@@ -54,7 +54,7 @@ public class SodiumGameOptionPages {
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName("Fullscreen")
-                        .setTooltip("Controls whether or not the game will use the full-screen resolution.")
+                        .setTooltip("If enabled, the game will display in full-screen.")
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> {
                             opts.fullscreen = value;
@@ -119,7 +119,8 @@ public class SodiumGameOptionPages {
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(SodiumGameOptions.DefaultGraphicsQuality.class, vanillaOpts)
                         .setName("Graphics Quality")
-                        .setTooltip("The default graphics quality controls some legacy options and is necessary for mod compatibility.")
+                        .setTooltip("The default graphics quality controls some legacy options and is necessary for mod compatibility. If the options below are left to " +
+                                "\"Default\", they will use this setting.")
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.DefaultGraphicsQuality.values()))
                         .setBinding(
                                 (opts, value) -> opts.fancyGraphics = value == SodiumGameOptions.DefaultGraphicsQuality.FANCY,
@@ -162,14 +163,15 @@ public class SodiumGameOptionPages {
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fog")
-                        .setTooltip("Controls the quality of fog effects.")
+                        .setTooltip("If enabled, a fog effect will be used for terrain in the distance.")
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.quality.enableFog = value, opts -> opts.quality.enableFog)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Vignette")
-                        .setTooltip("If enabled, a vignette effect will be rendered on the player's view.")
+                        .setTooltip("If enabled, a vignette effect will be rendered on the player's view. This is very unlikely to make a difference " +
+                                "to frame rates unless you are fill-rate limited.")
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.quality.enableVignette = value, opts -> opts.quality.enableVignette)
                         .setImpact(OptionImpact.LOW)
@@ -180,19 +182,12 @@ public class SodiumGameOptionPages {
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName("Mipmap Levels")
-                        .setTooltip("Controls the quality of rendered clouds in the sky.")
+                        .setTooltip("Controls the number of mipmaps which will be used for block model textures. Higher values provide better rendering of blocks " +
+                                "in the distance, but may adversely affect performance with many animated textures.")
                         .setControl(option -> new SliderControl(option, 0, 4, 1, SliderControl.SliderMode.NUMBER))
                         .setBinding((opts, value) -> opts.mipmapLevels = value, opts -> opts.mipmapLevels)
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_ASSET_RELOAD)
-                        .build())
-                .add(OptionImpl.createBuilder(SodiumGameOptions.MipmapQuality.class, sodiumOpts)
-                        .setName("Mipmap Quality")
-                        .setTooltip("Controls the quality of rendered clouds in the sky.")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.MipmapQuality.values()))
-                        .setBinding((opts, value) -> opts.quality.mipmapQuality = value, opts -> opts.quality.mipmapQuality)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .build());
 

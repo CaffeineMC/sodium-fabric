@@ -38,4 +38,4 @@ The resulting build artifacts will be present in `build/libs`.
 
 ### License
 
-Lithium is licensed under GNU LGPLv3, a free and open-source license. For more information, please see the [license file](https://github.com/jellysquid3/lithium/blob/master/LICENSE.txt).
+Sodium is licensed under GNU LGPLv3, a free and open-source license. For more information, please see the [license file](https://github.com/jellysquid3/lithium/blob/master/LICENSE.txt).
