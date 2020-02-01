@@ -6,11 +6,13 @@ import com.google.gson.GsonBuilder;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 
 import java.io.*;
-import java.util.function.Supplier;
+import java.lang.reflect.Modifier;
 
 public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
     public final PerformanceSettings performance = new PerformanceSettings();
+
+    private File file;
 
     public static class PerformanceSettings {
         public boolean useVAOs = true;
@@ -93,26 +95,30 @@ public class SodiumGameOptions {
     private static final Gson gson = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .setPrettyPrinting()
+            .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
 
-    public static <T> T load(File file, Class<T> type, Supplier<T> defaultFactory) {
-        T config;
+    public static SodiumGameOptions load(File file) {
+        SodiumGameOptions config;
 
         if (file.exists()) {
             try (FileReader reader = new FileReader(file)) {
-                config = gson.fromJson(reader, type);
+                config = gson.fromJson(reader, SodiumGameOptions.class);
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse config", e);
             }
         } else {
-            writeConfig(file, config = defaultFactory.get());
+            config = new SodiumGameOptions();
         }
+
+        config.file = file;
+        config.writeChanges();
 
         return config;
     }
 
-    private static <T> void writeConfig(File file, T config) {
-        File dir = file.getParentFile();
+    public void writeChanges() {
+        File dir = this.file.getParentFile();
 
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
@@ -122,8 +128,8 @@ public class SodiumGameOptions {
             throw new RuntimeException("The parent file is not a directory");
         }
 
-        try (FileWriter writer = new FileWriter(file)) {
-            gson.toJson(config, writer);
+        try (FileWriter writer = new FileWriter(this.file)) {
+            gson.toJson(this, writer);
         } catch (IOException e) {
             throw new RuntimeException("Could not save configuration file", e);
         }

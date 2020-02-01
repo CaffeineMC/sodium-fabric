@@ -14,7 +14,7 @@ public class SodiumClientMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         LOGGER = LogManager.getLogger("Sodium");
-        CONFIG = SodiumGameOptions.load(new File("config/sodium-options.json"), SodiumGameOptions.class, SodiumGameOptions::new);
+        CONFIG = SodiumGameOptions.load(new File("config/sodium-options.json"));
     }
 
     public static SodiumGameOptions options() {
