@@ -1,0 +1,21 @@
+package me.jellysquid.mods.sodium.client.gui.options.control;
+
+public interface ControlValueFormatter {
+    String format(int value);
+
+    static ControlValueFormatter percentage() {
+        return (v) -> v + "%";
+    }
+
+    static ControlValueFormatter multiplier() {
+        return (v) -> v + "x";
+    }
+
+    static ControlValueFormatter quanity(String name) {
+        return (v) -> v + " " + name;
+    }
+
+    static ControlValueFormatter number() {
+        return String::valueOf;
+    }
+}
