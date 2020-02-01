@@ -22,6 +22,9 @@
       "me.jellysquid.mods.sodium.client.SodiumClientMod"
     ]
   },
+  "custom": {
+    "fabric-renderer-api-v1:contains_renderer": true
+  },
   "mixins": [
     "sodium.mixins.json"
   ],
