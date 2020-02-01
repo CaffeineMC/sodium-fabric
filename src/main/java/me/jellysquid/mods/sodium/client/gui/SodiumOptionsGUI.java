@@ -5,14 +5,18 @@ import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
+import net.minecraft.client.Keyboard;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.VideoOptionsScreen;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.Rect2i;
 import net.minecraft.client.util.TextFormat;
 import net.minecraft.text.TranslatableText;
 import org.apache.commons.lang3.Validate;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -237,5 +241,16 @@ public class SodiumOptionsGUI extends Screen {
 
     private void popScreen() {
         MinecraftClient.getInstance().openScreen(this.prevScreen);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
+            MinecraftClient.getInstance().openScreen(new VideoOptionsScreen(this.prevScreen, MinecraftClient.getInstance().options));
+
+            return true;
+        }
+
+        return false;
     }
 }
