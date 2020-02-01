@@ -1,0 +1,31 @@
+{
+    "package": "me.jellysquid.mods.sodium.mixin",
+    "required": true,
+    "compatibilityLevel": "JAVA_8",
+    "plugin": "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "client": [
+        "render.reduce_matrix_allocs.MixinMatrixStack",
+        "render.fast_block_cache.MixinChunkRendererRegion",
+        "pipeline.MixinBakedQuad",
+        "pipeline.MixinRebuildTask",
+        "pipeline.MixinChunkData",
+        "pipeline.MixinRenderLayers",
+        "pipeline.MixinBufferBuilder",
+        "pipeline.MixinWorldRenderer",
+        "pipeline.MixinBuiltChunkStorage",
+        "pipeline.MixinChunkData",
+        "pipeline.MixinBuiltChunk",
+        "pipeline.MixinVertexFormat",
+        "pipeline.MixinSettingsScreen",
+        "pipeline.MixinClientChunkManager",
+        "pipeline.MixinChunkOcclusionData",
+        "models.MixinMultipartBakedModel",
+        "options.MixinRenderLayers",
+        "options.MixinInGameHud",
+        "options.MixinWorldRenderer",
+        "options.MixinGameOptions"
+    ]
+}
