@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.pipeline;
+package me.jellysquid.mods.sodium.mixin.chunk_rendering;
 
 import me.jellysquid.mods.sodium.client.render.chunk.ExtendedClientChunkManager;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;

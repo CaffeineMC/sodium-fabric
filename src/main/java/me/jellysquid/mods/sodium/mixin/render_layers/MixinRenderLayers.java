@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.pipeline;
+package me.jellysquid.mods.sodium.mixin.render_layers;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.render.RenderLayer;

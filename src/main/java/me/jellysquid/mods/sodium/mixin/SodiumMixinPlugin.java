@@ -32,11 +32,14 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
     }
 
     private void setupMixins(SodiumConfig config) {
-        this.enableIf("pipeline", true);
+        this.enableIf("chunk_building", true);
+        this.enableIf("chunk_occlusion", true);
+        this.enableIf("chunk_rendering", true);
         this.enableIf("models", true);
-        this.enableIf("render", true);
         this.enableIf("options", true);
-        this.enableIf("fast_chunk_occlusion", true);
+        this.enableIf("pipeline", true);
+        this.enableIf("render", true);
+        this.enableIf("render_layers", true);
     }
 
     private void enableIf(String packageName, boolean condition) {
