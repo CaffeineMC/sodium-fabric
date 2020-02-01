@@ -1,6 +1,7 @@
 plugins {
 	id 'fabric-loom' version '0.2.6-SNAPSHOT'
     id "me.champeau.gradle.jmh" version "0.5.0"
+	id 'com.github.johnrengelman.shadow' version '5.2.0'
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -24,7 +25,7 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    modShade "com.moandjiezana.toml:toml4j:0.7.2"
+	modShade "com.moandjiezana.toml:toml4j:0.7.2"
 }
 
 processResources {
@@ -63,3 +64,20 @@ jar {
 jmh {
     duplicateClassesStrategy = 'warn'
 }
+
+shadowJar {
+	dependencies {
+		exclude(dependency('com.google.code.gson:gson'))
+	}
+
+	relocate('net.minecraft.client.util.math', 'net.minecraft') {
+		include 'net.minecraft.client.util.math.Sodium*'
+	}
+
+	relocate('com.moandjiezana.toml', 'me.jellysquid.mods.lithium.shaded.toml')
+
+	configurations = [project.configurations.modShade]
+	classifier = 'dev'
+}
+
+remapJar.dependsOn shadowJar
