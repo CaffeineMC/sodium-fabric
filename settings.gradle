@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        jcenter()
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        maven {
+            name = "Jitpack"
+            url 'https://jitpack.io/'
+        }
+        maven {
+            name = "Forge"
+            url = "https://files.minecraftforge.net/maven/"
+        }
+        gradlePluginPortal()
+    }
+}
