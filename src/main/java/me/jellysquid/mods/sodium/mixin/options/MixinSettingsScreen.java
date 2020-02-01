@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.pipeline;
+package me.jellysquid.mods.sodium.mixin.options;
 
 import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 import net.minecraft.client.gui.screen.Screen;

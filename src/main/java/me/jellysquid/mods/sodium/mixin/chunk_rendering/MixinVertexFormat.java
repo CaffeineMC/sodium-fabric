@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.pipeline;
+package me.jellysquid.mods.sodium.mixin.chunk_rendering;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.platform.GlStateManager;

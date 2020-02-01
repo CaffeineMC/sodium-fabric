@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.pipeline;
+package me.jellysquid.mods.sodium.mixin.chunk_occlusion;
 
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import org.spongepowered.asm.mixin.Final;

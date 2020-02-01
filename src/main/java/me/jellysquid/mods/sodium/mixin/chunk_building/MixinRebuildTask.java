@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.pipeline;
+package me.jellysquid.mods.sodium.mixin.chunk_building;
 
 import com.google.common.collect.Sets;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
