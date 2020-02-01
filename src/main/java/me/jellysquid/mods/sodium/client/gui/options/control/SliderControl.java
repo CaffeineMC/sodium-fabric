@@ -10,9 +10,9 @@ public class SliderControl implements Control<Integer> {
 
     private final int min, max, interval;
 
-    private final SliderMode mode;
+    private final ControlValueFormatter mode;
 
-    public SliderControl(Option<Integer> option, int min, int max, int interval, SliderMode mode) {
+    public SliderControl(Option<Integer> option, int min, int max, int interval, ControlValueFormatter mode) {
         Validate.isTrue(max > min, "The maximum value must be greater than the minimum value");
         Validate.isTrue(interval > 0, "The slider interval must be greater than zero");
         Validate.isTrue(((max - min) % interval) == 0, "The maximum value must be divisable by the interval");
@@ -39,7 +39,7 @@ public class SliderControl implements Control<Integer> {
         private static final int THUMB_WIDTH = 2, TRACK_HEIGHT = 1;
 
         private final Rect2i sliderBounds;
-        private final SliderMode mode;
+        private final ControlValueFormatter formatter;
 
         private final int min;
         private final int range;
@@ -47,14 +47,14 @@ public class SliderControl implements Control<Integer> {
 
         private double thumbPosition;
 
-        public Button(Option<Integer> option, Rect2i dim, int min, int max, int interval, SliderMode mode) {
+        public Button(Option<Integer> option, Rect2i dim, int min, int max, int interval, ControlValueFormatter formatter) {
             super(option, dim);
 
             this.min = min;
             this.range = max - min;
             this.interval = interval;
             this.thumbPosition = this.getThumbPositionForValue(option.getValue());
-            this.mode = mode;
+            this.formatter = formatter;
 
             this.sliderBounds = new Rect2i(dim.getX() + dim.getWidth() - 96, dim.getY() + (dim.getHeight() / 2) - 5, 90, 10);
         }
@@ -76,7 +76,7 @@ public class SliderControl implements Control<Integer> {
             int sliderWidth = this.sliderBounds.getWidth();
             int sliderHeight = this.sliderBounds.getHeight();
 
-            String label = this.mode.format(String.valueOf((int) this.option.getValue()));
+            String label = this.formatter.format(this.option.getValue());
             int labelWidth = this.font.getStringWidth(label);
 
             this.drawString(label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
@@ -96,7 +96,7 @@ public class SliderControl implements Control<Integer> {
             drawRect(thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
             drawRect(sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
 
-            String label = this.mode.format(String.valueOf(this.getIntValue()));
+            String label = String.valueOf(this.getIntValue());
 
             int labelWidth = this.font.getStringWidth(label);
 
@@ -152,18 +152,4 @@ public class SliderControl implements Control<Integer> {
         }
     }
 
-    public enum SliderMode {
-        PERCENTAGE("%s%%"),
-        NUMBER("%s");
-
-        private final String format;
-
-        SliderMode(String format) {
-            this.format = format;
-        }
-
-        public String format(String... args) {
-            return String.format(this.format, (Object[]) args);
-        }
-    }
 }

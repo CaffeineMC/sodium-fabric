@@ -3,11 +3,12 @@ package me.jellysquid.mods.sodium.client.gui;
 import com.google.common.collect.ImmutableList;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
+import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
 import me.jellysquid.mods.sodium.client.gui.options.control.CyclingControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.TickBoxControl;
-import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
 import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
+import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
 import me.jellysquid.mods.sodium.client.render.gl.GlVertexArray;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.AttackIndicator;
@@ -29,7 +30,7 @@ public class SodiumGameOptionPages {
                         .setName("View Distance")
                         .setTooltip("The view distance controls how far away terrain will be rendered. Lower distances mean that less terrain will be " +
                                 "rendered, improving frame rates.")
-                        .setControl(option -> new SliderControl(option, 2, 32, 1, SliderControl.SliderMode.NUMBER))
+                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.quanity("Chunks")))
                         .setBinding((options, value) -> options.viewDistance = value, options -> options.viewDistance)
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -46,7 +47,7 @@ public class SodiumGameOptionPages {
                         .setName("FPS Limit")
                         .setTooltip("Limits the maximum number of frames per second. In effect, this will throttle the game and can be useful when you want to conserve " +
                                 "battery life or multi-task between other applications.")
-                        .setControl(option -> new SliderControl(option, 5, 300, 5, SliderControl.SliderMode.NUMBER))
+                        .setControl(option -> new SliderControl(option, 5, 300, 5, ControlValueFormatter.quanity("FPS")))
                         .setBinding((opts, value) -> {
                             opts.maxFps = value;
                             MinecraftClient.getInstance().getWindow().setFramerateLimit(value);
@@ -76,7 +77,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName("Brightness")
                         .setTooltip("Controls the brightness (gamma) of the game.")
-                        .setControl(opt -> new SliderControl(opt, 0, 100, 1, SliderControl.SliderMode.PERCENTAGE))
+                        .setControl(opt -> new SliderControl(opt, 0, 100, 1, ControlValueFormatter.percentage()))
                         .setBinding((opts, value) -> opts.gamma = value * 0.01D, (opts) -> (int) (opts.gamma / 0.01D))
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
@@ -184,7 +185,7 @@ public class SodiumGameOptionPages {
                         .setName("Mipmap Levels")
                         .setTooltip("Controls the number of mipmaps which will be used for block model textures. Higher values provide better rendering of blocks " +
                                 "in the distance, but may adversely affect performance with many animated textures.")
-                        .setControl(option -> new SliderControl(option, 0, 4, 1, SliderControl.SliderMode.NUMBER))
+                        .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.multiplier()))
                         .setBinding((opts, value) -> opts.mipmapLevels = value, opts -> opts.mipmapLevels)
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_ASSET_RELOAD)
