@@ -25,6 +25,7 @@
         "pipeline.MixinBufferBuilder",
         "render.fast_block_cache.MixinChunkRendererRegion",
         "render.reduce_matrix_allocs.MixinMatrixStack",
+        "render.static_fov.MixinGameRenderer",
         "render_layers.MixinRenderLayers"
     ]
 }
