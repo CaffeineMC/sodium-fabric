@@ -31,7 +31,7 @@ public class SodiumGameOptions {
         public boolean enableVignette = true;
         public boolean enableFog = true;
         public boolean enableClouds = true;
-        public boolean staticFov = true;
+        public boolean staticFov = false;
     }
 
     public enum DefaultGraphicsQuality implements TextProvider {
