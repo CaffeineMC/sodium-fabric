@@ -1,24 +1,22 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import net.minecraft.client.render.chunk.ChunkBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 
-class ChunkGraphNode {
-    public final ChunkBuilder.BuiltChunk chunk;
+class ChunkGraphNode<T extends ChunkRenderData> {
+    public final ChunkRender<T> chunk;
 
     public Direction direction;
+
     public int propagationLevel;
     public int rebuildFrame;
     public byte cullingState;
 
-    private final int index;
-
-    public ChunkGraphNode(ChunkBuilder.BuiltChunk chunk, int index) {
+    public ChunkGraphNode(ChunkRender<T> chunk) {
         this.chunk = chunk;
         this.rebuildFrame = -1;
-        this.index = index;
     }
 
     public void updateCullingState(byte parent, Direction from) {
@@ -40,7 +38,7 @@ class ChunkGraphNode {
     }
 
     public Box getBoundingBox() {
-        return this.chunk.boundingBox;
+        return this.chunk.getBoundingBox();
     }
 
     public void setPropagationLevel(int level) {
@@ -55,15 +53,23 @@ class ChunkGraphNode {
         return this.rebuildFrame;
     }
 
-    public int getIndex() {
-        return this.index;
-    }
-
     public boolean isVisibleThrough(Direction from, Direction to) {
-        return this.chunk.getData().isVisibleThrough(from, to);
+        return this.chunk.isVisibleThrough(from, to);
     }
 
     public BlockPos getOrigin() {
         return this.chunk.getOrigin();
+    }
+
+    public boolean hasNeighbors() {
+        return this.chunk.hasNeighbors();
+    }
+
+    public void setCullingState(byte i) {
+        this.cullingState = i;
+    }
+
+    public void delete() {
+        this.chunk.delete();
     }
 }
