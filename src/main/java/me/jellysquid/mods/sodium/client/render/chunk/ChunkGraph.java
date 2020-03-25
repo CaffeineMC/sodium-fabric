@@ -180,6 +180,10 @@ public class ChunkGraph<T extends ChunkRenderData> {
     }
 
     private ChunkGraphNode<T> getOrCreateNode(BlockPos pos) {
+        if (pos.getY() < 0 || pos.getY() >= 256) {
+            return null;
+        }
+
         return this.nodes.computeIfAbsent(ChunkSectionPos.asLong(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4), this::createNode);
     }
 
@@ -197,10 +201,6 @@ public class ChunkGraph<T extends ChunkRenderData> {
         }
 
         if (z < this.minZ || z > this.maxZ) {
-            return null;
-        }
-
-        if (y < 0 || y >= 256) {
             return null;
         }
 
