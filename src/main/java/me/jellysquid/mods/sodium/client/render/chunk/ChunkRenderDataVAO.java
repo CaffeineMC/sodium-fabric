@@ -46,4 +46,9 @@ public class ChunkRenderDataVAO implements ChunkRenderData {
             array.upload(entry.getValue());
         }
     }
+
+    @Override
+    public void deleteMeshes() {
+
+    }
 }

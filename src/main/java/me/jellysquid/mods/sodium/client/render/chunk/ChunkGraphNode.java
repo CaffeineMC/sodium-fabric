@@ -6,7 +6,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 
 class ChunkGraphNode<T extends ChunkRenderData> {
-    public final ChunkRender<T> chunk;
+    public final ChunkRender<T> render;
 
     public Direction direction;
 
@@ -14,8 +14,8 @@ class ChunkGraphNode<T extends ChunkRenderData> {
     public int rebuildFrame;
     public byte cullingState;
 
-    public ChunkGraphNode(ChunkRender<T> chunk) {
-        this.chunk = chunk;
+    public ChunkGraphNode(ChunkRender<T> render) {
+        this.render = render;
         this.rebuildFrame = -1;
     }
 
@@ -38,7 +38,7 @@ class ChunkGraphNode<T extends ChunkRenderData> {
     }
 
     public Box getBoundingBox() {
-        return this.chunk.getBoundingBox();
+        return this.render.getBoundingBox();
     }
 
     public void setPropagationLevel(int level) {
@@ -54,15 +54,15 @@ class ChunkGraphNode<T extends ChunkRenderData> {
     }
 
     public boolean isVisibleThrough(Direction from, Direction to) {
-        return this.chunk.isVisibleThrough(from, to);
+        return this.render.isVisibleThrough(from, to);
     }
 
     public BlockPos getOrigin() {
-        return this.chunk.getOrigin();
+        return this.render.getOrigin();
     }
 
     public boolean hasNeighbors() {
-        return this.chunk.hasNeighbors();
+        return this.render.hasNeighbors();
     }
 
     public void setCullingState(byte i) {
@@ -70,6 +70,10 @@ class ChunkGraphNode<T extends ChunkRenderData> {
     }
 
     public void delete() {
-        this.chunk.delete();
+        this.render.delete();
+    }
+
+    public boolean isEmpty() {
+        return this.render.isEmpty();
     }
 }

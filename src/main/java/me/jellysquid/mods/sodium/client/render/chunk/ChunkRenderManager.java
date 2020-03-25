@@ -94,7 +94,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         int i = 0;
 
         for (ChunkGraphNode<T> node : this.chunkGraph.getVisibleChunks()) {
-            if (!node.chunk.getMeshInfo().isEmpty()) {
+            if (!node.render.getMeshInfo().isEmpty()) {
                 i++;
             }
         }
@@ -194,7 +194,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         List<CompletableFuture<ChunkRenderUploadTask>> futures = new ArrayList<>();
 
         for (ChunkGraphNode<T> info : this.chunkGraph.getVisibleChunks()) {
-            ChunkRender<T> chunk = info.chunk;
+            ChunkRender<T> chunk = info.render;
 
             if (!chunk.needsRebuild()) {
                 continue;
@@ -270,7 +270,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             }
 
             ChunkGraphNode<T> info = notTranslucent ? it.next() : it.previous();
-            ChunkRender<T> chunk = info.chunk;
+            ChunkRender<T> chunk = info.render;
 
             T data = chunk.getRenderData();
 
@@ -331,7 +331,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         ChunkGraphNode<T> node = this.chunkGraph.getChunkRender(x, y, z);
 
         if (node != null) {
-            node.chunk.scheduleRebuild(important);
+            node.render.scheduleRebuild(important);
         }
     }
 }

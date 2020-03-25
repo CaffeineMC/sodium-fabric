@@ -169,7 +169,7 @@ public class ChunkGraph<T extends ChunkRenderData> {
                 }
             }
 
-            list.sort(Comparator.comparingDouble(o -> blockPos.getSquaredDistance(o.chunk.getOrigin().add(8, 8, 8))));
+            list.sort(Comparator.comparingDouble(o -> blockPos.getSquaredDistance(o.render.getOrigin().add(8, 8, 8))));
 
             for (ChunkGraphNode<T> n : list) {
                 queue.enqueue(n);
@@ -188,9 +188,9 @@ public class ChunkGraph<T extends ChunkRenderData> {
     }
 
     private ChunkGraphNode<T> getAdjacentChunk(ChunkGraphNode<T> node, Direction direction) {
-        int x = node.chunk.getChunkX() + direction.getOffsetX();
-        int y = node.chunk.getChunkY() + direction.getOffsetY();
-        int z = node.chunk.getChunkZ() + direction.getOffsetZ();
+        int x = node.render.getChunkX() + direction.getOffsetX();
+        int y = node.render.getChunkY() + direction.getOffsetY();
+        int z = node.render.getChunkZ() + direction.getOffsetZ();
 
         if (x < this.minX || x > this.maxX) {
             return null;

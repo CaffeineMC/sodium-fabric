@@ -148,14 +148,26 @@ public class ChunkRender<T extends ChunkRenderData> {
         T data = this.renderData;
 
         if (data == null) {
+            if (uploads.isEmpty()) {
+                return;
+            }
+
             data = this.renderData = this.chunkRenderer.createRenderData();
         }
 
-        data.uploadMeshes(uploads);
+        if (uploads.isEmpty()) {
+            data.deleteMeshes();
+        } else {
+            data.uploadMeshes(uploads);
+        }
     }
 
     public void finishRebuild() {
         this.needsRebuild = false;
         this.needsImportantRebuild = false;
+    }
+
+    public boolean isEmpty() {
+        return this.renderData == null;
     }
 }

@@ -8,4 +8,6 @@ public interface ChunkRenderData {
     void destroy();
 
     void uploadMeshes(Object2ObjectMap<RenderLayer, BufferUploadData> layers);
+
+    void deleteMeshes();
 }
