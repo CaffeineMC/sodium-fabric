@@ -34,4 +34,9 @@ public class ChunkRenderDataVBO implements ChunkRenderData {
             array.upload(entry.getValue());
         }
     }
+
+    @Override
+    public void deleteMeshes() {
+
+    }
 }
