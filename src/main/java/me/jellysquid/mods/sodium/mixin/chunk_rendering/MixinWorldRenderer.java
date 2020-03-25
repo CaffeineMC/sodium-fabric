@@ -1,54 +1,30 @@
 package me.jellysquid.mods.sodium.mixin.chunk_rendering;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
-import me.jellysquid.mods.sodium.client.render.chunk.ExtendedBuiltChunkStorage;
-import me.jellysquid.mods.sodium.client.render.chunk.ExtendedWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderDataVAO;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRendererVAO;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
-import net.minecraft.client.render.chunk.ChunkBuilder;
-import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3d;
-import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.client.world.ClientWorld;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(WorldRenderer.class)
-public abstract class MixinWorldRenderer implements ExtendedWorldRenderer {
-    @Shadow
-    private BuiltChunkStorage chunks;
-
-
-    @Shadow
-    private ChunkBuilder chunkBuilder;
-
-    @Shadow
-    @Final
-    private Vector4f[] capturedFrustrumOrientation;
-
-    @Shadow
-    @Final
-    private Vector3d capturedFrustumPosition;
-
-    @Shadow
-    private Frustum capturedFrustum;
-
-    private ChunkRenderer chunkRenderer;
+public abstract class MixinWorldRenderer {
+    private ChunkRenderManager<ChunkRenderDataVAO> chunkManager;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(MinecraftClient client, BufferBuilderStorage bufferBuilders, CallbackInfo ci) {
-        this.chunkRenderer = new ChunkRenderer(client, (WorldRenderer) (Object) this);
+        this.chunkManager = new ChunkRenderManager<>(client, new ChunkRendererVAO());
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))
     private void onWorldChanged(ClientWorld world, CallbackInfo ci) {
-        this.chunkRenderer.setWorld(world);
+        this.chunkManager.setWorld(world);
     }
 
     /**
@@ -56,7 +32,7 @@ public abstract class MixinWorldRenderer implements ExtendedWorldRenderer {
      */
     @Overwrite
     public int getCompletedChunkCount() {
-        return this.chunkRenderer.getCompletedChunkCount();
+        return this.chunkManager.getCompletedChunkCount();
     }
 
     /**
@@ -64,7 +40,7 @@ public abstract class MixinWorldRenderer implements ExtendedWorldRenderer {
      */
     @Overwrite
     private void updateChunks(long limitTime) {
-        this.chunkRenderer.updateChunks(limitTime);
+        this.chunkManager.updateChunks(limitTime);
     }
 
     /**
@@ -72,12 +48,12 @@ public abstract class MixinWorldRenderer implements ExtendedWorldRenderer {
      */
     @Overwrite
     public boolean isTerrainRenderComplete() {
-        return this.chunkRenderer.isTerrainRenderComplete();
+        return this.chunkManager.isTerrainRenderComplete();
     }
 
     @Inject(method = "scheduleTerrainUpdate", at = @At("RETURN"))
     private void onTerrainUpdateScheduled(CallbackInfo ci) {
-        this.chunkRenderer.scheduleTerrainUpdate();
+        this.chunkManager.scheduleTerrainUpdate();
     }
 
     /**
@@ -85,13 +61,7 @@ public abstract class MixinWorldRenderer implements ExtendedWorldRenderer {
      */
     @Overwrite
     private void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double d, double e, double f) {
-        this.chunkRenderer.renderLayer(renderLayer, matrixStack, d, e, f);
-    }
-
-
-    @Inject(method = "captureFrustum", at = @At("RETURN"))
-    private void onFrustumUpdated(Matrix4f modelMatrix, Matrix4f matrix4f, double x, double y, double z, Frustum frustum, CallbackInfo ci) {
-        this.chunkRenderer.onFrustumUpdated(this.capturedFrustrumOrientation, this.capturedFrustumPosition, this.capturedFrustum);
+        this.chunkManager.renderLayer(renderLayer, matrixStack, d, e, f);
     }
 
     /**
@@ -99,7 +69,7 @@ public abstract class MixinWorldRenderer implements ExtendedWorldRenderer {
      */
     @Overwrite
     private void renderChunkDebugInfo(Camera camera) {
-        this.chunkRenderer.renderChunkDebugInfo(camera);
+        this.chunkManager.renderChunkDebugInfo(camera);
     }
 
     /**
@@ -107,27 +77,24 @@ public abstract class MixinWorldRenderer implements ExtendedWorldRenderer {
      */
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
-        this.chunkRenderer.update(camera, frustum, hasForcedFrustum, frame, spectator);
-    }
-
-    @Override
-    public ChunkBuilder getChunkBuilder() {
-        return this.chunkBuilder;
-    }
-
-    @Override
-    public ExtendedBuiltChunkStorage getBuiltChunkStorage() {
-        return (ExtendedBuiltChunkStorage) this.chunks;
+        this.chunkManager.update(camera, frustum, hasForcedFrustum, frame, spectator);
     }
 
     @Inject(method = "clearChunkRenderers", at = @At("RETURN"))
     private void onChunkRenderersCleared(CallbackInfo ci) {
-        this.chunkRenderer.clearRenderers();
+        this.chunkManager.clearRenderers();
     }
 
     @Inject(method = "reload", at = @At("RETURN"))
     private void reload(CallbackInfo ci) {
-        this.chunkRenderer.reload();
+        this.chunkManager.reload();
     }
 
+    /**
+     * @author JellySquid
+     */
+    @Overwrite
+    private void scheduleChunkRender(int x, int y, int z, boolean important) {
+        this.chunkManager.scheduleRebuild(x, y, z, important);
+    }
 }

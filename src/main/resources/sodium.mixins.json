@@ -9,9 +9,8 @@
     "client": [
         "chunk_building.MixinChunkData",
         "chunk_building.MixinRebuildTask",
+        "chunk_building.MixinBufferBuilder",
         "chunk_occlusion.MixinChunkOcclusionData",
-        "chunk_rendering.MixinBuiltChunk",
-        "chunk_rendering.MixinBuiltChunkStorage",
         "chunk_rendering.MixinClientChunkManager",
         "chunk_rendering.MixinVertexFormat",
         "chunk_rendering.MixinWorldRenderer",
