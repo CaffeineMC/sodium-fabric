@@ -98,6 +98,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
     public void updateChunks(long limitTime) {
         this.isRenderGraphDirty |= this.chunkBuilder.upload();
+        this.isRenderGraphDirty |= this.chunkGraph.cleanup();
 
         int uploaded = 0;
 
@@ -311,8 +312,8 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         this.chunkBuilder.abortTasks();
     }
 
-    public ChunkRender<T> createChunkRender(int x, int y, int z) {
-        return new ChunkRender<>(this.chunkGraph, this.chunkBuilder, this.chunkRenderer, new BlockPos(x, y, z));
+    public ChunkRender<T> createChunkRender(long pos) {
+        return new ChunkRender<>(this.chunkGraph, this.chunkBuilder, this.chunkRenderer, pos);
     }
 
     public void scheduleRebuildForBlock(int x, int y, int z, boolean important) {
