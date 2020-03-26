@@ -31,9 +31,10 @@ public class ChunkGraph<T extends ChunkRenderData> {
     private final ObjectList<ChunkRender<T>> visibleNodes = new ObjectArrayList<>();
     private final ObjectList<ChunkRender<T>> drawableNodes = new ObjectArrayList<>();
 
+    private final ObjectArrayFIFOQueue<ChunkRender<T>> iterationQueue = new ObjectArrayFIFOQueue<>();
+
     private final ChunkRenderManager<T> renderManager;
     private final World world;
-    private final ObjectArrayFIFOQueue<ChunkRender<T>> iterationQueue = new ObjectArrayFIFOQueue<>();
 
     private int minX, minZ, maxX, maxZ;
     private int renderDistance;
@@ -65,9 +66,7 @@ public class ChunkGraph<T extends ChunkRenderData> {
         boolean fogCulling = cull && this.renderDistance > 4 && options.quality.enableFog && options.performance.useFogChunkCulling;
         int maxChunkDistance = (this.renderDistance * 16) + 16;
 
-        ObjectArrayFIFOQueue<ChunkRender<T>> queue = this.iterationQueue;
-
-        while (!queue.isEmpty()) {
+        while (!this.iterationQueue.isEmpty()) {
             ChunkRender<T> render = this.iterationQueue.dequeue();
 
             this.visibleNodes.add(render);
@@ -80,44 +79,44 @@ public class ChunkGraph<T extends ChunkRenderData> {
                 continue;
             }
 
-            Direction dir = render.direction;
-
-            for (Direction adjDir : DirectionUtil.ALL_DIRECTIONS) {
-                ChunkRender<T> adjRender = this.getAdjacentRender(render, adjDir);
-
-                if (adjRender == null) {
-                    continue;
-                }
-
-                if (adjRender.getRebuildFrame() == frame) {
-                    continue;
-                }
-
-                if (cull) {
-                    if (render.canCull(adjDir.getOpposite())) {
-                        continue;
-                    }
-
-                    if (dir != null && !render.isVisibleThrough(dir.getOpposite(), adjDir)) {
-                        continue;
-                    }
-
-                    if (!frustum.isVisible(adjRender.getBoundingBox())) {
-                        continue;
-                    }
-                }
-
-                if (!adjRender.hasNeighbors()) {
-                    continue;
-                }
-
-                adjRender.setDirection(adjDir);
-                adjRender.setRebuildFrame(frame);
-                adjRender.updateCullingState(render.cullingState, adjDir);
-
-                queue.enqueue(adjRender);
-            }
+            this.addNeighbors(render, cull, frustum, frame);
         }
+    }
+
+    private void addNeighbors(ChunkRender<T> render, boolean cull, Frustum frustum, int frame) {
+        for (Direction adjDir : DirectionUtil.ALL_DIRECTIONS) {
+            ChunkRender<T> adjRender = this.getAdjacentRender(render, adjDir);
+
+            if (adjRender == null || adjRender.getRebuildFrame() == frame) {
+                continue;
+            }
+
+            if (cull && !this.isVisible(render, adjRender, adjDir, frustum)) {
+                continue;
+            }
+
+            if (!adjRender.hasNeighbors()) {
+                continue;
+            }
+
+            adjRender.setDirection(adjDir);
+            adjRender.setRebuildFrame(frame);
+            adjRender.updateCullingState(render.cullingState, adjDir);
+
+            this.iterationQueue.enqueue(adjRender);
+        }
+    }
+
+    private boolean isVisible(ChunkRender<T> render, ChunkRender<T> adjRender, Direction dir, Frustum frustum) {
+        if (render.canCull(dir.getOpposite())) {
+            return false;
+        }
+
+        if (render.direction != null && !render.isVisibleThrough(render.direction.getOpposite(), dir)) {
+            return false;
+        }
+
+        return frustum.isVisible(adjRender.getBoundingBox());
     }
 
     private boolean init(BlockPos blockPos, Camera camera, Vec3d cameraPos, Frustum frustum, int frame, boolean spectator) {
@@ -187,12 +186,20 @@ public class ChunkGraph<T extends ChunkRenderData> {
         return cull;
     }
 
-    private ChunkRender<T> getOrCreateRender(BlockPos pos) {
-        if (pos.getY() < 0 || pos.getY() >= 256) {
+    public ChunkRender<T> getOrCreateRender(BlockPos pos) {
+        return this.getOrCreateRender(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);
+    }
+
+    public ChunkRender<T> getOrCreateRender(int x, int y, int z) {
+        if (y < 0 || y >= 16) {
             return null;
         }
 
-        return this.nodes.computeIfAbsent(ChunkSectionPos.asLong(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4), this::createRender);
+        return this.nodes.computeIfAbsent(ChunkSectionPos.asLong(x, y, z), this::createRender);
+    }
+
+    public ChunkRender<T> getRender(int x, int y, int z) {
+        return this.nodes.get(ChunkSectionPos.asLong(x >> 4, y >> 4, z >> 4));
     }
 
     private ChunkRender<T> createRender(long pos) {
@@ -205,10 +212,10 @@ public class ChunkGraph<T extends ChunkRenderData> {
         int z = render.getChunkZ() + direction.getOffsetZ();
 
         if (!this.isWithinRenderBounds(x, y, z)) {
-            return render;
+            return null;
         }
 
-        return this.nodes.computeIfAbsent(ChunkSectionPos.asLong(x, y, z), this::createRender);
+        return render.getAdjacent(direction);
     }
 
     private boolean isWithinRenderBounds(int x, int y, int z) {
@@ -259,9 +266,5 @@ public class ChunkGraph<T extends ChunkRenderData> {
 
     public ObjectList<ChunkRender<T>> getDrawableChunks() {
         return this.drawableNodes;
-    }
-
-    public ChunkRender<T> getChunkRender(int x, int y, int z) {
-        return this.nodes.get(ChunkSectionPos.asLong(x, y, z));
     }
 }
