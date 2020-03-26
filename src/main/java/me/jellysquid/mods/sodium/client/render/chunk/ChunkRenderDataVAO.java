@@ -19,14 +19,16 @@ public class ChunkRenderDataVAO implements ChunkRenderData {
     }
 
     @Override
-    public void destroy() {
+    public void clearData() {
         for (VertexBufferWithArray buffer : this.vaos.values()) {
             buffer.delete();
         }
+
+        this.vaos.clear();
     }
 
     @Override
-    public void uploadChunk(ChunkMeshInfo mesh) {
+    public void uploadData(ChunkMeshInfo mesh) {
         for (ChunkMeshInfo.MeshUpload entry : mesh.getUploads()) {
             VertexBufferWithArray array = this.vaos.computeIfAbsent(entry.layer, this::createData);
             array.upload(entry.data);
