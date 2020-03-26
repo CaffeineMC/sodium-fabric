@@ -6,6 +6,4 @@ public interface ChunkRenderData {
     void destroy();
 
     void uploadChunk(ChunkMeshInfo layers);
-
-    void deleteMeshes();
 }

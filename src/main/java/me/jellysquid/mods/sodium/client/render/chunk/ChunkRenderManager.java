@@ -86,15 +86,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
     }
 
     public int getCompletedChunkCount() {
-        int i = 0;
-
-        for (ChunkRender<T> node : this.chunkGraph.getVisibleChunks()) {
-            if (!node.getMeshInfo().isEmpty()) {
-                i++;
-            }
-        }
-
-        return i;
+        return this.chunkGraph.getDrawableChunks().size();
     }
 
     public void scheduleTerrainUpdate() {
@@ -249,7 +241,8 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
         boolean notTranslucent = renderLayer != RenderLayer.getTranslucent();
 
-        ObjectListIterator<ChunkRender<T>> it = this.chunkGraph.getVisibleChunks().listIterator(notTranslucent ? 0 : this.chunkGraph.getVisibleChunkCount());
+        ObjectList<ChunkRender<T>> list = this.chunkGraph.getDrawableChunks();
+        ObjectListIterator<ChunkRender<T>> it = list.listIterator(notTranslucent ? 0 : list.size());
 
         this.chunkRenderer.begin();
 
