@@ -23,6 +23,7 @@
         "pipeline.MixinBufferBuilder",
         "render.fast_block_cache.MixinChunkRendererRegion",
         "render.reduce_matrix_allocs.MixinMatrixStack",
-        "render_layers.MixinRenderLayers"
+        "render_layers.MixinRenderLayers",
+        "fast_mojmath.MixinFrustum"
     ]
 }
