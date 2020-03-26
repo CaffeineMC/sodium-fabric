@@ -95,6 +95,6 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void scheduleChunkRender(int x, int y, int z, boolean important) {
-        this.chunkManager.scheduleRebuild(x, y, z, important);
+        this.chunkManager.scheduleRebuildForBlock(x, y, z, important);
     }
 }

@@ -81,7 +81,10 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             }
 
             this.chunkBuilder.setWorld(this.world);
+
             this.chunkGraph = new ChunkGraph<>(this, this.world, this.renderDistance);
+
+            ((ChunkManagerWithStatusListener) world.getChunkManager()).setListener(this.chunkGraph);
         }
     }
 
@@ -312,8 +315,8 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         return new ChunkRender<>(this.chunkGraph, this.chunkBuilder, this.chunkRenderer, new BlockPos(x, y, z));
     }
 
-    public void scheduleRebuild(int x, int y, int z, boolean important) {
-        ChunkRender<T> node = this.chunkGraph.getRender(x, y, z);
+    public void scheduleRebuildForBlock(int x, int y, int z, boolean important) {
+        ChunkRender<T> node = this.chunkGraph.getRender(x >> 4, y >> 4, z >> 4);
 
         if (node != null) {
             node.scheduleRebuild(important);

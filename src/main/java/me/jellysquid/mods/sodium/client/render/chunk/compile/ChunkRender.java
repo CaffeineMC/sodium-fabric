@@ -6,7 +6,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.chunk.ChunkStatus;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,6 +33,7 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public int rebuildFrame;
     public byte cullingState;
+    private boolean chunkPresent;
 
     @SuppressWarnings("unchecked")
     public ChunkRender(ChunkGraph<T> graph, ChunkBuilder builder, ChunkRenderer<T> chunkRenderer, BlockPos origin) {
@@ -56,6 +56,7 @@ public class ChunkRender<T extends ChunkRenderData> {
         this.rebuildFrame = -1;
 
         this.adjacent = new ChunkRender[6];
+        this.chunkPresent = this.builder.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
     }
 
     public void cancelRebuildTask() {
@@ -141,11 +142,14 @@ public class ChunkRender<T extends ChunkRenderData> {
     }
 
     public boolean hasNeighbors() {
-        return this.isChunkPresent(Direction.WEST) && this.isChunkPresent(Direction.NORTH) && this.isChunkPresent(Direction.EAST) && this.isChunkPresent(Direction.SOUTH);
+        return this.isChunkPresent(Direction.WEST) && this.isChunkPresent(Direction.NORTH) &&
+                this.isChunkPresent(Direction.EAST) && this.isChunkPresent(Direction.SOUTH);
     }
 
     private boolean isChunkPresent(Direction dir) {
-        return this.builder.getWorld().getChunk(this.chunkX + dir.getOffsetX(), this.chunkZ + dir.getOffsetZ(), ChunkStatus.FULL, false) != null;
+        ChunkRender<T> render = this.getAdjacent(dir);
+
+        return render == null || render.isChunkPresent();
     }
 
     public void rebuild() {
@@ -213,5 +217,13 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public int getRebuildFrame() {
         return this.rebuildFrame;
+    }
+
+    public void setChunkPresent(boolean value) {
+        this.chunkPresent = value;
+    }
+
+    public boolean isChunkPresent() {
+        return this.chunkPresent;
     }
 }
