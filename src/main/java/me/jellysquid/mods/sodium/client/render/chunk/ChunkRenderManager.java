@@ -317,7 +317,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
     }
 
     public void scheduleRebuildForBlock(int x, int y, int z, boolean important) {
-        ChunkRender<T> node = this.chunkGraph.getRender(x >> 4, y >> 4, z >> 4);
+        ChunkRender<T> node = this.chunkGraph.getRender(x, y, z);
 
         if (node != null) {
             node.scheduleRebuild(important);
