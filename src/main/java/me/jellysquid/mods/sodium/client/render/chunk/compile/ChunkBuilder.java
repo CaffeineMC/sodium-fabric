@@ -136,18 +136,17 @@ public class ChunkBuilder {
                     continue;
                 }
 
-                if (job.future.isCancelled()) {
-                    continue;
+                if (!job.future.isCancelled()) {
+                    ChunkRenderUploadTask uploadTask = job.task.performBuild(this.bufferCache);
+
+                    job.future.complete(uploadTask);
                 }
 
-                ChunkRenderUploadTask uploadTask = job.task.performBuild(this.bufferCache);
-
-                job.future.complete(uploadTask);
             }
         }
     }
 
-    private class BuildJob {
+    private static class BuildJob {
         private final ChunkRenderBuildTask task;
         private final CompletableFuture<ChunkRenderUploadTask> future;
 
