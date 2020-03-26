@@ -1,12 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import me.jellysquid.mods.sodium.client.render.chunk.CloneableBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.mesh.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
-import me.jellysquid.mods.sodium.client.render.vertex.BufferUploadData;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
@@ -33,9 +29,17 @@ import org.lwjgl.opengl.GL11;
 import java.util.EnumSet;
 
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
+    private static final ChunkOcclusionData EMPTY_OCCLUSION_DATA;
+
+    static {
+        ChunkOcclusionData data = new ChunkOcclusionData();
+        data.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
+
+        EMPTY_OCCLUSION_DATA = data;
+    }
+
     private final ChunkRender<?> render;
     private final Vector3d camera;
-    private final BlockPos origin;
     private final ChunkRendererRegion region;
     private final ChunkRenderPipeline pipeline;
     private final BlockRenderManager fallbackPipeline;
@@ -44,45 +48,34 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         this.render = render;
 
         this.camera = builder.getCameraPosition();
-        this.origin = this.render.getOrigin();
 
-        BlockPos from = this.origin.add(-1, -1, -1);
-        BlockPos to = this.origin.add(16, 16, 16);
+        BlockPos origin = this.render.getOrigin();
+        BlockPos from = origin.add(-1, -1, -1);
+        BlockPos to = origin.add(16, 16, 16);
 
         this.region = ChunkRendererRegion.create(builder.getWorld(), from, to, 1);
-        this.pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance(), this.region, this.origin);
+        this.pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance(), this.region, origin);
         this.fallbackPipeline = MinecraftClient.getInstance().getBlockRenderManager();
     }
 
     @Override
     public ChunkRenderUploadTask performBuild(VertexBufferCache buffers) {
-        ChunkMeshInfo meshInfo;
-        Object2ObjectMap<RenderLayer, BufferUploadData> uploads;
+        ChunkMeshInfo.Builder info = new ChunkMeshInfo.Builder();
 
-        if (this.region == null) {
-            meshInfo = new ChunkMeshInfo();
-            meshInfo.occlusionGraph = new ChunkOcclusionData();
-            meshInfo.occlusionGraph.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
-
-            uploads = Object2ObjectMaps.emptyMap();
+        if (this.region != null) {
+            this.build(info, buffers);
         } else {
-            meshInfo = this.generateMesh(buffers);
-            uploads = new Object2ObjectArrayMap<>();
+            ChunkOcclusionData occlusionData = new ChunkOcclusionData();
+            occlusionData.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
 
-            for (RenderLayer layer : meshInfo.presentLayers) {
-                BufferBuilder builder = buffers.get(layer);
-                builder.end();
-
-                uploads.put(layer, ((CloneableBufferBuilder) builder).copyData());
-            }
+            info.setOcclusionData(occlusionData);
         }
 
-        return new Result(this.render, meshInfo, uploads);
+        return new Result(this.render, info.build());
     }
 
-    private ChunkMeshInfo generateMesh(VertexBufferCache buffers) {
-        ChunkMeshInfo info = new ChunkMeshInfo();
-        ChunkOcclusionDataBuilder occlusionDataBuilder = new ChunkOcclusionDataBuilder();
+    private void build(ChunkMeshInfo.Builder info, VertexBufferCache buffers) {
+        ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
         Vector3f translation = new Vector3f();
 
@@ -110,7 +103,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     Block block = blockState.getBlock();
 
                     if (blockState.isFullOpaque(this.region, pos)) {
-                        occlusionDataBuilder.markClosed(pos);
+                        occluder.markClosed(pos);
                     }
 
                     if (block.hasBlockEntity()) {
@@ -120,11 +113,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                             BlockEntityRenderer<BlockEntity> renderer = BlockEntityRenderDispatcher.INSTANCE.get(entity);
 
                             if (renderer != null) {
-                                info.blockEntities.add(entity);
-
-                                if (renderer.rendersOutsideBoundingBox(entity)) {
-                                    info.globalEntities.add(entity);
-                                }
+                                info.addBlockEntity(entity, renderer.rendersOutsideBoundingBox(entity));
                             }
                         }
                     }
@@ -158,8 +147,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        BufferBuilder.State translucentBufferState = null;
-
         for (RenderLayer layer : RenderLayer.getBlockLayers()) {
             BufferBuilder builder = buffers.get(layer);
 
@@ -175,28 +162,24 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                 builder.sortQuads((float) this.camera.x - (float) from.getX(),
                         (float) this.camera.y - (float) from.getY(),
                         (float) this.camera.z - (float) from.getZ());
-
-                translucentBufferState = builder.popState();
             }
 
-            info.presentLayers.add(layer);
+            // TODO: simplify API
+            builder.end();
+
+            info.addMeshData(layer, ((CloneableBufferBuilder) builder).copyData());
         }
 
-        info.occlusionGraph = occlusionDataBuilder.build();
-        info.translucentBufferState = translucentBufferState;
-
-        return info;
+        info.setOcclusionData(occluder.build());
     }
 
     public static class Result extends ChunkRenderUploadTask {
         private final ChunkRender<?> chunkRender;
         private final ChunkMeshInfo meshInfo;
-        private final Object2ObjectMap<RenderLayer, BufferUploadData> uploads;
 
-        public Result(ChunkRender<?> chunkRender, ChunkMeshInfo meshInfo, Object2ObjectMap<RenderLayer, BufferUploadData> uploads) {
+        public Result(ChunkRender<?> chunkRender, ChunkMeshInfo meshInfo) {
             this.chunkRender = chunkRender;
             this.meshInfo = meshInfo;
-            this.uploads = uploads;
         }
 
         @Override
@@ -205,7 +188,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                 return;
             }
 
-            this.chunkRender.upload(this.meshInfo, this.uploads);
+            this.chunkRender.upload(this.meshInfo);
             this.chunkRender.finishRebuild();
         }
     }

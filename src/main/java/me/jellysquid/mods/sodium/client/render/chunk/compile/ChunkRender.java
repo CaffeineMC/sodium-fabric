@@ -1,10 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
-import me.jellysquid.mods.sodium.client.render.vertex.BufferUploadData;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -22,7 +19,7 @@ public class ChunkRender<T extends ChunkRenderData> {
     private Box boundingBox;
     private T renderData;
 
-    private ChunkMeshInfo meshInfo = ChunkMeshInfo.empty();
+    private ChunkMeshInfo meshInfo = ChunkMeshInfo.ABSENT;
     private CompletableFuture<Void> rebuildTask = null;
 
     private volatile boolean needsRebuild;
@@ -119,7 +116,7 @@ public class ChunkRender<T extends ChunkRenderData> {
 
         this.cancelRebuildTask();
 
-        this.meshInfo = ChunkMeshInfo.empty();
+        this.meshInfo = ChunkMeshInfo.ABSENT;
 
         if (this.renderData != null) {
             this.renderData.destroy();
@@ -149,24 +146,23 @@ public class ChunkRender<T extends ChunkRenderData> {
         return this.invalid.get();
     }
 
-    public void upload(ChunkMeshInfo meshInfo, Object2ObjectMap<RenderLayer, BufferUploadData> uploads) {
-        this.meshInfo = meshInfo;
-
-        T data = this.renderData;
-
-        if (data == null) {
-            if (uploads.isEmpty()) {
-                return;
+    public void upload(ChunkMeshInfo meshInfo) {
+        if (meshInfo.isEmpty()) {
+            if (this.renderData != null) {
+                this.renderData.destroy();
+                this.renderData = null;
+            }
+        } else {
+            if (this.renderData == null) {
+                this.renderData = this.chunkRenderer.createRenderData();
             }
 
-            data = this.renderData = this.chunkRenderer.createRenderData();
+            this.renderData.uploadChunk(meshInfo);
+
+            meshInfo.clearUploads();
         }
 
-        if (uploads.isEmpty()) {
-            data.deleteMeshes();
-        } else {
-            data.uploadMeshes(uploads);
-        }
+        this.meshInfo = meshInfo;
     }
 
     public void finishRebuild() {

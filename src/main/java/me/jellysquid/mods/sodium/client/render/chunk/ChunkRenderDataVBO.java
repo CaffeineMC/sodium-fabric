@@ -1,12 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
 import me.jellysquid.mods.sodium.client.render.gl.GlVertexBuffer;
-import me.jellysquid.mods.sodium.client.render.vertex.BufferUploadData;
 import net.minecraft.client.render.RenderLayer;
 
 import java.util.HashMap;
-import java.util.Map;
 
 public class ChunkRenderDataVBO implements ChunkRenderData {
     private final HashMap<RenderLayer, GlVertexBuffer> vbos = new HashMap<>();
@@ -23,15 +21,15 @@ public class ChunkRenderDataVBO implements ChunkRenderData {
     }
 
     @Override
-    public void uploadMeshes(Object2ObjectMap<RenderLayer, BufferUploadData> layers) {
-        for (Map.Entry<RenderLayer, BufferUploadData> entry : layers.entrySet()) {
-            GlVertexBuffer array = this.vbos.get(entry.getKey());
+    public void uploadChunk(ChunkMeshInfo mesh) {
+        for (ChunkMeshInfo.MeshUpload entry : mesh.getUploads()) {
+            GlVertexBuffer array = this.vbos.get(entry.layer);
 
             if (array == null) {
-                throw new NullPointerException("No graphics state container for layer " + entry.getKey());
+                throw new NullPointerException("No graphics state container for layer " + entry.layer);
             }
 
-            array.upload(entry.getValue());
+            array.upload(entry.data);
         }
     }
 
