@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraph;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import net.minecraft.util.math.BlockPos;
@@ -11,10 +12,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChunkRender<T extends ChunkRenderData> {
+    private final ChunkGraph<T> graph;
     private final ChunkBuilder builder;
     private final BlockPos.Mutable origin = new BlockPos.Mutable();
     private final ChunkRenderer<T> chunkRenderer;
     private final int chunkX, chunkY, chunkZ;
+    private final ChunkRender<T>[] adjacent;
 
     private Box boundingBox;
     private T renderData;
@@ -29,11 +32,12 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public Direction direction;
 
-    public int propagationLevel;
     public int rebuildFrame;
     public byte cullingState;
 
-    public ChunkRender(ChunkBuilder builder, ChunkRenderer<T> chunkRenderer, BlockPos origin) {
+    @SuppressWarnings("unchecked")
+    public ChunkRender(ChunkGraph<T> graph, ChunkBuilder builder, ChunkRenderer<T> chunkRenderer, BlockPos origin) {
+        this.graph = graph;
         this.builder = builder;
         this.chunkRenderer = chunkRenderer;
 
@@ -50,6 +54,8 @@ public class ChunkRender<T extends ChunkRenderData> {
 
         this.needsRebuild = true;
         this.rebuildFrame = -1;
+
+        this.adjacent = new ChunkRender[6];
     }
 
     public void cancelRebuildTask() {
@@ -59,6 +65,16 @@ public class ChunkRender<T extends ChunkRenderData> {
             this.rebuildTask.cancel(false);
             this.rebuildTask = null;
         }
+    }
+
+    public ChunkRender<T> getAdjacent(Direction dir) {
+        ChunkRender<T> adj = this.adjacent[dir.ordinal()];
+
+        if (adj == null) {
+            adj = this.adjacent[dir.ordinal()] = this.graph.getOrCreateRender(this.chunkX + dir.getOffsetX(), this.chunkY + dir.getOffsetY(), this.chunkZ + dir.getOffsetZ());
+        }
+
+        return adj;
     }
 
     public ChunkRenderRebuildTask createRebuildTask() {
@@ -184,16 +200,11 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public void reset() {
         this.direction = null;
-        this.propagationLevel = 0;
         this.cullingState = 0;
     }
 
     public void setRebuildFrame(int frame) {
         this.rebuildFrame = frame;
-    }
-
-    public void setPropagationLevel(int level) {
-        this.propagationLevel = level;
     }
 
     public void setDirection(Direction dir) {
@@ -202,9 +213,5 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public int getRebuildFrame() {
         return this.rebuildFrame;
-    }
-
-    public void setCullingState(byte i) {
-        this.cullingState = i;
     }
 }

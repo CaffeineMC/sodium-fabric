@@ -309,11 +309,11 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
     }
 
     public ChunkRender<T> createChunkRender(int x, int y, int z) {
-        return new ChunkRender<>(this.chunkBuilder, this.chunkRenderer, new BlockPos(x, y, z));
+        return new ChunkRender<>(this.chunkGraph, this.chunkBuilder, this.chunkRenderer, new BlockPos(x, y, z));
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
-        ChunkRender<T> node = this.chunkGraph.getChunkRender(x, y, z);
+        ChunkRender<T> node = this.chunkGraph.getRender(x, y, z);
 
         if (node != null) {
             node.scheduleRebuild(important);
