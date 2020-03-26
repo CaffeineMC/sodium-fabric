@@ -51,7 +51,6 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
     private boolean isRenderGraphDirty;
 
     private ChunkGraph<T> chunkGraph;
-    private ChunkStatusTracker chunkStatusTracker;
 
     public ChunkRenderManager(MinecraftClient client, ChunkRenderer<T> chunkRenderer) {
         this.client = client;
@@ -82,11 +81,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             }
 
             this.chunkBuilder.setWorld(this.world);
-
-            this.chunkStatusTracker = new ChunkStatusTracker(this.renderDistance);
             this.chunkGraph = new ChunkGraph<>(this, this.world, this.renderDistance);
-
-            ((ExtendedClientChunkManager) world.getChunkManager()).setListener(this.chunkStatusTracker);
         }
     }
 
