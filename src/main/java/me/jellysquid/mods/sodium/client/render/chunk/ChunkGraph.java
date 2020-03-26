@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -25,12 +26,12 @@ import java.util.List;
 import java.util.Set;
 
 public class ChunkGraph<T extends ChunkRenderData> {
-    private final Long2ObjectOpenHashMap<ChunkGraphNode<T>> nodes = new Long2ObjectOpenHashMap<>();
-    private final ObjectList<ChunkGraphNode<T>> visibleNodes = new ObjectArrayList<>();
+    private final Long2ObjectOpenHashMap<ChunkRender<T>> nodes = new Long2ObjectOpenHashMap<>();
+    private final ObjectList<ChunkRender<T>> visibleNodes = new ObjectArrayList<>();
 
     private final ChunkRenderManager<T> renderManager;
     private final World world;
-    private final ObjectArrayFIFOQueue<ChunkGraphNode<T>> iterationQueue = new ObjectArrayFIFOQueue<>();
+    private final ObjectArrayFIFOQueue<ChunkRender<T>> iterationQueue = new ObjectArrayFIFOQueue<>();
 
     private int minX, minZ, maxX, maxZ;
     private int renderDistance;
@@ -61,10 +62,10 @@ public class ChunkGraph<T extends ChunkRenderData> {
         boolean fogCulling = cull && this.renderDistance > 4 && options.quality.enableFog && options.performance.useFogChunkCulling;
         int maxChunkDistance = (this.renderDistance * 16) + 16;
 
-        ObjectArrayFIFOQueue<ChunkGraphNode<T>> queue = this.iterationQueue;
+        ObjectArrayFIFOQueue<ChunkRender<T>> queue = this.iterationQueue;
 
         while (!queue.isEmpty()) {
-            ChunkGraphNode<T> node = this.iterationQueue.dequeue();
+            ChunkRender<T> node = this.iterationQueue.dequeue();
 
             this.visibleNodes.add(node);
 
@@ -75,7 +76,7 @@ public class ChunkGraph<T extends ChunkRenderData> {
             Direction dir = node.direction;
 
             for (Direction adjDir : DirectionUtil.ALL_DIRECTIONS) {
-                ChunkGraphNode<T> adjNode = this.getAdjacentChunk(node, adjDir);
+                ChunkRender<T> adjNode = this.getAdjacentChunk(node, adjDir);
 
                 if (adjNode == null) {
                     continue;
@@ -114,11 +115,11 @@ public class ChunkGraph<T extends ChunkRenderData> {
 
     private boolean init(BlockPos blockPos, Camera camera, Vec3d cameraPos, Frustum frustum, int frame, boolean spectator) {
         MinecraftClient client = MinecraftClient.getInstance();
-        ObjectArrayFIFOQueue<ChunkGraphNode<T>> queue = this.iterationQueue;
+        ObjectArrayFIFOQueue<ChunkRender<T>> queue = this.iterationQueue;
 
         boolean cull = client.chunkCullingEnabled;
 
-        ChunkGraphNode<T> node = this.getOrCreateNode(blockPos);
+        ChunkRender<T> node = this.getOrCreateNode(blockPos);
 
         if (node != null) {
             node.reset();
@@ -150,11 +151,11 @@ public class ChunkGraph<T extends ChunkRenderData> {
             int x = MathHelper.floor(cameraPos.x / 16.0D) * 16;
             int z = MathHelper.floor(cameraPos.z / 16.0D) * 16;
 
-            List<ChunkGraphNode<T>> list = Lists.newArrayList();
+            List<ChunkRender<T>> list = Lists.newArrayList();
 
             for (int x2 = -this.renderDistance; x2 <= this.renderDistance; ++x2) {
                 for (int z2 = -this.renderDistance; z2 <= this.renderDistance; ++z2) {
-                    ChunkGraphNode<T> chunk = this.getOrCreateNode(new BlockPos(x + (x2 << 4) + 8, y, z + (z2 << 4) + 8));
+                    ChunkRender<T> chunk = this.getOrCreateNode(new BlockPos(x + (x2 << 4) + 8, y, z + (z2 << 4) + 8));
 
                     if (chunk == null) {
                         continue;
@@ -169,9 +170,9 @@ public class ChunkGraph<T extends ChunkRenderData> {
                 }
             }
 
-            list.sort(Comparator.comparingDouble(o -> blockPos.getSquaredDistance(o.render.getOrigin().add(8, 8, 8))));
+            list.sort(Comparator.comparingDouble(o -> blockPos.getSquaredDistance(o.getOrigin().add(8, 8, 8))));
 
-            for (ChunkGraphNode<T> n : list) {
+            for (ChunkRender<T> n : list) {
                 queue.enqueue(n);
             }
         }
@@ -179,7 +180,7 @@ public class ChunkGraph<T extends ChunkRenderData> {
         return cull;
     }
 
-    private ChunkGraphNode<T> getOrCreateNode(BlockPos pos) {
+    private ChunkRender<T> getOrCreateNode(BlockPos pos) {
         if (pos.getY() < 0 || pos.getY() >= 256) {
             return null;
         }
@@ -187,24 +188,29 @@ public class ChunkGraph<T extends ChunkRenderData> {
         return this.nodes.computeIfAbsent(ChunkSectionPos.asLong(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4), this::createNode);
     }
 
-    private ChunkGraphNode<T> createNode(long pos) {
-        return new ChunkGraphNode<>(this.renderManager.createChunkRender(ChunkSectionPos.getX(pos) << 4, ChunkSectionPos.getY(pos) << 4, ChunkSectionPos.getZ(pos) << 4));
+    private ChunkRender<T> createNode(long pos) {
+        return this.renderManager.createChunkRender(ChunkSectionPos.getX(pos) << 4, ChunkSectionPos.getY(pos) << 4, ChunkSectionPos.getZ(pos) << 4);
     }
 
-    private ChunkGraphNode<T> getAdjacentChunk(ChunkGraphNode<T> node, Direction direction) {
-        int x = node.render.getChunkX() + direction.getOffsetX();
-        int y = node.render.getChunkY() + direction.getOffsetY();
-        int z = node.render.getChunkZ() + direction.getOffsetZ();
+    private ChunkRender<T> getAdjacentChunk(ChunkRender<T> render, Direction direction) {
+        int x = render.getChunkX() + direction.getOffsetX();
+        int z = render.getChunkZ() + direction.getOffsetZ();
 
-        if (x < this.minX || x > this.maxX) {
-            return null;
+        if (!this.isWithinRenderBounds(x, z)) {
+            return render;
         }
 
-        if (z < this.minZ || z > this.maxZ) {
-            return null;
-        }
+        int y = render.getChunkY() + direction.getOffsetY();
 
         return this.nodes.computeIfAbsent(ChunkSectionPos.asLong(x, y, z), this::createNode);
+    }
+
+    private boolean isWithinRenderBounds(ChunkRender<T> render) {
+        return this.isWithinRenderBounds(render.getChunkX(), render.getChunkZ());
+    }
+
+    private boolean isWithinRenderBounds(int x, int z) {
+        return x >= this.minX && x <= this.maxX && z >= this.minZ && z <= this.maxZ;
     }
 
     private Set<Direction> getOpenChunkFaces(BlockPos pos) {
@@ -237,7 +243,7 @@ public class ChunkGraph<T extends ChunkRenderData> {
     }
 
     public void reset() {
-        for (ChunkGraphNode<?> node : this.nodes.values()) {
+        for (ChunkRender<?> node : this.nodes.values()) {
             node.delete();
         }
 
@@ -245,7 +251,7 @@ public class ChunkGraph<T extends ChunkRenderData> {
         this.visibleNodes.clear();
     }
 
-    public ObjectList<ChunkGraphNode<T>> getVisibleChunks() {
+    public ObjectList<ChunkRender<T>> getVisibleChunks() {
         return this.visibleNodes;
     }
 
@@ -253,7 +259,7 @@ public class ChunkGraph<T extends ChunkRenderData> {
         return this.visibleNodes.size();
     }
 
-    public ChunkGraphNode<T> getChunkRender(int x, int y, int z) {
+    public ChunkRender<T> getChunkRender(int x, int y, int z) {
         return this.nodes.get(ChunkSectionPos.asLong(x, y, z));
     }
 }

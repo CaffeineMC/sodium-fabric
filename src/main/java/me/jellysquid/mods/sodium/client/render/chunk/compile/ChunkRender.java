@@ -30,6 +30,12 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     private AtomicBoolean invalid = new AtomicBoolean(false);
 
+    public Direction direction;
+
+    public int propagationLevel;
+    public int rebuildFrame;
+    public byte cullingState;
+
     public ChunkRender(ChunkBuilder builder, ChunkRenderer<T> chunkRenderer, BlockPos origin) {
         this.builder = builder;
         this.chunkRenderer = chunkRenderer;
@@ -46,6 +52,7 @@ public class ChunkRender<T extends ChunkRenderData> {
         this.chunkZ = z >> 4;
 
         this.needsRebuild = true;
+        this.rebuildFrame = -1;
     }
 
     public void cancelRebuildTask() {
@@ -169,5 +176,39 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public boolean isEmpty() {
         return this.renderData == null;
+    }
+
+    public void updateCullingState(byte parent, Direction from) {
+        this.cullingState = (byte) (parent | (1 << from.ordinal()));
+    }
+
+    public boolean canCull(Direction from) {
+        return (this.cullingState & 1 << from.ordinal()) > 0;
+    }
+
+    public void reset() {
+        this.direction = null;
+        this.propagationLevel = 0;
+        this.cullingState = 0;
+    }
+
+    public void setRebuildFrame(int frame) {
+        this.rebuildFrame = frame;
+    }
+
+    public void setPropagationLevel(int level) {
+        this.propagationLevel = level;
+    }
+
+    public void setDirection(Direction dir) {
+        this.direction = dir;
+    }
+
+    public int getRebuildFrame() {
+        return this.rebuildFrame;
+    }
+
+    public void setCullingState(byte i) {
+        this.cullingState = i;
     }
 }

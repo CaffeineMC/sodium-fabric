@@ -93,8 +93,8 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
     public int getCompletedChunkCount() {
         int i = 0;
 
-        for (ChunkGraphNode<T> node : this.chunkGraph.getVisibleChunks()) {
-            if (!node.render.getMeshInfo().isEmpty()) {
+        for (ChunkRender<T> node : this.chunkGraph.getVisibleChunks()) {
+            if (!node.getMeshInfo().isEmpty()) {
                 i++;
             }
         }
@@ -193,19 +193,17 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
     private void performRebuilds(BlockPos blockPos) {
         List<CompletableFuture<ChunkRenderUploadTask>> futures = new ArrayList<>();
 
-        for (ChunkGraphNode<T> info : this.chunkGraph.getVisibleChunks()) {
-            ChunkRender<T> chunk = info.render;
-
-            if (!chunk.needsRebuild()) {
+        for (ChunkRender<T> render : this.chunkGraph.getVisibleChunks()) {
+            if (!render.needsRebuild()) {
                 continue;
             }
 
-            BlockPos center = chunk.getOrigin().add(8, 8, 8);
+            BlockPos center = render.getOrigin().add(8, 8, 8);
 
-            if (chunk.needsImportantRebuild() || center.getSquaredDistance(blockPos) < 768.0D) {
-                futures.add(chunk.rebuildImmediately());
+            if (render.needsImportantRebuild() || center.getSquaredDistance(blockPos) < 768.0D) {
+                futures.add(render.rebuildImmediately());
             } else {
-                chunk.rebuild();
+                render.rebuild();
             }
 
             this.isRenderGraphDirty = true;
@@ -256,7 +254,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
         boolean notTranslucent = renderLayer != RenderLayer.getTranslucent();
 
-        ObjectListIterator<ChunkGraphNode<T>> it = this.chunkGraph.getVisibleChunks().listIterator(notTranslucent ? 0 : this.chunkGraph.getVisibleChunkCount());
+        ObjectListIterator<ChunkRender<T>> it = this.chunkGraph.getVisibleChunks().listIterator(notTranslucent ? 0 : this.chunkGraph.getVisibleChunkCount());
 
         this.chunkRenderer.begin();
 
@@ -269,8 +267,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
                 break;
             }
 
-            ChunkGraphNode<T> info = notTranslucent ? it.next() : it.previous();
-            ChunkRender<T> chunk = info.render;
+            ChunkRender<T> chunk = notTranslucent ? it.next() : it.previous();
 
             T data = chunk.getRenderData();
 
@@ -328,10 +325,10 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
-        ChunkGraphNode<T> node = this.chunkGraph.getChunkRender(x, y, z);
+        ChunkRender<T> node = this.chunkGraph.getChunkRender(x, y, z);
 
         if (node != null) {
-            node.render.scheduleRebuild(important);
+            node.scheduleRebuild(important);
         }
     }
 }
