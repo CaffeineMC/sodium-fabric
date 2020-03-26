@@ -14,14 +14,16 @@ public class ChunkRenderDataVBO implements ChunkRenderData {
     }
 
     @Override
-    public void destroy() {
+    public void clearData() {
         for (GlVertexBuffer buffer : this.vbos.values()) {
             buffer.delete();
         }
+
+        this.vbos.clear();
     }
 
     @Override
-    public void uploadChunk(ChunkMeshInfo mesh) {
+    public void uploadData(ChunkMeshInfo mesh) {
         for (ChunkMeshInfo.MeshUpload entry : mesh.getUploads()) {
             GlVertexBuffer array = this.vbos.computeIfAbsent(entry.layer, this::createData);
             array.upload(entry.data);

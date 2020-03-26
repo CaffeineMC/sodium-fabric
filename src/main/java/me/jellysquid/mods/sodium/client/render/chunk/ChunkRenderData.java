@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
 
 public interface ChunkRenderData {
-    void destroy();
+    void clearData();
 
-    void uploadChunk(ChunkMeshInfo layers);
+    void uploadData(ChunkMeshInfo layers);
 }

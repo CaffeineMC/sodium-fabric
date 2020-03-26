@@ -119,7 +119,7 @@ public class ChunkRender<T extends ChunkRenderData> {
         this.meshInfo = ChunkMeshInfo.ABSENT;
 
         if (this.renderData != null) {
-            this.renderData.destroy();
+            this.renderData.clearData();
             this.renderData = null;
         }
     }
@@ -149,7 +149,7 @@ public class ChunkRender<T extends ChunkRenderData> {
     public void upload(ChunkMeshInfo meshInfo) {
         if (meshInfo.isEmpty()) {
             if (this.renderData != null) {
-                this.renderData.destroy();
+                this.renderData.clearData();
                 this.renderData = null;
             }
         } else {
@@ -157,7 +157,7 @@ public class ChunkRender<T extends ChunkRenderData> {
                 this.renderData = this.chunkRenderer.createRenderData();
             }
 
-            this.renderData.uploadChunk(meshInfo);
+            this.renderData.uploadData(meshInfo);
 
             meshInfo.clearUploads();
         }
