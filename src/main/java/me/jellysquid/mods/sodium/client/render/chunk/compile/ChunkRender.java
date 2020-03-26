@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
 import java.util.concurrent.CompletableFuture;
@@ -13,10 +14,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ChunkRender<T extends ChunkRenderData> {
     private final ChunkGraph<T> graph;
     private final ChunkBuilder builder;
-    private final BlockPos.Mutable origin = new BlockPos.Mutable();
+    private final BlockPos.Mutable origin;
     private final ChunkRenderer<T> chunkRenderer;
     private final int chunkX, chunkY, chunkZ;
     private final ChunkRender<T>[] adjacent;
+    private final long chunkPosKey;
 
     private Box boundingBox;
     private T renderData;
@@ -36,21 +38,22 @@ public class ChunkRender<T extends ChunkRenderData> {
     private boolean chunkPresent;
 
     @SuppressWarnings("unchecked")
-    public ChunkRender(ChunkGraph<T> graph, ChunkBuilder builder, ChunkRenderer<T> chunkRenderer, BlockPos origin) {
+    public ChunkRender(ChunkGraph<T> graph, ChunkBuilder builder, ChunkRenderer<T> chunkRenderer, long chunkPosKey) {
         this.graph = graph;
         this.builder = builder;
         this.chunkRenderer = chunkRenderer;
 
-        int x = origin.getX();
-        int y = origin.getY();
-        int z = origin.getZ();
+        this.chunkPosKey = chunkPosKey;
+        this.chunkX = ChunkSectionPos.getX(chunkPosKey);
+        this.chunkY = ChunkSectionPos.getY(chunkPosKey);
+        this.chunkZ = ChunkSectionPos.getZ(chunkPosKey);
 
-        this.origin.set(x, y, z);
+        int x = this.chunkX << 4;
+        int y = this.chunkY << 4;
+        int z = this.chunkZ << 4;
+
+        this.origin = new BlockPos.Mutable(x, y, z);
         this.boundingBox = new Box(x, y, z, x + 16.0, y + 16.0, z + 16.0);
-
-        this.chunkX = x >> 4;
-        this.chunkY = y >> 4;
-        this.chunkZ = z >> 4;
 
         this.needsRebuild = true;
         this.rebuildFrame = -1;
@@ -128,7 +131,7 @@ public class ChunkRender<T extends ChunkRenderData> {
         return this.renderData;
     }
 
-    public void delete() {
+    public void deleteResources() {
         this.invalid.set(true);
 
         this.cancelRebuildTask();
@@ -225,5 +228,9 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public boolean isChunkPresent() {
         return this.chunkPresent;
+    }
+
+    public long getPositionKey() {
+        return this.chunkPosKey;
     }
 }

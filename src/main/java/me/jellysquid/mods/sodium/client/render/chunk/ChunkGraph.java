@@ -29,6 +29,7 @@ import java.util.Set;
 public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListener {
     private final Long2ObjectOpenHashMap<ChunkRender<T>> nodes = new Long2ObjectOpenHashMap<>();
 
+    private final ObjectList<ChunkRender<T>> unloadQueue = new ObjectArrayList<>();
     private final ObjectList<ChunkRender<T>> visibleNodes = new ObjectArrayList<>();
     private final ObjectList<ChunkRender<T>> drawableNodes = new ObjectArrayList<>();
 
@@ -196,15 +197,11 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
             return null;
         }
 
-        return this.nodes.computeIfAbsent(ChunkSectionPos.asLong(x, y, z), this::createRender);
+        return this.nodes.computeIfAbsent(ChunkSectionPos.asLong(x, y, z), this.renderManager::createChunkRender);
     }
 
     public ChunkRender<T> getRender(int x, int y, int z) {
         return this.nodes.get(ChunkSectionPos.asLong(x, y, z));
-    }
-
-    private ChunkRender<T> createRender(long pos) {
-        return this.renderManager.createChunkRender(ChunkSectionPos.getX(pos) << 4, ChunkSectionPos.getY(pos) << 4, ChunkSectionPos.getZ(pos) << 4);
     }
 
     private ChunkRender<T> getAdjacentRender(ChunkRender<T> render, Direction direction) {
@@ -254,7 +251,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
 
     public void reset() {
         for (ChunkRender<?> node : this.nodes.values()) {
-            node.delete();
+            node.deleteResources();
         }
 
         this.nodes.clear();
@@ -267,6 +264,26 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
 
     public ObjectList<ChunkRender<T>> getDrawableChunks() {
         return this.drawableNodes;
+    }
+
+    public boolean cleanup() {
+        if (!this.unloadQueue.isEmpty()) {
+            for (ChunkRender<T> render : this.unloadQueue) {
+                this.removeRenderer(render);
+            }
+
+            this.unloadQueue.clear();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private void removeRenderer(ChunkRender<T> render) {
+        render.deleteResources();
+
+        this.nodes.remove(render.getPositionKey());
     }
 
     @Override
@@ -287,6 +304,8 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
 
             if (render != null) {
                 render.setChunkPresent(false);
+
+                this.unloadQueue.add(render);
             }
         }
     }
