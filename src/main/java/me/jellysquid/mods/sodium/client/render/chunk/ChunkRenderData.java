@@ -1,13 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
-import me.jellysquid.mods.sodium.client.render.vertex.BufferUploadData;
-import net.minecraft.client.render.RenderLayer;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
 
 public interface ChunkRenderData {
     void destroy();
 
-    void uploadMeshes(Object2ObjectMap<RenderLayer, BufferUploadData> layers);
+    void uploadChunk(ChunkMeshInfo layers);
 
     void deleteMeshes();
 }

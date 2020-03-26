@@ -1,16 +1,14 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.RenderLayer;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Environment(EnvType.CLIENT)
 public class VertexBufferCache {
-    private final Map<RenderLayer, BufferBuilder> builders = new HashMap<>();
+    private final Reference2ReferenceArrayMap<RenderLayer, BufferBuilder> builders = new Reference2ReferenceArrayMap<>();
 
     public VertexBufferCache() {
         for (RenderLayer layer : RenderLayer.getBlockLayers()) {

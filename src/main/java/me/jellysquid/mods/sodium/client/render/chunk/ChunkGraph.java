@@ -27,7 +27,9 @@ import java.util.Set;
 
 public class ChunkGraph<T extends ChunkRenderData> {
     private final Long2ObjectOpenHashMap<ChunkRender<T>> nodes = new Long2ObjectOpenHashMap<>();
+
     private final ObjectList<ChunkRender<T>> visibleNodes = new ObjectArrayList<>();
+    private final ObjectList<ChunkRender<T>> drawableNodes = new ObjectArrayList<>();
 
     private final ChunkRenderManager<T> renderManager;
     private final World world;
@@ -68,6 +70,10 @@ public class ChunkGraph<T extends ChunkRenderData> {
             ChunkRender<T> node = this.iterationQueue.dequeue();
 
             this.visibleNodes.add(node);
+
+            if (!node.isEmpty()) {
+                this.drawableNodes.add(node);
+            }
 
             if (fogCulling && !node.getOrigin().isWithinDistance(cameraPos, maxChunkDistance)) {
                 continue;
@@ -253,6 +259,10 @@ public class ChunkGraph<T extends ChunkRenderData> {
 
     public ObjectList<ChunkRender<T>> getVisibleChunks() {
         return this.visibleNodes;
+    }
+
+    public Iterable<ChunkRender<T>> getDrawableChunks() {
+        return this.drawableNodes;
     }
 
     public int getVisibleChunkCount() {
