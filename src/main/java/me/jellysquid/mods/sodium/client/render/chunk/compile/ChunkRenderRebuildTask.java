@@ -76,15 +76,41 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         for (int z = minZ; z < maxZ; z++) {
             for (int y = minY; y < maxY; y++) {
                 for (int x = minX; x < maxX; x++) {
-                    pos.set(x, y, z);
-
-                    BlockState blockState = this.region.getBlockState(pos);
-                    FluidState fluidState = blockState.getFluidState();
-
+                    BlockState blockState = this.region.getBlockState(x, y, z);
                     Block block = blockState.getBlock();
 
-                    if (blockState.isFullOpaque(this.region, pos)) {
-                        occluder.markClosed(pos);
+                    if (blockState.isAir()) {
+                        continue;
+                    }
+
+                    pos.set(x, y, z);
+
+                    if (block.getRenderType(blockState) != BlockRenderType.INVISIBLE) {
+                        RenderLayer layer = RenderLayers.getBlockLayer(blockState);
+
+                        BufferBuilder builder = buffers.get(layer);
+
+                        if (!builder.isBuilding()) {
+                            builder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
+                        }
+
+                        translation.set(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
+
+                        this.pipeline.renderBlock(blockState, pos, this.region, translation, builder, true);
+                    }
+
+                    FluidState fluidState = block.getFluidState(blockState);
+
+                    if (!fluidState.isEmpty()) {
+                        RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
+
+                        BufferBuilder builder = buffers.get(layer);
+
+                        if (!builder.isBuilding()) {
+                            builder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
+                        }
+
+                        this.fallbackPipeline.renderFluid(pos, this.region, builder, fluidState);
                     }
 
                     if (block.hasBlockEntity()) {
@@ -99,30 +125,8 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                         }
                     }
 
-                    if (!fluidState.isEmpty()) {
-                        RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
-
-                        BufferBuilder builder = buffers.get(layer);
-
-                        if (!builder.isBuilding()) {
-                            builder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
-                        }
-
-                        this.fallbackPipeline.renderFluid(pos, this.region, builder, fluidState);
-                    }
-
-                    if (blockState.getRenderType() != BlockRenderType.INVISIBLE) {
-                        RenderLayer layer = RenderLayers.getBlockLayer(blockState);
-
-                        BufferBuilder builder = buffers.get(layer);
-
-                        if (!builder.isBuilding()) {
-                            builder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
-                        }
-
-                        translation.set(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
-
-                        this.pipeline.renderBlock(blockState, pos, this.region, translation, builder, true);
+                    if (blockState.isFullOpaque(this.region, pos)) {
+                        occluder.markClosed(pos);
                     }
                 }
             }
@@ -131,11 +135,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         for (RenderLayer layer : RenderLayer.getBlockLayers()) {
             BufferBuilder builder = buffers.get(layer);
 
-            if (!builder.isBuilding()) {
-                continue;
-            }
-
-            if (((ChunkMeshBuilder) builder).isEmpty()) {
+            if (!builder.isBuilding() || ((ChunkMeshBuilder) builder).isEmpty()) {
                 continue;
             }
 

@@ -30,8 +30,8 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
     private final Long2ObjectOpenHashMap<ChunkRender<T>> nodes = new Long2ObjectOpenHashMap<>();
 
     private final ObjectList<ChunkRender<T>> unloadQueue = new ObjectArrayList<>();
-    private final ObjectList<ChunkRender<T>> visibleNodes = new ObjectArrayList<>();
-    private final ObjectList<ChunkRender<T>> drawableNodes = new ObjectArrayList<>();
+    private final ObjectList<ChunkRender<T>> visibleChunks = new ObjectArrayList<>();
+    private final ObjectList<ChunkRender<T>> drawableChunks = new ObjectArrayList<>();
 
     private final ObjectArrayFIFOQueue<ChunkRender<T>> iterationQueue = new ObjectArrayFIFOQueue<>();
 
@@ -57,8 +57,8 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
         this.maxX = centerX + this.renderDistance;
         this.maxZ = centerZ + this.renderDistance;
 
-        this.visibleNodes.clear();
-        this.drawableNodes.clear();
+        this.visibleChunks.clear();
+        this.drawableChunks.clear();
 
         boolean cull = this.init(blockPos, camera, cameraPos, frustum, frame, spectator);
 
@@ -70,10 +70,10 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
         while (!this.iterationQueue.isEmpty()) {
             ChunkRender<T> render = this.iterationQueue.dequeue();
 
-            this.visibleNodes.add(render);
+            this.visibleChunks.add(render);
 
             if (!render.isEmpty()) {
-                this.drawableNodes.add(render);
+                this.drawableChunks.add(render);
             }
 
             if (fogCulling && !render.getOrigin().isWithinDistance(cameraPos, maxChunkDistance)) {
@@ -142,7 +142,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
             }
 
             if (openFaces.isEmpty() && !spectator) {
-                this.visibleNodes.add(node);
+                this.visibleChunks.add(node);
             } else {
                 if (spectator && this.world.getBlockState(blockPos).isFullOpaque(this.world, blockPos)) {
                     cull = false;
@@ -254,15 +254,15 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
         }
 
         this.nodes.clear();
-        this.visibleNodes.clear();
+        this.visibleChunks.clear();
     }
 
     public ObjectList<ChunkRender<T>> getVisibleChunks() {
-        return this.visibleNodes;
+        return this.visibleChunks;
     }
 
     public ObjectList<ChunkRender<T>> getDrawableChunks() {
-        return this.drawableNodes;
+        return this.drawableChunks;
     }
 
     public boolean cleanup() {
