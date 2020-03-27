@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraph;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -59,7 +60,7 @@ public class ChunkRender<T extends ChunkRenderData> {
         this.rebuildFrame = -1;
 
         this.adjacent = new ChunkRender[6];
-        this.chunkPresent = this.builder.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
+        this.refreshChunk();
     }
 
     public void cancelRebuildTask() {
@@ -81,12 +82,6 @@ public class ChunkRender<T extends ChunkRenderData> {
         return adj;
     }
 
-    public ChunkRenderRebuildTask createRebuildTask() {
-        this.cancelRebuildTask();
-
-        return new ChunkRenderRebuildTask(this.builder, this);
-    }
-
     public BlockPos getOrigin() {
         return this.origin;
     }
@@ -105,10 +100,6 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public boolean needsImportantRebuild() {
         return this.needsRebuild && this.needsImportantRebuild;
-    }
-
-    public CompletableFuture<ChunkRenderUploadTask> rebuildImmediately() {
-        return this.builder.schedule(this.createRebuildTask());
     }
 
     public int getChunkX() {
@@ -156,8 +147,16 @@ public class ChunkRender<T extends ChunkRenderData> {
     }
 
     public void rebuild() {
-        this.builder.schedule(this.createRebuildTask())
+        this.cancelRebuildTask();
+
+        this.builder.schedule(createRebuildTask(this.builder, this))
                 .thenAccept(this.builder::addUploadTask);
+    }
+
+    public CompletableFuture<ChunkRenderUploadTask> rebuildImmediately() {
+        this.cancelRebuildTask();
+
+        return this.builder.schedule(createRebuildTask(this.builder, this));
     }
 
     public void scheduleRebuild(boolean important) {
@@ -232,5 +231,28 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public long getPositionKey() {
         return this.chunkPosKey;
+    }
+
+    public void refreshChunk() {
+        this.chunkPresent = this.builder.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
+    }
+
+    private static ChunkRenderBuildTask createRebuildTask(ChunkBuilder builder, ChunkRender<?> render) {
+        BlockPos origin = render.getOrigin();
+
+        BlockPos from = origin.add(-1, -1, -1);
+        BlockPos to = origin.add(16, 16, 16);
+
+        ChunkSlice slice = ChunkSlice.tryCreate(builder.getWorld(), render.getChunkPos());
+
+        if (slice == null) {
+            return new ChunkRenderEmptyBuildTask(builder, render);
+        }
+
+        return new ChunkRenderRebuildTask(builder, render, slice);
+    }
+
+    private ChunkSectionPos getChunkPos() {
+        return ChunkSectionPos.from(this.chunkX, this.chunkY, this.chunkZ);
     }
 }
