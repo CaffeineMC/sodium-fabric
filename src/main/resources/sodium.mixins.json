@@ -7,8 +7,6 @@
         "defaultRequire": 1
     },
     "client": [
-        "chunk_building.MixinChunkData",
-        "chunk_building.MixinRebuildTask",
         "chunk_building.MixinBufferBuilder",
         "chunk_occlusion.MixinChunkOcclusionData",
         "chunk_rendering.MixinClientChunkManager",
@@ -22,7 +20,6 @@
         "options.MixinWorldRenderer",
         "pipeline.MixinBakedQuad",
         "pipeline.MixinBufferBuilder",
-        "render.fast_block_cache.MixinChunkRendererRegion",
         "render.reduce_matrix_allocs.MixinMatrixStack",
         "render_layers.MixinRenderLayers",
         "fast_mojmath.MixinFrustum"

@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.pipeline;
 
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
-import me.jellysquid.mods.sodium.client.render.LightDataCache;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
 import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
@@ -20,7 +20,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.chunk.ChunkRendererRegion;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.Vector3f;
@@ -45,12 +44,11 @@ public class ChunkBlockRenderPipeline {
     private final ModelQuad cachedQuad = new ModelQuad();
     private final LightResult cachedLightResult = new LightResult();
 
-    public ChunkBlockRenderPipeline(MinecraftClient client, ChunkRendererRegion world, BlockPos origin) {
+    public ChunkBlockRenderPipeline(MinecraftClient client, ChunkSlice world) {
         this.colorMap = client.getBlockColorMap();
 
-        LightDataCache lightDataCache = new LightDataCache(world, origin.getX() - 2, origin.getY() - 2, origin.getZ() - 2);
-        this.smoothLightPipeline = new SmoothLightPipeline(lightDataCache);
-        this.flatLightPipeline = new FlatLightPipeline(lightDataCache);
+        this.smoothLightPipeline = new SmoothLightPipeline(world.getLightDataCache());
+        this.flatLightPipeline = new FlatLightPipeline(world.getLightDataCache());
 
         this.occlusionCache = new BlockOcclusionCache();
 

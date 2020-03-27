@@ -1,33 +1,35 @@
 package me.jellysquid.mods.sodium.client.render;
 
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockRenderView;
-
-import java.util.Arrays;
 
 public class LightDataCache {
-    private static final int RADIUS = 20;
-
-    private final BlockRenderView world;
+    private final ChunkSlice world;
     private final int xOffset, yOffset, zOffset;
+    private final int xSize, ySize, zSize;
 
-    private final long[] light = new long[RADIUS * RADIUS * RADIUS];
+    private final long[] light;
 
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
 
-    public LightDataCache(BlockRenderView world, int xOffset, int yOffset, int zOffset) {
+    public LightDataCache(ChunkSlice world, int xOffset, int yOffset, int zOffset, int xSize, int ySize, int zSize) {
         this.world = world;
 
         this.xOffset = xOffset;
         this.yOffset = yOffset;
         this.zOffset = zOffset;
+        this.xSize = xSize;
+        this.ySize = ySize;
+        this.zSize = zSize;
+
+        this.light = new long[xSize * ySize * zSize];
     }
 
     private int index(int x, int y, int z) {
-        return (z - this.zOffset) * RADIUS * RADIUS + (y - this.yOffset) * RADIUS + x - this.xOffset;
+        return (z - this.zOffset) * this.xSize * this.ySize + (y - this.yOffset) * this.zSize + x - this.xOffset;
     }
 
     public long get(int x, int y, int z, Direction d1, Direction d2) {
@@ -63,9 +65,9 @@ public class LightDataCache {
     }
 
     private long compute(int x, int y, int z) {
-        this.pos.set(x, y, z);
+        BlockState state = this.world.getBlockState(x, y, z);
 
-        BlockState state = this.world.getBlockState(this.pos);
+        this.pos.set(x, y, z);
 
         float ao;
 

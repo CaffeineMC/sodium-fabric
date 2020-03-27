@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.CloneableBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.mesh.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
@@ -17,7 +18,6 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
-import net.minecraft.client.render.chunk.ChunkRendererRegion;
 import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.fluid.FluidState;
@@ -40,41 +40,22 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
     private final ChunkRender<?> render;
     private final Vector3d camera;
-    private final ChunkRendererRegion region;
+    private final ChunkSlice region;
     private final ChunkRenderPipeline pipeline;
     private final BlockRenderManager fallbackPipeline;
 
-    public ChunkRenderRebuildTask(ChunkBuilder builder, ChunkRender<?> render) {
+    public ChunkRenderRebuildTask(ChunkBuilder builder, ChunkRender<?> render, ChunkSlice slice) {
         this.render = render;
-
         this.camera = builder.getCameraPosition();
+        this.region = slice;
 
-        BlockPos origin = this.render.getOrigin();
-        BlockPos from = origin.add(-1, -1, -1);
-        BlockPos to = origin.add(16, 16, 16);
-
-        this.region = ChunkRendererRegion.create(builder.getWorld(), from, to, 1);
-        this.pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance(), this.region, origin);
+        this.pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance(), slice);
         this.fallbackPipeline = MinecraftClient.getInstance().getBlockRenderManager();
     }
 
     @Override
     public ChunkRenderUploadTask performBuild(VertexBufferCache buffers) {
         ChunkMeshInfo.Builder info = new ChunkMeshInfo.Builder();
-
-        if (this.region != null) {
-            this.build(info, buffers);
-        } else {
-            ChunkOcclusionData occlusionData = new ChunkOcclusionData();
-            occlusionData.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
-
-            info.setOcclusionData(occlusionData);
-        }
-
-        return new Result(this.render, info.build());
-    }
-
-    private void build(ChunkMeshInfo.Builder info, VertexBufferCache buffers) {
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
         Vector3f translation = new Vector3f();
@@ -171,6 +152,8 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         }
 
         info.setOcclusionData(occluder.build());
+
+        return new Result(this.render, info.build());
     }
 
     public static class Result extends ChunkRenderUploadTask {

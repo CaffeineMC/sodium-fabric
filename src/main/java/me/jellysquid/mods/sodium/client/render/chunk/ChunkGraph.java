@@ -266,17 +266,25 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
     }
 
     public boolean cleanup() {
-        if (!this.unloadQueue.isEmpty()) {
-            for (ChunkRender<T> render : this.unloadQueue) {
-                this.removeRenderer(render);
-            }
-
-            this.unloadQueue.clear();
-
-            return true;
+        if (this.unloadQueue.isEmpty()) {
+            return false;
         }
 
-        return false;
+        boolean flag = false;
+
+        for (ChunkRender<T> render : this.unloadQueue) {
+            render.refreshChunk();
+
+            if (!render.isChunkPresent()) {
+                this.removeRenderer(render);
+
+                flag = true;
+            }
+        }
+
+        this.unloadQueue.clear();
+
+        return flag;
     }
 
     private void removeRenderer(ChunkRender<T> render) {
