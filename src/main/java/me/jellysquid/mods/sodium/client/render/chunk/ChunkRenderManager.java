@@ -73,14 +73,15 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             }
 
             if (this.chunkBuilder != null) {
-                this.chunkBuilder.abortTasks();
+                this.chunkBuilder.shutdown();
             }
         } else {
             if (this.chunkBuilder == null) {
-                this.chunkBuilder = new ChunkBuilder(8);
+                this.chunkBuilder = new ChunkBuilder();
             }
 
             this.chunkBuilder.setWorld(this.world);
+            this.chunkBuilder.start();
 
             this.chunkGraph = new ChunkGraph<>(this, this.world, this.renderDistance);
 
@@ -184,20 +185,29 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
     private void performRebuilds(BlockPos blockPos) {
         List<CompletableFuture<ChunkRenderUploadTask>> futures = new ArrayList<>();
 
+        int budget = this.chunkBuilder.getBudget();
+
+        BlockPos.Mutable pos = new BlockPos.Mutable();
+
         for (ChunkRender<T> render : this.chunkGraph.getVisibleChunks()) {
             if (!render.needsRebuild()) {
                 continue;
             }
 
-            BlockPos center = render.getOrigin().add(8, 8, 8);
+            BlockPos origin = render.getOrigin();
+            pos.set(origin.getX() + 8, origin.getY() + 8, origin.getZ() + 8);
 
-            if (render.needsImportantRebuild() || center.getSquaredDistance(blockPos) < 768.0D) {
-                futures.add(render.rebuildImmediately());
-            } else {
-                render.rebuild();
+            boolean important = render.needsImportantRebuild() && pos.getSquaredDistance(blockPos) < 768.0D;
+
+            if (important || budget-- > 0) {
+                if (important) {
+                    futures.add(render.rebuildImmediately());
+                } else {
+                    render.rebuild();
+                }
+
+                this.isRenderGraphDirty = true;
             }
-
-            this.isRenderGraphDirty = true;
         }
 
         // TODO: perform an upload on the main-thread when any chunk is completed to reduce idle
@@ -309,7 +319,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         }
 
         this.chunkGraph = new ChunkGraph<>(this, this.world, this.renderDistance);
-        this.chunkBuilder.abortTasks();
+        this.chunkBuilder.reset();
     }
 
     public ChunkRender<T> createChunkRender(long pos) {
@@ -320,7 +330,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         ChunkRender<T> node = this.chunkGraph.getRender(x, y, z);
 
         if (node != null) {
-            node.scheduleRebuild(important);
+            node.scheduleRebuild(true);
         }
     }
 }
