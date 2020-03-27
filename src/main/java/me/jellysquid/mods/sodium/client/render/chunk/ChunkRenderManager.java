@@ -7,11 +7,11 @@ import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRenderUploadTask;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.Frustum;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.*;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -29,6 +29,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
     private final MinecraftClient client;
 
     private final ObjectList<ChunkRender<T>> chunksToRebuild = new ObjectArrayList<>();
+    private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
     private final ChunkRenderer<T> chunkRenderer;
 
     private ClientWorld world;
@@ -51,6 +52,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
     private boolean isRenderGraphDirty;
 
     private ChunkGraph<T> chunkGraph;
+    private BufferBuilderStorage bufferBuilders;
 
     public ChunkRenderManager(MinecraftClient client, ChunkRenderer<T> chunkRenderer) {
         this.client = client;
@@ -83,6 +85,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             this.chunkBuilder.setWorld(this.world);
             this.chunkBuilder.start();
 
+            this.bufferBuilders = MinecraftClient.getInstance().getBufferBuilders();
             this.chunkGraph = new ChunkGraph<>(this, this.world, this.renderDistance);
 
             ((ChunkManagerWithStatusListener) world.getChunkManager()).setListener(this.chunkGraph);
@@ -220,7 +223,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         }
     }
 
-    public void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double d, double e, double f) {
+    public void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
         Profiler profiler = this.client.getProfiler();
 
         renderLayer.startDrawing();
@@ -281,7 +284,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
                 BlockPos origin = chunk.getOrigin();
 
                 matrixStack.push();
-                matrixStack.translate((double) origin.getX() - d, (double) origin.getY() - e, (double) origin.getZ() - f);
+                matrixStack.translate((double) origin.getX() - x, (double) origin.getY() - y, (double) origin.getZ() - z);
 
                 this.chunkRenderer.render(matrixStack, renderLayer, data);
 
@@ -331,6 +334,26 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
         if (node != null) {
             node.scheduleRebuild(true);
+        }
+    }
+
+    public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Camera camera, float tickDelta) {
+        VertexConsumerProvider.Immediate immediate = bufferBuilders.getEntityVertexConsumers();
+
+        Vec3d cameraPos = camera.getPos();
+        double x = cameraPos.getX();
+        double y = cameraPos.getY();
+        double z = cameraPos.getZ();
+
+        for (BlockEntity blockEntity : this.chunkGraph.getVisibleBlockEntities()) {
+            BlockPos pos = blockEntity.getPos();
+
+            matrices.push();
+            matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
+
+            BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, tickDelta, matrices, immediate);
+
+            matrices.pop();
         }
     }
 }

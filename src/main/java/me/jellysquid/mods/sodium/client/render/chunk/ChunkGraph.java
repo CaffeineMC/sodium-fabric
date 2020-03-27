@@ -11,6 +11,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Frustum;
@@ -21,10 +22,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.WorldChunk;
 
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListener {
     private final Long2ObjectOpenHashMap<ChunkRender<T>> nodes = new Long2ObjectOpenHashMap<>();
@@ -33,6 +31,8 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
     private final ObjectList<ChunkRender<T>> visibleChunks = new ObjectArrayList<>();
     private final ObjectList<ChunkRender<T>> drawableChunks = new ObjectArrayList<>();
 
+    private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
+
     private final ObjectArrayFIFOQueue<ChunkRender<T>> iterationQueue = new ObjectArrayFIFOQueue<>();
 
     private final ChunkRenderManager<T> renderManager;
@@ -40,6 +40,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
 
     private int minX, minZ, maxX, maxZ;
     private int renderDistance;
+
 
     public ChunkGraph(ChunkRenderManager<T> renderManager, World world, int renderDistance) {
         this.renderManager = renderManager;
@@ -59,6 +60,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
 
         this.visibleChunks.clear();
         this.drawableChunks.clear();
+        this.visibleBlockEntities.clear();
 
         boolean cull = this.init(blockPos, camera, cameraPos, frustum, frame, spectator);
 
@@ -70,17 +72,27 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
         while (!this.iterationQueue.isEmpty()) {
             ChunkRender<T> render = this.iterationQueue.dequeue();
 
-            this.visibleChunks.add(render);
-
-            if (!render.isEmpty()) {
-                this.drawableChunks.add(render);
-            }
+            this.markVisible(render);
 
             if (fogCulling && !render.getOrigin().isWithinDistance(cameraPos, maxChunkDistance)) {
                 continue;
             }
 
             this.addNeighbors(render, cull, frustum, frame);
+        }
+    }
+
+    private void markVisible(ChunkRender<T> render) {
+        this.visibleChunks.add(render);
+
+        if (!render.isEmpty()) {
+            this.drawableChunks.add(render);
+        }
+
+        Collection<BlockEntity> blockEntities = render.getMeshInfo().getBlockEntities();
+
+        if (!blockEntities.isEmpty()) {
+            this.visibleBlockEntities.addAll(blockEntities);
         }
     }
 
@@ -315,5 +327,9 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
                 this.unloadQueue.add(render);
             }
         }
+    }
+
+    public Collection<BlockEntity> getVisibleBlockEntities() {
+        return this.visibleBlockEntities;
     }
 }

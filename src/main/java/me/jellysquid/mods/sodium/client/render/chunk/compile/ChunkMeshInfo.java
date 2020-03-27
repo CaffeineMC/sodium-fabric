@@ -10,6 +10,7 @@ import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.Direction;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -51,6 +52,10 @@ public class ChunkMeshInfo {
 
     public void clearUploads() {
         this.uploads = Collections.emptyList();
+    }
+
+    public Collection<BlockEntity> getBlockEntities() {
+        return this.blockEntities;
     }
 
     public static class Builder {

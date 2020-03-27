@@ -120,7 +120,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                             BlockEntityRenderer<BlockEntity> renderer = BlockEntityRenderDispatcher.INSTANCE.get(entity);
 
                             if (renderer != null) {
-                                info.addBlockEntity(entity, renderer.rendersOutsideBoundingBox(entity));
+                                info.addBlockEntity(entity, !renderer.rendersOutsideBoundingBox(entity));
                             }
                         }
                     }
