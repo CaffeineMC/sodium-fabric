@@ -21,6 +21,11 @@ public class ChunkRendererVAO extends AbstractChunkRenderer<ChunkRenderDataVAO> 
     @Override
     public void render(ChunkRender<ChunkRenderDataVAO> chunk, RenderLayer layer, MatrixStack matrixStack, double x, double y, double z) {
         ChunkRenderDataVAO data = chunk.getRenderData();
+
+        if (data == null) {
+            return;
+        }
+
         VertexBufferWithArray vao = data.getVertexArrayForLayer(layer);
 
         if (vao == null) {
