@@ -234,15 +234,11 @@ public class ChunkRender<T extends ChunkRenderData> {
     }
 
     public void refreshChunk() {
-        this.chunkPresent = this.builder.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
+        // ClientWorld#isChunkLoaded cannot be used as it will always return true
+        this.chunkPresent = this.builder.getWorld().getChunk(this.chunkX, this.chunkZ) != null;
     }
 
     private static ChunkRenderBuildTask createRebuildTask(ChunkBuilder builder, ChunkRender<?> render) {
-        BlockPos origin = render.getOrigin();
-
-        BlockPos from = origin.add(-1, -1, -1);
-        BlockPos to = origin.add(16, 16, 16);
-
         ChunkSlice slice = ChunkSlice.tryCreate(builder.getWorld(), render.getChunkPos());
 
         if (slice == null) {
