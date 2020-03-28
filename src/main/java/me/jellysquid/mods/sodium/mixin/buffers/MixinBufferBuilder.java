@@ -41,13 +41,19 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
      */
     @Overwrite
     public void vertex(float x, float y, float z, float r, float g, float b, float a, float u, float v, int light1, int light2, float normX, float normY, float normZ) {
+        if (!this.field_21594) {
+            super.vertex(x, y, z, r, g, b, a, u, v, light1, light2, normX, normY, normZ);
+
+            return;
+        }
+
         this.vertex(x, y, z, ColorUtil.encodeRGBA(r, g, b, a), u, v, light1, light2, QuadUtil.encodeNormal(normX, normY, normZ));
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
     @Override
     public void vertex(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
-        if (this.colorFixed || !this.field_21594) {
+        if (this.colorFixed) {
             throw new IllegalStateException();
         }
 
