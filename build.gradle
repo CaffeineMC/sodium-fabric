@@ -1,8 +1,26 @@
-plugins {
-	id 'fabric-loom' version '0.2.6-SNAPSHOT'
-    id "me.champeau.gradle.jmh" version "0.5.0"
-	id 'com.github.johnrengelman.shadow' version '5.2.0'
+buildscript {
+	repositories {
+		jcenter()
+		maven {
+			name = "Fabric"
+			url = "https://maven.fabricmc.net/"
+		}
+		maven {
+			name = "Forge"
+			url = "https://files.minecraftforge.net/maven/"
+		}
+		maven {
+			name = "Jitpack"
+			url 'https://jitpack.io/'
+		}
+	}
+	dependencies {
+		classpath 'com.github.Chocohead:fabric-loom:e5d69cb'
+	}
 }
+
+apply plugin: "fabric-loom"
+import net.fabricmc.loom.task.RemappingJar;
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -14,9 +32,14 @@ group = project.maven_group
 minecraft {
 }
 
-configurations {
-    modShade
-    modCompile.extendsFrom modShade
+repositories {
+	// Fabric-ASM
+	maven { url 'https://jitpack.io' }
+}
+
+minecraft {
+	refmapName = "mixins.sodium.refmap.json"
+	AT = file("src/main/resources/access-transformers.txt")
 }
 
 dependencies {
@@ -25,7 +48,11 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	modShade "com.moandjiezana.toml:toml4j:0.7.2"
+	include "com.moandjiezana.toml:toml4j:0.7.2"
+	compile "com.moandjiezana.toml:toml4j:0.7.2"
+
+	include "com.github.Chocohead:Fabric-ASM:${project.fabric_asm_version}"
+	compile "com.github.Chocohead:Fabric-ASM:${project.fabric_asm_version}:dev"
 }
 
 processResources {
@@ -61,23 +88,9 @@ jar {
 	from "LICENSE.txt"
 }
 
-jmh {
-    duplicateClassesStrategy = 'warn'
+task modJar(type: RemappingJar, dependsOn: classes) {
+	classifier = "mod"
+	from sourceSets.main.output
 }
 
-shadowJar {
-	dependencies {
-		exclude(dependency('com.google.code.gson:gson'))
-	}
-
-	relocate('net.minecraft.client.util.math', 'net.minecraft') {
-		include 'net.minecraft.client.util.math.Sodium*'
-	}
-
-	relocate('com.moandjiezana.toml', 'me.jellysquid.mods.lithium.shaded.toml')
-
-	configurations = [project.configurations.modShade]
-	classifier = 'dev'
-}
-
-remapJar.dependsOn shadowJar
+build.dependsOn modJar
