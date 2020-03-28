@@ -4,7 +4,11 @@ public class ColorUtil {
     private static final float NORM_RGB = 1.0f / 255.0f;
 
     public static int encodeRGB(int r, int g, int b) {
-        return 0xFF000000 | (b & 0xFF) << 16 | (g & 0xFF) << 8 | (r & 0xFF);
+        return encodeRGBA(r, g, b, 0xFF);
+    }
+
+    public static int encodeRGBA(int r, int g, int b, int a) {
+        return (a & 0xFF) << 24 | (b & 0xFF) << 16 | (g & 0xFF) << 8 | (r & 0xFF);
     }
 
     public static int mulPackedRGB(int color, float rw, float gw, float bw) {
@@ -37,5 +41,9 @@ public class ColorUtil {
 
     public static float normalize(float v) {
         return v * NORM_RGB;
+    }
+
+    public static int encodeRGBA(float r, float g, float b, float a) {
+        return encodeRGBA((int) (r * 255.0f), (int) (g * 255.0f), (int) (b * 255.0f), (int) (a * 255.0f));
     }
 }

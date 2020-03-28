@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.util;
 
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3i;
@@ -27,9 +28,17 @@ public class QuadUtil {
     }
 
     private static int encodeNormal(Vec3i norm) {
-        int normX = encodeNormal(norm.getX());
-        int normY = encodeNormal(norm.getY());
-        int normZ = encodeNormal(norm.getZ());
+        return encodeNormal(norm.getX(), norm.getY(), norm.getZ());
+    }
+
+    public static int encodeNormal(Vector3f dir) {
+        return encodeNormal(dir.getX(), dir.getY(), dir.getZ());
+    }
+
+    public static int encodeNormal(float x, float y, float z) {
+        int normX = encodeNormal(x);
+        int normY = encodeNormal(y);
+        int normZ = encodeNormal(z);
 
         return (normX << 16) | (normY << 8) | normZ;
     }
