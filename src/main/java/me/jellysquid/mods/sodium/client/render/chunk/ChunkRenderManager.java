@@ -272,24 +272,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
                 break;
             }
 
-            ChunkRender<T> chunk = notTranslucent ? it.next() : it.previous();
-
-            T data = chunk.getRenderData();
-
-            if (data == null) {
-                continue;
-            }
-
-            if (chunk.getMeshInfo().containsLayer(renderLayer)) {
-                BlockPos origin = chunk.getOrigin();
-
-                matrixStack.push();
-                matrixStack.translate((double) origin.getX() - x, (double) origin.getY() - y, (double) origin.getZ() - z);
-
-                this.chunkRenderer.render(matrixStack, renderLayer, data);
-
-                matrixStack.pop();
-            }
+            this.chunkRenderer.render(notTranslucent ? it.next() : it.previous(), renderLayer, matrixStack, x, y, z);
         }
 
         this.chunkRenderer.end();

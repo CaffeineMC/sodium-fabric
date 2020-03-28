@@ -22,7 +22,7 @@ public class VertexBufferWithArray {
         this.format = format;
     }
 
-    public static void unbind() {
+    public void unbind() {
         GlVertexArray.unbind();
     }
 
