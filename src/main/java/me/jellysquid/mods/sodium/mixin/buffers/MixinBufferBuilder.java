@@ -17,8 +17,6 @@ import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
 public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements DirectVertexConsumer {
-    private static final Unsafe UNSAFE = UnsafeUtil.instance();
-
     @Shadow private int elementOffset;
 
     @Shadow public abstract void next();
@@ -50,43 +48,17 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
         this.vertex(x, y, z, ColorUtil.encodeRGBA(r, g, b, a), u, v, light1, light2, QuadUtil.encodeNormal(normX, normY, normZ));
     }
 
-    @SuppressWarnings("SuspiciousNameCombination")
     @Override
     public void vertex(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
         if (this.colorFixed) {
             throw new IllegalStateException();
         }
 
-        long i = this.getWriteAddress() + this.elementOffset;
-
-        UNSAFE.putFloat(i, x);
-        i += 4;
-
-        UNSAFE.putFloat(i, y);
-        i += 4;
-
-        UNSAFE.putFloat(i, z);
-        i += 4;
-
-        UNSAFE.putInt(i, color);
-        i += 4;
-
-        UNSAFE.putFloat(i, u);
-        i += 4;
-
-        UNSAFE.putFloat(i, v);
-        i += 4;
-
-        if (this.field_21595) {
-            UNSAFE.putInt(i, overlay);
-            i += 4;
+        if (UnsafeUtil.isAvailable()) {
+            this.vertexUnsafe(x, y, z, color, u, v, overlay, light, normal);
+        } else {
+            this.vertexFallback(x, y, z, color, u, v, overlay, light, normal);
         }
-
-        UNSAFE.putInt(i, light);
-        i += 4;
-
-        UNSAFE.putInt(i, normal);
-        i += 4;
 
         int size = this.format.getVertexSize();
 
@@ -96,7 +68,70 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
         this.grow(size);
     }
 
-    private long getWriteAddress() {
-        return ((DirectBuffer) this.buffer).address();
+    @SuppressWarnings("SuspiciousNameCombination")
+    private void vertexUnsafe(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
+        long i = ((DirectBuffer) this.buffer).address() + this.elementOffset;
+
+        Unsafe unsafe = UnsafeUtil.instance();
+        unsafe.putFloat(i, x);
+        i += 4;
+
+        unsafe.putFloat(i, y);
+        i += 4;
+
+        unsafe.putFloat(i, z);
+        i += 4;
+
+        unsafe.putInt(i, color);
+        i += 4;
+
+        unsafe.putFloat(i, u);
+        i += 4;
+
+        unsafe.putFloat(i, v);
+        i += 4;
+
+        if (this.field_21595) {
+            unsafe.putInt(i, overlay);
+            i += 4;
+        }
+
+        unsafe.putInt(i, light);
+        i += 4;
+
+        unsafe.putInt(i, normal);
+    }
+
+    private void vertexFallback(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
+        int i = this.elementOffset;
+
+        ByteBuffer buffer = this.buffer;
+        buffer.putFloat(i, x);
+        i += 4;
+
+        buffer.putFloat(i, y);
+        i += 4;
+
+        buffer.putFloat(i, z);
+        i += 4;
+
+        buffer.putInt(i, color);
+        i += 4;
+
+        buffer.putFloat(i, u);
+        i += 4;
+
+        buffer.putFloat(i, v);
+        i += 4;
+
+        if (this.field_21595) {
+            buffer.putInt(i, overlay);
+            i += 4;
+        }
+
+        buffer.putInt(i, light);
+        i += 4;
+
+        buffer.putInt(i, normal);
     }
 }
