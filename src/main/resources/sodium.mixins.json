@@ -20,8 +20,10 @@
         "options.MixinWorldRenderer",
         "pipeline.MixinBakedQuad",
         "pipeline.MixinBufferBuilder",
-        "render.reduce_matrix_allocs.MixinMatrixStack",
         "render_layers.MixinRenderLayers",
-        "fast_mojmath.MixinFrustum"
+        "fast_mojmath.MixinFrustum",
+        "fast_mojmath.MixinMatrix3f",
+        "fast_mojmath.MixinMatrix4f",
+        "fast_mojmath.MixinMatrixStack"
     ]
 }
