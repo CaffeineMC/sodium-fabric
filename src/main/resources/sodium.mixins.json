@@ -7,6 +7,8 @@
         "defaultRequire": 1
     },
     "client": [
+        "buffers.MixinBufferBuilder",
+        "buffers.MixinSpriteTexturedVertexConsumer",
         "chunk_building.MixinBufferBuilder",
         "chunk_occlusion.MixinChunkOcclusionData",
         "chunk_rendering.MixinClientChunkManager",
