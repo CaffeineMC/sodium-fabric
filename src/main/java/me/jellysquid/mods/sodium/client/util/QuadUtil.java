@@ -40,7 +40,7 @@ public class QuadUtil {
         int normY = encodeNormal(y);
         int normZ = encodeNormal(z);
 
-        return (normX << 16) | (normY << 8) | normZ;
+        return (normZ << 16) | (normY << 8) | normX;
     }
 
     private static int encodeNormal(float v) {
