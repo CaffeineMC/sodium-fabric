@@ -10,7 +10,6 @@
         "buffers.MixinBufferBuilder",
         "buffers.MixinSpriteTexturedVertexConsumer",
         "chunk_building.MixinBufferBuilder",
-        "chunk_occlusion.MixinChunkOcclusionData",
         "chunk_rendering.MixinClientChunkManager",
         "chunk_rendering.MixinVertexFormat",
         "chunk_rendering.MixinWorldRenderer",

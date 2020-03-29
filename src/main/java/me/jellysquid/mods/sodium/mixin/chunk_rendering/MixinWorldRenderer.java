@@ -19,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(WorldRenderer.class)
 public abstract class MixinWorldRenderer {
     @Shadow @Final private BufferBuilderStorage bufferBuilders;
+
     private ChunkRenderManager<ChunkRenderDataVAO> chunkManager;
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -93,6 +94,30 @@ public abstract class MixinWorldRenderer {
     private void reload(CallbackInfo ci) {
         this.chunkManager.reload();
     }
+
+    /**
+     * @reason Avoid updating the same chunk multiple times
+     * @author JellySquid
+     */
+    @Overwrite
+    public void scheduleBlockRenders(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        int minChunkX = minX >> 4;
+        int minChunkY = minY >> 4;
+        int minChunkZ = minZ >> 4;
+
+        int maxChunkX = maxX >> 4;
+        int maxChunkY = maxY >> 4;
+        int maxChunkZ = maxZ >> 4;
+
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+                for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                    this.scheduleChunkRender(chunkX, chunkY, chunkZ, false);
+                }
+            }
+        }
+    }
+
 
     /**
      * @author JellySquid

@@ -16,28 +16,15 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.block.BlockRenderManager;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.world.chunk.WorldChunk;
 import org.lwjgl.opengl.GL11;
 
-import java.util.EnumSet;
-
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
-    private static final ChunkOcclusionData EMPTY_OCCLUSION_DATA;
-
-    static {
-        ChunkOcclusionData data = new ChunkOcclusionData();
-        data.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
-
-        EMPTY_OCCLUSION_DATA = data;
-    }
-
     private final ChunkRender<?> render;
     private final Vector3d camera;
     private final ChunkSlice region;
@@ -135,20 +122,17 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         for (RenderLayer layer : RenderLayer.getBlockLayers()) {
             BufferBuilder builder = buffers.get(layer);
 
-            if (!builder.isBuilding() || ((ChunkMeshBuilder) builder).isEmpty()) {
-                continue;
+            if (builder.isBuilding() && !((ChunkMeshBuilder) builder).isEmpty()) {
+                if (layer == RenderLayer.getTranslucent()) {
+                    builder.sortQuads((float) this.camera.x - (float) from.getX(),
+                            (float) this.camera.y - (float) from.getY(),
+                            (float) this.camera.z - (float) from.getZ());
+                }
+
+                builder.end();
+
+                info.addMeshData(layer,  ((CloneableBufferBuilder) builder).copyData());
             }
-
-            if (layer == RenderLayer.getTranslucent()) {
-                builder.sortQuads((float) this.camera.x - (float) from.getX(),
-                        (float) this.camera.y - (float) from.getY(),
-                        (float) this.camera.z - (float) from.getZ());
-            }
-
-            // TODO: simplify API
-            builder.end();
-
-            info.addMeshData(layer, ((CloneableBufferBuilder) builder).copyData());
         }
 
         info.setOcclusionData(occluder.build());
@@ -167,10 +151,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
         @Override
         public void performUpload() {
-            if (this.chunkRender.isInvalid()) {
-                return;
-            }
-
             this.chunkRender.upload(this.meshInfo);
             this.chunkRender.finishRebuild();
         }

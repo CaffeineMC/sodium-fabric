@@ -23,11 +23,6 @@ public class ChunkRendererVBO extends AbstractChunkRenderer<ChunkRenderDataVBO> 
     @Override
     public void render(ChunkRender<ChunkRenderDataVBO> chunk, RenderLayer layer, MatrixStack matrixStack, double x, double y, double z) {
         ChunkRenderDataVBO data = chunk.getRenderData();
-
-        if (data == null) {
-            return;
-        }
-
         GlVertexBuffer vbo = data.getVertexBufferForLayer(layer);
 
         if (vbo == null) {
