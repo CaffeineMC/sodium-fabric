@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ChunkBuilder {
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
-    private final Deque<BuildJob> buildQueue = new ConcurrentLinkedDeque<>();
+    private final Deque<WrappedTask> buildQueue = new ConcurrentLinkedDeque<>();
     private final Queue<ChunkRenderUploadTask> uploadQueue = new ConcurrentLinkedDeque<>();
 
     private final Object jobNotifier = new Object();
@@ -31,7 +31,7 @@ public class ChunkBuilder {
     private final int limitThreads = getOptimalThreadCount();
 
     public int getBudget() {
-        return Math.max(0, (this.limitThreads * 6) - this.buildQueue.size());
+        return Math.max(0, (this.limitThreads * 3) - this.buildQueue.size());
     }
 
     public void start() {
@@ -86,7 +86,7 @@ public class ChunkBuilder {
         // Drop any pending work queues and cancel futures
         this.uploadQueue.clear();
 
-        for (BuildJob job : this.buildQueue) {
+        for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
         }
 
@@ -111,7 +111,7 @@ public class ChunkBuilder {
             throw new IllegalStateException("Executor is stopped");
         }
 
-        BuildJob job = new BuildJob(task);
+        WrappedTask job = new WrappedTask(task);
 
         this.buildQueue.add(job);
 
@@ -122,7 +122,7 @@ public class ChunkBuilder {
         return job.future;
     }
 
-    public void addUploadTask(ChunkRenderUploadTask task) {
+    public void enqueueUpload(ChunkRenderUploadTask task) {
         this.uploadQueue.add(task);
     }
 
@@ -157,7 +157,7 @@ public class ChunkBuilder {
         @Override
         public void run() {
             while (this.running.get()) {
-                BuildJob job = this.getNextJob();
+                WrappedTask job = this.getNextJob();
 
                 if (job == null || job.future.isCancelled()) {
                     continue;
@@ -167,8 +167,8 @@ public class ChunkBuilder {
             }
         }
 
-        private BuildJob getNextJob() {
-            BuildJob job = ChunkBuilder.this.buildQueue.poll();
+        private WrappedTask getNextJob() {
+            WrappedTask job = ChunkBuilder.this.buildQueue.poll();
 
             if (job == null) {
                 synchronized (ChunkBuilder.this.jobNotifier) {
@@ -182,11 +182,11 @@ public class ChunkBuilder {
         }
     }
 
-    private static class BuildJob {
+    private static class WrappedTask {
         private final ChunkRenderBuildTask task;
         private final CompletableFuture<ChunkRenderUploadTask> future;
 
-        private BuildJob(ChunkRenderBuildTask task) {
+        private WrappedTask(ChunkRenderBuildTask task) {
             this.task = task;
             this.future = new CompletableFuture<>();
         }

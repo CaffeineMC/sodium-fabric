@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ColumnRender;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
@@ -25,7 +26,7 @@ import net.minecraft.world.chunk.WorldChunk;
 import java.util.*;
 
 public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListener {
-    private final Long2ObjectOpenHashMap<ChunkRender<T>> nodes = new Long2ObjectOpenHashMap<>();
+    private final Long2ObjectOpenHashMap<ColumnRender<T>> columns = new Long2ObjectOpenHashMap<>();
 
     private final ObjectList<ChunkRender<T>> unloadQueue = new ObjectArrayList<>();
     private final ObjectList<ChunkRender<T>> visibleChunks = new ObjectArrayList<>();
@@ -38,9 +39,8 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
     private final ChunkRenderManager<T> renderManager;
     private final World world;
 
-    private int minX, minZ, maxX, maxZ;
+    private int minChunkX, minChunkZ, maxChunkX, maxChunkZ;
     private int renderDistance;
-
 
     public ChunkGraph(ChunkRenderManager<T> renderManager, World world, int renderDistance) {
         this.renderManager = renderManager;
@@ -52,11 +52,11 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
         int centerX = MathHelper.floor(cameraPos.x) >> 4;
         int centerZ = MathHelper.floor(cameraPos.z) >> 4;
 
-        this.minX = centerX - this.renderDistance;
-        this.minZ = centerZ - this.renderDistance;
+        this.minChunkX = centerX - this.renderDistance;
+        this.minChunkZ = centerZ - this.renderDistance;
 
-        this.maxX = centerX + this.renderDistance;
-        this.maxZ = centerZ + this.renderDistance;
+        this.maxChunkX = centerX + this.renderDistance;
+        this.maxChunkZ = centerZ + this.renderDistance;
 
         this.visibleChunks.clear();
         this.drawableChunks.clear();
@@ -108,7 +108,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
                 continue;
             }
 
-            if (!adjRender.hasNeighbors()) {
+            if (!adjRender.hasChunkNeighbors(this)) {
                 continue;
             }
 
@@ -141,7 +141,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
         ChunkRender<T> node = this.getOrCreateRender(blockPos);
 
         if (node != null) {
-            node.reset();
+            node.resetGraphState();
 
             // Player is within bounds and inside a node
             Set<Direction> openFaces = this.getOpenChunkFaces(blockPos);
@@ -176,16 +176,14 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
                 for (int z2 = -this.renderDistance; z2 <= this.renderDistance; ++z2) {
                     ChunkRender<T> chunk = this.getOrCreateRender(new BlockPos(x + (x2 << 4) + 8, y, z + (z2 << 4) + 8));
 
-                    if (chunk == null) {
+                    if (chunk==null || !frustum.isVisible(chunk.getBoundingBox())) {
                         continue;
                     }
 
-                    if (frustum.isVisible(chunk.getBoundingBox())) {
-                        chunk.setRebuildFrame(frame);
-                        chunk.reset();
+                    chunk.setRebuildFrame(frame);
+                    chunk.resetGraphState();
 
-                        list.add(chunk);
-                    }
+                    list.add(chunk);
                 }
             }
 
@@ -204,15 +202,22 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
     }
 
     public ChunkRender<T> getOrCreateRender(int x, int y, int z) {
-        if (y < 0 || y >= 16) {
-            return null;
-        }
-
-        return this.nodes.computeIfAbsent(ChunkSectionPos.asLong(x, y, z), this.renderManager::createChunkRender);
+        return this.columns.computeIfAbsent(ChunkPos.toLong(x, z), this::createColumn)
+                .getOrCreateChunk(y, this.renderManager::createChunkRender);
     }
 
     public ChunkRender<T> getRender(int x, int y, int z) {
-        return this.nodes.get(ChunkSectionPos.asLong(x, y, z));
+        ColumnRender<T> column = this.columns.get(ChunkPos.toLong(x, z));
+
+        if (column == null) {
+            return null;
+        }
+
+        return column.getChunk(y);
+    }
+
+    private ColumnRender<T> createColumn(long pos) {
+        return new ColumnRender<>(this.world, ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos));
     }
 
     private ChunkRender<T> getAdjacentRender(ChunkRender<T> render, Direction direction) {
@@ -224,11 +229,11 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
             return null;
         }
 
-        return render.getAdjacent(direction);
+        return render.getAdjacent(this, direction);
     }
 
     private boolean isWithinRenderBounds(int x, int y, int z) {
-        return y >= 0 && y < 256 && x >= this.minX && x <= this.maxX && z >= this.minZ && z <= this.maxZ;
+        return y >= 0 && y < 16 && x >= this.minChunkX && x <= this.maxChunkX && z >= this.minChunkZ && z <= this.maxChunkZ;
     }
 
     private Set<Direction> getOpenChunkFaces(BlockPos pos) {
@@ -261,12 +266,15 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
     }
 
     public void reset() {
-        for (ChunkRender<?> node : this.nodes.values()) {
-            node.deleteResources();
+        for (ColumnRender<T> column : this.columns.values()) {
+            column.deleteData();
         }
 
-        this.nodes.clear();
+        this.columns.clear();
         this.visibleChunks.clear();
+        this.drawableChunks.clear();
+        this.visibleBlockEntities.clear();
+        this.unloadQueue.clear();
     }
 
     public ObjectList<ChunkRender<T>> getVisibleChunks() {
@@ -278,58 +286,53 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
     }
 
     public boolean cleanup() {
-        if (this.unloadQueue.isEmpty()) {
-            return false;
-        }
-
-        boolean flag = false;
-
-        for (ChunkRender<T> render : this.unloadQueue) {
-            render.refreshChunk();
-
-            if (!render.isChunkPresent()) {
+        if (!this.unloadQueue.isEmpty()) {
+            for (ChunkRender<T> render : this.unloadQueue) {
                 this.removeRenderer(render);
-
-                flag = true;
             }
+
+            this.unloadQueue.clear();
+
+            return true;
         }
 
-        this.unloadQueue.clear();
-
-        return flag;
+        return false;
     }
 
     private void removeRenderer(ChunkRender<T> render) {
-        render.deleteResources();
+        render.deleteData();
 
-        this.nodes.remove(render.getPositionKey());
-    }
+        ColumnRender<T> column = render.getColumn();
+        column.remove(render);
 
-    @Override
-    public void onChunkAdded(int x, int z) {
-        for (int y = 0; y < 16; y++) {
-            ChunkRender<T> render = this.getRender(x, y, z);
-
-            if (render != null) {
-                render.setChunkPresent(true);
-            }
-        }
-    }
-
-    @Override
-    public void onChunkRemoved(int x, int z) {
-        for (int y = 0; y < 16; y++) {
-            ChunkRender<T> render = this.getRender(x, y, z);
-
-            if (render != null) {
-                render.setChunkPresent(false);
-
-                this.unloadQueue.add(render);
-            }
+        if (column.isEmpty()) {
+            this.columns.remove(column.getKey());
         }
     }
 
     public Collection<BlockEntity> getVisibleBlockEntities() {
         return this.visibleBlockEntities;
+    }
+
+    @Override
+    public void onChunkAdded(int x, int z) {
+        ColumnRender<T> column = this.getRenderColumn(x, z);
+
+        if (column != null) {
+            column.setChunkPresent(true);
+        }
+    }
+
+    @Override
+    public void onChunkRemoved(int x, int z) {
+        ColumnRender<T> column = this.getRenderColumn(x, z);
+
+        if (column != null) {
+            column.setChunkPresent(false);
+        }
+    }
+
+    private ColumnRender<T> getRenderColumn(int x, int z) {
+        return this.columns.get(ChunkPos.toLong(x, z));
     }
 }

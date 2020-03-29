@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraph;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -10,19 +9,20 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChunkRender<T extends ChunkRenderData> {
-    private final ChunkGraph<T> graph;
     private final ChunkBuilder builder;
-    private final BlockPos.Mutable origin;
-    private final ChunkRenderer<T> chunkRenderer;
-    private final int chunkX, chunkY, chunkZ;
-    private final ChunkRender<T>[] adjacent;
-    private final long chunkPosKey;
 
-    private Box boundingBox;
-    private T renderData;
+    @SuppressWarnings("unchecked")
+    private final ChunkRender<T>[] adjacent = new ChunkRender[6];
+    private final ColumnRender<T> column;
+
+    private final BlockPos.Mutable origin;
+    private final int chunkX, chunkY, chunkZ;
+
+    private final T renderData;
+
+    private final Box boundingBox;
 
     private ChunkMeshInfo meshInfo = ChunkMeshInfo.ABSENT;
     private CompletableFuture<Void> rebuildTask = null;
@@ -30,24 +30,19 @@ public class ChunkRender<T extends ChunkRenderData> {
     private volatile boolean needsRebuild;
     private volatile boolean needsImportantRebuild;
 
-    private AtomicBoolean invalid = new AtomicBoolean(false);
-
     public Direction direction;
 
     public int rebuildFrame;
     public byte cullingState;
-    private boolean chunkPresent;
 
-    @SuppressWarnings("unchecked")
-    public ChunkRender(ChunkGraph<T> graph, ChunkBuilder builder, ChunkRenderer<T> chunkRenderer, long chunkPosKey) {
-        this.graph = graph;
+    public ChunkRender(ChunkBuilder builder, T renderData, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
         this.builder = builder;
-        this.chunkRenderer = chunkRenderer;
+        this.renderData = renderData;
+        this.column = column;
 
-        this.chunkPosKey = chunkPosKey;
-        this.chunkX = ChunkSectionPos.getX(chunkPosKey);
-        this.chunkY = ChunkSectionPos.getY(chunkPosKey);
-        this.chunkZ = ChunkSectionPos.getZ(chunkPosKey);
+        this.chunkX = chunkX;
+        this.chunkY = chunkY;
+        this.chunkZ = chunkZ;
 
         int x = this.chunkX << 4;
         int y = this.chunkY << 4;
@@ -58,9 +53,6 @@ public class ChunkRender<T extends ChunkRenderData> {
 
         this.needsRebuild = true;
         this.rebuildFrame = -1;
-
-        this.adjacent = new ChunkRender[6];
-        this.refreshChunk();
     }
 
     public void cancelRebuildTask() {
@@ -72,11 +64,11 @@ public class ChunkRender<T extends ChunkRenderData> {
         }
     }
 
-    public ChunkRender<T> getAdjacent(Direction dir) {
+    public ChunkRender<T> getAdjacent(ChunkGraph<T> graph, Direction dir) {
         ChunkRender<T> adj = this.adjacent[dir.ordinal()];
 
         if (adj == null) {
-            adj = this.adjacent[dir.ordinal()] = this.graph.getOrCreateRender(this.chunkX + dir.getOffsetX(), this.chunkY + dir.getOffsetY(), this.chunkZ + dir.getOffsetZ());
+            adj = this.adjacent[dir.ordinal()] = graph.getOrCreateRender(this.chunkX + dir.getOffsetX(), this.chunkY + dir.getOffsetY(), this.chunkZ + dir.getOffsetZ());
         }
 
         return adj;
@@ -122,26 +114,20 @@ public class ChunkRender<T extends ChunkRenderData> {
         return this.renderData;
     }
 
-    public void deleteResources() {
-        this.invalid.set(true);
-
+    public void deleteData() {
         this.cancelRebuildTask();
 
+        this.renderData.clearData();
         this.meshInfo = ChunkMeshInfo.ABSENT;
-
-        if (this.renderData != null) {
-            this.renderData.clearData();
-            this.renderData = null;
-        }
     }
 
-    public boolean hasNeighbors() {
-        return this.isChunkPresent(Direction.WEST) && this.isChunkPresent(Direction.NORTH) &&
-                this.isChunkPresent(Direction.EAST) && this.isChunkPresent(Direction.SOUTH);
+    public boolean hasChunkNeighbors(ChunkGraph<T> graph) {
+        return this.isNeighborPresent(graph, Direction.WEST) && this.isNeighborPresent(graph, Direction.NORTH) &&
+                this.isNeighborPresent(graph, Direction.EAST) && this.isNeighborPresent(graph, Direction.SOUTH);
     }
 
-    private boolean isChunkPresent(Direction dir) {
-        ChunkRender<T> render = this.getAdjacent(dir);
+    private boolean isNeighborPresent(ChunkGraph<T> graph, Direction dir) {
+        ChunkRender<T> render = this.getAdjacent(graph, dir);
 
         return render == null || render.isChunkPresent();
     }
@@ -150,7 +136,7 @@ public class ChunkRender<T extends ChunkRenderData> {
         this.cancelRebuildTask();
 
         this.builder.schedule(createRebuildTask(this.builder, this))
-                .thenAccept(this.builder::addUploadTask);
+                .thenAccept(this.builder::enqueueUpload);
     }
 
     public CompletableFuture<ChunkRenderUploadTask> rebuildImmediately() {
@@ -164,26 +150,8 @@ public class ChunkRender<T extends ChunkRenderData> {
         this.needsRebuild = true;
     }
 
-    public boolean isInvalid() {
-        return this.invalid.get();
-    }
-
     public void upload(ChunkMeshInfo meshInfo) {
-        if (meshInfo.isEmpty()) {
-            if (this.renderData != null) {
-                this.renderData.clearData();
-                this.renderData = null;
-            }
-        } else {
-            if (this.renderData == null) {
-                this.renderData = this.chunkRenderer.createRenderData();
-            }
-
-            this.renderData.uploadData(meshInfo);
-
-            meshInfo.clearUploads();
-        }
-
+        this.renderData.uploadData(meshInfo);
         this.meshInfo = meshInfo;
     }
 
@@ -204,7 +172,7 @@ public class ChunkRender<T extends ChunkRenderData> {
         return (this.cullingState & 1 << from.ordinal()) > 0;
     }
 
-    public void reset() {
+    public void resetGraphState() {
         this.direction = null;
         this.cullingState = 0;
     }
@@ -221,28 +189,19 @@ public class ChunkRender<T extends ChunkRenderData> {
         return this.rebuildFrame;
     }
 
-    public void setChunkPresent(boolean value) {
-        this.chunkPresent = value;
-    }
-
     public boolean isChunkPresent() {
-        return this.chunkPresent;
+        return this.column.isChunkPresent();
     }
 
     public long getPositionKey() {
-        return this.chunkPosKey;
-    }
-
-    public void refreshChunk() {
-        // ClientWorld#isChunkLoaded cannot be used as it will always return true
-        this.chunkPresent = this.builder.getWorld().getChunk(this.chunkX, this.chunkZ) != null;
+        return ChunkSectionPos.asLong(this.chunkX, this.chunkY, this.chunkZ);
     }
 
     private static ChunkRenderBuildTask createRebuildTask(ChunkBuilder builder, ChunkRender<?> render) {
         ChunkSlice slice = ChunkSlice.tryCreate(builder.getWorld(), render.getChunkPos());
 
         if (slice == null) {
-            return new ChunkRenderEmptyBuildTask(builder, render);
+            return new ChunkRenderEmptyBuildTask(render);
         }
 
         return new ChunkRenderRebuildTask(builder, render, slice);
@@ -250,5 +209,9 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     private ChunkSectionPos getChunkPos() {
         return ChunkSectionPos.from(this.chunkX, this.chunkY, this.chunkZ);
+    }
+
+    public ColumnRender<T> getColumn() {
+        return this.column;
     }
 }

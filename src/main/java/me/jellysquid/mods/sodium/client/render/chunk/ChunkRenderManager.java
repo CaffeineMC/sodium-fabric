@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRenderUploadTask;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ColumnRender;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -104,12 +105,13 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         this.isRenderGraphDirty |= this.chunkBuilder.upload();
         this.isRenderGraphDirty |= this.chunkGraph.cleanup();
 
+        int limit = this.chunkBuilder.getBudget();
         int uploaded = 0;
 
         if (!this.chunksToRebuild.isEmpty()) {
             Iterator<ChunkRender<T>> iterator = this.chunksToRebuild.iterator();
 
-            while (uploaded < 16 && iterator.hasNext()) {
+            while (uploaded < limit && iterator.hasNext()) {
                 ChunkRender<T> chunk = iterator.next();
 
                 if (chunk.needsImportantRebuild()) {
@@ -304,12 +306,11 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             this.chunkGraph.reset();
         }
 
-        this.chunkGraph = new ChunkGraph<>(this, this.world, this.renderDistance);
         this.chunkBuilder.reset();
     }
 
-    public ChunkRender<T> createChunkRender(long pos) {
-        return new ChunkRender<>(this.chunkGraph, this.chunkBuilder, this.chunkRenderer, pos);
+    public ChunkRender<T> createChunkRender(ColumnRender<T> column, int x, int y, int z) {
+        return new ChunkRender<>(this.chunkBuilder, this.chunkRenderer.createRenderData(), column, x, y, z);
     }
 
     public void scheduleRebuildForBlock(int x, int y, int z, boolean important) {

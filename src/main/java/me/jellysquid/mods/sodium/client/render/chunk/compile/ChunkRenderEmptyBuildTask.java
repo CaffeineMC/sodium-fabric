@@ -8,7 +8,7 @@ import java.util.EnumSet;
 public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
     private final ChunkRender<?> render;
 
-    public ChunkRenderEmptyBuildTask(ChunkBuilder builder, ChunkRender<?> render) {
+    public ChunkRenderEmptyBuildTask(ChunkRender<?> render) {
         this.render = render;
     }
 
@@ -26,10 +26,6 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
 
         @Override
         public void performUpload() {
-            if (this.render.isInvalid()) {
-                return;
-            }
-
             ChunkOcclusionData occlusionData = new ChunkOcclusionData();
             occlusionData.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
 
