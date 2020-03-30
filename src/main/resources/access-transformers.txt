@@ -1,0 +1,2 @@
+net/minecraft/client/model/ModelPart$Vertex
+net/minecraft/client/model/ModelPart$Quad

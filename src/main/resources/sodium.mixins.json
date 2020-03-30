@@ -7,14 +7,16 @@
         "defaultRequire": 1
     },
     "client": [
-        "chunk_building.MixinChunkData",
-        "chunk_building.MixinRebuildTask",
-        "chunk_occlusion.MixinChunkOcclusionData",
-        "chunk_rendering.MixinBuiltChunk",
-        "chunk_rendering.MixinBuiltChunkStorage",
+        "buffers.MixinBufferBuilder",
+        "buffers.MixinSpriteTexturedVertexConsumer",
+        "chunk_building.MixinBufferBuilder",
         "chunk_rendering.MixinClientChunkManager",
         "chunk_rendering.MixinVertexFormat",
         "chunk_rendering.MixinWorldRenderer",
+        "client_world_ticking.MixinClientWorld",
+        "entity_rendering.MixinCuboid",
+        "entity_rendering.MixinModelPart",
+        "entity_rendering.MixinModelPart$MixinQuad",
         "models.MixinMultipartBakedModel",
         "options.MixinGameOptions",
         "options.MixinInGameHud",
@@ -26,6 +28,10 @@
         "render.fast_block_cache.MixinChunkRendererRegion",
         "render.reduce_matrix_allocs.MixinMatrixStack",
         "render.static_fov.MixinGameRenderer",
-        "render_layers.MixinRenderLayers"
+        "render_layers.MixinRenderLayers",
+        "fast_mojmath.MixinFrustum",
+        "fast_mojmath.MixinMatrix3f",
+        "fast_mojmath.MixinMatrix4f",
+        "fast_mojmath.MixinMatrixStack"
     ]
 }

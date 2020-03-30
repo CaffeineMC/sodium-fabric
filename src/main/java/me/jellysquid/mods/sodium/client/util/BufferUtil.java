@@ -14,7 +14,7 @@ public class BufferUtil {
 
         int bytes = limit * 4;
 
-        if (buffer.remaining() < bytes) {
+        if (buffer.capacity() - offset < bytes) {
             throw new IllegalArgumentException("Destination buffer is too small");
         }
 

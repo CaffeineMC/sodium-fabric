@@ -2,33 +2,36 @@ package me.jellysquid.mods.sodium.client.render.pipeline;
 
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
-import me.jellysquid.mods.sodium.client.render.LightDataCache;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
+import me.jellysquid.mods.sodium.client.render.light.LightResult;
 import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
-import me.jellysquid.mods.sodium.client.render.light.LightResult;
-import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
-import me.jellysquid.mods.sodium.client.render.quad.*;
 import me.jellysquid.mods.sodium.client.render.mesh.ChunkMeshBuilder;
+import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
+import me.jellysquid.mods.sodium.client.render.quad.ModelQuad;
+import me.jellysquid.mods.sodium.client.render.quad.ModelQuadOrder;
+import me.jellysquid.mods.sodium.client.render.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.render.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.util.ColorUtil;
 import me.jellysquid.mods.sodium.client.util.QuadUtil;
+import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.chunk.ChunkRendererRegion;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockRenderView;
 
 import java.util.List;
 import java.util.Random;
 
 public class ChunkBlockRenderPipeline {
-    private static final Direction[] DIRECTIONS = Direction.values();
-
     private final BlockColors colorMap;
 
     private final LightPipeline smoothLightPipeline;
@@ -41,12 +44,11 @@ public class ChunkBlockRenderPipeline {
     private final ModelQuad cachedQuad = new ModelQuad();
     private final LightResult cachedLightResult = new LightResult();
 
-    public ChunkBlockRenderPipeline(MinecraftClient client, ChunkRendererRegion world, BlockPos origin) {
+    public ChunkBlockRenderPipeline(MinecraftClient client, ChunkSlice world) {
         this.colorMap = client.getBlockColorMap();
 
-        LightDataCache lightDataCache = new LightDataCache(world, origin.getX() - 2, origin.getY() - 2, origin.getZ() - 2);
-        this.smoothLightPipeline = new SmoothLightPipeline(lightDataCache);
-        this.flatLightPipeline = new FlatLightPipeline(lightDataCache);
+        this.smoothLightPipeline = new SmoothLightPipeline(world.getLightDataCache());
+        this.flatLightPipeline = new FlatLightPipeline(world.getLightDataCache());
 
         this.occlusionCache = new BlockOcclusionCache();
 
@@ -65,7 +67,7 @@ public class ChunkBlockRenderPipeline {
 
         boolean rendered = false;
 
-        for (Direction dir : DIRECTIONS) {
+        for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
             random.setSeed(seed);
 
             List<BakedQuad> sided = model.getQuads(state, dir, random);
