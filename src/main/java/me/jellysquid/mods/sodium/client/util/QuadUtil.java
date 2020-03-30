@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.client.util;
 
+import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3i;
 
 public class QuadUtil {
-    private static final Direction[] FACES = Direction.values();
-
     public static final int POSITION_INDEX = 0,
             COLOR_INDEX = 3,
             TEXTURE_INDEX = 4,
@@ -15,11 +15,11 @@ public class QuadUtil {
 
     public static final int VERTEX_SIZE = 8;
 
-    private static final int[] NORMALS = new int[FACES.length];
+    private static final int[] NORMALS = new int[DirectionUtil.ALL_DIRECTIONS.length];
 
     static {
         for (int i = 0; i < NORMALS.length; i++) {
-            NORMALS[i] = QuadUtil.encodeNormal(FACES[i].getVector());
+            NORMALS[i] = QuadUtil.encodeNormal(DirectionUtil.ALL_DIRECTIONS[i].getVector());
         }
     }
 
@@ -28,11 +28,19 @@ public class QuadUtil {
     }
 
     private static int encodeNormal(Vec3i norm) {
-        int normX = encodeNormal(norm.getX());
-        int normY = encodeNormal(norm.getY());
-        int normZ = encodeNormal(norm.getZ());
+        return encodeNormal(norm.getX(), norm.getY(), norm.getZ());
+    }
 
-        return (normX << 16) | (normY << 8) | normZ;
+    public static int encodeNormal(Vector3f dir) {
+        return encodeNormal(dir.getX(), dir.getY(), dir.getZ());
+    }
+
+    public static int encodeNormal(float x, float y, float z) {
+        int normX = encodeNormal(x);
+        int normY = encodeNormal(y);
+        int normZ = encodeNormal(z);
+
+        return (normZ << 16) | (normY << 8) | normX;
     }
 
     private static int encodeNormal(float v) {

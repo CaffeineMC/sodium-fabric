@@ -5,6 +5,7 @@ import sun.misc.Unsafe;
 import java.lang.reflect.Field;
 
 public class UnsafeUtil {
+    private static final boolean USE_UNSAFE = true;
     private static final Unsafe UNSAFE;
 
     public static final long INT_ARRAY_OFFSET;
@@ -20,6 +21,10 @@ public class UnsafeUtil {
     }
 
     private static Unsafe findUnsafe() {
+        if (!USE_UNSAFE) {
+            return null;
+        }
+
         try {
             Field field = Unsafe.class.getDeclaredField("theUnsafe");
             field.setAccessible(true);
