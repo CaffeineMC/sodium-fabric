@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraph;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
+import net.minecraft.client.render.Frustum;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -213,5 +214,9 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public ColumnRender<T> getColumn() {
         return this.column;
+    }
+
+    public boolean isVisible(Frustum frustum, int frame) {
+        return this.getColumn().isVisible(frustum, frame) && frustum.isVisible(this.getBoundingBox());
     }
 }

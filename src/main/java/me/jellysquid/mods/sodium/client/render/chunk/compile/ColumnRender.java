@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
+import net.minecraft.client.render.Frustum;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -10,14 +12,23 @@ public class ColumnRender<T extends ChunkRenderData> {
     private final ChunkRender<T>[] chunks = new ChunkRender[16];
     private final World world;
 
-    private final int x, z;
+    private final int chunkX, chunkZ;
+    private final Box boundingBox;
+
     private int count;
     private boolean chunkPresent;
+    private boolean visible;
+    private int lastFrame = -1;
 
-    public ColumnRender(World world, int x, int z) {
+    public ColumnRender(World world, int chunkX, int chunkZ) {
         this.world = world;
-        this.x = x;
-        this.z = z;
+        this.chunkX = chunkX;
+        this.chunkZ = chunkZ;
+
+        int x = chunkX << 4;
+        int z = chunkZ << 4;
+
+        this.boundingBox = new Box(x, Double.NEGATIVE_INFINITY, z, x + 16.0, Double.POSITIVE_INFINITY, z + 16.0);
 
         this.refreshChunkStatus();
     }
@@ -38,7 +49,7 @@ public class ColumnRender<T extends ChunkRenderData> {
         ChunkRender<T> chunk = this.chunks[y];
 
         if (chunk == null) {
-            chunk = factory.create(this, this.x, y, this.z);
+            chunk = factory.create(this, this.chunkX, y, this.chunkZ);
 
             this.chunks[y] = chunk;
             this.count++;
@@ -58,7 +69,7 @@ public class ColumnRender<T extends ChunkRenderData> {
     public void refreshChunkStatus() {
         // ClientWorld#isChunkLoaded cannot be used as it will always return true
         // We also must specify we don't want an empty chunk
-        this.chunkPresent = this.world.getChunk(this.x, this.z, ChunkStatus.FULL, false) != null;
+        this.chunkPresent = this.world.getChunk(this.chunkX, this.chunkZ, ChunkStatus.FULL, false) != null;
     }
 
     public void setChunkPresent(boolean flag) {
@@ -79,11 +90,22 @@ public class ColumnRender<T extends ChunkRenderData> {
     }
 
     public long getKey() {
-        return ChunkPos.toLong(this.x, this.z);
+        return ChunkPos.toLong(this.chunkX, this.chunkZ);
     }
 
     public boolean isEmpty() {
         return this.count > 0;
+    }
+
+    public boolean isVisible(Frustum frustum, int frame) {
+        if (this.lastFrame == frame) {
+            return this.visible;
+        }
+
+        this.visible = frustum.isVisible(this.boundingBox);
+        this.lastFrame = frame;
+
+        return this.visible;
     }
 
     public interface RenderFactory<T extends ChunkRenderData> {

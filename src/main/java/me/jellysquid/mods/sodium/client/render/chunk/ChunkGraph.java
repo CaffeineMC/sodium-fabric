@@ -104,7 +104,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
                 continue;
             }
 
-            if (cull && !this.isVisible(render, adjRender, adjDir, frustum)) {
+            if (cull && !this.isVisible(render, adjRender, adjDir, frustum, frame)) {
                 continue;
             }
 
@@ -120,7 +120,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
         }
     }
 
-    private boolean isVisible(ChunkRender<T> render, ChunkRender<T> adjRender, Direction dir, Frustum frustum) {
+    private boolean isVisible(ChunkRender<T> render, ChunkRender<T> adjRender, Direction dir, Frustum frustum, int frame) {
         if (render.canCull(dir.getOpposite())) {
             return false;
         }
@@ -129,7 +129,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
             return false;
         }
 
-        return frustum.isVisible(adjRender.getBoundingBox());
+        return adjRender.isVisible(frustum, frame);
     }
 
     private boolean init(BlockPos blockPos, Camera camera, Vec3d cameraPos, Frustum frustum, int frame, boolean spectator) {
