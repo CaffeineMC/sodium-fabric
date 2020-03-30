@@ -177,7 +177,6 @@ public class MixinMatrix3f implements ExtendedMatrix {
         this.a22 = a22;
     }
 
-
     @Override
     public void translate(float x, float y, float z) {
         throw new UnsupportedOperationException();

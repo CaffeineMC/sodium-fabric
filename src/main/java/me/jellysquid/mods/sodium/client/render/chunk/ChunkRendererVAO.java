@@ -1,12 +1,16 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
+import me.jellysquid.mods.sodium.client.render.gl.GlVertexArrayBuffer;
+import me.jellysquid.mods.sodium.client.render.matrix.MatrixUtil;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL11;
 
+import java.nio.FloatBuffer;
+
 public class ChunkRendererVAO extends AbstractChunkRenderer<ChunkRenderDataVAO> {
-    private VertexBufferWithArray lastRender;
+    private GlVertexArrayBuffer lastRender;
 
     @Override
     public ChunkRenderDataVAO createRenderData() {
@@ -21,7 +25,7 @@ public class ChunkRendererVAO extends AbstractChunkRenderer<ChunkRenderDataVAO> 
     @Override
     public void render(ChunkRender<ChunkRenderDataVAO> chunk, RenderLayer layer, MatrixStack matrixStack, double x, double y, double z) {
         ChunkRenderDataVAO data = chunk.getRenderData();
-        VertexBufferWithArray vao = data.getVertexArrayForLayer(layer);
+        GlVertexArrayBuffer vao = data.getVertexArrayForLayer(layer);
 
         if (vao == null) {
             return;
@@ -29,8 +33,12 @@ public class ChunkRendererVAO extends AbstractChunkRenderer<ChunkRenderDataVAO> 
 
         this.beginChunkRender(matrixStack, chunk, x, y, z);
 
+        FloatBuffer modelMatrix = MatrixUtil.intoBuffer(matrixStack.peek().getModel());
+
+        GL11.glLoadMatrixf(modelMatrix);
+
         vao.bind();
-        vao.draw(matrixStack.peek().getModel(), GL11.GL_QUADS);
+        vao.draw(GL11.GL_QUADS);
 
         this.endChunkRender(matrixStack, chunk, x, y, z);
 

@@ -40,6 +40,10 @@ public class GlVertexBuffer extends GlHandle {
         RenderSystem.popMatrix();
     }
 
+    public void drawInline(int mode) {
+        RenderSystem.drawArrays(mode, 0, this.vertexCount);
+    }
+
     public void delete() {
         FUNC.glDeleteBuffers(this.handle());
 
