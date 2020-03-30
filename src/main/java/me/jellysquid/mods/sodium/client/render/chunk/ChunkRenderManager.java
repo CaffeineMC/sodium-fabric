@@ -265,6 +265,8 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
         this.chunkRenderer.begin();
 
+        RenderSystem.pushMatrix();
+
         while (true) {
             if (notTranslucent) {
                 if (!it.hasNext()) {
@@ -278,6 +280,8 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         }
 
         this.chunkRenderer.end();
+
+        RenderSystem.popMatrix();
 
         RenderSystem.clearCurrentColor();
 

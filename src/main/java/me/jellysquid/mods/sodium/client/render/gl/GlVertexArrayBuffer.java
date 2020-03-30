@@ -1,13 +1,10 @@
-package me.jellysquid.mods.sodium.client.render.chunk;
+package me.jellysquid.mods.sodium.client.render.gl;
 
-import me.jellysquid.mods.sodium.client.render.gl.GlVertexArray;
-import me.jellysquid.mods.sodium.client.render.gl.GlVertexBuffer;
 import me.jellysquid.mods.sodium.client.render.vertex.BufferUploadData;
 import me.jellysquid.mods.sodium.client.render.vertex.ExtendedVertexFormat;
 import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.util.math.Matrix4f;
 
-public class VertexBufferWithArray {
+public class GlVertexArrayBuffer {
     private final VertexFormat format;
 
     private final GlVertexBuffer vertexBuffer;
@@ -15,7 +12,7 @@ public class VertexBufferWithArray {
 
     private boolean init = false;
 
-    public VertexBufferWithArray(VertexFormat format, GlVertexBuffer vertexBuffer, GlVertexArray vertexArray) {
+    public GlVertexArrayBuffer(VertexFormat format, GlVertexBuffer vertexBuffer, GlVertexArray vertexArray) {
         this.vertexBuffer = vertexBuffer;
         this.vertexArray = vertexArray;
 
@@ -47,8 +44,8 @@ public class VertexBufferWithArray {
         this.vertexBuffer.unbind();
     }
 
-    public void draw(Matrix4f modelMatrix, int mode) {
-        this.vertexBuffer.draw(modelMatrix, mode);
+    public void draw(int mode) {
+        this.vertexBuffer.drawInline(mode);
     }
 
     public void upload(BufferUploadData buffer) {

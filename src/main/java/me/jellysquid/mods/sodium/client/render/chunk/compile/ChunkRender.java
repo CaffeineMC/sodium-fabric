@@ -161,7 +161,7 @@ public class ChunkRender<T extends ChunkRenderData> {
     }
 
     public boolean isEmpty() {
-        return this.renderData == null;
+        return this.meshInfo.isEmpty();
     }
 
     public void updateCullingState(byte parent, Direction from) {

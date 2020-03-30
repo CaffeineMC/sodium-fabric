@@ -1,35 +1,58 @@
 package me.jellysquid.mods.sodium.mixin.fast_mojmath;
 
 import me.jellysquid.mods.sodium.client.render.matrix.ExtendedMatrix;
+import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.util.math.Quaternion;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
+import java.nio.FloatBuffer;
+
+@SuppressWarnings("PointlessArithmeticExpression")
 @Mixin(Matrix4f.class)
-public class MixinMatrix4f implements ExtendedMatrix {
-    @Shadow protected float a00;
-    @Shadow protected float a01;
-    @Shadow protected float a02;
-    @Shadow protected float a03;
-    @Shadow protected float a10;
-    @Shadow protected float a11;
-    @Shadow protected float a12;
-    @Shadow protected float a13;
-    @Shadow protected float a20;
-    @Shadow protected float a21;
-    @Shadow protected float a22;
-    @Shadow protected float a23;
-    @Shadow protected float a30;
-    @Shadow protected float a31;
-    @Shadow protected float a32;
-    @Shadow protected float a33;
+public abstract class MixinMatrix4f implements ExtendedMatrix {
+    @Shadow
+    protected float a00;
+    @Shadow
+    protected float a01;
+    @Shadow
+    protected float a02;
+    @Shadow
+    protected float a03;
+    @Shadow
+    protected float a10;
+    @Shadow
+    protected float a11;
+    @Shadow
+    protected float a12;
+    @Shadow
+    protected float a13;
+    @Shadow
+    protected float a20;
+    @Shadow
+    protected float a21;
+    @Shadow
+    protected float a22;
+    @Shadow
+    protected float a23;
+    @Shadow
+    protected float a30;
+    @Shadow
+    protected float a31;
+    @Shadow
+    protected float a32;
+    @Shadow
+    protected float a33;
 
     @Override
     public void rotate(Quaternion quaternion) {
-        boolean x = quaternion.getB() != 0.0F;
-        boolean y = quaternion.getC() != 0.0F;
-        boolean z = quaternion.getD() != 0.0F;
+        boolean x = quaternion.getB()!=0.0F;
+        boolean y = quaternion.getC()!=0.0F;
+        boolean z = quaternion.getD()!=0.0F;
 
         // Try to determine if this is a simple rotation on one axis component only
         if (x) {
@@ -119,8 +142,8 @@ public class MixinMatrix4f implements ExtendedMatrix {
         float ta00 = 1.0F - zz;
         float ta11 = 1.0F - zz;
         float zw = z * w;
-        float ta10 = 2.0F * (zw);
-        float ta01 = 2.0F * (-zw);
+        float ta10 = 2.0F * zw;
+        float ta01 = 2.0F * -zw;
 
         float a00 = this.a00 * ta00 + this.a01 * ta10;
         float a01 = this.a00 * ta01 + this.a01 * ta11;
@@ -201,4 +224,61 @@ public class MixinMatrix4f implements ExtendedMatrix {
         this.a33 = this.a30 * x + this.a31 * y + this.a32 * z + this.a33;
     }
 
+    /**
+     * @reason Optimize
+     * @author JellySquid
+     */
+    @Overwrite
+    public void writeToBuffer(FloatBuffer buf) {
+        if (buf.remaining() < 16) {
+            throw new IllegalArgumentException("Not enough space in buffer");
+        }
+
+        if (UnsafeUtil.isAvailable()) {
+            this.writeToBufferUnsafe(buf);
+        } else {
+            this.writeToBufferSafe(buf);
+        }
+    }
+
+    private void writeToBufferUnsafe(FloatBuffer buf) {
+        Unsafe unsafe = UnsafeUtil.instance();
+        long addr = ((DirectBuffer) buf).address();
+
+        unsafe.putFloat(addr +  0, this.a00);
+        unsafe.putFloat(addr +  4, this.a10);
+        unsafe.putFloat(addr +  8, this.a20);
+        unsafe.putFloat(addr + 12, this.a30);
+        unsafe.putFloat(addr + 16, this.a01);
+        unsafe.putFloat(addr + 20, this.a11);
+        unsafe.putFloat(addr + 24, this.a21);
+        unsafe.putFloat(addr + 28, this.a31);
+        unsafe.putFloat(addr + 32, this.a02);
+        unsafe.putFloat(addr + 36, this.a12);
+        unsafe.putFloat(addr + 40, this.a22);
+        unsafe.putFloat(addr + 44, this.a32);
+        unsafe.putFloat(addr + 48, this.a03);
+        unsafe.putFloat(addr + 52, this.a13);
+        unsafe.putFloat(addr + 56, this.a23);
+        unsafe.putFloat(addr + 60, this.a33);
+    }
+
+    private void writeToBufferSafe(FloatBuffer buf) {
+        buf.put(  0, this.a00);
+        buf.put(  1, this.a10);
+        buf.put(  2, this.a20);
+        buf.put(  3, this.a30);
+        buf.put(  4, this.a01);
+        buf.put(  5, this.a11);
+        buf.put(  6, this.a21);
+        buf.put(  7, this.a31);
+        buf.put(  8, this.a02);
+        buf.put(  9, this.a12);
+        buf.put( 10, this.a22);
+        buf.put( 11, this.a32);
+        buf.put( 12, this.a03);
+        buf.put( 13, this.a13);
+        buf.put( 14, this.a23);
+        buf.put( 15, this.a33);
+    }
 }
