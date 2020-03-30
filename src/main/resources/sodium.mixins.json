@@ -13,6 +13,7 @@
         "chunk_rendering.MixinClientChunkManager",
         "chunk_rendering.MixinVertexFormat",
         "chunk_rendering.MixinWorldRenderer",
+        "client_world_ticking.MixinClientWorld",
         "entity_rendering.MixinCuboid",
         "entity_rendering.MixinModelPart",
         "entity_rendering.MixinModelPart$MixinQuad",
