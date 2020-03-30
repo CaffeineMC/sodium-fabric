@@ -8,7 +8,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockRenderView;
+import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
@@ -24,6 +26,7 @@ public class ChunkSlice implements BlockRenderView {
    private static final ChunkSection EMPTY_SECTION = new ChunkSection(0);
 
    protected final int chunkXOffset;
+   protected final int chunkYOffset;
    protected final int chunkZOffset;
 
    protected final int offsetX;
@@ -34,6 +37,9 @@ public class ChunkSlice implements BlockRenderView {
    protected final BlockState[] blockStates;
    protected final World world;
    protected final LightDataCache lightCache;
+
+   protected final ChunkNibbleArray[] blockLightArrays;
+   protected final ChunkNibbleArray[] skyLightArrays;
 
    public static ChunkSlice tryCreate(World world, ChunkSectionPos pos) {
       WorldChunk chunk = world.getChunk(pos.getX(), pos.getZ());
@@ -65,6 +71,7 @@ public class ChunkSlice implements BlockRenderView {
       this.chunks = chunks;
 
       this.chunkXOffset = chunkPos.getX() - CHUNK_MARGIN;
+      this.chunkYOffset = chunkPos.getY() - CHUNK_MARGIN;
       this.chunkZOffset = chunkPos.getZ() - CHUNK_MARGIN;
 
       this.blockStates = new BlockState[BLOCK_LENGTH * BLOCK_LENGTH * BLOCK_LENGTH];
@@ -90,9 +97,15 @@ public class ChunkSlice implements BlockRenderView {
       final int minChunkZ = minZ >> 4;
       final int maxChunkZ = maxZ >> 4;
 
+      this.blockLightArrays = new ChunkNibbleArray[3 * 3 * 3];
+      this.skyLightArrays = new ChunkNibbleArray[3 * 3 * 3];
+
       for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
          for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-            WorldChunk chunk = chunks[chunkX - this.chunkXOffset][chunkZ - this.chunkZOffset];
+            int chunkXLocal = chunkX - this.chunkXOffset;
+            int chunkZLocal = chunkZ - this.chunkZOffset;
+
+            WorldChunk chunk = chunks[chunkXLocal][chunkZLocal];
 
             int aX = Math.max(minX, chunkX << 4);
             int bX = Math.min(maxX, (chunkX + 1) << 4);
@@ -101,6 +114,14 @@ public class ChunkSlice implements BlockRenderView {
             int bZ = Math.min(maxZ, (chunkZ + 1) << 4);
 
             for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+               int chunkYLocal = chunkY - this.chunkYOffset;
+
+               ChunkSectionPos p = ChunkSectionPos.from(chunkX, chunkY, chunkZ);
+               int i = getChunkIndex(chunkXLocal, chunkYLocal, chunkZLocal);
+
+               this.blockLightArrays[i] = this.world.getLightingProvider().get(LightType.BLOCK).getLightArray(p);
+               this.skyLightArrays[i] = this.world.getLightingProvider().get(LightType.SKY).getLightArray(p);
+
                ChunkSection section = getSection(chunk, chunkY);
 
                int aY = Math.max(minY, chunkY << 4);
@@ -176,6 +197,31 @@ public class ChunkSlice implements BlockRenderView {
    @Override
    public int getColor(BlockPos pos, ColorResolver resolver) {
       return this.world.getColor(pos, resolver);
+   }
+
+   @Override
+   public int getLightLevel(LightType type, BlockPos pos) {
+      ChunkNibbleArray[] arrays = type == LightType.SKY ? this.skyLightArrays : this.blockLightArrays;
+
+      int x = pos.getX();
+      int y = pos.getZ();
+      int z = pos.getZ();
+
+      int chunkX = (x >> 4) - this.chunkXOffset;
+      int chunkY = (y >> 4) - this.chunkYOffset;
+      int chunkZ = (z >> 4) - this.chunkZOffset;
+
+      ChunkNibbleArray array = arrays[getChunkIndex(chunkX, chunkY, chunkZ)];
+
+      if (array != null) {
+         return array.get(x & 15, y & 15, z & 15);
+      }
+
+      return 0;
+   }
+
+   private int getChunkIndex(int x, int y, int z) {
+      return (x * 9) + (z * 3) + y;
    }
 
    public LightDataCache getLightDataCache() {
