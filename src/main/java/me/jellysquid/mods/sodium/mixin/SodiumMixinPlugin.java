@@ -42,6 +42,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
         this.enableIf("fast_mojmath", true);
         this.enableIf("buffers", true);
         this.enableIf("entity_rendering", true);
+        this.enableIf("client_world_ticking", true);
     }
 
     private void enableIf(String packageName, boolean condition) {
