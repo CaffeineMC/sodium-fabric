@@ -49,14 +49,13 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
     }
 
     public void calculateVisible(Camera camera, Vec3d cameraPos, BlockPos blockPos, int frame, Frustum frustum, boolean spectator) {
-        int centerX = MathHelper.floor(cameraPos.x) >> 4;
-        int centerZ = MathHelper.floor(cameraPos.z) >> 4;
+        int maxDistBlocks = this.renderDistance * 16;
 
-        this.minChunkX = centerX - this.renderDistance;
-        this.minChunkZ = centerZ - this.renderDistance;
+        this.minChunkX = MathHelper.floor(cameraPos.x - maxDistBlocks) >> 4;
+        this.minChunkZ = MathHelper.floor(cameraPos.z - maxDistBlocks) >> 4;
 
-        this.maxChunkX = centerX + this.renderDistance;
-        this.maxChunkZ = centerZ + this.renderDistance;
+        this.maxChunkX = MathHelper.floor(cameraPos.x + maxDistBlocks) >> 4;
+        this.maxChunkZ = MathHelper.floor(cameraPos.z + maxDistBlocks) >> 4;
 
         this.visibleChunks.clear();
         this.drawableChunks.clear();
