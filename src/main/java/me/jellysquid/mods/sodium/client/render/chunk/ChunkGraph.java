@@ -28,7 +28,7 @@ import java.util.*;
 public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListener {
     private final Long2ObjectOpenHashMap<ColumnRender<T>> columns = new Long2ObjectOpenHashMap<>();
 
-    private final ObjectList<ChunkRender<T>> unloadQueue = new ObjectArrayList<>();
+    private final ObjectList<ColumnRender<T>> unloadQueue = new ObjectArrayList<>();
     private final ObjectList<ChunkRender<T>> visibleChunks = new ObjectArrayList<>();
     private final ObjectList<ChunkRender<T>> drawableChunks = new ObjectArrayList<>();
 
@@ -286,8 +286,12 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
 
     public boolean cleanup() {
         if (!this.unloadQueue.isEmpty()) {
-            for (ChunkRender<T> render : this.unloadQueue) {
-                this.removeRenderer(render);
+            for (ColumnRender<T> column : this.unloadQueue) {
+                for (ChunkRender<T> render : column.getChunks()) {
+                    if (render != null) {
+                        this.removeRenderer(render);
+                    }
+                }
             }
 
             this.unloadQueue.clear();
@@ -328,6 +332,8 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
 
         if (column != null) {
             column.setChunkPresent(false);
+
+            this.unloadQueue.add(column);
         }
     }
 
