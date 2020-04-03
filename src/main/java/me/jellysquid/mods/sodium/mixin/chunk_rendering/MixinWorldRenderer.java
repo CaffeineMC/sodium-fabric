@@ -46,14 +46,6 @@ public abstract class MixinWorldRenderer {
      * @author JellySquid
      */
     @Overwrite
-    private void updateChunks(long limitTime) {
-        this.chunkManager.updateChunks(limitTime);
-    }
-
-    /**
-     * @author JellySquid
-     */
-    @Overwrite
     public boolean isTerrainRenderComplete() {
         return this.chunkManager.isTerrainRenderComplete();
     }
@@ -85,11 +77,6 @@ public abstract class MixinWorldRenderer {
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
         this.chunkManager.update(camera, frustum, hasForcedFrustum, frame, spectator);
-    }
-
-    @Inject(method = "clearChunkRenderers", at = @At("RETURN"))
-    private void onChunkRenderersCleared(CallbackInfo ci) {
-        this.chunkManager.clearRenderers();
     }
 
     @Inject(method = "reload", at = @At("RETURN"))
