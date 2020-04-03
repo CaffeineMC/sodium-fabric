@@ -131,7 +131,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                 builder.end();
 
-                info.addMeshData(layer,  ((CloneableBufferBuilder) builder).copyData());
+                info.addMeshData(layer, ((CloneableBufferBuilder) builder).copyData());
             }
         }
 

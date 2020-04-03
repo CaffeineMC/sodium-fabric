@@ -175,7 +175,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
                 for (int z2 = -this.renderDistance; z2 <= this.renderDistance; ++z2) {
                     ChunkRender<T> chunk = this.getOrCreateRender(new BlockPos(x + (x2 << 4) + 8, y, z + (z2 << 4) + 8));
 
-                    if (chunk==null || !frustum.isVisible(chunk.getBoundingBox())) {
+                    if (chunk == null || !frustum.isVisible(chunk.getBoundingBox())) {
                         continue;
                     }
 

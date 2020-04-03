@@ -1,34 +1,34 @@
 {
-    "package": "me.jellysquid.mods.sodium.mixin",
-    "required": true,
-    "compatibilityLevel": "JAVA_8",
-    "plugin": "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
-    "injectors": {
-        "defaultRequire": 1
-    },
-    "client": [
-        "buffers.MixinBufferBuilder",
-        "buffers.MixinSpriteTexturedVertexConsumer",
-        "chunk_building.MixinBufferBuilder",
-        "chunk_rendering.MixinClientChunkManager",
-        "chunk_rendering.MixinVertexFormat",
-        "chunk_rendering.MixinWorldRenderer",
-        "client_world_ticking.MixinClientWorld",
-        "entity_rendering.MixinCuboid",
-        "entity_rendering.MixinModelPart",
-        "entity_rendering.MixinModelPart$MixinQuad",
-        "models.MixinMultipartBakedModel",
-        "options.MixinGameOptions",
-        "options.MixinInGameHud",
-        "options.MixinRenderLayers",
-        "options.MixinSettingsScreen",
-        "options.MixinWorldRenderer",
-        "pipeline.MixinBakedQuad",
-        "pipeline.MixinBufferBuilder",
-        "render_layers.MixinRenderLayers",
-        "fast_mojmath.MixinFrustum",
-        "fast_mojmath.MixinMatrix3f",
-        "fast_mojmath.MixinMatrix4f",
-        "fast_mojmath.MixinMatrixStack"
-    ]
+  "package": "me.jellysquid.mods.sodium.mixin",
+  "required": true,
+  "compatibilityLevel": "JAVA_8",
+  "plugin": "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "buffers.MixinBufferBuilder",
+    "buffers.MixinSpriteTexturedVertexConsumer",
+    "chunk_building.MixinBufferBuilder",
+    "chunk_rendering.MixinClientChunkManager",
+    "chunk_rendering.MixinVertexFormat",
+    "chunk_rendering.MixinWorldRenderer",
+    "client_world_ticking.MixinClientWorld",
+    "entity_rendering.MixinCuboid",
+    "entity_rendering.MixinModelPart",
+    "entity_rendering.MixinModelPart$MixinQuad",
+    "models.MixinMultipartBakedModel",
+    "options.MixinGameOptions",
+    "options.MixinInGameHud",
+    "options.MixinRenderLayers",
+    "options.MixinSettingsScreen",
+    "options.MixinWorldRenderer",
+    "pipeline.MixinBakedQuad",
+    "pipeline.MixinBufferBuilder",
+    "render_layers.MixinRenderLayers",
+    "fast_mojmath.MixinFrustum",
+    "fast_mojmath.MixinMatrix3f",
+    "fast_mojmath.MixinMatrix4f",
+    "fast_mojmath.MixinMatrixStack"
+  ]
 }

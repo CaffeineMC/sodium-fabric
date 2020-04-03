@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.pipeline;
 
 import com.google.common.collect.ImmutableList;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.render.mesh.ChunkMeshBuilder;
+import me.jellysquid.mods.sodium.client.render.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.util.BufferUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;

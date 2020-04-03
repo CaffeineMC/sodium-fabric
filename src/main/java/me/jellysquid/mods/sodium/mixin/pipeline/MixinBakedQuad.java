@@ -20,10 +20,12 @@ public class MixinBakedQuad implements ModelQuadView {
     @Final
     protected int[] vertexData;
 
-    @Shadow @Final
+    @Shadow
+    @Final
     protected int colorIndex;
 
-    @Shadow @Final
+    @Shadow
+    @Final
     protected Direction face;
 
     private int cachedFlags;

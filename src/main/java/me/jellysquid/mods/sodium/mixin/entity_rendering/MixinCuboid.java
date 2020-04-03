@@ -8,7 +8,8 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(ModelPart.Cuboid.class)
 public class MixinCuboid implements ExtendedCuboid {
-    @Shadow @Final
+    @Shadow
+    @Final
     private ModelPart.Quad[] sides;
 
     @Override
