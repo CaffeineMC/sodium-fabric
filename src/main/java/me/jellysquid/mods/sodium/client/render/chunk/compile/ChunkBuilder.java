@@ -78,7 +78,8 @@ public class ChunkBuilder {
         for (Thread thread : this.threads) {
             try {
                 thread.join();
-            } catch (InterruptedException ignored) { }
+            } catch (InterruptedException ignored) {
+            }
         }
 
         this.threads.clear();
@@ -174,7 +175,8 @@ public class ChunkBuilder {
                 synchronized (ChunkBuilder.this.jobNotifier) {
                     try {
                         ChunkBuilder.this.jobNotifier.wait();
-                    } catch (InterruptedException ignored) { }
+                    } catch (InterruptedException ignored) {
+                    }
                 }
             }
 

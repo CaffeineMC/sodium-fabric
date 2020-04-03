@@ -17,21 +17,29 @@ import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
 public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements DirectVertexConsumer {
-    @Shadow private int elementOffset;
+    @Shadow
+    private int elementOffset;
 
-    @Shadow public abstract void next();
+    @Shadow
+    public abstract void next();
 
-    @Shadow private boolean field_21594; // canUseVertexPath
+    @Shadow
+    private boolean field_21594; // canUseVertexPath
 
-    @Shadow private boolean field_21595; // hasOverlay
+    @Shadow
+    private boolean field_21595; // hasOverlay
 
-    @Shadow private ByteBuffer buffer;
+    @Shadow
+    private ByteBuffer buffer;
 
-    @Shadow private VertexFormat format;
+    @Shadow
+    private VertexFormat format;
 
-    @Shadow private int vertexCount;
+    @Shadow
+    private int vertexCount;
 
-    @Shadow protected abstract void grow(int size);
+    @Shadow
+    protected abstract void grow(int size);
 
     /**
      * @reason Use faster implementation which works directly with Unsafe

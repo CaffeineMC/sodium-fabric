@@ -13,7 +13,8 @@ import java.util.Deque;
 @SuppressWarnings("ConstantConditions")
 @Mixin(MatrixStack.class)
 public class MixinMatrixStack {
-    @Shadow @Final
+    @Shadow
+    @Final
     private Deque<MatrixStack.Entry> stack;
 
     /**

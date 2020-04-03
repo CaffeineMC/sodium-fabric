@@ -50,9 +50,9 @@ public abstract class MixinMatrix4f implements ExtendedMatrix {
 
     @Override
     public void rotate(Quaternion quaternion) {
-        boolean x = quaternion.getB()!=0.0F;
-        boolean y = quaternion.getC()!=0.0F;
-        boolean z = quaternion.getD()!=0.0F;
+        boolean x = quaternion.getB() != 0.0F;
+        boolean y = quaternion.getC() != 0.0F;
+        boolean z = quaternion.getD() != 0.0F;
 
         // Try to determine if this is a simple rotation on one axis component only
         if (x) {
@@ -245,9 +245,9 @@ public abstract class MixinMatrix4f implements ExtendedMatrix {
         Unsafe unsafe = UnsafeUtil.instance();
         long addr = ((DirectBuffer) buf).address();
 
-        unsafe.putFloat(addr +  0, this.a00);
-        unsafe.putFloat(addr +  4, this.a10);
-        unsafe.putFloat(addr +  8, this.a20);
+        unsafe.putFloat(addr + 0, this.a00);
+        unsafe.putFloat(addr + 4, this.a10);
+        unsafe.putFloat(addr + 8, this.a20);
         unsafe.putFloat(addr + 12, this.a30);
         unsafe.putFloat(addr + 16, this.a01);
         unsafe.putFloat(addr + 20, this.a11);
@@ -264,21 +264,21 @@ public abstract class MixinMatrix4f implements ExtendedMatrix {
     }
 
     private void writeToBufferSafe(FloatBuffer buf) {
-        buf.put(  0, this.a00);
-        buf.put(  1, this.a10);
-        buf.put(  2, this.a20);
-        buf.put(  3, this.a30);
-        buf.put(  4, this.a01);
-        buf.put(  5, this.a11);
-        buf.put(  6, this.a21);
-        buf.put(  7, this.a31);
-        buf.put(  8, this.a02);
-        buf.put(  9, this.a12);
-        buf.put( 10, this.a22);
-        buf.put( 11, this.a32);
-        buf.put( 12, this.a03);
-        buf.put( 13, this.a13);
-        buf.put( 14, this.a23);
-        buf.put( 15, this.a33);
+        buf.put(0, this.a00);
+        buf.put(1, this.a10);
+        buf.put(2, this.a20);
+        buf.put(3, this.a30);
+        buf.put(4, this.a01);
+        buf.put(5, this.a11);
+        buf.put(6, this.a21);
+        buf.put(7, this.a31);
+        buf.put(8, this.a02);
+        buf.put(9, this.a12);
+        buf.put(10, this.a22);
+        buf.put(11, this.a32);
+        buf.put(12, this.a03);
+        buf.put(13, this.a13);
+        buf.put(14, this.a23);
+        buf.put(15, this.a33);
     }
 }

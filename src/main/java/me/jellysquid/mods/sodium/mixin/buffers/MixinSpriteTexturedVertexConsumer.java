@@ -10,9 +10,13 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(SpriteTexturedVertexConsumer.class)
 public class MixinSpriteTexturedVertexConsumer implements DirectVertexConsumer {
-    @Shadow @Final private VertexConsumer parent;
+    @Shadow
+    @Final
+    private VertexConsumer parent;
 
-    @Shadow @Final private Sprite sprite;
+    @Shadow
+    @Final
+    private Sprite sprite;
 
     @Override
     public void vertex(float x, float y, float z, int color, float u, float v, int overlay, int light, int norm) {
