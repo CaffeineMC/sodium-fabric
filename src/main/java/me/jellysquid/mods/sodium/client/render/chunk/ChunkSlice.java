@@ -127,9 +127,9 @@ public class ChunkSlice implements BlockRenderView {
                     int aY = Math.max(minY, chunkY << 4);
                     int bY = Math.min(maxY, (chunkY + 1) << 4);
 
-                    for (int x = aX; x < bX; x++) {
-                        for (int y = aY; y < bY; y++) {
-                            for (int z = aZ; z < bZ; z++) {
+                    for (int y = aY; y < bY; y++) {
+                        for (int z = aZ; z < bZ; z++) {
+                            for (int x = aX; x < bX; x++) {
                                 this.blockStates[this.getIndex(x, y, z)] = section.getBlockState(x & 15, y & 15, z & 15);
                             }
                         }
@@ -160,7 +160,7 @@ public class ChunkSlice implements BlockRenderView {
     }
 
     protected int getIndex(int x, int y, int z) {
-        return ((z - this.offsetZ) * BLOCK_LENGTH * BLOCK_LENGTH) + ((y - this.offsetY) * BLOCK_LENGTH) + x - this.offsetX;
+        return ((y - this.offsetY) * BLOCK_LENGTH * BLOCK_LENGTH) + ((z - this.offsetZ) * BLOCK_LENGTH) + x - this.offsetX;
     }
 
     @Override
@@ -221,7 +221,7 @@ public class ChunkSlice implements BlockRenderView {
     }
 
     private int getChunkIndex(int x, int y, int z) {
-        return (x * 9) + (z * 3) + y;
+        return (y * CHUNK_LENGTH * CHUNK_LENGTH) + (z * CHUNK_LENGTH) + x;
     }
 
     public LightDataCache getLightDataCache() {
