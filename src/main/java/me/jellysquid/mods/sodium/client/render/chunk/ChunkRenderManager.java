@@ -22,14 +22,12 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ChunkRenderManager<T extends ChunkRenderData> {
     private final MinecraftClient client;
 
-    private final ObjectList<ChunkRender<T>> chunksToRebuild = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
     private final ChunkRenderer<T> chunkRenderer;
 
@@ -68,8 +66,6 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         this.renderDistance = this.client.options.viewDistance;
 
         if (world == null) {
-            this.chunksToRebuild.clear();
-
             if (this.chunkGraph != null) {
                 this.chunkGraph.reset();
                 this.chunkGraph = null;
@@ -101,34 +97,8 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         this.isRenderGraphDirty = true;
     }
 
-    public void updateChunks(long limitTime) {
-        this.isRenderGraphDirty |= this.chunkBuilder.upload();
-        this.isRenderGraphDirty |= this.chunkGraph.cleanup();
-
-        int limit = this.chunkBuilder.getBudget();
-        int uploaded = 0;
-
-        if (!this.chunksToRebuild.isEmpty()) {
-            Iterator<ChunkRender<T>> iterator = this.chunksToRebuild.iterator();
-
-            while (uploaded < limit && iterator.hasNext()) {
-                ChunkRender<T> chunk = iterator.next();
-
-                if (chunk.needsImportantRebuild()) {
-                    chunk.rebuildImmediately();
-                } else {
-                    chunk.rebuild();
-                }
-
-                iterator.remove();
-
-                ++uploaded;
-            }
-        }
-    }
-
     public boolean isTerrainRenderComplete() {
-        return this.chunksToRebuild.isEmpty() && this.chunkBuilder.isEmpty();
+        return this.chunkBuilder.isEmpty();
     }
 
     public void update(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
@@ -154,7 +124,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
 
-        this.isRenderGraphDirty = this.isRenderGraphDirty || !this.chunksToRebuild.isEmpty() ||
+        this.isRenderGraphDirty = this.isRenderGraphDirty ||
                 cameraPos.x != this.lastCameraX || cameraPos.y != this.lastCameraY || cameraPos.z != this.lastCameraZ ||
                 pitch != this.lastCameraPitch || yaw != this.lastCameraYaw;
 
@@ -182,12 +152,12 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
         this.client.getProfiler().swap("rebuildNear");
 
-        this.performRebuilds(blockPos);
+        this.updateChunks(blockPos);
 
         this.client.getProfiler().pop();
     }
 
-    private void performRebuilds(BlockPos blockPos) {
+    private void updateChunks(BlockPos blockPos) {
         List<CompletableFuture<ChunkRenderUploadTask>> futures = new ArrayList<>();
 
         int budget = this.chunkBuilder.getBudget();
@@ -215,7 +185,10 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             }
         }
 
-        // TODO: perform an upload on the main-thread when any chunk is completed to reduce idle
+        // Try to complete some other work on the main thread while we wait for rebuilds to complete
+        this.isRenderGraphDirty |= this.chunkBuilder.upload();
+        this.isRenderGraphDirty |= this.chunkGraph.cleanup();
+
         for (CompletableFuture<ChunkRenderUploadTask> future : futures) {
             ChunkRenderUploadTask task = future.join();
 
@@ -292,10 +265,6 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
     public void renderChunkDebugInfo(Camera camera) {
         // TODO: re-implement
-    }
-
-    public void clearRenderers() {
-        this.chunksToRebuild.clear();
     }
 
     public void reload() {
