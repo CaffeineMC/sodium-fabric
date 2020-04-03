@@ -334,4 +334,8 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
     private ColumnRender<T> getRenderColumn(int x, int z) {
         return this.columns.get(ChunkPos.toLong(x, z));
     }
+
+    public void setRenderDistance(int renderDistance) {
+        this.renderDistance = renderDistance;
+    }
 }

@@ -277,6 +277,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
         if (this.chunkGraph != null) {
             this.chunkGraph.reset();
+            this.chunkGraph.setRenderDistance(this.renderDistance);
         }
 
         this.chunkBuilder.reset();
