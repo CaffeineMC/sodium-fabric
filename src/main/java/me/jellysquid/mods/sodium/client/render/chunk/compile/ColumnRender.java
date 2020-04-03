@@ -108,6 +108,10 @@ public class ColumnRender<T extends ChunkRenderData> {
         return this.visible;
     }
 
+    public ChunkRender<T>[] getChunks() {
+        return this.chunks;
+    }
+
     public interface RenderFactory<T extends ChunkRenderData> {
         ChunkRender<T> create(ColumnRender<T> column, int x, int y, int z);
     }
