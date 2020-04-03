@@ -204,7 +204,7 @@ public class ChunkSlice implements BlockRenderView {
       ChunkNibbleArray[] arrays = type == LightType.SKY ? this.skyLightArrays : this.blockLightArrays;
 
       int x = pos.getX();
-      int y = pos.getZ();
+      int y = pos.getY();
       int z = pos.getZ();
 
       int chunkX = (x >> 4) - this.chunkXOffset;
