@@ -60,8 +60,8 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
         BlockPos.Mutable pos = new BlockPos.Mutable();
 
-        for (int z = minZ; z < maxZ; z++) {
-            for (int y = minY; y < maxY; y++) {
+        for (int y = minY; y < maxY; y++) {
+            for (int z = minZ; z < maxZ; z++) {
                 for (int x = minX; x < maxX; x++) {
                     BlockState blockState = this.region.getBlockState(x, y, z);
                     Block block = blockState.getBlock();
