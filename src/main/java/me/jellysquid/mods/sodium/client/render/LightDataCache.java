@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
@@ -78,7 +79,10 @@ public class LightDataCache {
         }
 
         int lm = WorldRenderer.getLightmapCoordinates(this.world, state, this.pos);
-        boolean op = state.getOpacity(this.world, this.pos) == 0;
+
+        // FIX: Fluids are always non-translucent despite blocking light, so we need a special check here in order to
+        // solve lighting issues underwater.
+        boolean op = state.getFluidState() != Fluids.EMPTY.getDefaultState() || state.getOpacity(this.world, this.pos) == 0;
         boolean fo = state.isFullOpaque(this.world, this.pos);
 
         return packAO(ao) | packLM(lm) | packOP(op) | packFO(fo) | (1L << 60);
