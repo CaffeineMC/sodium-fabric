@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.LightDataCache;
+import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.fluid.FluidState;
@@ -200,9 +201,10 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
         return this.chunks[x][z].getBlockEntity(pos, type);
     }
 
+    // FIX: Do not access state on the main thread
     @Override
     public int getColor(BlockPos pos, ColorResolver resolver) {
-        return resolver.getColor(this.biomeAccess.getBiome(pos), pos.getX(), pos.getZ());
+        return ((ClientWorldExtended) this.world).getColor(pos, resolver, this.biomeAccess);
     }
 
     @Override
@@ -234,6 +236,7 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
         return this.lightCache;
     }
 
+    // FIX: Do not access state on the main thread
     @Override
     public Biome getBiomeForNoiseGen(int x, int y, int z) {
         // Coordinates are in biome space!
