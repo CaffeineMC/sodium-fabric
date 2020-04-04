@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
-import me.jellysquid.mods.sodium.client.render.chunk.CloneableBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.mesh.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import net.minecraft.block.Block;
@@ -131,7 +130,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                 builder.end();
 
-                meshInfo.addMeshData(layer, ((CloneableBufferBuilder) builder).copyData());
+                meshInfo.addMeshData(layer, builder.popData());
             }
         }
 

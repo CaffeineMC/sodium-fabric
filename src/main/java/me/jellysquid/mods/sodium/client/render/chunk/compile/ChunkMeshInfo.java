@@ -1,16 +1,20 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.render.vertex.BufferUploadData;
+import me.jellysquid.mods.sodium.client.util.BufferUtil;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -78,8 +82,11 @@ public class ChunkMeshInfo {
             }
         }
 
-        public void addMeshData(RenderLayer layer, BufferUploadData data) {
-            if (this.layers.putIfAbsent(layer, new LayerMeshInfo(layer, data)) != null) {
+        public void addMeshData(RenderLayer layer, Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> params) {
+            ByteBuffer data = BufferUtil.copyAsNative(params.getSecond());
+            BufferUploadData upload = new BufferUploadData(data, layer.getVertexFormat());
+
+            if (this.layers.putIfAbsent(layer, new LayerMeshInfo(layer, upload)) != null) {
                 throw new IllegalArgumentException("Mesh already added");
             }
         }

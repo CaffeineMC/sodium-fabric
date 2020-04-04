@@ -1,13 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.fast_mojmath;
 
-import me.jellysquid.mods.sodium.client.render.matrix.ExtendedMatrix;
+import me.jellysquid.mods.sodium.client.render.matrix.Matrix3fExtended;
 import net.minecraft.client.util.math.Matrix3f;
 import net.minecraft.util.math.Quaternion;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(Matrix3f.class)
-public class MixinMatrix3f implements ExtendedMatrix {
+public class MixinMatrix3f implements Matrix3fExtended {
     @Shadow
     protected float a00;
     @Shadow
@@ -184,10 +184,5 @@ public class MixinMatrix3f implements ExtendedMatrix {
         this.a20 = a20;
         this.a21 = a21;
         this.a22 = a22;
-    }
-
-    @Override
-    public void translate(float x, float y, float z) {
-        throw new UnsupportedOperationException();
     }
 }

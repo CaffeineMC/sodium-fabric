@@ -33,7 +33,7 @@ public class ChunkRendererVAO extends AbstractChunkRenderer<ChunkRenderDataVAO> 
 
         this.beginChunkRender(matrixStack, chunk, x, y, z);
 
-        FloatBuffer modelMatrix = MatrixUtil.intoBuffer(matrixStack.peek().getModel());
+        FloatBuffer modelMatrix = MatrixUtil.writeToBuffer(matrixStack.peek().getModel());
 
         GL11.glLoadMatrixf(modelMatrix);
 

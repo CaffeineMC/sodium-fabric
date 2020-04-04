@@ -1,5 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.model;
 
-public interface FlattenedModelPartQuad {
+public interface ModelPartQuadExtended {
     float[] getFlattenedData();
 }
