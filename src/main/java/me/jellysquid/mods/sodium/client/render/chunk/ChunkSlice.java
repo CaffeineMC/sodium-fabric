@@ -10,13 +10,16 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeAccess;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.ColorResolver;
 
-public class ChunkSlice implements BlockRenderView {
+public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
     private static final int BLOCK_MARGIN = 1;
     private static final int CHUNK_MARGIN = MathHelper.roundUp(1, 16) >> 4;
 
@@ -25,21 +28,23 @@ public class ChunkSlice implements BlockRenderView {
 
     private static final ChunkSection EMPTY_SECTION = new ChunkSection(0);
 
-    protected final int chunkXOffset;
-    protected final int chunkYOffset;
-    protected final int chunkZOffset;
+    private final int chunkXOffset;
+    private final int chunkYOffset;
+    private final int chunkZOffset;
 
-    protected final int offsetX;
-    protected final int offsetY;
-    protected final int offsetZ;
+    private final int offsetX;
+    private final int offsetY;
+    private final int offsetZ;
 
-    protected final WorldChunk[][] chunks;
-    protected final BlockState[] blockStates;
-    protected final World world;
-    protected final LightDataCache lightCache;
+    private final WorldChunk[][] chunks;
+    private final BlockState[] blockStates;
+    private final World world;
+    private final LightDataCache lightCache;
 
-    protected final ChunkNibbleArray[] blockLightArrays;
-    protected final ChunkNibbleArray[] skyLightArrays;
+    private final ChunkNibbleArray[] blockLightArrays;
+    private final ChunkNibbleArray[] skyLightArrays;
+    
+    private final BiomeAccess biomeAccess;
 
     public static ChunkSlice tryCreate(World world, ChunkSectionPos pos) {
         WorldChunk chunk = world.getChunk(pos.getX(), pos.getZ());
@@ -139,6 +144,7 @@ public class ChunkSlice implements BlockRenderView {
         }
 
         this.lightCache = new LightDataCache(this, minX, minY, minZ, BLOCK_LENGTH, BLOCK_LENGTH, BLOCK_LENGTH);
+        this.biomeAccess = new BiomeAccess(this, this.world.getSeed(), this.world.getDimension().getType().getBiomeAccessType());
     }
 
     private static ChunkSection getSection(WorldChunk chunk, int y) {
@@ -155,7 +161,7 @@ public class ChunkSlice implements BlockRenderView {
         return section;
     }
 
-    protected final int getIndex(BlockPos pos) {
+    private final int getIndex(BlockPos pos) {
         return this.getIndex(pos.getX(), pos.getY(), pos.getZ());
     }
 
@@ -196,7 +202,7 @@ public class ChunkSlice implements BlockRenderView {
 
     @Override
     public int getColor(BlockPos pos, ColorResolver resolver) {
-        return this.world.getColor(pos, resolver);
+        return resolver.getColor(this.biomeAccess.getBiome(pos), pos.getX(), pos.getZ());
     }
 
     @Override
@@ -226,5 +232,21 @@ public class ChunkSlice implements BlockRenderView {
 
     public LightDataCache getLightDataCache() {
         return this.lightCache;
+    }
+
+    @Override
+    public Biome getBiomeForNoiseGen(int x, int y, int z) {
+        // Coordinates are in biome space!
+        // [VanillaCopy] WorldView#getBiomeForNoiseGen(int, int, int)
+        int x2 = (x >> 2) - this.chunkXOffset;
+        int z2 = (z >> 2) - this.chunkZOffset;
+
+        Chunk chunk = this.chunks[x2][z2];
+
+        if (chunk != null && chunk.getBiomeArray() != null) {
+            return chunk.getBiomeArray().getBiomeForNoiseGen(x, y, z);
+        }
+
+        return this.world.getGeneratorStoredBiome(x, y, z);
     }
 }
