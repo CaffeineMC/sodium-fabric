@@ -14,7 +14,6 @@ import java.nio.ByteBuffer;
 public class GlVertexBuffer extends GlHandle {
     private static final VertexBufferFunctions FUNC = VertexBufferFunctions.pickBest(GL.getCapabilities());
 
-    private VertexFormat vertexFormat;
     private int vertexCount = 0;
 
     private final int target;
@@ -59,7 +58,6 @@ public class GlVertexBuffer extends GlHandle {
         VertexFormat format = data.format;
 
         this.vertexCount = buffer.remaining() / format.getVertexSize();
-        this.vertexFormat = format;
 
         FUNC.glBindBuffer(this.target, this.handle());
         FUNC.glBufferData(this.target, buffer, GL15.GL_STATIC_DRAW);

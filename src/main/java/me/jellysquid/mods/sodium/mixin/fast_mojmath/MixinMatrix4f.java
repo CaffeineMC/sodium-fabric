@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.fast_mojmath;
 
-import me.jellysquid.mods.sodium.client.render.matrix.ExtendedMatrix;
+import me.jellysquid.mods.sodium.client.render.matrix.Matrix4fExtended;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.util.math.Quaternion;
@@ -14,7 +14,7 @@ import java.nio.FloatBuffer;
 
 @SuppressWarnings("PointlessArithmeticExpression")
 @Mixin(Matrix4f.class)
-public abstract class MixinMatrix4f implements ExtendedMatrix {
+public abstract class MixinMatrix4f implements Matrix4fExtended {
     @Shadow
     protected float a00;
     @Shadow

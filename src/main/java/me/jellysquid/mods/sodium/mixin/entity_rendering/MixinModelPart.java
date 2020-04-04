@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.entity_rendering;
 
 import it.unimi.dsi.fastutil.objects.ObjectList;
-import me.jellysquid.mods.sodium.client.render.model.ExtendedCuboid;
-import me.jellysquid.mods.sodium.client.render.model.FlattenedModelPartQuad;
+import me.jellysquid.mods.sodium.client.render.model.ModelPartCuboidExtended;
+import me.jellysquid.mods.sodium.client.render.model.ModelPartQuadExtended;
 import me.jellysquid.mods.sodium.client.render.pipeline.DirectVertexConsumer;
 import me.jellysquid.mods.sodium.client.util.ColorUtil;
 import me.jellysquid.mods.sodium.client.util.QuadUtil;
@@ -49,14 +49,14 @@ public class MixinModelPart {
         final Vector4f posVec = this.posVec;
 
         for (ModelPart.Cuboid cuboid : this.cuboids) {
-            for (ModelPart.Quad quad : ((ExtendedCuboid) cuboid).getQuads()) {
+            for (ModelPart.Quad quad : ((ModelPartCuboidExtended) cuboid).getQuads()) {
                 Vector3f dir = quad.direction;
                 normVec.set(dir.getX(), dir.getY(), dir.getZ());
                 normVec.transform(normalMatrix);
 
                 int norm = QuadUtil.encodeNormal(normVec);
 
-                final float[] data = ((FlattenedModelPartQuad) quad).getFlattenedData();
+                final float[] data = ((ModelPartQuadExtended) quad).getFlattenedData();
 
                 int k = 0;
 
@@ -85,12 +85,12 @@ public class MixinModelPart {
         final Vector4f posVec = this.posVec;
 
         for (ModelPart.Cuboid cuboid : this.cuboids) {
-            for (ModelPart.Quad quad : ((ExtendedCuboid) cuboid).getQuads()) {
+            for (ModelPart.Quad quad : ((ModelPartCuboidExtended) cuboid).getQuads()) {
                 Vector3f dir = quad.direction;
                 normVec.set(dir.getX(), dir.getY(), dir.getZ());
                 normVec.transform(normalMatrix);
 
-                final float[] data = ((FlattenedModelPartQuad) quad).getFlattenedData();
+                final float[] data = ((ModelPartQuadExtended) quad).getFlattenedData();
 
                 int k = 0;
 
@@ -112,7 +112,7 @@ public class MixinModelPart {
     }
 
     @Mixin(ModelPart.Quad.class)
-    private static class MixinQuad implements FlattenedModelPartQuad {
+    private static class MixinQuad implements ModelPartQuadExtended {
         private float[] data;
 
         @Inject(method = "<init>", at = @At("RETURN"))
