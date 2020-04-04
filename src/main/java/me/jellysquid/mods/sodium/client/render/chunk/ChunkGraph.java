@@ -152,16 +152,15 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
                 openFaces.remove(direction);
             }
 
-            if (openFaces.isEmpty() && !spectator) {
-                this.visibleChunks.add(node);
-            } else {
+            if (!openFaces.isEmpty() || spectator) {
                 if (spectator && this.world.getBlockState(blockPos).isFullOpaque(this.world, blockPos)) {
                     cull = false;
                 }
 
                 node.setRebuildFrame(frame);
-                queue.enqueue(node);
             }
+
+            queue.enqueue(node);
         } else {
             // Player is out-of-bounds
             int y = blockPos.getY() > 0 ? 248 : 8;
@@ -252,7 +251,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
             for (int y = 0; y < 16; y++) {
                 for (int z = 0; z < 16; z++) {
                     BlockState state = section.getBlockState(x, y, z);
-                    mpos.set(x, y, z);
+                    mpos.set(x + pos.getX(), y + pos.getY(), z + pos.getZ());
 
                     if (state.isFullOpaque(this.world, mpos)) {
                         occlusionBuilder.markClosed(mpos);
