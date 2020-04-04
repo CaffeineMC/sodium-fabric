@@ -3,12 +3,15 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraph;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
+import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import net.minecraft.client.render.Frustum;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ChunkRender<T extends ChunkRenderData> {
@@ -218,5 +221,19 @@ public class ChunkRender<T extends ChunkRenderData> {
 
     public boolean isVisible(Frustum frustum, int frame) {
         return this.getColumn().isVisible(frustum, frame) && frustum.isVisible(this.getBoundingBox());
+    }
+
+    public void tickTextures() {
+        List<Sprite> sprites = this.getMeshInfo().getAnimatedSprites();
+
+        if (!sprites.isEmpty()) {
+            int size = sprites.size();
+
+            // We would like to avoid allocating an iterator here
+            // noinspection ForLoopReplaceableByForEach
+            for (int i = 0; i < size; i++) {
+                SpriteUtil.ensureSpriteReady(sprites.get(i));
+            }
+        }
     }
 }

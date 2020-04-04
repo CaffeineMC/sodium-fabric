@@ -42,7 +42,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
     @Override
     public ChunkRenderUploadTask performBuild(VertexBufferCache buffers) {
-        ChunkMeshInfo.Builder info = new ChunkMeshInfo.Builder();
+        ChunkMeshInfo.Builder meshInfo = new ChunkMeshInfo.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
         Vector3f translation = new Vector3f();
@@ -83,7 +83,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                         translation.set(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
 
-                        this.pipeline.renderBlock(blockState, pos, this.region, translation, builder, true);
+                        this.pipeline.renderBlock(meshInfo, blockState, pos, this.region, translation, builder, true);
                     }
 
                     FluidState fluidState = block.getFluidState(blockState);
@@ -97,7 +97,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                             builder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
                         }
 
-                        this.fallbackPipeline.renderFluid(pos, this.region, builder, fluidState);
+                        this.pipeline.renderFluid(meshInfo, pos, this.region, builder, fluidState);
                     }
 
                     if (block.hasBlockEntity()) {
@@ -107,7 +107,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                             BlockEntityRenderer<BlockEntity> renderer = BlockEntityRenderDispatcher.INSTANCE.get(entity);
 
                             if (renderer != null) {
-                                info.addBlockEntity(entity, !renderer.rendersOutsideBoundingBox(entity));
+                                meshInfo.addBlockEntity(entity, !renderer.rendersOutsideBoundingBox(entity));
                             }
                         }
                     }
@@ -131,13 +131,13 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                 builder.end();
 
-                info.addMeshData(layer, ((CloneableBufferBuilder) builder).copyData());
+                meshInfo.addMeshData(layer, ((CloneableBufferBuilder) builder).copyData());
             }
         }
 
-        info.setOcclusionData(occluder.build());
+        meshInfo.setOcclusionData(occluder.build());
 
-        return new Result(this.render, info.build());
+        return new Result(this.render, meshInfo.build());
     }
 
     public static class Result extends ChunkRenderUploadTask {
