@@ -21,6 +21,7 @@ public class SodiumGameOptions {
         public boolean useVAOs = true;
         public boolean useLargeBuffers = true;
         public boolean useFogChunkCulling = true;
+        public boolean animateOnlyVisibleTextures = true;
     }
 
     public static class QualitySettings {

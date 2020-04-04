@@ -29,6 +29,10 @@
     "fast_mojmath.MixinFrustum",
     "fast_mojmath.MixinMatrix3f",
     "fast_mojmath.MixinMatrix4f",
-    "fast_mojmath.MixinMatrixStack"
+    "fast_mojmath.MixinMatrixStack",
+    "textures.MixinEntityRenderDispatcher",
+    "textures.MixinInGameOverlayRenderer",
+    "textures.MixinItemRenderer",
+    "textures.MixinSprite"
   ]
 }

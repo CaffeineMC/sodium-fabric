@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.pipeline;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
 import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
@@ -56,7 +57,7 @@ public class ChunkBlockRenderPipeline {
         this.cachedColors.defaultReturnValue(Integer.MAX_VALUE);
     }
 
-    public boolean renderModel(BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, Vector3f translation, VertexConsumer builder, boolean cull, Random random, long seed) {
+    public boolean renderModel(ChunkMeshInfo.Builder meshInfo, BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, Vector3f translation, VertexConsumer builder, boolean cull, Random random, long seed) {
         LightPipeline lighter = this.getLightPipeline(state, model);
         lighter.reset();
 
@@ -77,7 +78,7 @@ public class ChunkBlockRenderPipeline {
             }
 
             if (!cull || this.occlusionCache.shouldDrawSide(state, world, pos, dir)) {
-                this.renderQuadList(world, state, pos, lighter, translation, builder, sided, dir);
+                this.renderQuadList(meshInfo, world, state, pos, lighter, translation, builder, sided, dir);
 
                 rendered = true;
             }
@@ -88,7 +89,7 @@ public class ChunkBlockRenderPipeline {
         List<BakedQuad> all = model.getQuads(state, null, random);
 
         if (!all.isEmpty()) {
-            this.renderQuadList(world, state, pos, lighter, translation, builder, all, null);
+            this.renderQuadList(meshInfo, world, state, pos, lighter, translation, builder, all, null);
 
             rendered = true;
         }
@@ -96,12 +97,14 @@ public class ChunkBlockRenderPipeline {
         return rendered;
     }
 
-    private void renderQuadList(BlockRenderView world, BlockState state, BlockPos pos, LightPipeline lighter, Vector3f translation, VertexConsumer builder, List<BakedQuad> quads, Direction dir) {
+    private void renderQuadList(ChunkMeshInfo.Builder meshInfo, BlockRenderView world, BlockState state, BlockPos pos, LightPipeline lighter, Vector3f translation, VertexConsumer builder, List<BakedQuad> quads, Direction dir) {
         for (BakedQuad quad : quads) {
             LightResult light = this.cachedLightResult;
             lighter.apply((ModelQuadView) quad, pos, light);
 
             this.renderQuad(world, state, pos, builder, translation, (ModelQuadView) quad, light.br, light.lm);
+
+            meshInfo.addSprite(((ModelQuadView) quad).getSprite());
         }
     }
 

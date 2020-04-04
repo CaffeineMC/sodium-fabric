@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRenderUploadTask;
@@ -240,6 +241,8 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
         RenderSystem.pushMatrix();
 
+        boolean needManualTicking = SodiumClientMod.options().performance.animateOnlyVisibleTextures;
+
         while (true) {
             if (notTranslucent) {
                 if (!it.hasNext()) {
@@ -249,7 +252,13 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
                 break;
             }
 
-            this.chunkRenderer.render(notTranslucent ? it.next() : it.previous(), renderLayer, matrixStack, x, y, z);
+            ChunkRender<T> render = notTranslucent ? it.next() : it.previous();
+
+            if (needManualTicking) {
+                render.tickTextures();
+            }
+
+            this.chunkRenderer.render(render, renderLayer, matrixStack, x, y, z);
         }
 
         this.chunkRenderer.end();

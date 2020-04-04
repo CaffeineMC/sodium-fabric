@@ -184,6 +184,10 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
         return this.getBlockState(pos).getFluidState();
     }
 
+    public FluidState getFluidState(int x, int y, int z) {
+        return this.getBlockState(x, y, z).getFluidState();
+    }
+
     @Override
     public LightingProvider getLightingProvider() {
         return this.world.getLightingProvider();
