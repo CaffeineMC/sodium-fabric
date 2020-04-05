@@ -49,7 +49,7 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
 
     private final ChunkNibbleArray[] blockLightArrays;
     private final ChunkNibbleArray[] skyLightArrays;
-    
+
     private final Map<ColorResolver, ColorizerCache> ourColorCache = new Reference2ReferenceArrayMap<>();
     private final BiomeCache biomeCache;
 
@@ -154,7 +154,7 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
         long seed = this.world.getSeed();
 
         this.lightCache = new LightDataCache(this, minX, minY, minZ, BLOCK_LENGTH, BLOCK_LENGTH, BLOCK_LENGTH);
-        this.biomeCache = new BiomeCache( this, type, seed);
+        this.biomeCache = new BiomeCache(this, type, seed);
     }
 
     private ColorizerCache getColorizerCache(ColorResolver resolver) {

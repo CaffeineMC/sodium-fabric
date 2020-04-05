@@ -83,9 +83,9 @@ public class ChunkFluidRenderPipeline {
         Sprite[] sprites = lava ? this.lavaSprites : this.waterSprites;
         int color = lava ? 0xFFFFFF : BiomeColors.getWaterColor(world, pos);
 
-        float baseRed = (float)(color >> 16 & 255) / 255.0F;
-        float baseGreen = (float)(color >> 8 & 255) / 255.0F;
-        float baseBlue = (float)(color & 255) / 255.0F;
+        float baseRed = (float) (color >> 16 & 255) / 255.0F;
+        float baseGreen = (float) (color >> 8 & 255) / 255.0F;
+        float baseBlue = (float) (color & 255) / 255.0F;
 
         boolean rendered = false;
 
@@ -130,7 +130,7 @@ public class ChunkFluidRenderPipeline {
                 float_21 = float_15;
             } else {
                 Sprite sprite = sprites[1];
-                float float_22 = (float) MathHelper.atan2(velocity.z, velocity.x) - ((float)Math.PI / 2F);
+                float float_22 = (float) MathHelper.atan2(velocity.z, velocity.x) - ((float) Math.PI / 2F);
                 float float_23 = MathHelper.sin(float_22) * 0.25F;
                 float float_24 = MathHelper.cos(float_22) * 0.25F;
                 float_14 = sprite.getFrameU(8.0F + (-float_24 - float_23) * 16.0F);
@@ -145,8 +145,8 @@ public class ChunkFluidRenderPipeline {
 
             float float_34 = (float_14 + float_16 + float_18 + float_20) / 4.0F;
             float float_35 = (float_15 + float_17 + float_19 + float_21) / 4.0F;
-            float float_36 = (float)sprites[0].getWidth() / (sprites[0].getMaxU() - sprites[0].getMinU());
-            float float_37 = (float)sprites[0].getHeight() / (sprites[0].getMaxV() - sprites[0].getMinV());
+            float float_36 = (float) sprites[0].getWidth() / (sprites[0].getMaxU() - sprites[0].getMinU());
+            float float_37 = (float) sprites[0].getHeight() / (sprites[0].getMaxV() - sprites[0].getMinV());
             float float_38 = 4.0F / Math.max(float_37, float_36);
 
             float_14 = MathHelper.lerp(float_38, float_14, float_34);
@@ -162,16 +162,16 @@ public class ChunkFluidRenderPipeline {
             float r = 1.0F * baseRed;
             float g = 1.0F * baseGreen;
             float b = 1.0F * baseBlue;
-            this.vertex(builder, x + 0.0D, y + (double)h1, z + 0.0D, r, g, b, float_14, float_15, light);
-            this.vertex(builder, x + 0.0D, y + (double)h2, z + 1.0D, r, g, b, float_16, float_17, light);
-            this.vertex(builder, x + 1.0D, y + (double)h3, z + 1.0D, r, g, b, float_18, float_19, light);
-            this.vertex(builder, x + 1.0D, y + (double)h4, z + 0.0D, r, g, b, float_20, float_21, light);
+            this.vertex(builder, x + 0.0D, y + (double) h1, z + 0.0D, r, g, b, float_14, float_15, light);
+            this.vertex(builder, x + 0.0D, y + (double) h2, z + 1.0D, r, g, b, float_16, float_17, light);
+            this.vertex(builder, x + 1.0D, y + (double) h3, z + 1.0D, r, g, b, float_18, float_19, light);
+            this.vertex(builder, x + 1.0D, y + (double) h4, z + 0.0D, r, g, b, float_20, float_21, light);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.vertex(builder, x + 0.0D, y + (double)h1, z + 0.0D, r, g, b, float_14, float_15, light);
-                this.vertex(builder, x + 1.0D, y + (double)h4, z + 0.0D, r, g, b, float_20, float_21, light);
-                this.vertex(builder, x + 1.0D, y + (double)h3, z + 1.0D, r, g, b, float_18, float_19, light);
-                this.vertex(builder, x + 0.0D, y + (double)h2, z + 1.0D, r, g, b, float_16, float_17, light);
+                this.vertex(builder, x + 0.0D, y + (double) h1, z + 0.0D, r, g, b, float_14, float_15, light);
+                this.vertex(builder, x + 1.0D, y + (double) h4, z + 0.0D, r, g, b, float_20, float_21, light);
+                this.vertex(builder, x + 1.0D, y + (double) h3, z + 1.0D, r, g, b, float_18, float_19, light);
+                this.vertex(builder, x + 0.0D, y + (double) h2, z + 1.0D, r, g, b, float_16, float_17, light);
             }
         }
 
@@ -191,7 +191,7 @@ public class ChunkFluidRenderPipeline {
             rendered = true;
         }
 
-        for(int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; ++i) {
             float float_49;
             float float_50;
             double double_4;
@@ -205,8 +205,8 @@ public class ChunkFluidRenderPipeline {
                 float_50 = h4;
                 double_4 = x;
                 double_5 = x + 1.0D;
-                double_6 = z + (double)0.001F;
-                double_7 = z + (double)0.001F;
+                double_6 = z + (double) 0.001F;
+                double_7 = z + (double) 0.001F;
                 dir = Direction.NORTH;
                 boolean_9 = sfNorth;
             } else if (i == 1) {
@@ -214,15 +214,15 @@ public class ChunkFluidRenderPipeline {
                 float_50 = h2;
                 double_4 = x + 1.0D;
                 double_5 = x;
-                double_6 = z + 1.0D - (double)0.001F;
-                double_7 = z + 1.0D - (double)0.001F;
+                double_6 = z + 1.0D - (double) 0.001F;
+                double_7 = z + 1.0D - (double) 0.001F;
                 dir = Direction.SOUTH;
                 boolean_9 = sfSouth;
             } else if (i == 2) {
                 float_49 = h2;
                 float_50 = h1;
-                double_4 = x + (double)0.001F;
-                double_5 = x + (double)0.001F;
+                double_4 = x + (double) 0.001F;
+                double_5 = x + (double) 0.001F;
                 double_6 = z + 1.0D;
                 double_7 = z;
                 dir = Direction.WEST;
@@ -230,8 +230,8 @@ public class ChunkFluidRenderPipeline {
             } else {
                 float_49 = h4;
                 float_50 = h3;
-                double_4 = x + 1.0D - (double)0.001F;
-                double_5 = x + 1.0D - (double)0.001F;
+                double_4 = x + 1.0D - (double) 0.001F;
+                double_5 = x + 1.0D - (double) 0.001F;
                 double_6 = z;
                 double_7 = z + 1.0D;
                 dir = Direction.EAST;
@@ -269,16 +269,16 @@ public class ChunkFluidRenderPipeline {
                 float g = 1.0F * float_62 * baseGreen;
                 float b = 1.0F * float_62 * baseBlue;
 
-                this.vertex(builder, double_4, y + (double)float_49, double_6, r, g, b, float_57, float_59, light);
-                this.vertex(builder, double_5, y + (double)float_50, double_7, r, g, b, float_58, float_60, light);
+                this.vertex(builder, double_4, y + (double) float_49, double_6, r, g, b, float_57, float_59, light);
+                this.vertex(builder, double_5, y + (double) float_50, double_7, r, g, b, float_58, float_60, light);
                 this.vertex(builder, double_5, y + float_13, double_7, r, g, b, float_58, float_61, light);
                 this.vertex(builder, double_4, y + float_13, double_6, r, g, b, float_57, float_61, light);
 
                 if (sprite != this.waterOverlaySprite) {
                     this.vertex(builder, double_4, y + float_13, double_6, r, g, b, float_57, float_61, light);
                     this.vertex(builder, double_5, y + float_13, double_7, r, g, b, float_58, float_61, light);
-                    this.vertex(builder, double_5, y + (double)float_50, double_7, r, g, b, float_58, float_60, light);
-                    this.vertex(builder, double_4, y + (double)float_49, double_6, r, g, b, float_57, float_59, light);
+                    this.vertex(builder, double_5, y + (double) float_50, double_7, r, g, b, float_58, float_60, light);
+                    this.vertex(builder, double_4, y + (double) float_49, double_6, r, g, b, float_57, float_59, light);
                 }
             }
         }
@@ -309,7 +309,7 @@ public class ChunkFluidRenderPipeline {
         int int_1 = 0;
         float float_1 = 0.0F;
 
-        for(int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; ++i) {
             int x2 = x - (i & 1);
             int z2 = z - (i >> 1 & 1);
 
@@ -335,6 +335,6 @@ public class ChunkFluidRenderPipeline {
             }
         }
 
-        return float_1 / (float)int_1;
+        return float_1 / (float) int_1;
     }
 }

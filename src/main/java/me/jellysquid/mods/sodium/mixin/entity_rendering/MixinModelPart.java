@@ -33,7 +33,7 @@ public class MixinModelPart {
     @Overwrite
     private void renderCuboids(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
         DirectVertexConsumer directVertexConsumer = DirectVertexConsumer.getDirectVertexConsumer(vertexConsumer);
-        
+
         if (directVertexConsumer != null) {
             this.renderCuboidsDirect(matrices, directVertexConsumer, light, overlay, red, green, blue, alpha);
         } else {

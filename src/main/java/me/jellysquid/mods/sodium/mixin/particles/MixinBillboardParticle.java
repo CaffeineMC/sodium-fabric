@@ -79,9 +79,9 @@ public abstract class MixinBillboardParticle extends Particle {
         int brightness = this.getColorMultiplier(tickDelta);
 
         this.addVertex(vertices, -1.0F, -1.0F, maxU, maxV, color, brightness, rotation, size, posX, posY, posZ);
-        this.addVertex(vertices, -1.0F,  1.0F, maxU, minV, color, brightness, rotation, size, posX, posY, posZ);
-        this.addVertex(vertices,  1.0F,  1.0F, minU, minV, color, brightness, rotation, size, posX, posY, posZ);
-        this.addVertex(vertices,  1.0F, -1.0F, minU, maxV, color, brightness, rotation, size, posX, posY, posZ);
+        this.addVertex(vertices, -1.0F, 1.0F, maxU, minV, color, brightness, rotation, size, posX, posY, posZ);
+        this.addVertex(vertices, 1.0F, 1.0F, minU, minV, color, brightness, rotation, size, posX, posY, posZ);
+        this.addVertex(vertices, 1.0F, -1.0F, minU, maxV, color, brightness, rotation, size, posX, posY, posZ);
     }
 
     private void addVertex(VertexConsumer vertices, float x, float y, float u, float v, int color, int brightness, Quaternion rotation, float scale, float offsetX, float offsetY, float offsetZ) {

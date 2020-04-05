@@ -1,22 +1,22 @@
 buildscript {
-	repositories {
-		jcenter()
-		maven {
-			name = "Fabric"
-			url = "https://maven.fabricmc.net/"
-		}
-		maven {
-			name = "Forge"
-			url = "https://files.minecraftforge.net/maven/"
-		}
-		maven {
-			name = "Jitpack"
-			url 'https://jitpack.io/'
-		}
-	}
-	dependencies {
-		classpath 'com.github.Chocohead:fabric-loom:e5d69cb'
-	}
+    repositories {
+        jcenter()
+        maven {
+            name = "Fabric"
+            url = "https://maven.fabricmc.net/"
+        }
+        maven {
+            name = "Forge"
+            url = "https://files.minecraftforge.net/maven/"
+        }
+        maven {
+            name = "Jitpack"
+            url 'https://jitpack.io/'
+        }
+    }
+    dependencies {
+        classpath 'com.github.Chocohead:fabric-loom:e5d69cb'
+    }
 }
 
 apply plugin: "fabric-loom"
@@ -33,64 +33,64 @@ minecraft {
 }
 
 repositories {
-	// Fabric-ASM
-	maven { url 'https://jitpack.io' }
+    // Fabric-ASM
+    maven { url 'https://jitpack.io' }
 }
 
 minecraft {
-	refmapName = "mixins.sodium.refmap.json"
-	AT = file("src/main/resources/access-transformers.txt")
+    refmapName = "mixins.sodium.refmap.json"
+    AT = file("src/main/resources/access-transformers.txt")
 }
 
 dependencies {
-	//to change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
+    //to change the versions see the gradle.properties file
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	include "com.moandjiezana.toml:toml4j:0.7.2"
-	compile "com.moandjiezana.toml:toml4j:0.7.2"
+    include "com.moandjiezana.toml:toml4j:0.7.2"
+    compile "com.moandjiezana.toml:toml4j:0.7.2"
 
-	include "com.github.Chocohead:Fabric-ASM:${project.fabric_asm_version}"
-	compile "com.github.Chocohead:Fabric-ASM:${project.fabric_asm_version}:dev"
+    include "com.github.Chocohead:Fabric-ASM:${project.fabric_asm_version}"
+    compile "com.github.Chocohead:Fabric-ASM:${project.fabric_asm_version}:dev"
 }
 
 processResources {
-	inputs.property "version", project.version
+    inputs.property "version", project.version
 
-	from(sourceSets.main.resources.srcDirs) {
-		include "fabric.mod.json"
+    from(sourceSets.main.resources.srcDirs) {
+        include "fabric.mod.json"
 
-		expand "version": project.version
-	}
+        expand "version": project.version
+    }
 
-	from(sourceSets.main.resources.srcDirs) {
-		exclude "fabric.mod.json"
-	}
+    from(sourceSets.main.resources.srcDirs) {
+        exclude "fabric.mod.json"
+    }
 }
 
 // ensure that the encoding is set to UTF-8, no matter what the system default is
 // this fixes some edge cases with special characters not displaying correctly
 // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
 tasks.withType(JavaCompile) {
-	options.encoding = "UTF-8"
+    options.encoding = "UTF-8"
 }
 
 // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
 // if it is present.
 // If you remove this task, sources will not be generated.
 task sourcesJar(type: Jar, dependsOn: classes) {
-	classifier = "sources"
-	from sourceSets.main.allSource
+    classifier = "sources"
+    from sourceSets.main.allSource
 }
 
 jar {
-	from "LICENSE.txt"
+    from "LICENSE.txt"
 }
 
 task modJar(type: RemappingJar, dependsOn: classes) {
-	classifier = "mod"
-	from sourceSets.main.output
+    classifier = "mod"
+    from sourceSets.main.output
 }
 
 build.dependsOn modJar
