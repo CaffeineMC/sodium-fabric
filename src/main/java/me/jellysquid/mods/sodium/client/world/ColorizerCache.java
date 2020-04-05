@@ -7,28 +7,28 @@ import net.minecraft.world.level.ColorResolver;
 import java.util.Arrays;
 
 public class ColorizerCache {
-	private final ColorResolver resolver;
-	private final BiomeCache biomes;
+    private final ColorResolver resolver;
+    private final BiomeCache biomes;
 
-	private final int[] colors;
-	private final int radius;
+    private final int[] colors;
+    private final int radius;
 
-	public ColorizerCache(ColorResolver resolver, BiomeCache biomes) {
-	    this.resolver = resolver;
-	    this.biomes = biomes;
-	    this.radius = MinecraftClient.getInstance().options.biomeBlendRadius;
+    public ColorizerCache(ColorResolver resolver, BiomeCache biomes) {
+        this.resolver = resolver;
+        this.biomes = biomes;
+        this.radius = MinecraftClient.getInstance().options.biomeBlendRadius;
 
         this.colors = new int[16 * 16];
 
         Arrays.fill(this.colors, -1);
     }
 
-	public int getBiomeColor(BlockPos pos) {
-		int x = pos.getX() & 15;
-		int z = pos.getZ() & 15;
+    public int getBiomeColor(BlockPos pos) {
+        int x = pos.getX() & 15;
+        int z = pos.getZ() & 15;
 
-		int idx = z << 4 | x;
-		int color = this.colors[idx];
+        int idx = z << 4 | x;
+        int color = this.colors[idx];
 
         if (color == -1) {
             this.colors[idx] = color = this.calculateColor(pos);

@@ -170,7 +170,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
 
         ChunkSection[] sections = chunk.getSectionArray();
 
-        for(int y = 0; y < sections.length; ++y) {
+        for (int y = 0; y < sections.length; ++y) {
             lightEngine.updateSectionStatus(ChunkSectionPos.from(x, y, z), ChunkSection.isEmpty(sections[y]));
         }
 
