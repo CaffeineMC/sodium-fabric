@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(SpriteTexturedVertexConsumer.class)
-public class MixinSpriteTexturedVertexConsumer implements DirectVertexConsumer {
+public abstract class MixinSpriteTexturedVertexConsumer implements DirectVertexConsumer {
     @Shadow
     @Final
     private VertexConsumer parent;
@@ -28,5 +28,17 @@ public class MixinSpriteTexturedVertexConsumer implements DirectVertexConsumer {
         v = this.sprite.getFrameV(v * 16.0F);
 
         ((DirectVertexConsumer) this.parent).vertex(x, y, z, color, u, v, overlay, light, norm);
+    }
+
+    @Override
+    public void vertexParticle(float x, float y, float z, float u, float v, int color, int light) {
+        if (!(this.parent instanceof DirectVertexConsumer)) {
+            throw new UnsupportedOperationException("Not a direct buffer");
+        }
+
+        u = this.sprite.getFrameU(u * 16.0F);
+        v = this.sprite.getFrameV(v * 16.0F);
+
+        ((DirectVertexConsumer) this.parent).vertexParticle(x, y, z, u, v, color, light);
     }
 }
