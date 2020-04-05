@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
 import net.minecraft.client.render.BufferVertexConsumer;
+import net.minecraft.client.render.VertexConsumer;
 
 public interface DirectVertexConsumer extends BufferVertexConsumer {
     /**
@@ -32,4 +33,23 @@ public interface DirectVertexConsumer extends BufferVertexConsumer {
      * @param light   The light of the vertex
      */
     void vertexParticle(float x, float y, float z, float u, float v, int color, int light);
+
+    /**
+     * @return True if direct writing can be used on this buffer (i.e. the entire pipeline supports it)
+     */
+    boolean canUseDirectWriting();
+
+    static DirectVertexConsumer getDirectVertexConsumer(VertexConsumer consumer) {
+        if (!(consumer instanceof DirectVertexConsumer)) {
+            return null;
+        }
+
+        DirectVertexConsumer dConsumer = (DirectVertexConsumer) consumer;
+
+        if (!dConsumer.canUseDirectWriting()) {
+            return null;
+        }
+
+        return dConsumer;
+    }
 }

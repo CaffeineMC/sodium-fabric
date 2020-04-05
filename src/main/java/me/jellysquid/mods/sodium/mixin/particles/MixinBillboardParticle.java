@@ -107,6 +107,12 @@ public abstract class MixinBillboardParticle extends Particle {
         fy = (fy * scale) + offsetY;
         fz = (fz * scale) + offsetZ;
 
-        ((DirectVertexConsumer) vertices).vertexParticle(fx, fy, fz, u, v, color, brightness);
+        DirectVertexConsumer directVertexConsumer = DirectVertexConsumer.getDirectVertexConsumer(vertices);
+
+        if (directVertexConsumer != null) {
+            directVertexConsumer.vertexParticle(fx, fy, fz, u, v, color, brightness);
+        } else {
+            vertices.vertex(fx, fy, fz).texture(u, v).color(this.colorRed, this.colorGreen, this.colorBlue, this.colorAlpha).light(brightness).next();
+        }
     }
 }
