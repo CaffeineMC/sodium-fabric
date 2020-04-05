@@ -27,6 +27,9 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
     private int centerX, centerZ;
     private int radius;
 
+    private long prevChunkKey = Long.MIN_VALUE;
+    private WorldChunk prevChunk;
+
     public SodiumChunkManager(ClientWorld world, int dist) {
         super(world, dist);
 
@@ -40,21 +43,39 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
         if (this.chunks.remove(toChunkKey(x, z)) != null) {
             this.onChunkUnloaded(x, z);
         }
+
+        this.clearCache();
     }
 
     private void unload(long pos) {
         if (this.chunks.remove(pos) != null) {
             this.onChunkUnloaded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos));
         }
+
+        this.clearCache();
+    }
+
+    private void clearCache() {
+        this.prevChunk = null;
+        this.prevChunkKey = Long.MIN_VALUE;
     }
 
     @Override
     public WorldChunk getChunk(int x, int z, ChunkStatus status, boolean create) {
-        WorldChunk chunk = this.chunks.get(toChunkKey(x, z));
+        long key = toChunkKey(x, z);
+
+        if (key == this.prevChunkKey) {
+            return this.prevChunk;
+        }
+
+        WorldChunk chunk = this.chunks.get(key);
 
         if (chunk == null) {
             return create ? this.emptyChunk : null;
         }
+
+        this.prevChunkKey = key;
+        this.prevChunk = chunk;
 
         return chunk;
     }
