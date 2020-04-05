@@ -32,14 +32,16 @@ public class MixinModelPart {
      */
     @Overwrite
     private void renderCuboids(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
-        if (vertexConsumer instanceof DirectVertexConsumer) {
-            this.renderCuboidsDirect(matrices, vertexConsumer, light, overlay, red, green, blue, alpha);
+        DirectVertexConsumer directVertexConsumer = DirectVertexConsumer.getDirectVertexConsumer(vertexConsumer);
+        
+        if (directVertexConsumer != null) {
+            this.renderCuboidsDirect(matrices, directVertexConsumer, light, overlay, red, green, blue, alpha);
         } else {
             this.renderCuboidsFallback(matrices, vertexConsumer, light, overlay, red, green, blue, alpha);
         }
     }
 
-    private void renderCuboidsDirect(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
+    private void renderCuboidsDirect(MatrixStack.Entry matrices, DirectVertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
         Matrix4f modelMatrix = matrices.getModel();
         Matrix3f normalMatrix = matrices.getNormal();
 
@@ -71,7 +73,7 @@ public class MixinModelPart {
                     posVec.set(x, y, z, 1.0f);
                     posVec.transform(modelMatrix);
 
-                    ((DirectVertexConsumer) vertexConsumer).vertex(posVec.getX(), posVec.getY(), posVec.getZ(), color, u, v, overlay, light, norm);
+                    vertexConsumer.vertex(posVec.getX(), posVec.getY(), posVec.getZ(), color, u, v, overlay, light, norm);
                 }
             }
         }

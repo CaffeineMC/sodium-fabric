@@ -214,4 +214,9 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
         unsafe.putInt(i, light);
         i += 4;
     }
+
+    @Override
+    public boolean canUseDirectWriting() {
+        return true;
+    }
 }
