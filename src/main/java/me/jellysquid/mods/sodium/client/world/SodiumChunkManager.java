@@ -30,12 +30,12 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
     private long prevChunkKey = Long.MIN_VALUE;
     private WorldChunk prevChunk;
 
-    public SodiumChunkManager(ClientWorld world, int dist) {
-        super(world, dist);
+    public SodiumChunkManager(ClientWorld world, int radius) {
+        super(world, radius);
 
         this.world = world;
         this.emptyChunk = new EmptyChunk(world, new ChunkPos(0, 0));
-        this.radius = dist;
+        this.radius = getChunkMapRadius(radius);
     }
 
     @Override
@@ -113,6 +113,12 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
 
     @Override
     public void updateLoadDistance(int dist) {
+        int radius = getChunkMapRadius(dist);
+
+        if (this.radius == radius) {
+            return;
+        }
+
         LongList queue = new LongArrayList();
 
         LongIterator it = this.chunks.keySet().iterator();
@@ -135,6 +141,8 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
                 this.unload(it.nextLong());
             }
         }
+
+        this.radius = dist;
     }
 
     private boolean isWithinLoadDistance(int x, int z) {
@@ -181,5 +189,9 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
 
     private static long toChunkKey(int x, int z) {
         return ChunkPos.toLong(x, z);
+    }
+
+    private static int getChunkMapRadius(int radius) {
+        return Math.max(2, radius) + 3;
     }
 }
