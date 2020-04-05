@@ -31,6 +31,7 @@
     "textures.MixinEntityRenderDispatcher",
     "textures.MixinInGameOverlayRenderer",
     "textures.MixinItemRenderer",
-    "textures.MixinSprite"
+    "textures.MixinSprite",
+    "particles.MixinBillboardParticle"
   ]
 }
