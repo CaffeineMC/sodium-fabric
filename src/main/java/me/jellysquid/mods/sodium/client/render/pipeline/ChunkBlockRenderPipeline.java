@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
-import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
@@ -40,8 +38,6 @@ public class ChunkBlockRenderPipeline {
 
     private final BlockOcclusionCache occlusionCache;
 
-    private final Int2IntFunction cachedColors;
-
     private final ModelQuad cachedQuad = new ModelQuad();
     private final LightResult cachedLightResult = new LightResult();
 
@@ -52,16 +48,11 @@ public class ChunkBlockRenderPipeline {
         this.flatLightPipeline = new FlatLightPipeline(world.getLightDataCache());
 
         this.occlusionCache = new BlockOcclusionCache();
-
-        this.cachedColors = new Int2IntArrayMap();
-        this.cachedColors.defaultReturnValue(Integer.MAX_VALUE);
     }
 
     public boolean renderModel(ChunkMeshInfo.Builder meshInfo, BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, Vector3f translation, VertexConsumer builder, boolean cull, Random random, long seed) {
         LightPipeline lighter = this.getLightPipeline(state, model);
         lighter.reset();
-
-        this.cachedColors.clear();
 
         Vec3d blockOffset = state.getOffsetPos(world, pos);
         translation.add((float) blockOffset.getX(), (float) blockOffset.getY(), (float) blockOffset.getZ());
@@ -109,11 +100,11 @@ public class ChunkBlockRenderPipeline {
     }
 
     private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, VertexConsumer builder, Vector3f translation, ModelQuadView quad, float[] brightnesses, int[] lights) {
-        int color = this.getQuadColor(quad, world, state, pos);
-
         float r, g, b;
 
-        if (color != Integer.MIN_VALUE) {
+        if (quad.hasColorIndex()) {
+            int color = this.colorMap.getColor(state, world, pos, quad.getColorIndex());
+
             r = ColorUtil.normalize(ColorUtil.unpackColorR(color));
             g = ColorUtil.normalize(ColorUtil.unpackColorG(color));
             b = ColorUtil.normalize(ColorUtil.unpackColorB(color));
@@ -136,12 +127,7 @@ public class ChunkBlockRenderPipeline {
             copy.setZ(i, quad.getZ(o) + translation.getZ());
 
             float br = brightnesses[o];
-
-            if (color != Integer.MIN_VALUE) {
-                copy.setColor(i, ColorUtil.mulPackedRGB(quad.getColor(o), r * br, g * br, b * br));
-            } else {
-                copy.setColor(i, ColorUtil.mulPacked(quad.getColor(o), br));
-            }
+            copy.setColor(i, ColorUtil.mulPackedRGB(quad.getColor(o), r * br, g * br, b * br));
 
             copy.setTexU(i, quad.getTexU(o));
             copy.setTexV(i, quad.getTexV(o));
@@ -151,20 +137,6 @@ public class ChunkBlockRenderPipeline {
         }
 
         ((ChunkMeshBuilder) builder).write(copy);
-    }
-
-    private int getQuadColor(ModelQuadView quad, BlockRenderView world, BlockState state, BlockPos pos) {
-        if (quad.hasColorIndex()) {
-            int color = this.cachedColors.get(quad.getColorIndex());
-
-            if (color == Integer.MAX_VALUE) {
-                this.cachedColors.put(quad.getColorIndex(), color = this.colorMap.getColor(state, world, pos, quad.getColorIndex()));
-            }
-
-            return color;
-        }
-
-        return Integer.MIN_VALUE;
     }
 
     private LightPipeline getLightPipeline(BlockState state, BakedModel model) {
