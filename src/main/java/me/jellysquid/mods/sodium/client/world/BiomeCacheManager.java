@@ -5,11 +5,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.biome.source.BiomeAccessType;
 
-import java.util.concurrent.locks.StampedLock;
-
 public class BiomeCacheManager {
     private final Long2ReferenceLinkedOpenHashMap<BiomeCache> caches = new Long2ReferenceLinkedOpenHashMap<>();
-    private final StampedLock lock = new StampedLock();
 
     private final BiomeAccessType type;
     private final long seed;
@@ -34,46 +31,38 @@ public class BiomeCacheManager {
         int maxY = centerY + 1;
         int maxZ = centerZ + 1;
 
-        long stamp = this.lock.writeLock();
+        final Long2ReferenceLinkedOpenHashMap<BiomeCache> caches = this.caches;
 
-        try {
-            final Long2ReferenceLinkedOpenHashMap<BiomeCache> caches = this.caches;
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    long key = ChunkSectionPos.asLong(x, y, z);
 
-            for (int x = minX; x <= maxX; x++) {
-                for (int y = minY; y <= maxY; y++) {
-                    for (int z = minZ; z <= maxZ; z++) {
-                        long key = ChunkSectionPos.asLong(x, y, z);
+                    BiomeCache cache = caches.getAndMoveToFirst(key);
 
-                        BiomeCache cache = caches.getAndMoveToFirst(key);
+                    if (cache == null) {
+                        caches.put(key, cache = new BiomeCache(this.type, this.seed));
 
-                        if (cache == null) {
-                            caches.put(key, cache = new BiomeCache(this.type, this.seed));
-
-                            if (caches.size() > 256) {
-                                caches.removeLast();
-                            }
+                        if (caches.size() > 256) {
+                            caches.removeLast();
                         }
-
-                        cachesArray[ChunkSlice.getSectionIndex(x - minX, y - minY, z - minZ)] = cache;
                     }
+
+                    cachesArray[ChunkSlice.getSectionIndex(x - minX, y - minY, z - minZ)] = cache;
                 }
             }
-        } finally {
-            this.lock.unlockWrite(stamp);
         }
 
         return cachesArray;
     }
 
-    public void clearCacheFor(int x, int z) {
-        long stamp = this.lock.writeLock();
-
-        try {
-            for (int y = 0; y < 16; y++) {
-                this.caches.remove(ChunkSectionPos.asLong(x, y, z));
+    public void clearCacheFor(int centerX, int centerZ) {
+        for (int x = centerX - 1; x <= centerX; x++) {
+            for (int z = centerZ - 1; z <= centerZ; z++) {
+                for (int y = 0; y < 16; y++) {
+                    this.caches.remove(ChunkSectionPos.asLong(x, y, z));
+                }
             }
-        } finally {
-            this.lock.unlockWrite(stamp);
         }
     }
 }
