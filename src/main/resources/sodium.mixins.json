@@ -11,6 +11,7 @@
     "buffers.MixinSpriteTexturedVertexConsumer",
     "chunk_rendering.MixinClientWorld",
     "chunk_rendering.MixinWorldRenderer",
+    "chunk_rendering.MixinChunkBuilder",
     "client_world_ticking.MixinClientWorld",
     "entity_rendering.MixinCuboid",
     "entity_rendering.MixinModelPart",
