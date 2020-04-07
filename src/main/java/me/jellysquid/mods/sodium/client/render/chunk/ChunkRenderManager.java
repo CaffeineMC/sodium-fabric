@@ -53,7 +53,6 @@ public class ChunkRenderManager implements ChunkStatusListener {
     private boolean useEntityCulling;
 
     private ChunkGraph<?> chunkGraph;
-    private BufferBuilderStorage bufferBuilders;
     private Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
     private ChunkBuilder chunkBuilder;
 
@@ -323,7 +322,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
                 int stage = breakingInfos.last().getStage();
 
                 if (stage >= 0) {
-                    VertexConsumer transformer = new TransformingVertexConsumer(this.bufferBuilders.getEffectVertexConsumers().getBuffer(ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.get(stage)), matrices.peek());
+                    VertexConsumer transformer = new TransformingVertexConsumer(bufferBuilders.getEffectVertexConsumers().getBuffer(ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.get(stage)), matrices.peek());
                     consumer = (layer) -> layer.method_23037() ? VertexConsumers.dual(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
                 }
             }
