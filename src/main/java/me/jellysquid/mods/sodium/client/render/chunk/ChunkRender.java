@@ -41,7 +41,9 @@ public class ChunkRender<T extends ChunkRenderState> {
 
     public Direction direction;
 
-    public int rebuildFrame;
+    public int rebuildFrame = -1;
+    public int lastVisibleFrame = -1;
+
     public byte cullingState;
 
     public ChunkRender(ChunkRenderManager renderManager, ChunkBuilder builder, T renderState, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
@@ -62,7 +64,6 @@ public class ChunkRender<T extends ChunkRenderState> {
         this.boundingBox = new Box(x, y, z, x + 16.0, y + 16.0, z + 16.0);
 
         this.needsRebuild = true;
-        this.rebuildFrame = -1;
     }
 
     public void cancelRebuildTask() {
@@ -201,6 +202,10 @@ public class ChunkRender<T extends ChunkRenderState> {
 
     public void setRebuildFrame(int frame) {
         this.rebuildFrame = frame;
+    }
+
+    public void setLastVisibleFrame(int frame) {
+        this.lastVisibleFrame = frame;
     }
 
     public void setDirection(Direction dir) {

@@ -22,6 +22,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
@@ -30,6 +31,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public class ChunkRenderManager implements ChunkStatusListener {
+    private static ChunkRenderManager instance;
+
     private final MinecraftClient client;
 
     private ClientWorld world;
@@ -47,13 +50,22 @@ public class ChunkRenderManager implements ChunkStatusListener {
     private double lastCameraYaw;
 
     private boolean isRenderGraphDirty;
+    private boolean useEntityCulling;
 
     private ChunkGraph<?> chunkGraph;
     private BufferBuilderStorage bufferBuilders;
     private Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
     private ChunkBuilder chunkBuilder;
 
-    public ChunkRenderManager(MinecraftClient client) {
+    public static ChunkRenderManager create() {
+        if (instance == null) {
+            instance = new ChunkRenderManager(MinecraftClient.getInstance());
+        }
+
+        return instance;
+    }
+
+    private ChunkRenderManager(MinecraftClient client) {
         this.client = client;
     }
 
@@ -110,6 +122,8 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     public void update(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
+        this.applySettings();
+
         Vec3d cameraPos = camera.getPos();
 
         if (this.client.options.viewDistance != this.renderDistance) {
@@ -163,6 +177,10 @@ public class ChunkRenderManager implements ChunkStatusListener {
         this.updateChunks(blockPos);
 
         this.client.getProfiler().pop();
+    }
+
+    private void applySettings() {
+        this.useEntityCulling = SodiumClientMod.options().performance.useAdvancedEntityCulling;
     }
 
     private void updateChunks(BlockPos blockPos) {
@@ -351,5 +369,45 @@ public class ChunkRenderManager implements ChunkStatusListener {
         if (!entitiesAfter.isEmpty()) {
             this.globalBlockEntities.addAll(entitiesAfter);
         }
+    }
+
+    /**
+     * Returns whether or not the entity intersects with any visible chunks in the graph.
+     * @return True if the entity is visible, otherwise false
+     */
+    public boolean isEntityVisible(Entity entity) {
+        if (!this.useEntityCulling) {
+            return true;
+        }
+
+        Box box = entity.getVisibilityBoundingBox();
+
+        int minX = MathHelper.floor(box.x1) >> 4;
+        int minY = MathHelper.floor(box.y1) >> 4;
+        int minZ = MathHelper.floor(box.z1) >> 4;
+
+        int maxX = MathHelper.floor(box.x2) >> 4;
+        int maxY = MathHelper.floor(box.y2) >> 4;
+        int maxZ = MathHelper.floor(box.z2) >> 4;
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                for (int y = minY; y <= maxY; y++) {
+                    if (this.chunkGraph.isChunkVisible(x, y, z)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public static ChunkRenderManager getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("Renderer not initialized");
+        }
+
+        return instance;
     }
 }

@@ -48,6 +48,7 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
 
     private int minChunkX, minChunkZ, maxChunkX, maxChunkZ;
     private int renderDistance;
+    private int lastFrame;
 
     private boolean useCulling;
     private boolean useFogCulling;
@@ -73,6 +74,8 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
         this.maxChunkX = MathHelper.floor(cameraPos.x + maxDistBlocks) >> 4;
         this.maxChunkZ = MathHelper.floor(cameraPos.z + maxDistBlocks) >> 4;
 
+        this.lastFrame = frame;
+
         this.visibleChunks.clear();
         this.drawableChunks.clear();
         this.visibleBlockEntities.clear();
@@ -97,6 +100,8 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
     }
 
     private void markVisible(ChunkRender<T> render) {
+        render.setLastVisibleFrame(this.lastFrame);
+
         this.visibleChunks.add(render);
 
         if (!render.isEmpty()) {
@@ -388,5 +393,15 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
         }
 
         this.chunkRenderer.end(matrixStack);
+    }
+
+    public boolean isChunkVisible(int x, int y, int z) {
+        ChunkRender<T> render = this.getRender(x, y, z);
+
+        if (render != null && render.rebuildFrame == this.lastFrame) {
+            return true;
+        }
+
+        return false;
     }
 }

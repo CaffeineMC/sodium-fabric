@@ -38,7 +38,7 @@ public abstract class MixinWorldRenderer {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(MinecraftClient client, BufferBuilderStorage bufferBuilders, CallbackInfo ci) {
-        this.chunkManager = new ChunkRenderManager(client);
+        this.chunkManager = ChunkRenderManager.create();
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))
@@ -118,7 +118,6 @@ public abstract class MixinWorldRenderer {
             }
         }
     }
-
 
     /**
      * @author JellySquid
