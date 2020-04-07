@@ -30,7 +30,7 @@ public abstract class AbstractWidget implements Drawable, Element {
         float g = (float) (color >> 8 & 255) / 255.0F;
         float b = (float) (color & 255) / 255.0F;
 
-        drawQuads(vertices -> addQuad(vertices, x1, y1, x2, y2, a, r, g, b));
+        this.drawQuads(vertices -> addQuad(vertices, x1, y1, x2, y2, a, r, g, b));
     }
 
     protected void drawQuads(Consumer<VertexConsumer> consumer) {

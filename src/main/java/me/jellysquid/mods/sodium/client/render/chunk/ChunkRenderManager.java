@@ -151,7 +151,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             this.client.getProfiler().pop();
         }
 
-        Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) client.options.viewDistance / 8.0D, 1.0D, 2.5D));
+        Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.viewDistance / 8.0D, 1.0D, 2.5D));
 
         this.client.getProfiler().swap("rebuildNear");
 
