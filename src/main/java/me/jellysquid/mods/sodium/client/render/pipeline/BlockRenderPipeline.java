@@ -15,6 +15,7 @@ import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColors;
+import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
@@ -99,7 +100,7 @@ public class BlockRenderPipeline {
         }
     }
 
-    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, VertexConsumer builder, ModelQuadTransformer quadTransformer, Vec3d offset, ModelQuadView quad, float[] brightnesses, int[] lights) {
+    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, VertexConsumer consumer, ModelQuadTransformer quadTransformer, Vec3d offset, ModelQuadView quad, float[] brightnesses, int[] lights) {
         float r, g, b;
 
         if (quad.hasColorIndex()) {
@@ -138,7 +139,31 @@ public class BlockRenderPipeline {
 
         quadTransformer.transform(copy);
 
-        ((ModelQuadConsumer) builder).write(copy);
+        writeQuad(consumer, copy);
+    }
+
+    private static void writeQuad(VertexConsumer consumer, ModelQuadViewMutable quad) {
+        if (consumer instanceof ModelQuadConsumer) {
+            ((ModelQuadConsumer) consumer).write(quad);
+        } else {
+            for (int i = 0; i < 4; i++) {
+                int color = quad.getColor(i);
+
+                float r = ColorUtil.normalize(ColorUtil.unpackColorR(color));
+                float g = ColorUtil.normalize(ColorUtil.unpackColorG(color));
+                float b = ColorUtil.normalize(ColorUtil.unpackColorB(color));
+                float a = ColorUtil.normalize(ColorUtil.unpackColorA(color));
+
+                int light = quad.getLight(i);
+                int norm = quad.getNormal(i);
+
+                float normX = QuadUtil.unpackNormalX(norm);
+                float normY = QuadUtil.unpackNormalY(norm);
+                float normZ = QuadUtil.unpackNormalZ(norm);
+
+                consumer.vertex(quad.getX(i), quad.getY(i), quad.getZ(i), r, g, b, a, quad.getTexU(i), quad.getTexV(i), light, OverlayTexture.DEFAULT_UV, normX, normY, normZ);
+            }
+        }
     }
 
     private int getQuadColor(BlockState state, BlockRenderView world, BlockPos pos, int colorIndex) {

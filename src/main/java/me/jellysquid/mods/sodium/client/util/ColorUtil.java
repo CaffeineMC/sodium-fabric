@@ -39,6 +39,10 @@ public class ColorUtil {
         return color & 0xFF;
     }
 
+    public static float unpackColorA(int color) {
+        return color & 0xFF;
+    }
+
     public static float normalize(float v) {
         return v * NORM_RGB;
     }
