@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.GlHelper;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
@@ -48,12 +49,19 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
     private int minChunkX, minChunkZ, maxChunkX, maxChunkZ;
     private int renderDistance;
 
+    private boolean useCulling;
+    private boolean useFogCulling;
+
     public ChunkGraph(ChunkBuilder chunkBuilder, ChunkRenderBackend<T> chunkRenderer, ChunkRenderManager renderManager, World world, int renderDistance) {
         this.chunkBuilder = chunkBuilder;
         this.chunkRenderer = chunkRenderer;
         this.renderManager = renderManager;
         this.world = world;
         this.renderDistance = renderDistance;
+
+        SodiumGameOptions options = SodiumClientMod.options();
+
+        this.useFogCulling = GlHelper.supportsNvFog() && this.renderDistance > 4 && options.quality.enableFog && options.performance.useFogChunkCulling;
     }
 
     public void calculateVisible(Camera camera, Vec3d cameraPos, BlockPos blockPos, int frame, Frustum frustum, boolean spectator) {
@@ -69,11 +77,10 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
         this.drawableChunks.clear();
         this.visibleBlockEntities.clear();
 
-        boolean cull = this.init(blockPos, camera, cameraPos, frustum, frame, spectator);
+        this.init(blockPos, camera, cameraPos, frustum, frame, spectator);
 
-        SodiumGameOptions options = SodiumClientMod.options();
+        boolean fogCulling = this.useCulling && this.useFogCulling;
 
-        boolean fogCulling = cull && this.renderDistance > 4 && options.quality.enableFog && options.performance.useFogChunkCulling;
         int maxChunkDistance = (this.renderDistance * 16) + 16;
 
         while (!this.iterationQueue.isEmpty()) {
@@ -85,7 +92,7 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
                 continue;
             }
 
-            this.addNeighbors(render, cull, frustum, frame);
+            this.addNeighbors(render, frustum, frame);
         }
     }
 
@@ -103,7 +110,7 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
         }
     }
 
-    private void addNeighbors(ChunkRender<T> render, boolean cull, Frustum frustum, int frame) {
+    private void addNeighbors(ChunkRender<T> render, Frustum frustum, int frame) {
         for (Direction adjDir : DirectionUtil.ALL_DIRECTIONS) {
             ChunkRender<T> adjRender = this.getAdjacentRender(render, adjDir);
 
@@ -111,7 +118,7 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
                 continue;
             }
 
-            if (cull && !this.isVisible(render, adjRender, adjDir, frustum, frame)) {
+            if (this.useCulling && !this.isVisible(render, adjRender, adjDir, frustum, frame)) {
                 continue;
             }
 
@@ -139,7 +146,7 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
         return adjRender.isVisible(frustum, frame);
     }
 
-    private boolean init(BlockPos blockPos, Camera camera, Vec3d cameraPos, Frustum frustum, int frame, boolean spectator) {
+    private void init(BlockPos blockPos, Camera camera, Vec3d cameraPos, Frustum frustum, int frame, boolean spectator) {
         MinecraftClient client = MinecraftClient.getInstance();
         ObjectArrayFIFOQueue<ChunkRender<T>> queue = this.iterationQueue;
 
@@ -200,7 +207,7 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
             }
         }
 
-        return cull;
+        this.useCulling = cull;
     }
 
     public ChunkRender<T> getOrCreateRender(BlockPos pos) {
