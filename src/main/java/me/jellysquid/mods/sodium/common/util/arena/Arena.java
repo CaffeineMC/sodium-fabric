@@ -12,10 +12,17 @@ public class Arena<T extends ReusableObject> {
         this.factory = factory;
     }
 
+    /**
+     * Drops all objects from the arena.
+     */
     public void reset() {
         this.pool.clear();
     }
 
+    /**
+     * Allocates an object from the arena and acquires a reference for it to be handed to the caller. If there are
+     * re-usable objects in the arena, they will be used instead of allocating a new object.
+     */
     public T allocate() {
         T obj = this.pool.poll();
 
@@ -23,12 +30,30 @@ public class Arena<T extends ReusableObject> {
             obj = this.factory.get();
         }
 
+        if (obj.hasReferences()) {
+            throw new IllegalStateException("Object in arena has references");
+        }
+
+        obj.acquireReference();
+
         return obj;
     }
 
-    public void reclaim(T obj) {
-        if (this.pool.offer(obj)) {
-            obj.reset();
+    /**
+     * Releases a reference to the object and adds it back into the arena if no references are held. This method passes
+     * ownership *away* from the caller. Using the object after this method returns is invalid.
+     */
+    public void release(T obj) {
+        if (obj.releaseReference()) {
+            this.pool.offer(obj);
         }
+    }
+
+    /**
+     * Acquires a reference to the object. This prevents the object from being reclaimed until
+     * {@link Arena#release(ReusableObject)} is called.
+     */
+    public void acquireReference(T obj) {
+        obj.acquireReference();
     }
 }
