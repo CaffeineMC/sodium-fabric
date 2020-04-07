@@ -50,22 +50,7 @@ public abstract class MixinBillboardParticle extends Particle {
         Quaternion rotation = camera.getRotation();
 
         if (this.angle != 0.0F) {
-            float angle = MathHelper.lerp(tickDelta, this.prevAngle, this.angle);
-
-            float r1 = angle * (float) Math.sin(angle / 2.0F);
-            float r2 = (float) Math.cos(angle / 2.0F);
-
-            float x = rotation.getB();
-            float y = rotation.getC();
-            float z = rotation.getD();
-            float a = rotation.getA();
-
-            float b2 = (x * r2) + (y * r1);
-            float c2 = (x * r1) + (y * r2);
-            float d2 = (a * r1) + (z * r2);
-            float a2 = (a * r2) - (z * r1);
-
-            rotation = new Quaternion(b2, c2, d2, a2);
+            rotation = this.rotateCamera(rotation, tickDelta);
         }
 
         float size = this.getSize(tickDelta);
@@ -84,28 +69,51 @@ public abstract class MixinBillboardParticle extends Particle {
         this.addVertex(vertices, 1.0F, -1.0F, minU, maxV, color, brightness, rotation, size, posX, posY, posZ);
     }
 
+    protected Quaternion rotateCamera(Quaternion rotation, float tickDelta) {
+        float angle = MathHelper.lerp(tickDelta, this.prevAngle, this.angle);
+
+        float rx = rotation.getB();
+        float ry = rotation.getC();
+        float rz = rotation.getD();
+        float rw = rotation.getA();
+
+        float r0 = angle / 2.0F;
+        float r1 = MathHelper.sin(r0);
+        float r2 = MathHelper.cos(r0);
+
+        float zx = rx * r2 + ry * r1;
+        float zy = -(rx * r1) + ry * r2;
+        float zz = rw * r1 + rz * r2;
+        float zw = rw * r2 - rz * r1;
+
+        return new Quaternion(zx, zy, zz, zw);
+    }
+
     private void addVertex(VertexConsumer vertices, float x, float y, float u, float v, int color, int brightness, Quaternion rotation, float scale, float offsetX, float offsetY, float offsetZ) {
         float rx = rotation.getB();
         float ry = rotation.getC();
         float rz = rotation.getD();
         float rw = rotation.getA();
 
-        float b1 = (rw * x) - (rz * y);
-        float c2 = (rw * y) + (rz * x);
-        float d2 = (rx * y) - (ry * x);
-        float a2 = (rx * x) - (ry * y);
+        // Quaternion.hamiltonProduct(x, y, 1.0F, 0.0F)
+        float qx = rw * x + ry - rz * y;
+        float qy = rw * y - rx + rz * x;
+        float qz = rw + rx * y - ry * x;
+        float qw = -(rx * x) - (ry * y - rz);
 
-        float cb = -rx;
-        float cc = -ry;
-        float cd = -rz;
+        // Quaternion.conjugate
+        float cx = -rx;
+        float cy = -ry;
+        float cz = -rz;
 
-        float fx = (a2 * cb) + (b1 * rw) + (c2 * cd) - (d2 * cc);
-        float fy = (a2 * cc) - (b1 * cd) + (c2 * rw) + (d2 * cb);
-        float fz = (a2 * cd) + (b1 * cc) - (c2 * cb) + (d2 * rw);
+        // Quaternion.hamiltonProduct
+        float fx = qw * cx + qx * rw + qy * cz - qz * cy;
+        float fy = qw * cy - qx * cz + qy * rw + qz * cx;
+        float fz = qw * cz + qx * cy - qy * cx + qz * rw;
 
-        fx = (fx * scale) + offsetX;
-        fy = (fy * scale) + offsetY;
-        fz = (fz * scale) + offsetZ;
+        fx = fx * scale + offsetX;
+        fy = fy * scale + offsetY;
+        fz = fz * scale + offsetZ;
 
         DirectVertexConsumer directVertexConsumer = DirectVertexConsumer.getDirectVertexConsumer(vertices);
 
