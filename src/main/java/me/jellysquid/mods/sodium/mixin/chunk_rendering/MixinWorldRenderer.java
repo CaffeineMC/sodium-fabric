@@ -1,8 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.chunk_rendering;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import me.jellysquid.mods.sodium.client.render.backends.vao.ChunkRenderBackendVAO;
-import me.jellysquid.mods.sodium.client.render.backends.vao.ChunkRenderStateVAO;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.GameOptions;
@@ -30,7 +28,7 @@ public abstract class MixinWorldRenderer {
     @Shadow
     @Final
     private Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions;
-    private ChunkRenderManager<ChunkRenderStateVAO> chunkManager;
+    private ChunkRenderManager chunkManager;
 
     @Redirect(method = "reload", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;viewDistance:I", ordinal = 1))
     private int nullifyBuiltChunkStorage(GameOptions options) {
@@ -40,7 +38,7 @@ public abstract class MixinWorldRenderer {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(MinecraftClient client, BufferBuilderStorage bufferBuilders, CallbackInfo ci) {
-        this.chunkManager = new ChunkRenderManager<>(client, new ChunkRenderBackendVAO());
+        this.chunkManager = new ChunkRenderManager(client);
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))

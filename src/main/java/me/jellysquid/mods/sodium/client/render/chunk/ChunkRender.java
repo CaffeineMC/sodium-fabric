@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ChunkRender<T extends ChunkRenderState> {
-    private final ChunkRenderManager<T> renderManager;
+    private final ChunkRenderManager renderManager;
     private final ChunkBuilder builder;
 
     @SuppressWarnings("unchecked")
@@ -44,7 +44,7 @@ public class ChunkRender<T extends ChunkRenderState> {
     public int rebuildFrame;
     public byte cullingState;
 
-    public ChunkRender(ChunkRenderManager<T> renderManager, ChunkBuilder builder, T renderState, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
+    public ChunkRender(ChunkRenderManager renderManager, ChunkBuilder builder, T renderState, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
         this.renderManager = renderManager;
         this.builder = builder;
         this.renderState = renderState;

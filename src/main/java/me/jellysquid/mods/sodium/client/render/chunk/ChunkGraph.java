@@ -5,9 +5,12 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
+import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
@@ -15,7 +18,9 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Frustum;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.*;
 import net.minecraft.world.World;
@@ -25,6 +30,8 @@ import net.minecraft.world.chunk.WorldChunk;
 import java.util.*;
 
 public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListener {
+    private final ChunkBuilder chunkBuilder;
+    private final ChunkRenderBackend<T> chunkRenderer;
     private final Long2ObjectOpenHashMap<ColumnRender<T>> columns = new Long2ObjectOpenHashMap<>();
 
     private final ObjectList<ColumnRender<T>> unloadQueue = new ObjectArrayList<>();
@@ -35,13 +42,15 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
 
     private final ObjectArrayFIFOQueue<ChunkRender<T>> iterationQueue = new ObjectArrayFIFOQueue<>();
 
-    private final ChunkRenderManager<T> renderManager;
+    private final ChunkRenderManager renderManager;
     private final World world;
 
     private int minChunkX, minChunkZ, maxChunkX, maxChunkZ;
     private int renderDistance;
 
-    public ChunkGraph(ChunkRenderManager<T> renderManager, World world, int renderDistance) {
+    public ChunkGraph(ChunkBuilder chunkBuilder, ChunkRenderBackend<T> chunkRenderer, ChunkRenderManager renderManager, World world, int renderDistance) {
+        this.chunkBuilder = chunkBuilder;
+        this.chunkRenderer = chunkRenderer;
         this.renderManager = renderManager;
         this.world = world;
         this.renderDistance = renderDistance;
@@ -200,7 +209,11 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
 
     public ChunkRender<T> getOrCreateRender(int x, int y, int z) {
         return this.columns.computeIfAbsent(ChunkPos.toLong(x, z), this::createColumn)
-                .getOrCreateChunk(y, this.renderManager::createChunkRender);
+                .getOrCreateChunk(y, this::createChunkRender);
+    }
+
+    private ChunkRender<T> createChunkRender(ColumnRender<T> column, int x, int y, int z) {
+        return new ChunkRender<>(this.renderManager, this.chunkBuilder, this.chunkRenderer.createRenderState(), column, x, y, z);
     }
 
     public ChunkRender<T> getRender(int x, int y, int z) {
@@ -339,7 +352,34 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
         return this.columns.get(ChunkPos.toLong(x, z));
     }
 
-    public void setRenderDistance(int renderDistance) {
-        this.renderDistance = renderDistance;
+    public void renderLayer(MatrixStack matrixStack, RenderLayer renderLayer, double x, double y, double z) {
+        boolean notTranslucent = renderLayer != RenderLayer.getTranslucent();
+
+        ObjectList<ChunkRender<T>> list = this.getDrawableChunks();
+        ObjectListIterator<ChunkRender<T>> it = list.listIterator(notTranslucent ? 0 : list.size());
+
+        this.chunkRenderer.begin(matrixStack);
+
+        boolean needManualTicking = SodiumClientMod.options().performance.animateOnlyVisibleTextures;
+
+        while (true) {
+            if (notTranslucent) {
+                if (!it.hasNext()) {
+                    break;
+                }
+            } else if (!it.hasPrevious()) {
+                break;
+            }
+
+            ChunkRender<T> render = notTranslucent ? it.next() : it.previous();
+
+            if (needManualTicking) {
+                render.tickTextures();
+            }
+
+            this.chunkRenderer.render(render, renderLayer, matrixStack, x, y, z);
+        }
+
+        this.chunkRenderer.end(matrixStack);
     }
 }
