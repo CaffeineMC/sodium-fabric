@@ -28,7 +28,7 @@ import java.util.*;
 public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListener {
     private final Long2ObjectOpenHashMap<ColumnRender<T>> columns = new Long2ObjectOpenHashMap<>();
 
-    private final ObjectList<ChunkRender<T>> unloadQueue = new ObjectArrayList<>();
+    private final ObjectList<ColumnRender<T>> unloadQueue = new ObjectArrayList<>();
     private final ObjectList<ChunkRender<T>> visibleChunks = new ObjectArrayList<>();
     private final ObjectList<ChunkRender<T>> drawableChunks = new ObjectArrayList<>();
 
@@ -152,16 +152,15 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
                 openFaces.remove(direction);
             }
 
-            if (openFaces.isEmpty() && !spectator) {
-                this.visibleChunks.add(node);
-            } else {
+            if (!openFaces.isEmpty() || spectator) {
                 if (spectator && this.world.getBlockState(blockPos).isFullOpaque(this.world, blockPos)) {
                     cull = false;
                 }
 
                 node.setRebuildFrame(frame);
-                queue.enqueue(node);
             }
+
+            queue.enqueue(node);
         } else {
             // Player is out-of-bounds
             int y = blockPos.getY() > 0 ? 248 : 8;
@@ -175,7 +174,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
                 for (int z2 = -this.renderDistance; z2 <= this.renderDistance; ++z2) {
                     ChunkRender<T> chunk = this.getOrCreateRender(new BlockPos(x + (x2 << 4) + 8, y, z + (z2 << 4) + 8));
 
-                    if (chunk==null || !frustum.isVisible(chunk.getBoundingBox())) {
+                    if (chunk == null || !frustum.isVisible(chunk.getBoundingBox())) {
                         continue;
                     }
 
@@ -252,7 +251,7 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
             for (int y = 0; y < 16; y++) {
                 for (int z = 0; z < 16; z++) {
                     BlockState state = section.getBlockState(x, y, z);
-                    mpos.set(x, y, z);
+                    mpos.set(x + pos.getX(), y + pos.getY(), z + pos.getZ());
 
                     if (state.isFullOpaque(this.world, mpos)) {
                         occlusionBuilder.markClosed(mpos);
@@ -286,8 +285,12 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
 
     public boolean cleanup() {
         if (!this.unloadQueue.isEmpty()) {
-            for (ChunkRender<T> render : this.unloadQueue) {
-                this.removeRenderer(render);
+            for (ColumnRender<T> column : this.unloadQueue) {
+                for (ChunkRender<T> render : column.getChunks()) {
+                    if (render != null) {
+                        this.removeRenderer(render);
+                    }
+                }
             }
 
             this.unloadQueue.clear();
@@ -328,10 +331,16 @@ public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListene
 
         if (column != null) {
             column.setChunkPresent(false);
+
+            this.unloadQueue.add(column);
         }
     }
 
     private ColumnRender<T> getRenderColumn(int x, int z) {
         return this.columns.get(ChunkPos.toLong(x, z));
+    }
+
+    public void setRenderDistance(int renderDistance) {
+        this.renderDistance = renderDistance;
     }
 }

@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderDataVAO;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRendererVAO;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
@@ -14,13 +15,22 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(WorldRenderer.class)
 public abstract class MixinWorldRenderer {
-    @Shadow @Final private BufferBuilderStorage bufferBuilders;
+    @Shadow
+    @Final
+    private BufferBuilderStorage bufferBuilders;
 
     private ChunkRenderManager<ChunkRenderDataVAO> chunkManager;
+
+    @Redirect(method = "reload", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;viewDistance:I", ordinal = 1))
+    private int nullifyBuiltChunkStorage(GameOptions options) {
+        // Do not allow any resources to be allocated
+        return 0;
+    }
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(MinecraftClient client, BufferBuilderStorage bufferBuilders, CallbackInfo ci) {
@@ -38,14 +48,6 @@ public abstract class MixinWorldRenderer {
     @Overwrite
     public int getCompletedChunkCount() {
         return this.chunkManager.getCompletedChunkCount();
-    }
-
-    /**
-     * @author JellySquid
-     */
-    @Overwrite
-    private void updateChunks(long limitTime) {
-        this.chunkManager.updateChunks(limitTime);
     }
 
     /**
@@ -83,11 +85,6 @@ public abstract class MixinWorldRenderer {
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
         this.chunkManager.update(camera, frustum, hasForcedFrustum, frame, spectator);
-    }
-
-    @Inject(method = "clearChunkRenderers", at = @At("RETURN"))
-    private void onChunkRenderersCleared(CallbackInfo ci) {
-        this.chunkManager.clearRenderers();
     }
 
     @Inject(method = "reload", at = @At("RETURN"))

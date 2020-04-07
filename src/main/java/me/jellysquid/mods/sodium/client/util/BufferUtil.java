@@ -1,11 +1,20 @@
 package me.jellysquid.mods.sodium.client.util;
 
+import net.minecraft.client.util.GlAllocationUtils;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
 
 public class BufferUtil {
     private static final boolean USE_UNSAFE = UnsafeUtil.isAvailable();
+
+    public static ByteBuffer copyAsNative(ByteBuffer src) {
+        ByteBuffer dst = GlAllocationUtils.allocateByteBuffer(src.capacity());
+        dst.put(src);
+        dst.flip();
+
+        return dst;
+    }
 
     public static void copyIntArray(int[] data, int limit, int offset, ByteBuffer buffer) {
         if (limit > data.length) {

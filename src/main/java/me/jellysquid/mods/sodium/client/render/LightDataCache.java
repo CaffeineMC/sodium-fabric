@@ -3,33 +3,34 @@ package me.jellysquid.mods.sodium.client.render;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
+import java.util.Arrays;
+
 public class LightDataCache {
     private final ChunkSlice world;
-    private final int xOffset, yOffset, zOffset;
-    private final int xSize, ySize, zSize;
-
     private final long[] light;
-
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
 
-    public LightDataCache(ChunkSlice world, int xOffset, int yOffset, int zOffset, int xSize, int ySize, int zSize) {
+    private int xOffset, yOffset, zOffset;
+
+    public LightDataCache(ChunkSlice world) {
         this.world = world;
+        this.light = new long[ChunkSlice.BLOCK_COUNT];
+    }
 
-        this.xOffset = xOffset;
-        this.yOffset = yOffset;
-        this.zOffset = zOffset;
-        this.xSize = xSize;
-        this.ySize = ySize;
-        this.zSize = zSize;
+    public void init(int x, int y, int z) {
+        this.xOffset = x;
+        this.yOffset = y;
+        this.zOffset = z;
 
-        this.light = new long[xSize * ySize * zSize];
+        Arrays.fill(this.light, 0L);
     }
 
     private int index(int x, int y, int z) {
-        return (z - this.zOffset) * this.xSize * this.ySize + (y - this.yOffset) * this.zSize + x - this.xOffset;
+        return (z - this.zOffset) * ChunkSlice.BLOCK_LENGTH * ChunkSlice.BLOCK_LENGTH + (y - this.yOffset) * ChunkSlice.BLOCK_LENGTH + x - this.xOffset;
     }
 
     public long get(int x, int y, int z, Direction d1, Direction d2) {
@@ -78,7 +79,10 @@ public class LightDataCache {
         }
 
         int lm = WorldRenderer.getLightmapCoordinates(this.world, state, this.pos);
-        boolean op = state.getOpacity(this.world, this.pos) == 0;
+
+        // FIX: Fluids are always non-translucent despite blocking light, so we need a special check here in order to
+        // solve lighting issues underwater.
+        boolean op = state.getFluidState() != Fluids.EMPTY.getDefaultState() || state.getOpacity(this.world, this.pos) == 0;
         boolean fo = state.isFullOpaque(this.world, this.pos);
 
         return packAO(ao) | packLM(lm) | packOP(op) | packFO(fo) | (1L << 60);

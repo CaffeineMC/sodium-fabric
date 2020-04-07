@@ -10,10 +10,10 @@ import net.minecraft.util.math.BlockPos;
 import java.util.Arrays;
 
 public class FlatLightPipeline implements LightPipeline {
-    private final LightDataCache lightCache;
+    private LightDataCache lightCache;
 
-    public FlatLightPipeline(LightDataCache lightCache) {
-        this.lightCache = lightCache;
+    public void setLightCache(LightDataCache cache) {
+        this.lightCache = cache;
     }
 
     @Override

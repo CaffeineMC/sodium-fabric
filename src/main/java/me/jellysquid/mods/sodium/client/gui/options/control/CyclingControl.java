@@ -1,10 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.gui.options.Option;
-import me.jellysquid.mods.sodium.client.gui.options.OptionImpl;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
-import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.util.Rect2i;
 import org.apache.commons.lang3.Validate;
 

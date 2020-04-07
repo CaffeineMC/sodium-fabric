@@ -4,10 +4,12 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRenderUploadTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ColumnRender;
+import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -22,14 +24,12 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class ChunkRenderManager<T extends ChunkRenderData> {
+public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatusListener {
     private final MinecraftClient client;
 
-    private final ObjectList<ChunkRender<T>> chunksToRebuild = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
     private final ChunkRenderer<T> chunkRenderer;
 
@@ -68,8 +68,6 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         this.renderDistance = this.client.options.viewDistance;
 
         if (world == null) {
-            this.chunksToRebuild.clear();
-
             if (this.chunkGraph != null) {
                 this.chunkGraph.reset();
                 this.chunkGraph = null;
@@ -89,7 +87,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             this.bufferBuilders = MinecraftClient.getInstance().getBufferBuilders();
             this.chunkGraph = new ChunkGraph<>(this, this.world, this.renderDistance);
 
-            ((ChunkManagerWithStatusListener) world.getChunkManager()).setListener(this.chunkGraph);
+            ((ChunkManagerWithStatusListener) world.getChunkManager()).setListener(this);
         }
     }
 
@@ -101,34 +99,8 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         this.isRenderGraphDirty = true;
     }
 
-    public void updateChunks(long limitTime) {
-        this.isRenderGraphDirty |= this.chunkBuilder.upload();
-        this.isRenderGraphDirty |= this.chunkGraph.cleanup();
-
-        int limit = this.chunkBuilder.getBudget();
-        int uploaded = 0;
-
-        if (!this.chunksToRebuild.isEmpty()) {
-            Iterator<ChunkRender<T>> iterator = this.chunksToRebuild.iterator();
-
-            while (uploaded < limit && iterator.hasNext()) {
-                ChunkRender<T> chunk = iterator.next();
-
-                if (chunk.needsImportantRebuild()) {
-                    chunk.rebuildImmediately();
-                } else {
-                    chunk.rebuild();
-                }
-
-                iterator.remove();
-
-                ++uploaded;
-            }
-        }
-    }
-
     public boolean isTerrainRenderComplete() {
-        return this.chunksToRebuild.isEmpty() && this.chunkBuilder.isEmpty();
+        return this.chunkBuilder.isEmpty();
     }
 
     public void update(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
@@ -154,7 +126,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
 
-        this.isRenderGraphDirty = this.isRenderGraphDirty || !this.chunksToRebuild.isEmpty() ||
+        this.isRenderGraphDirty = this.isRenderGraphDirty ||
                 cameraPos.x != this.lastCameraX || cameraPos.y != this.lastCameraY || cameraPos.z != this.lastCameraZ ||
                 pitch != this.lastCameraPitch || yaw != this.lastCameraYaw;
 
@@ -182,12 +154,12 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
         this.client.getProfiler().swap("rebuildNear");
 
-        this.performRebuilds(blockPos);
+        this.updateChunks(blockPos);
 
         this.client.getProfiler().pop();
     }
 
-    private void performRebuilds(BlockPos blockPos) {
+    private void updateChunks(BlockPos blockPos) {
         List<CompletableFuture<ChunkRenderUploadTask>> futures = new ArrayList<>();
 
         int budget = this.chunkBuilder.getBudget();
@@ -215,7 +187,10 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             }
         }
 
-        // TODO: perform an upload on the main-thread when any chunk is completed to reduce idle
+        // Try to complete some other work on the main thread while we wait for rebuilds to complete
+        this.isRenderGraphDirty |= this.chunkBuilder.upload();
+        this.isRenderGraphDirty |= this.chunkGraph.cleanup();
+
         for (CompletableFuture<ChunkRenderUploadTask> future : futures) {
             ChunkRenderUploadTask task = future.join();
 
@@ -263,9 +238,9 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         ObjectList<ChunkRender<T>> list = this.chunkGraph.getDrawableChunks();
         ObjectListIterator<ChunkRender<T>> it = list.listIterator(notTranslucent ? 0 : list.size());
 
-        this.chunkRenderer.begin();
+        this.chunkRenderer.begin(matrixStack);
 
-        RenderSystem.pushMatrix();
+        boolean needManualTicking = SodiumClientMod.options().performance.animateOnlyVisibleTextures;
 
         while (true) {
             if (notTranslucent) {
@@ -276,12 +251,16 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
                 break;
             }
 
-            this.chunkRenderer.render(notTranslucent ? it.next() : it.previous(), renderLayer, matrixStack, x, y, z);
+            ChunkRender<T> render = notTranslucent ? it.next() : it.previous();
+
+            if (needManualTicking) {
+                render.tickTextures();
+            }
+
+            this.chunkRenderer.render(render, renderLayer, matrixStack, x, y, z);
         }
 
-        this.chunkRenderer.end();
-
-        RenderSystem.popMatrix();
+        this.chunkRenderer.end(matrixStack);
 
         RenderSystem.clearCurrentColor();
 
@@ -294,10 +273,6 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         // TODO: re-implement
     }
 
-    public void clearRenderers() {
-        this.chunksToRebuild.clear();
-    }
-
     public void reload() {
         if (this.world == null) {
             return;
@@ -308,9 +283,10 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
         if (this.chunkGraph != null) {
             this.chunkGraph.reset();
+            this.chunkGraph.setRenderDistance(this.renderDistance);
         }
 
-        this.chunkBuilder.reset();
+        this.chunkBuilder.setWorld(this.world);
     }
 
     public ChunkRender<T> createChunkRender(ColumnRender<T> column, int x, int y, int z) {
@@ -343,5 +319,17 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
             matrices.pop();
         }
+    }
+
+    @Override
+    public void onChunkAdded(int x, int z) {
+        this.chunkBuilder.clearCachesForChunk(x, z);
+        this.chunkGraph.onChunkAdded(x, z);
+    }
+
+    @Override
+    public void onChunkRemoved(int x, int z) {
+        this.chunkBuilder.clearCachesForChunk(x, z);
+        this.chunkGraph.onChunkRemoved(x, z);
     }
 }

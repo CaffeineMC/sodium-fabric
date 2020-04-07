@@ -5,7 +5,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Modifier;
 
 public class SodiumGameOptions {
@@ -18,6 +21,7 @@ public class SodiumGameOptions {
         public boolean useVAOs = true;
         public boolean useLargeBuffers = true;
         public boolean useFogChunkCulling = true;
+        public boolean animateOnlyVisibleTextures = true;
     }
 
     public static class QualitySettings {

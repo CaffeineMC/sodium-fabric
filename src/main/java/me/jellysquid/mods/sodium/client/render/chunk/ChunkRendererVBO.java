@@ -16,11 +16,6 @@ public class ChunkRendererVBO extends AbstractChunkRenderer<ChunkRenderDataVBO> 
     }
 
     @Override
-    public void begin() {
-
-    }
-
-    @Override
     public void render(ChunkRender<ChunkRenderDataVBO> chunk, RenderLayer layer, MatrixStack matrixStack, double x, double y, double z) {
         ChunkRenderDataVBO data = chunk.getRenderData();
         GlVertexBuffer vbo = data.getVertexBufferForLayer(layer);
@@ -29,19 +24,19 @@ public class ChunkRendererVBO extends AbstractChunkRenderer<ChunkRenderDataVBO> 
             return;
         }
 
-        this.beginChunkRender(matrixStack, chunk, x, y, z);
+        this.beginChunkRender(chunk, x, y, z);
 
         vbo.bind();
         VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL.startDrawing(0L);
         vbo.draw(matrixStack.peek().getModel(), GL11.GL_QUADS);
 
-        this.endChunkRender(matrixStack, chunk, x, y, z);
-
         this.lastRender = vbo;
     }
 
     @Override
-    public void end() {
+    public void end(MatrixStack matrixStack) {
+        super.end(matrixStack);
+
         if (this.lastRender != null) {
             this.lastRender.unbind();
             this.lastRender = null;

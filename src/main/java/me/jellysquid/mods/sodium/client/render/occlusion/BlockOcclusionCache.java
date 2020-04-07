@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.occlusion;
 
-import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ByteOpenHashMap;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.BooleanBiFunction;
@@ -32,7 +31,7 @@ public class BlockOcclusionCache {
             NeighborGroup cache = this.cache;
             cache.self = state;
             cache.other = adjState;
-            cache.facing =  facing;
+            cache.facing = facing;
 
             Object2ByteOpenHashMap<NeighborGroup> map = this.map;
 

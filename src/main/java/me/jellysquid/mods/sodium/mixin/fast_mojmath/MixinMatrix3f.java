@@ -1,22 +1,31 @@
 package me.jellysquid.mods.sodium.mixin.fast_mojmath;
 
-import me.jellysquid.mods.sodium.client.render.matrix.ExtendedMatrix;
+import me.jellysquid.mods.sodium.client.render.matrix.Matrix3fExtended;
 import net.minecraft.client.util.math.Matrix3f;
 import net.minecraft.util.math.Quaternion;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(Matrix3f.class)
-public class MixinMatrix3f implements ExtendedMatrix {
-    @Shadow protected float a00;
-    @Shadow protected float a01;
-    @Shadow protected float a02;
-    @Shadow protected float a10;
-    @Shadow protected float a11;
-    @Shadow protected float a12;
-    @Shadow protected float a20;
-    @Shadow protected float a21;
-    @Shadow protected float a22;
+public class MixinMatrix3f implements Matrix3fExtended {
+    @Shadow
+    protected float a00;
+    @Shadow
+    protected float a01;
+    @Shadow
+    protected float a02;
+    @Shadow
+    protected float a10;
+    @Shadow
+    protected float a11;
+    @Shadow
+    protected float a12;
+    @Shadow
+    protected float a20;
+    @Shadow
+    protected float a21;
+    @Shadow
+    protected float a22;
 
     @Override
     public void rotate(Quaternion quaternion) {
@@ -81,15 +90,15 @@ public class MixinMatrix3f implements ExtendedMatrix {
 
         float yw = y * w;
 
-        float ta20 = 2.0F * (- yw);
-        float ta02 = 2.0F * (+ yw);
+        float ta20 = 2.0F * (-yw);
+        float ta02 = 2.0F * (+yw);
 
         float a00 = this.a00 * ta00 + this.a02 * ta20;
         float a02 = this.a00 * ta02 + this.a02 * ta22;
         float a10 = this.a10 * ta00 + this.a12 * ta20;
         float a12 = this.a10 * ta02 + this.a12 * ta22;
         float a20 = this.a20 * ta00 + this.a22 * ta20;
-        float a22 = this.a20 * ta02  + this.a22 * ta22;
+        float a22 = this.a20 * ta02 + this.a22 * ta22;
 
         this.a00 = a00;
         this.a02 = a02;
@@ -175,10 +184,5 @@ public class MixinMatrix3f implements ExtendedMatrix {
         this.a20 = a20;
         this.a21 = a21;
         this.a22 = a22;
-    }
-
-    @Override
-    public void translate(float x, float y, float z) {
-        throw new UnsupportedOperationException();
     }
 }

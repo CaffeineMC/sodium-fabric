@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.gui.options;
 
 import me.jellysquid.mods.sodium.client.gui.options.binding.GenericBinding;
-import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.binding.OptionBinding;
+import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import org.apache.commons.lang3.Validate;
 

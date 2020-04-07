@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.quad;
 
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 
 import static me.jellysquid.mods.sodium.client.util.QuadUtil.*;
@@ -100,5 +101,10 @@ public class ModelQuad implements ModelQuadViewMutable {
     @Override
     public Direction getFacing() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Sprite getSprite() {
+        return null;
     }
 }

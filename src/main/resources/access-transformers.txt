@@ -1,2 +1,4 @@
 net/minecraft/client/model/ModelPart$Vertex
 net/minecraft/client/model/ModelPart$Quad
+net/minecraft/client/texture/Sprite$Interpolation
+net/minecraft/client/texture/Sprite$Interpolation method_24128()V
