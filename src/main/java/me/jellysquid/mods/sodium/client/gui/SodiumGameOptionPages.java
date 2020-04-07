@@ -163,6 +163,17 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
+                .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)
+                        .setName("Smooth Lighting")
+                        .setTooltip("Controls the quality of smooth lighting effects.\n" +
+                                "\nOff - No smooth lighting." +
+                                "\nLow - Smooth block lighting only." +
+                                "\nHigh - Smooth block and entity lighting.")
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.LightingQuality.values()))
+                        .setBinding((opts, value) -> opts.quality.smoothLighting = value, opts -> opts.quality.smoothLighting)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fog")
                         .setTooltip("If enabled, a fog effect will be used for terrain in the distance.")
