@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ChunkRender<T extends ChunkRenderState> {
+    private final ChunkRenderManager<T> renderManager;
     private final ChunkBuilder builder;
 
     @SuppressWarnings("unchecked")
@@ -43,7 +44,8 @@ public class ChunkRender<T extends ChunkRenderState> {
     public int rebuildFrame;
     public byte cullingState;
 
-    public ChunkRender(ChunkBuilder builder, T renderState, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
+    public ChunkRender(ChunkRenderManager<T> renderManager, ChunkBuilder builder, T renderState, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
+        this.renderManager = renderManager;
         this.builder = builder;
         this.renderState = renderState;
         this.column = column;
@@ -127,7 +129,16 @@ public class ChunkRender<T extends ChunkRenderState> {
         this.cancelRebuildTask();
 
         this.renderState.clearData();
-        this.meshInfo = ChunkMeshInfo.ABSENT;
+        this.setMeshInfo(ChunkMeshInfo.ABSENT);
+    }
+
+    private void setMeshInfo(ChunkMeshInfo info) {
+        if (info == null) {
+            throw new NullPointerException("Mesh information must not be null");
+        }
+
+        this.renderManager.onChunkRenderUpdated(this.meshInfo, info);
+        this.meshInfo = info;
     }
 
     public boolean hasChunkNeighbors(ChunkGraph<T> graph) {
@@ -161,7 +172,7 @@ public class ChunkRender<T extends ChunkRenderState> {
 
     public void upload(ChunkMeshInfo meshInfo) {
         this.renderState.uploadData(meshInfo.getLayers());
-        this.meshInfo = meshInfo;
+        this.setMeshInfo(meshInfo);
     }
 
     public void finishRebuild(WorldSlice slice) {
