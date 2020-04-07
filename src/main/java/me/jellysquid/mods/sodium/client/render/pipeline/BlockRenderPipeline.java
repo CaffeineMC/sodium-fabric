@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
-import me.jellysquid.mods.sodium.client.render.LightDataCache;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
+import me.jellysquid.mods.sodium.client.render.light.cache.LightDataCache;
 import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
 import me.jellysquid.mods.sodium.client.render.mesh.ChunkMeshBuilder;

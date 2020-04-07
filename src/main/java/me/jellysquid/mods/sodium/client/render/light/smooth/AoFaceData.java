@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.light.smooth;
 
-import me.jellysquid.mods.sodium.client.render.LightDataCache;
+import me.jellysquid.mods.sodium.client.render.light.cache.LightDataCache;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
-import static me.jellysquid.mods.sodium.client.render.LightDataCache.*;
+import static me.jellysquid.mods.sodium.client.render.light.cache.ChunkLightDataCache.*;
 
 class AoFaceData {
     public final int[] lm = new int[4];

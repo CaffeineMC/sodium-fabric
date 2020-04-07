@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render;
+package me.jellysquid.mods.sodium.client.render.light.cache;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.WorldRenderer;
@@ -8,48 +8,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockRenderView;
 
-import java.util.Arrays;
+public abstract class LightDataCache {
+    protected static final FluidState EMPTY_FLUID_STATE = Fluids.EMPTY.getDefaultState();
 
-public class LightDataCache {
-    private static final FluidState EMPTY_FLUID_STATE = Fluids.EMPTY.getDefaultState();
-
-    private final byte[] op;
-    private final long[] light;
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
 
-    private final int xSize, ySize, zSize;
-
-    private BlockRenderView world;
-    private int xOffset, yOffset, zOffset;
-
-    public LightDataCache(int size) {
-        this(size, size, size);
-    }
-
-    public LightDataCache(int xSize, int ySize, int zSize) {
-        this.xSize = xSize;
-        this.ySize = ySize;
-        this.zSize = zSize;
-
-        int len = xSize * ySize * zSize;
-
-        this.light = new long[len];
-        this.op = new byte[len];
-    }
-
-    public void init(BlockRenderView world, int x, int y, int z) {
-        this.world = world;
-        this.xOffset = x;
-        this.yOffset = y;
-        this.zOffset = z;
-
-        Arrays.fill(this.light, 0L);
-        Arrays.fill(this.op, (byte) 0);
-    }
-
-    private int index(int x, int y, int z) {
-        return (z - this.zOffset) * this.xSize * this.ySize + (y - this.yOffset) * this.zSize + x - this.xOffset;
-    }
+    protected BlockRenderView world;
 
     public long get(int x, int y, int z, Direction d1, Direction d2) {
         return this.get(x + d1.getOffsetX() + d2.getOffsetX(),
@@ -71,19 +35,9 @@ public class LightDataCache {
         return this.get(pos.getX(), pos.getY(), pos.getZ());
     }
 
-    public long get(int x, int y, int z) {
-        int l = this.index(x, y, z);
+    public abstract long get(int x, int y, int z);
 
-        long word = this.light[l];
-
-        if (word != 0) {
-            return word;
-        }
-
-        return this.light[l] = this.compute(x, y, z);
-    }
-
-    private long compute(int x, int y, int z) {
+    protected long compute(int x, int y, int z) {
         BlockPos pos = this.pos.set(x, y, z);
         BlockRenderView world = this.world;
 
@@ -108,7 +62,7 @@ public class LightDataCache {
         return packAO(ao) | packLM(lm) | packOP(op) | packFO(fo) | (1L << 60);
     }
 
-    private static long packOP(boolean opaque) {
+    public static long packOP(boolean opaque) {
         return (opaque ? 1L : 0L) << 56;
     }
 
@@ -116,7 +70,7 @@ public class LightDataCache {
         return ((word >>> 56) & 0b1) != 0;
     }
 
-    private static long packFO(boolean opaque) {
+    public static long packFO(boolean opaque) {
         return (opaque ? 1L : 0L) << 57;
     }
 
