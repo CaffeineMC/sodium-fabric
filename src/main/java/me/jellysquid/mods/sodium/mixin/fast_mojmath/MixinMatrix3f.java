@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.fast_mojmath;
 
-import me.jellysquid.mods.sodium.client.render.matrix.Matrix3fExtended;
 import me.jellysquid.mods.sodium.client.util.QuadUtil;
+import me.jellysquid.mods.sodium.common.util.matrix.Matrix3fExtended;
 import net.minecraft.client.util.math.Matrix3f;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Quaternion;
