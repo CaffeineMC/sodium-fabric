@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.chunk_rendering;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.client.render.backends.vao.ChunkRenderBackendVAO;
 import me.jellysquid.mods.sodium.client.render.backends.vao.ChunkRenderStateVAO;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
@@ -18,12 +19,17 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.SortedSet;
+
 @Mixin(WorldRenderer.class)
 public abstract class MixinWorldRenderer {
     @Shadow
     @Final
     private BufferBuilderStorage bufferBuilders;
 
+    @Shadow
+    @Final
+    private Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions;
     private ChunkRenderManager<ChunkRenderStateVAO> chunkManager;
 
     @Redirect(method = "reload", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;viewDistance:I", ordinal = 1))
@@ -121,11 +127,11 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void scheduleChunkRender(int x, int y, int z, boolean important) {
-        this.chunkManager.scheduleRebuildForBlock(x, y, z, important);
+        this.chunkManager.scheduleRebuildForBlock(x, y, z);
     }
 
     @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/WorldRenderer;noCullingBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
     private void renderTileEntities(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
-        this.chunkManager.renderTileEntities(matrices, this.bufferBuilders, camera, tickDelta);
+        this.chunkManager.renderTileEntities(matrices, this.bufferBuilders, this.blockBreakingProgressions, camera, tickDelta);
     }
 }

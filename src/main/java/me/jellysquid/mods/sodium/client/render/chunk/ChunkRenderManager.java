@@ -1,9 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
@@ -16,6 +17,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
@@ -24,14 +26,11 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStatusListener {
     private final MinecraftClient client;
-
-    private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
     private final ChunkRenderBackend<T> chunkRenderer;
 
     private ClientWorld world;
@@ -55,6 +54,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     private ChunkGraph<T> chunkGraph;
     private BufferBuilderStorage bufferBuilders;
+    private Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
     public ChunkRenderManager(MinecraftClient client, ChunkRenderBackend<T> chunkRenderer) {
         this.client = client;
@@ -291,10 +291,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     public ChunkRender<T> createChunkRender(ColumnRender<T> column, int x, int y, int z) {
-        return new ChunkRender<>(this.chunkBuilder, this.chunkRenderer.createRenderState(), column, x, y, z);
+        return new ChunkRender<>(this, this.chunkBuilder, this.chunkRenderer.createRenderState(), column, x, y, z);
     }
 
-    public void scheduleRebuildForBlock(int x, int y, int z, boolean important) {
+    public void scheduleRebuildForBlock(int x, int y, int z) {
         ChunkRender<T> node = this.chunkGraph.getRender(x, y, z);
 
         if (node != null) {
@@ -302,7 +302,8 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         }
     }
 
-    public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Camera camera, float tickDelta) {
+    public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
+                                   Camera camera, float tickDelta) {
         VertexConsumerProvider.Immediate immediate = bufferBuilders.getEntityVertexConsumers();
 
         Vec3d cameraPos = camera.getPos();
@@ -311,6 +312,29 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         double z = cameraPos.getZ();
 
         for (BlockEntity blockEntity : this.chunkGraph.getVisibleBlockEntities()) {
+            BlockPos pos = blockEntity.getPos();
+
+            matrices.push();
+            matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
+
+            VertexConsumerProvider consumer = immediate;
+            SortedSet<BlockBreakingInfo> breakingInfos = blockBreakingProgressions.get(pos.asLong());
+
+            if (breakingInfos != null && !breakingInfos.isEmpty()) {
+                int stage = breakingInfos.last().getStage();
+
+                if (stage >= 0) {
+                    VertexConsumer transformer = new TransformingVertexConsumer(this.bufferBuilders.getEffectVertexConsumers().getBuffer(ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.get(stage)), matrices.peek());
+                    consumer = (layer) -> layer.method_23037() ? VertexConsumers.dual(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
+                }
+            }
+
+            BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, tickDelta, matrices, consumer);
+
+            matrices.pop();
+        }
+
+        for (BlockEntity blockEntity : this.globalBlockEntities) {
             BlockPos pos = blockEntity.getPos();
 
             matrices.push();
@@ -332,5 +356,19 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     public void onChunkRemoved(int x, int z) {
         this.chunkBuilder.clearCachesForChunk(x, z);
         this.chunkGraph.onChunkRemoved(x, z);
+    }
+
+    public void onChunkRenderUpdated(ChunkMeshInfo meshBefore, ChunkMeshInfo meshAfter) {
+        Collection<BlockEntity> entitiesBefore = meshBefore.getGlobalBlockEntities();
+
+        if (!entitiesBefore.isEmpty()) {
+            this.globalBlockEntities.removeAll(entitiesBefore);
+        }
+
+        Collection<BlockEntity> entitiesAfter = meshAfter.getGlobalBlockEntities();
+
+        if (!entitiesAfter.isEmpty()) {
+            this.globalBlockEntities.addAll(entitiesAfter);
+        }
     }
 }
