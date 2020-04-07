@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.pipeline;
 
 import com.google.common.collect.ImmutableList;
-import me.jellysquid.mods.sodium.client.render.mesh.ChunkMeshBuilder;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.util.BufferUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;
@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
-public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements ChunkMeshBuilder {
+public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements ModelQuadConsumer {
     @Shadow
     private VertexFormat format;
 

@@ -1,8 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderBuildTask;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderUploadTask;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
-import me.jellysquid.mods.sodium.client.world.BiomeCacheManager;
+import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
 import me.jellysquid.mods.sodium.common.util.arena.Arena;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.Vector3d;
@@ -32,7 +34,7 @@ public class ChunkBuilder {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
-    private final Arena<ChunkSlice> chunkSliceArena;
+    private final Arena<WorldSlice> chunkSliceArena;
 
     private World world;
     private Vector3d cameraPosition;
@@ -42,7 +44,7 @@ public class ChunkBuilder {
 
     public ChunkBuilder() {
         this.limitThreads = getOptimalThreadCount();
-        this.chunkSliceArena = new Arena<>(this.getBudget(), ChunkSlice::new);
+        this.chunkSliceArena = new Arena<>(this.getBudget(), WorldSlice::new);
     }
 
     public int getBudget() {
@@ -178,20 +180,20 @@ public class ChunkBuilder {
         return Math.max(1, Runtime.getRuntime().availableProcessors());
     }
 
-    public ChunkSlice createChunkSlice(ChunkSectionPos pos) {
-        WorldChunk[] chunks = ChunkSlice.getChunks(this.world, pos);
+    public WorldSlice createChunkSlice(ChunkSectionPos pos) {
+        WorldChunk[] chunks = WorldSlice.getChunks(this.world, pos);
 
         if (chunks == null) {
             return null;
         }
 
-        ChunkSlice slice = this.chunkSliceArena.allocate();
+        WorldSlice slice = this.chunkSliceArena.allocate();
         slice.init(this, this.world, pos, chunks);
 
         return slice;
     }
 
-    public void releaseChunkSlice(ChunkSlice slice) {
+    public void releaseChunkSlice(WorldSlice slice) {
         this.chunkSliceArena.release(slice);
     }
 

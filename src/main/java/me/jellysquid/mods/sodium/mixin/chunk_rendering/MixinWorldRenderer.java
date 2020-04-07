@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.chunk_rendering;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderDataVAO;
+import me.jellysquid.mods.sodium.client.render.backends.vao.ChunkRenderBackendVAO;
+import me.jellysquid.mods.sodium.client.render.backends.vao.ChunkRenderStateVAO;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRendererVAO;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.render.*;
@@ -24,7 +24,7 @@ public abstract class MixinWorldRenderer {
     @Final
     private BufferBuilderStorage bufferBuilders;
 
-    private ChunkRenderManager<ChunkRenderDataVAO> chunkManager;
+    private ChunkRenderManager<ChunkRenderStateVAO> chunkManager;
 
     @Redirect(method = "reload", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;viewDistance:I", ordinal = 1))
     private int nullifyBuiltChunkStorage(GameOptions options) {
@@ -34,7 +34,7 @@ public abstract class MixinWorldRenderer {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(MinecraftClient client, BufferBuilderStorage bufferBuilders, CallbackInfo ci) {
-        this.chunkManager = new ChunkRenderManager<>(client, new ChunkRendererVAO());
+        this.chunkManager = new ChunkRenderManager<>(client, new ChunkRenderBackendVAO());
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))

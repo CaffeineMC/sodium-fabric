@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshInfo;
+import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -43,11 +43,11 @@ public class FluidRenderPipeline {
         this.waterOverlaySprite = ModelLoader.WATER_OVERLAY.getSprite();
     }
 
-    private static boolean isSameFluid(ChunkSlice world, int x, int y, int z, Fluid fluid) {
+    private static boolean isSameFluid(WorldSlice world, int x, int y, int z, Fluid fluid) {
         return world.getFluidState(x, y, z).getFluid().matchesType(fluid);
     }
 
-    private static boolean isSideCovered(ChunkSlice world, int x, int y, int z, Direction dir, float height) {
+    private static boolean isSideCovered(WorldSlice world, int x, int y, int z, Direction dir, float height) {
         BlockState blockState = world.getBlockState(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
 
         if (blockState.isOpaque()) {
@@ -60,7 +60,7 @@ public class FluidRenderPipeline {
         return false;
     }
 
-    public boolean render(ChunkMeshInfo.Builder meshInfo, ChunkSlice world, BlockPos pos, VertexConsumer builder, FluidState fluidState) {
+    public boolean render(ChunkMeshInfo.Builder meshInfo, WorldSlice world, BlockPos pos, VertexConsumer builder, FluidState fluidState) {
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();
@@ -305,7 +305,7 @@ public class FluidRenderPipeline {
         return (Math.max(bl1, bl2)) | (Math.max(sl1, sl2)) << 16;
     }
 
-    private float getNorthWestCornerFluidHeight(ChunkSlice world, int x, int y, int z, Fluid fluid) {
+    private float getNorthWestCornerFluidHeight(WorldSlice world, int x, int y, int z, Fluid fluid) {
         int int_1 = 0;
         float float_1 = 0.0F;
 

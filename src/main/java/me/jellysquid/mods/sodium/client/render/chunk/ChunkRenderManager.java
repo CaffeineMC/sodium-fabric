@@ -5,10 +5,11 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRenderUploadTask;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ColumnRender;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderUploadTask;
+import me.jellysquid.mods.sodium.client.world.ChunkManagerWithStatusListener;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
@@ -27,11 +28,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatusListener {
+public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStatusListener {
     private final MinecraftClient client;
 
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
-    private final ChunkRenderer<T> chunkRenderer;
+    private final ChunkRenderBackend<T> chunkRenderer;
 
     private ClientWorld world;
 
@@ -55,7 +56,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatu
     private ChunkGraph<T> chunkGraph;
     private BufferBuilderStorage bufferBuilders;
 
-    public ChunkRenderManager(MinecraftClient client, ChunkRenderer<T> chunkRenderer) {
+    public ChunkRenderManager(MinecraftClient client, ChunkRenderBackend<T> chunkRenderer) {
         this.client = client;
         this.chunkRenderer = chunkRenderer;
     }
@@ -290,7 +291,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatu
     }
 
     public ChunkRender<T> createChunkRender(ColumnRender<T> column, int x, int y, int z) {
-        return new ChunkRender<>(this.chunkBuilder, this.chunkRenderer.createRenderData(), column, x, y, z);
+        return new ChunkRender<>(this.chunkBuilder, this.chunkRenderer.createRenderState(), column, x, y, z);
     }
 
     public void scheduleRebuildForBlock(int x, int y, int z, boolean important) {

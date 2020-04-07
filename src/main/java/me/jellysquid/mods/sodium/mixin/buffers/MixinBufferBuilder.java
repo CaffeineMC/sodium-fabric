@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.buffers;
 
-import me.jellysquid.mods.sodium.client.render.matrix.MatrixUtil;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.render.pipeline.DirectVertexConsumer;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.util.ColorUtil;
 import me.jellysquid.mods.sodium.client.util.QuadUtil;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
+import me.jellysquid.mods.sodium.common.util.matrix.MatrixUtil;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.Matrix3f;

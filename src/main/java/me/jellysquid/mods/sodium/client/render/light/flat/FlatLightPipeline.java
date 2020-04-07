@@ -3,8 +3,8 @@ package me.jellysquid.mods.sodium.client.render.light.flat;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
 import me.jellysquid.mods.sodium.client.render.light.cache.LightDataCache;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadFlags;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;

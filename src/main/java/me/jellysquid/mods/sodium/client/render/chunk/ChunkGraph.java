@@ -7,8 +7,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ColumnRender;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
@@ -25,7 +24,7 @@ import net.minecraft.world.chunk.WorldChunk;
 
 import java.util.*;
 
-public class ChunkGraph<T extends ChunkRenderData> implements ChunkStatusListener {
+public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListener {
     private final Long2ObjectOpenHashMap<ColumnRender<T>> columns = new Long2ObjectOpenHashMap<>();
 
     private final ObjectList<ColumnRender<T>> unloadQueue = new ObjectArrayList<>();
