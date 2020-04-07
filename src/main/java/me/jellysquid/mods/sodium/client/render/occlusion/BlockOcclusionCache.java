@@ -87,9 +87,9 @@ public class BlockOcclusionCache {
 
         @Override
         public int hashCode() {
-            int result = self.hashCode();
-            result = 31 * result + other.hashCode();
-            result = 31 * result + facing.hashCode();
+            int result = this.self.hashCode();
+            result = 31 * result + this.other.hashCode();
+            result = 31 * result + this.facing.hashCode();
 
             return result;
         }

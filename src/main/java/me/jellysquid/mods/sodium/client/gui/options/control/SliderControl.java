@@ -93,8 +93,8 @@ public class SliderControl implements Control<Integer> {
             int thumbX = sliderX + thumbOffset - THUMB_WIDTH;
             int trackY = sliderY + (sliderHeight / 2) - TRACK_HEIGHT;
 
-            drawRect(thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
-            drawRect(sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
+            this.drawRect(thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
+            this.drawRect(sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
 
             String label = String.valueOf(this.getIntValue());
 

@@ -18,7 +18,7 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
 
     @Override
     public ChunkRenderUploadTask performBuild(ChunkRenderPipeline pipeline, VertexBufferCache buffers) {
-        return new ChunkRenderEmptyBuildTask.EmptyUploadTask(render);
+        return new ChunkRenderEmptyBuildTask.EmptyUploadTask(this.render);
     }
 
     public static class EmptyUploadTask extends ChunkRenderUploadTask {
