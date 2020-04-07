@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
-import me.jellysquid.mods.sodium.client.render.LightDataCache;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.world.BiomeCache;
 import me.jellysquid.mods.sodium.client.world.BiomeCacheManager;
@@ -47,8 +46,6 @@ public class ChunkSlice extends ReusableObject implements BlockRenderView, Biome
     private final ChunkNibbleArray[] skyLightArrays;
     private final BiomeCache[] biomeCaches;
     private final BiomeArray[] biomeArrays;
-
-    private final LightDataCache lightDataCache;
 
     private final Map<ColorResolver, ColorizerCache> colorResolvers = new Reference2ReferenceArrayMap<>();
 
@@ -96,7 +93,6 @@ public class ChunkSlice extends ReusableObject implements BlockRenderView, Biome
         this.skyLightArrays = new ChunkNibbleArray[SECTION_COUNT];
         this.biomeCaches = new BiomeCache[CHUNK_COUNT];
         this.biomeArrays = new BiomeArray[CHUNK_COUNT];
-        this.lightDataCache = new LightDataCache(this);
     }
 
     public void init(ChunkBuilder builder, World world, ChunkSectionPos chunkPos, WorldChunk[] chunks) {
@@ -181,8 +177,6 @@ public class ChunkSlice extends ReusableObject implements BlockRenderView, Biome
 
         this.biomeCacheManager = builder.getBiomeCacheManager();
         this.biomeCacheManager.populateArrays(chunkPos.getX(), chunkPos.getY(), chunkPos.getZ(), this.biomeCaches);
-
-        this.lightDataCache.init(minX, minY, minZ);
     }
 
     private ColorizerCache getColorizerCache(ColorResolver resolver) {
@@ -257,10 +251,6 @@ public class ChunkSlice extends ReusableObject implements BlockRenderView, Biome
         }
 
         return 0;
-    }
-
-    public LightDataCache getLightDataCache() {
-        return this.lightDataCache;
     }
 
     // FIX: Do not access state on the main thread
@@ -341,5 +331,17 @@ public class ChunkSlice extends ReusableObject implements BlockRenderView, Biome
         this.world = null;
 
         this.colorResolvers.clear();
+    }
+
+    public int getBlockOffsetX() {
+        return this.blockOffsetX;
+    }
+
+    public int getBlockOffsetY() {
+        return this.blockOffsetY;
+    }
+
+    public int getBlockOffsetZ() {
+        return this.blockOffsetZ;
     }
 }

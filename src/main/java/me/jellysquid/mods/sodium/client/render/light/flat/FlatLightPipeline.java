@@ -10,9 +10,9 @@ import net.minecraft.util.math.BlockPos;
 import java.util.Arrays;
 
 public class FlatLightPipeline implements LightPipeline {
-    private LightDataCache lightCache;
+    private final LightDataCache lightCache;
 
-    public void setLightCache(LightDataCache cache) {
+    public FlatLightPipeline(LightDataCache cache) {
         this.lightCache = cache;
     }
 
@@ -23,6 +23,10 @@ public class FlatLightPipeline implements LightPipeline {
 
     @Override
     public void apply(ModelQuadView quad, BlockPos pos, LightResult out) {
+        if (this.lightCache == null) {
+            throw new IllegalStateException("Light cache not defined");
+        }
+
         Arrays.fill(out.br, 1.0f);
 
         if ((quad.getFlags() & ModelQuadFlags.IS_ALIGNED) != 0) {

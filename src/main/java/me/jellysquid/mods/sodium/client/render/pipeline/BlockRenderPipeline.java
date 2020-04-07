@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
+import me.jellysquid.mods.sodium.client.render.LightDataCache;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
@@ -9,10 +9,7 @@ import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
 import me.jellysquid.mods.sodium.client.render.mesh.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuad;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuadOrder;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuadViewMutable;
+import me.jellysquid.mods.sodium.client.render.quad.*;
 import me.jellysquid.mods.sodium.client.util.ColorUtil;
 import me.jellysquid.mods.sodium.client.util.QuadUtil;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -22,7 +19,6 @@ import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -31,7 +27,7 @@ import net.minecraft.world.BlockRenderView;
 import java.util.List;
 import java.util.Random;
 
-public class ChunkBlockRenderPipeline {
+public class BlockRenderPipeline {
     private final BlockColors colorMap;
 
     private final SmoothLightPipeline smoothLightPipeline;
@@ -43,24 +39,22 @@ public class ChunkBlockRenderPipeline {
     private final LightResult cachedLightResult = new LightResult();
     private final Int2IntArrayMap cachedColors = new Int2IntArrayMap();
 
-    public ChunkBlockRenderPipeline(MinecraftClient client) {
+    public BlockRenderPipeline(MinecraftClient client, LightDataCache lightCache) {
         this.colorMap = client.getBlockColorMap();
 
-        this.smoothLightPipeline = new SmoothLightPipeline();
-        this.flatLightPipeline = new FlatLightPipeline();
-
+        this.smoothLightPipeline = new SmoothLightPipeline(lightCache);
+        this.flatLightPipeline = new FlatLightPipeline(lightCache);
         this.occlusionCache = new BlockOcclusionCache();
         this.cachedColors.defaultReturnValue(Integer.MIN_VALUE);
     }
 
-    public boolean renderModel(ChunkMeshInfo.Builder meshInfo, BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, Vector3f translation, VertexConsumer builder, boolean cull, Random random, long seed) {
+    public boolean renderModel(ChunkMeshInfo.Builder meshInfo, BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, ModelQuadTransformer quadTransformer, VertexConsumer builder, boolean cull, Random random, long seed) {
         LightPipeline lighter = this.getLightPipeline(state, model);
         lighter.reset();
 
         this.cachedColors.clear();
 
-        Vec3d blockOffset = state.getOffsetPos(world, pos);
-        translation.add((float) blockOffset.getX(), (float) blockOffset.getY(), (float) blockOffset.getZ());
+        Vec3d offset = state.getOffsetPos(world, pos);
 
         boolean rendered = false;
 
@@ -74,7 +68,7 @@ public class ChunkBlockRenderPipeline {
             }
 
             if (!cull || this.occlusionCache.shouldDrawSide(state, world, pos, dir)) {
-                this.renderQuadList(meshInfo, world, state, pos, lighter, translation, builder, sided, dir);
+                this.renderQuadList(meshInfo, world, state, pos, lighter, quadTransformer, offset, builder, sided, dir);
 
                 rendered = true;
             }
@@ -85,7 +79,7 @@ public class ChunkBlockRenderPipeline {
         List<BakedQuad> all = model.getQuads(state, null, random);
 
         if (!all.isEmpty()) {
-            this.renderQuadList(meshInfo, world, state, pos, lighter, translation, builder, all, null);
+            this.renderQuadList(meshInfo, world, state, pos, lighter, quadTransformer, offset, builder, all, null);
 
             rendered = true;
         }
@@ -93,18 +87,20 @@ public class ChunkBlockRenderPipeline {
         return rendered;
     }
 
-    private void renderQuadList(ChunkMeshInfo.Builder meshInfo, BlockRenderView world, BlockState state, BlockPos pos, LightPipeline lighter, Vector3f translation, VertexConsumer builder, List<BakedQuad> quads, Direction dir) {
+    private void renderQuadList(ChunkMeshInfo.Builder meshInfo, BlockRenderView world, BlockState state, BlockPos pos, LightPipeline lighter, ModelQuadTransformer quadTransformer, Vec3d offset, VertexConsumer builder, List<BakedQuad> quads, Direction dir) {
         for (BakedQuad quad : quads) {
             LightResult light = this.cachedLightResult;
             lighter.apply((ModelQuadView) quad, pos, light);
 
-            this.renderQuad(world, state, pos, builder, translation, (ModelQuadView) quad, light.br, light.lm);
+            this.renderQuad(world, state, pos, builder, quadTransformer, offset, (ModelQuadView) quad, light.br, light.lm);
 
-            meshInfo.addSprite(((ModelQuadView) quad).getSprite());
+            if (meshInfo != null) {
+                meshInfo.addSprite(((ModelQuadView) quad).getSprite());
+            }
         }
     }
 
-    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, VertexConsumer builder, Vector3f translation, ModelQuadView quad, float[] brightnesses, int[] lights) {
+    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, VertexConsumer builder, ModelQuadTransformer quadTransformer, Vec3d offset, ModelQuadView quad, float[] brightnesses, int[] lights) {
         float r, g, b;
 
         if (quad.hasColorIndex()) {
@@ -124,22 +120,24 @@ public class ChunkBlockRenderPipeline {
 
         int norm = QuadUtil.getNormal(quad.getFacing());
 
-        for (int i = 0; i < 4; i++) {
-            int o = order.getVertexIndex(i);
+        for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
+            int srcIndex = order.getVertexIndex(dstIndex);
 
-            copy.setX(i, quad.getX(o) + translation.getX());
-            copy.setY(i, quad.getY(o) + translation.getY());
-            copy.setZ(i, quad.getZ(o) + translation.getZ());
+            copy.setX(dstIndex, quad.getX(srcIndex) + (float) offset.getX());
+            copy.setY(dstIndex, quad.getY(srcIndex) + (float) offset.getY());
+            copy.setZ(dstIndex, quad.getZ(srcIndex) + (float) offset.getZ());
 
-            float br = brightnesses[o];
-            copy.setColor(i, ColorUtil.mulPackedRGB(quad.getColor(o), r * br, g * br, b * br));
+            float br = brightnesses[srcIndex];
+            copy.setColor(dstIndex, ColorUtil.mulPackedRGB(quad.getColor(srcIndex), r * br, g * br, b * br));
 
-            copy.setTexU(i, quad.getTexU(o));
-            copy.setTexV(i, quad.getTexV(o));
+            copy.setTexU(dstIndex, quad.getTexU(srcIndex));
+            copy.setTexV(dstIndex, quad.getTexV(srcIndex));
 
-            copy.setLight(i, lights[o]);
-            copy.setNormal(i, norm);
+            copy.setLight(dstIndex, lights[srcIndex]);
+            copy.setNormal(dstIndex, norm);
         }
+
+        quadTransformer.transform(copy);
 
         ((ChunkMeshBuilder) builder).write(copy);
     }
@@ -158,10 +156,5 @@ public class ChunkBlockRenderPipeline {
         boolean smooth = MinecraftClient.isAmbientOcclusionEnabled() && state.getLuminance() == 0 && model.useAmbientOcclusion();
 
         return smooth ? this.smoothLightPipeline : this.flatLightPipeline;
-    }
-
-    public void setWorldSlice(ChunkSlice slice) {
-        this.flatLightPipeline.setLightCache(slice.getLightDataCache());
-        this.smoothLightPipeline.setLightCache(slice.getLightDataCache());
     }
 }

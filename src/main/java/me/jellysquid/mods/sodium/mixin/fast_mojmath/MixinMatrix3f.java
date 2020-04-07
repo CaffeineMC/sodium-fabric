@@ -1,8 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.fast_mojmath;
 
 import me.jellysquid.mods.sodium.client.render.matrix.Matrix3fExtended;
+import me.jellysquid.mods.sodium.client.util.QuadUtil;
 import net.minecraft.client.util.math.Matrix3f;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Quaternion;
+import net.minecraft.util.math.Vec3i;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
@@ -49,6 +52,21 @@ public class MixinMatrix3f implements Matrix3fExtended {
         } else if (z) {
             this.rotateZ(quaternion);
         }
+    }
+
+    @Override
+    public int computeNormal(Direction dir) {
+        Vec3i faceNorm = dir.getVector();
+
+        float x = faceNorm.getX();
+        float y = faceNorm.getY();
+        float z = faceNorm.getZ();
+
+        float x2 = this.a00 * x + this.a01 * y + this.a02 * z;
+        float y2 = this.a10 * x + this.a11 * y + this.a12 * z;
+        float z2 = this.a20 * x + this.a21 * y + this.a22 * z;
+
+        return QuadUtil.encodeNormal(x2, y2, z2);
     }
 
     private void rotateX(Quaternion quaternion) {

@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import me.jellysquid.mods.sodium.client.render.mesh.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
+import me.jellysquid.mods.sodium.client.render.quad.transformers.TranslateTransformer;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
@@ -15,7 +16,6 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.util.math.Vector3d;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.WorldChunk;
@@ -34,15 +34,15 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
     @Override
     public ChunkRenderUploadTask performBuild(ChunkRenderPipeline pipeline, VertexBufferCache buffers) {
-        pipeline.setWorldSlice(this.slice);
+        pipeline.init(this.slice, this.slice.getBlockOffsetX(), this.slice.getBlockOffsetY(), this.slice.getBlockOffsetZ());
 
         ChunkMeshInfo.Builder meshInfo = new ChunkMeshInfo.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
-        Vector3f translation = new Vector3f();
-
         BlockPos from = this.render.getOrigin();
         BlockPos to = from.add(16, 16, 16);
+
+        TranslateTransformer transformer = new TranslateTransformer();
 
         int minX = from.getX();
         int minY = from.getY();
@@ -75,9 +75,9 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                             builder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
                         }
 
-                        translation.set(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
+                        transformer.setOffset(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
 
-                        pipeline.renderBlock(meshInfo, blockState, pos, this.slice, translation, builder, true);
+                        pipeline.renderBlock(meshInfo, blockState, pos, this.slice, transformer, builder, true);
                     }
 
                     FluidState fluidState = block.getFluidState(blockState);

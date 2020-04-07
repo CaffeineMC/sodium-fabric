@@ -1,10 +1,17 @@
 package me.jellysquid.mods.sodium.mixin.buffers;
 
+import me.jellysquid.mods.sodium.client.render.matrix.MatrixUtil;
 import me.jellysquid.mods.sodium.client.render.pipeline.DirectVertexConsumer;
+import me.jellysquid.mods.sodium.client.render.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.util.ColorUtil;
 import me.jellysquid.mods.sodium.client.util.QuadUtil;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.util.math.Matrix3f;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -218,5 +225,73 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
     @Override
     public boolean canUseDirectWriting() {
         return true;
+    }
+
+    @Override
+    public void quad(MatrixStack.Entry matrices, BakedQuad quad, float[] brightnessTable, float r, float g, float b, int[] light, int overlay, boolean colorize) {
+        if (!this.field_21594) {
+            super.quad(matrices, quad, brightnessTable, r, g, b, light, overlay, colorize);
+
+            return;
+        }
+
+        if (this.colorFixed) {
+            throw new IllegalStateException();
+        }
+
+        ModelQuadView quadView = (ModelQuadView) quad;
+
+        Matrix4f modelMatrix = matrices.getModel();
+        Matrix3f normalMatrix = matrices.getNormal();
+
+        int norm = MatrixUtil.computeNormal(normalMatrix, quadView.getFacing());
+        int vertexSize = this.format.getVertexSize();
+
+        this.grow(vertexSize * 4);
+
+        for (int i = 0; i < 4; i++) {
+            float x = quadView.getX(i);
+            float y = quadView.getY(i);
+            float z = quadView.getZ(i);
+
+            float fR;
+            float fG;
+            float fB;
+
+            float brightness = brightnessTable[i];
+
+            if (colorize) {
+                int color = quadView.getColor(i);
+
+                float oR = ColorUtil.normalize(ColorUtil.unpackColorR(color));
+                float oG = ColorUtil.normalize(ColorUtil.unpackColorG(color));
+                float oB = ColorUtil.normalize(ColorUtil.unpackColorB(color));
+
+                fR = oR * brightness * r;
+                fG = oG * brightness * g;
+                fB = oB * brightness * b;
+            } else {
+                fR = brightness * r;
+                fG = brightness * g;
+                fB = brightness * b;
+            }
+
+            float u = quadView.getTexU(i);
+            float v = quadView.getTexV(i);
+
+            int color = ColorUtil.encodeRGBA(fR, fG, fB, 1.0F);
+
+            Vector4f pos = new Vector4f(x, y, z, 1.0F);
+            pos.transform(modelMatrix);
+
+            if (UNSAFE) {
+                this.vertexUnsafe(pos.getX(), pos.getY(), pos.getZ(), color, u, v, overlay, light[i], norm);
+            } else {
+                this.vertexFallback(pos.getX(), pos.getY(), pos.getZ(), color, u, v, overlay, light[i], norm);
+            }
+
+            this.vertexCount++;
+            this.elementOffset += vertexSize;
+        }
     }
 }

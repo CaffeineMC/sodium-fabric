@@ -1,36 +1,54 @@
 package me.jellysquid.mods.sodium.client.render;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.BlockRenderView;
 
 import java.util.Arrays;
 
 public class LightDataCache {
-    private final ChunkSlice world;
+    private static final FluidState EMPTY_FLUID_STATE = Fluids.EMPTY.getDefaultState();
+
+    private final byte[] op;
     private final long[] light;
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
 
+    private final int xSize, ySize, zSize;
+
+    private BlockRenderView world;
     private int xOffset, yOffset, zOffset;
 
-    public LightDataCache(ChunkSlice world) {
-        this.world = world;
-        this.light = new long[ChunkSlice.BLOCK_COUNT];
+    public LightDataCache(int size) {
+        this(size, size, size);
     }
 
-    public void init(int x, int y, int z) {
+    public LightDataCache(int xSize, int ySize, int zSize) {
+        this.xSize = xSize;
+        this.ySize = ySize;
+        this.zSize = zSize;
+
+        int len = xSize * ySize * zSize;
+
+        this.light = new long[len];
+        this.op = new byte[len];
+    }
+
+    public void init(BlockRenderView world, int x, int y, int z) {
+        this.world = world;
         this.xOffset = x;
         this.yOffset = y;
         this.zOffset = z;
 
         Arrays.fill(this.light, 0L);
+        Arrays.fill(this.op, (byte) 0);
     }
 
     private int index(int x, int y, int z) {
-        return (z - this.zOffset) * ChunkSlice.BLOCK_LENGTH * ChunkSlice.BLOCK_LENGTH + (y - this.yOffset) * ChunkSlice.BLOCK_LENGTH + x - this.xOffset;
+        return (z - this.zOffset) * this.xSize * this.ySize + (y - this.yOffset) * this.zSize + x - this.xOffset;
     }
 
     public long get(int x, int y, int z, Direction d1, Direction d2) {
@@ -66,24 +84,26 @@ public class LightDataCache {
     }
 
     private long compute(int x, int y, int z) {
-        BlockState state = this.world.getBlockState(x, y, z);
+        BlockPos pos = this.pos.set(x, y, z);
+        BlockRenderView world = this.world;
 
-        this.pos.set(x, y, z);
+        BlockState state = world.getBlockState(pos);
 
         float ao;
 
         if (state.getLuminance() == 0) {
-            ao = state.getAmbientOcclusionLightLevel(this.world, this.pos);
+            ao = state.getAmbientOcclusionLightLevel(world, pos);
         } else {
             ao = 1.0f;
         }
 
-        int lm = WorldRenderer.getLightmapCoordinates(this.world, state, this.pos);
-
         // FIX: Fluids are always non-translucent despite blocking light, so we need a special check here in order to
         // solve lighting issues underwater.
-        boolean op = state.getFluidState() != Fluids.EMPTY.getDefaultState() || state.getOpacity(this.world, this.pos) == 0;
-        boolean fo = state.isFullOpaque(this.world, this.pos);
+        boolean op = state.getFluidState() != EMPTY_FLUID_STATE || state.getOpacity(world, pos) == 0;
+        boolean fo = state.isFullOpaque(world, pos);
+
+        // OPTIMIZE: Do not calculate lightmap data if the block is full and opaque
+        int lm = fo ? 0 : WorldRenderer.getLightmapCoordinates(world, state, pos);
 
         return packAO(ao) | packLM(lm) | packOP(op) | packFO(fo) | (1L << 60);
     }

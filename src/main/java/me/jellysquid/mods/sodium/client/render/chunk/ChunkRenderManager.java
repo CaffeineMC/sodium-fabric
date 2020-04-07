@@ -26,6 +26,7 @@ import net.minecraft.util.profiler.Profiler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatusListener {
     private final MinecraftClient client;
@@ -58,6 +59,8 @@ public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatu
     public ChunkRenderManager(MinecraftClient client, ChunkRenderer<T> chunkRenderer) {
         this.client = client;
         this.chunkRenderer = chunkRenderer;
+
+        Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 2);
     }
 
     public void setWorld(ClientWorld world) {
@@ -160,7 +163,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatu
     }
 
     private void updateChunks(BlockPos blockPos) {
-        List<CompletableFuture<ChunkRenderUploadTask>> futures = new ArrayList<>();
+        List<ChunkRender<T>> immediateTasks = new ArrayList<>();
 
         int budget = this.chunkBuilder.getBudget();
 
@@ -178,7 +181,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatu
 
             if (important || budget-- > 0) {
                 if (important) {
-                    futures.add(render.rebuildImmediately());
+                    immediateTasks.add(render);
                 } else {
                     render.rebuild();
                 }
@@ -191,8 +194,27 @@ public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatu
         this.isRenderGraphDirty |= this.chunkBuilder.upload();
         this.isRenderGraphDirty |= this.chunkGraph.cleanup();
 
-        for (CompletableFuture<ChunkRenderUploadTask> future : futures) {
-            ChunkRenderUploadTask task = future.join();
+        if (!immediateTasks.isEmpty()) {
+            this.rebuildImmediately(immediateTasks);
+        }
+    }
+
+    private void rebuildImmediately(List<ChunkRender<T>> chunks) {
+        LinkedBlockingDeque<ChunkRenderUploadTask> finished = new LinkedBlockingDeque<>(chunks.size());
+
+        for (ChunkRender<T> chunk : chunks) {
+            CompletableFuture<ChunkRenderUploadTask> future = chunk.rebuildImmediately();
+            future.thenAccept(finished::add);
+        }
+
+        int remaining = chunks.size();
+
+        while (remaining-- > 0) {
+            ChunkRenderUploadTask task = null;
+
+            try {
+                task = finished.take();
+            } catch (InterruptedException ignored) { }
 
             if (task != null) {
                 task.performUpload();
