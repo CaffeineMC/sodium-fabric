@@ -35,6 +35,8 @@ public class SodiumGameOptions {
         public boolean enableVignette = true;
         public boolean enableFog = true;
         public boolean enableClouds = true;
+
+        public LightingQuality smoothLighting = LightingQuality.HIGH;
     }
 
     public enum DefaultGraphicsQuality implements TextProvider {
@@ -87,6 +89,23 @@ public class SodiumGameOptions {
         private final String name;
 
         MipmapQuality(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getLocalizedName() {
+            return this.name;
+        }
+    }
+
+    public enum LightingQuality implements TextProvider {
+        OFF("Off"),
+        LOW("Low"),
+        HIGH("High");
+
+        private final String name;
+
+        LightingQuality(String name) {
             this.name = name;
         }
 
