@@ -313,14 +313,12 @@ public class ChunkSlice extends ReusableObject implements BlockRenderView, Biome
         return (y * SECTION_LENGTH * SECTION_LENGTH) + (z * SECTION_LENGTH) + x;
     }
 
-    public void cleanup() {
+    @Override
+    public void reset() {
         for (BiomeCache cache : this.biomeCaches) {
             this.biomeCacheManager.release(cache);
         }
-    }
 
-    @Override
-    public void reset() {
         Arrays.fill(this.biomeCaches, null);
         Arrays.fill(this.biomeArrays, null);
         Arrays.fill(this.blockLightArrays, null);

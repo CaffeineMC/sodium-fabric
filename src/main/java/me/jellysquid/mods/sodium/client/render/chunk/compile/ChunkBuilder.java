@@ -49,7 +49,7 @@ public class ChunkBuilder {
         return Math.max(0, (this.limitThreads * 3) - this.buildQueue.size());
     }
 
-    public void start() {
+    public void startWorkers() {
         if (this.running.getAndSet(true)) {
             return;
         }
@@ -70,11 +70,11 @@ public class ChunkBuilder {
     }
 
     public void reset() {
-        this.shutdown();
-        this.start();
+        this.stopWorkers();
+        this.startWorkers();
     }
 
-    public void shutdown() {
+    public void stopWorkers() {
         if (!this.running.getAndSet(false)) {
             return;
         }
@@ -111,6 +111,7 @@ public class ChunkBuilder {
 
         this.world = null;
         this.biomeCacheManager = null;
+        this.chunkSliceArena.reset();
     }
 
     public boolean upload() {
@@ -186,16 +187,12 @@ public class ChunkBuilder {
 
         ChunkSlice slice = this.chunkSliceArena.allocate();
         slice.init(this, this.world, pos, chunks);
-        slice.allocateReference();
 
         return slice;
     }
 
     public void releaseChunkSlice(ChunkSlice slice) {
-        slice.releaseReference();
-        slice.cleanup();
-
-        this.chunkSliceArena.reclaim(slice);
+        this.chunkSliceArena.release(slice);
     }
 
     public BiomeCacheManager getBiomeCacheManager() {

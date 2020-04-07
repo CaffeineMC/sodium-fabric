@@ -74,7 +74,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatu
             }
 
             if (this.chunkBuilder != null) {
-                this.chunkBuilder.shutdown();
+                this.chunkBuilder.stopWorkers();
             }
         } else {
             if (this.chunkBuilder == null) {
@@ -82,7 +82,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatu
             }
 
             this.chunkBuilder.setWorld(this.world);
-            this.chunkBuilder.start();
+            this.chunkBuilder.startWorkers();
 
             this.bufferBuilders = MinecraftClient.getInstance().getBufferBuilders();
             this.chunkGraph = new ChunkGraph<>(this, this.world, this.renderDistance);
