@@ -1,20 +1,19 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.LightDataCache;
+import me.jellysquid.mods.sodium.client.render.light.cache.HashLightDataCache;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
 
 public class GlobalRenderer {
-    private static final ThreadLocal<GlobalRenderer> GLOBAL = ThreadLocal.withInitial(GlobalRenderer::new);
+    private static final GlobalRenderer INSTANCE = new GlobalRenderer();
 
     private final BlockRenderPipeline blockRenderer;
-    private final LightDataCache lightCache;
+    private final HashLightDataCache lightCache;
 
     private GlobalRenderer() {
         MinecraftClient client = MinecraftClient.getInstance();
 
-        this.lightCache = new LightDataCache(5);
+        this.lightCache = new HashLightDataCache();
         this.blockRenderer = new BlockRenderPipeline(client, this.lightCache);
     }
 
@@ -22,10 +21,13 @@ public class GlobalRenderer {
         return this.blockRenderer;
     }
 
-    public static GlobalRenderer getInstance(BlockRenderView world, BlockPos pos) {
-        GlobalRenderer renderer = GLOBAL.get();
-        renderer.lightCache.init(world, pos.getX() - 2, pos.getY() - 2, pos.getZ() - 2);
+    public static GlobalRenderer getInstance(BlockRenderView world) {
+        INSTANCE.lightCache.init(world);
 
-        return renderer;
+        return INSTANCE;
+    }
+
+    public static void reset() {
+        INSTANCE.lightCache.clear();
     }
 }

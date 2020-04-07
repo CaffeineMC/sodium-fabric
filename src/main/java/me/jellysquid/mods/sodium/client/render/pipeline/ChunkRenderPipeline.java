@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.LightDataCache;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
+import me.jellysquid.mods.sodium.client.render.light.cache.ChunkLightDataCache;
 import me.jellysquid.mods.sodium.client.render.quad.ModelQuadTransformer;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import net.minecraft.block.BlockRenderType;
@@ -17,7 +17,7 @@ import net.minecraft.world.BlockRenderView;
 import java.util.Random;
 
 public class ChunkRenderPipeline {
-    private final LightDataCache lightDataCache;
+    private final ChunkLightDataCache lightDataCache;
     private final BlockRenderPipeline blockRenderer;
     private final FluidRenderPipeline fluidRenderer;
 
@@ -26,7 +26,7 @@ public class ChunkRenderPipeline {
     private final Random random = new XoRoShiRoRandom();
 
     public ChunkRenderPipeline(MinecraftClient client) {
-        this.lightDataCache = new LightDataCache(ChunkSlice.BLOCK_LENGTH);
+        this.lightDataCache = new ChunkLightDataCache(ChunkSlice.BLOCK_LENGTH);
 
         this.blockRenderer = new BlockRenderPipeline(client, this.lightDataCache);
         this.fluidRenderer = new FluidRenderPipeline();
