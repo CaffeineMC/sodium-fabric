@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.matrix;
 
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Quaternion;
 
 public interface Matrix3fExtended {
@@ -9,4 +10,6 @@ public interface Matrix3fExtended {
      * @param quaternion The quaternion to rotate this matrix by
      */
     void rotate(Quaternion quaternion);
+
+    int computeNormal(Direction dir);
 }

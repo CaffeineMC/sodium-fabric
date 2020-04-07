@@ -60,6 +60,7 @@ public class ChunkBuilder {
 
         for (int i = 0; i < this.limitThreads; i++) {
             Thread thread = new Thread(new WorkerRunnable(), "Chunk Render Task Executor #" + i);
+            thread.setPriority(Math.max(0, Thread.NORM_PRIORITY - 2));
             thread.start();
 
             this.threads.add(thread);
@@ -173,7 +174,7 @@ public class ChunkBuilder {
     }
 
     private static int getOptimalThreadCount() {
-        return Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
+        return Math.max(1, Runtime.getRuntime().availableProcessors());
     }
 
     public ChunkSlice createChunkSlice(ChunkSectionPos pos) {

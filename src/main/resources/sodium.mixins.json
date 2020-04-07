@@ -24,6 +24,7 @@
     "options.MixinWorldRenderer",
     "pipeline.MixinBakedQuad",
     "pipeline.MixinBufferBuilder",
+    "pipeline.MixinBlockModelRenderer",
     "render_layers.MixinRenderLayers",
     "fast_mojmath.MixinFrustum",
     "fast_mojmath.MixinMatrix3f",

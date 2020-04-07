@@ -1,7 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.matrix;
 
 import net.minecraft.client.util.GlAllocationUtils;
+import net.minecraft.client.util.math.Matrix3f;
 import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.util.math.Direction;
 
 import java.nio.FloatBuffer;
 
@@ -18,5 +20,9 @@ public class MatrixUtil {
         buffer.rewind();
 
         return buffer;
+    }
+
+    public static int computeNormal(Matrix3f normalMatrix, Direction facing) {
+        return ((Matrix3fExtended) (Object) normalMatrix).computeNormal(facing);
     }
 }

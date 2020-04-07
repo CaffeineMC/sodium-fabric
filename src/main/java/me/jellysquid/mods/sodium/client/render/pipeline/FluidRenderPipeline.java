@@ -24,14 +24,14 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockRenderView;
 
-public class ChunkFluidRenderPipeline {
+public class FluidRenderPipeline {
     private final BlockPos.Mutable scratchPos = new BlockPos.Mutable();
 
     private final Sprite[] lavaSprites = new Sprite[2];
     private final Sprite[] waterSprites = new Sprite[2];
     private Sprite waterOverlaySprite;
 
-    public ChunkFluidRenderPipeline() {
+    public FluidRenderPipeline() {
         BlockModels models = MinecraftClient.getInstance().getBakedModelManager().getBlockModels();
 
         this.lavaSprites[0] = models.getModel(Blocks.LAVA.getDefaultState()).getSprite();
