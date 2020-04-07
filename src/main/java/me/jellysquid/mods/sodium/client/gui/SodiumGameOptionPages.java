@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
+import me.jellysquid.mods.sodium.client.gl.GlHelper;
 import me.jellysquid.mods.sodium.client.gl.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
@@ -203,7 +204,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fast Chunk Setup")
                         .setTooltip("If enabled, Vertex Array Objects will be used in chunk rendering to avoid needing to setup array pointers every chunk render. " +
-                                "Requires OpenGL 3.0+ or support for the ARB_vertex_array_object extension.")
+                                "\n\nRequires OpenGL 3.0+ or support for the ARB_vertex_array_object extension.")
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.performance.useVAOs = value, opts -> opts.performance.useVAOs)
                         .setImpact(OptionImpact.MEDIUM)
@@ -214,7 +215,7 @@ public class SodiumGameOptionPages {
                         .setName("Large Chunk Buffers")
                         .setTooltip("If enabled, chunks will be batched into larger vertex buffers to avoid expensive buffer switches while rendering chunks. " +
                                 "This can provide a huge boost at high render distances when CPU-bound." +
-                                "Requires OpenGL 3.1+ or support for the ARB_copy_buffer extension.")
+                                "\n\nRequires OpenGL 3.1+ or support for the ARB_copy_buffer extension.")
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.performance.useLargeBuffers = value, opts -> opts.performance.useLargeBuffers)
                         .setImpact(OptionImpact.HIGH)
@@ -224,11 +225,13 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fog Chunk Occlusion")
                         .setTooltip("If enabled, additional chunk culling will be performed through determining whether or not chunks are hidden in the fog. This can " +
-                                "eliminate additional chunks that would otherwise be unnecessarily rendered. This option does nothing if fog rendering is disabled.")
+                                "eliminate additional chunks that would otherwise be unnecessarily rendered. This option does nothing if fog rendering is disabled. " +
+                                "\n\nRequires support for the NV_fog_distance extension.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.useFogChunkCulling = value, opts -> opts.performance.useFogChunkCulling)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .setEnabled(GlHelper.supportsNvFog())
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
