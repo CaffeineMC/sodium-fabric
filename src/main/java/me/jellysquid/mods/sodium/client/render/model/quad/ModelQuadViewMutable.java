@@ -16,4 +16,8 @@ public interface ModelQuadViewMutable extends ModelQuadView {
     void setLight(int idx, int light);
 
     void setNormal(int idx, int norm);
+
+    int getLight(int idx);
+
+    int getNormal(int idx);
 }

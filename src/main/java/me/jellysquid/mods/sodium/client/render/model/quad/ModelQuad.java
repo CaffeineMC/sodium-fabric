@@ -49,6 +49,16 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
+    public int getLight(int idx) {
+        return this.data[vertexOffset(idx) + LIGHT_INDEX];
+    }
+
+    @Override
+    public int getNormal(int idx) {
+        return this.data[vertexOffset(idx) + NORMAL_INDEX];
+    }
+
+    @Override
     public float getX(int idx) {
         return Float.intBitsToFloat(this.data[vertexOffset(idx) + POSITION_INDEX]);
     }
