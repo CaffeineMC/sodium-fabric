@@ -2,7 +2,9 @@ package me.jellysquid.mods.sodium.mixin.entity_rendering;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
 import me.jellysquid.mods.sodium.client.render.light.EntityLighter;
+import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.entity.Entity;
@@ -68,5 +70,13 @@ public abstract class MixinEntityRenderer<T extends Entity> {
     // [VanillaCopy] EntityRenderer#getLight(Entity, float)
     private int getSimpleLight(T entity, float tickDelta, int blockLight) {
         return LightmapTextureManager.pack(blockLight, entity.world.getLightLevel(LightType.SKY, new BlockPos(entity.getCameraPosVec(tickDelta))));
+    }
+
+    @Inject(method = "shouldRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Frustum;isVisible(Lnet/minecraft/util/math/Box;)Z", shift = At.Shift.AFTER), cancellable = true)
+    private void preShouldRender(T entity, Frustum frustum, double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
+        // If the entity isn't culled already by other means, try to perform a second pass
+        if (cir.getReturnValue() && !ChunkRenderManager.getInstance().isEntityVisible(entity)) {
+            cir.setReturnValue(false);
+        }
     }
 }

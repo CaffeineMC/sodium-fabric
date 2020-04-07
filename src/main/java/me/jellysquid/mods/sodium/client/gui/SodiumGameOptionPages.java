@@ -213,6 +213,15 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Advanced Entity Culling")
+                        .setTooltip("If enabled, a secondary culling pass will be performed before attempting to render an entity. This additional pass " +
+                                "takes into account the current set of visible chunks and removes entities which are not in any visible chunks.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.performance.useAdvancedEntityCulling = value, opts -> opts.performance.useAdvancedEntityCulling)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fast Chunk Setup")
                         .setTooltip("If enabled, Vertex Array Objects will be used in chunk rendering to avoid needing to setup array pointers every chunk render. " +
                                 "\n\nRequires OpenGL 3.0+ or support for the ARB_vertex_array_object extension.")
@@ -248,7 +257,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Animate Only Visible Textures")
                         .setTooltip("If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame " +
-                                "rates on some hardware.")
+                                "rates on some hardware. If you experience issues with some textures not being animated, disable this option.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.animateOnlyVisibleTextures = value, opts -> opts.performance.animateOnlyVisibleTextures)
