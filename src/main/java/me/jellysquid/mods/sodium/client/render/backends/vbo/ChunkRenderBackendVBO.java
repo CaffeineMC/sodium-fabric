@@ -29,7 +29,7 @@ public class ChunkRenderBackendVBO extends AbstractChunkRenderBackend<ChunkRende
 
         vbo.bind();
         VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL.startDrawing(0L);
-        vbo.draw(matrixStack.peek().getModel(), GL11.GL_QUADS);
+        vbo.drawInline(GL11.GL_QUADS);
 
         this.lastRender = vbo;
     }

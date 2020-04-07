@@ -2,12 +2,12 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.objects.ObjectList;
-import it.unimi.dsi.fastutil.objects.ObjectListIterator;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.backends.vao.ChunkRenderBackendVAO;
+import me.jellysquid.mods.sodium.client.render.backends.vbo.ChunkRenderBackendVBO;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderUploadTask;
 import me.jellysquid.mods.sodium.client.world.ChunkManagerWithStatusListener;
@@ -29,15 +29,11 @@ import net.minecraft.util.profiler.Profiler;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStatusListener {
+public class ChunkRenderManager implements ChunkStatusListener {
     private final MinecraftClient client;
-    private final ChunkRenderBackend<T> chunkRenderer;
 
     private ClientWorld world;
-
     private int renderDistance;
-
-    private ChunkBuilder chunkBuilder;
 
     private double lastTranslucentSortX;
     private double lastTranslucentSortY;
@@ -52,13 +48,13 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     private boolean isRenderGraphDirty;
 
-    private ChunkGraph<T> chunkGraph;
+    private ChunkGraph<?> chunkGraph;
     private BufferBuilderStorage bufferBuilders;
     private Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
+    private ChunkBuilder chunkBuilder;
 
-    public ChunkRenderManager(MinecraftClient client, ChunkRenderBackend<T> chunkRenderer) {
+    public ChunkRenderManager(MinecraftClient client) {
         this.client = client;
-        this.chunkRenderer = chunkRenderer;
     }
 
     public void setWorld(ClientWorld world) {
@@ -85,11 +81,20 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             this.chunkBuilder.setWorld(this.world);
             this.chunkBuilder.startWorkers();
 
-            this.bufferBuilders = MinecraftClient.getInstance().getBufferBuilders();
-            this.chunkGraph = new ChunkGraph<>(this, this.world, this.renderDistance);
+            this.initChunkGraph();
 
             ((ChunkManagerWithStatusListener) world.getChunkManager()).setListener(this);
         }
+    }
+
+    private ChunkRenderBackend<?> createRenderBackend() {
+        SodiumGameOptions options = SodiumClientMod.options();
+
+        if (options.performance.useVAOs && ChunkRenderBackendVAO.isSupported()) {
+            return new ChunkRenderBackendVAO();
+        }
+
+        return new ChunkRenderBackendVBO();
     }
 
     public int getCompletedChunkCount() {
@@ -167,7 +172,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
         BlockPos.Mutable pos = new BlockPos.Mutable();
 
-        for (ChunkRender<T> render : this.chunkGraph.getVisibleChunks()) {
+        for (ChunkRender<?> render : this.chunkGraph.getVisibleChunks()) {
             if (!render.needsRebuild()) {
                 continue;
             }
@@ -234,34 +239,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         profiler.push("filterempty");
         profiler.swap(() -> "render_" + renderLayer);
 
-        boolean notTranslucent = renderLayer != RenderLayer.getTranslucent();
-
-        ObjectList<ChunkRender<T>> list = this.chunkGraph.getDrawableChunks();
-        ObjectListIterator<ChunkRender<T>> it = list.listIterator(notTranslucent ? 0 : list.size());
-
-        this.chunkRenderer.begin(matrixStack);
-
-        boolean needManualTicking = SodiumClientMod.options().performance.animateOnlyVisibleTextures;
-
-        while (true) {
-            if (notTranslucent) {
-                if (!it.hasNext()) {
-                    break;
-                }
-            } else if (!it.hasPrevious()) {
-                break;
-            }
-
-            ChunkRender<T> render = notTranslucent ? it.next() : it.previous();
-
-            if (needManualTicking) {
-                render.tickTextures();
-            }
-
-            this.chunkRenderer.render(render, renderLayer, matrixStack, x, y, z);
-        }
-
-        this.chunkRenderer.end(matrixStack);
+        this.chunkGraph.renderLayer(matrixStack, renderLayer, x, y, z);
 
         RenderSystem.clearCurrentColor();
 
@@ -283,19 +261,22 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         this.renderDistance = this.client.options.viewDistance;
 
         if (this.chunkGraph != null) {
-            this.chunkGraph.reset();
-            this.chunkGraph.setRenderDistance(this.renderDistance);
+            this.initChunkGraph();
         }
 
         this.chunkBuilder.setWorld(this.world);
     }
 
-    public ChunkRender<T> createChunkRender(ColumnRender<T> column, int x, int y, int z) {
-        return new ChunkRender<>(this, this.chunkBuilder, this.chunkRenderer.createRenderState(), column, x, y, z);
+    private void initChunkGraph() {
+        if (this.chunkGraph != null) {
+            this.chunkGraph.reset();
+        }
+
+        this.chunkGraph = new ChunkGraph<>(this.chunkBuilder, this.createRenderBackend(), this, this.world, this.renderDistance);
     }
 
     public void scheduleRebuildForBlock(int x, int y, int z) {
-        ChunkRender<T> node = this.chunkGraph.getRender(x, y, z);
+        ChunkRender<?> node = this.chunkGraph.getRender(x, y, z);
 
         if (node != null) {
             node.scheduleRebuild(true);

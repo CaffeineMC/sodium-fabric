@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.backends.vao;
 
+import me.jellysquid.mods.sodium.client.gl.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.GlVertexArrayBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.AbstractChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
@@ -40,5 +41,9 @@ public class ChunkRenderBackendVAO extends AbstractChunkRenderBackend<ChunkRende
             this.lastRender.unbind();
             this.lastRender = null;
         }
+    }
+
+    public static boolean isSupported() {
+        return GlVertexArray.isSupported();
     }
 }
