@@ -1,8 +1,15 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
+import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
+import me.jellysquid.mods.sodium.client.world.BiomeCacheManager;
+import me.jellysquid.mods.sodium.common.util.arena.Arena;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,10 +32,18 @@ public class ChunkBuilder {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
+    private final Arena<ChunkSlice> chunkSliceArena;
+
     private World world;
     private Vector3d cameraPosition;
+    private BiomeCacheManager biomeCacheManager;
 
-    private final int limitThreads = getOptimalThreadCount();
+    private final int limitThreads;
+
+    public ChunkBuilder() {
+        this.limitThreads = getOptimalThreadCount();
+        this.chunkSliceArena = new Arena<>(this.getBudget(), ChunkSlice::new);
+    }
 
     public int getBudget() {
         return Math.max(0, (this.limitThreads * 3) - this.buildQueue.size());
@@ -92,6 +107,9 @@ public class ChunkBuilder {
         }
 
         this.buildQueue.clear();
+
+        this.world = null;
+        this.biomeCacheManager = null;
     }
 
     public boolean upload() {
@@ -144,16 +162,54 @@ public class ChunkBuilder {
     }
 
     public void setWorld(ClientWorld world) {
+        if (world == null) {
+            throw new NullPointerException("World is null");
+        }
+
+        this.reset();
+
         this.world = world;
+        this.biomeCacheManager = new BiomeCacheManager(world.getDimension().getType().getBiomeAccessType(), world.getSeed());
     }
 
     private static int getOptimalThreadCount() {
         return Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
     }
 
+    public ChunkSlice createChunkSlice(ChunkSectionPos pos) {
+        WorldChunk[] chunks = ChunkSlice.getChunks(this.world, pos);
+
+        if (chunks == null) {
+            return null;
+        }
+
+        ChunkSlice slice = this.chunkSliceArena.allocate();
+        slice.init(this, this.world, pos, chunks);
+        slice.allocateReference();
+
+        return slice;
+    }
+
+    public void releaseChunkSlice(ChunkSlice slice) {
+        slice.releaseReference();
+        slice.cleanup();
+
+        this.chunkSliceArena.reclaim(slice);
+    }
+
+    public BiomeCacheManager getBiomeCacheManager() {
+        return this.biomeCacheManager;
+    }
+
+    public void clearCachesForChunk(int x, int z) {
+        this.biomeCacheManager.dropCachesForChunk(x, z);
+    }
+
     private class WorkerRunnable implements Runnable {
         private final VertexBufferCache bufferCache = new VertexBufferCache();
         private final AtomicBoolean running = ChunkBuilder.this.running;
+
+        private final ChunkRenderPipeline pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance());
 
         @Override
         public void run() {
@@ -164,7 +220,7 @@ public class ChunkBuilder {
                     continue;
                 }
 
-                job.future.complete(job.task.performBuild(this.bufferCache));
+                job.future.complete(job.task.performBuild(this.pipeline, this.bufferCache));
             }
         }
 

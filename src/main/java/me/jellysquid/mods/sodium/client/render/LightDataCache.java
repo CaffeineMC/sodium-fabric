@@ -7,30 +7,30 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
+import java.util.Arrays;
+
 public class LightDataCache {
     private final ChunkSlice world;
-    private final int xOffset, yOffset, zOffset;
-    private final int xSize, ySize, zSize;
-
     private final long[] light;
-
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
 
-    public LightDataCache(ChunkSlice world, int xOffset, int yOffset, int zOffset, int xSize, int ySize, int zSize) {
+    private int xOffset, yOffset, zOffset;
+
+    public LightDataCache(ChunkSlice world) {
         this.world = world;
+        this.light = new long[ChunkSlice.BLOCK_COUNT];
+    }
 
-        this.xOffset = xOffset;
-        this.yOffset = yOffset;
-        this.zOffset = zOffset;
-        this.xSize = xSize;
-        this.ySize = ySize;
-        this.zSize = zSize;
+    public void init(int x, int y, int z) {
+        this.xOffset = x;
+        this.yOffset = y;
+        this.zOffset = z;
 
-        this.light = new long[xSize * ySize * zSize];
+        Arrays.fill(this.light, 0L);
     }
 
     private int index(int x, int y, int z) {
-        return (z - this.zOffset) * this.xSize * this.ySize + (y - this.yOffset) * this.zSize + x - this.xOffset;
+        return (z - this.zOffset) * ChunkSlice.BLOCK_LENGTH * ChunkSlice.BLOCK_LENGTH + (y - this.yOffset) * ChunkSlice.BLOCK_LENGTH + x - this.xOffset;
     }
 
     public long get(int x, int y, int z, Direction d1, Direction d2) {

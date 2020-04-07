@@ -7,9 +7,9 @@ import net.minecraft.client.util.math.MatrixStack;
 public interface ChunkRenderer<T extends ChunkRenderData> {
     T createRenderData();
 
-    void begin();
+    void begin(MatrixStack matrixStack);
 
     void render(ChunkRender<T> chunk, RenderLayer layer, MatrixStack matrixStack, double x, double y, double z);
 
-    void end();
+    void end(MatrixStack matrixStack);
 }

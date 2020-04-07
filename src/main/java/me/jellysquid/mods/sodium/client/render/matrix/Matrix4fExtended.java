@@ -2,6 +2,8 @@ package me.jellysquid.mods.sodium.client.render.matrix;
 
 import net.minecraft.util.math.Quaternion;
 
+import java.nio.FloatBuffer;
+
 public interface Matrix4fExtended {
     /**
      * Applies the specified rotation to this matrix in-place.
@@ -18,4 +20,6 @@ public interface Matrix4fExtended {
      * @param z The z-component of the translation
      */
     void translate(float x, float y, float z);
+
+    void writeTranslation(FloatBuffer buffer, float x, float y, float z);
 }

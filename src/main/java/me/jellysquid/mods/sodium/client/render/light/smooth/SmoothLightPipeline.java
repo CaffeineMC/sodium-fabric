@@ -10,18 +10,20 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 
 public class SmoothLightPipeline implements LightPipeline {
-    private final LightDataCache cache;
+    private LightDataCache cache;
 
     private final AoFaceData[] cachedFaceData = new AoFaceData[6 * 2];
 
     private final float[] weights = new float[4];
 
-    public SmoothLightPipeline(LightDataCache cache) {
-        this.cache = cache;
-
+    public SmoothLightPipeline() {
         for (int i = 0; i < this.cachedFaceData.length; i++) {
             this.cachedFaceData[i] = new AoFaceData();
         }
+    }
+
+    public void setLightCache(LightDataCache cache) {
+        this.cache = cache;
     }
 
     @Override

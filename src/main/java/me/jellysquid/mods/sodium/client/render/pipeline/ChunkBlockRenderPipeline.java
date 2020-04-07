@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
+import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
@@ -33,26 +34,30 @@ import java.util.Random;
 public class ChunkBlockRenderPipeline {
     private final BlockColors colorMap;
 
-    private final LightPipeline smoothLightPipeline;
-    private final LightPipeline flatLightPipeline;
+    private final SmoothLightPipeline smoothLightPipeline;
+    private final FlatLightPipeline flatLightPipeline;
 
     private final BlockOcclusionCache occlusionCache;
 
     private final ModelQuad cachedQuad = new ModelQuad();
     private final LightResult cachedLightResult = new LightResult();
+    private final Int2IntArrayMap cachedColors = new Int2IntArrayMap();
 
-    public ChunkBlockRenderPipeline(MinecraftClient client, ChunkSlice world) {
+    public ChunkBlockRenderPipeline(MinecraftClient client) {
         this.colorMap = client.getBlockColorMap();
 
-        this.smoothLightPipeline = new SmoothLightPipeline(world.getLightDataCache());
-        this.flatLightPipeline = new FlatLightPipeline(world.getLightDataCache());
+        this.smoothLightPipeline = new SmoothLightPipeline();
+        this.flatLightPipeline = new FlatLightPipeline();
 
         this.occlusionCache = new BlockOcclusionCache();
+        this.cachedColors.defaultReturnValue(Integer.MIN_VALUE);
     }
 
     public boolean renderModel(ChunkMeshInfo.Builder meshInfo, BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, Vector3f translation, VertexConsumer builder, boolean cull, Random random, long seed) {
         LightPipeline lighter = this.getLightPipeline(state, model);
         lighter.reset();
+
+        this.cachedColors.clear();
 
         Vec3d blockOffset = state.getOffsetPos(world, pos);
         translation.add((float) blockOffset.getX(), (float) blockOffset.getY(), (float) blockOffset.getZ());
@@ -103,7 +108,7 @@ public class ChunkBlockRenderPipeline {
         float r, g, b;
 
         if (quad.hasColorIndex()) {
-            int color = this.colorMap.getColor(state, world, pos, quad.getColorIndex());
+            int color = this.getQuadColor(state, world, pos, quad.getColorIndex());
 
             r = ColorUtil.normalize(ColorUtil.unpackColorR(color));
             g = ColorUtil.normalize(ColorUtil.unpackColorG(color));
@@ -139,9 +144,24 @@ public class ChunkBlockRenderPipeline {
         ((ChunkMeshBuilder) builder).write(copy);
     }
 
+    private int getQuadColor(BlockState state, BlockRenderView world, BlockPos pos, int colorIndex) {
+        int color = this.cachedColors.get(colorIndex);
+
+        if (color == Integer.MIN_VALUE) {
+            this.cachedColors.put(colorIndex, color = this.colorMap.getColor(state, world, pos, colorIndex));
+        }
+
+        return color;
+    }
+
     private LightPipeline getLightPipeline(BlockState state, BakedModel model) {
         boolean smooth = MinecraftClient.isAmbientOcclusionEnabled() && state.getLuminance() == 0 && model.useAmbientOcclusion();
 
         return smooth ? this.smoothLightPipeline : this.flatLightPipeline;
+    }
+
+    public void setWorldSlice(ChunkSlice slice) {
+        this.flatLightPipeline.setLightCache(slice.getLightDataCache());
+        this.smoothLightPipeline.setLightCache(slice.getLightDataCache());
     }
 }
