@@ -9,6 +9,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkRenderUploadTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ColumnRender;
+import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -26,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class ChunkRenderManager<T extends ChunkRenderData> {
+public class ChunkRenderManager<T extends ChunkRenderData> implements ChunkStatusListener {
     private final MinecraftClient client;
 
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
@@ -86,7 +87,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             this.bufferBuilders = MinecraftClient.getInstance().getBufferBuilders();
             this.chunkGraph = new ChunkGraph<>(this, this.world, this.renderDistance);
 
-            ((ChunkManagerWithStatusListener) world.getChunkManager()).setListener(this.chunkGraph);
+            ((ChunkManagerWithStatusListener) world.getChunkManager()).setListener(this);
         }
     }
 
@@ -237,9 +238,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
         ObjectList<ChunkRender<T>> list = this.chunkGraph.getDrawableChunks();
         ObjectListIterator<ChunkRender<T>> it = list.listIterator(notTranslucent ? 0 : list.size());
 
-        this.chunkRenderer.begin();
-
-        RenderSystem.pushMatrix();
+        this.chunkRenderer.begin(matrixStack);
 
         boolean needManualTicking = SodiumClientMod.options().performance.animateOnlyVisibleTextures;
 
@@ -261,9 +260,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             this.chunkRenderer.render(render, renderLayer, matrixStack, x, y, z);
         }
 
-        this.chunkRenderer.end();
-
-        RenderSystem.popMatrix();
+        this.chunkRenderer.end(matrixStack);
 
         RenderSystem.clearCurrentColor();
 
@@ -289,7 +286,7 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
             this.chunkGraph.setRenderDistance(this.renderDistance);
         }
 
-        this.chunkBuilder.reset();
+        this.chunkBuilder.setWorld(this.world);
     }
 
     public ChunkRender<T> createChunkRender(ColumnRender<T> column, int x, int y, int z) {
@@ -322,5 +319,17 @@ public class ChunkRenderManager<T extends ChunkRenderData> {
 
             matrices.pop();
         }
+    }
+
+    @Override
+    public void onChunkAdded(int x, int z) {
+        this.chunkBuilder.clearCachesForChunk(x, z);
+        this.chunkGraph.onChunkAdded(x, z);
+    }
+
+    @Override
+    public void onChunkRemoved(int x, int z) {
+        this.chunkBuilder.clearCachesForChunk(x, z);
+        this.chunkGraph.onChunkRemoved(x, z);
     }
 }

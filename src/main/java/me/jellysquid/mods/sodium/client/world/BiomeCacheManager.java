@@ -2,67 +2,85 @@ package me.jellysquid.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
-import net.minecraft.util.math.ChunkSectionPos;
+import me.jellysquid.mods.sodium.common.util.arena.Arena;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.biome.source.BiomeAccessType;
 
 public class BiomeCacheManager {
-    private final Long2ReferenceLinkedOpenHashMap<BiomeCache> caches = new Long2ReferenceLinkedOpenHashMap<>();
-
-    private final BiomeAccessType type;
-    private final long seed;
+    private final Arena<BiomeCache> arena;
+    private final Long2ReferenceLinkedOpenHashMap<BiomeCache[]> caches = new Long2ReferenceLinkedOpenHashMap<>(32, 0.5f);
 
     public BiomeCacheManager(BiomeAccessType type, long seed) {
-        this.type = type;
-        this.seed = seed;
+        this.arena = new Arena<>(64, () -> new BiomeCache(type, seed));
     }
 
-    public BiomeCache[] getCacheArray(ChunkSectionPos chunkPos) {
-        return this.getCacheArray(chunkPos.getX(), chunkPos.getY(), chunkPos.getZ());
-    }
-
-    public BiomeCache[] getCacheArray(int centerX, int centerY, int centerZ) {
-        BiomeCache[] cachesArray = new BiomeCache[3 * 3 * 3];
-
+    public void populateArrays(int centerX, int centerY, int centerZ, BiomeCache[] array) {
         int minX = centerX - 1;
-        int minY = centerY - 1;
         int minZ = centerZ - 1;
 
         int maxX = centerX + 1;
-        int maxY = centerY + 1;
         int maxZ = centerZ + 1;
 
-        final Long2ReferenceLinkedOpenHashMap<BiomeCache> caches = this.caches;
-
         for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    long key = ChunkSectionPos.asLong(x, y, z);
+            for (int z = minZ; z <= maxZ; z++) {
+                long key = ChunkPos.toLong(x, z);
 
-                    BiomeCache cache = caches.getAndMoveToFirst(key);
+                BiomeCache[] column = this.caches.getAndMoveToFirst(key);
 
-                    if (cache == null) {
-                        caches.put(key, cache = new BiomeCache(this.type, this.seed));
-
-                        if (caches.size() > 256) {
-                            caches.removeLast();
-                        }
+                if (column == null) {
+                    if (this.caches.size() >= 256) {
+                        this.dropCacheColumn(this.caches.removeLast());
                     }
 
-                    cachesArray[ChunkSlice.getSectionIndex(x - minX, y - minY, z - minZ)] = cache;
+                    this.caches.put(key, column = new BiomeCache[16]);
                 }
+
+                BiomeCache cache = column[centerY];
+
+                if (cache == null) {
+                    column[centerY] = (cache = this.arena.allocate());
+                }
+
+                array[ChunkSlice.getChunkIndex(x - minX, z - minZ)] = cache;
             }
         }
 
-        return cachesArray;
+        for (BiomeCache cache : array) {
+            if (cache == null) {
+                throw new IllegalStateException();
+            }
+        }
     }
 
-    public void clearCacheFor(int centerX, int centerZ) {
+    public void dropCachesForChunk(int centerX, int centerZ) {
         for (int x = centerX - 1; x <= centerX; x++) {
             for (int z = centerZ - 1; z <= centerZ; z++) {
-                for (int y = 0; y < 16; y++) {
-                    this.caches.remove(ChunkSectionPos.asLong(x, y, z));
+                BiomeCache[] column = this.caches.remove(ChunkPos.toLong(x, z));
+
+                if (column != null) {
+                    this.dropCacheColumn(column);
                 }
             }
         }
+    }
+
+    private void dropCacheColumn(BiomeCache[] column) {
+        for (BiomeCache cache : column) {
+            if (cache != null) {
+                this.tryReclaimCache(cache);
+            }
+        }
+    }
+
+    private void tryReclaimCache(BiomeCache cache) {
+        if (!cache.hasReferences()) {
+            this.arena.reclaim(cache);
+        }
+    }
+
+    public void release(BiomeCache cache) {
+        cache.releaseReference();
+
+        this.tryReclaimCache(cache);
     }
 }

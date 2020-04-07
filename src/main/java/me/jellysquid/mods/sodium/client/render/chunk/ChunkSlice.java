@@ -2,9 +2,11 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import me.jellysquid.mods.sodium.client.render.LightDataCache;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.world.BiomeCache;
-import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
+import me.jellysquid.mods.sodium.client.world.BiomeCacheManager;
 import me.jellysquid.mods.sodium.client.world.ColorizerCache;
+import me.jellysquid.mods.sodium.common.util.arena.ReusableObject;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.fluid.FluidState;
@@ -24,43 +26,46 @@ import net.minecraft.world.chunk.light.ChunkLightingView;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.ColorResolver;
 
+import java.util.Arrays;
 import java.util.Map;
 
-public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
-    private static final int BLOCK_RADIUS = 1;
-    private static final int CHUNK_RADIUS = MathHelper.roundUp(BLOCK_RADIUS, 16) >> 4;
+public class ChunkSlice extends ReusableObject implements BlockRenderView, BiomeAccess.Storage {
+    public static final int BLOCK_RADIUS = 1;
+    public static final int CHUNK_RADIUS = MathHelper.roundUp(BLOCK_RADIUS, 16) >> 4;
 
-    private static final int SECTION_LENGTH = 1 + (CHUNK_RADIUS * 2);
-    private static final int BLOCK_LENGTH = 16 + (BLOCK_RADIUS * 2);
+    public static final int SECTION_LENGTH = 1 + (CHUNK_RADIUS * 2);
+    public static final int BLOCK_LENGTH = 16 + (BLOCK_RADIUS * 2);
 
-    private static final int BLOCK_COUNT = BLOCK_LENGTH * BLOCK_LENGTH * BLOCK_LENGTH;
-    private static final int SECTION_COUNT = SECTION_LENGTH * SECTION_LENGTH * SECTION_LENGTH;
-    private static final int CHUNK_COUNT = SECTION_COUNT * SECTION_LENGTH;
+    public static final int BLOCK_COUNT = BLOCK_LENGTH * BLOCK_LENGTH * BLOCK_LENGTH;
+    public static final int SECTION_COUNT = SECTION_LENGTH * SECTION_LENGTH * SECTION_LENGTH;
+    public static final int CHUNK_COUNT = SECTION_LENGTH * SECTION_LENGTH;
 
     private static final ChunkSection EMPTY_SECTION = new ChunkSection(0);
 
-    private final int chunkOffsetX;
-    private final int chunkOffsetY;
-    private final int chunkOffsetZ;
-
-    private final int blockOffsetX;
-    private final int blockOffsetY;
-    private final int blockOffsetZ;
-
-    private final WorldChunk[] chunks;
     private final BlockState[] blockStates;
-
-    private final World world;
-    private final LightDataCache lightCache;
-
-    private final BiomeArray[] biomeArrays;
     private final ChunkNibbleArray[] blockLightArrays;
     private final ChunkNibbleArray[] skyLightArrays;
+    private final BiomeCache[] biomeCaches;
+    private final BiomeArray[] biomeArrays;
 
-    private final Map<ColorResolver, ColorizerCache> colorCache = new Reference2ReferenceArrayMap<>();
-    private final BiomeCache[] biomeCache;
+    private final LightDataCache lightDataCache;
 
-    public static ChunkSlice tryCreate(World world, ChunkSectionPos pos) {
+    private final Map<ColorResolver, ColorizerCache> colorResolvers = new Reference2ReferenceArrayMap<>();
+
+    private World world;
+    private WorldChunk[] chunks;
+
+    private BiomeCacheManager biomeCacheManager;
+
+    private int chunkOffsetX;
+    private int chunkOffsetY;
+    private int chunkOffsetZ;
+
+    private int blockOffsetX;
+    private int blockOffsetY;
+    private int blockOffsetZ;
+
+    public static WorldChunk[] getChunks(World world, ChunkSectionPos pos) {
         WorldChunk chunk = world.getChunk(pos.getX(), pos.getZ());
         ChunkSection section = chunk.getSectionArray()[pos.getY()];
 
@@ -82,10 +87,19 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
             }
         }
 
-        return new ChunkSlice(world, pos, chunks);
+        return chunks;
     }
 
-    public ChunkSlice(World world, ChunkSectionPos chunkPos, WorldChunk[] chunks) {
+    public ChunkSlice() {
+        this.blockStates = new BlockState[BLOCK_COUNT];
+        this.blockLightArrays = new ChunkNibbleArray[SECTION_COUNT];
+        this.skyLightArrays = new ChunkNibbleArray[SECTION_COUNT];
+        this.biomeCaches = new BiomeCache[CHUNK_COUNT];
+        this.biomeArrays = new BiomeArray[CHUNK_COUNT];
+        this.lightDataCache = new LightDataCache(this);
+    }
+
+    public void init(ChunkBuilder builder, World world, ChunkSectionPos chunkPos, WorldChunk[] chunks) {
         final int minX = chunkPos.getMinX() - BLOCK_RADIUS;
         final int minY = chunkPos.getMinY() - BLOCK_RADIUS;
         final int minZ = chunkPos.getMinZ() - BLOCK_RADIUS;
@@ -113,11 +127,6 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
         this.chunkOffsetY = chunkPos.getY() - CHUNK_RADIUS;
         this.chunkOffsetZ = chunkPos.getZ() - CHUNK_RADIUS;
 
-        this.blockStates = new BlockState[BLOCK_COUNT];
-        this.blockLightArrays = new ChunkNibbleArray[SECTION_COUNT];
-        this.skyLightArrays = new ChunkNibbleArray[SECTION_COUNT];
-        this.biomeArrays = new BiomeArray[CHUNK_COUNT];
-
         ChunkLightingView blockLightProvider = this.world.getLightingProvider().get(LightType.BLOCK);
         ChunkLightingView skyLightProvider = this.world.getLightingProvider().get(LightType.SKY);
 
@@ -125,17 +134,17 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
                 int chunkXLocal = chunkX - this.chunkOffsetX;
                 int chunkZLocal = chunkZ - this.chunkOffsetZ;
+                int chunkIdx = getChunkIndex(chunkXLocal, chunkZLocal);
 
-                WorldChunk chunk = chunks[getChunkIndex(chunkXLocal, chunkZLocal)];
+                WorldChunk chunk = chunks[chunkIdx];
+
+                this.biomeArrays[chunkIdx] = chunk.getBiomeArray();
 
                 int aX = Math.max(minX, chunkX << 4);
                 int bX = Math.min(maxX, (chunkX + 1) << 4);
 
                 int aZ = Math.max(minZ, chunkZ << 4);
                 int bZ = Math.min(maxZ, (chunkZ + 1) << 4);
-
-                int chunkIdx = getChunkIndex(chunkXLocal, chunkZLocal);
-                this.biomeArrays[chunkIdx] = chunk.getBiomeArray();
 
                 for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
                     int chunkYLocal = chunkY - this.chunkOffsetY;
@@ -170,15 +179,17 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
             }
         }
 
-        this.lightCache = new LightDataCache(this, minX, minY, minZ, BLOCK_LENGTH, BLOCK_LENGTH, BLOCK_LENGTH);
-        this.biomeCache = ((ClientWorldExtended) world).getBiomeCacheManager().getCacheArray(chunkPos);
+        this.biomeCacheManager = builder.getBiomeCacheManager();
+        this.biomeCacheManager.populateArrays(chunkPos.getX(), chunkPos.getY(), chunkPos.getZ(), this.biomeCaches);
+
+        this.lightDataCache.init(minX, minY, minZ);
     }
 
     private ColorizerCache getColorizerCache(ColorResolver resolver) {
-        ColorizerCache cache = this.colorCache.get(resolver);
+        ColorizerCache cache = this.colorResolvers.get(resolver);
 
         if (cache == null) {
-            this.colorCache.put(resolver, cache = new ColorizerCache(resolver, this));
+            this.colorResolvers.put(resolver, cache = new ColorizerCache(resolver, this));
         }
 
         return cache;
@@ -248,12 +259,8 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
         return 0;
     }
 
-    private static int getChunkIndex(int x, int z) {
-        return (z * SECTION_LENGTH) + x;
-    }
-
     public LightDataCache getLightDataCache() {
-        return this.lightCache;
+        return this.lightDataCache;
     }
 
     // FIX: Do not access state on the main thread
@@ -269,7 +276,7 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
     }
 
     public Biome getCachedBiome(int x, int y, int z) {
-        return this.biomeCache[this.getSectionIndexForBlock(x, y, z)].getBiome(this, x, y, z);
+        return this.biomeCaches[this.getChunkIndexForBlock(x, z)].getBiome(this, x, y, z);
     }
 
     private int getBlockIndex(int x, int y, int z) {
@@ -281,7 +288,14 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
     }
 
     private int getChunkIndexForBlock(BlockPos pos) {
-        return getChunkIndex((pos.getX() >> 4) - this.chunkOffsetX, (pos.getZ() >> 4) - this.chunkOffsetZ);
+        return this.getChunkIndexForBlock(pos.getX(), pos.getZ());
+    }
+
+    private int getChunkIndexForBlock(int x, int z) {
+        int x2 = (x >> 4) - this.chunkOffsetX;
+        int z2 = (z >> 4) - this.chunkOffsetZ;
+
+        return getChunkIndex(x2, z2);
     }
 
     private int getBiomeIndexForBlock(int x, int z) {
@@ -290,7 +304,7 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
         int x2 = (x >> 2) - this.chunkOffsetX;
         int z2 = (z >> 2) - this.chunkOffsetZ;
 
-        return (z2 * SECTION_LENGTH) + x2;
+        return getChunkIndex(x2, z2);
     }
 
     private int getSectionIndexForBlock(int x, int y, int z) {
@@ -298,10 +312,34 @@ public class ChunkSlice implements BlockRenderView, BiomeAccess.Storage {
         int y2 = (y >> 4) - this.chunkOffsetY;
         int z2 = (z >> 4) - this.chunkOffsetZ;
 
-        return (y2 * 9) + (z2 * 3) + x2;
+        return getSectionIndex(x2, y2, z2);
+    }
+
+    public static int getChunkIndex(int x, int z) {
+        return (z * SECTION_LENGTH) + x;
     }
 
     public static int getSectionIndex(int x, int y, int z) {
         return (y * SECTION_LENGTH * SECTION_LENGTH) + (z * SECTION_LENGTH) + x;
+    }
+
+    public void cleanup() {
+        for (BiomeCache cache : this.biomeCaches) {
+            this.biomeCacheManager.release(cache);
+        }
+    }
+
+    @Override
+    public void reset() {
+        Arrays.fill(this.biomeCaches, null);
+        Arrays.fill(this.biomeArrays, null);
+        Arrays.fill(this.blockLightArrays, null);
+        Arrays.fill(this.skyLightArrays, null);
+
+        this.biomeCacheManager = null;
+        this.chunks = null;
+        this.world = null;
+
+        this.colorResolvers.clear();
     }
 }

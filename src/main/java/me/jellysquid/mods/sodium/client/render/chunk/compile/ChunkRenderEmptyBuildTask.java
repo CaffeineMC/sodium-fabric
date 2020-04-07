@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.Direction;
 
@@ -13,7 +14,7 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
     }
 
     @Override
-    public ChunkRenderUploadTask performBuild(VertexBufferCache buffers) {
+    public ChunkRenderUploadTask performBuild(ChunkRenderPipeline pipeline, VertexBufferCache buffers) {
         return new ChunkRenderEmptyBuildTask.EmptyUploadTask(render);
     }
 

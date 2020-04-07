@@ -60,7 +60,8 @@ public class ChunkRender<T extends ChunkRenderData> {
     }
 
     public void cancelRebuildTask() {
-        this.finishRebuild();
+        this.needsRebuild = false;
+        this.needsImportantRebuild = false;
 
         if (this.rebuildTask != null) {
             this.rebuildTask.cancel(false);
@@ -159,9 +160,11 @@ public class ChunkRender<T extends ChunkRenderData> {
         this.meshInfo = meshInfo;
     }
 
-    public void finishRebuild() {
+    public void finishRebuild(ChunkSlice slice) {
         this.needsRebuild = false;
         this.needsImportantRebuild = false;
+
+        this.builder.releaseChunkSlice(slice);
     }
 
     public boolean isEmpty() {
@@ -197,18 +200,14 @@ public class ChunkRender<T extends ChunkRenderData> {
         return this.column.isChunkPresent();
     }
 
-    public long getPositionKey() {
-        return ChunkSectionPos.asLong(this.chunkX, this.chunkY, this.chunkZ);
-    }
-
     private static ChunkRenderBuildTask createRebuildTask(ChunkBuilder builder, ChunkRender<?> render) {
-        ChunkSlice slice = ChunkSlice.tryCreate(builder.getWorld(), render.getChunkPos());
+        ChunkSlice slice = builder.createChunkSlice(render.getChunkPos());
 
         if (slice == null) {
             return new ChunkRenderEmptyBuildTask(render);
+        } else {
+            return new ChunkRenderRebuildTask(builder, render, slice);
         }
-
-        return new ChunkRenderRebuildTask(builder, render, slice);
     }
 
     private ChunkSectionPos getChunkPos() {

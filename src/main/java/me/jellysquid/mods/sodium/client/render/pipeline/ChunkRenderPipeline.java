@@ -23,8 +23,8 @@ public class ChunkRenderPipeline {
 
     private final Random random = new XoRoShiRoRandom();
 
-    public ChunkRenderPipeline(MinecraftClient client, ChunkSlice world) {
-        this.blockRenderer = new ChunkBlockRenderPipeline(client, world);
+    public ChunkRenderPipeline(MinecraftClient client) {
+        this.blockRenderer = new ChunkBlockRenderPipeline(client);
         this.fluidRenderer = new ChunkFluidRenderPipeline();
 
         this.models = client.getBakedModelManager().getBlockModels();
@@ -42,5 +42,9 @@ public class ChunkRenderPipeline {
 
     public void renderFluid(ChunkMeshInfo.Builder meshInfo, BlockPos.Mutable pos, ChunkSlice region, BufferBuilder builder, FluidState fluidState) {
         this.fluidRenderer.render(meshInfo, region, pos, builder, fluidState);
+    }
+
+    public void setWorldSlice(ChunkSlice slice) {
+        this.blockRenderer.setWorldSlice(slice);
     }
 }
