@@ -381,13 +381,13 @@ public class ChunkRenderManager implements ChunkStatusListener {
 
         Box box = entity.getVisibilityBoundingBox();
 
-        int minX = MathHelper.floor(box.x1) >> 4;
-        int minY = MathHelper.floor(box.y1) >> 4;
-        int minZ = MathHelper.floor(box.z1) >> 4;
+        int minX = MathHelper.floor(box.x1 - 0.5D) >> 4;
+        int minY = MathHelper.floor(box.y1 - 0.5D) >> 4;
+        int minZ = MathHelper.floor(box.z1 - 0.5D) >> 4;
 
-        int maxX = MathHelper.floor(box.x2) >> 4;
-        int maxY = MathHelper.floor(box.y2) >> 4;
-        int maxZ = MathHelper.floor(box.z2) >> 4;
+        int maxX = MathHelper.floor(box.x2 + 0.5D) >> 4;
+        int maxY = MathHelper.floor(box.y2 + 0.5D) >> 4;
+        int maxZ = MathHelper.floor(box.z2 + 0.5D) >> 4;
 
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
