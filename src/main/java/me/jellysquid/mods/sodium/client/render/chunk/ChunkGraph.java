@@ -398,10 +398,6 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
     public boolean isChunkVisible(int x, int y, int z) {
         ChunkRender<T> render = this.getRender(x, y, z);
 
-        if (render != null && render.rebuildFrame == this.lastFrame) {
-            return true;
-        }
-
-        return false;
+        return render != null && render.lastVisibleFrame == this.lastFrame;
     }
 }
