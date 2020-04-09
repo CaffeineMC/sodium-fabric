@@ -1,8 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderBuildTask;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderUploadTask;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
-import me.jellysquid.mods.sodium.client.world.BiomeCacheManager;
+import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
 import me.jellysquid.mods.sodium.common.util.arena.Arena;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.Vector3d;
@@ -32,7 +34,7 @@ public class ChunkBuilder {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
-    private final Arena<ChunkSlice> chunkSliceArena;
+    private final Arena<WorldSlice> chunkSliceArena;
 
     private World world;
     private Vector3d cameraPosition;
@@ -42,14 +44,14 @@ public class ChunkBuilder {
 
     public ChunkBuilder() {
         this.limitThreads = getOptimalThreadCount();
-        this.chunkSliceArena = new Arena<>(this.getBudget(), ChunkSlice::new);
+        this.chunkSliceArena = new Arena<>(this.getBudget(), WorldSlice::new);
     }
 
     public int getBudget() {
         return Math.max(0, (this.limitThreads * 3) - this.buildQueue.size());
     }
 
-    public void start() {
+    public void startWorkers() {
         if (this.running.getAndSet(true)) {
             return;
         }
@@ -60,6 +62,7 @@ public class ChunkBuilder {
 
         for (int i = 0; i < this.limitThreads; i++) {
             Thread thread = new Thread(new WorkerRunnable(), "Chunk Render Task Executor #" + i);
+            thread.setPriority(Math.max(0, Thread.NORM_PRIORITY - 2));
             thread.start();
 
             this.threads.add(thread);
@@ -69,11 +72,11 @@ public class ChunkBuilder {
     }
 
     public void reset() {
-        this.shutdown();
-        this.start();
+        this.stopWorkers();
+        this.startWorkers();
     }
 
-    public void shutdown() {
+    public void stopWorkers() {
         if (!this.running.getAndSet(false)) {
             return;
         }
@@ -110,6 +113,7 @@ public class ChunkBuilder {
 
         this.world = null;
         this.biomeCacheManager = null;
+        this.chunkSliceArena.reset();
     }
 
     public boolean upload() {
@@ -173,28 +177,24 @@ public class ChunkBuilder {
     }
 
     private static int getOptimalThreadCount() {
-        return Math.max(1, Runtime.getRuntime().availableProcessors() - 1);
+        return Math.max(1, Runtime.getRuntime().availableProcessors());
     }
 
-    public ChunkSlice createChunkSlice(ChunkSectionPos pos) {
-        WorldChunk[] chunks = ChunkSlice.getChunks(this.world, pos);
+    public WorldSlice createChunkSlice(ChunkSectionPos pos) {
+        WorldChunk[] chunks = WorldSlice.getChunks(this.world, pos);
 
         if (chunks == null) {
             return null;
         }
 
-        ChunkSlice slice = this.chunkSliceArena.allocate();
+        WorldSlice slice = this.chunkSliceArena.allocate();
         slice.init(this, this.world, pos, chunks);
-        slice.allocateReference();
 
         return slice;
     }
 
-    public void releaseChunkSlice(ChunkSlice slice) {
-        slice.releaseReference();
-        slice.cleanup();
-
-        this.chunkSliceArena.reclaim(slice);
+    public void releaseChunkSlice(WorldSlice slice) {
+        this.chunkSliceArena.release(slice);
     }
 
     public BiomeCacheManager getBiomeCacheManager() {

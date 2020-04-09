@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
+import me.jellysquid.mods.sodium.client.gl.GlHelper;
+import me.jellysquid.mods.sodium.client.gl.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
@@ -9,7 +11,6 @@ import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.TickBoxControl;
 import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
-import me.jellysquid.mods.sodium.client.render.gl.GlVertexArray;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.AttackIndicator;
 import net.minecraft.client.options.ParticlesOption;
@@ -168,6 +169,17 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
+                .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)
+                        .setName("Smooth Lighting")
+                        .setTooltip("Controls the quality of smooth lighting effects.\n" +
+                                "\nOff - No smooth lighting." +
+                                "\nLow - Smooth block lighting only." +
+                                "\nHigh - Smooth block and entity lighting.")
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.LightingQuality.values()))
+                        .setBinding((opts, value) -> opts.quality.smoothLighting = value, opts -> opts.quality.smoothLighting)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fog")
                         .setTooltip("If enabled, a fog effect will be used for terrain in the distance.")
@@ -207,9 +219,18 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Advanced Entity Culling")
+                        .setTooltip("If enabled, a secondary culling pass will be performed before attempting to render an entity. This additional pass " +
+                                "takes into account the current set of visible chunks and removes entities which are not in any visible chunks.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.performance.useAdvancedEntityCulling = value, opts -> opts.performance.useAdvancedEntityCulling)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fast Chunk Setup")
                         .setTooltip("If enabled, Vertex Array Objects will be used in chunk rendering to avoid needing to setup array pointers every chunk render. " +
-                                "Requires OpenGL 3.0+ or support for the ARB_vertex_array_object extension.")
+                                "\n\nRequires OpenGL 3.0+ or support for the ARB_vertex_array_object extension.")
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.performance.useVAOs = value, opts -> opts.performance.useVAOs)
                         .setImpact(OptionImpact.MEDIUM)
@@ -220,7 +241,7 @@ public class SodiumGameOptionPages {
                         .setName("Large Chunk Buffers")
                         .setTooltip("If enabled, chunks will be batched into larger vertex buffers to avoid expensive buffer switches while rendering chunks. " +
                                 "This can provide a huge boost at high render distances when CPU-bound." +
-                                "Requires OpenGL 3.1+ or support for the ARB_copy_buffer extension.")
+                                "\n\nRequires OpenGL 3.1+ or support for the ARB_copy_buffer extension.")
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.performance.useLargeBuffers = value, opts -> opts.performance.useLargeBuffers)
                         .setImpact(OptionImpact.HIGH)
@@ -230,17 +251,19 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fog Chunk Occlusion")
                         .setTooltip("If enabled, additional chunk culling will be performed through determining whether or not chunks are hidden in the fog. This can " +
-                                "eliminate additional chunks that would otherwise be unnecessarily rendered. This option does nothing if fog rendering is disabled.")
+                                "eliminate additional chunks that would otherwise be unnecessarily rendered. This option does nothing if fog rendering is disabled. " +
+                                "\n\nRequires support for the NV_fog_distance extension.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.useFogChunkCulling = value, opts -> opts.performance.useFogChunkCulling)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .setEnabled(GlHelper.supportsNvFog())
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Animate Only Visible Textures")
                         .setTooltip("If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame " +
-                                "rates on some hardware.")
+                                "rates on some hardware. If you experience issues with some textures not being animated, disable this option.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.animateOnlyVisibleTextures = value, opts -> opts.performance.animateOnlyVisibleTextures)

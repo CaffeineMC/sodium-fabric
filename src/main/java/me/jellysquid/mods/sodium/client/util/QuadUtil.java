@@ -16,6 +16,7 @@ public class QuadUtil {
     public static final int VERTEX_SIZE = 8;
 
     private static final int[] NORMALS = new int[DirectionUtil.ALL_DIRECTIONS.length];
+    private static final float NORM = 1.0f / 127.0f;
 
     static {
         for (int i = 0; i < NORMALS.length; i++) {
@@ -49,5 +50,17 @@ public class QuadUtil {
 
     public static int getNormal(Direction facing) {
         return NORMALS[facing.ordinal()];
+    }
+
+    public static float unpackNormalX(int norm) {
+        return ((byte) (norm & 0xFF)) * NORM;
+    }
+
+    public static float unpackNormalY(int norm) {
+        return ((byte) ((norm >> 8) & 0xFF)) * NORM;
+    }
+
+    public static float unpackNormalZ(int norm) {
+        return ((byte) ((norm >> 16) & 0xFF)) * NORM;
     }
 }

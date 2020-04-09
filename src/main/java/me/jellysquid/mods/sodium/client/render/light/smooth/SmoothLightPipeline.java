@@ -1,29 +1,27 @@
 package me.jellysquid.mods.sodium.client.render.light.smooth;
 
-import me.jellysquid.mods.sodium.client.render.LightDataCache;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.render.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.render.light.cache.LightDataCache;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadFlags;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 
 public class SmoothLightPipeline implements LightPipeline {
-    private LightDataCache cache;
+    private final LightDataCache lightCache;
 
     private final AoFaceData[] cachedFaceData = new AoFaceData[6 * 2];
 
     private final float[] weights = new float[4];
 
-    public SmoothLightPipeline() {
+    public SmoothLightPipeline(LightDataCache lightCache) {
+        this.lightCache = lightCache;
+
         for (int i = 0; i < this.cachedFaceData.length; i++) {
             this.cachedFaceData[i] = new AoFaceData();
         }
-    }
-
-    public void setLightCache(LightDataCache cache) {
-        this.cache = cache;
     }
 
     @Override
@@ -113,7 +111,7 @@ public class SmoothLightPipeline implements LightPipeline {
         AoFaceData data = this.cachedFaceData[face.ordinal() + (offset ? 6 : 0)];
 
         if (!data.hasLightData()) {
-            data.initLightData(this.cache, pos, face, offset);
+            data.initLightData(this.lightCache, pos, face, offset);
         }
 
         return data;

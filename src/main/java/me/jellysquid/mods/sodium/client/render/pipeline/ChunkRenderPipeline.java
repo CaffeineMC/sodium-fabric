@@ -1,14 +1,15 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkSlice;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshInfo;
+import me.jellysquid.mods.sodium.client.render.light.cache.ChunkLightDataCache;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadTransformer;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
+import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.block.BlockModels;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
@@ -16,35 +17,38 @@ import net.minecraft.world.BlockRenderView;
 import java.util.Random;
 
 public class ChunkRenderPipeline {
-    private final ChunkBlockRenderPipeline blockRenderer;
-    private final ChunkFluidRenderPipeline fluidRenderer;
+    private final ChunkLightDataCache lightDataCache;
+    private final BlockRenderPipeline blockRenderer;
+    private final FluidRenderPipeline fluidRenderer;
 
     private final BlockModels models;
 
     private final Random random = new XoRoShiRoRandom();
 
     public ChunkRenderPipeline(MinecraftClient client) {
-        this.blockRenderer = new ChunkBlockRenderPipeline(client);
-        this.fluidRenderer = new ChunkFluidRenderPipeline();
+        this.lightDataCache = new ChunkLightDataCache(WorldSlice.BLOCK_LENGTH);
+
+        this.blockRenderer = new BlockRenderPipeline(client, this.lightDataCache);
+        this.fluidRenderer = new FluidRenderPipeline();
 
         this.models = client.getBakedModelManager().getBlockModels();
     }
 
-    public boolean renderBlock(ChunkMeshInfo.Builder meshInfo, BlockState state, BlockPos pos, BlockRenderView world, Vector3f offset, BufferBuilder builder, boolean cull) {
+    public boolean renderBlock(ChunkMeshInfo.Builder meshInfo, BlockState state, BlockPos pos, BlockRenderView world, ModelQuadTransformer quadTransformer, BufferBuilder builder, boolean cull) {
         BlockRenderType type = state.getRenderType();
 
         if (type != BlockRenderType.MODEL) {
             return false;
         }
 
-        return this.blockRenderer.renderModel(meshInfo, world, this.models.getModel(state), state, pos, offset, builder, cull, this.random, state.getRenderingSeed(pos));
+        return this.blockRenderer.renderModel(meshInfo, world, this.models.getModel(state), state, pos, quadTransformer, builder, cull, this.random, state.getRenderingSeed(pos));
     }
 
-    public void renderFluid(ChunkMeshInfo.Builder meshInfo, BlockPos.Mutable pos, ChunkSlice region, BufferBuilder builder, FluidState fluidState) {
+    public void renderFluid(ChunkMeshInfo.Builder meshInfo, BlockPos.Mutable pos, WorldSlice region, BufferBuilder builder, FluidState fluidState) {
         this.fluidRenderer.render(meshInfo, region, pos, builder, fluidState);
     }
 
-    public void setWorldSlice(ChunkSlice slice) {
-        this.blockRenderer.setWorldSlice(slice);
+    public void init(BlockRenderView world, int x, int y, int z) {
+        this.lightDataCache.init(world, x, y, z);
     }
 }
