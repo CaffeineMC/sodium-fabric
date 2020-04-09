@@ -189,6 +189,13 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.quality.enableVignette = value, opts -> opts.quality.enableVignette)
                         .setImpact(OptionImpact.LOW)
                         .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Hurt Cam")
+                        .setTooltip("If enabled, the players view will bob when they take damage.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.quality.enableHurtCam = value, opts -> opts.quality.enableHurtCam)
+                        .setImpact(OptionImpact.LOW)
+                        .build())
                 .build());
 
 

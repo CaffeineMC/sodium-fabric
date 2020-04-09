@@ -37,6 +37,7 @@
     "textures.MixinInGameOverlayRenderer",
     "textures.MixinItemRenderer",
     "textures.MixinSprite",
-    "particles.MixinBillboardParticle"
+    "particles.MixinBillboardParticle",
+    "no_hurt_cam.MixinGameRenderer"
   ]
 }
