@@ -16,9 +16,9 @@ public enum ModelQuadOrder {
 
     public static ModelQuadOrder orderOf(float[] brightnesses) {
         if (brightnesses[0] + brightnesses[2] > brightnesses[1] + brightnesses[3]) {
-            return FLIP;
-        } else {
             return NORMAL;
+        } else {
+            return FLIP;
         }
     }
 }
