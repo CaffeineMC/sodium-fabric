@@ -13,6 +13,7 @@ import me.jellysquid.mods.sodium.client.render.backends.AbstractChunkRenderBacke
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL21;
@@ -34,11 +35,11 @@ public class ShaderChunkRenderBackend extends AbstractChunkRenderBackend<ShaderC
         this.useVertexArrays = GlVertexArray.isSupported() && options.performance.useVertexArrays;
         this.useImmutableStorage = GlImmutableBuffer.isSupported() && options.performance.useImmutableStorage;
 
-        GlShader vertShader = new GlShader(ShaderType.VERTEX, ShaderLoader.getShaderSource("/assets/sodium/shaders/chunk.v.glsl"));
-        GlShader fragShader = new GlShader(ShaderType.FRAGMENT, ShaderLoader.getShaderSource("/assets/sodium/shaders/chunk.f.glsl"));
+        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk.v.glsl"));
+        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk.f.glsl"));
 
         try {
-            this.program = GlShaderProgram.builder()
+            this.program = GlShaderProgram.builder(new Identifier("sodium", "chunk_shader"))
                     .attach(vertShader)
                     .attach(fragShader)
                     .link(ChunkShader::new);
@@ -100,8 +101,8 @@ public class ShaderChunkRenderBackend extends AbstractChunkRenderBackend<ShaderC
         private final int uBlockTex;
         private final int uLightTex;
 
-        public ChunkShader(int handle) {
-            super(handle);
+        public ChunkShader(Identifier name, int handle) {
+            super(name, handle);
 
             this.uModelView = this.getUniformLocation("u_ModelView");
             this.uProjection = this.getUniformLocation("u_Projection");

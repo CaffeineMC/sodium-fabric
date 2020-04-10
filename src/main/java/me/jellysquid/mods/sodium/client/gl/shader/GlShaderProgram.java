@@ -1,18 +1,24 @@
 package me.jellysquid.mods.sodium.client.gl.shader;
 
 import me.jellysquid.mods.sodium.client.gl.GlHandle;
+import net.minecraft.util.Identifier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL21;
 
-import java.util.function.IntFunction;
-
 public abstract class GlShaderProgram extends GlHandle {
-    protected GlShaderProgram(int program) {
+    private static final Logger LOGGER = LogManager.getLogger(GlShaderProgram.class);
+
+    private final Identifier name;
+
+    protected GlShaderProgram(Identifier name, int program) {
+        this.name = name;
         this.setHandle(program);
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public static Builder builder(Identifier identifier) {
+        return new Builder(identifier);
     }
 
     public void bind() {
@@ -21,6 +27,10 @@ public abstract class GlShaderProgram extends GlHandle {
 
     public void unbind() {
         GL21.glUseProgram(0);
+    }
+
+    public Identifier getName() {
+        return this.name;
     }
 
     public int getUniformLocation(String name) {
@@ -40,9 +50,11 @@ public abstract class GlShaderProgram extends GlHandle {
     }
 
     public static class Builder {
+        private final Identifier name;
         private final int program;
 
-        public Builder() {
+        public Builder(Identifier name) {
+            this.name = name;
             this.program = GL21.glCreateProgram();
         }
 
@@ -52,16 +64,26 @@ public abstract class GlShaderProgram extends GlHandle {
             return this;
         }
 
-        public <P extends GlShaderProgram> P link(IntFunction<P> factory) {
+        public <P extends GlShaderProgram> P link(ShaderTypeFactory<P> factory) {
             GL21.glLinkProgram(this.program);
+
+            String log = GL21.glGetProgramInfoLog(this.program);
+
+            if (!log.isEmpty()) {
+                LOGGER.warn("Program link log for " + this.name + ": " + log);
+            }
 
             int result = GL21.glGetProgrami(this.program, GL21.GL_LINK_STATUS);
 
             if (result != GL11.GL_TRUE) {
-                throw new RuntimeException("Shader link error: " + GL21.glGetProgramInfoLog(this.program));
+                throw new RuntimeException("Shader program linking failed, see log for details");
             }
 
-            return factory.apply(this.program);
+            return factory.create(this.name, this.program);
         }
+    }
+
+    public static interface ShaderTypeFactory<P extends GlShaderProgram> {
+        P create(Identifier name, int handle);
     }
 }
