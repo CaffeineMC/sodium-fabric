@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlImmutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShaderProgram;
@@ -29,8 +31,8 @@ public class ShaderChunkRenderBackend extends AbstractChunkRenderBackend<ShaderC
     public ShaderChunkRenderBackend() {
         SodiumGameOptions options = SodiumClientMod.options();
 
-        this.useVertexArrays = options.performance.useVertexArrays;
-        this.useImmutableStorage = options.performance.useImmutableStorage;
+        this.useVertexArrays = GlVertexArray.isSupported() && options.performance.useVertexArrays;
+        this.useImmutableStorage = GlImmutableBuffer.isSupported() && options.performance.useImmutableStorage;
 
         GlShader vertShader = new GlShader(ShaderType.VERTEX, ShaderLoader.getShaderSource("/assets/sodium/shaders/chunk.v.glsl"));
         GlShader fragShader = new GlShader(ShaderType.FRAGMENT, ShaderLoader.getShaderSource("/assets/sodium/shaders/chunk.f.glsl"));
