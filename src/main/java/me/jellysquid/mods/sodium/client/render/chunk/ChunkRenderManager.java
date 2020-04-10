@@ -89,6 +89,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
 
             if (this.chunkRenderBackend != null) {
                 this.chunkRenderBackend.delete();
+                this.chunkRenderBackend = null;
             }
         } else {
             if (this.chunkBuilder == null) {
@@ -283,6 +284,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
 
         if (this.chunkRenderBackend != null) {
             this.chunkRenderBackend.delete();
+            this.chunkRenderBackend = null;
         }
 
         if (SodiumClientMod.options().performance.useRenderLayerConsolidation) {
