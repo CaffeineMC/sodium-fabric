@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.VertexBufferCache;
+import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
 import me.jellysquid.mods.sodium.client.render.model.quad.transformers.TranslateTransformer;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
@@ -24,6 +25,8 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.WorldChunk;
 import org.lwjgl.opengl.GL11;
+
+import java.util.Map;
 
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
     private final ChunkRender<?> render;
@@ -117,11 +120,12 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        for (RenderLayer layer : RenderLayer.getBlockLayers()) {
-            BufferBuilder builder = buffers.get(layer);
+        for (Map.Entry<BlockRenderPass, BufferBuilder> entry : buffers.getAllBuffers()) {
+            BlockRenderPass type = entry.getKey();
+            BufferBuilder builder = entry.getValue();
 
             if (builder.isBuilding() && !((ModelQuadConsumer) builder).isEmpty()) {
-                if (layer == RenderLayer.getTranslucent()) {
+                if (type.isTranslucent()) {
                     builder.sortQuads((float) this.camera.x - (float) from.getX(),
                             (float) this.camera.y - (float) from.getY(),
                             (float) this.camera.z - (float) from.getZ());
@@ -129,7 +133,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                 builder.end();
 
-                meshInfo.addMeshData(layer, builder.popData());
+                meshInfo.addMeshData(type, builder.popData());
             }
         }
 

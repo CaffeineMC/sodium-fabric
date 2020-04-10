@@ -2,7 +2,8 @@ package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
 import me.jellysquid.mods.sodium.client.gl.GlHelper;
-import me.jellysquid.mods.sodium.client.gl.GlVertexArray;
+import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlImmutableBuffer;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
@@ -141,27 +142,11 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
-                        .setName("Leaves Quality")
-                        .setTooltip("Controls the quality of leaf blocks rendered in the world.")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.values()))
-                        .setBinding((opts, value) -> opts.quality.leavesQuality = value, opts -> opts.quality.leavesQuality)
-                        .setImpact(OptionImpact.HIGH)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build())
-                .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
                         .setName("Weather Quality")
                         .setTooltip("Controls the quality of rain and snow effects.")
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.values()))
                         .setBinding((opts, value) -> opts.quality.weatherQuality = value, opts -> opts.quality.weatherQuality)
                         .setImpact(OptionImpact.MEDIUM)
-                        .build())
-                .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
-                        .setName("Translucency Quality")
-                        .setTooltip("Controls the quality of translucent block effects.")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.values()))
-                        .setBinding((opts, value) -> opts.quality.translucentBlockQuality = value, opts -> opts.quality.translucentBlockQuality)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)
                         .setName("Smooth Lighting")
@@ -222,13 +207,32 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Consolidate Render Layers")
+                        .setTooltip("If enabled, render layers will be consolidated where possible, reducing the number of render passes that have to be performed.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.performance.useRenderLayerConsolidation = value, opts -> opts.performance.useRenderLayerConsolidation)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fast Chunk Setup")
                         .setTooltip("If enabled, Vertex Array Objects will be used in chunk rendering to avoid needing to setup array pointers every chunk render. " +
                                 "\n\nRequires OpenGL 3.0+ or support for the ARB_vertex_array_object extension.")
                         .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.performance.useVAOs = value, opts -> opts.performance.useVAOs)
+                        .setBinding((opts, value) -> opts.performance.useVertexArrays = value, opts -> opts.performance.useVertexArrays)
                         .setImpact(OptionImpact.MEDIUM)
                         .setEnabled(GlVertexArray.isSupported())
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Immutable Storage")
+                        .setTooltip("If enabled, immutable storage objects will be used for storing chunk meshes. This can improve performance by giving the driver, " +
+                                "more information about how the data will be used, in turn allowing it to apply additional optimizations." +
+                                "\n\nRequires OpenGL 4.4+ or support for the ARB_buffer_storage extension.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.performance.useImmutableStorage = value, opts -> opts.performance.useImmutableStorage)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setEnabled(GlImmutableBuffer.isSupported())
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)

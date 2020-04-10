@@ -20,7 +20,6 @@
     "models.MixinMultipartBakedModel",
     "options.MixinGameOptions",
     "options.MixinInGameHud",
-    "options.MixinRenderLayers",
     "options.MixinSettingsScreen",
     "options.MixinWorldRenderer",
     "options.MixinMinecraftClient",

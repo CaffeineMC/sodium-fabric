@@ -1,33 +1,34 @@
-package me.jellysquid.mods.sodium.client.gl;
+package me.jellysquid.mods.sodium.client.gl.array;
 
+import me.jellysquid.mods.sodium.client.gl.GlHandle;
 import org.lwjgl.opengl.ARBVertexArrayObject;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GLCapabilities;
 
 public class GlVertexArray extends GlHandle {
-    private static final VertexArrayFunctions vaoMode = VertexArrayFunctions.pickBest(GL.getCapabilities());
+    private static final VertexArrayFunctions func = VertexArrayFunctions.pickBest(GL.getCapabilities());
 
     public GlVertexArray() {
-        this.setHandle(vaoMode.glGenVertexArrays());
+        this.setHandle(func.glGenVertexArrays());
     }
 
-    public static void unbind() {
-        vaoMode.glBindVertexArray(0);
+    public void unbind() {
+        func.glBindVertexArray(0);
     }
 
     public void bind() {
-        vaoMode.glBindVertexArray(this.handle());
+        func.glBindVertexArray(this.handle());
     }
 
     public void delete() {
-        vaoMode.glDeleteVertexArrays(this.handle());
+        func.glDeleteVertexArrays(this.handle());
 
         this.invalidateHandle();
     }
 
     public static boolean isSupported() {
-        return vaoMode != VertexArrayFunctions.UNSUPPORTED;
+        return func != VertexArrayFunctions.UNSUPPORTED;
     }
 
     private enum VertexArrayFunctions {

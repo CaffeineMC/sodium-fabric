@@ -7,13 +7,13 @@ import me.jellysquid.mods.sodium.common.util.matrix.MatrixUtil;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
-import org.lwjgl.opengl.GL11;
 
 import java.nio.FloatBuffer;
 
 public abstract class AbstractChunkRenderBackend<T extends ChunkRenderState> implements ChunkRenderBackend<T> {
     private Matrix4f modelMatrix;
     private Matrix4fExtended modelMatrixExt;
+
     private FloatBuffer matrixBuffer;
 
     @Override
@@ -36,7 +36,7 @@ public abstract class AbstractChunkRenderBackend<T extends ChunkRenderState> imp
         RenderSystem.popMatrix();
     }
 
-    protected void beginChunkRender(ChunkRender<T> chunk, double x, double y, double z) {
+    protected final FloatBuffer createModelMatrix(ChunkRender<T> chunk, double x, double y, double z) {
         BlockPos origin = chunk.getOrigin();
 
         float offsetX = (float) (origin.getX() - x);
@@ -45,6 +45,6 @@ public abstract class AbstractChunkRenderBackend<T extends ChunkRenderState> imp
 
         this.modelMatrixExt.writeTranslation(this.matrixBuffer, offsetX, offsetY, offsetZ);
 
-        GL11.glLoadMatrixf(this.matrixBuffer);
+        return this.matrixBuffer;
     }
 }
