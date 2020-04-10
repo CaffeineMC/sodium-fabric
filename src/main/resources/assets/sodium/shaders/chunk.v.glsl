@@ -1,9 +1,9 @@
 #version 120
 
-in vec3 a_Pos;
-in vec4 a_Color;
-in vec2 a_TexCoord;
-in vec2 a_LightCoord;
+attribute vec3 a_Pos;
+attribute vec4 a_Color;
+attribute vec2 a_TexCoord;
+attribute vec2 a_LightCoord;
 
 varying vec4 v_Color;
 varying vec2 v_TexCoord;
