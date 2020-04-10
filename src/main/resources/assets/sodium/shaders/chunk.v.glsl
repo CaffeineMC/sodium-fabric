@@ -12,8 +12,6 @@ varying vec2 v_LightCoord;
 uniform mat4 u_ModelView;
 uniform mat4 u_Projection;
 
-const float LOG2 = 1.442695;
-
 void main() {
     gl_Position = u_Projection * u_ModelView * vec4(a_Pos.x, a_Pos.y, a_Pos.z, 1.0);
 
