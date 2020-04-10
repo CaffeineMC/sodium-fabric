@@ -5,11 +5,12 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.client.gl.BufferUploadData;
+import me.jellysquid.mods.sodium.client.gl.buffer.BufferUploadData;
+import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.util.BufferUtil;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
@@ -27,11 +28,11 @@ public class ChunkMeshInfo {
     private final List<BlockEntity> blockEntities;
     private final List<Sprite> animatedSprites;
 
-    private final Object2ObjectMap<RenderLayer, ChunkLayerInfo> layers;
+    private final Object2ObjectMap<BlockRenderPass, ChunkLayerInfo> layers;
 
     private final ChunkOcclusionData occlusionData;
 
-    public ChunkMeshInfo(List<BlockEntity> globalBlockEntities, List<BlockEntity> blockEntities, List<Sprite> animatedSprites, ChunkOcclusionData occlusionData, Object2ObjectMap<RenderLayer, ChunkLayerInfo> layers) {
+    public ChunkMeshInfo(List<BlockEntity> globalBlockEntities, List<BlockEntity> blockEntities, List<Sprite> animatedSprites, ChunkOcclusionData occlusionData, Object2ObjectMap<BlockRenderPass, ChunkLayerInfo> layers) {
         this.globalBlockEntities = globalBlockEntities;
         this.blockEntities = blockEntities;
         this.animatedSprites = animatedSprites;
@@ -68,7 +69,7 @@ public class ChunkMeshInfo {
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
-        private final Object2ObjectMap<RenderLayer, ChunkLayerInfo> layers = new Object2ObjectArrayMap<>(4);
+        private final Object2ObjectMap<BlockRenderPass, ChunkLayerInfo> layers = new Object2ObjectArrayMap<>(4);
 
         private ChunkOcclusionData occlusionData;
 
@@ -82,9 +83,9 @@ public class ChunkMeshInfo {
             }
         }
 
-        public void addMeshData(RenderLayer layer, Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> params) {
+        public void addMeshData(BlockRenderPass layer, Pair<BufferBuilder.DrawArrayParameters, ByteBuffer> params) {
             ByteBuffer data = BufferUtil.copyAsNative(params.getSecond());
-            BufferUploadData upload = new BufferUploadData(data, layer.getVertexFormat());
+            BufferUploadData upload = new BufferUploadData(data, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
 
             if (this.layers.putIfAbsent(layer, new ChunkLayerInfo(layer, upload)) != null) {
                 throw new IllegalArgumentException("Mesh already added");

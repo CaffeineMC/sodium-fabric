@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.backends;
 
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
-import net.minecraft.client.render.RenderLayer;
+import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
 
 public interface ChunkRenderBackend<T extends ChunkRenderState> {
@@ -9,7 +9,9 @@ public interface ChunkRenderBackend<T extends ChunkRenderState> {
 
     void begin(MatrixStack matrixStack);
 
-    void render(ChunkRender<T> chunk, RenderLayer layer, MatrixStack matrixStack, double x, double y, double z);
+    void render(ChunkRender<T> chunk, BlockRenderPass layer, MatrixStack matrixStack, double x, double y, double z);
 
     void end(MatrixStack matrixStack);
+
+    void delete();
 }

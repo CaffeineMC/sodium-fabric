@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.gl;
+package me.jellysquid.mods.sodium.client.gl.buffer;
 
 import net.minecraft.client.render.VertexFormat;
 

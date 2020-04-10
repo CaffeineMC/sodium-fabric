@@ -2,16 +2,14 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectList;
-import it.unimi.dsi.fastutil.objects.ObjectListIterator;
+import it.unimi.dsi.fastutil.objects.*;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.GlHelper;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
+import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
@@ -19,7 +17,6 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.Frustum;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
@@ -40,6 +37,8 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
     private final ObjectList<ChunkRender<T>> drawableChunks = new ObjectArrayList<>();
 
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
+
+    private final ObjectSet<BlockRenderPass> renderedLayers = new ObjectOpenHashSet<>();
 
     private final ObjectArrayFIFOQueue<ChunkRender<T>> iterationQueue = new ObjectArrayFIFOQueue<>();
 
@@ -364,8 +363,12 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
         return this.columns.get(ChunkPos.toLong(x, z));
     }
 
-    public void renderLayer(MatrixStack matrixStack, RenderLayer renderLayer, double x, double y, double z) {
-        boolean notTranslucent = renderLayer != RenderLayer.getTranslucent();
+    public void renderLayer(MatrixStack matrixStack, BlockRenderPass layerType, double x, double y, double z) { ;
+        if (!this.renderedLayers.add(layerType)) {
+            return;
+        }
+
+        boolean notTranslucent = !layerType.isTranslucent();
 
         ObjectList<ChunkRender<T>> list = this.getDrawableChunks();
         ObjectListIterator<ChunkRender<T>> it = list.listIterator(notTranslucent ? 0 : list.size());
@@ -389,7 +392,7 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
                 render.tickTextures();
             }
 
-            this.chunkRenderer.render(render, renderLayer, matrixStack, x, y, z);
+            this.chunkRenderer.render(render, layerType, matrixStack, x, y, z);
         }
 
         this.chunkRenderer.end(matrixStack);
@@ -399,5 +402,9 @@ public class ChunkGraph<T extends ChunkRenderState> implements ChunkStatusListen
         ChunkRender<T> render = this.getRender(x, y, z);
 
         return render != null && render.lastVisibleFrame == this.lastFrame;
+    }
+
+    public void resetRenderedLayers() {
+        this.renderedLayers.clear();
     }
 }

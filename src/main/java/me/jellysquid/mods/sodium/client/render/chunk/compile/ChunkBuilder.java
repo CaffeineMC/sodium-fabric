@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderUploadTask;
+import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
@@ -39,6 +40,7 @@ public class ChunkBuilder {
     private World world;
     private Vector3d cameraPosition;
     private BiomeCacheManager biomeCacheManager;
+    private BlockRenderPassManager renderPassManager;
 
     private final int limitThreads;
 
@@ -61,7 +63,10 @@ public class ChunkBuilder {
         }
 
         for (int i = 0; i < this.limitThreads; i++) {
-            Thread thread = new Thread(new WorkerRunnable(), "Chunk Render Task Executor #" + i);
+            VertexBufferCache bufferCache = new VertexBufferCache(this.renderPassManager);
+            WorkerRunnable worker = new WorkerRunnable(bufferCache);
+
+            Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
             thread.setPriority(Math.max(0, Thread.NORM_PRIORITY - 2));
             thread.start();
 
@@ -165,15 +170,18 @@ public class ChunkBuilder {
         return this.buildQueue.isEmpty();
     }
 
-    public void setWorld(ClientWorld world) {
+    public void init(ClientWorld world, BlockRenderPassManager renderPassManager) {
         if (world == null) {
             throw new NullPointerException("World is null");
         }
 
-        this.reset();
+        this.stopWorkers();
 
         this.world = world;
+        this.renderPassManager = renderPassManager;
         this.biomeCacheManager = new BiomeCacheManager(world.getDimension().getType().getBiomeAccessType(), world.getSeed());
+
+        this.startWorkers();
     }
 
     private static int getOptimalThreadCount() {
@@ -206,10 +214,14 @@ public class ChunkBuilder {
     }
 
     private class WorkerRunnable implements Runnable {
-        private final VertexBufferCache bufferCache = new VertexBufferCache();
+        private final VertexBufferCache bufferCache;
         private final AtomicBoolean running = ChunkBuilder.this.running;
 
         private final ChunkRenderPipeline pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance());
+
+        public WorkerRunnable(VertexBufferCache bufferCache) {
+            this.bufferCache = bufferCache;
+        }
 
         @Override
         public void run() {
