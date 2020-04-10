@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import me.jellysquid.mods.sodium.client.gl.BufferUploadData;
-import net.minecraft.client.render.RenderLayer;
+import me.jellysquid.mods.sodium.client.gl.buffer.BufferUploadData;
+import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import org.apache.commons.lang3.Validate;
 
 public class ChunkLayerInfo {
-    private final RenderLayer renderLayer;
+    private final BlockRenderPass renderLayer;
     private BufferUploadData pendingUpload;
 
-    public ChunkLayerInfo(RenderLayer renderLayer, BufferUploadData pendingUpload) {
+    public ChunkLayerInfo(BlockRenderPass renderLayer, BufferUploadData pendingUpload) {
         Validate.notNull(pendingUpload);
 
         this.pendingUpload = pendingUpload;
@@ -27,7 +27,7 @@ public class ChunkLayerInfo {
         return data;
     }
 
-    public RenderLayer getLayer() {
+    public BlockRenderPass getLayer() {
         return this.renderLayer;
     }
 }
