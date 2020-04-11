@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.gl.buffer;
+package me.jellysquid.mods.sodium.client.gl.tessellation;
 
 public interface GlTessellation {
     void bind();

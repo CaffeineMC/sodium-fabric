@@ -20,4 +20,12 @@ public class BlockRenderPass {
     public boolean isTranslucent() {
         return this.translucent;
     }
+
+    public void endDrawing() {
+        this.layer.endDrawing();
+    }
+
+    public void startDrawing() {
+        this.layer.startDrawing();
+    }
 }
