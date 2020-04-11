@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ChunkRender<T extends ChunkRenderState> {
-    private final ChunkRenderManager renderManager;
+    private final ChunkRenderer renderManager;
     private final ChunkBuilder builder;
 
     @SuppressWarnings("unchecked")
@@ -46,7 +46,7 @@ public class ChunkRender<T extends ChunkRenderState> {
 
     public byte cullingState;
 
-    public ChunkRender(ChunkRenderManager renderManager, ChunkBuilder builder, T renderState, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
+    public ChunkRender(ChunkRenderer renderManager, ChunkBuilder builder, T renderState, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
         this.renderManager = renderManager;
         this.builder = builder;
         this.renderState = renderState;
@@ -76,7 +76,7 @@ public class ChunkRender<T extends ChunkRenderState> {
         }
     }
 
-    public ChunkRender<T> getAdjacent(ChunkGraph<T> graph, Direction dir) {
+    public ChunkRender<T> getAdjacent(ChunkRenderManager<T> graph, Direction dir) {
         ChunkRender<T> adj = this.adjacent[dir.ordinal()];
 
         if (adj == null) {
@@ -142,12 +142,12 @@ public class ChunkRender<T extends ChunkRenderState> {
         this.meshInfo = info;
     }
 
-    public boolean hasChunkNeighbors(ChunkGraph<T> graph) {
+    public boolean hasChunkNeighbors(ChunkRenderManager<T> graph) {
         return this.isNeighborPresent(graph, Direction.WEST) && this.isNeighborPresent(graph, Direction.NORTH) &&
                 this.isNeighborPresent(graph, Direction.EAST) && this.isNeighborPresent(graph, Direction.SOUTH);
     }
 
-    private boolean isNeighborPresent(ChunkGraph<T> graph, Direction dir) {
+    private boolean isNeighborPresent(ChunkRenderManager<T> graph, Direction dir) {
         ChunkRender<T> render = this.getAdjacent(graph, dir);
 
         return render == null || render.isChunkPresent();
