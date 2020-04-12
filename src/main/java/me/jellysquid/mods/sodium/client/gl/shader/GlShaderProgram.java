@@ -43,6 +43,16 @@ public abstract class GlShaderProgram extends GlHandle {
         return index;
     }
 
+    public int getAttributeLocation(String name) {
+        int index = GL21.glGetAttribLocation(this.handle(), name);
+
+        if (index < 0) {
+            throw new NullPointerException("No attribute exists with name: " + name);
+        }
+
+        return index;
+    }
+
     public void delete() {
         GL21.glDeleteProgram(this.handle());
 
@@ -81,9 +91,15 @@ public abstract class GlShaderProgram extends GlHandle {
 
             return factory.create(this.name, this.program);
         }
+
+        public Builder attribute(int index, String name) {
+            GL21.glBindAttribLocation(this.program, index, name);
+
+            return this;
+        }
     }
 
-    public static interface ShaderTypeFactory<P extends GlShaderProgram> {
+    public interface ShaderTypeFactory<P extends GlShaderProgram> {
         P create(Identifier name, int handle);
     }
 }
