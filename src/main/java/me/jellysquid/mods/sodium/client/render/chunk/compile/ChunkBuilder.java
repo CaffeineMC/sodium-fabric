@@ -1,6 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderBuildTask;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderEmptyBuildTask;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderUploadTask;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
@@ -211,6 +214,26 @@ public class ChunkBuilder {
 
     public void clearCachesForChunk(int x, int z) {
         this.biomeCacheManager.dropCachesForChunk(x, z);
+    }
+
+    public void rebuild(ChunkRender<?> render) {
+        this.createRebuildFuture(render).thenAccept(this::enqueueUpload);
+    }
+
+    public CompletableFuture<ChunkRenderUploadTask> createRebuildFuture(ChunkRender<?> render) {
+        return this.schedule(this.createRebuildTask(render));
+    }
+
+    private ChunkRenderBuildTask createRebuildTask(ChunkRender<?> render) {
+        render.cancelRebuildTask();
+
+        WorldSlice slice = this.createChunkSlice(render.getChunkPos());
+
+        if (slice == null) {
+            return new ChunkRenderEmptyBuildTask(render);
+        } else {
+            return new ChunkRenderRebuildTask(this, render, slice);
+        }
     }
 
     private class WorkerRunnable implements Runnable {
