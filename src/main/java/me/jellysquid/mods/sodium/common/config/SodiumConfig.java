@@ -1,88 +1,168 @@
 package me.jellysquid.mods.sodium.common.config;
 
-import me.jellysquid.mods.sodium.common.config.annotations.Category;
-import me.jellysquid.mods.sodium.common.config.annotations.Option;
-import me.jellysquid.mods.sodium.common.config.parser.ConfigParser;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
- * Documentation of these options: https://github.com/jellysquid3/Sodium/wiki/Configuration-File
+ * Documentation of these options: https://github.com/jellysquid3/sodium-fabric/wiki/Configuration-File
  */
 @SuppressWarnings("CanBeFinal")
 public class SodiumConfig {
-    @Category("general")
-    public static class GeneralConfig {
-        @Option("use_fast_thread_assertions")
-        public boolean useFastThreadAssertions = true;
+    private static final Logger LOGGER = LogManager.getLogger("SodiumConfig");
 
-        @Option("use_matrix_pooling")
-        public boolean useMatrixPooling = true;
+    private final Map<String, Option> options = new HashMap<>();
+
+    private void discoverMixins(String path) {
+        try (InputStream in = SodiumConfig.class.getResourceAsStream(path)) {
+            if (in == null) {
+                throw new IOException("Could not find mixin config at path: " + path);
+            }
+
+            JsonObject mixinConfig = new Gson().fromJson(new InputStreamReader(in), JsonObject.class);
+
+            this.addKnownMixins(mixinConfig.getAsJsonArray("mixins"));
+            this.addKnownMixins(mixinConfig.getAsJsonArray("client"));
+        } catch (IOException e) {
+            throw new RuntimeException("Could not examine mixin config", e);
+        }
     }
 
-    @Category("chunk")
-    public static class ChunkConfig {
-        @Option("use_fast_ao")
-        public boolean useFastAo = true;
-
-        @Option("use_fast_block_occlusion_cache")
-        public boolean useFastBlockOcclusionCache = true;
+    private void addKnownMixins(JsonArray array) {
+        if (array != null) {
+            for (JsonElement e : array) {
+                this.addKnownMixinName(e.getAsString());
+            }
+        }
     }
 
-    @Category("pipeline")
-    public static class PipelineConfig {
-        @Option("avoid_enum_cloning")
-        public boolean avoidEnumCloning = true;
-
-        @Option("use_fast_vertex_consumer")
-        public boolean useFastVertexConsumer = true;
+    private void addKnownMixinName(String name) {
+        this.options.computeIfAbsent(getMixinRuleName(name), (key) -> new Option(true, false));
     }
 
-    public final GeneralConfig general = new GeneralConfig();
-    public final ChunkConfig chunk = new ChunkConfig();
-    public final PipelineConfig pipeline = new PipelineConfig();
+    private void read(Properties props) {
+        for (Map.Entry<Object, Object> entry : props.entrySet()) {
+            String key = (String) entry.getKey();
+            String value = (String) entry.getValue();
+
+            Option option = this.options.get(key);
+
+            if (option == null) {
+                LOGGER.warn("No configuration key exists with name '{}', ignoring", key);
+                continue;
+            }
+
+            boolean enabled;
+
+            if (value.equalsIgnoreCase("true")) {
+                enabled = true;
+            } else if (value.equalsIgnoreCase("false")) {
+                enabled = false;
+            } else {
+                LOGGER.warn("Invalid value '{}' encountered for configuration key '{}', ignoring", value, key);
+                continue;
+            }
+
+            option.setEnabled(enabled, true);
+        }
+    }
+
+    /**
+     * Returns the most specific Mixin rule for the specified class name.
+     */
+    public Option getOptionForMixin(String mixinClassName) {
+        int start = 0;
+        int lastSplit = start;
+        int nextSplit;
+
+        Option rule = new Option(true, false);
+
+        while ((nextSplit = mixinClassName.indexOf('.', lastSplit + 1)) != -1) {
+            String key = getMixinRuleName(mixinClassName.substring(start, nextSplit));
+
+            Option candidate = this.options.get(key);
+
+            if (candidate != null) {
+                rule = candidate;
+            }
+
+            lastSplit = nextSplit;
+        }
+
+        return rule;
+    }
 
     /**
      * Loads the configuration file from the specified location. If it does not exist, a new configuration file will be
      * created. The file on disk will then be updated to include any new options.
      */
-    public static SodiumConfig load(File file) {
+    public static SodiumConfig load(File file, String mixinPath) {
         if (!file.exists()) {
-            writeDefaultConfig(file);
+            try {
+                writeDefaultConfig(file);
+            } catch (IOException e) {
+                LOGGER.warn("Could not write default configuration file", e);
+            }
 
             return new SodiumConfig();
         }
 
-        try {
-            return ConfigParser.deserialize(SodiumConfig.class, file);
-        } catch (ConfigParser.ParseException e) {
-            throw new RuntimeException("Could not parse config", e);
+        Properties props = new Properties();
+
+        try (FileInputStream fin = new FileInputStream(file)){
+            props.load(fin);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not load config file", e);
         }
+
+        SodiumConfig config = new SodiumConfig();
+        config.discoverMixins(mixinPath);
+        config.read(props);
+
+        return config;
     }
 
-    private static void writeDefaultConfig(File file) {
+    private static void writeDefaultConfig(File file) throws IOException {
         File dir = file.getParentFile();
 
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
-                throw new RuntimeException("Could not create parent directories");
+                throw new IOException("Could not create parent directories");
             }
         } else if (!dir.isDirectory()) {
-            throw new RuntimeException("The parent file is not a directory");
+            throw new IOException("The parent file is not a directory");
         }
 
         try (Writer writer = new FileWriter(file)) {
             writer.write("# This is the configuration file for Sodium.\n");
             writer.write("#\n");
             writer.write("# You can find information on editing this file and all the available options here:\n");
-            writer.write("# https://github.com/jellysquid3/Sodium/wiki/Configuration-File\n");
+            writer.write("# https://github.com/jellysquid3/sodium-fabric/wiki/Configuration-File\n");
             writer.write("#\n");
             writer.write("# By default, this file will be empty except for this notice.\n");
-        } catch (IOException e) {
-            throw new RuntimeException("Could not write default config", e);
         }
+    }
+
+    private static String getMixinRuleName(String name) {
+        return "mixin." + name;
+    }
+
+    public int getOptionCount() {
+        return this.options.size();
+    }
+
+    public int getOptionOverrideCount() {
+        return (int) this.options.values()
+                .stream()
+                .filter(Option::isUserDefined)
+                .count();
     }
 }

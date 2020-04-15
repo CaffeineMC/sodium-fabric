@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin;
 
-import me.jellysquid.mods.sodium.common.SodiumMod;
+import me.jellysquid.mods.sodium.common.config.Option;
 import me.jellysquid.mods.sodium.common.config.SodiumConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,7 +9,6 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 import java.io.File;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -18,39 +17,19 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
     private static final String MIXIN_PACKAGE_ROOT = "me.jellysquid.mods.sodium.mixin.";
 
     private final Logger logger = LogManager.getLogger("Sodium");
-    private final HashSet<String> enabledPackages = new HashSet<>();
+    private SodiumConfig config;
 
     @Override
     public void onLoad(String mixinPackage) {
-        SodiumConfig config = SodiumConfig.load(new File("./config/sodium-mixins.toml"));
-
-        this.setupMixins(config);
-
-        this.logger.info("Sodium's configuration file was loaded successfully");
-
-        SodiumMod.CONFIG = config;
-    }
-
-    private void setupMixins(SodiumConfig config) {
-        this.enableIf("chunk_building", true);
-        this.enableIf("chunk_rendering", true);
-        this.enableIf("models", true);
-        this.enableIf("options", true);
-        this.enableIf("pipeline", true);
-        this.enableIf("render", true);
-        this.enableIf("render_layers", true);
-        this.enableIf("fast_mojmath", true);
-        this.enableIf("buffers", true);
-        this.enableIf("entity_rendering", true);
-        this.enableIf("client_world_ticking", true);
-        this.enableIf("textures", true);
-        this.enableIf("particles", true);
-    }
-
-    private void enableIf(String packageName, boolean condition) {
-        if (condition) {
-            this.enabledPackages.add(packageName);
+        try {
+            this.config = SodiumConfig.load(new File("./config/sodium.properties"), "/sodium.mixins.json");
+        } catch (Exception e) {
+            throw new RuntimeException("Could not load configuration file for Lithium", e);
         }
+
+        this.logger.info("Loaded configuration file for Sodium ({} options available, {} user overrides)",
+                this.config.getOptionCount(), this.config.getOptionOverrideCount());
+        this.logger.info("Sodium has been successfully discovered and initialized -- your game is now faster!");
     }
 
     @Override
@@ -64,23 +43,18 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
             return true;
         }
 
-        int start = MIXIN_PACKAGE_ROOT.length();
-        int lastSplit = start;
-        int nextSplit;
+        String mixin = mixinClassName.substring(MIXIN_PACKAGE_ROOT.length());
+        Option option = this.config.getOptionForMixin(mixin);
 
-        while ((nextSplit = mixinClassName.indexOf('.', lastSplit + 1)) != -1) {
-            String part = mixinClassName.substring(start, nextSplit);
-
-            if (this.enabledPackages.contains(part)) {
-                return true;
+        if (option.isUserDefined()) {
+            if (option.isEnabled()) {
+                this.logger.warn("Applying mixin '{}' as user configuration forcefully enables it", mixin);
+            } else {
+                this.logger.warn("Not applying mixin '{}' as user configuration forcefully disables it", mixin);
             }
-
-            lastSplit = nextSplit;
         }
 
-        this.logger.info("Not applying mixin '" + mixinClassName + "' as no configuration enables it");
-
-        return false;
+        return option.isEnabled();
     }
 
     @Override

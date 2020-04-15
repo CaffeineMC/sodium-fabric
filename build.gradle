@@ -22,9 +22,6 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    include "com.moandjiezana.toml:toml4j:0.7.2"
-    compile "com.moandjiezana.toml:toml4j:0.7.2"
 }
 
 processResources {
