@@ -1,26 +1,33 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkStatus;
 
 public class ColumnRender<T extends ChunkRenderState> {
     @SuppressWarnings("unchecked")
     private final ChunkRender<T>[] chunks = new ChunkRender[16];
+
+    @SuppressWarnings("unchecked")
+    private final ColumnRender<T>[] neighbors = new ColumnRender[6];
+
+    private final ChunkRenderer renderer;
     private final World world;
 
     private final int chunkX, chunkZ;
     private final Box boundingBox;
 
-    private int count;
     private boolean chunkPresent;
     private boolean visible;
     private int lastFrame = -1;
 
-    public ColumnRender(World world, int chunkX, int chunkZ) {
+    public ColumnRender(ChunkRenderer renderer, World world, int chunkX, int chunkZ, RenderFactory<T> factory) {
+        this.renderer = renderer;
         this.world = world;
         this.chunkX = chunkX;
         this.chunkZ = chunkZ;
@@ -28,40 +35,36 @@ public class ColumnRender<T extends ChunkRenderState> {
         int x = chunkX << 4;
         int z = chunkZ << 4;
 
+        this.neighbors[Direction.DOWN.ordinal()] = this;
+        this.neighbors[Direction.UP.ordinal()] = this;
+
         this.boundingBox = new Box(x, Double.NEGATIVE_INFINITY, z, x + 16.0, Double.POSITIVE_INFINITY, z + 16.0);
 
-        this.refreshChunkStatus();
+        for (int y = 0; y < 16; y++) {
+            this.chunks[y] = factory.create(this, this.chunkX, y, this.chunkZ);
+        }
+    }
+
+    public void setNeighbor(Direction dir, ColumnRender<T> adj) {
+        this.neighbors[dir.ordinal()] = adj;
+    }
+
+    public ColumnRender<T> getNeighbor(Direction dir) {
+        return this.neighbors[dir.ordinal()];
     }
 
     public ChunkRender<T> getChunk(int y) {
-        if (y < 0 || y >= 16) {
+        if (y < 0 || y >= this.chunks.length) {
             return null;
         }
 
         return this.chunks[y];
     }
 
-    public ChunkRender<T> getOrCreateChunk(int y, RenderFactory<T> factory) {
-        if (y < 0 || y >= 16) {
-            return null;
-        }
-
-        ChunkRender<T> chunk = this.chunks[y];
-
-        if (chunk == null) {
-            chunk = factory.create(this, this.chunkX, y, this.chunkZ);
-
-            this.chunks[y] = chunk;
-            this.count++;
-        }
-
-        return chunk;
-    }
-
-    public void deleteData() {
+    public void delete() {
         for (ChunkRender<T> render : this.chunks) {
             if (render != null) {
-                render.deleteData();
+                render.delete();
             }
         }
     }
@@ -80,21 +83,8 @@ public class ColumnRender<T extends ChunkRenderState> {
         return this.chunkPresent;
     }
 
-    public void remove(ChunkRender<T> render) {
-        int y = render.getChunkY();
-
-        if (this.chunks[y] != null) {
-            this.chunks[y] = null;
-            this.count--;
-        }
-    }
-
     public long getKey() {
         return ChunkPos.toLong(this.chunkX, this.chunkZ);
-    }
-
-    public boolean isEmpty() {
-        return this.count > 0;
     }
 
     public boolean isVisible(Frustum frustum, int frame) {
@@ -108,8 +98,46 @@ public class ColumnRender<T extends ChunkRenderState> {
         return this.visible;
     }
 
-    public ChunkRender<T>[] getChunks() {
-        return this.chunks;
+    public int getX() {
+        return this.chunkX;
+    }
+
+    public int getZ() {
+        return this.chunkZ;
+    }
+
+    public boolean hasNeighbors() {
+        for (Direction dir : DirectionUtil.HORIZONTAL_DIRECTIONS) {
+            ColumnRender<T> neighbor = this.neighbors[dir.ordinal()];
+
+            if (neighbor == null) {
+                return false;
+            }
+
+            Direction corner;
+
+            if (dir == Direction.NORTH) {
+                corner = Direction.EAST;
+            } else if (dir == Direction.SOUTH) {
+                corner = Direction.WEST;
+            } else if (dir == Direction.WEST) {
+                corner = Direction.NORTH;
+            } else if (dir == Direction.EAST) {
+                corner = Direction.SOUTH;
+            } else {
+                continue;
+            }
+
+            if (neighbor.getNeighbor(corner) == null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void onChunkRenderUpdated(ChunkMeshInfo before, ChunkMeshInfo after) {
+        this.renderer.onChunkRenderUpdated(before, after);
     }
 
     public interface RenderFactory<T extends ChunkRenderState> {

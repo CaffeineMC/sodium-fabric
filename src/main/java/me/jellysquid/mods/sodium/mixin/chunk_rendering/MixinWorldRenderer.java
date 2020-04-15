@@ -124,7 +124,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void scheduleChunkRender(int x, int y, int z, boolean important) {
-        this.chunkManager.scheduleRebuildForBlock(x, y, z);
+        this.chunkManager.scheduleRebuild(x, y, z);
     }
 
     @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/WorldRenderer;noCullingBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
