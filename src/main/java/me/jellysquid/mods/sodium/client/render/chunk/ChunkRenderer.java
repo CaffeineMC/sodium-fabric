@@ -56,6 +56,7 @@ public class ChunkRenderer implements ChunkStatusListener {
     private final LongSet loadedChunkPositions = new LongOpenHashSet();
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
+    private Frustum frustum;
     private ChunkRenderManager<?> chunkRenderManager;
     private ChunkBuilder chunkBuilder;
     private BlockRenderPassManager renderPassManager;
@@ -115,6 +116,8 @@ public class ChunkRenderer implements ChunkStatusListener {
     }
 
     public void update(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
+        this.frustum = frustum;
+
         this.applySettings();
         this.chunkRenderManager.onFrameChanged();
 
@@ -389,5 +392,9 @@ public class ChunkRenderer implements ChunkStatusListener {
         }
 
         return instance;
+    }
+
+    public Frustum getFrustum() {
+        return this.frustum;
     }
 }

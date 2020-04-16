@@ -254,6 +254,15 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.performance.animateOnlyVisibleTextures = value, opts -> opts.performance.animateOnlyVisibleTextures)
                         .build()
                 )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Particle Culling")
+                        .setTooltip("If enabled, only particles which are determined to be visible will be rendered. This can provide a significant improvement " +
+                                "to frame rates when many particles are nearby.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setBinding((opts, value) -> opts.performance.useParticleCulling = value, opts -> opts.performance.useParticleCulling)
+                        .build()
+                )
                 .build());
 
         return new OptionPage("Performance", ImmutableList.copyOf(groups));
