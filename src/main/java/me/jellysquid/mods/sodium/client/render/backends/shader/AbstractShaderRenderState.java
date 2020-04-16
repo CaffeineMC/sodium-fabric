@@ -1,17 +1,18 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader;
 
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlImmutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
+import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkLayerInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkMesh;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import org.lwjgl.opengl.GL15;
 
-public abstract class AbstractShaderRenderState<B> implements ChunkRenderState {
-    protected final Reference2ReferenceArrayMap<BlockRenderPass, B> data = new Reference2ReferenceArrayMap<>();
+public abstract class AbstractShaderRenderState<B extends GlTessellation> implements ChunkRenderState {
+    private final B[] data = this.createTessellationArrays(BlockRenderPass.count());
+
     protected final GlAttributeBinding[] attributes;
     protected final boolean useImmutableStorage;
 
@@ -20,11 +21,28 @@ public abstract class AbstractShaderRenderState<B> implements ChunkRenderState {
         this.useImmutableStorage = useImmutableStorage;
     }
 
+    protected abstract B[] createTessellationArrays(int count);
+
     public B getDataForPass(BlockRenderPass layer) {
-        return this.data.get(layer);
+        return this.data[layer.ordinal()];
     }
 
-    protected GlBuffer createBuffer(ChunkLayerInfo info) {
+    @Override
+    public void deleteData() {
+        B[] data = this.data;
+
+        for (int i = 0; i < data.length; i++) {
+            GlTessellation tess = data[i];
+
+            if (tess != null) {
+                tess.delete();
+
+                data[i] = null;
+            }
+        }
+    }
+
+    protected GlBuffer createBuffer(ChunkMesh info) {
         GlBuffer buffer;
 
         if (this.useImmutableStorage) {
@@ -38,5 +56,9 @@ public abstract class AbstractShaderRenderState<B> implements ChunkRenderState {
         buffer.unbind();
 
         return buffer;
+    }
+
+    protected void setData(BlockRenderPass layer, B tess) {
+        this.data[layer.ordinal()] = tess;
     }
 }

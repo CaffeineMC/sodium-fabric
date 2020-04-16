@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.backends;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkLayerInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkMesh;
 
 import java.util.Collection;
 
 public interface ChunkRenderState {
-    void clearData();
+    void deleteData();
 
-    void uploadData(Collection<ChunkLayerInfo> layers);
+    void uploadData(Collection<ChunkMesh> meshes);
 }

@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.tasks;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.VertexBufferCache;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.Direction;
@@ -17,7 +17,7 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
     }
 
     @Override
-    public ChunkRenderUploadTask performBuild(ChunkRenderPipeline pipeline, VertexBufferCache buffers) {
+    public ChunkRenderUploadTask performBuild(ChunkRenderPipeline pipeline, ChunkBuildBuffers buffers) {
         return new ChunkRenderEmptyBuildTask.EmptyUploadTask(this.render);
     }
 
@@ -33,7 +33,7 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
             ChunkOcclusionData occlusionData = new ChunkOcclusionData();
             occlusionData.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
 
-            ChunkMeshInfo.Builder meshInfo = new ChunkMeshInfo.Builder();
+            ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
             meshInfo.setOcclusionData(occlusionData);
 
             this.render.upload(meshInfo.build());

@@ -136,7 +136,7 @@ public class ColumnRender<T extends ChunkRenderState> {
         return true;
     }
 
-    public void onChunkRenderUpdated(ChunkMeshInfo before, ChunkMeshInfo after) {
+    public void onChunkRenderUpdated(ChunkRenderData before, ChunkRenderData after) {
         this.renderer.onChunkRenderUpdated(before, after);
     }
 

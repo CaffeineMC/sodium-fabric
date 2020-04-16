@@ -17,7 +17,7 @@ public class ChunkRender<T extends ChunkRenderState> {
     private final T renderState;
     private final Box boundingBox;
 
-    private ChunkMeshInfo meshInfo = ChunkMeshInfo.ABSENT;
+    private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<Void> rebuildTask = null;
 
     private boolean needsRebuild;
@@ -59,8 +59,8 @@ public class ChunkRender<T extends ChunkRenderState> {
         return this.boundingBox;
     }
 
-    public ChunkMeshInfo getMeshInfo() {
-        return this.meshInfo;
+    public ChunkRenderData getData() {
+        return this.data;
     }
 
     public boolean needsRebuild() {
@@ -76,7 +76,7 @@ public class ChunkRender<T extends ChunkRenderState> {
     }
 
     public boolean isVisibleThrough(Direction from, Direction to) {
-        return this.meshInfo.isVisibleThrough(from, to);
+        return this.data.isVisibleThrough(from, to);
     }
 
     public T getRenderState() {
@@ -86,17 +86,17 @@ public class ChunkRender<T extends ChunkRenderState> {
     public void delete() {
         this.cancelRebuildTask();
 
-        this.renderState.clearData();
-        this.setMeshInfo(ChunkMeshInfo.ABSENT);
+        this.renderState.deleteData();
+        this.setData(ChunkRenderData.ABSENT);
     }
 
-    private void setMeshInfo(ChunkMeshInfo info) {
+    private void setData(ChunkRenderData info) {
         if (info == null) {
             throw new NullPointerException("Mesh information must not be null");
         }
 
-        this.column.onChunkRenderUpdated(this.meshInfo, info);
-        this.meshInfo = info;
+        this.column.onChunkRenderUpdated(this.data, info);
+        this.data = info;
     }
 
     public void scheduleRebuild(boolean important) {
@@ -104,9 +104,9 @@ public class ChunkRender<T extends ChunkRenderState> {
         this.needsRebuild = true;
     }
 
-    public void upload(ChunkMeshInfo meshInfo) {
-        this.renderState.uploadData(meshInfo.getLayers());
-        this.setMeshInfo(meshInfo);
+    public void upload(ChunkRenderData meshInfo) {
+        this.renderState.uploadData(meshInfo.getMeshes());
+        this.setData(meshInfo);
     }
 
     public void finishRebuild() {
@@ -115,7 +115,7 @@ public class ChunkRender<T extends ChunkRenderState> {
     }
 
     public boolean isEmpty() {
-        return this.meshInfo.isEmpty();
+        return this.data.isEmpty();
     }
 
     public void updateCullingState(byte parent, Direction from) {
@@ -160,7 +160,7 @@ public class ChunkRender<T extends ChunkRenderState> {
     }
 
     public void tickTextures() {
-        List<Sprite> sprites = this.getMeshInfo().getAnimatedSprites();
+        List<Sprite> sprites = this.getData().getAnimatedSprites();
 
         if (!sprites.isEmpty()) {
             int size = sprites.size();
