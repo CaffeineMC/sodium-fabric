@@ -77,9 +77,4 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
         this.vertexCount += 4;
         this.elementOffset += bytes;
     }
-
-    @Override
-    public boolean isEmpty() {
-        return this.elementOffset <= 0;
-    }
 }

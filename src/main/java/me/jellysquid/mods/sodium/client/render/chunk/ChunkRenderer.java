@@ -217,12 +217,12 @@ public class ChunkRenderer implements ChunkStatusListener {
     }
 
     public void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
-        BlockRenderPass blockRenderPass = this.renderPassManager.get(renderLayer);
-        blockRenderPass.startDrawing();
+        BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
+        pass.startDrawing();
 
-        this.chunkRenderManager.renderLayer(matrixStack, blockRenderPass, x, y, z);
+        this.chunkRenderManager.renderLayer(matrixStack, pass, x, y, z);
 
-        blockRenderPass.endDrawing();
+        pass.endDrawing();
 
         RenderSystem.clearCurrentColor();
     }
@@ -340,7 +340,7 @@ public class ChunkRenderer implements ChunkStatusListener {
         this.chunkRenderManager.onChunkRemoved(x, z);
     }
 
-    public void onChunkRenderUpdated(ChunkMeshInfo meshBefore, ChunkMeshInfo meshAfter) {
+    public void onChunkRenderUpdated(ChunkRenderData meshBefore, ChunkRenderData meshAfter) {
         Collection<BlockEntity> entitiesBefore = meshBefore.getGlobalBlockEntities();
 
         if (!entitiesBefore.isEmpty()) {

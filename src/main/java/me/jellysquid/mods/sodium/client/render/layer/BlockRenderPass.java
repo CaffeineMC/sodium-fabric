@@ -2,19 +2,25 @@ package me.jellysquid.mods.sodium.client.render.layer;
 
 import net.minecraft.client.render.RenderLayer;
 
-public class BlockRenderPass {
-    public static final BlockRenderPass FALLBACK = new BlockRenderPass(RenderLayer.getCutoutMipped(), false);
+public enum  BlockRenderPass {
+    SOLID(RenderLayer.getCutout(), false),
+    SOLID_MIPPED(RenderLayer.getCutoutMipped(), false),
+    CUTOUT(RenderLayer.getCutout(), false),
+    CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false),
+    TRANSLUCENT(RenderLayer.getTranslucent(), true);
+
+    public static final BlockRenderPass[] VALUES = BlockRenderPass.values();
 
     private final RenderLayer layer;
     private final boolean translucent;
 
-    public BlockRenderPass(RenderLayer layer, boolean translucent) {
+    BlockRenderPass(RenderLayer layer, boolean translucent) {
         this.layer = layer;
         this.translucent = translucent;
     }
 
-    public RenderLayer getRenderLayer() {
-        return this.layer;
+    public static int count() {
+        return VALUES.length;
     }
 
     public boolean isTranslucent() {

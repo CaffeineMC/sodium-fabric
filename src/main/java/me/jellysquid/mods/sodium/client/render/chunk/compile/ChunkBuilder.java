@@ -66,7 +66,7 @@ public class ChunkBuilder {
         }
 
         for (int i = 0; i < this.limitThreads; i++) {
-            VertexBufferCache bufferCache = new VertexBufferCache(this.renderPassManager);
+            ChunkBuildBuffers bufferCache = new ChunkBuildBuffers(this.renderPassManager);
             WorkerRunnable worker = new WorkerRunnable(bufferCache);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
@@ -237,12 +237,12 @@ public class ChunkBuilder {
     }
 
     private class WorkerRunnable implements Runnable {
-        private final VertexBufferCache bufferCache;
+        private final ChunkBuildBuffers bufferCache;
         private final AtomicBoolean running = ChunkBuilder.this.running;
 
         private final ChunkRenderPipeline pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance());
 
-        public WorkerRunnable(VertexBufferCache bufferCache) {
+        public WorkerRunnable(ChunkBuildBuffers bufferCache) {
             this.bufferCache = bufferCache;
         }
 

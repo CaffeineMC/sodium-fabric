@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 public class BufferUtil {
     private static final boolean USE_UNSAFE = UnsafeUtil.isAvailable();
 
-    public static ByteBuffer copyAsNative(ByteBuffer src) {
+    public static ByteBuffer copy(ByteBuffer src) {
         ByteBuffer dst = GlAllocationUtils.allocateByteBuffer(src.capacity());
         dst.put(src);
         dst.flip();

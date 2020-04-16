@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -60,7 +60,7 @@ public class FluidRenderPipeline {
         return false;
     }
 
-    public boolean render(ChunkMeshInfo.Builder meshInfo, WorldSlice world, BlockPos pos, VertexConsumer builder, FluidState fluidState) {
+    public boolean render(ChunkRenderData.Builder meshInfo, WorldSlice world, BlockPos pos, VertexConsumer builder, FluidState fluidState) {
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();

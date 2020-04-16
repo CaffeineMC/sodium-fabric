@@ -90,7 +90,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             this.drawableChunks.add(render);
         }
 
-        Collection<BlockEntity> blockEntities = render.getMeshInfo().getBlockEntities();
+        Collection<BlockEntity> blockEntities = render.getData().getBlockEntities();
 
         if (!blockEntities.isEmpty()) {
             this.visibleBlockEntities.addAll(blockEntities);
