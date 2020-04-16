@@ -1,4 +1,4 @@
-#version 120
+#version 110
 
 varying vec4 v_Color;
 varying vec2 v_TexCoord;
@@ -7,8 +7,8 @@ varying vec2 v_LightCoord;
 uniform sampler2D u_BlockTex;
 uniform sampler2D u_LightTex;
 
-const float LIGHT_COORD_SCALE = 1.0F / 256.0F;
-const float LIGHT_COORD_OFFSET = 1.0F / 32.0F;
+const float LIGHT_COORD_SCALE = 1.0 / 256.0;
+const float LIGHT_COORD_OFFSET = 1.0 / 32.0;
 
 void main() {
     vec4 sampleBlockTex = texture2D(u_BlockTex, v_TexCoord);

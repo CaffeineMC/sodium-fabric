@@ -5,7 +5,7 @@ import me.jellysquid.mods.sodium.client.gl.shader.GlShaderProgram;
 import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL21;
+import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.FloatBuffer;
@@ -49,14 +49,14 @@ public class ChunkShader extends GlShaderProgram {
             FloatBuffer buf = stack.mallocFloat(16);
 
             GL15.glGetFloatv(GL15.GL_PROJECTION_MATRIX, buf);
-            GL21.glUniformMatrix4fv(this.uProjection, false, buf);
+            GL20.glUniformMatrix4fv(this.uProjection, false, buf);
         }
 
-        GL21.glUniform1i(this.uBlockTex, 0);
-        GL21.glUniform1i(this.uLightTex, 2);
+        GL20.glUniform1i(this.uBlockTex, 0);
+        GL20.glUniform1i(this.uLightTex, 2);
     }
 
     public void uploadModelMatrix(FloatBuffer buffer) {
-        GL21.glUniformMatrix4fv(this.uModelView, false, buffer);
+        GL20.glUniformMatrix4fv(this.uModelView, false, buffer);
     }
 }
