@@ -186,19 +186,19 @@ public class ChunkRender<T extends ChunkRenderState> {
     }
 
     public boolean isWithinDistance(Vec3d pos, int distance) {
-        double x = pos.getX() - this.getOriginX();
-        double y = pos.getY() - this.getOriginY();
-        double z = pos.getZ() - this.getOriginZ();
-
-        return ((x * x) + (y * y) + (z * z)) <= distance;
+        return this.getSquaredDistance(pos.x, pos.y, pos.z) <= distance;
     }
 
     public double getSquaredDistance(BlockPos pos) {
-        double x = pos.getX() - this.getCenterX();
-        double y = pos.getY() - this.getCenterY();
-        double z = pos.getZ() - this.getCenterZ();
+        return this.getSquaredDistance(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
+    }
 
-        return (x * x) + (y * y) + (z * z);
+    public double getSquaredDistance(double x, double y, double z) {
+        double xDist = x - this.getCenterX();
+        double yDist = y - this.getCenterY();
+        double zDist = z - this.getCenterZ();
+
+        return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
 
     private double getCenterX() {

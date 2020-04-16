@@ -20,7 +20,6 @@ public class SodiumGameOptions {
     public static class PerformanceSettings {
         public boolean useVertexArrays = true;
         public boolean useLargeBuffers = true;
-        public boolean useFogChunkCulling = true;
         public boolean animateOnlyVisibleTextures = true;
         public boolean useAdvancedEntityCulling = true;
         public boolean useImmutableStorage = true;

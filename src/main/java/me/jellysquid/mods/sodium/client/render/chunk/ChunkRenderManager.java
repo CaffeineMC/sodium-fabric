@@ -5,8 +5,6 @@ import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.*;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.GlHelper;
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
@@ -45,7 +43,6 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     private final World world;
 
     private final int renderDistance;
-    private final boolean useFogCulling;
 
     private int lastFrameUpdated;
     private boolean useCulling;
@@ -55,10 +52,6 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         this.renderer = renderer;
         this.world = world;
         this.renderDistance = renderDistance;
-
-        SodiumGameOptions options = SodiumClientMod.options();
-
-        this.useFogCulling = GlHelper.supportsNvFog() && this.renderDistance > 4 && options.quality.enableFog && options.performance.useFogChunkCulling;
     }
 
     public void addAllChunks(LongCollection chunks) {
@@ -80,19 +73,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
         this.init(blockPos, camera, cameraPos, frustum, frame, spectator);
 
-        boolean fogCulling = this.useCulling && this.useFogCulling;
-
-        int maxChunkDistance = (this.renderDistance * 16) + 16;
-
         while (!this.iterationQueue.isEmpty()) {
             ChunkRender<T> render = this.iterationQueue.dequeue();
 
             this.markVisible(render);
-
-            if (fogCulling && !render.isWithinDistance(cameraPos, maxChunkDistance)) {
-                continue;
-            }
-
             this.addNeighbors(render, frustum, frame);
         }
     }
@@ -373,7 +357,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         return this.columns.get(ChunkPos.toLong(x, z));
     }
 
-    public void renderLayer(MatrixStack matrixStack, BlockRenderPass layerType, double x, double y, double z) { ;
+    public void renderLayer(MatrixStack matrixStack, BlockRenderPass layerType, double x, double y, double z) {
         if (!this.renderedLayers.add(layerType)) {
             return;
         }
