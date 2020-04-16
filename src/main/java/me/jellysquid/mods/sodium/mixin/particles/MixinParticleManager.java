@@ -37,8 +37,11 @@ public class MixinParticleManager {
         Frustum frustum = ChunkRenderer.getInstance().getFrustum();
         boolean useCulling = SodiumClientMod.options().performance.useParticleCulling;
 
+        // Setup the frustum state before rendering particles
         if (useCulling && frustum != null) {
             this.cullingFrustum = frustum;
+        } else {
+            this.cullingFrustum = null;
         }
     }
 
@@ -47,10 +50,16 @@ public class MixinParticleManager {
     private <V> V filterParticleList(Map<ParticleTextureSheet, Queue<Particle>> map, Object key, MatrixStack matrixStack, VertexConsumerProvider.Immediate immediate, LightmapTextureManager lightmapTextureManager, Camera camera, float f) {
         Queue<Particle> queue = this.particles.get(key);
 
-        if (this.cullingFrustum == null || queue == null) {
+        if (queue == null || queue.isEmpty()) {
             return null;
         }
 
+        // If the frustum isn't available (whether disabled or some other issue arose), simply return the queue as-is
+        if (this.cullingFrustum == null) {
+            return (V) queue;
+        }
+
+        // Filter particles which are not visible
         Queue<Particle> filtered = this.cachedQueue;
         filtered.clear();
 
@@ -65,8 +74,7 @@ public class MixinParticleManager {
 
     @Inject(method = "renderParticles", at = @At("RETURN"))
     private void postRenderParticles(MatrixStack matrixStack, VertexConsumerProvider.Immediate immediate, LightmapTextureManager lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
+        // Ensure particles don't linger in the temporary collection
         this.cachedQueue.clear();
     }
-
-
 }
