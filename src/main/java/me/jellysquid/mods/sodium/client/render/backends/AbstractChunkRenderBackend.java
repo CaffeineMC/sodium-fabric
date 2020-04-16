@@ -6,7 +6,6 @@ import me.jellysquid.mods.sodium.common.util.matrix.Matrix4fExtended;
 import me.jellysquid.mods.sodium.common.util.matrix.MatrixUtil;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.BlockPos;
 
 import java.nio.FloatBuffer;
 
@@ -37,11 +36,9 @@ public abstract class AbstractChunkRenderBackend<T extends ChunkRenderState> imp
     }
 
     protected final FloatBuffer createModelMatrix(ChunkRender<T> chunk, double x, double y, double z) {
-        BlockPos origin = chunk.getOrigin();
-
-        float offsetX = (float) (origin.getX() - x);
-        float offsetY = (float) (origin.getY() - y);
-        float offsetZ = (float) (origin.getZ() - z);
+        float offsetX = (float) (chunk.getOriginX() - x);
+        float offsetY = (float) (chunk.getOriginY() - y);
+        float offsetZ = (float) (chunk.getOriginZ() - z);
 
         this.modelMatrixExt.writeTranslation(this.matrixBuffer, offsetX, offsetY, offsetZ);
 

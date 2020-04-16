@@ -2,6 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
@@ -24,10 +26,7 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -54,8 +53,10 @@ public class ChunkRenderer implements ChunkStatusListener {
     private boolean isRenderGraphDirty;
     private boolean useEntityCulling;
 
+    private final LongSet loadedChunkPositions = new LongOpenHashSet();
+    private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
+
     private ChunkRenderManager<?> chunkRenderManager;
-    private Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
     private ChunkBuilder chunkBuilder;
     private BlockRenderPassManager renderPassManager;
     private ChunkRenderBackend<?> chunkRenderBackend;
@@ -74,10 +75,7 @@ public class ChunkRenderer implements ChunkStatusListener {
 
     public void setWorld(ClientWorld world) {
         this.world = world;
-
-        this.isRenderGraphDirty = true;
-
-        this.renderDistance = this.client.options.viewDistance;
+        this.loadedChunkPositions.clear();
 
         if (world == null) {
             if (this.chunkRenderManager != null) {
@@ -118,7 +116,7 @@ public class ChunkRenderer implements ChunkStatusListener {
 
     public void update(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
         this.applySettings();
-        this.chunkRenderManager.resetRenderedLayers();
+        this.chunkRenderManager.onFrameChanged();
 
         Vec3d cameraPos = camera.getPos();
 
@@ -184,23 +182,18 @@ public class ChunkRenderer implements ChunkStatusListener {
 
         int budget = this.chunkBuilder.getBudget();
 
-        BlockPos.Mutable pos = new BlockPos.Mutable();
-
         for (ChunkRender<?> render : this.chunkRenderManager.getVisibleChunks()) {
             if (!render.needsRebuild()) {
                 continue;
             }
 
-            BlockPos origin = render.getOrigin();
-            pos.set(origin.getX() + 8, origin.getY() + 8, origin.getZ() + 8);
-
-            boolean important = render.needsImportantRebuild() && pos.getSquaredDistance(blockPos) < 768.0D;
+            boolean important = render.needsImportantRebuild() && render.getSquaredDistance(blockPos) < 768.0D;
 
             if (important || budget-- > 0) {
                 if (important) {
-                    futures.add(render.rebuildImmediately());
+                    futures.add(this.chunkBuilder.createRebuildFuture(render));
                 } else {
-                    render.rebuild();
+                    this.chunkBuilder.rebuild(render);
                 }
 
                 this.isRenderGraphDirty = true;
@@ -240,9 +233,6 @@ public class ChunkRenderer implements ChunkStatusListener {
             return;
         }
 
-        this.isRenderGraphDirty = true;
-        this.renderDistance = this.client.options.viewDistance;
-
         this.initRenderer();
     }
 
@@ -255,6 +245,9 @@ public class ChunkRenderer implements ChunkStatusListener {
             this.chunkRenderBackend.delete();
             this.chunkRenderBackend = null;
         }
+
+        this.isRenderGraphDirty = true;
+        this.renderDistance = this.client.options.viewDistance;
 
         SodiumGameOptions opts = SodiumClientMod.options();
 
@@ -270,12 +263,13 @@ public class ChunkRenderer implements ChunkStatusListener {
             this.chunkRenderBackend = new ShaderVBOChunkRenderBackend();
         }
 
-        this.chunkRenderManager = new ChunkRenderManager<>(this.chunkBuilder, this.chunkRenderBackend, this, this.world, this.renderDistance);
+        this.chunkRenderManager = new ChunkRenderManager<>(this.chunkRenderBackend, this, this.world, this.renderDistance);
+        this.chunkRenderManager.addAllChunks(this.loadedChunkPositions);
 
         this.chunkBuilder.init(this.world, this.renderPassManager);
     }
 
-    public void scheduleRebuildForBlock(int x, int y, int z) {
+    public void scheduleRebuild(int x, int y, int z) {
         ChunkRender<?> node = this.chunkRenderManager.getRender(x, y, z);
 
         if (node != null) {
@@ -329,12 +323,16 @@ public class ChunkRenderer implements ChunkStatusListener {
 
     @Override
     public void onChunkAdded(int x, int z) {
+        this.loadedChunkPositions.add(ChunkPos.toLong(x, z));
+
         this.chunkBuilder.clearCachesForChunk(x, z);
         this.chunkRenderManager.onChunkAdded(x, z);
     }
 
     @Override
     public void onChunkRemoved(int x, int z) {
+        this.loadedChunkPositions.remove(ChunkPos.toLong(x, z));
+
         this.chunkBuilder.clearCachesForChunk(x, z);
         this.chunkRenderManager.onChunkRemoved(x, z);
     }

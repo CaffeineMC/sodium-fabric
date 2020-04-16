@@ -30,12 +30,14 @@ import java.util.Map;
 
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
     private final ChunkRender<?> render;
+    private final ChunkBuilder chunkBuilder;
     private final Vector3d camera;
     private final WorldSlice slice;
 
-    public ChunkRenderRebuildTask(ChunkBuilder builder, ChunkRender<?> render, WorldSlice slice) {
+    public ChunkRenderRebuildTask(ChunkBuilder chunkBuilder, ChunkRender<?> render, WorldSlice slice) {
+        this.chunkBuilder = chunkBuilder;
         this.render = render;
-        this.camera = builder.getCameraPosition();
+        this.camera = chunkBuilder.getCameraPosition();
         this.slice = slice;
     }
 
@@ -46,7 +48,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         ChunkMeshInfo.Builder meshInfo = new ChunkMeshInfo.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
-        BlockPos from = this.render.getOrigin();
+        BlockPos from = new BlockPos(this.render.getOriginX(), this.render.getOriginY(), this.render.getOriginZ());
         BlockPos to = from.add(16, 16, 16);
 
         TranslateTransformer transformer = new TranslateTransformer();
@@ -139,15 +141,17 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
         meshInfo.setOcclusionData(occluder.build());
 
-        return new Result(this.render, meshInfo.build(), this.slice);
+        return new Result(this.render, this.chunkBuilder, meshInfo.build(), this.slice);
     }
 
     public static class Result extends ChunkRenderUploadTask {
+        private final ChunkBuilder chunkBuilder;
         private final ChunkRender<?> chunkRender;
         private final ChunkMeshInfo meshInfo;
         private final WorldSlice slice;
 
-        public Result(ChunkRender<?> chunkRender, ChunkMeshInfo meshInfo, WorldSlice slice) {
+        public Result(ChunkRender<?> chunkRender, ChunkBuilder chunkBuilder, ChunkMeshInfo meshInfo, WorldSlice slice) {
+            this.chunkBuilder = chunkBuilder;
             this.chunkRender = chunkRender;
             this.meshInfo = meshInfo;
             this.slice = slice;
@@ -156,7 +160,9 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         @Override
         public void performUpload() {
             this.chunkRender.upload(this.meshInfo);
-            this.chunkRender.finishRebuild(this.slice);
+            this.chunkRender.finishRebuild();
+
+            this.chunkBuilder.releaseChunkSlice(this.slice);
         }
     }
 }

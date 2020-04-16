@@ -1,26 +1,6 @@
-buildscript {
-    repositories {
-        jcenter()
-        maven {
-            name = "Fabric"
-            url = "https://maven.fabricmc.net/"
-        }
-        maven {
-            name = "Forge"
-            url = "https://files.minecraftforge.net/maven/"
-        }
-        maven {
-            name = "Jitpack"
-            url 'https://jitpack.io/'
-        }
-    }
-    dependencies {
-        classpath 'com.github.Chocohead:fabric-loom:e5d69cb'
-    }
+plugins {
+    id 'fabric-loom' version '0.2.7-SNAPSHOT'
 }
-
-apply plugin: "fabric-loom"
-import net.fabricmc.loom.task.RemappingJar;
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -32,14 +12,9 @@ group = project.maven_group
 minecraft {
 }
 
-repositories {
-    // Fabric-ASM
-    maven { url 'https://jitpack.io' }
-}
-
 minecraft {
     refmapName = "mixins.sodium.refmap.json"
-    AT = file("src/main/resources/access-transformers.txt")
+    accessWidener = file("src/main/resources/sodium.accesswidener")
 }
 
 dependencies {
@@ -47,12 +22,6 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    include "com.moandjiezana.toml:toml4j:0.7.2"
-    compile "com.moandjiezana.toml:toml4j:0.7.2"
-
-    include "com.github.Chocohead:Fabric-ASM:${project.fabric_asm_version}"
-    compile "com.github.Chocohead:Fabric-ASM:${project.fabric_asm_version}:dev"
 }
 
 processResources {
@@ -87,10 +56,3 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 jar {
     from "LICENSE.txt"
 }
-
-task modJar(type: RemappingJar, dependsOn: classes) {
-    classifier = "mod"
-    from sourceSets.main.output
-}
-
-build.dependsOn modJar
