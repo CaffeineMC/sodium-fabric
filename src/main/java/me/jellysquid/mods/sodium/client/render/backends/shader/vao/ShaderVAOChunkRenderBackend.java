@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.render.backends.shader.vao;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
-import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL11;
 
@@ -11,7 +10,7 @@ import java.util.Iterator;
 
 public class ShaderVAOChunkRenderBackend extends AbstractShaderChunkRenderBackend<ShaderVAORenderState> {
     @Override
-    public void render(Iterator<ShaderVAORenderState> renders, BlockRenderPass pass, MatrixStack matrixStack, double x, double y, double z) {
+    public void render(Iterator<ShaderVAORenderState> renders, MatrixStack matrixStack, double x, double y, double z) {
         this.begin(matrixStack);
 
         this.program.setMatrices(matrixStack.peek());

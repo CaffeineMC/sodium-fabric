@@ -162,10 +162,6 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         this.cameraPosition = new Vector3d(x, y, z);
     }
 
-    public World getWorld() {
-        return this.world;
-    }
-
     public Vector3d getCameraPosition() {
         return this.cameraPosition;
     }

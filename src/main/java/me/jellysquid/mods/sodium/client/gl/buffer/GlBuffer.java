@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
 import me.jellysquid.mods.sodium.client.gl.GlHandle;
-import net.minecraft.client.render.VertexFormat;
 import org.lwjgl.opengl.*;
 
 import java.nio.ByteBuffer;
@@ -10,8 +9,6 @@ public abstract class GlBuffer extends GlHandle {
     protected static final VertexBufferFunctions bufferFuncs = VertexBufferFunctions.pickBest(GL.getCapabilities());
 
     protected final int target;
-
-    protected VertexFormat vertexFormat;
     protected int vertexCount = 0;
 
     protected GlBuffer(int target) {

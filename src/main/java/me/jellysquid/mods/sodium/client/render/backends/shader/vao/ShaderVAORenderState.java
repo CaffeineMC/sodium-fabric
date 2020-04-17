@@ -11,9 +11,9 @@ public class ShaderVAORenderState implements ChunkRenderState {
     private final GlBuffer vertexBuffer;
     private final GlVertexArray vertexArray;
     private final GlAttributeBinding[] attributes;
+    private final Vector3d translation;
 
     private boolean init;
-    private Vector3d translation;
 
     public ShaderVAORenderState(GlBuffer vertexBuffer, GlAttributeBinding[] attributes, Vector3d translation) {
         this.vertexBuffer = vertexBuffer;

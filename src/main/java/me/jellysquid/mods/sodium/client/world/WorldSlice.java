@@ -95,7 +95,7 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
         this.biomeArrays = new BiomeArray[CHUNK_COUNT];
     }
 
-    public void init(ChunkBuilder builder, World world, ChunkSectionPos chunkPos, WorldChunk[] chunks) {
+    public void init(ChunkBuilder<?> builder, World world, ChunkSectionPos chunkPos, WorldChunk[] chunks) {
         final int minX = chunkPos.getMinX() - BLOCK_RADIUS;
         final int minY = chunkPos.getMinY() - BLOCK_RADIUS;
         final int minZ = chunkPos.getMinZ() - BLOCK_RADIUS;
