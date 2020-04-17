@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
-import me.jellysquid.mods.sodium.client.gl.GlHelper;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlImmutableBuffer;
 import me.jellysquid.mods.sodium.client.gui.options.*;
@@ -247,24 +246,21 @@ public class SodiumGameOptionPages {
                         .setEnabled(false)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Fog Chunk Occlusion")
-                        .setTooltip("If enabled, additional chunk culling will be performed through determining whether or not chunks are hidden in the fog. This can " +
-                                "eliminate additional chunks that would otherwise be unnecessarily rendered. This option does nothing if fog rendering is disabled. " +
-                                "\n\nRequires support for the NV_fog_distance extension.")
-                        .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.performance.useFogChunkCulling = value, opts -> opts.performance.useFogChunkCulling)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .setEnabled(GlHelper.supportsNvFog())
-                        .build()
-                )
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Animate Only Visible Textures")
                         .setTooltip("If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame " +
                                 "rates on some hardware. If you experience issues with some textures not being animated, disable this option.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.animateOnlyVisibleTextures = value, opts -> opts.performance.animateOnlyVisibleTextures)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Particle Culling")
+                        .setTooltip("If enabled, only particles which are determined to be visible will be rendered. This can provide a significant improvement " +
+                                "to frame rates when many particles are nearby.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setBinding((opts, value) -> opts.performance.useParticleCulling = value, opts -> opts.performance.useParticleCulling)
                         .build()
                 )
                 .build());

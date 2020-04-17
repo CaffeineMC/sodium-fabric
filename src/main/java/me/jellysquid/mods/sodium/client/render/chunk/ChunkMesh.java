@@ -4,11 +4,11 @@ import me.jellysquid.mods.sodium.client.gl.buffer.BufferUploadData;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import org.apache.commons.lang3.Validate;
 
-public class ChunkLayerInfo {
+public class ChunkMesh {
     private final BlockRenderPass renderLayer;
     private BufferUploadData pendingUpload;
 
-    public ChunkLayerInfo(BlockRenderPass renderLayer, BufferUploadData pendingUpload) {
+    public ChunkMesh(BlockRenderPass renderLayer, BufferUploadData pendingUpload) {
         Validate.notNull(pendingUpload);
 
         this.pendingUpload = pendingUpload;
@@ -27,7 +27,7 @@ public class ChunkLayerInfo {
         return data;
     }
 
-    public BlockRenderPass getLayer() {
+    public BlockRenderPass getRenderPass() {
         return this.renderLayer;
     }
 }

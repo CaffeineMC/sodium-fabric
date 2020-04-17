@@ -1,13 +1,14 @@
 package me.jellysquid.mods.sodium.mixin.chunk_rendering;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
+import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -28,7 +29,11 @@ public abstract class MixinWorldRenderer {
     @Shadow
     @Final
     private Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions;
-    private ChunkRenderer chunkManager;
+
+    @Shadow
+    public abstract void render(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f);
+
+    private SodiumWorldRenderer renderer;
 
     @Redirect(method = "reload", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;viewDistance:I", ordinal = 1))
     private int nullifyBuiltChunkStorage(GameOptions options) {
@@ -38,12 +43,12 @@ public abstract class MixinWorldRenderer {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(MinecraftClient client, BufferBuilderStorage bufferBuilders, CallbackInfo ci) {
-        this.chunkManager = ChunkRenderer.create();
+        this.renderer = SodiumWorldRenderer.create();
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))
     private void onWorldChanged(ClientWorld world, CallbackInfo ci) {
-        this.chunkManager.setWorld(world);
+        this.renderer.setWorld(world);
     }
 
     /**
@@ -51,7 +56,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     public int getCompletedChunkCount() {
-        return this.chunkManager.getCompletedChunkCount();
+        return this.renderer.getCompletedChunkCount();
     }
 
     /**
@@ -59,12 +64,12 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     public boolean isTerrainRenderComplete() {
-        return this.chunkManager.isTerrainRenderComplete();
+        return this.renderer.isTerrainRenderComplete();
     }
 
     @Inject(method = "scheduleTerrainUpdate", at = @At("RETURN"))
     private void onTerrainUpdateScheduled(CallbackInfo ci) {
-        this.chunkManager.scheduleTerrainUpdate();
+        this.renderer.scheduleTerrainUpdate();
     }
 
     /**
@@ -72,7 +77,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double d, double e, double f) {
-        this.chunkManager.renderLayer(renderLayer, matrixStack, d, e, f);
+        this.renderer.renderLayer(renderLayer, matrixStack, d, e, f);
     }
 
     /**
@@ -80,7 +85,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void renderChunkDebugInfo(Camera camera) {
-        this.chunkManager.renderChunkDebugInfo(camera);
+        this.renderer.renderChunkDebugInfo(camera);
     }
 
     /**
@@ -88,12 +93,12 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
-        this.chunkManager.update(camera, frustum, hasForcedFrustum, frame, spectator);
+        this.renderer.update(camera, frustum, hasForcedFrustum, frame, spectator);
     }
 
     @Inject(method = "reload", at = @At("RETURN"))
     private void reload(CallbackInfo ci) {
-        this.chunkManager.reload();
+        this.renderer.reload();
     }
 
     /**
@@ -102,21 +107,25 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     public void scheduleBlockRenders(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        int minChunkX = minX >> 4;
-        int minChunkY = minY >> 4;
-        int minChunkZ = minZ >> 4;
+        this.renderer.scheduleRebuildForArea(minX, minY, minZ, maxX, maxY, maxZ, false);
+    }
 
-        int maxChunkX = maxX >> 4;
-        int maxChunkY = maxY >> 4;
-        int maxChunkZ = maxZ >> 4;
+    /**
+     * @reason Avoid updating the same chunk multiple times
+     * @author JellySquid
+     */
+    @Overwrite
+    public void scheduleBlockRenders(int x, int y, int z) {
+        this.renderer.scheduleRebuildForArea(x - 1, y - 1, z - 1, x + 1, y + 1, z + 1, false);
+    }
 
-        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-            for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-                for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                    this.scheduleChunkRender(chunkX, chunkY, chunkZ, false);
-                }
-            }
-        }
+    /**
+     * @reason Avoid updating the same chunk multiple times
+     * @author JellySquid
+     */
+    @Overwrite
+    private void scheduleSectionRender(BlockPos pos, boolean important) {
+        this.renderer.scheduleRebuildForArea(pos.getX() - 1, pos.getY() - 1, pos.getZ() - 1, pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1, important);
     }
 
     /**
@@ -124,11 +133,19 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void scheduleChunkRender(int x, int y, int z, boolean important) {
-        this.chunkManager.scheduleRebuild(x, y, z);
+        this.renderer.scheduleRebuildForChunk(x, y, z, important);
     }
 
     @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/WorldRenderer;noCullingBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
     private void renderTileEntities(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
-        this.chunkManager.renderTileEntities(matrices, this.bufferBuilders, this.blockBreakingProgressions, camera, tickDelta);
+        this.renderer.renderTileEntities(matrices, this.bufferBuilders, this.blockBreakingProgressions, camera, tickDelta);
+    }
+
+    /**
+     * @author JellySquid
+     */
+    @Overwrite
+    public String getChunksDebugString() {
+        return this.renderer.getChunksDebugString();
     }
 }

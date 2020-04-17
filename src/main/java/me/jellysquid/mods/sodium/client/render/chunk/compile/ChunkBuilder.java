@@ -1,10 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderRebuildTask;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderUploadTask;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -19,19 +21,16 @@ import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ChunkBuilder {
+public class ChunkBuilder<T extends ChunkRenderState> {
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
-    private final Deque<WrappedTask> buildQueue = new ConcurrentLinkedDeque<>();
-    private final Queue<ChunkRenderUploadTask> uploadQueue = new ConcurrentLinkedDeque<>();
+    private final Deque<WrappedTask<T>> buildQueue = new ConcurrentLinkedDeque<>();
+    private final Queue<ChunkBuildResult<T>> uploadQueue = new ConcurrentLinkedDeque<>();
 
     private final Object jobNotifier = new Object();
 
@@ -66,7 +65,7 @@ public class ChunkBuilder {
         }
 
         for (int i = 0; i < this.limitThreads; i++) {
-            VertexBufferCache bufferCache = new VertexBufferCache(this.renderPassManager);
+            ChunkBuildBuffers bufferCache = new ChunkBuildBuffers(this.renderPassManager);
             WorkerRunnable worker = new WorkerRunnable(bufferCache);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
@@ -77,11 +76,6 @@ public class ChunkBuilder {
         }
 
         LOGGER.info("Started {} worker threads", this.threads.size());
-    }
-
-    public void reset() {
-        this.stopWorkers();
-        this.startWorkers();
     }
 
     public void stopWorkers() {
@@ -113,7 +107,7 @@ public class ChunkBuilder {
         // Drop any pending work queues and cancel futures
         this.uploadQueue.clear();
 
-        for (WrappedTask job : this.buildQueue) {
+        for (WrappedTask<?> job : this.buildQueue) {
             job.future.cancel(true);
         }
 
@@ -124,25 +118,32 @@ public class ChunkBuilder {
         this.chunkSliceArena.reset();
     }
 
-    public boolean upload() {
-        int count = 0;
-
-        while (!this.uploadQueue.isEmpty()) {
-            ChunkRenderUploadTask task = this.uploadQueue.remove();
-            task.performUpload();
-
-            count++;
+    public boolean upload(ChunkRenderBackend<T> backend) {
+        if (this.uploadQueue.isEmpty()) {
+            return false;
         }
 
-        return count > 0;
+        backend.upload(new Iterator<ChunkBuildResult<T>>() {
+            @Override
+            public boolean hasNext() {
+                return !ChunkBuilder.this.uploadQueue.isEmpty();
+            }
+
+            @Override
+            public ChunkBuildResult<T> next() {
+                return ChunkBuilder.this.uploadQueue.remove();
+            }
+        });
+
+        return true;
     }
 
-    public CompletableFuture<ChunkRenderUploadTask> schedule(ChunkRenderBuildTask task) {
+    public CompletableFuture<ChunkBuildResult<T>> schedule(ChunkRenderBuildTask<T> task) {
         if (!this.running.get()) {
             throw new IllegalStateException("Executor is stopped");
         }
 
-        WrappedTask job = new WrappedTask(task);
+        WrappedTask<T> job = new WrappedTask<>(task);
 
         this.buildQueue.add(job);
 
@@ -153,8 +154,8 @@ public class ChunkBuilder {
         return job.future;
     }
 
-    public void enqueueUpload(ChunkRenderUploadTask task) {
-        this.uploadQueue.add(task);
+    public void enqueueUpload(ChunkBuildResult<T> result) {
+        this.uploadQueue.add(result);
     }
 
     public void setCameraPosition(double x, double y, double z) {
@@ -216,40 +217,40 @@ public class ChunkBuilder {
         this.biomeCacheManager.dropCachesForChunk(x, z);
     }
 
-    public void rebuild(ChunkRender<?> render) {
+    public void rebuild(ChunkRender<T> render) {
         this.createRebuildFuture(render).thenAccept(this::enqueueUpload);
     }
 
-    public CompletableFuture<ChunkRenderUploadTask> createRebuildFuture(ChunkRender<?> render) {
+    public CompletableFuture<ChunkBuildResult<T>> createRebuildFuture(ChunkRender<T> render) {
         return this.schedule(this.createRebuildTask(render));
     }
 
-    private ChunkRenderBuildTask createRebuildTask(ChunkRender<?> render) {
+    private ChunkRenderBuildTask<T> createRebuildTask(ChunkRender<T> render) {
         render.cancelRebuildTask();
 
         WorldSlice slice = this.createChunkSlice(render.getChunkPos());
 
         if (slice == null) {
-            return new ChunkRenderEmptyBuildTask(render);
+            return new ChunkRenderEmptyBuildTask<>(render);
         } else {
-            return new ChunkRenderRebuildTask(this, render, slice);
+            return new ChunkRenderRebuildTask<>(this, render, slice);
         }
     }
 
     private class WorkerRunnable implements Runnable {
-        private final VertexBufferCache bufferCache;
+        private final ChunkBuildBuffers bufferCache;
         private final AtomicBoolean running = ChunkBuilder.this.running;
 
         private final ChunkRenderPipeline pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance());
 
-        public WorkerRunnable(VertexBufferCache bufferCache) {
+        public WorkerRunnable(ChunkBuildBuffers bufferCache) {
             this.bufferCache = bufferCache;
         }
 
         @Override
         public void run() {
             while (this.running.get()) {
-                WrappedTask job = this.getNextJob();
+                WrappedTask<T> job = this.getNextJob();
 
                 if (job == null || job.future.isCancelled()) {
                     continue;
@@ -259,8 +260,8 @@ public class ChunkBuilder {
             }
         }
 
-        private WrappedTask getNextJob() {
-            WrappedTask job = ChunkBuilder.this.buildQueue.poll();
+        private WrappedTask<T> getNextJob() {
+            WrappedTask<T> job = ChunkBuilder.this.buildQueue.poll();
 
             if (job == null) {
                 synchronized (ChunkBuilder.this.jobNotifier) {
@@ -275,11 +276,11 @@ public class ChunkBuilder {
         }
     }
 
-    private static class WrappedTask {
-        private final ChunkRenderBuildTask task;
-        private final CompletableFuture<ChunkRenderUploadTask> future;
+    private static class WrappedTask<T extends ChunkRenderState> {
+        private final ChunkRenderBuildTask<T> task;
+        private final CompletableFuture<ChunkBuildResult<T>> future;
 
-        private WrappedTask(ChunkRenderBuildTask task) {
+        private WrappedTask(ChunkRenderBuildTask<T> task) {
             this.task = task;
             this.future = new CompletableFuture<>();
         }

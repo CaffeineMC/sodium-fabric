@@ -1,32 +1,44 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader.vbo;
 
 import me.jellysquid.mods.sodium.client.gl.attribute.GlAttributeBinding;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlVertexBuffer;
-import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderRenderState;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkLayerInfo;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import net.minecraft.client.util.math.Vector3d;
+import org.lwjgl.opengl.GL20;
 
-import java.util.Collection;
+public class ShaderVBORenderState implements ChunkRenderState {
+    private final GlBuffer buffer;
+    private final GlAttributeBinding[] attributes;
+    private final Vector3d translation;
 
-public class ShaderVBORenderState extends AbstractShaderRenderState<GlVertexBuffer> {
-    public ShaderVBORenderState(GlAttributeBinding[] attributes, boolean useImmutableStorage) {
-        super(attributes, useImmutableStorage);
+    public ShaderVBORenderState(GlBuffer buffer, GlAttributeBinding[] attributes, Vector3d translation) {
+        this.translation = translation;
+        this.buffer = buffer;
+        this.attributes = attributes;
+    }
+
+    public void bind() {
+        this.buffer.bind();
+
+        for (GlAttributeBinding binding : this.attributes) {
+            GL20.glVertexAttribPointer(binding.index, binding.count, binding.format, binding.normalized, binding.stride, binding.pointer);
+        }
+    }
+
+    public void draw(int mode) {
+        this.buffer.drawArrays(mode);
+    }
+
+    public void unbind() {
+        this.buffer.unbind();
     }
 
     @Override
-    public void clearData() {
-        for (GlVertexBuffer tess : this.data.values()) {
-            tess.delete();
-        }
-
-        this.data.clear();
+    public void delete() {
+        this.buffer.delete();
     }
 
-    @Override
-    public void uploadData(Collection<ChunkLayerInfo> layers) {
-        this.clearData();
-
-        for (ChunkLayerInfo info : layers) {
-            this.data.put(info.getLayer(), new GlVertexBuffer(this.createBuffer(info), this.attributes));
-        }
+    public Vector3d getTranslation() {
+        return this.translation;
     }
 }

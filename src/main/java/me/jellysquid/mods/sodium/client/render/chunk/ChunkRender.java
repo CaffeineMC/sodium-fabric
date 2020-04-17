@@ -1,12 +1,19 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import me.jellysquid.mods.sodium.client.render.FrustumExtended;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import net.minecraft.client.render.Frustum;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.*;
+import net.minecraft.client.util.math.Vector3d;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.Direction;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -14,10 +21,9 @@ public class ChunkRender<T extends ChunkRenderState> {
     private final ColumnRender<T> column;
     private final int chunkX, chunkY, chunkZ;
 
-    private final T renderState;
-    private final Box boundingBox;
+    private final T[] renderState;
 
-    private ChunkMeshInfo meshInfo = ChunkMeshInfo.ABSENT;
+    private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<Void> rebuildTask = null;
 
     private boolean needsRebuild;
@@ -29,8 +35,15 @@ public class ChunkRender<T extends ChunkRenderState> {
     private byte cullingState;
     private byte direction;
 
-    public ChunkRender(ColumnRender<T> column, int chunkX, int chunkY, int chunkZ, T renderState) {
-        this.renderState = renderState;
+    private final float boundsMinX;
+    private final float boundsMinY;
+    private final float boundsMinZ;
+
+    private final float boundsMaxX;
+    private final float boundsMaxY;
+    private final float boundsMaxZ;
+
+    public ChunkRender(ChunkRenderBackend<T> backend, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
         this.column = column;
 
         this.chunkX = chunkX;
@@ -41,8 +54,17 @@ public class ChunkRender<T extends ChunkRenderState> {
         int originY = chunkY << 4;
         int originZ = chunkZ << 4;
 
-        this.boundingBox = new Box(originX, originY, originZ, originX + 16.0D, originY + 16.0D, originZ + 16.0D);
+        this.boundsMinX = originX;
+        this.boundsMinY = originY;
+        this.boundsMinZ = originZ;
+        this.boundsMaxX = originX + 16.0f;
+        this.boundsMaxY = originY + 16.0f;
+        this.boundsMaxZ = originZ + 16.0f;
+
         this.needsRebuild = true;
+
+        //noinspection unchecked
+        this.renderState = (T[]) Array.newInstance(backend.getRenderStateType(), BlockRenderPass.count());
     }
 
     public void cancelRebuildTask() {
@@ -55,12 +77,8 @@ public class ChunkRender<T extends ChunkRenderState> {
         }
     }
 
-    public Box getBoundingBox() {
-        return this.boundingBox;
-    }
-
-    public ChunkMeshInfo getMeshInfo() {
-        return this.meshInfo;
+    public ChunkRenderData getData() {
+        return this.data;
     }
 
     public boolean needsRebuild() {
@@ -68,7 +86,7 @@ public class ChunkRender<T extends ChunkRenderState> {
     }
 
     public boolean needsImportantRebuild() {
-        return this.needsRebuild && this.needsImportantRebuild;
+        return this.needsImportantRebuild;
     }
 
     public int getChunkY() {
@@ -76,27 +94,30 @@ public class ChunkRender<T extends ChunkRenderState> {
     }
 
     public boolean isVisibleThrough(Direction from, Direction to) {
-        return this.meshInfo.isVisibleThrough(from, to);
+        return this.data.isVisibleThrough(from, to);
     }
 
-    public T getRenderState() {
-        return this.renderState;
+    public T getRenderState(BlockRenderPass pass) {
+        return this.renderState[pass.ordinal()];
+    }
+
+    public void setRenderState(BlockRenderPass pass, T data) {
+        this.renderState[pass.ordinal()] = data;
     }
 
     public void delete() {
         this.cancelRebuildTask();
-
-        this.renderState.clearData();
-        this.setMeshInfo(ChunkMeshInfo.ABSENT);
+        this.setData(ChunkRenderData.ABSENT);
+        this.resetRenderStates();
     }
 
-    private void setMeshInfo(ChunkMeshInfo info) {
+    public void setData(ChunkRenderData info) {
         if (info == null) {
             throw new NullPointerException("Mesh information must not be null");
         }
 
-        this.column.onChunkRenderUpdated(this.meshInfo, info);
-        this.meshInfo = info;
+        this.column.onChunkRenderUpdated(this.data, info);
+        this.data = info;
     }
 
     public void scheduleRebuild(boolean important) {
@@ -104,18 +125,8 @@ public class ChunkRender<T extends ChunkRenderState> {
         this.needsRebuild = true;
     }
 
-    public void upload(ChunkMeshInfo meshInfo) {
-        this.renderState.uploadData(meshInfo.getLayers());
-        this.setMeshInfo(meshInfo);
-    }
-
-    public void finishRebuild() {
-        this.needsRebuild = false;
-        this.needsImportantRebuild = false;
-    }
-
     public boolean isEmpty() {
-        return this.meshInfo.isEmpty();
+        return this.data.isEmpty();
     }
 
     public void updateCullingState(byte parent, Direction from) {
@@ -155,12 +166,17 @@ public class ChunkRender<T extends ChunkRenderState> {
         return this.column;
     }
 
-    public boolean isVisible(Frustum frustum, int frame) {
-        return this.column.isVisible(frustum, frame) && frustum.isVisible(this.boundingBox);
+    public boolean isVisible(FrustumExtended frustum, int frame) {
+        return this.column.isVisible(frustum, frame) && this.isVisible(frustum);
     }
 
-    public void tickTextures() {
-        List<Sprite> sprites = this.getMeshInfo().getAnimatedSprites();
+
+    public boolean isVisible(FrustumExtended frustum) {
+        return frustum.fastAabbTest(this.boundsMinX, this.boundsMinY, this.boundsMinZ, this.boundsMaxX, this.boundsMaxY, this.boundsMaxZ);
+    }
+
+    public void tick() {
+        List<Sprite> sprites = this.getData().getAnimatedSprites();
 
         if (!sprites.isEmpty()) {
             int size = sprites.size();
@@ -185,20 +201,16 @@ public class ChunkRender<T extends ChunkRenderState> {
         return this.chunkZ << 4;
     }
 
-    public boolean isWithinDistance(Vec3d pos, int distance) {
-        double x = pos.getX() - this.getOriginX();
-        double y = pos.getY() - this.getOriginY();
-        double z = pos.getZ() - this.getOriginZ();
-
-        return ((x * x) + (y * y) + (z * z)) <= distance;
+    public double getSquaredDistance(BlockPos pos) {
+        return this.getSquaredDistance(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
     }
 
-    public double getSquaredDistance(BlockPos pos) {
-        double x = pos.getX() - this.getCenterX();
-        double y = pos.getY() - this.getCenterY();
-        double z = pos.getZ() - this.getCenterZ();
+    public double getSquaredDistance(double x, double y, double z) {
+        double xDist = x - this.getCenterX();
+        double yDist = y - this.getCenterY();
+        double zDist = z - this.getCenterZ();
 
-        return (x * x) + (y * y) + (z * z);
+        return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
 
     private double getCenterX() {
@@ -227,5 +239,27 @@ public class ChunkRender<T extends ChunkRenderState> {
 
     public int getLastVisibleFrame() {
         return this.lastVisibleFrame;
+    }
+
+    public Vector3d getTranslation() {
+        return new Vector3d(this.getOriginX(), this.getOriginY(), this.getOriginZ());
+    }
+
+    public void resetRenderStates() {
+        for (T state : this.renderState) {
+            if (state != null) {
+                state.delete();
+            }
+        }
+
+        Arrays.fill(this.renderState, null);
+    }
+
+    public T[] getRenderStates() {
+        return this.renderState;
+    }
+
+    public boolean hasData() {
+        return this.data != ChunkRenderData.EMPTY;
     }
 }
