@@ -28,11 +28,11 @@ import org.lwjgl.opengl.GL11;
 
 public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRenderBuildTask<T> {
     private final ChunkRender<T> render;
-    private final ChunkBuilder chunkBuilder;
+    private final ChunkBuilder<T> chunkBuilder;
     private final Vector3d camera;
     private final WorldSlice slice;
 
-    public ChunkRenderRebuildTask(ChunkBuilder chunkBuilder, ChunkRender<T> render, WorldSlice slice) {
+    public ChunkRenderRebuildTask(ChunkBuilder<T> chunkBuilder, ChunkRender<T> render, WorldSlice slice) {
         this.chunkBuilder = chunkBuilder;
         this.render = render;
         this.camera = chunkBuilder.getCameraPosition();

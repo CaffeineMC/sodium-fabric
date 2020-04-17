@@ -37,7 +37,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
-    private final Arena<WorldSlice> chunkSliceArena;
+    private final Arena<WorldSlice> worldSliceArena;
 
     private World world;
     private Vector3d cameraPosition;
@@ -48,7 +48,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
 
     public ChunkBuilder() {
         this.limitThreads = getOptimalThreadCount();
-        this.chunkSliceArena = new Arena<>(this.getBudget(), WorldSlice::new);
+        this.worldSliceArena = new Arena<>(this.getBudget(), WorldSlice::new);
     }
 
     public int getBudget() {
@@ -115,7 +115,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
 
         this.world = null;
         this.biomeCacheManager = null;
-        this.chunkSliceArena.reset();
+        this.worldSliceArena.reset();
     }
 
     public boolean upload(ChunkRenderBackend<T> backend) {
@@ -199,14 +199,14 @@ public class ChunkBuilder<T extends ChunkRenderState> {
             return null;
         }
 
-        WorldSlice slice = this.chunkSliceArena.allocate();
+        WorldSlice slice = this.worldSliceArena.allocate();
         slice.init(this, this.world, pos, chunks);
 
         return slice;
     }
 
     public void releaseChunkSlice(WorldSlice slice) {
-        this.chunkSliceArena.release(slice);
+        this.worldSliceArena.release(slice);
     }
 
     public BiomeCacheManager getBiomeCacheManager() {
@@ -256,7 +256,10 @@ public class ChunkBuilder<T extends ChunkRenderState> {
                     continue;
                 }
 
-                job.future.complete(job.task.performBuild(this.pipeline, this.bufferCache));
+                ChunkBuildResult<T> result = job.task.performBuild(this.pipeline, this.bufferCache);
+                job.task.releaseResources();
+
+                job.future.complete(result);
             }
         }
 
