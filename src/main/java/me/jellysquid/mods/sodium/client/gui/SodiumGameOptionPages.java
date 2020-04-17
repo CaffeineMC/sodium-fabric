@@ -110,6 +110,12 @@ public class SodiumGameOptionPages {
                         .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.values(), new String[] { "Off", "Crosshair", "Hotbar" }))
                         .setBinding((opts, value) -> opts.attackIndicator = value, (opts) -> opts.attackIndicator)
                         .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Static Fov")
+                        .setTooltip("If enabled, the field of view will not change in response to potion effects or sprinting.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.quality.staticFov = value, (opts) -> opts.quality.staticFov)
+                        .build())
                 .build());
 
         return new OptionPage("General", ImmutableList.copyOf(groups));

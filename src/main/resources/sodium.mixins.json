@@ -38,6 +38,7 @@
     "textures.MixinItemRenderer",
     "textures.MixinSprite",
     "particles.MixinBillboardParticle",
+    "render.static_fov.MixinGameRenderer",
     "no_hurt_cam.MixinGameRenderer"
   ]
 }
