@@ -40,5 +40,8 @@
   ],
   "mixins": [
     "particles.MixinParticleManager"
+    "textures.MixinSprite",
+    "particles.MixinBillboardParticle",
+    "render.static_fov.MixinGameRenderer"
   ]
 }
