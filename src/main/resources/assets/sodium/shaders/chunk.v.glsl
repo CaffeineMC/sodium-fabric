@@ -9,11 +9,11 @@ varying vec4 v_Color;
 varying vec2 v_TexCoord;
 varying vec2 v_LightCoord;
 
-uniform mat4 u_ModelView;
-uniform mat4 u_Projection;
+uniform mat4 u_ModelViewProjectionMatrix;
+uniform vec3 u_ModelOffset;
 
 void main() {
-    gl_Position = u_Projection * u_ModelView * vec4(a_Pos.x, a_Pos.y, a_Pos.z, 1.0);
+    gl_Position = u_ModelViewProjectionMatrix * vec4(a_Pos + u_ModelOffset, 1.0);
 
     v_Color = a_Color;
     v_TexCoord = a_TexCoord;
