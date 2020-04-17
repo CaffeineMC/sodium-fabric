@@ -14,6 +14,7 @@ import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.util.RenderList;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import me.jellysquid.mods.sodium.common.util.collections.FutureDequeDrain;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -453,17 +454,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         this.dirty |= this.builder.upload(this.backend);
         this.cleanup();
 
-        this.backend.upload(new Iterator<ChunkBuildResult<T>>() {
-            @Override
-            public boolean hasNext() {
-                return !futures.isEmpty();
-            }
-
-            @Override
-            public ChunkBuildResult<T> next() {
-                return futures.remove().join();
-            }
-        });
+        this.backend.upload(new FutureDequeDrain<>(futures));
     }
 
     public void markDirty() {

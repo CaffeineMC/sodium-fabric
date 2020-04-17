@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
 import me.jellysquid.mods.sodium.common.util.arena.Arena;
+import me.jellysquid.mods.sodium.common.util.collections.DequeDrain;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.client.world.ClientWorld;
@@ -21,7 +22,9 @@ import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,7 +33,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
     private final Deque<WrappedTask<T>> buildQueue = new ConcurrentLinkedDeque<>();
-    private final Queue<ChunkBuildResult<T>> uploadQueue = new ConcurrentLinkedDeque<>();
+    private final Deque<ChunkBuildResult<T>> uploadQueue = new ConcurrentLinkedDeque<>();
 
     private final Object jobNotifier = new Object();
 
@@ -123,17 +126,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
             return false;
         }
 
-        backend.upload(new Iterator<ChunkBuildResult<T>>() {
-            @Override
-            public boolean hasNext() {
-                return !ChunkBuilder.this.uploadQueue.isEmpty();
-            }
-
-            @Override
-            public ChunkBuildResult<T> next() {
-                return ChunkBuilder.this.uploadQueue.remove();
-            }
-        });
+        backend.upload(new DequeDrain<>(this.uploadQueue));
 
         return true;
     }
