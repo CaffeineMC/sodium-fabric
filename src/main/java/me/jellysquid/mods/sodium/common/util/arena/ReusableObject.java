@@ -1,15 +1,17 @@
 package me.jellysquid.mods.sodium.common.util.arena;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public abstract class ReusableObject {
     /** The number of active references to this object **/
-    private int refCount;
+    private final AtomicInteger refCount = new AtomicInteger(0);
 
     /**
      * Acquires a reference for this object. This will prevent the object from being re-used until all references have
      * been released using {@link ReusableObject#releaseReference()}.
      */
     final void acquireReference() {
-        this.refCount++;
+        this.refCount.getAndIncrement();
     }
 
     /**
@@ -21,9 +23,7 @@ public abstract class ReusableObject {
             throw new IllegalStateException("No references are allocated");
         }
 
-        this.refCount--;
-
-        boolean flag = this.refCount <= 0;
+        boolean flag = this.refCount.getAndDecrement() <= 0;
 
         if (flag) {
             this.reset();
@@ -42,6 +42,6 @@ public abstract class ReusableObject {
      * @return True if the object has at least one reference, otherwise false
      */
     final boolean hasReferences() {
-        return this.refCount > 0;
+        return this.refCount.get() > 0;
     }
 }
