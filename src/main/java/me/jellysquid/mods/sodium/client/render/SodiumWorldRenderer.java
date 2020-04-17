@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk;
+package me.jellysquid.mods.sodium.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -11,10 +11,11 @@ import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.vao.ShaderVAOChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.vbo.ShaderVBOChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderUploadTask;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.util.RenderList;
 import me.jellysquid.mods.sodium.client.world.ChunkManagerWithStatusListener;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import net.minecraft.block.entity.BlockEntity;
@@ -28,11 +29,12 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.*;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.Collection;
+import java.util.Set;
+import java.util.SortedSet;
 
-public class ChunkRenderer implements ChunkStatusListener {
-    private static ChunkRenderer instance;
+public class SodiumWorldRenderer implements ChunkStatusListener {
+    private static SodiumWorldRenderer instance;
 
     private final MinecraftClient client;
 
@@ -50,7 +52,6 @@ public class ChunkRenderer implements ChunkStatusListener {
     private double lastCameraPitch;
     private double lastCameraYaw;
 
-    private boolean isRenderGraphDirty;
     private boolean useEntityCulling;
 
     private final LongSet loadedChunkPositions = new LongOpenHashSet();
@@ -58,19 +59,18 @@ public class ChunkRenderer implements ChunkStatusListener {
 
     private Frustum frustum;
     private ChunkRenderManager<?> chunkRenderManager;
-    private ChunkBuilder chunkBuilder;
     private BlockRenderPassManager renderPassManager;
     private ChunkRenderBackend<?> chunkRenderBackend;
 
-    public static ChunkRenderer create() {
+    public static SodiumWorldRenderer create() {
         if (instance == null) {
-            instance = new ChunkRenderer(MinecraftClient.getInstance());
+            instance = new SodiumWorldRenderer(MinecraftClient.getInstance());
         }
 
         return instance;
     }
 
-    private ChunkRenderer(MinecraftClient client) {
+    private SodiumWorldRenderer(MinecraftClient client) {
         this.client = client;
     }
 
@@ -80,23 +80,17 @@ public class ChunkRenderer implements ChunkStatusListener {
 
         if (world == null) {
             if (this.chunkRenderManager != null) {
-                this.chunkRenderManager.reset();
+                this.chunkRenderManager.destroy();
                 this.chunkRenderManager = null;
-            }
-
-            if (this.chunkBuilder != null) {
-                this.chunkBuilder.stopWorkers();
             }
 
             if (this.chunkRenderBackend != null) {
                 this.chunkRenderBackend.delete();
                 this.chunkRenderBackend = null;
             }
-        } else {
-            if (this.chunkBuilder == null) {
-                this.chunkBuilder = new ChunkBuilder();
-            }
 
+            this.loadedChunkPositions.clear();
+        } else {
             this.initRenderer();
 
             ((ChunkManagerWithStatusListener) world.getChunkManager()).setListener(this);
@@ -104,15 +98,28 @@ public class ChunkRenderer implements ChunkStatusListener {
     }
 
     public int getCompletedChunkCount() {
-        return this.chunkRenderManager.getDrawableChunks().size();
+        int count = 0;
+
+        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
+            RenderList<?> list = this.chunkRenderManager.getRenderList(pass);
+
+            if (list != null) {
+                count += list.size();
+            }
+        }
+
+        return count;
     }
 
     public void scheduleTerrainUpdate() {
-        this.isRenderGraphDirty = true;
+        // seems to be called before init
+        if (this.chunkRenderManager != null) {
+            this.chunkRenderManager.markDirty();
+        }
     }
 
     public boolean isTerrainRenderComplete() {
-        return this.chunkBuilder.isEmpty();
+        return this.chunkRenderManager.isBuildComplete();
     }
 
     public void update(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
@@ -135,7 +142,7 @@ public class ChunkRenderer implements ChunkStatusListener {
             throw new IllegalStateException("Client instance has no active player entity");
         }
 
-        this.chunkBuilder.setCameraPosition(cameraPos.x, cameraPos.y, cameraPos.z);
+        this.chunkRenderManager.setCameraPosition(cameraPos.x, cameraPos.y, cameraPos.z);
 
         this.world.getProfiler().swap("cull");
         this.client.getProfiler().swap("culling");
@@ -143,9 +150,13 @@ public class ChunkRenderer implements ChunkStatusListener {
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
 
-        this.isRenderGraphDirty = this.isRenderGraphDirty ||
+        boolean dirty = this.chunkRenderManager.isDirty() ||
                 cameraPos.x != this.lastCameraX || cameraPos.y != this.lastCameraY || cameraPos.z != this.lastCameraZ ||
                 pitch != this.lastCameraPitch || yaw != this.lastCameraYaw;
+
+        if (dirty) {
+            this.chunkRenderManager.markDirty();
+        }
 
         this.lastCameraX = cameraPos.x;
         this.lastCameraY = cameraPos.y;
@@ -157,63 +168,21 @@ public class ChunkRenderer implements ChunkStatusListener {
 
         BlockPos blockPos = camera.getBlockPos();
 
-        if (!hasForcedFrustum && this.isRenderGraphDirty) {
-            this.isRenderGraphDirty = false;
+        this.chunkRenderManager.updateChunks();
 
+        if (!hasForcedFrustum && this.chunkRenderManager.isDirty()) {
             this.client.getProfiler().push("iteration");
 
-            this.chunkRenderManager.calculateVisible(camera, cameraPos, blockPos, frame, frustum, spectator);
+            this.chunkRenderManager.updateGraph(camera, cameraPos, blockPos, frame, (FrustumExtended) frustum, spectator);
 
             this.client.getProfiler().pop();
         }
 
         Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.viewDistance / 8.0D, 1.0D, 2.5D));
-
-        this.client.getProfiler().swap("rebuildNear");
-
-        this.updateChunks(blockPos);
-
-        this.client.getProfiler().pop();
     }
 
     private void applySettings() {
         this.useEntityCulling = SodiumClientMod.options().performance.useAdvancedEntityCulling;
-    }
-
-    private void updateChunks(BlockPos blockPos) {
-        List<CompletableFuture<ChunkRenderUploadTask>> futures = new ArrayList<>();
-
-        int budget = this.chunkBuilder.getBudget();
-
-        for (ChunkRender<?> render : this.chunkRenderManager.getVisibleChunks()) {
-            if (!render.needsRebuild()) {
-                continue;
-            }
-
-            boolean important = render.needsImportantRebuild() && render.getSquaredDistance(blockPos) < 768.0D;
-
-            if (important || budget-- > 0) {
-                if (important) {
-                    futures.add(this.chunkBuilder.createRebuildFuture(render));
-                } else {
-                    this.chunkBuilder.rebuild(render);
-                }
-
-                this.isRenderGraphDirty = true;
-            }
-        }
-
-        // Try to complete some other work on the main thread while we wait for rebuilds to complete
-        this.isRenderGraphDirty |= this.chunkBuilder.upload();
-        this.isRenderGraphDirty |= this.chunkRenderManager.cleanup();
-
-        for (CompletableFuture<ChunkRenderUploadTask> future : futures) {
-            ChunkRenderUploadTask task = future.join();
-
-            if (task != null) {
-                task.performUpload();
-            }
-        }
     }
 
     public void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
@@ -241,7 +210,8 @@ public class ChunkRenderer implements ChunkStatusListener {
 
     private void initRenderer() {
         if (this.chunkRenderManager != null) {
-            this.chunkRenderManager.reset();
+            this.chunkRenderManager.destroy();
+            this.chunkRenderManager = null;
         }
 
         if (this.chunkRenderBackend != null) {
@@ -249,7 +219,6 @@ public class ChunkRenderer implements ChunkStatusListener {
             this.chunkRenderBackend = null;
         }
 
-        this.isRenderGraphDirty = true;
         this.renderDistance = this.client.options.viewDistance;
 
         SodiumGameOptions opts = SodiumClientMod.options();
@@ -266,18 +235,8 @@ public class ChunkRenderer implements ChunkStatusListener {
             this.chunkRenderBackend = new ShaderVBOChunkRenderBackend();
         }
 
-        this.chunkRenderManager = new ChunkRenderManager<>(this.chunkRenderBackend, this, this.world, this.renderDistance);
-        this.chunkRenderManager.addAllChunks(this.loadedChunkPositions);
-
-        this.chunkBuilder.init(this.world, this.renderPassManager);
-    }
-
-    public void scheduleRebuild(int x, int y, int z) {
-        ChunkRender<?> node = this.chunkRenderManager.getRender(x, y, z);
-
-        if (node != null) {
-            node.scheduleRebuild(true);
-        }
+        this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.renderPassManager, this.world, this.renderDistance);
+        this.chunkRenderManager.restoreChunks(this.loadedChunkPositions);
     }
 
     public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
@@ -327,16 +286,12 @@ public class ChunkRenderer implements ChunkStatusListener {
     @Override
     public void onChunkAdded(int x, int z) {
         this.loadedChunkPositions.add(ChunkPos.toLong(x, z));
-
-        this.chunkBuilder.clearCachesForChunk(x, z);
         this.chunkRenderManager.onChunkAdded(x, z);
     }
 
     @Override
     public void onChunkRemoved(int x, int z) {
         this.loadedChunkPositions.remove(ChunkPos.toLong(x, z));
-
-        this.chunkBuilder.clearCachesForChunk(x, z);
         this.chunkRenderManager.onChunkRemoved(x, z);
     }
 
@@ -386,7 +341,7 @@ public class ChunkRenderer implements ChunkStatusListener {
         return false;
     }
 
-    public static ChunkRenderer getInstance() {
+    public static SodiumWorldRenderer getInstance() {
         if (instance == null) {
             throw new IllegalStateException("Renderer not initialized");
         }
@@ -396,5 +351,32 @@ public class ChunkRenderer implements ChunkStatusListener {
 
     public Frustum getFrustum() {
         return this.frustum;
+    }
+
+    public String getChunksDebugString() {
+        // C: visible/total
+        return String.format("C: %s/%s", this.chunkRenderManager.getVisibleSectionCount(), this.chunkRenderManager.getTotalSections());
+    }
+
+    public void scheduleRebuildForArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean important) {
+        int minChunkX = minX >> 4;
+        int minChunkY = minY >> 4;
+        int minChunkZ = minZ >> 4;
+
+        int maxChunkX = maxX >> 4;
+        int maxChunkY = maxY >> 4;
+        int maxChunkZ = maxZ >> 4;
+
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+                for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                    this.scheduleRebuildForChunk(chunkX, chunkY, chunkZ, important);
+                }
+            }
+        }
+    }
+
+    public void scheduleRebuildForChunk(int x, int y, int z, boolean important) {
+        this.chunkRenderManager.scheduleRebuild(x, y, z, important);
     }
 }

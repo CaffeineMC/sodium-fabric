@@ -10,13 +10,11 @@ import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ChunkRenderData {
     public static final ChunkRenderData ABSENT = new ChunkRenderData.Builder().build();
+    public static final ChunkRenderData EMPTY = createEmptyData();
 
     private final List<BlockEntity> globalBlockEntities;
     private final List<BlockEntity> blockEntities;
@@ -79,7 +77,7 @@ public class ChunkRenderData {
 
         public void addMeshes(List<ChunkMesh> meshes) {
             for (ChunkMesh mesh : meshes) {
-                if (this.meshes.putIfAbsent(mesh.getLayer(), mesh) != null) {
+                if (this.meshes.putIfAbsent(mesh.getRenderPass(), mesh) != null) {
                     throw new IllegalArgumentException("Mesh already added");
                 }
             }
@@ -98,5 +96,15 @@ public class ChunkRenderData {
                 this.addSprite(sprite);
             }
         }
+    }
+
+    private static ChunkRenderData createEmptyData() {
+        ChunkOcclusionData occlusionData = new ChunkOcclusionData();
+        occlusionData.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
+
+        ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
+        meshInfo.setOcclusionData(occlusionData);
+
+        return meshInfo.build();
     }
 }

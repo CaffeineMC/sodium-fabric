@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.fast_mojmath;
 
+import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.Vector4f;
@@ -10,13 +11,22 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Frustum.class)
-public class MixinFrustum {
+public class MixinFrustum implements FrustumExtended {
+    private float xF, yF, zF;
+
     private float nxX, nxY, nxZ, nxW;
     private float pxX, pxY, pxZ, pxW;
     private float nyX, nyY, nyZ, nyW;
     private float pyX, pyY, pyZ, pyW;
     private float nzX, nzY, nzZ, nzW;
     private float pzX, pzY, pzZ, pzW;
+
+    @Inject(method = "setPosition", at = @At("HEAD"))
+    private void prePositionUpdate(double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
+        this.xF = (float) cameraX;
+        this.yF = (float) cameraY;
+        this.zF = (float) cameraZ;
+    }
 
     @Inject(method = "transform", at = @At("HEAD"))
     private void transform(Matrix4f mat, int x, int y, int z, int index, CallbackInfo ci) {
@@ -66,8 +76,12 @@ public class MixinFrustum {
         }
     }
 
+    @Override
+    public boolean fastAabbTest(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        return this.isAnyCornerVisible(minX - this.xF, minY - this.yF, minZ - this.zF, maxX - this.xF, maxY - this.yF, maxZ - this.zF);
+    }
+
     /**
-     * @reason Use faster implementation
      * @author JellySquid
      */
     @Overwrite

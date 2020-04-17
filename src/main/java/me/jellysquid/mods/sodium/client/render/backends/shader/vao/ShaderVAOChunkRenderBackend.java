@@ -1,43 +1,50 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader.vao;
 
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlVertexArrayWithBuffer;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL11;
 
+import java.util.Iterator;
+
 public class ShaderVAOChunkRenderBackend extends AbstractShaderChunkRenderBackend<ShaderVAORenderState> {
-    private GlVertexArrayWithBuffer lastRender;
-
     @Override
-    public void render(ChunkRender<ShaderVAORenderState> chunk, BlockRenderPass pass, MatrixStack matrixStack, double x, double y, double z) {
-        GlVertexArrayWithBuffer vao = chunk.getRenderState().getDataForPass(pass);
+    public void render(Iterator<ShaderVAORenderState> renders, BlockRenderPass pass, MatrixStack matrixStack, double x, double y, double z) {
+        this.begin(matrixStack);
 
-        if (vao == null) {
-            return;
+        this.program.setMatrices(matrixStack.peek());
+
+        ShaderVAORenderState lastRender = null;
+
+        while (renders.hasNext()) {
+            ShaderVAORenderState vao = renders.next();
+
+            if (vao != null) {
+                this.program.setModelOffset(vao.getTranslation(), x, y, z);
+
+                vao.bind();
+                vao.draw(GL11.GL_QUADS);
+
+                lastRender = vao;
+            }
         }
 
-        this.program.uploadModelMatrix(this.createModelMatrix(chunk, x, y, z));
+        if (lastRender != null) {
+            lastRender.unbind();
+        }
 
-        vao.bind();
-        vao.draw(GL11.GL_QUADS);
-
-        this.lastRender = vao;
+        this.end(matrixStack);
     }
 
     @Override
-    public void end(MatrixStack matrixStack) {
-        if (this.lastRender != null) {
-            this.lastRender.unbind();
-            this.lastRender = null;
-        }
-
-        super.end(matrixStack);
+    public Class<ShaderVAORenderState> getRenderStateType() {
+        return ShaderVAORenderState.class;
     }
 
     @Override
-    public ShaderVAORenderState createRenderState() {
-        return new ShaderVAORenderState(this.program.attributes, this.useImmutableStorage);
+    protected ShaderVAORenderState createRenderState(GlBuffer buffer, ChunkRender<ShaderVAORenderState> render) {
+        return new ShaderVAORenderState(buffer, this.program.attributes, render.getTranslation());
     }
 }

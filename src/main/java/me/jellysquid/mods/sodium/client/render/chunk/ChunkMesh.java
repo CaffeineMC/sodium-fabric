@@ -27,7 +27,7 @@ public class ChunkMesh {
         return data;
     }
 
-    public BlockRenderPass getLayer() {
+    public BlockRenderPass getRenderPass() {
         return this.renderLayer;
     }
 }
