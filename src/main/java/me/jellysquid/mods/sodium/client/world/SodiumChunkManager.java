@@ -118,6 +118,12 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
             return;
         }
 
+        this.radius = dist;
+
+        this.checkChunks();
+    }
+
+    private void checkChunks() {
         LongList queue = new LongArrayList();
 
         LongIterator it = this.chunks.keySet().iterator();
@@ -140,8 +146,6 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
                 this.unload(it.nextLong());
             }
         }
-
-        this.radius = dist;
     }
 
     private boolean isWithinLoadDistance(int x, int z) {

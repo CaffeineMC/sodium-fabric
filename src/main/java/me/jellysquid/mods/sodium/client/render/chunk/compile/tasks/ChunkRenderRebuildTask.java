@@ -1,10 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.tasks;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshInfo;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.VertexBufferCache;
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
 import me.jellysquid.mods.sodium.client.render.model.quad.transformers.TranslateTransformer;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -25,25 +26,27 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.WorldChunk;
 import org.lwjgl.opengl.GL11;
 
-public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
-    private final ChunkRender<?> render;
+public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRenderBuildTask<T> {
+    private final ChunkRender<T> render;
+    private final ChunkBuilder chunkBuilder;
     private final Vector3d camera;
     private final WorldSlice slice;
 
-    public ChunkRenderRebuildTask(ChunkBuilder builder, ChunkRender<?> render, WorldSlice slice) {
+    public ChunkRenderRebuildTask(ChunkBuilder chunkBuilder, ChunkRender<T> render, WorldSlice slice) {
+        this.chunkBuilder = chunkBuilder;
         this.render = render;
-        this.camera = builder.getCameraPosition();
+        this.camera = chunkBuilder.getCameraPosition();
         this.slice = slice;
     }
 
     @Override
-    public ChunkRenderUploadTask performBuild(ChunkRenderPipeline pipeline, VertexBufferCache buffers) {
+    public ChunkBuildResult<T> performBuild(ChunkRenderPipeline pipeline, ChunkBuildBuffers buffers) {
         pipeline.init(this.slice, this.slice.getBlockOffsetX(), this.slice.getBlockOffsetY(), this.slice.getBlockOffsetZ());
 
-        ChunkMeshInfo.Builder meshInfo = new ChunkMeshInfo.Builder();
+        ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
-        BlockPos from = this.render.getOrigin();
+        BlockPos from = new BlockPos(this.render.getOriginX(), this.render.getOriginY(), this.render.getOriginZ());
         BlockPos to = from.add(16, 16, 16);
 
         TranslateTransformer transformer = new TranslateTransformer();
@@ -117,42 +120,14 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        for (RenderLayer layer : RenderLayer.getBlockLayers()) {
-            BufferBuilder builder = buffers.get(layer);
-
-            if (builder.isBuilding() && !((ModelQuadConsumer) builder).isEmpty()) {
-                if (layer == RenderLayer.getTranslucent()) {
-                    builder.sortQuads((float) this.camera.x - (float) from.getX(),
-                            (float) this.camera.y - (float) from.getY(),
-                            (float) this.camera.z - (float) from.getZ());
-                }
-
-                builder.end();
-
-                meshInfo.addMeshData(layer, builder.popData());
-            }
-        }
-
+        meshInfo.addMeshes(buffers.createMeshes(this.camera, from));
         meshInfo.setOcclusionData(occluder.build());
 
-        return new Result(this.render, meshInfo.build(), this.slice);
+        return new ChunkBuildResult<>(this.render, meshInfo.build());
     }
 
-    public static class Result extends ChunkRenderUploadTask {
-        private final ChunkRender<?> chunkRender;
-        private final ChunkMeshInfo meshInfo;
-        private final WorldSlice slice;
-
-        public Result(ChunkRender<?> chunkRender, ChunkMeshInfo meshInfo, WorldSlice slice) {
-            this.chunkRender = chunkRender;
-            this.meshInfo = meshInfo;
-            this.slice = slice;
-        }
-
-        @Override
-        public void performUpload() {
-            this.chunkRender.upload(this.meshInfo);
-            this.chunkRender.finishRebuild(this.slice);
-        }
+    @Override
+    public void releaseResources() {
+        this.chunkBuilder.releaseChunkSlice(this.slice);
     }
 }

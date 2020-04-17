@@ -18,18 +18,18 @@ public class SodiumGameOptions {
     private File file;
 
     public static class PerformanceSettings {
-        public boolean useVAOs = true;
+        public boolean useVertexArrays = true;
         public boolean useLargeBuffers = true;
-        public boolean useFogChunkCulling = true;
         public boolean animateOnlyVisibleTextures = true;
         public boolean useAdvancedEntityCulling = true;
+        public boolean useImmutableStorage = true;
+        public boolean useRenderLayerConsolidation = true;
+        public boolean useParticleCulling = true;
     }
 
     public static class QualitySettings {
         public GraphicsQuality cloudQuality = GraphicsQuality.DEFAULT;
-        public GraphicsQuality leavesQuality = GraphicsQuality.DEFAULT;
         public GraphicsQuality weatherQuality = GraphicsQuality.DEFAULT;
-        public GraphicsQuality translucentBlockQuality = GraphicsQuality.DEFAULT;
 
         public MipmapQuality mipmapQuality = MipmapQuality.NEAREST;
 

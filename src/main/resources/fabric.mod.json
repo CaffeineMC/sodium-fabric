@@ -25,11 +25,12 @@
   "custom": {
     "fabric-renderer-api-v1:contains_renderer": true
   },
+  "accessWidener": "sodium.accesswidener",
   "mixins": [
     "sodium.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.4.0"
+    "fabricloader": ">=0.8.0"
   },
   "breaks": {
     "optifabric": "*"

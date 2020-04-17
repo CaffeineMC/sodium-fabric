@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
-import me.jellysquid.mods.sodium.client.gl.GlHelper;
-import me.jellysquid.mods.sodium.client.gl.GlVertexArray;
+import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlImmutableBuffer;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
@@ -147,27 +147,11 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
-                        .setName("Leaves Quality")
-                        .setTooltip("Controls the quality of leaf blocks rendered in the world.")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.values()))
-                        .setBinding((opts, value) -> opts.quality.leavesQuality = value, opts -> opts.quality.leavesQuality)
-                        .setImpact(OptionImpact.HIGH)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build())
-                .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
                         .setName("Weather Quality")
                         .setTooltip("Controls the quality of rain and snow effects.")
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.values()))
                         .setBinding((opts, value) -> opts.quality.weatherQuality = value, opts -> opts.quality.weatherQuality)
                         .setImpact(OptionImpact.MEDIUM)
-                        .build())
-                .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
-                        .setName("Translucency Quality")
-                        .setTooltip("Controls the quality of translucent block effects.")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.values()))
-                        .setBinding((opts, value) -> opts.quality.translucentBlockQuality = value, opts -> opts.quality.translucentBlockQuality)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)
                         .setName("Smooth Lighting")
@@ -228,13 +212,32 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Consolidate Render Layers")
+                        .setTooltip("If enabled, render layers will be consolidated where possible, reducing the number of render passes that have to be performed.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.performance.useRenderLayerConsolidation = value, opts -> opts.performance.useRenderLayerConsolidation)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fast Chunk Setup")
                         .setTooltip("If enabled, Vertex Array Objects will be used in chunk rendering to avoid needing to setup array pointers every chunk render. " +
                                 "\n\nRequires OpenGL 3.0+ or support for the ARB_vertex_array_object extension.")
                         .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.performance.useVAOs = value, opts -> opts.performance.useVAOs)
+                        .setBinding((opts, value) -> opts.performance.useVertexArrays = value, opts -> opts.performance.useVertexArrays)
                         .setImpact(OptionImpact.MEDIUM)
                         .setEnabled(GlVertexArray.isSupported())
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Immutable Storage")
+                        .setTooltip("If enabled, immutable storage objects will be used for storing chunk meshes. This can improve performance by giving the driver, " +
+                                "more information about how the data will be used, in turn allowing it to apply additional optimizations." +
+                                "\n\nRequires OpenGL 4.4+ or support for the ARB_buffer_storage extension.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.performance.useImmutableStorage = value, opts -> opts.performance.useImmutableStorage)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setEnabled(GlImmutableBuffer.isSupported())
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
@@ -249,24 +252,21 @@ public class SodiumGameOptionPages {
                         .setEnabled(false)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Fog Chunk Occlusion")
-                        .setTooltip("If enabled, additional chunk culling will be performed through determining whether or not chunks are hidden in the fog. This can " +
-                                "eliminate additional chunks that would otherwise be unnecessarily rendered. This option does nothing if fog rendering is disabled. " +
-                                "\n\nRequires support for the NV_fog_distance extension.")
-                        .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.performance.useFogChunkCulling = value, opts -> opts.performance.useFogChunkCulling)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .setEnabled(GlHelper.supportsNvFog())
-                        .build()
-                )
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Animate Only Visible Textures")
                         .setTooltip("If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame " +
                                 "rates on some hardware. If you experience issues with some textures not being animated, disable this option.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.animateOnlyVisibleTextures = value, opts -> opts.performance.animateOnlyVisibleTextures)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Particle Culling")
+                        .setTooltip("If enabled, only particles which are determined to be visible will be rendered. This can provide a significant improvement " +
+                                "to frame rates when many particles are nearby.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setBinding((opts, value) -> opts.performance.useParticleCulling = value, opts -> opts.performance.useParticleCulling)
                         .build()
                 )
                 .build());

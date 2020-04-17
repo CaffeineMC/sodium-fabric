@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.light.cache.ChunkLightDataCache;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadTransformer;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
@@ -34,7 +34,7 @@ public class ChunkRenderPipeline {
         this.models = client.getBakedModelManager().getBlockModels();
     }
 
-    public boolean renderBlock(ChunkMeshInfo.Builder meshInfo, BlockState state, BlockPos pos, BlockRenderView world, ModelQuadTransformer quadTransformer, BufferBuilder builder, boolean cull) {
+    public boolean renderBlock(ChunkRenderData.Builder meshInfo, BlockState state, BlockPos pos, BlockRenderView world, ModelQuadTransformer quadTransformer, BufferBuilder builder, boolean cull) {
         BlockRenderType type = state.getRenderType();
 
         if (type != BlockRenderType.MODEL) {
@@ -44,7 +44,7 @@ public class ChunkRenderPipeline {
         return this.blockRenderer.renderModel(meshInfo, world, this.models.getModel(state), state, pos, quadTransformer, builder, cull, this.random, state.getRenderingSeed(pos));
     }
 
-    public void renderFluid(ChunkMeshInfo.Builder meshInfo, BlockPos.Mutable pos, WorldSlice region, BufferBuilder builder, FluidState fluidState) {
+    public void renderFluid(ChunkRenderData.Builder meshInfo, BlockPos.Mutable pos, WorldSlice region, BufferBuilder builder, FluidState fluidState) {
         this.fluidRenderer.render(meshInfo, region, pos, builder, fluidState);
     }
 

@@ -9,7 +9,7 @@ public class GlHandle {
         this.handle = handle;
     }
 
-    protected int handle() {
+    public int handle() {
         this.checkHandle();
 
         return this.handle;
