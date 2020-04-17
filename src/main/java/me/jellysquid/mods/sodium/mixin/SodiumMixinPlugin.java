@@ -45,6 +45,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
         this.enableIf("client_world_ticking", true);
         this.enableIf("textures", true);
         this.enableIf("particles", true);
+        this.enableIf("no_hurt_cam", true);
     }
 
     private void enableIf(String packageName, boolean condition) {
