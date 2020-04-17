@@ -29,7 +29,7 @@ public class FluidRenderPipeline {
 
     private final Sprite[] lavaSprites = new Sprite[2];
     private final Sprite[] waterSprites = new Sprite[2];
-    private Sprite waterOverlaySprite;
+    private final Sprite waterOverlaySprite;
 
     public FluidRenderPipeline() {
         BlockModels models = MinecraftClient.getInstance().getBakedModelManager().getBlockModels();

@@ -18,7 +18,6 @@ import java.util.List;
 
 public class ChunkBuildBuffers {
     private final BufferBuilder[] builders = new BufferBuilder[BlockRenderPass.count()];
-    private final RenderLayer[] layers = new RenderLayer[BlockRenderPass.count()];
 
     private final BlockRenderPassManager renderPassManager;
 
@@ -26,31 +25,12 @@ public class ChunkBuildBuffers {
         this.renderPassManager = renderPassManager;
 
         for (RenderLayer layer : RenderLayer.getBlockLayers()) {
-            int i = renderPassManager.getRenderPassId(layer);
-
-            this.builders[i] = new BufferBuilder(layer.getExpectedBufferSize());
-            this.layers[i] = layer;
+            this.builders[renderPassManager.getRenderPassId(layer)] = new BufferBuilder(layer.getExpectedBufferSize());
         }
     }
 
     public BufferBuilder get(RenderLayer layer) {
         return this.builders[this.renderPassManager.getRenderPassId(layer)];
-    }
-
-    public void clear() {
-        for (BufferBuilder builder : this.builders) {
-            if (builder != null) {
-                builder.clear();
-            }
-        }
-    }
-
-    public void reset() {
-        for (BufferBuilder builder : this.builders) {
-            if (builder != null) {
-                builder.reset();
-            }
-        }
     }
 
     public List<ChunkMesh> createMeshes(Vector3d camera, BlockPos pos) {

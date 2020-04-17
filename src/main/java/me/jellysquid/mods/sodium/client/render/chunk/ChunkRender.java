@@ -43,6 +43,8 @@ public class ChunkRender<T extends ChunkRenderState> {
     private final float boundsMaxY;
     private final float boundsMaxZ;
 
+    private boolean tickable;
+
     public ChunkRender(ChunkRenderBackend<T> backend, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
         this.column = column;
 
@@ -95,10 +97,6 @@ public class ChunkRender<T extends ChunkRenderState> {
 
     public boolean isVisibleThrough(Direction from, Direction to) {
         return this.data.isVisibleThrough(from, to);
-    }
-
-    public T getRenderState(BlockRenderPass pass) {
-        return this.renderState[pass.ordinal()];
     }
 
     public void setRenderState(BlockRenderPass pass, T data) {
@@ -166,13 +164,12 @@ public class ChunkRender<T extends ChunkRenderState> {
         return this.column;
     }
 
-    public boolean isVisible(FrustumExtended frustum, int frame) {
-        return this.column.isVisible(frustum, frame) && this.isVisible(frustum);
-    }
-
-
     public boolean isVisible(FrustumExtended frustum) {
         return frustum.fastAabbTest(this.boundsMinX, this.boundsMinY, this.boundsMinZ, this.boundsMaxX, this.boundsMaxY, this.boundsMaxZ);
+    }
+
+    public boolean isTickable() {
+        return this.getData().getAnimatedSprites().isEmpty();
     }
 
     public void tick() {

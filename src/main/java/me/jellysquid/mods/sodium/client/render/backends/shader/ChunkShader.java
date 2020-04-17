@@ -20,7 +20,6 @@ public class ChunkShader extends GlShaderProgram {
     private final int uLightTex;
 
     private final FloatBuffer uModelOffsetBuffer;
-    private final FloatBuffer uModelViewMatrixBuffer;
 
     public final GlAttributeBinding[] attributes;
 
@@ -47,7 +46,6 @@ public class ChunkShader extends GlShaderProgram {
         };
 
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(3);
-        this.uModelViewMatrixBuffer = MemoryUtil.memAllocFloat(16);
     }
 
     @Override

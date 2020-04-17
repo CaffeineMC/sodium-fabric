@@ -8,7 +8,6 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
     private final String label;
     private final Runnable action;
 
-    private boolean hovered;
     private boolean selected;
     private boolean enabled = true;
 
@@ -20,14 +19,14 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
 
     @Override
     public void render(int mouseX, int mouseY, float delta) {
-        this.hovered = this.dim.contains(mouseX, mouseY);
+        boolean hovered = this.dim.contains(mouseX, mouseY);
 
         int x = this.dim.getX();
         int y = this.dim.getY();
         int width = this.dim.getWidth();
         int height = this.dim.getHeight();
 
-        int backgroundColor = this.enabled ? (this.hovered ? 0xE0000000 : 0x90000000) : 0x60000000;
+        int backgroundColor = this.enabled ? (hovered ? 0xE0000000 : 0x90000000) : 0x60000000;
         int textColor = this.enabled ? 0xFFFFFFFF : 0x90FFFFFF;
 
         int strWidth = this.font.getStringWidth(this.label);

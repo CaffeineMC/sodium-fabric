@@ -28,7 +28,7 @@ public class OptionImpl<S, T> implements Option<T> {
     private T value;
     private T modifiedValue;
 
-    private boolean enabled;
+    private final boolean enabled;
 
     private OptionImpl(OptionStorage<S> storage,
                        String name,
@@ -123,7 +123,7 @@ public class OptionImpl<S, T> implements Option<T> {
         private OptionBinding<S, T> binding;
         private Function<OptionImpl<S, T>, Control<T>> control;
         private OptionImpact impact;
-        private EnumSet<OptionFlag> flags = EnumSet.noneOf(OptionFlag.class);
+        private final EnumSet<OptionFlag> flags = EnumSet.noneOf(OptionFlag.class);
         private boolean enabled = true;
 
         private Builder(OptionStorage<S> storage) {

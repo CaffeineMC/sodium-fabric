@@ -413,7 +413,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             return;
         }
 
-        this.backend.render(renderList.iterator(pass.isTranslucent()), pass, matrixStack, x, y, z);
+        this.backend.render(renderList.iterator(pass.isTranslucent()), matrixStack, x, y, z);
     }
 
     public void onFrameChanged() {

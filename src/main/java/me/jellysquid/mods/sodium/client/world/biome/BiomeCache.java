@@ -11,7 +11,7 @@ public class BiomeCache extends ReusableObject {
     private final BiomeAccessType type;
     private final long seed;
 
-    private Biome[] biomes;
+    private final Biome[] biomes;
 
     public BiomeCache(BiomeAccessType type, long seed) {
         this.type = type;

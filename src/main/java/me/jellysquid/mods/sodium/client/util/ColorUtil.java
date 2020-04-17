@@ -19,14 +19,6 @@ public class ColorUtil {
         return encodeRGB((int) r, (int) g, (int) b);
     }
 
-    public static int mulPacked(int color, float w) {
-        float r = unpackColorR(color) * w;
-        float g = unpackColorG(color) * w;
-        float b = unpackColorB(color) * w;
-
-        return encodeRGB((int) r, (int) g, (int) b);
-    }
-
     public static float unpackColorR(int color) {
         return color >> 16 & 0xFF;
     }

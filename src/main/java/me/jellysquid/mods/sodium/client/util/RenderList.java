@@ -9,13 +9,12 @@ public class RenderList<T> extends ObjectArrayList<T> {
         if (backwards) {
             return new Iterator<T>() {
                 private final T[] data = RenderList.this.a;
-                private final int lim = 0;
 
                 private int pos = RenderList.this.size() - 1;
 
                 @Override
                 public boolean hasNext() {
-                    return this.pos >= this.lim;
+                    return this.pos >= 0;
                 }
 
                 @Override
