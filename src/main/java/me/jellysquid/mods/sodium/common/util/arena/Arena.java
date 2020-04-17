@@ -16,7 +16,9 @@ public class Arena<T extends ReusableObject> {
      * Drops all objects from the arena.
      */
     public void reset() {
-        this.pool.clear();
+        synchronized (this.pool) {
+            this.pool.clear();
+        }
     }
 
     /**
@@ -24,7 +26,11 @@ public class Arena<T extends ReusableObject> {
      * re-usable objects in the arena, they will be used instead of allocating a new object.
      */
     public T allocate() {
-        T obj = this.pool.poll();
+        T obj;
+
+        synchronized (this.pool) {
+            obj = this.pool.poll();
+        }
 
         if (obj == null) {
             obj = this.factory.get();
@@ -45,7 +51,9 @@ public class Arena<T extends ReusableObject> {
      */
     public void release(T obj) {
         if (obj.releaseReference()) {
-            this.pool.offer(obj);
+            synchronized (this.pool) {
+                this.pool.offer(obj);
+            }
         }
     }
 
