@@ -40,7 +40,8 @@ public class FluidRenderPipeline {
 
     private final ModelQuadViewMutable quad = new ModelQuad();
 
-    private final LightPipeline lightPipeline;
+    private final SmoothLightPipeline smoothLightPipeline;
+    private final LightPipeline flatLightPipeline;
 
     private final LightResult lightResult = new LightResult();
 
@@ -61,7 +62,8 @@ public class FluidRenderPipeline {
             this.quad.setNormal(i, normal);
         }
 
-        this.lightPipeline = MinecraftClient.isAmbientOcclusionEnabled() ? smoothLightPipeline : flatLightPipeline;
+        this.smoothLightPipeline = smoothLightPipeline;
+        this.flatLightPipeline = flatLightPipeline;
     }
 
     private static boolean isSameFluid(WorldSlice world, int x, int y, int z, Fluid fluid) {
@@ -123,7 +125,8 @@ public class FluidRenderPipeline {
 
         final ModelQuadViewMutable quad = this.quad;
 
-        this.lightPipeline.reset();
+        LightPipeline lighter = !lava && MinecraftClient.isAmbientOcclusionEnabled() ? this.smoothLightPipeline : this.flatLightPipeline;
+        lighter.reset();
 
         if (sfUp && !isSideCovered(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
             rendered = true;
@@ -187,14 +190,14 @@ public class FluidRenderPipeline {
             this.writeVertex(quad, 1, x, y + h2, z + 1.0F, u2, v2);
             this.writeVertex(quad, 2, x + 1.0F, y + h3, z + 1.0F, u3, v3);
             this.writeVertex(quad, 3, x + 1.0F, y + h4, z, u4, v4);
-            this.lightAndFlushVertex(builder, quad, pos, baseRed, baseGreen, baseBlue, Direction.UP);
+            this.lightAndFlushVertex(builder, quad, lighter, pos, baseRed, baseGreen, baseBlue, Direction.UP);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
                 this.writeVertex(quad, 0, x, y + h1, z, u1, v1);
                 this.writeVertex(quad, 1, x + 1.0F, y + h4, z, u4, v4);
                 this.writeVertex(quad, 2, x + 1.0F, y + h3, z + 1.0F, u3, v3);
                 this.writeVertex(quad, 3, x, y + h2, z + 1.0F, u2, v2);
-                this.lightAndFlushVertex(builder, quad, pos, baseRed, baseGreen, baseBlue, Direction.UP);
+                this.lightAndFlushVertex(builder, quad, lighter, pos, baseRed, baseGreen, baseBlue, Direction.UP);
             }
         }
 
@@ -208,7 +211,7 @@ public class FluidRenderPipeline {
             this.writeVertex(quad, 1, x, y + float_13, z, minU, minV);
             this.writeVertex(quad, 2, x + 1.0F, y + float_13, z, maxU, minV);
             this.writeVertex(quad, 3, x + 1.0F, y + float_13, z + 1.0F, maxU, maxV);
-            this.lightAndFlushVertex(builder, quad, pos, baseRed, baseGreen, baseBlue, Direction.DOWN);
+            this.lightAndFlushVertex(builder, quad, lighter, pos, baseRed, baseGreen, baseBlue, Direction.DOWN);
 
             rendered = true;
         }
@@ -294,14 +297,14 @@ public class FluidRenderPipeline {
                 this.writeVertex(quad, 2, x1, y + float_13, z1, float_57, float_61);
                 this.writeVertex(quad, 3, x1, y + c1, z1, float_57, float_59);
 
-                this.lightAndFlushVertex(builder, quad, pos, r, g, b, dir);
+                this.lightAndFlushVertex(builder, quad, lighter, pos, r, g, b, dir);
 
                 if (sprite != this.waterOverlaySprite) {
                     this.writeVertex(quad, 0, x2, y + float_13, z2, float_58, float_61);
                     this.writeVertex(quad, 1, x2, y + c2, z2, float_58, float_60);
                     this.writeVertex(quad, 2, x1, y + c1, z1, float_57, float_59);
                     this.writeVertex(quad, 3, x1, y + float_13, z1, float_57, float_61);
-                    this.lightAndFlushVertex(builder, quad, pos, r, g, b, dir);
+                    this.lightAndFlushVertex(builder, quad, lighter, pos, r, g, b, dir);
                 }
             }
         }
@@ -313,9 +316,9 @@ public class FluidRenderPipeline {
         return rendered;
     }
 
-    private void lightAndFlushVertex(VertexConsumer consumer, ModelQuadViewMutable quad, BlockPos pos, float r, float g, float b, Direction dir) {
+    private void lightAndFlushVertex(VertexConsumer consumer, ModelQuadViewMutable quad, LightPipeline lighter, BlockPos pos, float r, float g, float b, Direction dir) {
         LightResult lightResult = this.lightResult;
-        this.lightPipeline.apply(quad, pos, lightResult, dir);
+        lighter.apply(quad, pos, lightResult, dir);
 
         for (int i = 0; i < 4; i++) {
             float br = lightResult.br[i];
