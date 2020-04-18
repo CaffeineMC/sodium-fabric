@@ -43,8 +43,6 @@ public class ChunkRender<T extends ChunkRenderState> {
     private final float boundsMaxY;
     private final float boundsMaxZ;
 
-    private boolean tickable;
-
     public ChunkRender(ChunkRenderBackend<T> backend, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
         this.column = column;
 
@@ -63,10 +61,14 @@ public class ChunkRender<T extends ChunkRenderState> {
         this.boundsMaxY = originY + 16.0f;
         this.boundsMaxZ = originZ + 16.0f;
 
-        this.needsRebuild = true;
-
         //noinspection unchecked
         this.renderState = (T[]) Array.newInstance(backend.getRenderStateType(), BlockRenderPass.count());
+
+        if (column.isSectionEmpty(chunkY)) {
+            this.setData(ChunkRenderData.EMPTY);
+        } else {
+            this.scheduleRebuild(false);
+        }
     }
 
     public void cancelRebuildTask() {
