@@ -22,20 +22,13 @@ public class MixinBakedQuad implements ModelQuadView {
 
     @Shadow
     @Final
-    protected int colorIndex;
-
-    @Shadow
-    @Final
-    protected Direction face;
-
-    @Shadow
-    @Final
     protected Sprite sprite;
+
     private int cachedFlags;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, CallbackInfo ci) {
-        this.cachedFlags = ModelQuadFlags.getQuadFlags(this);
+        this.cachedFlags = ModelQuadFlags.getQuadFlags((BakedQuad) (Object) this);
     }
 
     @Override
@@ -59,23 +52,8 @@ public class MixinBakedQuad implements ModelQuadView {
     }
 
     @Override
-    public boolean hasColorIndex() {
-        return this.colorIndex != -1;
-    }
-
-    @Override
-    public int getColorIndex() {
-        return this.colorIndex;
-    }
-
-    @Override
     public int[] getVertexData() {
         return this.vertexData;
-    }
-
-    @Override
-    public Direction getFacing() {
-        return this.face;
     }
 
     @Override

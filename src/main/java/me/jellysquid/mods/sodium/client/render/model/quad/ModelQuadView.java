@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.model.quad;
 
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.Direction;
 
 public interface ModelQuadView {
     float getX(int idx);
@@ -18,13 +17,7 @@ public interface ModelQuadView {
 
     int getFlags();
 
-    boolean hasColorIndex();
-
-    int getColorIndex();
-
     int[] getVertexData();
-
-    Direction getFacing();
 
     Sprite getSprite();
 }

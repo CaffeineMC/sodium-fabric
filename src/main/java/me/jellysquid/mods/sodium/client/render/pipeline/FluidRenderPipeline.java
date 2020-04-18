@@ -1,6 +1,15 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
+import me.jellysquid.mods.sodium.client.render.light.LightResult;
+import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
+import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuad;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadViewMutable;
+import me.jellysquid.mods.sodium.client.util.ColorUtil;
+import me.jellysquid.mods.sodium.client.util.QuadUtil;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -9,7 +18,6 @@ import net.minecraft.block.StainedGlassBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.world.BiomeColors;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.block.BlockModels;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.texture.Sprite;
@@ -22,7 +30,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockRenderView;
 
 public class FluidRenderPipeline {
     private final BlockPos.Mutable scratchPos = new BlockPos.Mutable();
@@ -31,8 +38,14 @@ public class FluidRenderPipeline {
     private final Sprite[] waterSprites = new Sprite[2];
     private final Sprite waterOverlaySprite;
 
-    public FluidRenderPipeline() {
-        BlockModels models = MinecraftClient.getInstance().getBakedModelManager().getBlockModels();
+    private final ModelQuadViewMutable quad = new ModelQuad();
+
+    private final LightPipeline lightPipeline;
+
+    private final LightResult lightResult = new LightResult();
+
+    public FluidRenderPipeline(MinecraftClient client, SmoothLightPipeline smoothLightPipeline, FlatLightPipeline flatLightPipeline) {
+        BlockModels models = client.getBakedModelManager().getBlockModels();
 
         this.lavaSprites[0] = models.getModel(Blocks.LAVA.getDefaultState()).getSprite();
         this.lavaSprites[1] = ModelLoader.LAVA_FLOW.getSprite();
@@ -41,6 +54,14 @@ public class FluidRenderPipeline {
         this.waterSprites[1] = ModelLoader.WATER_FLOW.getSprite();
 
         this.waterOverlaySprite = ModelLoader.WATER_OVERLAY.getSprite();
+
+        int normal = QuadUtil.encodeNormal(0.0f, 1.0f, 0.0f);
+
+        for (int i = 0; i < 4; i++) {
+            this.quad.setNormal(i, normal);
+        }
+
+        this.lightPipeline = MinecraftClient.isAmbientOcclusionEnabled() ? smoothLightPipeline : flatLightPipeline;
     }
 
     private static boolean isSameFluid(WorldSlice world, int x, int y, int z, Fluid fluid) {
@@ -94,11 +115,15 @@ public class FluidRenderPipeline {
         float h3 = this.getNorthWestCornerFluidHeight(world, posX + 1, posY, posZ + 1, fluidState.getFluid());
         float h4 = this.getNorthWestCornerFluidHeight(world, posX + 1, posY, posZ, fluidState.getFluid());
 
-        double x = pos.getX() & 15;
-        double y = pos.getY() & 15;
-        double z = pos.getZ() & 15;
+        float x = pos.getX() & 15;
+        float y = pos.getY() & 15;
+        float z = pos.getZ() & 15;
 
-        double float_13 = sfDown ? 0.001F : 0.0F;
+        float float_13 = sfDown ? 0.001F : 0.0F;
+
+        final ModelQuadViewMutable quad = this.quad;
+
+        this.lightPipeline.reset();
 
         if (sfUp && !isSideCovered(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
             rendered = true;
@@ -109,69 +134,67 @@ public class FluidRenderPipeline {
             h4 -= 0.001F;
 
             Vec3d velocity = fluidState.getVelocity(world, pos);
-            float float_14;
-            float float_16;
-            float float_18;
-            float float_20;
-            float float_15;
-            float float_17;
-            float float_19;
-            float float_21;
+            float u1;
+            float u2;
+            float u3;
+            float u4;
+            float v1;
+            float v2;
+            float v3;
+            float v4;
 
             if (velocity.x == 0.0D && velocity.z == 0.0D) {
                 Sprite sprite = sprites[0];
-                float_14 = sprite.getFrameU(0.0D);
-                float_15 = sprite.getFrameV(0.0D);
-                float_16 = float_14;
-                float_17 = sprite.getFrameV(16.0D);
-                float_18 = sprite.getFrameU(16.0D);
-                float_19 = float_17;
-                float_20 = float_18;
-                float_21 = float_15;
+                u1 = sprite.getFrameU(0.0D);
+                v1 = sprite.getFrameV(0.0D);
+                u2 = u1;
+                v2 = sprite.getFrameV(16.0D);
+                u3 = sprite.getFrameU(16.0D);
+                v3 = v2;
+                u4 = u3;
+                v4 = v1;
             } else {
                 Sprite sprite = sprites[1];
-                float float_22 = (float) MathHelper.atan2(velocity.z, velocity.x) - ((float) Math.PI / 2F);
-                float float_23 = MathHelper.sin(float_22) * 0.25F;
-                float float_24 = MathHelper.cos(float_22) * 0.25F;
-                float_14 = sprite.getFrameU(8.0F + (-float_24 - float_23) * 16.0F);
-                float_15 = sprite.getFrameV(8.0F + (-float_24 + float_23) * 16.0F);
-                float_16 = sprite.getFrameU(8.0F + (-float_24 + float_23) * 16.0F);
-                float_17 = sprite.getFrameV(8.0F + (float_24 + float_23) * 16.0F);
-                float_18 = sprite.getFrameU(8.0F + (float_24 + float_23) * 16.0F);
-                float_19 = sprite.getFrameV(8.0F + (float_24 - float_23) * 16.0F);
-                float_20 = sprite.getFrameU(8.0F + (float_24 - float_23) * 16.0F);
-                float_21 = sprite.getFrameV(8.0F + (-float_24 - float_23) * 16.0F);
+                float dir = (float) MathHelper.atan2(velocity.z, velocity.x) - ((float) Math.PI / 2F);
+                float sin = MathHelper.sin(dir) * 0.25F;
+                float cos = MathHelper.cos(dir) * 0.25F;
+                u1 = sprite.getFrameU(8.0F + (-cos - sin) * 16.0F);
+                v1 = sprite.getFrameV(8.0F + (-cos + sin) * 16.0F);
+                u2 = sprite.getFrameU(8.0F + (-cos + sin) * 16.0F);
+                v2 = sprite.getFrameV(8.0F + (cos + sin) * 16.0F);
+                u3 = sprite.getFrameU(8.0F + (cos + sin) * 16.0F);
+                v3 = sprite.getFrameV(8.0F + (cos - sin) * 16.0F);
+                u4 = sprite.getFrameU(8.0F + (cos - sin) * 16.0F);
+                v4 = sprite.getFrameV(8.0F + (-cos - sin) * 16.0F);
             }
 
-            float float_34 = (float_14 + float_16 + float_18 + float_20) / 4.0F;
-            float float_35 = (float_15 + float_17 + float_19 + float_21) / 4.0F;
-            float float_36 = (float) sprites[0].getWidth() / (sprites[0].getMaxU() - sprites[0].getMinU());
-            float float_37 = (float) sprites[0].getHeight() / (sprites[0].getMaxV() - sprites[0].getMinV());
-            float float_38 = 4.0F / Math.max(float_37, float_36);
+            float uAvg = (u1 + u2 + u3 + u4) / 4.0F;
+            float vAvg = (v1 + v2 + v3 + v4) / 4.0F;
+            float s1 = (float) sprites[0].getWidth() / (sprites[0].getMaxU() - sprites[0].getMinU());
+            float s2 = (float) sprites[0].getHeight() / (sprites[0].getMaxV() - sprites[0].getMinV());
+            float s3 = 4.0F / Math.max(s2, s1);
 
-            float_14 = MathHelper.lerp(float_38, float_14, float_34);
-            float_16 = MathHelper.lerp(float_38, float_16, float_34);
-            float_18 = MathHelper.lerp(float_38, float_18, float_34);
-            float_20 = MathHelper.lerp(float_38, float_20, float_34);
-            float_15 = MathHelper.lerp(float_38, float_15, float_35);
-            float_17 = MathHelper.lerp(float_38, float_17, float_35);
-            float_19 = MathHelper.lerp(float_38, float_19, float_35);
-            float_21 = MathHelper.lerp(float_38, float_21, float_35);
+            u1 = MathHelper.lerp(s3, u1, uAvg);
+            u2 = MathHelper.lerp(s3, u2, uAvg);
+            u3 = MathHelper.lerp(s3, u3, uAvg);
+            u4 = MathHelper.lerp(s3, u4, uAvg);
+            v1 = MathHelper.lerp(s3, v1, vAvg);
+            v2 = MathHelper.lerp(s3, v2, vAvg);
+            v3 = MathHelper.lerp(s3, v3, vAvg);
+            v4 = MathHelper.lerp(s3, v4, vAvg);
 
-            int light = this.getLight(world, posX, posY, posZ);
-            float r = 1.0F * baseRed;
-            float g = 1.0F * baseGreen;
-            float b = 1.0F * baseBlue;
-            this.vertex(builder, x + 0.0D, y + (double) h1, z + 0.0D, r, g, b, float_14, float_15, light);
-            this.vertex(builder, x + 0.0D, y + (double) h2, z + 1.0D, r, g, b, float_16, float_17, light);
-            this.vertex(builder, x + 1.0D, y + (double) h3, z + 1.0D, r, g, b, float_18, float_19, light);
-            this.vertex(builder, x + 1.0D, y + (double) h4, z + 0.0D, r, g, b, float_20, float_21, light);
+            this.writeVertex(quad, 0, x, y + h1, z, u1, v1);
+            this.writeVertex(quad, 1, x, y + h2, z + 1.0F, u2, v2);
+            this.writeVertex(quad, 2, x + 1.0F, y + h3, z + 1.0F, u3, v3);
+            this.writeVertex(quad, 3, x + 1.0F, y + h4, z, u4, v4);
+            this.lightAndFlushVertex(builder, quad, pos, baseRed, baseGreen, baseBlue, Direction.UP);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.vertex(builder, x + 0.0D, y + (double) h1, z + 0.0D, r, g, b, float_14, float_15, light);
-                this.vertex(builder, x + 1.0D, y + (double) h4, z + 0.0D, r, g, b, float_20, float_21, light);
-                this.vertex(builder, x + 1.0D, y + (double) h3, z + 1.0D, r, g, b, float_18, float_19, light);
-                this.vertex(builder, x + 0.0D, y + (double) h2, z + 1.0D, r, g, b, float_16, float_17, light);
+                this.writeVertex(quad, 0, x, y + h1, z, u1, v1);
+                this.writeVertex(quad, 1, x + 1.0F, y + h4, z, u4, v4);
+                this.writeVertex(quad, 2, x + 1.0F, y + h3, z + 1.0F, u3, v3);
+                this.writeVertex(quad, 3, x, y + h2, z + 1.0F, u2, v2);
+                this.lightAndFlushVertex(builder, quad, pos, baseRed, baseGreen, baseBlue, Direction.UP);
             }
         }
 
@@ -180,65 +203,64 @@ public class FluidRenderPipeline {
             float maxU = sprites[0].getMaxU();
             float minV = sprites[0].getMinV();
             float maxV = sprites[0].getMaxV();
-            int light = this.getLight(world, posX, posY - 1, posZ);
-            float r = 0.5F * baseRed;
-            float g = 0.5F * baseGreen;
-            float b = 0.5F * baseBlue;
-            this.vertex(builder, x, y + float_13, z + 1.0D, r, g, b, minU, maxV, light);
-            this.vertex(builder, x, y + float_13, z, r, g, b, minU, minV, light);
-            this.vertex(builder, x + 1.0D, y + float_13, z, r, g, b, maxU, minV, light);
-            this.vertex(builder, x + 1.0D, y + float_13, z + 1.0D, r, g, b, maxU, maxV, light);
+
+            this.writeVertex(quad, 0, x, y + float_13, z + 1.0F, minU, maxV);
+            this.writeVertex(quad, 1, x, y + float_13, z, minU, minV);
+            this.writeVertex(quad, 2, x + 1.0F, y + float_13, z, maxU, minV);
+            this.writeVertex(quad, 3, x + 1.0F, y + float_13, z + 1.0F, maxU, maxV);
+            this.lightAndFlushVertex(builder, quad, pos, baseRed, baseGreen, baseBlue, Direction.DOWN);
+
             rendered = true;
         }
 
         for (int i = 0; i < 4; ++i) {
-            float float_49;
-            float float_50;
-            double double_4;
-            double double_6;
-            double double_5;
-            double double_7;
+            float c1;
+            float c2;
+            float x1;
+            float z1;
+            float x2;
+            float z2;
             Direction dir;
-            boolean boolean_9;
+            boolean visible;
             if (i == 0) {
-                float_49 = h1;
-                float_50 = h4;
-                double_4 = x;
-                double_5 = x + 1.0D;
-                double_6 = z + (double) 0.001F;
-                double_7 = z + (double) 0.001F;
+                c1 = h1;
+                c2 = h4;
+                x1 = x;
+                x2 = x + 1.0F;
+                z1 = z + 0.001F;
+                z2 = z + 0.001F;
                 dir = Direction.NORTH;
-                boolean_9 = sfNorth;
+                visible = sfNorth;
             } else if (i == 1) {
-                float_49 = h3;
-                float_50 = h2;
-                double_4 = x + 1.0D;
-                double_5 = x;
-                double_6 = z + 1.0D - (double) 0.001F;
-                double_7 = z + 1.0D - (double) 0.001F;
+                c1 = h3;
+                c2 = h2;
+                x1 = x + 1.0F;
+                x2 = x;
+                z1 = z + 1.0F - 0.001F;
+                z2 = z + 1.0F - 0.001F;
                 dir = Direction.SOUTH;
-                boolean_9 = sfSouth;
+                visible = sfSouth;
             } else if (i == 2) {
-                float_49 = h2;
-                float_50 = h1;
-                double_4 = x + (double) 0.001F;
-                double_5 = x + (double) 0.001F;
-                double_6 = z + 1.0D;
-                double_7 = z;
+                c1 = h2;
+                c2 = h1;
+                x1 = x + 0.001F;
+                x2 = x + 0.001F;
+                z1 = z + 1.0F;
+                z2 = z;
                 dir = Direction.WEST;
-                boolean_9 = sfWest;
+                visible = sfWest;
             } else {
-                float_49 = h4;
-                float_50 = h3;
-                double_4 = x + 1.0D - (double) 0.001F;
-                double_5 = x + 1.0D - (double) 0.001F;
-                double_6 = z;
-                double_7 = z + 1.0D;
+                c1 = h4;
+                c2 = h3;
+                x1 = x + 1.0F - 0.001F;
+                x2 = x + 1.0F - 0.001F;
+                z1 = z;
+                z2 = z + 1.0F;
                 dir = Direction.EAST;
-                boolean_9 = sfEast;
+                visible = sfEast;
             }
 
-            if (boolean_9 && !isSideCovered(world, posX, posY, posZ, dir, Math.max(float_49, float_50))) {
+            if (visible && !isSideCovered(world, posX, posY, posZ, dir, Math.max(c1, c2))) {
                 rendered = true;
 
                 int adjX = posX + dir.getOffsetX();
@@ -257,28 +279,29 @@ public class FluidRenderPipeline {
 
                 float float_57 = sprite.getFrameU(0.0D);
                 float float_58 = sprite.getFrameU(8.0D);
-                float float_59 = sprite.getFrameV((1.0F - float_49) * 16.0F * 0.5F);
-                float float_60 = sprite.getFrameV((1.0F - float_50) * 16.0F * 0.5F);
+                float float_59 = sprite.getFrameV((1.0F - c1) * 16.0F * 0.5F);
+                float float_60 = sprite.getFrameV((1.0F - c2) * 16.0F * 0.5F);
                 float float_61 = sprite.getFrameV(8.0D);
 
-                int light = this.getLight(world, adjX, adjY, adjZ);
+                float br = i < 2 ? 0.8F : 0.6F;
 
-                float float_62 = i < 2 ? 0.8F : 0.6F;
+                float r = br * baseRed;
+                float g = br * baseGreen;
+                float b = br * baseBlue;
 
-                float r = 1.0F * float_62 * baseRed;
-                float g = 1.0F * float_62 * baseGreen;
-                float b = 1.0F * float_62 * baseBlue;
+                this.writeVertex(quad, 0, x2, y + c2, z2, float_58, float_60);
+                this.writeVertex(quad, 1, x2, y + float_13, z2, float_58, float_61);
+                this.writeVertex(quad, 2, x1, y + float_13, z1, float_57, float_61);
+                this.writeVertex(quad, 3, x1, y + c1, z1, float_57, float_59);
 
-                this.vertex(builder, double_4, y + (double) float_49, double_6, r, g, b, float_57, float_59, light);
-                this.vertex(builder, double_5, y + (double) float_50, double_7, r, g, b, float_58, float_60, light);
-                this.vertex(builder, double_5, y + float_13, double_7, r, g, b, float_58, float_61, light);
-                this.vertex(builder, double_4, y + float_13, double_6, r, g, b, float_57, float_61, light);
+                this.lightAndFlushVertex(builder, quad, pos, r, g, b, dir);
 
                 if (sprite != this.waterOverlaySprite) {
-                    this.vertex(builder, double_4, y + float_13, double_6, r, g, b, float_57, float_61, light);
-                    this.vertex(builder, double_5, y + float_13, double_7, r, g, b, float_58, float_61, light);
-                    this.vertex(builder, double_5, y + (double) float_50, double_7, r, g, b, float_58, float_60, light);
-                    this.vertex(builder, double_4, y + (double) float_49, double_6, r, g, b, float_57, float_59, light);
+                    this.writeVertex(quad, 0, x2, y + float_13, z2, float_58, float_61);
+                    this.writeVertex(quad, 1, x2, y + c2, z2, float_58, float_60);
+                    this.writeVertex(quad, 2, x1, y + c1, z1, float_57, float_59);
+                    this.writeVertex(quad, 3, x1, y + float_13, z1, float_57, float_61);
+                    this.lightAndFlushVertex(builder, quad, pos, r, g, b, dir);
                 }
             }
         }
@@ -286,28 +309,37 @@ public class FluidRenderPipeline {
         if (rendered) {
             meshInfo.addSprites(sprites);
         }
+
         return rendered;
     }
 
-    private void vertex(VertexConsumer consumer, double x, double y, double z, float r, float g, float b, float u, float v, int light) {
-        consumer.vertex(x, y, z).color(r, g, b, 1.0F).texture(u, v).light(light).normal(0.0F, 1.0F, 0.0F).next();
+    private void lightAndFlushVertex(VertexConsumer consumer, ModelQuadViewMutable quad, BlockPos pos, float r, float g, float b, Direction dir) {
+        LightResult lightResult = this.lightResult;
+        this.lightPipeline.apply(quad, pos, lightResult, dir);
+
+        for (int i = 0; i < 4; i++) {
+            float br = lightResult.br[i];
+            int lm = lightResult.lm[i];
+
+            quad.setColor(i, ColorUtil.encodeRGBA(r * br, g * br, b * br, 1.0f));
+            quad.setLight(i, lm);
+        }
+
+        // TODO: allow for fallback rendering
+        ((ModelQuadConsumer) consumer).write(quad);
     }
 
-    private int getLight(BlockRenderView world, int x, int y, int z) {
-        int lm1 = WorldRenderer.getLightmapCoordinates(world, this.scratchPos.set(x, y, z));
-        int lm2 = WorldRenderer.getLightmapCoordinates(world, this.scratchPos.set(x, y + 1, z));
-
-        int bl1 = lm1 & 255;
-        int bl2 = lm2 & 255;
-        int sl1 = lm1 >> 16 & 255;
-        int sl2 = lm2 >> 16 & 255;
-
-        return (Math.max(bl1, bl2)) | (Math.max(sl1, sl2)) << 16;
+    private void writeVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {
+        quad.setX(i, x);
+        quad.setY(i, y);
+        quad.setZ(i, z);
+        quad.setTexU(i, u);
+        quad.setTexV(i, v);
     }
 
     private float getNorthWestCornerFluidHeight(WorldSlice world, int x, int y, int z, Fluid fluid) {
-        int int_1 = 0;
-        float float_1 = 0.0F;
+        int samples = 0;
+        float totalHeight = 0.0F;
 
         for (int i = 0; i < 4; ++i) {
             int x2 = x - (i & 1);
@@ -324,17 +356,17 @@ public class FluidRenderPipeline {
                 float height = fluidState.getHeight(world, this.scratchPos.set(x2, y, z2));
 
                 if (height >= 0.8F) {
-                    float_1 += height * 10.0F;
-                    int_1 += 10;
+                    totalHeight += height * 10.0F;
+                    samples += 10;
                 } else {
-                    float_1 += height;
-                    ++int_1;
+                    totalHeight += height;
+                    ++samples;
                 }
             } else if (!blockState.getMaterial().isSolid()) {
-                ++int_1;
+                ++samples;
             }
         }
 
-        return float_1 / (float) int_1;
+        return totalHeight / (float) samples;
     }
 }
