@@ -6,6 +6,7 @@ import net.minecraft.util.math.Direction;
 public class ModelQuadFlags {
     public static final int IS_ALIGNED = 0b01;
     public static final int IS_PARTIAL = 0b10;
+    public static final int NONE = 0;
 
     public static boolean contains(int flags, int mask) {
         return (flags & mask) != 0;

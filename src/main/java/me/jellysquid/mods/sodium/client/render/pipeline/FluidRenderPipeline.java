@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.util.ColorUtil;
 import me.jellysquid.mods.sodium.client.util.QuadUtil;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -63,6 +64,8 @@ public class FluidRenderPipeline {
             this.quad.setNormal(i, normal);
         }
 
+        this.quad.setFlags(ModelQuadFlags.IS_ALIGNED);
+
         this.smoothLightPipeline = smoothLightPipeline;
         this.flatLightPipeline = flatLightPipeline;
     }
@@ -107,16 +110,16 @@ public class FluidRenderPipeline {
         Sprite[] sprites = lava ? this.lavaSprites : this.waterSprites;
         int color = lava ? 0xFFFFFF : BiomeColors.getWaterColor(world, pos);
 
-        float baseRed = (float) (color >> 16 & 255) / 255.0F;
-        float baseGreen = (float) (color >> 8 & 255) / 255.0F;
-        float baseBlue = (float) (color & 255) / 255.0F;
+        float red = (float) (color >> 16 & 255) / 255.0F;
+        float green = (float) (color >> 8 & 255) / 255.0F;
+        float blue = (float) (color & 255) / 255.0F;
 
         boolean rendered = false;
 
-        float h1 = this.getNorthWestCornerFluidHeight(world, posX, posY, posZ, fluidState.getFluid());
-        float h2 = this.getNorthWestCornerFluidHeight(world, posX, posY, posZ + 1, fluidState.getFluid());
-        float h3 = this.getNorthWestCornerFluidHeight(world, posX + 1, posY, posZ + 1, fluidState.getFluid());
-        float h4 = this.getNorthWestCornerFluidHeight(world, posX + 1, posY, posZ, fluidState.getFluid());
+        float h1 = this.getCornerHeight(world, posX, posY, posZ, fluidState.getFluid());
+        float h2 = this.getCornerHeight(world, posX, posY, posZ + 1, fluidState.getFluid());
+        float h3 = this.getCornerHeight(world, posX + 1, posY, posZ + 1, fluidState.getFluid());
+        float h4 = this.getCornerHeight(world, posX + 1, posY, posZ, fluidState.getFluid());
 
         float x = pos.getX() & 15;
         float y = pos.getY() & 15;
@@ -125,27 +128,21 @@ public class FluidRenderPipeline {
         float float_13 = sfDown ? 0.001F : 0.0F;
 
         final ModelQuadViewMutable quad = this.quad;
+        final LightResult light = this.lightResult;
 
         LightPipeline lighter = !lava && MinecraftClient.isAmbientOcclusionEnabled() ? this.smoothLightPipeline : this.flatLightPipeline;
         lighter.reset();
 
         if (sfUp && !isSideCovered(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
-            rendered = true;
-
             h1 -= 0.001F;
             h2 -= 0.001F;
             h3 -= 0.001F;
             h4 -= 0.001F;
 
             Vec3d velocity = fluidState.getVelocity(world, pos);
-            float u1;
-            float u2;
-            float u3;
-            float u4;
-            float v1;
-            float v2;
-            float v3;
-            float v4;
+
+            float u1, u2, u3, u4;
+            float v1, v2, v3, v4;
 
             if (velocity.x == 0.0D && velocity.z == 0.0D) {
                 Sprite sprite = sprites[0];
@@ -191,15 +188,19 @@ public class FluidRenderPipeline {
             this.writeVertex(quad, 1, x, y + h2, z + 1.0F, u2, v2);
             this.writeVertex(quad, 2, x + 1.0F, y + h3, z + 1.0F, u3, v3);
             this.writeVertex(quad, 3, x + 1.0F, y + h4, z, u4, v4);
-            this.lightAndFlushVertex(builder, quad, lighter, pos, baseRed, baseGreen, baseBlue, Direction.UP);
+
+            this.applyLighting(quad, pos, lighter, light, Direction.UP);
+            this.writeQuad(builder, quad, red, green, blue, false);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.writeVertex(quad, 0, x, y + h1, z, u1, v1);
-                this.writeVertex(quad, 1, x + 1.0F, y + h4, z, u4, v4);
-                this.writeVertex(quad, 2, x + 1.0F, y + h3, z + 1.0F, u3, v3);
-                this.writeVertex(quad, 3, x, y + h2, z + 1.0F, u2, v2);
-                this.lightAndFlushVertex(builder, quad, lighter, pos, baseRed, baseGreen, baseBlue, Direction.UP);
+                this.writeVertex(quad, 3, x, y + h1, z, u1, v1);
+                this.writeVertex(quad, 2, x, y + h2, z + 1.0F, u2, v2);
+                this.writeVertex(quad, 1, x + 1.0F, y + h3, z + 1.0F, u3, v3);
+                this.writeVertex(quad, 0, x + 1.0F, y + h4, z, u4, v4);
+                this.writeQuad(builder, quad, red, green, blue, true);
             }
+
+            rendered = true;
         }
 
         if (sfDown) {
@@ -212,61 +213,75 @@ public class FluidRenderPipeline {
             this.writeVertex(quad, 1, x, y + float_13, z, minU, minV);
             this.writeVertex(quad, 2, x + 1.0F, y + float_13, z, maxU, minV);
             this.writeVertex(quad, 3, x + 1.0F, y + float_13, z + 1.0F, maxU, maxV);
-            this.lightAndFlushVertex(builder, quad, lighter, pos, baseRed, baseGreen, baseBlue, Direction.DOWN);
+
+            this.applyLighting(quad, pos, lighter, light, Direction.DOWN);
+            this.writeQuad(builder, quad, red, green, blue, true);
 
             rendered = true;
         }
 
-        for (int i = 0; i < 4; ++i) {
+        for (Direction dir : DirectionUtil.HORIZONTAL_DIRECTIONS) {
             float c1;
             float c2;
             float x1;
             float z1;
             float x2;
             float z2;
-            Direction dir;
-            boolean visible;
-            if (i == 0) {
-                c1 = h1;
-                c2 = h4;
-                x1 = x;
-                x2 = x + 1.0F;
-                z1 = z + 0.001F;
-                z2 = z + 0.001F;
-                dir = Direction.NORTH;
-                visible = sfNorth;
-            } else if (i == 1) {
-                c1 = h3;
-                c2 = h2;
-                x1 = x + 1.0F;
-                x2 = x;
-                z1 = z + 1.0F - 0.001F;
-                z2 = z + 1.0F - 0.001F;
-                dir = Direction.SOUTH;
-                visible = sfSouth;
-            } else if (i == 2) {
-                c1 = h2;
-                c2 = h1;
-                x1 = x + 0.001F;
-                x2 = x + 0.001F;
-                z1 = z + 1.0F;
-                z2 = z;
-                dir = Direction.WEST;
-                visible = sfWest;
-            } else {
-                c1 = h4;
-                c2 = h3;
-                x1 = x + 1.0F - 0.001F;
-                x2 = x + 1.0F - 0.001F;
-                z1 = z;
-                z2 = z + 1.0F;
-                dir = Direction.EAST;
-                visible = sfEast;
+
+            switch (dir) {
+                case NORTH:
+                    if (!sfNorth) {
+                        continue;
+                    }
+
+                    c1 = h1;
+                    c2 = h4;
+                    x1 = x;
+                    x2 = x + 1.0F;
+                    z1 = z + 0.001F;
+                    z2 = z1;
+                    break;
+                case SOUTH:
+                    if (!sfSouth) {
+                        continue;
+                    }
+
+                    c1 = h3;
+                    c2 = h2;
+                    x1 = x + 1.0F;
+                    x2 = x;
+                    z1 = z + 0.999f;
+                    z2 = z1;
+                    break;
+                case WEST:
+                    if (!sfWest) {
+                        continue;
+                    }
+
+                    c1 = h2;
+                    c2 = h1;
+                    x1 = x + 0.001F;
+                    x2 = x1;
+                    z1 = z + 1.0F;
+                    z2 = z;
+                    break;
+                case EAST:
+                    if (!sfEast) {
+                        continue;
+                    }
+
+                    c1 = h4;
+                    c2 = h3;
+                    x1 = x + 0.999f;
+                    x2 = x1;
+                    z1 = z;
+                    z2 = z + 1.0F;
+                    break;
+                default:
+                    continue;
             }
 
-            if (visible && !isSideCovered(world, posX, posY, posZ, dir, Math.max(c1, c2))) {
-                rendered = true;
-
+            if (!isSideCovered(world, posX, posY, posZ, dir, Math.max(c1, c2))) {
                 int adjX = posX + dir.getOffsetX();
                 int adjY = posY + dir.getOffsetY();
                 int adjZ = posZ + dir.getOffsetZ();
@@ -281,32 +296,36 @@ public class FluidRenderPipeline {
                     }
                 }
 
-                float float_57 = sprite.getFrameU(0.0D);
-                float float_58 = sprite.getFrameU(8.0D);
-                float float_59 = sprite.getFrameV((1.0F - c1) * 16.0F * 0.5F);
-                float float_60 = sprite.getFrameV((1.0F - c2) * 16.0F * 0.5F);
-                float float_61 = sprite.getFrameV(8.0D);
+                float u1 = sprite.getFrameU(0.0D);
+                float u2 = sprite.getFrameU(8.0D);
+                float v1 = sprite.getFrameV((1.0F - c1) * 16.0F * 0.5F);
+                float v2 = sprite.getFrameV((1.0F - c2) * 16.0F * 0.5F);
+                float v3 = sprite.getFrameV(8.0D);
 
-                float br = i < 2 ? 0.8F : 0.6F;
+                float br = dir.getAxis() == Direction.Axis.Z ? 0.8F : 0.6F;
 
-                float r = br * baseRed;
-                float g = br * baseGreen;
-                float b = br * baseBlue;
+                float redM = br * red;
+                float greenM = br * green;
+                float blueM = br * blue;
 
-                this.writeVertex(quad, 0, x2, y + c2, z2, float_58, float_60);
-                this.writeVertex(quad, 1, x2, y + float_13, z2, float_58, float_61);
-                this.writeVertex(quad, 2, x1, y + float_13, z1, float_57, float_61);
-                this.writeVertex(quad, 3, x1, y + c1, z1, float_57, float_59);
+                this.writeVertex(quad, 0, x2, y + c2, z2, u2, v2);
+                this.writeVertex(quad, 1, x2, y + float_13, z2, u2, v3);
+                this.writeVertex(quad, 2, x1, y + float_13, z1, u1, v3);
+                this.writeVertex(quad, 3, x1, y + c1, z1, u1, v1);
 
-                this.lightAndFlushVertex(builder, quad, lighter, pos, r, g, b, dir);
+                this.applyLighting(quad, pos, lighter, light, dir);
+                this.writeQuad(builder, quad, redM, greenM, blueM, false);
 
                 if (sprite != this.waterOverlaySprite) {
-                    this.writeVertex(quad, 0, x2, y + float_13, z2, float_58, float_61);
-                    this.writeVertex(quad, 1, x2, y + c2, z2, float_58, float_60);
-                    this.writeVertex(quad, 2, x1, y + c1, z1, float_57, float_59);
-                    this.writeVertex(quad, 3, x1, y + float_13, z1, float_57, float_61);
-                    this.lightAndFlushVertex(builder, quad, lighter, pos, r, g, b, dir);
+                    this.writeVertex(quad, 0, x1, y + c1, z1, u1, v1);
+                    this.writeVertex(quad, 1, x1, y + float_13, z1, u1, v3);
+                    this.writeVertex(quad, 2, x2, y + float_13, z2, u2, v3);
+                    this.writeVertex(quad, 3, x2, y + c2, z2, u2, v2);
+
+                    this.writeQuad(builder, quad, redM, greenM, blueM, true);
                 }
+
+                rendered = true;
             }
         }
 
@@ -317,18 +336,31 @@ public class FluidRenderPipeline {
         return rendered;
     }
 
-    private void lightAndFlushVertex(VertexConsumer consumer, ModelQuadViewMutable quad, LightPipeline lighter, BlockPos pos, float r, float g, float b, Direction dir) {
-        quad.setFlags(dir != Direction.UP ? ModelQuadFlags.IS_ALIGNED : 0);
+    private void applyLighting(ModelQuadViewMutable quad, BlockPos pos, LightPipeline lighter, LightResult light, Direction dir) {
+        lighter.apply(quad, pos, light, dir);
+    }
 
+    private void writeQuad(VertexConsumer consumer, ModelQuadViewMutable quad, float r, float g, float b, boolean flipLight) {
         LightResult lightResult = this.lightResult;
-        lighter.apply(quad, pos, lightResult, dir);
+
+        int lightIndex, lightOrder;
+
+        if (flipLight) {
+            lightIndex = 3;
+            lightOrder = -1;
+        } else {
+            lightIndex = 0;
+            lightOrder = 1;
+        }
 
         for (int i = 0; i < 4; i++) {
-            float br = lightResult.br[i];
-            int lm = lightResult.lm[i];
+            float br = lightResult.br[lightIndex];
+            int lm = lightResult.lm[lightIndex];
 
             quad.setColor(i, ColorUtil.encodeRGBA(r * br, g * br, b * br, 1.0f));
             quad.setLight(i, lm);
+
+            lightIndex += lightOrder;
         }
 
         // TODO: allow for fallback rendering
@@ -343,7 +375,7 @@ public class FluidRenderPipeline {
         quad.setTexV(i, v);
     }
 
-    private float getNorthWestCornerFluidHeight(WorldSlice world, int x, int y, int z, Fluid fluid) {
+    private float getCornerHeight(WorldSlice world, int x, int y, int z, Fluid fluid) {
         int samples = 0;
         float totalHeight = 0.0F;
 
