@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.ChunkSection;
 
 public class ColumnRender<T extends ChunkRenderState> {
     @SuppressWarnings("unchecked")
@@ -16,16 +17,15 @@ public class ColumnRender<T extends ChunkRenderState> {
 
     private final SodiumWorldRenderer renderer;
 
+    private World world;
     private final int chunkX, chunkZ;
     private boolean chunkPresent;
 
     public ColumnRender(SodiumWorldRenderer renderer, World world, int chunkX, int chunkZ, RenderFactory<T> factory) {
+        this.world = world;
         this.renderer = renderer;
         this.chunkX = chunkX;
         this.chunkZ = chunkZ;
-
-        int x = chunkX << 4;
-        int z = chunkZ << 4;
 
         this.neighbors[Direction.DOWN.ordinal()] = this;
         this.neighbors[Direction.UP.ordinal()] = this;
@@ -111,6 +111,10 @@ public class ColumnRender<T extends ChunkRenderState> {
 
     public void onChunkRenderUpdated(ChunkRenderData before, ChunkRenderData after) {
         this.renderer.onChunkRenderUpdated(before, after);
+    }
+
+    public boolean isSectionEmpty(int chunkY) {
+        return ChunkSection.isEmpty(this.world.getChunk(this.chunkX, this.chunkZ).getSectionArray()[chunkY]);
     }
 
     public interface RenderFactory<T extends ChunkRenderState> {
