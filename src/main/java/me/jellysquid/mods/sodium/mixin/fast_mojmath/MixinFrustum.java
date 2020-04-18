@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.Vector4f;
+import net.minecraft.util.math.Box;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.injection.At;
@@ -74,6 +75,14 @@ public class MixinFrustum implements FrustumExtended {
             default:
                 throw new IllegalArgumentException("Invalid index");
         }
+    }
+
+    /**
+     * @author JellySquid
+     */
+    @Overwrite
+    public boolean isVisible(Box box) {
+        return this.fastAabbTest((float) box.x1, (float) box.y1, (float) box.z1, (float) box.x2, (float) box.y2, (float) box.z2);
     }
 
     @Override

@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.layer;
 
 import net.minecraft.client.render.RenderLayer;
 
-public enum  BlockRenderPass {
+public enum BlockRenderPass {
     SOLID(RenderLayer.getCutout(), false),
     SOLID_MIPPED(RenderLayer.getCutoutMipped(), false),
     CUTOUT(RenderLayer.getCutout(), false),

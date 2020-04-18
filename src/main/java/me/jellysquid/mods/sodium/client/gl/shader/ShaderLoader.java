@@ -6,10 +6,16 @@ import org.apache.commons.io.IOUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 
 public class ShaderLoader {
     public static GlShader loadShader(ShaderType type, Identifier name) {
-        return new GlShader(type, name, getShaderSource(getShaderPath(name)));
+        return loadShader(type, name, Collections.emptyList());
+    }
+
+    public static GlShader loadShader(ShaderType type, Identifier name, List<String> defines) {
+        return new GlShader(type, name, getShaderSource(getShaderPath(name)), defines);
     }
 
     private static String getShaderPath(Identifier name) {

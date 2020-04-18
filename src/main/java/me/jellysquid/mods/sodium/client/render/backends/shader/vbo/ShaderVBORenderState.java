@@ -8,19 +8,17 @@ import org.lwjgl.opengl.GL20;
 
 public class ShaderVBORenderState implements ChunkRenderState {
     private final GlBuffer buffer;
-    private final GlAttributeBinding[] attributes;
     private final Vector3d translation;
 
-    public ShaderVBORenderState(GlBuffer buffer, GlAttributeBinding[] attributes, Vector3d translation) {
+    public ShaderVBORenderState(GlBuffer buffer, Vector3d translation) {
         this.translation = translation;
         this.buffer = buffer;
-        this.attributes = attributes;
     }
 
-    public void bind() {
+    public void bind(GlAttributeBinding[] attributes) {
         this.buffer.bind();
 
-        for (GlAttributeBinding binding : this.attributes) {
+        for (GlAttributeBinding binding : attributes) {
             GL20.glVertexAttribPointer(binding.index, binding.count, binding.format, binding.normalized, binding.stride, binding.pointer);
         }
     }

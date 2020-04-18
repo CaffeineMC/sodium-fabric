@@ -12,21 +12,25 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
+import java.util.function.Function;
 
 public class ChunkShader extends GlShaderProgram {
-    private final int uModelViewProjectionMatrix;
+    private final int uModelViewMatrix;
+    private final int uProjectionMatrix;
     private final int uModelOffset;
     private final int uBlockTex;
     private final int uLightTex;
 
+    private final FogShaderComponent fogShader;
     private final FloatBuffer uModelOffsetBuffer;
 
     public final GlAttributeBinding[] attributes;
 
-    public ChunkShader(Identifier name, int handle) {
+    public ChunkShader(Identifier name, int handle, Function<ChunkShader, FogShaderComponent> fogShaderFunction) {
         super(name, handle);
 
-        this.uModelViewProjectionMatrix = this.getUniformLocation("u_ModelViewProjectionMatrix");
+        this.uModelViewMatrix = this.getUniformLocation("u_ModelViewMatrix");
+        this.uProjectionMatrix = this.getUniformLocation("u_ProjectionMatrix");
         this.uModelOffset = this.getUniformLocation("u_ModelOffset");
 
         this.uBlockTex = this.getUniformLocation("u_BlockTex");
@@ -46,6 +50,8 @@ public class ChunkShader extends GlShaderProgram {
         };
 
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(3);
+
+        this.fogShader = fogShaderFunction.apply(this);
     }
 
     @Override
@@ -54,24 +60,23 @@ public class ChunkShader extends GlShaderProgram {
 
         GL20.glUniform1i(this.uBlockTex, 0);
         GL20.glUniform1i(this.uLightTex, 2);
-    }
 
-    public void setMatrices(MatrixStack.Entry matrices) {
+        this.fogShader.setup();
+
         try (MemoryStack stack = MemoryStack.stackPush()) {
             FloatBuffer bufProjection = stack.mallocFloat(16);
-            FloatBuffer bufModelView = stack.mallocFloat(16);
-            FloatBuffer bufModelViewProjection = stack.mallocFloat(16);
-
             GL15.glGetFloatv(GL15.GL_PROJECTION_MATRIX, bufProjection);
+
+            GL20.glUniformMatrix4fv(this.uProjectionMatrix, false, bufProjection);
+        }
+    }
+
+    public void setModelMatrix(MatrixStack.Entry matrices) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            FloatBuffer bufModelView = stack.mallocFloat(16);
             matrices.getModel().writeToBuffer(bufModelView);
 
-            GL11.glPushMatrix();
-            GL11.glLoadMatrixf(bufProjection);
-            GL11.glMultMatrixf(bufModelView);
-            GL15.glGetFloatv(GL15.GL_MODELVIEW_MATRIX, bufModelViewProjection);
-            GL11.glPopMatrix();
-
-            GL20.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false, bufModelViewProjection);
+            GL20.glUniformMatrix4fv(this.uModelViewMatrix, false, bufModelView);
         }
     }
 
