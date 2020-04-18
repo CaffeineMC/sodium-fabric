@@ -26,10 +26,6 @@ public class FlatLightPipeline implements LightPipeline {
 
     @Override
     public void apply(ModelQuadView quad, BlockPos pos, LightResult out, Direction face) {
-        if (this.lightCache == null) {
-            throw new IllegalStateException("Light cache not defined");
-        }
-
         Arrays.fill(out.br, 1.0f);
 
         if ((quad.getFlags() & ModelQuadFlags.IS_ALIGNED) != 0) {

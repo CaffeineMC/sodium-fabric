@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuad;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.util.ColorUtil;
 import me.jellysquid.mods.sodium.client.util.QuadUtil;
@@ -317,6 +318,8 @@ public class FluidRenderPipeline {
     }
 
     private void lightAndFlushVertex(VertexConsumer consumer, ModelQuadViewMutable quad, LightPipeline lighter, BlockPos pos, float r, float g, float b, Direction dir) {
+        quad.setFlags(dir != Direction.UP ? ModelQuadFlags.IS_ALIGNED : 0);
+
         LightResult lightResult = this.lightResult;
         lighter.apply(quad, pos, lightResult, dir);
 
