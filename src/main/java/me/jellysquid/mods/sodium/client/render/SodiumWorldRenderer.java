@@ -179,6 +179,8 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         }
 
         Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.viewDistance / 8.0D, 1.0D, 2.5D));
+
+        this.client.getProfiler().pop();
     }
 
     private void applySettings() {
