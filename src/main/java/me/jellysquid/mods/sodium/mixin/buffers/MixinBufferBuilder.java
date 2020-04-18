@@ -244,7 +244,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
         Matrix4f modelMatrix = matrices.getModel();
         Matrix3f normalMatrix = matrices.getNormal();
 
-        int norm = MatrixUtil.computeNormal(normalMatrix, quadView.getFacing());
+        int norm = MatrixUtil.computeNormal(normalMatrix, quad.getFace());
         int vertexSize = this.format.getVertexSize();
 
         this.grow(vertexSize * 4);

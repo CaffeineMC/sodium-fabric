@@ -32,8 +32,7 @@ public class SmoothLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void apply(ModelQuadView quad, BlockPos pos, LightResult out) {
-        Direction face = quad.getFacing();
+    public void apply(ModelQuadView quad, BlockPos pos, LightResult out, Direction face) {
         int flags = quad.getFlags();
 
         final AoNeighborInfo neighborInfo = AoNeighborInfo.get(face);

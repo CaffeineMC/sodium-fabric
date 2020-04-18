@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
-import me.jellysquid.mods.sodium.client.render.light.cache.LightDataCache;
 import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
 import me.jellysquid.mods.sodium.client.render.model.quad.*;
@@ -39,11 +38,11 @@ public class BlockRenderPipeline {
     private final LightResult cachedLightResult = new LightResult();
     private final Int2IntArrayMap cachedColors = new Int2IntArrayMap();
 
-    public BlockRenderPipeline(MinecraftClient client, LightDataCache lightCache) {
+    public BlockRenderPipeline(MinecraftClient client, SmoothLightPipeline smoothLightPipeline, FlatLightPipeline flatLightPipeline) {
         this.colorMap = client.getBlockColorMap();
+        this.smoothLightPipeline = smoothLightPipeline;
+        this.flatLightPipeline = flatLightPipeline;
 
-        this.smoothLightPipeline = new SmoothLightPipeline(lightCache);
-        this.flatLightPipeline = new FlatLightPipeline(lightCache);
         this.occlusionCache = new BlockOcclusionCache();
         this.cachedColors.defaultReturnValue(Integer.MIN_VALUE);
     }
@@ -90,9 +89,9 @@ public class BlockRenderPipeline {
     private void renderQuadList(ChunkRenderData.Builder meshInfo, BlockRenderView world, BlockState state, BlockPos pos, LightPipeline lighter, ModelQuadTransformer quadTransformer, Vec3d offset, VertexConsumer builder, List<BakedQuad> quads) {
         for (BakedQuad quad : quads) {
             LightResult light = this.cachedLightResult;
-            lighter.apply((ModelQuadView) quad, pos, light);
+            lighter.apply((ModelQuadView) quad, pos, light, quad.getFace());
 
-            this.renderQuad(world, state, pos, builder, quadTransformer, offset, (ModelQuadView) quad, light.br, light.lm);
+            this.renderQuad(world, state, pos, builder, quadTransformer, offset, quad, light.br, light.lm);
 
             if (meshInfo != null) {
                 meshInfo.addSprite(((ModelQuadView) quad).getSprite());
@@ -100,11 +99,11 @@ public class BlockRenderPipeline {
         }
     }
 
-    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, VertexConsumer consumer, ModelQuadTransformer quadTransformer, Vec3d offset, ModelQuadView quad, float[] brightnesses, int[] lights) {
+    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, VertexConsumer consumer, ModelQuadTransformer quadTransformer, Vec3d offset, BakedQuad bakedQuad, float[] brightnesses, int[] lights) {
         float r, g, b;
 
-        if (quad.hasColorIndex()) {
-            int color = this.getQuadColor(state, world, pos, quad.getColorIndex());
+        if (bakedQuad.hasColor()) {
+            int color = this.getQuadColor(state, world, pos, bakedQuad.getColorIndex());
 
             r = ColorUtil.normalize(ColorUtil.unpackColorR(color));
             g = ColorUtil.normalize(ColorUtil.unpackColorG(color));
@@ -115,10 +114,11 @@ public class BlockRenderPipeline {
             b = 1.0f;
         }
 
+        ModelQuadView quad = (ModelQuadView) bakedQuad;
         ModelQuadOrder order = ModelQuadOrder.orderOf(brightnesses);
         ModelQuadViewMutable copy = this.cachedQuad;
 
-        int norm = QuadUtil.getNormal(quad.getFacing());
+        int norm = QuadUtil.getNormal(bakedQuad.getFace());
 
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = order.getVertexIndex(dstIndex);

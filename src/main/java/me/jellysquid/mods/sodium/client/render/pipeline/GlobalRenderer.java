@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
 import me.jellysquid.mods.sodium.client.render.light.cache.HashLightDataCache;
+import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
+import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.world.BlockRenderView;
 
@@ -9,12 +11,12 @@ public class GlobalRenderer {
 
     private final BlockRenderPipeline blockRenderer;
     private final HashLightDataCache lightCache;
-
     private GlobalRenderer() {
         MinecraftClient client = MinecraftClient.getInstance();
 
         this.lightCache = new HashLightDataCache();
-        this.blockRenderer = new BlockRenderPipeline(client, this.lightCache);
+
+        this.blockRenderer = new BlockRenderPipeline(client, new SmoothLightPipeline(this.lightCache),  new FlatLightPipeline(this.lightCache));
     }
 
     public BlockRenderPipeline getBlockRenderer() {
