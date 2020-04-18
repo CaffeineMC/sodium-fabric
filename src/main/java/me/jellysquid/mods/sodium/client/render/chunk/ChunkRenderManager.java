@@ -41,6 +41,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     private final ArrayDeque<ChunkRender<T>> importantDirtyChunks = new ArrayDeque<>();
     private final ArrayDeque<ChunkRender<T>> dirtyChunks = new ArrayDeque<>();
+    private final ObjectList<ChunkRender<T>> tickableChunks = new ObjectArrayList<>();
 
     @SuppressWarnings("unchecked")
     private final RenderList<T>[] renderLists = new RenderList[BlockRenderPass.count()];
@@ -103,6 +104,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             } else {
                 this.dirtyChunks.add(render);
             }
+        }
+
+        if (render.canTick()) {
+            this.tickableChunks.add(render);
         }
 
         if (!render.isEmpty()) {
@@ -299,6 +304,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     private void resetGraph() {
         this.dirtyChunks.clear();
+        this.tickableChunks.clear();
         this.importantDirtyChunks.clear();
 
         this.visibleBlockEntities.clear();
@@ -404,6 +410,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     public void renderLayer(MatrixStack matrixStack, BlockRenderPass pass, double x, double y, double z) {
+        if (this.renderedLayers.isEmpty()) {
+            this.tickRenders();
+        }
+
         if (!this.renderedLayers.add(pass)) {
             return;
         }
@@ -415,6 +425,12 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         }
 
         this.backend.render(renderList.iterator(pass.isTranslucent()), matrixStack, x, y, z);
+    }
+
+    private void tickRenders() {
+        for (ChunkRender<T> render : this.tickableChunks) {
+            render.tick();
+        }
     }
 
     public void onFrameChanged() {

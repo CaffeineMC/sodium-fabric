@@ -259,4 +259,8 @@ public class ChunkRender<T extends ChunkRenderState> {
     public boolean hasData() {
         return this.data != ChunkRenderData.EMPTY;
     }
+
+    public boolean canTick() {
+        return !this.getData().getAnimatedSprites().isEmpty();
+    }
 }
