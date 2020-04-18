@@ -46,6 +46,7 @@ public class FluidRenderPipeline {
     private final LightPipeline flatLightPipeline;
 
     private final LightResult lightResult = new LightResult();
+    private final BlockPos.Mutable mpos = new BlockPos.Mutable();
 
     public FluidRenderPipeline(MinecraftClient client, SmoothLightPipeline smoothLightPipeline, FlatLightPipeline flatLightPipeline) {
         BlockModels models = client.getBakedModelManager().getBlockModels();
@@ -70,21 +71,30 @@ public class FluidRenderPipeline {
         this.flatLightPipeline = flatLightPipeline;
     }
 
-    private static boolean isSameFluid(WorldSlice world, int x, int y, int z, Fluid fluid) {
-        return world.getFluidState(x, y, z).getFluid().matchesType(fluid);
+    private boolean isFluidExposed(WorldSlice world, int x, int y, int z, Fluid fluid) {
+        return !world.getFluidState(x, y, z).getFluid().matchesType(fluid);
     }
 
-    private static boolean isSideCovered(WorldSlice world, int x, int y, int z, Direction dir, float height) {
+    private boolean isSideExposed(WorldSlice world, int x, int y, int z, Direction dir, float height) {
         BlockState blockState = world.getBlockState(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
 
         if (blockState.isOpaque()) {
-            VoxelShape a = VoxelShapes.cuboid(0.0D, 0.0D, 0.0D, 1.0D, height, 1.0D);
-            VoxelShape b = blockState.getCullingShape(world, new BlockPos(x, y, z));
+            VoxelShape shape = blockState.getCullingShape(world, this.mpos.set(x, y, z));
 
-            return VoxelShapes.isSideCovered(a, b, dir);
+            // Hoist these checks to avoid allocating the shape below
+            if (shape == VoxelShapes.fullCube()) {
+                // The top face always be inset, so if the shape above is a full cube it can't possibly occlude
+                return dir == Direction.UP;
+            } else if (shape.isEmpty()) {
+                return true;
+            }
+
+            VoxelShape threshold = VoxelShapes.cuboid(0.0D, 0.0D, 0.0D, 1.0D, height, 1.0D);
+
+            return !VoxelShapes.isSideCovered(threshold, shape, dir);
         }
 
-        return false;
+        return true;
     }
 
     public boolean render(ChunkRenderData.Builder meshInfo, WorldSlice world, BlockPos pos, VertexConsumer builder, FluidState fluidState) {
@@ -94,13 +104,13 @@ public class FluidRenderPipeline {
 
         Fluid fluid = fluidState.getFluid();
 
-        boolean sfUp = !isSameFluid(world, posX, posY + 1, posZ, fluid);
-        boolean sfDown = !isSameFluid(world, posX, posY - 1, posZ, fluid) &&
-                !isSideCovered(world, posX, posY, posZ, Direction.DOWN, 0.8888889F);
-        boolean sfNorth = !isSameFluid(world, posX, posY, posZ - 1, fluid);
-        boolean sfSouth = !isSameFluid(world, posX, posY, posZ + 1, fluid);
-        boolean sfWest = !isSameFluid(world, posX - 1, posY, posZ, fluid);
-        boolean sfEast = !isSameFluid(world, posX + 1, posY, posZ, fluid);
+        boolean sfUp = this.isFluidExposed(world, posX, posY + 1, posZ, fluid);
+        boolean sfDown = this.isFluidExposed(world, posX, posY - 1, posZ, fluid) &&
+                this.isSideExposed(world, posX, posY, posZ, Direction.DOWN, 0.8888889F);
+        boolean sfNorth = this.isFluidExposed(world, posX, posY, posZ - 1, fluid);
+        boolean sfSouth = this.isFluidExposed(world, posX, posY, posZ + 1, fluid);
+        boolean sfWest = this.isFluidExposed(world, posX - 1, posY, posZ, fluid);
+        boolean sfEast = this.isFluidExposed(world, posX + 1, posY, posZ, fluid);
 
         if (!sfUp && !sfDown && !sfEast && !sfWest && !sfNorth && !sfSouth) {
             return false;
@@ -133,7 +143,7 @@ public class FluidRenderPipeline {
         LightPipeline lighter = !lava && MinecraftClient.isAmbientOcclusionEnabled() ? this.smoothLightPipeline : this.flatLightPipeline;
         lighter.reset();
 
-        if (sfUp && !isSideCovered(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
+        if (sfUp && this.isSideExposed(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
             h1 -= 0.001F;
             h2 -= 0.001F;
             h3 -= 0.001F;
@@ -215,7 +225,7 @@ public class FluidRenderPipeline {
             this.writeVertex(quad, 3, x + 1.0F, y + float_13, z + 1.0F, maxU, maxV);
 
             this.applyLighting(quad, pos, lighter, light, Direction.DOWN);
-            this.writeQuad(builder, quad, red, green, blue, true);
+            this.writeQuad(builder, quad, red, green, blue, false);
 
             rendered = true;
         }
@@ -281,7 +291,7 @@ public class FluidRenderPipeline {
                     continue;
             }
 
-            if (!isSideCovered(world, posX, posY, posZ, dir, Math.max(c1, c2))) {
+            if (this.isSideExposed(world, posX, posY, posZ, dir, Math.max(c1, c2))) {
                 int adjX = posX + dir.getOffsetX();
                 int adjY = posY + dir.getOffsetY();
                 int adjZ = posZ + dir.getOffsetZ();
