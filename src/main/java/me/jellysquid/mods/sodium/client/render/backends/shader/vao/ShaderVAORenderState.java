@@ -10,15 +10,13 @@ import org.lwjgl.opengl.GL20;
 public class ShaderVAORenderState implements ChunkRenderState {
     private final GlBuffer vertexBuffer;
     private final GlVertexArray vertexArray;
-    private final GlAttributeBinding[] attributes;
     private final Vector3d translation;
 
     private boolean init;
 
-    public ShaderVAORenderState(GlBuffer vertexBuffer, GlAttributeBinding[] attributes, Vector3d translation) {
+    public ShaderVAORenderState(GlBuffer vertexBuffer , Vector3d translation) {
         this.vertexBuffer = vertexBuffer;
         this.vertexArray = new GlVertexArray();
-        this.attributes = attributes;
         this.translation = translation;
     }
 
@@ -32,13 +30,13 @@ public class ShaderVAORenderState implements ChunkRenderState {
         this.vertexArray.delete();
     }
 
-    public void bind() {
+    public void bind(GlAttributeBinding[] attributes) {
         this.vertexArray.bind();
 
         if (!this.init) {
             this.vertexBuffer.bind();
 
-            for (GlAttributeBinding binding : this.attributes) {
+            for (GlAttributeBinding binding : attributes) {
                 GL20.glVertexAttribPointer(binding.index, binding.count, binding.format, binding.normalized, binding.stride, binding.pointer);
                 GL20.glEnableVertexAttribArray(binding.index);
             }

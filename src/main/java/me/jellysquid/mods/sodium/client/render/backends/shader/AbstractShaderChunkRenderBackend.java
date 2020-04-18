@@ -11,6 +11,7 @@ import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.backends.AbstractChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.backends.shader.FogShaderComponent.FogMode;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkMesh;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
@@ -19,10 +20,13 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL15;
 
+import java.util.EnumMap;
 import java.util.Iterator;
 
 public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderState> extends AbstractChunkRenderBackend<T> {
-    protected final ChunkShader program;
+    private final EnumMap<FogMode, ChunkShader> shaders = new EnumMap<>(FogMode.class);
+
+    protected ChunkShader activeProgram;
     protected final boolean useImmutableStorage;
 
     public AbstractShaderChunkRenderBackend() {
@@ -30,14 +34,20 @@ public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderStat
 
         this.useImmutableStorage = GlImmutableBuffer.isSupported() && options.performance.useImmutableStorage;
 
-        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk.v.glsl"));
-        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk.f.glsl"));
+        this.shaders.put(FogMode.NONE, createShader(FogMode.NONE));
+        this.shaders.put(FogMode.LINEAR, createShader(FogMode.LINEAR));
+        this.shaders.put(FogMode.EXP2, createShader(FogMode.EXP2));
+    }
+
+    private static ChunkShader createShader(FogMode fogMode) {
+        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium:chunk.v.glsl"), fogMode.getDefines());
+        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium:chunk.f.glsl"), fogMode.getDefines());
 
         try {
-            this.program = GlShaderProgram.builder(new Identifier("sodium", "chunk_shader"))
+            return GlShaderProgram.builder(new Identifier("sodium", "chunk_shader"))
                     .attach(vertShader)
                     .attach(fragShader)
-                    .link(ChunkShader::new);
+                    .link((program, name) -> new ChunkShader(program, name, fogMode.getFactory()));
         } finally {
             vertShader.delete();
             fragShader.delete();
@@ -58,7 +68,7 @@ public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderStat
             render.setData(data);
 
             for (ChunkMesh mesh : data.getMeshes()) {
-                GlBuffer buffer = this.createBuffer(GL15.GL_ARRAY_BUFFER);
+                GlBuffer buffer = this.createBuffer();
                 buffer.bind();
                 buffer.upload(mesh.takePendingUpload());
 
@@ -73,27 +83,31 @@ public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderStat
         }
     }
 
-    private GlBuffer createBuffer(int target) {
-        return this.useImmutableStorage ? new GlImmutableBuffer(target) : new GlMutableBuffer(target);
+    private GlBuffer createBuffer() {
+        return this.useImmutableStorage ? new GlImmutableBuffer(GL15.GL_ARRAY_BUFFER) : new GlMutableBuffer(GL15.GL_ARRAY_BUFFER);
     }
 
     @Override
     public void begin(MatrixStack matrixStack) {
         super.begin(matrixStack);
 
-        this.program.bind();
+        this.activeProgram = this.shaders.get(FogMode.chooseFogMode());
+        this.activeProgram.bind();
     }
+
 
     @Override
     public void end(MatrixStack matrixStack) {
-        this.program.unbind();
+        this.activeProgram.unbind();
 
         super.end(matrixStack);
     }
 
     @Override
     public void delete() {
-        this.program.delete();
+        for (ChunkShader shader : this.shaders.values()) {
+            shader.delete();
+        }
     }
 
     protected abstract T createRenderState(GlBuffer buffer, ChunkRender<T> render);
