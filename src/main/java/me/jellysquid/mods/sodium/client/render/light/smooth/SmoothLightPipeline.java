@@ -37,10 +37,10 @@ public class SmoothLightPipeline implements LightPipeline {
 
         final AoNeighborInfo neighborInfo = AoNeighborInfo.get(face);
 
-        if (ModelQuadFlags.contains(flags, ModelQuadFlags.IS_PARTIAL)) {
-            this.applyComplex(neighborInfo, quad, pos, face, out, flags);
-        } else {
+        if (flags == ModelQuadFlags.IS_ALIGNED) {
             this.applyAlignedFullFace(neighborInfo, pos, face, out, flags);
+        } else {
+            this.applyComplex(neighborInfo, quad, pos, face, out, flags);
         }
     }
 
