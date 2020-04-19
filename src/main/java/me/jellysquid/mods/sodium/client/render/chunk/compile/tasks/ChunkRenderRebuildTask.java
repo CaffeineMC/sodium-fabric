@@ -2,11 +2,11 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile.tasks;
 
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
-import me.jellysquid.mods.sodium.client.render.model.quad.transformers.TranslateTransformer;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.Block;
@@ -43,18 +43,13 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
         ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
-        BlockPos from = new BlockPos(this.render.getOriginX(), this.render.getOriginY(), this.render.getOriginZ());
-        BlockPos to = from.add(16, 16, 16);
+        int minX = this.render.getOriginX();
+        int minY = this.render.getOriginY();
+        int minZ = this.render.getOriginZ();
 
-        TranslateTransformer transformer = new TranslateTransformer();
-
-        int minX = from.getX();
-        int minY = from.getY();
-        int minZ = from.getZ();
-
-        int maxX = to.getX();
-        int maxY = to.getY();
-        int maxZ = to.getZ();
+        int maxX = minX + 16;
+        int maxY = minY + 16;
+        int maxZ = minZ + 16;
 
         BlockPos.Mutable pos = new BlockPos.Mutable();
 
@@ -70,12 +65,13 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
 
                     pos.set(x, y, z);
 
-                    if (block.getRenderType(blockState) != BlockRenderType.INVISIBLE) {
+                    if (block.getRenderType(blockState) == BlockRenderType.MODEL) {
                         RenderLayer layer = RenderLayers.getBlockLayer(blockState);
 
-                        transformer.setOffset(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
+                        ChunkMeshBuilder builder = buffers.get(layer);
+                        builder.setOffset(x & 15, y & 15, z & 15);
 
-                        pipeline.renderBlock(meshInfo, blockState, pos, this.slice, transformer, buffers.get(layer), true);
+                        pipeline.renderBlock(meshInfo, blockState, pos, this.slice, buffers.get(layer), true);
                     }
 
                     FluidState fluidState = block.getFluidState(blockState);
@@ -83,7 +79,10 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
                     if (!fluidState.isEmpty()) {
                         RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
 
-                        pipeline.renderFluid(meshInfo, pos, this.slice, buffers.get(layer), fluidState);
+                        ChunkMeshBuilder builder = buffers.get(layer);
+                        builder.setOffset(x & 15, y & 15, z & 15);
+
+                        pipeline.renderFluid(meshInfo, pos, this.slice, builder, fluidState);
                     }
 
                     if (block.hasBlockEntity()) {
@@ -105,7 +104,7 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
             }
         }
 
-        meshInfo.addMeshes(buffers.createMeshes(this.camera, from));
+        meshInfo.addMeshes(buffers.createMeshes(this.camera, this.render.getOrigin()));
         meshInfo.setOcclusionData(occluder.build());
 
         return new ChunkBuildResult<>(this.render, meshInfo.build());

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.model.quad.transformers.MatrixTransformer;
+import me.jellysquid.mods.sodium.client.render.model.quad.consumer.FallbackQuadConsumer;
 import me.jellysquid.mods.sodium.client.render.pipeline.BlockRenderPipeline;
 import me.jellysquid.mods.sodium.client.render.pipeline.GlobalRenderer;
 import net.minecraft.block.BlockState;
@@ -20,11 +20,11 @@ import java.util.Random;
 @Mixin(BlockModelRenderer.class)
 public class MixinBlockModelRenderer {
     @Inject(method = "render(Lnet/minecraft/world/BlockRenderView;Lnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;ZLjava/util/Random;JI)Z", at = @At("HEAD"), cancellable = true)
-    private void preRenderBlock(BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, MatrixStack matrixStack, VertexConsumer vertexConsumer, boolean cull, Random rand, long seed, int int_1, CallbackInfoReturnable<Boolean> cir) {
+    private void preRenderBlock(BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, MatrixStack matrixStack, VertexConsumer consumer, boolean cull, Random rand, long seed, int int_1, CallbackInfoReturnable<Boolean> cir) {
         GlobalRenderer renderer = GlobalRenderer.getInstance(world);
         BlockRenderPipeline blockRenderer = renderer.getBlockRenderer();
 
-        boolean ret = blockRenderer.renderModel(null, world, model, state, pos, new MatrixTransformer(matrixStack), vertexConsumer, cull, rand, seed);
+        boolean ret = blockRenderer.renderModel(null, world, model, state, pos, new FallbackQuadConsumer(consumer, matrixStack), cull, rand, seed);
 
         cir.setReturnValue(ret);
     }
