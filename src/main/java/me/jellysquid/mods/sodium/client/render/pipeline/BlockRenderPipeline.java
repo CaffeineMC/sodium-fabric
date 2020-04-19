@@ -4,18 +4,15 @@ import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
-import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
-import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
 import me.jellysquid.mods.sodium.client.render.model.quad.*;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.client.util.ColorUtil;
 import me.jellysquid.mods.sodium.client.util.QuadUtil;
+import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColors;
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.util.math.BlockPos;
@@ -29,16 +26,17 @@ import java.util.Random;
 public class BlockRenderPipeline {
     private final BlockColors colorMap;
 
-    private final SmoothLightPipeline smoothLightPipeline;
-    private final FlatLightPipeline flatLightPipeline;
+    private final LightPipeline smoothLightPipeline;
+    private final LightPipeline flatLightPipeline;
 
     private final BlockOcclusionCache occlusionCache;
 
     private final ModelQuad cachedQuad = new ModelQuad();
     private final LightResult cachedLightResult = new LightResult();
     private final Int2IntArrayMap cachedColors = new Int2IntArrayMap();
+    private final Random random = new XoRoShiRoRandom();
 
-    public BlockRenderPipeline(MinecraftClient client, SmoothLightPipeline smoothLightPipeline, FlatLightPipeline flatLightPipeline) {
+    public BlockRenderPipeline(MinecraftClient client, LightPipeline smoothLightPipeline, LightPipeline flatLightPipeline) {
         this.colorMap = client.getBlockColorMap();
         this.smoothLightPipeline = smoothLightPipeline;
         this.flatLightPipeline = flatLightPipeline;
@@ -47,7 +45,7 @@ public class BlockRenderPipeline {
         this.cachedColors.defaultReturnValue(Integer.MIN_VALUE);
     }
 
-    public boolean renderModel(ChunkRenderData.Builder meshInfo, BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, ModelQuadTransformer quadTransformer, VertexConsumer builder, boolean cull, Random random, long seed) {
+    public boolean renderModel(ChunkRenderData.Builder meshInfo, BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, ModelQuadConsumer builder, boolean cull, Random random, long seed) {
         LightPipeline lighter = this.getLightPipeline(state, model);
         lighter.reset();
 
@@ -67,7 +65,7 @@ public class BlockRenderPipeline {
             }
 
             if (!cull || this.occlusionCache.shouldDrawSide(state, world, pos, dir)) {
-                this.renderQuadList(meshInfo, world, state, pos, lighter, quadTransformer, offset, builder, sided);
+                this.renderQuadList(meshInfo, world, state, pos, lighter, offset, builder, sided);
 
                 rendered = true;
             }
@@ -78,7 +76,7 @@ public class BlockRenderPipeline {
         List<BakedQuad> all = model.getQuads(state, null, random);
 
         if (!all.isEmpty()) {
-            this.renderQuadList(meshInfo, world, state, pos, lighter, quadTransformer, offset, builder, all);
+            this.renderQuadList(meshInfo, world, state, pos, lighter, offset, builder, all);
 
             rendered = true;
         }
@@ -86,12 +84,12 @@ public class BlockRenderPipeline {
         return rendered;
     }
 
-    private void renderQuadList(ChunkRenderData.Builder meshInfo, BlockRenderView world, BlockState state, BlockPos pos, LightPipeline lighter, ModelQuadTransformer quadTransformer, Vec3d offset, VertexConsumer builder, List<BakedQuad> quads) {
+    private void renderQuadList(ChunkRenderData.Builder meshInfo, BlockRenderView world, BlockState state, BlockPos pos, LightPipeline lighter, Vec3d offset, ModelQuadConsumer builder, List<BakedQuad> quads) {
         for (BakedQuad quad : quads) {
             LightResult light = this.cachedLightResult;
             lighter.apply((ModelQuadView) quad, pos, light, quad.getFace());
 
-            this.renderQuad(world, state, pos, builder, quadTransformer, offset, quad, light.br, light.lm);
+            this.renderQuad(world, state, pos, builder, offset, quad, light.br, light.lm);
 
             if (meshInfo != null) {
                 meshInfo.addSprite(((ModelQuadView) quad).getSprite());
@@ -99,7 +97,7 @@ public class BlockRenderPipeline {
         }
     }
 
-    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, VertexConsumer consumer, ModelQuadTransformer quadTransformer, Vec3d offset, BakedQuad bakedQuad, float[] brightnesses, int[] lights) {
+    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelQuadConsumer consumer, Vec3d offset, BakedQuad bakedQuad, float[] brightnesses, int[] lights) {
         float r, g, b;
 
         if (bakedQuad.hasColor()) {
@@ -137,33 +135,7 @@ public class BlockRenderPipeline {
             copy.setNormal(dstIndex, norm);
         }
 
-        quadTransformer.transform(copy);
-
-        writeQuad(consumer, copy);
-    }
-
-    private static void writeQuad(VertexConsumer consumer, ModelQuadViewMutable quad) {
-        if (consumer instanceof ModelQuadConsumer) {
-            ((ModelQuadConsumer) consumer).write(quad);
-        } else {
-            for (int i = 0; i < 4; i++) {
-                int color = quad.getColor(i);
-
-                float r = ColorUtil.normalize(ColorUtil.unpackColorR(color));
-                float g = ColorUtil.normalize(ColorUtil.unpackColorG(color));
-                float b = ColorUtil.normalize(ColorUtil.unpackColorB(color));
-                float a = ColorUtil.normalize(ColorUtil.unpackColorA(color));
-
-                int light = quad.getLight(i);
-                int norm = quad.getNormal(i);
-
-                float normX = QuadUtil.unpackNormalX(norm);
-                float normY = QuadUtil.unpackNormalY(norm);
-                float normZ = QuadUtil.unpackNormalZ(norm);
-
-                consumer.vertex(quad.getX(i), quad.getY(i), quad.getZ(i), r, g, b, a, quad.getTexU(i), quad.getTexV(i), light, OverlayTexture.DEFAULT_UV, normX, normY, normZ);
-            }
-        }
+        consumer.write(copy);
     }
 
     private int getQuadColor(BlockState state, BlockRenderView world, BlockPos pos, int colorIndex) {

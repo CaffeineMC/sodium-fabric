@@ -265,4 +265,8 @@ public class ChunkRender<T extends ChunkRenderState> {
     public boolean canTick() {
         return !this.getData().getAnimatedSprites().isEmpty();
     }
+
+    public BlockPos getOrigin() {
+        return new BlockPos(this.getOriginX(), this.getOriginY(), this.getOriginZ());
+    }
 }

@@ -5,12 +5,11 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadEncoder;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadViewMutable;
-import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.GlAllocationUtils;
 
 import java.nio.ByteBuffer;
 
-public class ChunkMeshBuilder implements ModelQuadConsumer, VertexConsumer {
+public class ChunkMeshBuilder implements ModelQuadConsumer {
     private final GlVertexFormat<?> format;
     private final ModelQuadEncoder encoder;
 
@@ -20,6 +19,8 @@ public class ChunkMeshBuilder implements ModelQuadConsumer, VertexConsumer {
     private int position;
     private int capacity;
 
+    private float x, y, z;
+
     public ChunkMeshBuilder(GlVertexFormat<?> format, int initialSize) {
         this.format = format;
         this.stride = format.getStride();
@@ -28,6 +29,12 @@ public class ChunkMeshBuilder implements ModelQuadConsumer, VertexConsumer {
 
         this.buffer = GlAllocationUtils.allocateByteBuffer(initialSize);
         this.capacity = initialSize;
+    }
+
+    public void setOffset(int x, int y, int z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     @Override
@@ -41,7 +48,7 @@ public class ChunkMeshBuilder implements ModelQuadConsumer, VertexConsumer {
             this.grow(len);
         }
 
-        this.encoder.write(this.format, this.buffer, position, quad);
+        this.encoder.write(this.format, this.buffer, position, quad, this.x, this.y, this.z);
     }
 
     private void grow(int len) {
@@ -75,40 +82,5 @@ public class ChunkMeshBuilder implements ModelQuadConsumer, VertexConsumer {
         this.position = 0;
 
         return copy;
-    }
-
-    @Override
-    public VertexConsumer vertex(double x, double y, double z) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public VertexConsumer color(int red, int green, int blue, int alpha) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public VertexConsumer texture(float u, float v) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public VertexConsumer overlay(int u, int v) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public VertexConsumer light(int u, int v) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public VertexConsumer normal(float x, float y, float z) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void next() {
-        throw new UnsupportedOperationException();
     }
 }

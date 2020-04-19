@@ -6,7 +6,6 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttribute;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadEncoder;
-import me.jellysquid.mods.sodium.client.util.BufferUtil;
 import me.jellysquid.mods.sodium.client.util.fp.HFloat;
 
 public class SodiumVertexFormats {
@@ -33,16 +32,25 @@ public class SodiumVertexFormats {
     private static final Reference2ObjectMap<GlVertexFormat<?>, ModelQuadEncoder> encoders = new Reference2ObjectOpenHashMap<>();
 
     static {
-        registerEncoder(CHUNK_MESH_VANILLA, (format, buffer, position, quad) -> {
-            int[] data = quad.getVertexData();
-            BufferUtil.copyIntArray(data, data.length, position, buffer);
+        registerEncoder(CHUNK_MESH_VANILLA, (format, buffer, position, quad, x, y, z) -> {
+            for (int i = 0; i < 4; i++) {
+                buffer.putFloat(position, quad.getX(i) + x);
+                buffer.putFloat(position + 4, quad.getY(i) + y);
+                buffer.putFloat(position + 8, quad.getZ(i) + z);
+                buffer.putInt(position + 12, quad.getColor(i));
+                buffer.putFloat(position + 16, quad.getTexU(i));
+                buffer.putFloat(position + 20, quad.getTexV(i));
+                buffer.putInt(position + 24, quad.getLight(i));
+
+                position += format.getStride();
+            }
         });
 
-        registerEncoder(CHUNK_MESH_HFP, (format, buffer, position, quad) -> {
+        registerEncoder(CHUNK_MESH_HFP, (format, buffer, position, quad, x, y, z) -> {
             for (int i = 0; i < 4; i++) {
-                buffer.putShort(position, HFloat.encodeHalfS(quad.getX(i)));
-                buffer.putShort(position + 2, HFloat.encodeHalfS(quad.getY(i)));
-                buffer.putShort(position + 4, HFloat.encodeHalfS(quad.getZ(i)));
+                buffer.putShort(position, HFloat.encodeHalfS(quad.getX(i) + x));
+                buffer.putShort(position + 2, HFloat.encodeHalfS(quad.getY(i) + y));
+                buffer.putShort(position + 4, HFloat.encodeHalfS(quad.getZ(i) + z));
                 buffer.putInt(position + 8, quad.getColor(i));
                 buffer.putShort(position + 12, HFloat.encodeHalfS(quad.getTexU(i)));
                 buffer.putShort(position + 14, HFloat.encodeHalfS(quad.getTexV(i)));

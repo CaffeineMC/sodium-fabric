@@ -1,11 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
-import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
-import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuad;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadFlags;
@@ -42,13 +39,13 @@ public class FluidRenderPipeline {
 
     private final ModelQuadViewMutable quad = new ModelQuad();
 
-    private final SmoothLightPipeline smoothLightPipeline;
+    private final LightPipeline smoothLightPipeline;
     private final LightPipeline flatLightPipeline;
 
     private final LightResult lightResult = new LightResult();
     private final BlockPos.Mutable mpos = new BlockPos.Mutable();
 
-    public FluidRenderPipeline(MinecraftClient client, SmoothLightPipeline smoothLightPipeline, FlatLightPipeline flatLightPipeline) {
+    public FluidRenderPipeline(MinecraftClient client, LightPipeline smoothLightPipeline, LightPipeline flatLightPipeline) {
         BlockModels models = client.getBakedModelManager().getBlockModels();
 
         this.lavaSprites[0] = models.getModel(Blocks.LAVA.getDefaultState()).getSprite();
@@ -97,7 +94,7 @@ public class FluidRenderPipeline {
         return true;
     }
 
-    public boolean render(ChunkRenderData.Builder meshInfo, WorldSlice world, BlockPos pos, ChunkMeshBuilder builder, FluidState fluidState) {
+    public boolean render(ChunkRenderData.Builder meshInfo, WorldSlice world, BlockPos pos, ModelQuadConsumer consumer, FluidState fluidState) {
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();
@@ -131,11 +128,7 @@ public class FluidRenderPipeline {
         float h3 = this.getCornerHeight(world, posX + 1, posY, posZ + 1, fluidState.getFluid());
         float h4 = this.getCornerHeight(world, posX + 1, posY, posZ, fluidState.getFluid());
 
-        float x = pos.getX() & 15;
-        float y = pos.getY() & 15;
-        float z = pos.getZ() & 15;
-
-        float float_13 = sfDown ? 0.001F : 0.0F;
+        float yOffset = sfDown ? 0.001F : 0.0F;
 
         final ModelQuadViewMutable quad = this.quad;
         final LightResult light = this.lightResult;
@@ -166,7 +159,7 @@ public class FluidRenderPipeline {
                 v4 = v1;
             } else {
                 Sprite sprite = sprites[1];
-                float dir = (float) MathHelper.atan2(velocity.z, velocity.x) - ((float) Math.PI / 2F);
+                float dir = (float) MathHelper.atan2(velocity.z, velocity.x) - (1.5707964f);
                 float sin = MathHelper.sin(dir) * 0.25F;
                 float cos = MathHelper.cos(dir) * 0.25F;
                 u1 = sprite.getFrameU(8.0F + (-cos - sin) * 16.0F);
@@ -194,20 +187,20 @@ public class FluidRenderPipeline {
             v3 = MathHelper.lerp(s3, v3, vAvg);
             v4 = MathHelper.lerp(s3, v4, vAvg);
 
-            this.writeVertex(quad, 0, x, y + h1, z, u1, v1);
-            this.writeVertex(quad, 1, x, y + h2, z + 1.0F, u2, v2);
-            this.writeVertex(quad, 2, x + 1.0F, y + h3, z + 1.0F, u3, v3);
-            this.writeVertex(quad, 3, x + 1.0F, y + h4, z, u4, v4);
+            this.writeVertex(quad, 0, 0.0f, 0.0f + h1, 0.0f, u1, v1);
+            this.writeVertex(quad, 1, 0.0f, 0.0f + h2, 1.0F, u2, v2);
+            this.writeVertex(quad, 2, 1.0F, 0.0f + h3, 1.0F, u3, v3);
+            this.writeVertex(quad, 3, 1.0F, 0.0f + h4, 0.0f, u4, v4);
 
             this.applyLighting(quad, pos, lighter, light, Direction.UP);
-            this.writeQuad(builder, quad, red, green, blue, false);
+            this.writeQuad(consumer, quad, red, green, blue, false);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.writeVertex(quad, 3, x, y + h1, z, u1, v1);
-                this.writeVertex(quad, 2, x, y + h2, z + 1.0F, u2, v2);
-                this.writeVertex(quad, 1, x + 1.0F, y + h3, z + 1.0F, u3, v3);
-                this.writeVertex(quad, 0, x + 1.0F, y + h4, z, u4, v4);
-                this.writeQuad(builder, quad, red, green, blue, true);
+                this.writeVertex(quad, 3, 0.0f, 0.0f + h1, 0.0f, u1, v1);
+                this.writeVertex(quad, 2, 0.0f, 0.0f + h2, 1.0F, u2, v2);
+                this.writeVertex(quad, 1, 1.0F, 0.0f + h3, 1.0F, u3, v3);
+                this.writeVertex(quad, 0, 1.0F, 0.0f + h4, 0.0f, u4, v4);
+                this.writeQuad(consumer, quad, red, green, blue, true);
             }
 
             rendered = true;
@@ -219,13 +212,13 @@ public class FluidRenderPipeline {
             float minV = sprites[0].getMinV();
             float maxV = sprites[0].getMaxV();
 
-            this.writeVertex(quad, 0, x, y + float_13, z + 1.0F, minU, maxV);
-            this.writeVertex(quad, 1, x, y + float_13, z, minU, minV);
-            this.writeVertex(quad, 2, x + 1.0F, y + float_13, z, maxU, minV);
-            this.writeVertex(quad, 3, x + 1.0F, y + float_13, z + 1.0F, maxU, maxV);
+            this.writeVertex(quad, 0, 0.0f, 0.0f + yOffset, 1.0F, minU, maxV);
+            this.writeVertex(quad, 1, 0.0f, 0.0f + yOffset, 0.0f, minU, minV);
+            this.writeVertex(quad, 2, 1.0F, 0.0f + yOffset, 0.0f, maxU, minV);
+            this.writeVertex(quad, 3, 1.0F, 0.0f + yOffset, 1.0F, maxU, maxV);
 
             this.applyLighting(quad, pos, lighter, light, Direction.DOWN);
-            this.writeQuad(builder, quad, red, green, blue, false);
+            this.writeQuad(consumer, quad, red, green, blue, false);
 
             rendered = true;
         }
@@ -246,9 +239,9 @@ public class FluidRenderPipeline {
 
                     c1 = h1;
                     c2 = h4;
-                    x1 = x;
-                    x2 = x + 1.0F;
-                    z1 = z + 0.001F;
+                    x1 = 0.0f;
+                    x2 = 1.0F;
+                    z1 = 0.001f;
                     z2 = z1;
                     break;
                 case SOUTH:
@@ -258,9 +251,9 @@ public class FluidRenderPipeline {
 
                     c1 = h3;
                     c2 = h2;
-                    x1 = x + 1.0F;
-                    x2 = x;
-                    z1 = z + 0.999f;
+                    x1 = 1.0F;
+                    x2 = 0.0f;
+                    z1 = 0.999f;
                     z2 = z1;
                     break;
                 case WEST:
@@ -270,10 +263,10 @@ public class FluidRenderPipeline {
 
                     c1 = h2;
                     c2 = h1;
-                    x1 = x + 0.001F;
+                    x1 = 0.001f;
                     x2 = x1;
-                    z1 = z + 1.0F;
-                    z2 = z;
+                    z1 = 1.0F;
+                    z2 = 0.0f;
                     break;
                 case EAST:
                     if (!sfEast) {
@@ -282,10 +275,10 @@ public class FluidRenderPipeline {
 
                     c1 = h4;
                     c2 = h3;
-                    x1 = x + 0.999f;
+                    x1 = 0.999f;
                     x2 = x1;
-                    z1 = z;
-                    z2 = z + 1.0F;
+                    z1 = 0.0f;
+                    z2 = 1.0F;
                     break;
                 default:
                     continue;
@@ -318,21 +311,21 @@ public class FluidRenderPipeline {
                 float greenM = br * green;
                 float blueM = br * blue;
 
-                this.writeVertex(quad, 0, x2, y + c2, z2, u2, v2);
-                this.writeVertex(quad, 1, x2, y + float_13, z2, u2, v3);
-                this.writeVertex(quad, 2, x1, y + float_13, z1, u1, v3);
-                this.writeVertex(quad, 3, x1, y + c1, z1, u1, v1);
+                this.writeVertex(quad, 0, x2, 0.0f + c2, z2, u2, v2);
+                this.writeVertex(quad, 1, x2, 0.0f + yOffset, z2, u2, v3);
+                this.writeVertex(quad, 2, x1, 0.0f + yOffset, z1, u1, v3);
+                this.writeVertex(quad, 3, x1, 0.0f + c1, z1, u1, v1);
 
                 this.applyLighting(quad, pos, lighter, light, dir);
-                this.writeQuad(builder, quad, redM, greenM, blueM, false);
+                this.writeQuad(consumer, quad, redM, greenM, blueM, false);
 
                 if (sprite != this.waterOverlaySprite) {
-                    this.writeVertex(quad, 0, x1, y + c1, z1, u1, v1);
-                    this.writeVertex(quad, 1, x1, y + float_13, z1, u1, v3);
-                    this.writeVertex(quad, 2, x2, y + float_13, z2, u2, v3);
-                    this.writeVertex(quad, 3, x2, y + c2, z2, u2, v2);
+                    this.writeVertex(quad, 0, x1, 0.0f + c1, z1, u1, v1);
+                    this.writeVertex(quad, 1, x1, 0.0f + yOffset, z1, u1, v3);
+                    this.writeVertex(quad, 2, x2, 0.0f + yOffset, z2, u2, v3);
+                    this.writeVertex(quad, 3, x2, 0.0f + c2, z2, u2, v2);
 
-                    this.writeQuad(builder, quad, redM, greenM, blueM, true);
+                    this.writeQuad(consumer, quad, redM, greenM, blueM, true);
                 }
 
                 rendered = true;
@@ -350,7 +343,7 @@ public class FluidRenderPipeline {
         lighter.apply(quad, pos, light, dir);
     }
 
-    private void writeQuad(ChunkMeshBuilder consumer, ModelQuadViewMutable quad, float r, float g, float b, boolean flipLight) {
+    private void writeQuad(ModelQuadConsumer consumer, ModelQuadViewMutable quad, float r, float g, float b, boolean flipLight) {
         LightResult lightResult = this.lightResult;
 
         int lightIndex, lightOrder;
@@ -373,8 +366,7 @@ public class FluidRenderPipeline {
             lightIndex += lightOrder;
         }
 
-        // TODO: allow for fallback rendering
-        ((ModelQuadConsumer) consumer).write(quad);
+        consumer.write(quad);
     }
 
     private void writeVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {
