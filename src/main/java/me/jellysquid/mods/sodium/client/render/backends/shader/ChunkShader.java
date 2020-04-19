@@ -1,11 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader;
 
-import me.jellysquid.mods.sodium.client.gl.attribute.GlAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats.ChunkMeshAttribute;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShaderProgram;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.util.Identifier;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryStack;
@@ -24,9 +25,9 @@ public class ChunkShader extends GlShaderProgram {
     private final FogShaderComponent fogShader;
     private final FloatBuffer uModelOffsetBuffer;
 
-    public final GlAttributeBinding[] attributes;
+    public final GlVertexAttributeBinding[] attributes;
 
-    public ChunkShader(Identifier name, int handle, Function<ChunkShader, FogShaderComponent> fogShaderFunction) {
+    public ChunkShader(Identifier name, int handle, GlVertexFormat<ChunkMeshAttribute> format, Function<ChunkShader, FogShaderComponent> fogShaderFunction) {
         super(name, handle);
 
         this.uModelViewMatrix = this.getUniformLocation("u_ModelViewMatrix");
@@ -42,15 +43,14 @@ public class ChunkShader extends GlShaderProgram {
         int aLightCoord = this.getAttributeLocation("a_LightCoord");
 
         // TODO: Create this from VertexFormat
-        this.attributes = new GlAttributeBinding[] {
-                new GlAttributeBinding(aPos, 3, GL11.GL_FLOAT, false, 32, 0),
-                new GlAttributeBinding(aColor, 4, GL11.GL_UNSIGNED_BYTE, true, 32, 12),
-                new GlAttributeBinding(aTexCoord, 2, GL11.GL_FLOAT, false, 32, 16),
-                new GlAttributeBinding(aLightCoord, 2, GL11.GL_SHORT, false, 32, 24)
+        this.attributes = new GlVertexAttributeBinding[] {
+                new GlVertexAttributeBinding(aPos, format, ChunkMeshAttribute.POSITION),
+                new GlVertexAttributeBinding(aColor, format, ChunkMeshAttribute.COLOR),
+                new GlVertexAttributeBinding(aTexCoord, format, ChunkMeshAttribute.TEXTURE),
+                new GlVertexAttributeBinding(aLightCoord, format, ChunkMeshAttribute.LIGHT)
         };
 
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(3);
-
         this.fogShader = fogShaderFunction.apply(this);
     }
 

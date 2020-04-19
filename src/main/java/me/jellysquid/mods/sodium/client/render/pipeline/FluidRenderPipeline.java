@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
@@ -19,7 +20,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.StainedGlassBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.world.BiomeColors;
-import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.block.BlockModels;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.texture.Sprite;
@@ -97,7 +97,7 @@ public class FluidRenderPipeline {
         return true;
     }
 
-    public boolean render(ChunkRenderData.Builder meshInfo, WorldSlice world, BlockPos pos, VertexConsumer builder, FluidState fluidState) {
+    public boolean render(ChunkRenderData.Builder meshInfo, WorldSlice world, BlockPos pos, ChunkMeshBuilder builder, FluidState fluidState) {
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();
@@ -350,7 +350,7 @@ public class FluidRenderPipeline {
         lighter.apply(quad, pos, light, dir);
     }
 
-    private void writeQuad(VertexConsumer consumer, ModelQuadViewMutable quad, float r, float g, float b, boolean flipLight) {
+    private void writeQuad(ChunkMeshBuilder consumer, ModelQuadViewMutable quad, float r, float g, float b, boolean flipLight) {
         LightResult lightResult = this.lightResult;
 
         int lightIndex, lightOrder;

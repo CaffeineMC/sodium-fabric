@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
@@ -48,8 +49,10 @@ public class ChunkBuilder<T extends ChunkRenderState> {
     private BlockRenderPassManager renderPassManager;
 
     private final int limitThreads;
+    private final GlVertexFormat<?> format;
 
-    public ChunkBuilder() {
+    public ChunkBuilder(GlVertexFormat<?> format) {
+        this.format = format;
         this.limitThreads = getOptimalThreadCount();
         this.worldSliceArena = new Arena<>(this.getBudget(), WorldSlice::new);
     }
@@ -68,7 +71,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         }
 
         for (int i = 0; i < this.limitThreads; i++) {
-            ChunkBuildBuffers bufferCache = new ChunkBuildBuffers(this.renderPassManager);
+            ChunkBuildBuffers bufferCache = new ChunkBuildBuffers(this.format, this.renderPassManager);
             WorkerRunnable worker = new WorkerRunnable(bufferCache);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
