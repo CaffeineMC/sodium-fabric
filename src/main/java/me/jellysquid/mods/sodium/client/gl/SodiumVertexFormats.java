@@ -25,9 +25,9 @@ public class SodiumVertexFormats {
      */
     public static final GlVertexFormat<ChunkMeshAttribute> CHUNK_MESH_HFP = GlVertexAttribute.builder(ChunkMeshAttribute.class)
             .add(ChunkMeshAttribute.POSITION, new GlVertexAttribute(GlVertexAttributeFormat.HALF_FLOAT, 3, false, 0))
-            .add(ChunkMeshAttribute.COLOR, new GlVertexAttribute(GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true, 6))
-            .add(ChunkMeshAttribute.TEXTURE, new GlVertexAttribute(GlVertexAttributeFormat.HALF_FLOAT, 2, false, 10))
-            .add(ChunkMeshAttribute.LIGHT, new GlVertexAttribute(GlVertexAttributeFormat.SHORT, 2, false, 14))
+            .add(ChunkMeshAttribute.COLOR, new GlVertexAttribute(GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true, 8))
+            .add(ChunkMeshAttribute.TEXTURE, new GlVertexAttribute(GlVertexAttributeFormat.HALF_FLOAT, 2, false, 12))
+            .add(ChunkMeshAttribute.LIGHT, new GlVertexAttribute(GlVertexAttributeFormat.SHORT, 2, false, 16))
             .build(20);
 
     private static final Reference2ObjectMap<GlVertexFormat<?>, ModelQuadEncoder> encoders = new Reference2ObjectOpenHashMap<>();
@@ -43,10 +43,10 @@ public class SodiumVertexFormats {
                 buffer.putShort(position, HFloat.encodeHalfS(quad.getX(i)));
                 buffer.putShort(position + 2, HFloat.encodeHalfS(quad.getY(i)));
                 buffer.putShort(position + 4, HFloat.encodeHalfS(quad.getZ(i)));
-                buffer.putInt(position + 6, quad.getColor(i));
-                buffer.putShort(position + 10, HFloat.encodeHalfS(quad.getTexU(i)));
-                buffer.putShort(position + 12, HFloat.encodeHalfS(quad.getTexV(i)));
-                buffer.putInt(position + 14, quad.getLight(i));
+                buffer.putInt(position + 8, quad.getColor(i));
+                buffer.putShort(position + 12, HFloat.encodeHalfS(quad.getTexU(i)));
+                buffer.putShort(position + 14, HFloat.encodeHalfS(quad.getTexV(i)));
+                buffer.putInt(position + 16, quad.getLight(i));
 
                 position += format.getStride();
             }
