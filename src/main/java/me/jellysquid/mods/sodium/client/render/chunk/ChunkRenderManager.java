@@ -74,7 +74,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             this.renderLists[i] = new RenderList<>();
         }
 
-        this.builder = new ChunkBuilder<>();
+        this.builder = new ChunkBuilder<>(backend.getVertexFormat());
         this.builder.init(world, renderPassManager);
 
         this.dirty = true;

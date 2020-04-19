@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader.vbo;
 
-import me.jellysquid.mods.sodium.client.gl.attribute.GlAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
@@ -11,11 +13,15 @@ import org.lwjgl.opengl.GL20;
 import java.util.Iterator;
 
 public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBackend<ShaderVBORenderState> {
+    public ShaderVBOChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
+        super(format);
+    }
+
     @Override
     public void render(Iterator<ShaderVBORenderState> renders, MatrixStack matrixStack, double x, double y, double z) {
         super.begin(matrixStack);
 
-        for (GlAttributeBinding binding : this.activeProgram.attributes) {
+        for (GlVertexAttributeBinding binding : this.activeProgram.attributes) {
             GL20.glEnableVertexAttribArray(binding.index);
         }
 
@@ -42,7 +48,7 @@ public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBacken
             lastRender.unbind();
         }
 
-        for (GlAttributeBinding binding : this.activeProgram.attributes) {
+        for (GlVertexAttributeBinding binding : this.activeProgram.attributes) {
             GL20.glDisableVertexAttribArray(binding.index);
         }
 

@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
+import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlImmutableBuffer;
 import me.jellysquid.mods.sodium.client.gui.options.*;
@@ -225,7 +226,7 @@ public class SodiumGameOptionPages {
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Immutable Storage")
-                        .setTooltip("If enabled, immutable storage objects will be used for storing chunk meshes. This can improve performance by giving the driver, " +
+                        .setTooltip("If enabled, immutable storage objects will be used for storing chunk meshes. This can improve performance by giving the driver " +
                                 "more information about how the data will be used, in turn allowing it to apply additional optimizations." +
                                 "\n\nRequires OpenGL 4.4+ or support for the ARB_buffer_storage extension.")
                         .setControl(TickBoxControl::new)
@@ -261,6 +262,18 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.useParticleCulling = value, opts -> opts.performance.useParticleCulling)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Compact Vertex Format")
+                        .setTooltip("If enabled, a more compact vertex format will be used for chunk data. This option may break certain mods which expect " +
+                                "a specific vertex format, but will reduce graphics memory usage and bandwidth requirements by nearly 40% for rendered chunk data.\n\n" +
+                                "Requires OpenGL 3.0+.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.performance.useCompactVertexFormat = value, opts -> opts.performance.useCompactVertexFormat)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .setEnabled(SodiumVertexFormats.CHUNK_MESH_HFP.isSupported())
                         .build()
                 )
                 .build());

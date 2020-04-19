@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
-import net.minecraft.client.render.VertexFormat;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 
 import java.nio.ByteBuffer;
 
 public class BufferUploadData {
-    public final VertexFormat format;
+    public final GlVertexFormat<?> format;
     public final ByteBuffer buffer;
 
-    public BufferUploadData(ByteBuffer buffer, VertexFormat format) {
+    public BufferUploadData(ByteBuffer buffer, GlVertexFormat<?> format) {
         this.format = format;
         this.buffer = buffer;
     }

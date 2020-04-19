@@ -16,7 +16,7 @@ public class GlImmutableBuffer extends GlBuffer {
 
     @Override
     public void upload(BufferUploadData data) {
-        this.vertexCount = data.buffer.capacity() / data.format.getVertexSize();
+        this.vertexCount = data.buffer.capacity() / data.format.getStride();
 
         storageFuncs.glBufferStorage(this.target, data.buffer, 0);
     }

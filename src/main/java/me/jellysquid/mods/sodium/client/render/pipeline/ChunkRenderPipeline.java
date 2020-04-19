@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.light.cache.ChunkLightDataCache;
 import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
@@ -10,7 +11,7 @@ import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.block.BlockModels;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
@@ -42,7 +43,7 @@ public class ChunkRenderPipeline {
         this.models = client.getBakedModelManager().getBlockModels();
     }
 
-    public boolean renderBlock(ChunkRenderData.Builder meshInfo, BlockState state, BlockPos pos, BlockRenderView world, ModelQuadTransformer quadTransformer, BufferBuilder builder, boolean cull) {
+    public boolean renderBlock(ChunkRenderData.Builder meshInfo, BlockState state, BlockPos pos, BlockRenderView world, ModelQuadTransformer quadTransformer, VertexConsumer builder, boolean cull) {
         BlockRenderType type = state.getRenderType();
 
         if (type != BlockRenderType.MODEL) {
@@ -52,7 +53,7 @@ public class ChunkRenderPipeline {
         return this.blockRenderer.renderModel(meshInfo, world, this.models.getModel(state), state, pos, quadTransformer, builder, cull, this.random, state.getRenderingSeed(pos));
     }
 
-    public void renderFluid(ChunkRenderData.Builder meshInfo, BlockPos.Mutable pos, WorldSlice region, BufferBuilder builder, FluidState fluidState) {
+    public void renderFluid(ChunkRenderData.Builder meshInfo, BlockPos.Mutable pos, WorldSlice region, ChunkMeshBuilder builder, FluidState fluidState) {
         this.fluidRenderer.render(meshInfo, region, pos, builder, fluidState);
     }
 

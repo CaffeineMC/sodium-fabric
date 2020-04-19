@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader.vao;
 
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import net.minecraft.client.util.math.Vector3d;
@@ -30,13 +30,13 @@ public class ShaderVAORenderState implements ChunkRenderState {
         this.vertexArray.delete();
     }
 
-    public void bind(GlAttributeBinding[] attributes) {
+    public void bind(GlVertexAttributeBinding[] attributes) {
         this.vertexArray.bind();
 
         if (!this.init) {
             this.vertexBuffer.bind();
 
-            for (GlAttributeBinding binding : attributes) {
+            for (GlVertexAttributeBinding binding : attributes) {
                 GL20.glVertexAttribPointer(binding.index, binding.count, binding.format, binding.normalized, binding.stride, binding.pointer);
                 GL20.glEnableVertexAttribArray(binding.index);
             }

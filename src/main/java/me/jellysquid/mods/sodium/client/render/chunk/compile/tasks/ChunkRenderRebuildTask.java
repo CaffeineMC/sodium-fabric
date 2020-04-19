@@ -13,10 +13,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
@@ -24,7 +22,6 @@ import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.WorldChunk;
-import org.lwjgl.opengl.GL11;
 
 public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRenderBuildTask<T> {
     private final ChunkRender<T> render;
@@ -76,15 +73,9 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
                     if (block.getRenderType(blockState) != BlockRenderType.INVISIBLE) {
                         RenderLayer layer = RenderLayers.getBlockLayer(blockState);
 
-                        BufferBuilder builder = buffers.get(layer);
-
-                        if (!builder.isBuilding()) {
-                            builder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
-                        }
-
                         transformer.setOffset(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
 
-                        pipeline.renderBlock(meshInfo, blockState, pos, this.slice, transformer, builder, true);
+                        pipeline.renderBlock(meshInfo, blockState, pos, this.slice, transformer, buffers.get(layer), true);
                     }
 
                     FluidState fluidState = block.getFluidState(blockState);
@@ -92,13 +83,7 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
                     if (!fluidState.isEmpty()) {
                         RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
 
-                        BufferBuilder builder = buffers.get(layer);
-
-                        if (!builder.isBuilding()) {
-                            builder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL);
-                        }
-
-                        pipeline.renderFluid(meshInfo, pos, this.slice, builder, fluidState);
+                        pipeline.renderFluid(meshInfo, pos, this.slice, buffers.get(layer), fluidState);
                     }
 
                     if (block.hasBlockEntity()) {

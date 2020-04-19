@@ -9,7 +9,7 @@ public class GlMutableBuffer extends GlBuffer {
 
     @Override
     public void upload(BufferUploadData data) {
-        this.vertexCount = data.buffer.remaining() / data.format.getVertexSize();
+        this.vertexCount = data.buffer.remaining() / data.format.getStride();
 
         bufferFuncs.glBufferData(this.target, data.buffer, GL15.GL_STATIC_DRAW);
     }
