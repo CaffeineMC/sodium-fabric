@@ -9,7 +9,11 @@ import java.util.Random;
 public class XoRoShiRoRandom extends Random {
     private static final long serialVersionUID = 1L;
 
-    private long s0, s1;
+    private SplitMixRandom mixer;
+    private long seed = Long.MIN_VALUE;
+    private long p0, p1; // The initialization words for the current seed
+    private long s0, s1; // The current random words
+    private boolean hasSavedState; // True if we can be quickly reseed by using resetting the words
 
     private static final SplitMixRandom seedUniquifier = new SplitMixRandom(System.nanoTime());
 
@@ -112,9 +116,29 @@ public class XoRoShiRoRandom extends Random {
 
     @Override
     public void setSeed(final long seed) {
-        final SplitMixRandom r = new SplitMixRandom(seed);
+        // Restore the previous initial state if the seed hasn't changed
+        // Setting and mixing the seed is expensive, so this saves some CPU cycles
+        if (this.hasSavedState && this.seed == seed) {
+            this.s0 = this.p0;
+            this.s1 = this.p1;
+        } else {
+            SplitMixRandom mixer = this.mixer;
 
-        this.s0 = r.nextLong();
-        this.s1 = r.nextLong();
+            // Avoid allocations of SplitMixRandom
+            if (mixer == null) {
+                mixer = this.mixer = new SplitMixRandom(seed);
+            } else {
+                mixer.setSeed(seed);
+            }
+
+            this.s0 = mixer.nextLong();
+            this.s1 = mixer.nextLong();
+
+            this.p0 = this.s0;
+            this.p1 = this.s1;
+
+            this.seed = seed;
+            this.hasSavedState = true;
+        }
     }
 }
