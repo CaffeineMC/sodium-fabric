@@ -9,6 +9,12 @@ import net.minecraft.world.BlockRenderView;
 public class FlatVertexColorBlender implements VertexColorBlender {
     @Override
     public int getColor(BlockColorProvider provider, BlockState state, BlockRenderView world, int color, int colorIndex, float posX, float posZ, BlockPos origin, float brightness) {
-        return ColorUtil.mulPackedRGB(provider.getColor(state, world, origin, colorIndex), brightness, brightness, brightness);
+        int biomeColor = provider.getColor(state, world, origin, colorIndex);
+
+        float r = ColorUtil.normalize(ColorUtil.unpackColorR(biomeColor));
+        float g = ColorUtil.normalize(ColorUtil.unpackColorG(biomeColor));
+        float b = ColorUtil.normalize(ColorUtil.unpackColorB(biomeColor));
+
+        return ColorUtil.mulPackedRGB(color, r * brightness,  g * brightness, b * brightness);
     }
 }
