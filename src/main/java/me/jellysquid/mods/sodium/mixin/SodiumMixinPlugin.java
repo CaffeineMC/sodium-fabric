@@ -22,7 +22,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(String mixinPackage) {
         try {
-            this.config = SodiumConfig.load(new File("./config/sodium.properties"), "/sodium.mixins.json");
+            this.config = SodiumConfig.load(new File("./config/sodium-mixins.properties"), "/sodium.mixins.json");
         } catch (Exception e) {
             throw new RuntimeException("Could not load configuration file for Lithium", e);
         }
