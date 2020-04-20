@@ -11,7 +11,11 @@ public abstract class ReusableObject {
      * been released using {@link ReusableObject#releaseReference()}.
      */
     final void acquireReference() {
-        this.refCount.getAndIncrement();
+        int count = this.refCount.getAndIncrement();
+
+        if (count <= 0) {
+            throw new IllegalStateException("Reference cannot be acquired after all others have been dropped");
+        }
     }
 
     /**
@@ -19,17 +23,13 @@ public abstract class ReusableObject {
      * will throw an exception.
      */
     final boolean releaseReference() {
-        if (!this.hasReferences()) {
-            throw new IllegalStateException("No references are allocated");
+        int count = this.refCount.decrementAndGet();
+
+        if (count < 0) {
+            throw new IllegalStateException("No references are currently held");
         }
 
-        boolean flag = this.refCount.getAndDecrement() <= 0;
-
-        if (flag) {
-            this.reset();
-        }
-
-        return flag;
+        return count == 0;
     }
 
     /**
@@ -38,10 +38,9 @@ public abstract class ReusableObject {
      */
     protected abstract void reset();
 
-    /**
-     * @return True if the object has at least one reference, otherwise false
-     */
-    final boolean hasReferences() {
-        return this.refCount.get() > 0;
+    public void acquireOwner() {
+        if (!this.refCount.compareAndSet(0, 1)) {
+            throw new IllegalStateException("Object in arena still has references");
+        }
     }
 }
