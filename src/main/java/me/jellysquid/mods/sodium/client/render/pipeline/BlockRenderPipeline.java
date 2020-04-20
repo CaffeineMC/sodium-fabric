@@ -1,10 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.LightResult;
 import me.jellysquid.mods.sodium.client.render.model.quad.*;
+import me.jellysquid.mods.sodium.client.render.model.quad.blender.BilinearVertexColorBlender;
+import me.jellysquid.mods.sodium.client.render.model.quad.blender.FlatVertexColorBlender;
+import me.jellysquid.mods.sodium.client.render.model.quad.blender.VertexColorBlender;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.client.util.ColorUtil;
 import me.jellysquid.mods.sodium.client.util.QuadUtil;
@@ -33,7 +36,8 @@ public class BlockRenderPipeline {
 
     private final ModelQuad cachedQuad = new ModelQuad();
     private final LightResult cachedLightResult = new LightResult();
-    private final Int2IntArrayMap cachedColors = new Int2IntArrayMap();
+
+    private final VertexColorBlender colorBlender;
 
     public BlockRenderPipeline(MinecraftClient client, LightPipeline smoothLightPipeline, LightPipeline flatLightPipeline) {
         this.blockColors = (BlockColorsExtended) client.getBlockColorMap();
@@ -41,14 +45,19 @@ public class BlockRenderPipeline {
         this.flatLightPipeline = flatLightPipeline;
 
         this.occlusionCache = new BlockOcclusionCache();
-        this.cachedColors.defaultReturnValue(Integer.MIN_VALUE);
+
+        int biomeBlendRadius = SodiumClientMod.options().quality.biomeBlendDistance;
+
+        if (biomeBlendRadius <= 0) {
+            this.colorBlender = new FlatVertexColorBlender();
+        } else {
+            this.colorBlender = new BilinearVertexColorBlender();
+        }
     }
 
     public boolean renderModel(ChunkRenderData.Builder meshInfo, BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, ModelQuadConsumer builder, boolean cull, Random random, long seed) {
         LightPipeline lighter = this.getLightPipeline(state, model);
         lighter.reset();
-
-        this.cachedColors.clear();
 
         Vec3d offset = state.getOffsetPos(world, pos);
 
@@ -125,7 +134,7 @@ public class BlockRenderPipeline {
             int color = quad.getColor(srcIndex);
 
             if (hasColor) {
-                copy.setColor(dstIndex, this.getColor(colorProvider, state, world, color, bakedQuad.getColorIndex(), x, z, pos, br));
+                copy.setColor(dstIndex, this.colorBlender.getColor(colorProvider, state, world, color, bakedQuad.getColorIndex(), x, z, pos, br));
             } else {
                 copy.setColor(dstIndex, ColorUtil.mulPackedRGB(color, br, br, br));
             }
@@ -138,65 +147,6 @@ public class BlockRenderPipeline {
         }
 
         consumer.write(copy);
-    }
-
-    // Bi-linear interpolation for biome colors
-    private int getColor(BlockColorProvider colorProvider, BlockState state, BlockRenderView world, int color, int colorIndex, float posX, float posZ, BlockPos origin, float brightness) {
-        final BlockPos.Mutable mpos = new BlockPos.Mutable();
-
-        final float x = origin.getX() + posX;
-        final float z = origin.getZ() + posZ;
-
-        // Integer component of position vector
-        final int intX = (int) x;
-        final int intZ = (int) z;
-
-        // Fraction component of position vector
-        final float fracX = x - intX;
-        final float fracZ = z - intZ;
-
-        // Retrieve the color values for each neighbor
-        final int c1 = colorProvider.getColor(state, world, mpos.set(intX, origin.getY(), intZ), colorIndex);
-        final int c2 = colorProvider.getColor(state, world, mpos.set(intX, origin.getY(), intZ + 1), colorIndex);
-        final int c3 = colorProvider.getColor(state, world, mpos.set(intX + 1, origin.getY(), intZ), colorIndex);
-        final int c4 = colorProvider.getColor(state, world, mpos.set(intX + 1, origin.getY(), intZ + 1), colorIndex);;
-
-        // RGB components for each corner's color
-        final float c1r = ColorUtil.unpackColorR(c1);
-        final float c1g = ColorUtil.unpackColorG(c1);
-        final float c1b = ColorUtil.unpackColorB(c1);
-
-        final float c2r = ColorUtil.unpackColorR(c2);
-        final float c2g = ColorUtil.unpackColorG(c2);
-        final float c2b = ColorUtil.unpackColorB(c2);
-
-        final float c3r = ColorUtil.unpackColorR(c3);
-        final float c3g = ColorUtil.unpackColorG(c3);
-        final float c3b = ColorUtil.unpackColorB(c3);
-
-        final float c4r = ColorUtil.unpackColorR(c4);
-        final float c4g = ColorUtil.unpackColorG(c4);
-        final float c4b = ColorUtil.unpackColorB(c4);
-
-        // Compute the final color values across the Z axis
-        final float r1r = c1r + ((c2r - c1r) * fracZ);
-        final float r1g = c1g + ((c2g - c1g) * fracZ);
-        final float r1b = c1b + ((c2b - c1b) * fracZ);
-
-        final float r2r = c3r + ((c4r - c3r) * fracZ);
-        final float r2g = c3g + ((c4g - c3g) * fracZ);
-        final float r2b = c3b + ((c4b - c3b) * fracZ);
-
-        // Compute the final color values across the X axis
-        final float fr = r1r + ((r2r - r1r) * fracX);
-        final float fg = r1g + ((r2g - r1g) * fracX);
-        final float fb = r1b + ((r2b - r1b) * fracX);
-
-        // Normalize and darken the returned color
-        return ColorUtil.mulPackedRGB(color,
-                ColorUtil.normalize(fr) * brightness,
-                ColorUtil.normalize(fg) * brightness,
-                ColorUtil.normalize(fb) * brightness);
     }
 
     private LightPipeline getLightPipeline(BlockState state, BakedModel model) {
