@@ -98,7 +98,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     private void addToLists(ChunkRender<T> render) {
         render.setLastVisibleFrame(this.lastFrameUpdated);
 
-        if (render.needsRebuild()) {
+        if (render.needsRebuild() && render.getColumn().hasNeighbors()) {
             if (render.needsImportantRebuild()) {
                 this.importantDirtyChunks.add(render);
             } else {
@@ -174,10 +174,6 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             }
         }
 
-        if (!adj.getColumn().hasNeighbors()) {
-            return;
-        }
-
         adj.setDirection(dir);
         adj.setRebuildFrame(frame);
         adj.updateCullingState(render.getCullingState(), dir.getOpposite());
@@ -245,8 +241,8 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
             list.sort(Comparator.comparingDouble(o -> o.getSquaredDistance(origin)));
 
-            for (ChunkRender<T> n : list) {
-                queue.enqueue(n);
+            for (ChunkRender<T> render : list) {
+                queue.enqueue(render);
             }
         }
 
@@ -451,6 +447,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
         while (!this.importantDirtyChunks.isEmpty()) {
             ChunkRender<T> render = this.importantDirtyChunks.remove();
+
             futures.add(this.builder.createRebuildFuture(render));
 
             this.dirty = true;
@@ -525,16 +522,12 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
-        ChunkRender<T> node = this.getRender(x, y, z);
+        ChunkRender<T> render = this.getRender(x, y, z);
 
-        if (node != null) {
-            node.scheduleRebuild(important);
+        if (render != null) {
+            render.scheduleRebuild(important);
 
-            if (important) {
-                this.importantDirtyChunks.add(node);
-            } else {
-                this.dirtyChunks.add(node);
-            }
+            this.dirty = true;
         }
     }
 }
