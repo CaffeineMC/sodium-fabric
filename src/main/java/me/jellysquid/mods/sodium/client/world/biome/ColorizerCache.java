@@ -1,9 +1,8 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.level.ColorResolver;
 
 import java.util.Arrays;
@@ -12,56 +11,62 @@ public class ColorizerCache {
     private final ColorResolver resolver;
     private final WorldSlice slice;
 
-    private final int[] colors;
+    private final int[] blendedColors;
+    private final int[] cache;
+
     private final int radius;
+    private final int length;
+    private final int minX, minZ;
 
     public ColorizerCache(ColorResolver resolver, WorldSlice slice) {
         this.resolver = resolver;
         this.slice = slice;
-        this.radius = MinecraftClient.getInstance().options.biomeBlendRadius;
+        this.radius = SodiumClientMod.options().quality.biomeBlendDistance;
 
-        this.colors = new int[16 * 16];
+        this.minX = slice.getBlockOffsetX() - this.radius - 2;
+        this.minZ = slice.getBlockOffsetZ() - this.radius - 2;
 
-        Arrays.fill(this.colors, -1);
+        this.length = slice.getBlockLength() + ((this.radius + 2) * 2);
+
+        this.cache = new int[this.length * this.length];
+        this.blendedColors = new int[this.length * this.length];
+
+        Arrays.fill(this.cache, -1);
+        Arrays.fill(this.blendedColors, -1);
     }
 
-    public int getColor(BlockPos pos) {
-        int x = pos.getX() & 15;
-        int z = pos.getZ() & 15;
-
-        int idx = z << 4 | x;
-        int color = this.colors[idx];
+    public int getBlendedColor(BlockPos pos) {
+        int index = ((pos.getX() - this.minX) * this.length) + (pos.getZ() - this.minZ);
+        int color = this.blendedColors[index];
 
         if (color == -1) {
-            this.colors[idx] = color = this.calculateColor(pos);
+            this.blendedColors[index] = color = this.calculateBlendedColor(pos.getX(), pos.getZ());
         }
 
         return color;
     }
 
-    public int calculateColor(BlockPos pos) {
+    private int calculateBlendedColor(int posX, int posZ) {
         if (this.radius == 0) {
-            return this.resolver.getColor(this.getBiome(pos), pos.getX(), pos.getZ());
+            return this.getColor(posX, posZ);
         }
 
-        int diameter = (this.radius * 2 + 1);
+        int diameter = (this.radius * 2) + 1;
         int area = diameter * diameter;
 
         int r = 0;
         int g = 0;
         int b = 0;
 
-        int minX = pos.getX() - this.radius;
-        int minZ = pos.getZ() - this.radius;
+        int minX = posX - this.radius;
+        int minZ = posZ - this.radius;
 
-        int maxX = pos.getX() + this.radius;
-        int maxZ = pos.getZ() + this.radius;
+        int maxX = posX + this.radius;
+        int maxZ = posZ + this.radius;
 
-        int y = pos.getY();
-
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                int color = this.resolver.getColor(this.getBiome(x, y, z), x, z);
+        for (int x2 = minX; x2 <= maxX; x2++) {
+            for (int z2 = minZ; z2 <= maxZ; z2++) {
+                int color = this.getColor(x2, z2);
 
                 r += (color & 0xFF0000) >> 16;
                 g += (color & 0x00FF00) >> 8;
@@ -72,12 +77,18 @@ public class ColorizerCache {
         return (((r / area) & 255) << 16) | (((g / area) & 255) << 8) | ((b / area) & 255);
     }
 
-    private Biome getBiome(BlockPos pos) {
-        return this.getBiome(pos.getX(), pos.getY(), pos.getZ());
+    private int getColor(int x, int z) {
+        int index = ((x - this.minX) * this.length) + (z - this.minZ);
+        int color = this.cache[index];
+
+        if (color == -1) {
+            this.cache[index] = color = this.calculateColor(x, z);
+        }
+
+        return color;
     }
 
-    private Biome getBiome(int x, int y, int z) {
-        return this.slice.getCachedBiome(x, y, z);
+    private int calculateColor(int x, int z) {
+        return this.resolver.getColor(this.slice.getCachedBiome(x, 0, z), x, z);
     }
-
 }
