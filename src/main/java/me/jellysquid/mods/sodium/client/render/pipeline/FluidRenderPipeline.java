@@ -31,6 +31,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 
 public class FluidRenderPipeline {
+    private static final float HALF_PI = (float) (Math.PI / 2.0D);
+
     private final BlockPos.Mutable scratchPos = new BlockPos.Mutable();
 
     private final Sprite[] lavaSprites = new Sprite[2];
@@ -56,7 +58,7 @@ public class FluidRenderPipeline {
 
         this.waterOverlaySprite = ModelLoader.WATER_OVERLAY.getSprite();
 
-        int normal = QuadUtil.encodeNormal(0.0f, 1.0f, 0.0f);
+        int normal = QuadUtil.encodeNormal(0.0F, 1.0F, 0.0F);
 
         for (int i = 0; i < 4; i++) {
             this.quad.setNormal(i, normal);
@@ -123,10 +125,10 @@ public class FluidRenderPipeline {
 
         boolean rendered = false;
 
-        float h1 = this.getCornerHeight(world, posX, posY, posZ, fluidState.getFluid());
-        float h2 = this.getCornerHeight(world, posX, posY, posZ + 1, fluidState.getFluid());
-        float h3 = this.getCornerHeight(world, posX + 1, posY, posZ + 1, fluidState.getFluid());
-        float h4 = this.getCornerHeight(world, posX + 1, posY, posZ, fluidState.getFluid());
+        final float h1 = this.getCornerHeight(world, posX, posY, posZ, fluidState.getFluid());
+        final float h2 = this.getCornerHeight(world, posX, posY, posZ + 1, fluidState.getFluid());
+        final float h3 = this.getCornerHeight(world, posX + 1, posY, posZ + 1, fluidState.getFluid());
+        final float h4 = this.getCornerHeight(world, posX + 1, posY, posZ, fluidState.getFluid());
 
         float yOffset = sfDown ? 0.001F : 0.0F;
 
@@ -137,11 +139,6 @@ public class FluidRenderPipeline {
         lighter.reset();
 
         if (sfUp && this.isSideExposed(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
-            h1 -= 0.001F;
-            h2 -= 0.001F;
-            h3 -= 0.001F;
-            h4 -= 0.001F;
-
             Vec3d velocity = fluidState.getVelocity(world, pos);
 
             float u1, u2, u3, u4;
@@ -159,7 +156,7 @@ public class FluidRenderPipeline {
                 v4 = v1;
             } else {
                 Sprite sprite = sprites[1];
-                float dir = (float) MathHelper.atan2(velocity.z, velocity.x) - (1.5707964f);
+                float dir = (float) MathHelper.atan2(velocity.z, velocity.x) - HALF_PI;
                 float sin = MathHelper.sin(dir) * 0.25F;
                 float cos = MathHelper.cos(dir) * 0.25F;
                 u1 = sprite.getFrameU(8.0F + (-cos - sin) * 16.0F);
@@ -187,19 +184,19 @@ public class FluidRenderPipeline {
             v3 = MathHelper.lerp(s3, v3, vAvg);
             v4 = MathHelper.lerp(s3, v4, vAvg);
 
-            this.writeVertex(quad, 0, 0.0f, 0.0f + h1, 0.0f, u1, v1);
-            this.writeVertex(quad, 1, 0.0f, 0.0f + h2, 1.0F, u2, v2);
-            this.writeVertex(quad, 2, 1.0F, 0.0f + h3, 1.0F, u3, v3);
-            this.writeVertex(quad, 3, 1.0F, 0.0f + h4, 0.0f, u4, v4);
+            this.writeVertex(quad, 0, 0.0F, 0.0F + h1, 0.0F, u1, v1);
+            this.writeVertex(quad, 1, 0.0F, 0.0F + h2, 1.0F, u2, v2);
+            this.writeVertex(quad, 2, 1.0F, 0.0F + h3, 1.0F, u3, v3);
+            this.writeVertex(quad, 3, 1.0F, 0.0F + h4, 0.0F, u4, v4);
 
             this.applyLighting(quad, pos, lighter, light, Direction.UP);
             this.writeQuad(consumer, quad, red, green, blue, false);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.writeVertex(quad, 3, 0.0f, 0.0f + h1, 0.0f, u1, v1);
-                this.writeVertex(quad, 2, 0.0f, 0.0f + h2, 1.0F, u2, v2);
-                this.writeVertex(quad, 1, 1.0F, 0.0f + h3, 1.0F, u3, v3);
-                this.writeVertex(quad, 0, 1.0F, 0.0f + h4, 0.0f, u4, v4);
+                this.writeVertex(quad, 3, 0.0F, 0.0F + h1, 0.0F, u1, v1);
+                this.writeVertex(quad, 2, 0.0F, 0.0F + h2, 1.0F, u2, v2);
+                this.writeVertex(quad, 1, 1.0F, 0.0F + h3, 1.0F, u3, v3);
+                this.writeVertex(quad, 0, 1.0F, 0.0F + h4, 0.0F, u4, v4);
                 this.writeQuad(consumer, quad, red, green, blue, true);
             }
 
@@ -212,10 +209,10 @@ public class FluidRenderPipeline {
             float minV = sprites[0].getMinV();
             float maxV = sprites[0].getMaxV();
 
-            this.writeVertex(quad, 0, 0.0f, 0.0f + yOffset, 1.0F, minU, maxV);
-            this.writeVertex(quad, 1, 0.0f, 0.0f + yOffset, 0.0f, minU, minV);
-            this.writeVertex(quad, 2, 1.0F, 0.0f + yOffset, 0.0f, maxU, minV);
-            this.writeVertex(quad, 3, 1.0F, 0.0f + yOffset, 1.0F, maxU, maxV);
+            this.writeVertex(quad, 0, 0.0F, 0.0F + yOffset, 1.0F, minU, maxV);
+            this.writeVertex(quad, 1, 0.0F, 0.0F + yOffset, 0.0F, minU, minV);
+            this.writeVertex(quad, 2, 1.0F, 0.0F + yOffset, 0.0F, maxU, minV);
+            this.writeVertex(quad, 3, 1.0F, 0.0F + yOffset, 1.0F, maxU, maxV);
 
             this.applyLighting(quad, pos, lighter, light, Direction.DOWN);
             this.writeQuad(consumer, quad, red, green, blue, false);
@@ -239,9 +236,9 @@ public class FluidRenderPipeline {
 
                     c1 = h1;
                     c2 = h4;
-                    x1 = 0.0f;
+                    x1 = 0.0F;
                     x2 = 1.0F;
-                    z1 = 0.001f;
+                    z1 = 0.0F;
                     z2 = z1;
                     break;
                 case SOUTH:
@@ -252,8 +249,8 @@ public class FluidRenderPipeline {
                     c1 = h3;
                     c2 = h2;
                     x1 = 1.0F;
-                    x2 = 0.0f;
-                    z1 = 0.999f;
+                    x2 = 0.0F;
+                    z1 = 1.0F;
                     z2 = z1;
                     break;
                 case WEST:
@@ -263,10 +260,10 @@ public class FluidRenderPipeline {
 
                     c1 = h2;
                     c2 = h1;
-                    x1 = 0.001f;
+                    x1 = 0.0F;
                     x2 = x1;
                     z1 = 1.0F;
-                    z2 = 0.0f;
+                    z2 = 0.0F;
                     break;
                 case EAST:
                     if (!sfEast) {
@@ -275,9 +272,9 @@ public class FluidRenderPipeline {
 
                     c1 = h4;
                     c2 = h3;
-                    x1 = 0.999f;
+                    x1 = 1.0F;
                     x2 = x1;
-                    z1 = 0.0f;
+                    z1 = 0.0F;
                     z2 = 1.0F;
                     break;
                 default:
@@ -311,19 +308,19 @@ public class FluidRenderPipeline {
                 float greenM = br * green;
                 float blueM = br * blue;
 
-                this.writeVertex(quad, 0, x2, 0.0f + c2, z2, u2, v2);
-                this.writeVertex(quad, 1, x2, 0.0f + yOffset, z2, u2, v3);
-                this.writeVertex(quad, 2, x1, 0.0f + yOffset, z1, u1, v3);
-                this.writeVertex(quad, 3, x1, 0.0f + c1, z1, u1, v1);
+                this.writeVertex(quad, 0, x2, 0.0F + c2, z2, u2, v2);
+                this.writeVertex(quad, 1, x2, 0.0F + yOffset, z2, u2, v3);
+                this.writeVertex(quad, 2, x1, 0.0F + yOffset, z1, u1, v3);
+                this.writeVertex(quad, 3, x1, 0.0F + c1, z1, u1, v1);
 
                 this.applyLighting(quad, pos, lighter, light, dir);
                 this.writeQuad(consumer, quad, redM, greenM, blueM, false);
 
                 if (sprite != this.waterOverlaySprite) {
-                    this.writeVertex(quad, 0, x1, 0.0f + c1, z1, u1, v1);
-                    this.writeVertex(quad, 1, x1, 0.0f + yOffset, z1, u1, v3);
-                    this.writeVertex(quad, 2, x2, 0.0f + yOffset, z2, u2, v3);
-                    this.writeVertex(quad, 3, x2, 0.0f + c2, z2, u2, v2);
+                    this.writeVertex(quad, 0, x1, 0.0F + c1, z1, u1, v1);
+                    this.writeVertex(quad, 1, x1, 0.0F + yOffset, z1, u1, v3);
+                    this.writeVertex(quad, 2, x2, 0.0F + yOffset, z2, u2, v3);
+                    this.writeVertex(quad, 3, x2, 0.0F + c2, z2, u2, v2);
 
                     this.writeQuad(consumer, quad, redM, greenM, blueM, true);
                 }
@@ -360,7 +357,7 @@ public class FluidRenderPipeline {
             float br = lightResult.br[lightIndex];
             int lm = lightResult.lm[lightIndex];
 
-            quad.setColor(i, ColorUtil.encodeRGBA(r * br, g * br, b * br, 1.0f));
+            quad.setColor(i, ColorUtil.encodeRGBA(r * br, g * br, b * br, 1.0F));
             quad.setLight(i, lm);
 
             lightIndex += lightOrder;
