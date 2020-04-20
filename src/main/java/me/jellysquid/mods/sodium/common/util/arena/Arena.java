@@ -36,11 +36,7 @@ public class Arena<T extends ReusableObject> {
             obj = this.factory.get();
         }
 
-        if (obj.hasReferences()) {
-            throw new IllegalStateException("Object in arena has references");
-        }
-
-        obj.acquireReference();
+        obj.acquireOwner();
 
         return obj;
     }
@@ -51,6 +47,8 @@ public class Arena<T extends ReusableObject> {
      */
     public void release(T obj) {
         if (obj.releaseReference()) {
+            obj.reset();
+
             synchronized (this.pool) {
                 this.pool.offer(obj);
             }
