@@ -112,35 +112,38 @@ public class BlockRenderPipeline {
     }
 
     private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelQuadConsumer consumer, Vec3d offset, BlockColorProvider colorProvider, BakedQuad bakedQuad, float[] brightnesses, int[] lights) {
-        ModelQuadView quad = (ModelQuadView) bakedQuad;
+        ModelQuadView src = (ModelQuadView) bakedQuad;
         ModelQuadOrder order = ModelQuadOrder.orderOf(brightnesses);
         ModelQuadViewMutable copy = this.cachedQuad;
 
         int norm = QuadUtil.getNormal(bakedQuad.getFace());
-        boolean hasColor = bakedQuad.hasColor();
+        int[] colors = null;
+
+        if (bakedQuad.hasColor()) {
+            colors = this.colorBlender.getColors(colorProvider, state, world, src, pos, bakedQuad.getColorIndex(), brightnesses);
+        }
 
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = order.getVertexIndex(dstIndex);
 
-            float x = quad.getX(srcIndex) + (float) offset.getX();
-            float y = quad.getY(srcIndex) + (float) offset.getY();
-            float z = quad.getZ(srcIndex) + (float) offset.getZ();
+            float x = src.getX(srcIndex) + (float) offset.getX();
+            float y = src.getY(srcIndex) + (float) offset.getY();
+            float z = src.getZ(srcIndex) + (float) offset.getZ();
 
             copy.setX(dstIndex, x);
             copy.setY(dstIndex, y);
             copy.setZ(dstIndex, z);
 
             float br = brightnesses[srcIndex];
-            int color = quad.getColor(srcIndex);
 
-            if (hasColor) {
-                copy.setColor(dstIndex, this.colorBlender.getColor(colorProvider, state, world, color, bakedQuad.getColorIndex(), x, z, pos, br));
+            if (colors == null) {
+                copy.setColor(dstIndex, ColorUtil.mulPackedRGB(src.getColor(srcIndex), br, br, br));
             } else {
-                copy.setColor(dstIndex, ColorUtil.mulPackedRGB(color, br, br, br));
+                copy.setColor(dstIndex, colors[srcIndex]);
             }
 
-            copy.setTexU(dstIndex, quad.getTexU(srcIndex));
-            copy.setTexV(dstIndex, quad.getTexV(srcIndex));
+            copy.setTexU(dstIndex, src.getTexU(srcIndex));
+            copy.setTexV(dstIndex, src.getTexV(srcIndex));
 
             copy.setLight(dstIndex, lights[srcIndex]);
             copy.setNormal(dstIndex, norm);
