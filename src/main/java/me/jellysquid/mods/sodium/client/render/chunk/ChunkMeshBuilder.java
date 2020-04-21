@@ -48,7 +48,7 @@ public class ChunkMeshBuilder implements ModelQuadConsumer {
             this.grow(len);
         }
 
-        this.encoder.write(this.format, this.buffer, position, quad, this.x, this.y, this.z);
+        this.encoder.write(this.buffer, position, quad, this.x, this.y, this.z);
     }
 
     private void grow(int len) {

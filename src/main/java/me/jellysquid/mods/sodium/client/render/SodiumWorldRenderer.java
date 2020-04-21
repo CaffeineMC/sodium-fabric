@@ -236,10 +236,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         final GlVertexFormat<ChunkMeshAttribute> format;
 
-        if (SodiumVertexFormats.CHUNK_MESH_HFP.isSupported() && opts.performance.useCompactVertexFormat) {
+        if (opts.performance.useCompactVertexFormat) {
             format = SodiumVertexFormats.CHUNK_MESH_HFP;
         } else {
-            format = SodiumVertexFormats.CHUNK_MESH_VANILLA;
+            format = SodiumVertexFormats.CHUNK_MESH_SFP;
         }
 
         if (GlVertexArray.isSupported() && opts.performance.useVertexArrays) {

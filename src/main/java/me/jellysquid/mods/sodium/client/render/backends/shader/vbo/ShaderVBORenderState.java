@@ -3,15 +3,15 @@ package me.jellysquid.mods.sodium.client.render.backends.shader.vbo;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
-import net.minecraft.client.util.math.Vector3d;
+import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.opengl.GL20;
 
 public class ShaderVBORenderState implements ChunkRenderState {
     private final GlBuffer buffer;
-    private final Vector3d translation;
+    private final ChunkSectionPos translation;
 
-    public ShaderVBORenderState(GlBuffer buffer, Vector3d translation) {
-        this.translation = translation;
+    public ShaderVBORenderState(GlBuffer buffer, ChunkSectionPos origin) {
+        this.translation = origin;
         this.buffer = buffer;
     }
 
@@ -36,7 +36,7 @@ public class ShaderVBORenderState implements ChunkRenderState {
         this.buffer.delete();
     }
 
-    public Vector3d getTranslation() {
+    public ChunkSectionPos getOrigin() {
         return this.translation;
     }
 }

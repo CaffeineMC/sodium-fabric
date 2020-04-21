@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.gl.attribute;
 
-import me.jellysquid.mods.sodium.client.gl.GlHelper;
-
 import java.util.EnumMap;
 
 public class GlVertexFormat<T extends Enum<T>> {
@@ -19,15 +17,5 @@ public class GlVertexFormat<T extends Enum<T>> {
 
     public int getStride() {
         return this.stride;
-    }
-
-    public boolean isSupported() {
-        for (GlVertexAttribute attribute : this.attributes.values()) {
-            if (!GlHelper.isVertexFormatSupported(attribute.getFormat())) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

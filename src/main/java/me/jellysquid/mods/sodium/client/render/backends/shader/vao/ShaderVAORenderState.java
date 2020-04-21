@@ -4,20 +4,20 @@ import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
-import net.minecraft.client.util.math.Vector3d;
+import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.opengl.GL20;
 
 public class ShaderVAORenderState implements ChunkRenderState {
     private final GlBuffer vertexBuffer;
     private final GlVertexArray vertexArray;
-    private final Vector3d translation;
+    private final ChunkSectionPos origin;
 
     private boolean init;
 
-    public ShaderVAORenderState(GlBuffer vertexBuffer , Vector3d translation) {
+    public ShaderVAORenderState(GlBuffer vertexBuffer, ChunkSectionPos origin) {
         this.vertexBuffer = vertexBuffer;
         this.vertexArray = new GlVertexArray();
-        this.translation = translation;
+        this.origin = origin;
     }
 
     public void unbind() {
@@ -51,7 +51,7 @@ public class ShaderVAORenderState implements ChunkRenderState {
         this.vertexBuffer.drawArrays(mode);
     }
 
-    public Vector3d getTranslation() {
-        return this.translation;
+    public ChunkSectionPos getOrigin() {
+        return this.origin;
     }
 }

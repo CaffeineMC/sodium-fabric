@@ -25,7 +25,11 @@ public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBacken
             GL20.glEnableVertexAttribArray(binding.index);
         }
 
-        this.activeProgram.setModelMatrix(matrixStack.peek());
+        int chunkX = (int) (x / 16.0D);
+        int chunkY = (int) (y / 16.0D);
+        int chunkZ = (int) (z / 16.0D);
+
+        this.activeProgram.setModelMatrix(matrixStack, x % 16.0D, y % 16.0D, z % 16.0D);
 
         ShaderVBORenderState lastRender = null;
 
@@ -36,7 +40,7 @@ public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBacken
                 return;
             }
 
-            this.activeProgram.setModelOffset(vbo.getTranslation(), x, y, z);
+            this.activeProgram.setModelOffset(vbo.getOrigin(), chunkX, chunkY, chunkZ);
 
             vbo.bind(this.activeProgram.attributes);
             vbo.draw(GL11.GL_QUADS);
@@ -62,6 +66,6 @@ public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBacken
 
     @Override
     protected ShaderVBORenderState createRenderState(GlBuffer buffer, ChunkRender<ShaderVBORenderState> render) {
-        return new ShaderVBORenderState(buffer, render.getTranslation());
+        return new ShaderVBORenderState(buffer, render.getChunkPos());
     }
 }

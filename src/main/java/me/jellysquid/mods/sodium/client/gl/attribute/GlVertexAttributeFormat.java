@@ -1,11 +1,9 @@
 package me.jellysquid.mods.sodium.client.gl.attribute;
 
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL30;
 
 public enum GlVertexAttributeFormat {
     FLOAT(GL11.GL_FLOAT, 4),
-    HALF_FLOAT(GL30.GL_HALF_FLOAT, 2),
     SHORT(GL11.GL_SHORT, 2),
     UNSIGNED_SHORT(GL11.GL_UNSIGNED_SHORT, 2),
     BYTE(GL11.GL_BYTE, 1),

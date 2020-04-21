@@ -19,7 +19,11 @@ public class ShaderVAOChunkRenderBackend extends AbstractShaderChunkRenderBacken
     public void render(Iterator<ShaderVAORenderState> renders, MatrixStack matrixStack, double x, double y, double z) {
         this.begin(matrixStack);
 
-        this.activeProgram.setModelMatrix(matrixStack.peek());
+        int chunkX = (int) (x / 16.0D);
+        int chunkY = (int) (y / 16.0D);
+        int chunkZ = (int) (z / 16.0D);
+
+        this.activeProgram.setModelMatrix(matrixStack, x % 16.0D, y % 16.0D, z % 16.0D);
 
         ShaderVAORenderState lastRender = null;
 
@@ -27,7 +31,7 @@ public class ShaderVAOChunkRenderBackend extends AbstractShaderChunkRenderBacken
             ShaderVAORenderState vao = renders.next();
 
             if (vao != null) {
-                this.activeProgram.setModelOffset(vao.getTranslation(), x, y, z);
+                this.activeProgram.setModelOffset(vao.getOrigin(), chunkX, chunkY, chunkZ);
 
                 vao.bind(this.activeProgram.attributes);
                 vao.draw(GL11.GL_QUADS);
@@ -50,6 +54,6 @@ public class ShaderVAOChunkRenderBackend extends AbstractShaderChunkRenderBacken
 
     @Override
     protected ShaderVAORenderState createRenderState(GlBuffer buffer, ChunkRender<ShaderVAORenderState> render) {
-        return new ShaderVAORenderState(buffer, render.getTranslation());
+        return new ShaderVAORenderState(buffer, render.getChunkPos());
     }
 }
