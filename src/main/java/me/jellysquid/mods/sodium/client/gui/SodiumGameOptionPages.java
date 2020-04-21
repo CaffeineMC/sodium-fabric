@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
-import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlImmutableBuffer;
 import me.jellysquid.mods.sodium.client.gui.options.*;
@@ -275,14 +274,13 @@ public class SodiumGameOptionPages {
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Compact Vertex Format")
-                        .setTooltip("If enabled, a more compact vertex format will be used for chunk data. This option may break certain mods which expect " +
-                                "a specific vertex format, but will reduce graphics memory usage and bandwidth requirements by nearly 40% for rendered chunk data.\n\n" +
-                                "Requires OpenGL 3.0+.")
+                        .setTooltip("If enabled, a more compact vertex format will be used for chunk data by limiting the precision of vertex positions. This format " +
+                                "reduces graphics memory usage and bandwidth requirements by nearly 30% for rendered chunk data, but could cause problems " +
+                                "with exotic in-game models.")
                         .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.HIGH)
+                        .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.useCompactVertexFormat = value, opts -> opts.performance.useCompactVertexFormat)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .setEnabled(SodiumVertexFormats.CHUNK_MESH_HFP.isSupported())
                         .build()
                 )
                 .build());

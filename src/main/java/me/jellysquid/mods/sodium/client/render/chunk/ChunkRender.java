@@ -7,7 +7,7 @@ import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.math.Vector3d;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
@@ -240,8 +240,8 @@ public class ChunkRender<T extends ChunkRenderState> {
         return this.lastVisibleFrame;
     }
 
-    public Vector3d getTranslation() {
-        return new Vector3d(this.getOriginX(), this.getOriginY(), this.getOriginZ());
+    public Vector3f getTranslation() {
+        return new Vector3f(this.getOriginX(), this.getOriginY(), this.getOriginZ());
     }
 
     public void resetRenderStates() {
