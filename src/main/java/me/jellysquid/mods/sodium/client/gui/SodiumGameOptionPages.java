@@ -272,17 +272,6 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.performance.useParticleCulling = value, opts -> opts.performance.useParticleCulling)
                         .build()
                 )
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Compact Vertex Format")
-                        .setTooltip("If enabled, a more compact vertex format will be used for chunk data by limiting the precision of vertex positions. This format " +
-                                "reduces graphics memory usage and bandwidth requirements by nearly 30% for rendered chunk data, but could cause problems " +
-                                "with exotic in-game models.")
-                        .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.performance.useCompactVertexFormat = value, opts -> opts.performance.useCompactVertexFormat)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build()
-                )
                 .build());
 
         return new OptionPage("Performance", ImmutableList.copyOf(groups));

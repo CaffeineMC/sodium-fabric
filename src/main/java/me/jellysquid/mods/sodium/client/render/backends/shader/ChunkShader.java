@@ -16,10 +16,8 @@ import java.nio.FloatBuffer;
 import java.util.function.Function;
 
 public class ChunkShader extends GlShaderProgram {
-    private static final float MODEL_OFFSET = -8.0f;
     private static final float MODEL_SCALE = 32.0f;
     private static final float MODEL_SIZE = 16.0f;
-    private static final float MODEL_OFFSET_NORMALIZED_INV = 1.0f / (MODEL_SCALE / MODEL_SIZE);
 
     private final int uModelViewMatrix;
     private final int uProjectionMatrix;
@@ -29,7 +27,6 @@ public class ChunkShader extends GlShaderProgram {
 
     private final FogShaderComponent fogShader;
     private final FloatBuffer uModelOffsetBuffer;
-    private final boolean isPositionNormalized;
 
     public final GlVertexAttributeBinding[] attributes;
 
@@ -56,8 +53,6 @@ public class ChunkShader extends GlShaderProgram {
                 new GlVertexAttributeBinding(aLightCoord, format, ChunkMeshAttribute.LIGHT)
         };
 
-        this.isPositionNormalized = format.getAttribute(ChunkMeshAttribute.POSITION).isNormalized();
-
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(3);
         this.fogShader = fogShaderFunction.apply(this);
     }
@@ -83,11 +78,6 @@ public class ChunkShader extends GlShaderProgram {
         matrixStack.push();
         matrixStack.translate(-x, -y, -z);
 
-        if (this.isPositionNormalized) {
-            matrixStack.translate(MODEL_OFFSET, MODEL_OFFSET, MODEL_OFFSET);
-            matrixStack.scale(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
-        }
-
         MatrixStack.Entry entry = matrixStack.peek();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -102,16 +92,9 @@ public class ChunkShader extends GlShaderProgram {
 
     public void setModelOffset(ChunkSectionPos pos, int offsetX, int offsetY, int offsetZ) {
         FloatBuffer buf = this.uModelOffsetBuffer;
-
-        if (this.isPositionNormalized) {
-            buf.put(0, (pos.getX() - offsetX) * MODEL_OFFSET_NORMALIZED_INV);
-            buf.put(1, (pos.getY() - offsetY) * MODEL_OFFSET_NORMALIZED_INV);
-            buf.put(2, (pos.getZ() - offsetZ) * MODEL_OFFSET_NORMALIZED_INV);
-        } else {
-            buf.put(0, (pos.getX() - offsetX) * MODEL_SIZE);
-            buf.put(1, (pos.getY() - offsetY) * MODEL_SIZE);
-            buf.put(2, (pos.getZ() - offsetZ) * MODEL_SIZE);
-        }
+        buf.put(0, (pos.getX() - offsetX) * MODEL_SIZE);
+        buf.put(1, (pos.getY() - offsetY) * MODEL_SIZE);
+        buf.put(2, (pos.getZ() - offsetZ) * MODEL_SIZE);
 
         GL20.glUniform3fv(this.uModelOffset, buf);
     }

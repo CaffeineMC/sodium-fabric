@@ -25,7 +25,6 @@ public class SodiumGameOptions {
         public boolean useImmutableStorage = true;
         public boolean useRenderLayerConsolidation = true;
         public boolean useParticleCulling = true;
-        public boolean useCompactVertexFormat = true;
     }
 
     public static class QualitySettings {

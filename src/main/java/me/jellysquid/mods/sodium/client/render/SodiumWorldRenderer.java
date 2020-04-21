@@ -7,9 +7,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
-import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.vao.ShaderVAOChunkRenderBackend;
@@ -234,18 +232,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             this.renderPassManager = BlockRenderPassManager.vanilla();
         }
 
-        final GlVertexFormat<ChunkMeshAttribute> format;
-
-        if (opts.performance.useCompactVertexFormat) {
-            format = SodiumVertexFormats.CHUNK_MESH_HFP;
-        } else {
-            format = SodiumVertexFormats.CHUNK_MESH_SFP;
-        }
-
         if (GlVertexArray.isSupported() && opts.performance.useVertexArrays) {
-            this.chunkRenderBackend = new ShaderVAOChunkRenderBackend(format);
+            this.chunkRenderBackend = new ShaderVAOChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
         } else {
-            this.chunkRenderBackend = new ShaderVBOChunkRenderBackend(format);
+            this.chunkRenderBackend = new ShaderVBOChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
         }
 
         this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.renderPassManager, this.world, this.renderDistance);
