@@ -50,7 +50,9 @@ public class BufferBlock {
         src.unbind(GL15.GL_ARRAY_BUFFER);
 
         GlBuffer dst = this.createBuffer();
+
         GlBuffer.copy(src, dst, 0, 0, this.capacity, size);
+        src.delete();
 
         dst.bind(GL15.GL_ARRAY_BUFFER);
 

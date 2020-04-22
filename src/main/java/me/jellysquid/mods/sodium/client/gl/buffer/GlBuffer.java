@@ -44,6 +44,7 @@ public abstract class GlBuffer extends GlHandle {
 
         copyBufferFuncs.glCopyBufferSubData(GL31.GL_COPY_READ_BUFFER, GL31.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, copyLen);
 
+        dst.unbind(GL31.GL_COPY_WRITE_BUFFER);
         src.unbind(GL31.GL_COPY_READ_BUFFER);
     }
 
