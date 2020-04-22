@@ -74,7 +74,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             this.renderLists[i] = new RenderList<>();
         }
 
-        this.builder = new ChunkBuilder<>(backend.getVertexFormat());
+        this.builder = new ChunkBuilder<>(backend.getVertexFormat(), this.backend);
         this.builder.init(world, renderPassManager);
 
         this.dirty = true;
@@ -464,7 +464,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         this.dirty |= submitted > 0;
 
         // Try to complete some other work on the main thread while we wait for rebuilds to complete
-        this.dirty |= this.builder.upload(this.backend);
+        this.dirty |= this.builder.upload();
         this.cleanup();
 
         this.backend.upload(new FutureDequeDrain<>(futures));

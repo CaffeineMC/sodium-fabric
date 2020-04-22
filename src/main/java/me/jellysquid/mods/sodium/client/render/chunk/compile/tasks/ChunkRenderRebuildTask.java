@@ -28,12 +28,14 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
     private final ChunkBuilder<T> chunkBuilder;
     private final Vector3d camera;
     private final WorldSlice slice;
+    private final BlockPos offset;
 
-    public ChunkRenderRebuildTask(ChunkBuilder<T> chunkBuilder, ChunkRender<T> render, WorldSlice slice) {
+    public ChunkRenderRebuildTask(ChunkBuilder<T> chunkBuilder, ChunkRender<T> render, WorldSlice slice, BlockPos offset) {
         this.chunkBuilder = chunkBuilder;
         this.render = render;
         this.camera = chunkBuilder.getCameraPosition();
         this.slice = slice;
+        this.offset = offset;
     }
 
     @Override
@@ -52,6 +54,7 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
         int maxZ = minZ + 16;
 
         BlockPos.Mutable pos = new BlockPos.Mutable();
+        BlockPos offset = this.offset;
 
         for (int y = minY; y < maxY; y++) {
             for (int z = minZ; z < maxZ; z++) {
@@ -69,7 +72,7 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
                         RenderLayer layer = RenderLayers.getBlockLayer(blockState);
 
                         ChunkMeshBuilder builder = buffers.get(layer);
-                        builder.setOffset(x & 15, y & 15, z & 15);
+                        builder.setOffset(x - offset.getX(), y - offset.getY(), z - offset.getZ());
 
                         pipeline.renderBlock(meshInfo, blockState, pos, this.slice, buffers.get(layer), true);
                     }
@@ -80,7 +83,7 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
                         RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
 
                         ChunkMeshBuilder builder = buffers.get(layer);
-                        builder.setOffset(x & 15, y & 15, z & 15);
+                        builder.setOffset(x - offset.getX(), y - offset.getY(), z - offset.getZ());
 
                         pipeline.renderFluid(meshInfo, pos, this.slice, builder, fluidState);
                     }
