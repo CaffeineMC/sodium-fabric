@@ -62,7 +62,7 @@ public class BufferBlock {
     }
 
     private GlBuffer createBuffer() {
-        return this.useImmutableStorage ? new GlImmutableBuffer(GL44.GL_DYNAMIC_STORAGE_BIT) : new GlMutableBuffer(GL15.GL_STATIC_DRAW);
+        return this.useImmutableStorage ? new GlImmutableBuffer(GL44.GL_DYNAMIC_STORAGE_BIT) : new GlMutableBuffer(GL15.GL_DYNAMIC_DRAW);
     }
 
     public void bind(GlVertexAttributeBinding[] attributes) {
