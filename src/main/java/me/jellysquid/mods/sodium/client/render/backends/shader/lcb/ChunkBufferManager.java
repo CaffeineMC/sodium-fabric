@@ -47,10 +47,6 @@ public class ChunkBufferManager {
         return block;
     }
 
-    public static ChunkSectionPos getOffset(ChunkSectionPos pos) {
-        return ChunkSectionPos.from(pos.getX() >> BUFFER_WIDTH_SH, pos.getY() >> BUFFER_HEIGHT_SH, pos.getZ() >> BUFFER_LENGTH_SH);
-    }
-
     public static long getIndex(ChunkSectionPos pos) {
         return ChunkSectionPos.asLong(pos.getX() >> BUFFER_WIDTH_SH, pos.getY() >> BUFFER_HEIGHT_SH, pos.getZ() >> BUFFER_LENGTH_SH);
     }
