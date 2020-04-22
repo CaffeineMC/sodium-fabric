@@ -50,9 +50,11 @@ public class ChunkBuilder<T extends ChunkRenderState> {
 
     private final int limitThreads;
     private final GlVertexFormat<?> format;
+    private final ChunkRenderBackend<T> backend;
 
-    public ChunkBuilder(GlVertexFormat<?> format) {
+    public ChunkBuilder(GlVertexFormat<?> format, ChunkRenderBackend<T> backend) {
         this.format = format;
+        this.backend = backend;
         this.limitThreads = getOptimalThreadCount();
         this.worldSliceArena = new Arena<>(this.getBudget(), WorldSlice::new);
     }
@@ -124,12 +126,12 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         this.worldSliceArena.reset();
     }
 
-    public boolean upload(ChunkRenderBackend<T> backend) {
+    public boolean upload() {
         if (this.uploadQueue.isEmpty()) {
             return false;
         }
 
-        backend.upload(new DequeDrain<>(this.uploadQueue));
+        this.backend.upload(new DequeDrain<>(this.uploadQueue));
 
         return true;
     }
@@ -225,7 +227,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         if (slice == null) {
             return new ChunkRenderEmptyBuildTask<>(render);
         } else {
-            return new ChunkRenderRebuildTask<>(this, render, slice);
+            return new ChunkRenderRebuildTask<>(this, render, slice, this.backend.getRenderOffset(render.getChunkPos()));
         }
     }
 

@@ -71,8 +71,8 @@ public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderStat
 
             for (ChunkMesh mesh : data.getMeshes()) {
                 GlBuffer buffer = this.createBuffer();
-                buffer.bind();
-                buffer.upload(mesh.takePendingUpload());
+                buffer.bind(GL15.GL_ARRAY_BUFFER);
+                buffer.upload(GL15.GL_ARRAY_BUFFER, mesh.takePendingUpload());
 
                 lastBuffer = buffer;
 
@@ -81,12 +81,12 @@ public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderStat
         }
 
         if (lastBuffer != null) {
-            lastBuffer.unbind();
+            lastBuffer.unbind(GL15.GL_ARRAY_BUFFER);
         }
     }
 
     private GlBuffer createBuffer() {
-        return this.useImmutableStorage ? new GlImmutableBuffer(GL15.GL_ARRAY_BUFFER) : new GlMutableBuffer(GL15.GL_ARRAY_BUFFER);
+        return this.useImmutableStorage ? new GlImmutableBuffer(0) : new GlMutableBuffer(GL15.GL_STATIC_DRAW);
     }
 
     @Override

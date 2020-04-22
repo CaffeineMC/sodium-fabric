@@ -4,6 +4,8 @@ import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats.ChunkMeshAttribut
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
 
 import java.util.Iterator;
 
@@ -17,4 +19,8 @@ public interface ChunkRenderBackend<T extends ChunkRenderState> {
     Class<T> getRenderStateType();
 
     GlVertexFormat<ChunkMeshAttribute> getVertexFormat();
+
+    default BlockPos getRenderOffset(ChunkSectionPos pos) {
+        return new BlockPos(pos.getX() << 4, pos.getY() << 4, pos.getZ() << 4);
+    }
 }
