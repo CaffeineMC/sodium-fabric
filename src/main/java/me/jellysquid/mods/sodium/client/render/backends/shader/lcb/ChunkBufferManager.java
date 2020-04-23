@@ -12,6 +12,7 @@ public class ChunkBufferManager {
     private static final int BUFFER_WIDTH = 4;
     private static final int BUFFER_HEIGHT = 2;
     private static final int BUFFER_LENGTH = 4;
+    private static final int BUFFER_SIZE = BUFFER_WIDTH * BUFFER_HEIGHT * BUFFER_LENGTH;
 
     private static final int BUFFER_WIDTH_SH = Integer.bitCount(BUFFER_WIDTH - 1);
     private static final int BUFFER_HEIGHT_SH = Integer.bitCount(BUFFER_HEIGHT - 1);
@@ -39,7 +40,7 @@ public class ChunkBufferManager {
 
         if (block == null) {
             ChunkSectionPos origin = ChunkSectionPos.from(pos.getX() & BUFFER_WIDTH_M, pos.getY() & BUFFER_HEIGHT_M, pos.getZ() & BUFFER_LENGTH_M);
-            block = new BufferBlock(origin, this.useImmutableStorage);
+            block = new BufferBlock(origin);
 
             this.blocks.put(getIndex(pos), block);
         }
@@ -72,5 +73,9 @@ public class ChunkBufferManager {
 
     public BlockPos getRenderOffset(ChunkSectionPos pos) {
         return new BlockPos((pos.getX() & BUFFER_WIDTH_M) << 4, (pos.getY() & BUFFER_HEIGHT_M) << 4, (pos.getZ() & BUFFER_LENGTH_M) << 4);
+    }
+
+    public static int getMaxBatchSize() {
+        return BUFFER_SIZE;
     }
 }

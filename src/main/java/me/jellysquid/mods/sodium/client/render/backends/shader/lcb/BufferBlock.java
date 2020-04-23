@@ -3,16 +3,14 @@ package me.jellysquid.mods.sodium.client.render.backends.shader.lcb;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
-import me.jellysquid.mods.sodium.client.gl.buffer.BufferUploadData;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
-import me.jellysquid.mods.sodium.client.gl.buffer.GlImmutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL44;
+import org.lwjgl.opengl.GL31;
+import org.lwjgl.opengl.GL33;
 
-import java.nio.ByteBuffer;
 import java.util.Set;
 
 public class BufferBlock {
@@ -20,7 +18,6 @@ public class BufferBlock {
     private static final int DEFAULT_RESIZE_INCREMENT = 512 * 1024;
 
     private final ChunkSectionPos origin;
-    private final boolean useImmutableStorage;
 
     private final Set<BufferSegment> freeSegments = new ObjectOpenHashSet<>();
     private final GlVertexArray vertexArray;
@@ -32,29 +29,28 @@ public class BufferBlock {
     private int capacity;
     private int allocCount;
 
-    public BufferBlock(ChunkSectionPos origin, boolean useImmutableStorage) {
-        this.useImmutableStorage = useImmutableStorage;
+    public BufferBlock(ChunkSectionPos origin) {
         this.origin = origin;
         this.vertexArray = new GlVertexArray();
 
         this.vertexBuffer = this.createBuffer();
-        this.vertexBuffer.bind(GL15.GL_ARRAY_BUFFER);
-        this.vertexBuffer.allocate(GL15.GL_ARRAY_BUFFER, DEFAULT_SIZE);
-        this.vertexBuffer.unbind(GL15.GL_ARRAY_BUFFER);
+        this.vertexBuffer.bind(GL31.GL_COPY_WRITE_BUFFER);
+        this.vertexBuffer.allocate(GL31.GL_COPY_WRITE_BUFFER, DEFAULT_SIZE);
+        this.vertexBuffer.unbind(GL31.GL_COPY_WRITE_BUFFER);
 
         this.capacity = DEFAULT_SIZE;
     }
 
     private void resize(int size) {
         GlBuffer src = this.vertexBuffer;
-        src.unbind(GL15.GL_ARRAY_BUFFER);
+        src.unbind(GL31.GL_COPY_WRITE_BUFFER);
 
         GlBuffer dst = this.createBuffer();
 
         GlBuffer.copy(src, dst, 0, 0, this.capacity, size);
         src.delete();
 
-        dst.bind(GL15.GL_ARRAY_BUFFER);
+        dst.bind(GL31.GL_COPY_WRITE_BUFFER);
 
         this.vertexBuffer = dst;
         this.capacity = size;
@@ -62,7 +58,7 @@ public class BufferBlock {
     }
 
     private GlBuffer createBuffer() {
-        return this.useImmutableStorage ? new GlImmutableBuffer(GL44.GL_DYNAMIC_STORAGE_BIT) : new GlMutableBuffer(GL15.GL_DYNAMIC_DRAW);
+        return new GlMutableBuffer(GL15.GL_DYNAMIC_DRAW);
     }
 
     public void bind(GlVertexAttributeBinding[] attributes) {
@@ -90,26 +86,23 @@ public class BufferBlock {
     }
 
     public void beginUpload() {
-        this.vertexBuffer.bind(GL15.GL_ARRAY_BUFFER);
+        this.vertexBuffer.bind(GL31.GL_COPY_WRITE_BUFFER);
     }
 
-    public void endUploads() {
-        this.vertexBuffer.unbind(GL15.GL_ARRAY_BUFFER);
-    }
-
-    public BufferSegment upload(BufferUploadData data) {
-        ByteBuffer buf = data.buffer;
-        int len = buf.capacity();
-
+    public BufferSegment upload(int readTarget, int offset, int len) {
         BufferSegment segment = this.alloc(len);
 
         if (this.position >= this.capacity) {
             this.resize(this.getNextSize(len));
         }
 
-        this.vertexBuffer.uploadSub(GL15.GL_ARRAY_BUFFER, segment.getStart(), buf);
+        GL33.glCopyBufferSubData(readTarget, GL31.GL_COPY_WRITE_BUFFER, offset, segment.getStart(), len);
 
         return segment;
+    }
+
+    public void endUploads() {
+        this.vertexBuffer.unbind(GL31.GL_COPY_WRITE_BUFFER);
     }
 
     private int getNextSize(int len) {

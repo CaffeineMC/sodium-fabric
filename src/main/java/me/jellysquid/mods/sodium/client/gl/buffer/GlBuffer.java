@@ -6,7 +6,7 @@ import org.lwjgl.opengl.*;
 import java.nio.ByteBuffer;
 
 public abstract class GlBuffer extends GlHandle {
-    private static final CopyBufferFunctions copyBufferFuncs = CopyBufferFunctions.pickBest(GL.getCapabilities());
+    public static final CopyBufferFunctions copyBufferFuncs = CopyBufferFunctions.pickBest(GL.getCapabilities());
 
     protected int vertexCount = 0;
 

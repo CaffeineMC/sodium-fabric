@@ -5,18 +5,21 @@ import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
+import me.jellysquid.mods.sodium.client.gl.buffer.BufferUploadData;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkMesh;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
+import net.minecraft.client.util.GlAllocationUtils;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
-import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.opengl.GL15;
 
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -26,18 +29,31 @@ import java.util.Map;
 
 public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBackend<ShaderLCBRenderState> {
     private final ChunkBufferManager bufferManager;
-    private final IntBuffer bufIndices = MemoryUtil.memAllocInt(64);
-    private final IntBuffer bufLen = MemoryUtil.memAllocInt(64);
+    private final GlMutableBuffer uploadBuffer;
+
+    private final IntBuffer bufIndices;
+    private final IntBuffer bufLen;
+
     private final Reference2ObjectMap<BufferBlock, List<ShaderLCBRenderState>> lists = new Reference2ObjectOpenHashMap<>();
 
     public ShaderLCBChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
 
         this.bufferManager = new ChunkBufferManager(this.useImmutableStorage);
+
+        int maxBatchSize = ChunkBufferManager.getMaxBatchSize();
+
+        this.bufIndices = GlAllocationUtils.allocateByteBuffer(maxBatchSize * 4).asIntBuffer();
+        this.bufLen = GlAllocationUtils.allocateByteBuffer(maxBatchSize * 4).asIntBuffer();
+
+        this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
     }
 
     @Override
     public void upload(Iterator<ChunkBuildResult<ShaderLCBRenderState>> queue) {
+        GlMutableBuffer uploadBuffer = this.uploadBuffer;
+        uploadBuffer.bind(GL15.GL_ARRAY_BUFFER);
+
         BufferBlock prevBlock = null;
 
         while (queue.hasNext()) {
@@ -54,21 +70,30 @@ public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBacken
                 BufferBlock block = this.bufferManager.getOrCreateBlock(pos);
 
                 if (prevBlock != block) {
+                    if (prevBlock != null) {
+                        prevBlock.endUploads();
+                    }
+
                     block.beginUpload();
 
                     prevBlock = block;
                 }
 
-                BufferSegment slice = block.upload(mesh.takePendingUpload());
-                ShaderLCBRenderState state = new ShaderLCBRenderState(slice);
+                BufferUploadData upload = mesh.takePendingUpload();
+                uploadBuffer.upload(GL15.GL_ARRAY_BUFFER, upload);
 
-                render.setRenderState(mesh.getRenderPass(), state);
+                BufferSegment segment = block.upload(GL15.GL_ARRAY_BUFFER, 0, upload.buffer.capacity());
+
+                render.setRenderState(mesh.getRenderPass(), new ShaderLCBRenderState(segment));
             }
         }
 
         if (prevBlock != null) {
             prevBlock.endUploads();
         }
+
+        uploadBuffer.invalidate(GL15.GL_ARRAY_BUFFER);
+        uploadBuffer.unbind(GL15.GL_ARRAY_BUFFER);
     }
 
     @Override
@@ -169,6 +194,7 @@ public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBacken
         super.delete();
 
         this.bufferManager.delete();
+        this.uploadBuffer.delete();
     }
 
     @Override

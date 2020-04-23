@@ -20,4 +20,8 @@ public class GlMutableBuffer extends GlBuffer {
     public void allocate(int target, long size) {
         GL15.glBufferData(target, size, this.hints);
     }
+
+    public void invalidate(int target) {
+        this.allocate(target, 0);
+    }
 }
