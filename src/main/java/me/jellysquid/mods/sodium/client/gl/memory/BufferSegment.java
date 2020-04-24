@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.backends.shader.lcb;
+package me.jellysquid.mods.sodium.client.gl.memory;
 
 public class BufferSegment {
     private final BufferBlock block;

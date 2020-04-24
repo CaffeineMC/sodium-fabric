@@ -26,14 +26,14 @@ import java.util.Iterator;
 
 public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderState> extends AbstractChunkRenderBackend<T> {
     private final EnumMap<FogMode, ChunkShader> shaders = new EnumMap<>(FogMode.class);
-    private final GlVertexFormat<ChunkMeshAttribute> format;
 
-    protected ChunkShader activeProgram;
+    protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
     protected final boolean useImmutableStorage;
 
-    public AbstractShaderChunkRenderBackend(GlVertexFormat<ChunkMeshAttribute> format) {
+    protected ChunkShader activeProgram;
 
-        this.format = format;
+    public AbstractShaderChunkRenderBackend(GlVertexFormat<ChunkMeshAttribute> format) {
+        this.vertexFormat = format;
         this.useImmutableStorage = GlImmutableBuffer.isSupported() && SodiumClientMod.options().performance.useImmutableStorage;
 
         this.shaders.put(FogMode.NONE, createShader(format, FogMode.NONE));
@@ -116,6 +116,6 @@ public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderStat
 
     @Override
     public GlVertexFormat<ChunkMeshAttribute> getVertexFormat() {
-        return this.format;
+        return this.vertexFormat;
     }
 }

@@ -16,7 +16,6 @@ import java.nio.FloatBuffer;
 import java.util.function.Function;
 
 public class ChunkShader extends GlShaderProgram {
-    private static final float MODEL_SCALE = 32.0f;
     private static final float MODEL_SIZE = 16.0f;
 
     private final int uModelViewMatrix;
@@ -28,7 +27,6 @@ public class ChunkShader extends GlShaderProgram {
     private final FogShaderComponent fogShader;
     private final FloatBuffer uModelOffsetBuffer;
 
-    public final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
     public final GlVertexAttributeBinding[] attributes;
 
     public ChunkShader(Identifier name, int handle, GlVertexFormat<ChunkMeshAttribute> format, Function<ChunkShader, FogShaderComponent> fogShaderFunction) {
@@ -56,7 +54,6 @@ public class ChunkShader extends GlShaderProgram {
 
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(3);
         this.fogShader = fogShaderFunction.apply(this);
-        this.vertexFormat = format;
     }
 
     @Override
