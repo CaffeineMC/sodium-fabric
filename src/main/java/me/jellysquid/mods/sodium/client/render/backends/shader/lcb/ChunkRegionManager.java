@@ -7,10 +7,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
-public class ChunkBufferManager {
+public class ChunkRegionManager {
     // Buffers span 4x2x4 chunks
     private static final int BUFFER_WIDTH = 4;
-    private static final int BUFFER_HEIGHT = 2;
+    private static final int BUFFER_HEIGHT = 4;
     private static final int BUFFER_LENGTH = 4;
     private static final int BUFFER_SIZE = BUFFER_WIDTH * BUFFER_HEIGHT * BUFFER_LENGTH;
 
@@ -28,24 +28,19 @@ public class ChunkBufferManager {
         Validate.isTrue(MathUtil.isPowerOfTwo(BUFFER_HEIGHT));
     }
 
-    private final Long2ReferenceOpenHashMap<BufferBlock> blocks = new Long2ReferenceOpenHashMap<>();
-    private final boolean useImmutableStorage;
+    private final Long2ReferenceOpenHashMap<ChunkRegion> regions = new Long2ReferenceOpenHashMap<>();
 
-    public ChunkBufferManager(boolean useImmutableStorage) {
-        this.useImmutableStorage = useImmutableStorage;
-    }
+    public ChunkRegion createRegion(ChunkSectionPos pos) {
+        ChunkRegion region = this.regions.get(getIndex(pos));
 
-    public BufferBlock getOrCreateBlock(ChunkSectionPos pos) {
-        BufferBlock block = this.blocks.get(getIndex(pos));
-
-        if (block == null) {
+        if (region == null) {
             ChunkSectionPos origin = ChunkSectionPos.from(pos.getX() & BUFFER_WIDTH_M, pos.getY() & BUFFER_HEIGHT_M, pos.getZ() & BUFFER_LENGTH_M);
-            block = new BufferBlock(origin);
+            region = new ChunkRegion(origin, BUFFER_SIZE);
 
-            this.blocks.put(getIndex(pos), block);
+            this.regions.put(getIndex(pos), region);
         }
 
-        return block;
+        return region;
     }
 
     public static long getIndex(ChunkSectionPos pos) {
@@ -53,16 +48,16 @@ public class ChunkBufferManager {
     }
 
     public void delete() {
-        for (BufferBlock block : this.blocks.values()) {
-            block.delete();
+        for (ChunkRegion region : this.regions.values()) {
+            region.delete();
         }
 
-        this.blocks.clear();
+        this.regions.clear();
     }
 
     public void cleanup() {
-        for (ObjectIterator<BufferBlock> iterator = this.blocks.values().iterator(); iterator.hasNext(); ) {
-            BufferBlock block = iterator.next();
+        for (ObjectIterator<ChunkRegion> iterator = this.regions.values().iterator(); iterator.hasNext(); ) {
+            ChunkRegion block = iterator.next();
 
             if (block.isEmpty()) {
                 block.delete();
@@ -75,7 +70,4 @@ public class ChunkBufferManager {
         return new BlockPos((pos.getX() & BUFFER_WIDTH_M) << 4, (pos.getY() & BUFFER_HEIGHT_M) << 4, (pos.getZ() & BUFFER_LENGTH_M) << 4);
     }
 
-    public static int getMaxBatchSize() {
-        return BUFFER_SIZE;
-    }
 }

@@ -1,51 +1,37 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader.lcb;
 
-import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.BufferUploadData;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
+import me.jellysquid.mods.sodium.client.gl.memory.BufferBlock;
+import me.jellysquid.mods.sodium.client.gl.memory.BufferSegment;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkMesh;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
-import net.minecraft.client.util.GlAllocationUtils;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 
-import java.nio.IntBuffer;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBackend<ShaderLCBRenderState> {
-    private final ChunkBufferManager bufferManager;
+    private final ChunkRegionManager bufferManager;
     private final GlMutableBuffer uploadBuffer;
 
-    private final IntBuffer bufIndices;
-    private final IntBuffer bufLen;
-
-    private final Reference2ObjectMap<BufferBlock, List<ShaderLCBRenderState>> lists = new Reference2ObjectOpenHashMap<>();
+    private final ObjectList<ChunkRegion> pendingBatches = new ObjectArrayList<>();
 
     public ShaderLCBChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
 
-        this.bufferManager = new ChunkBufferManager(this.useImmutableStorage);
-
-        int maxBatchSize = ChunkBufferManager.getMaxBatchSize();
-
-        this.bufIndices = GlAllocationUtils.allocateByteBuffer(maxBatchSize * 4).asIntBuffer();
-        this.bufLen = GlAllocationUtils.allocateByteBuffer(maxBatchSize * 4).asIntBuffer();
-
+        this.bufferManager = new ChunkRegionManager();
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
     }
 
@@ -67,7 +53,9 @@ public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBacken
 
             for (ChunkMesh mesh : data.getMeshes()) {
                 ChunkSectionPos pos = render.getChunkPos();
-                BufferBlock block = this.bufferManager.getOrCreateBlock(pos);
+
+                ChunkRegion region = this.bufferManager.createRegion(pos);
+                BufferBlock block = region.getBuffer();
 
                 if (prevBlock != block) {
                     if (prevBlock != null) {
@@ -84,7 +72,7 @@ public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBacken
 
                 BufferSegment segment = block.upload(GL15.GL_ARRAY_BUFFER, 0, upload.buffer.capacity());
 
-                render.setRenderState(mesh.getRenderPass(), new ShaderLCBRenderState(segment));
+                render.setRenderState(mesh.getRenderPass(), new ShaderLCBRenderState(region, segment, this.vertexFormat));
             }
         }
 
@@ -100,7 +88,7 @@ public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBacken
     public void render(Iterator<ShaderLCBRenderState> renders, MatrixStack matrixStack, double x, double y, double z) {
         this.bufferManager.cleanup();
 
-        this.setupLists(renders);
+        this.setupBatches(renders);
         this.begin(matrixStack);
 
         int chunkX = (int) (x / 16.0D);
@@ -109,73 +97,36 @@ public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBacken
 
         this.activeProgram.setModelMatrix(matrixStack, x % 16.0D, y % 16.0D, z % 16.0D);
 
-        int stride = this.activeProgram.vertexFormat.getStride();
+        GlVertexArray prevArray = null;
 
-        for (Map.Entry<BufferBlock, List<ShaderLCBRenderState>> entry : this.lists.entrySet()) {
-            BufferBlock block = entry.getKey();
-            block.bind(this.activeProgram.attributes);
+        for (ChunkRegion region : this.pendingBatches) {
+            this.activeProgram.setModelOffset(region.getOrigin(), chunkX, chunkY, chunkZ);
 
-            this.activeProgram.setModelOffset(block.getOrigin(), chunkX, chunkY, chunkZ);
-
-            for (ShaderLCBRenderState state : entry.getValue()) {
-                this.queueArray(state.getSegment(), stride);
-            }
-
-            this.drawArrays();
-
-            block.unbind();
+            prevArray = region.drawBatch(this.activeProgram.attributes);
         }
 
-        this.lists.clear();
+        if (prevArray != null) {
+            prevArray.unbind();
+        }
+
+        this.pendingBatches.clear();
 
         this.end(matrixStack);
     }
 
-    private void queueArray(BufferSegment segment, int stride) {
-        this.bufIndices.put(segment.getStart() / stride);
-        this.bufLen.put(segment.getLength() / stride);
-    }
-
-    private void drawArrays() {
-        this.bufIndices.flip();
-        this.bufLen.flip();
-
-        GL14.glMultiDrawArrays(GL11.GL_QUADS, this.bufIndices, this.bufLen);
-
-        this.bufIndices.clear();
-        this.bufLen.clear();
-    }
-
-    private void setupLists(Iterator<ShaderLCBRenderState> renders) {
-        BufferBlock prevBlock = null;
-        List<ShaderLCBRenderState> prevList = null;
-
+    private void setupBatches(Iterator<ShaderLCBRenderState> renders) {
         while (renders.hasNext()) {
             ShaderLCBRenderState state = renders.next();
 
-            if (state == null) {
-                continue;
-            }
+            if (state != null) {
+                ChunkRegion region = state.getRegion();
 
-            BufferSegment slice = state.getSegment();
-            BufferBlock block = slice.getBlock();
-
-            List<ShaderLCBRenderState> list;
-
-            if (prevBlock == block) {
-                list = prevList;
-            } else {
-                list = this.lists.get(block);
-
-                if (list == null) {
-                    this.lists.put(block, list = new ArrayList<>());
+                if (region.isBatchEmpty()) {
+                    this.pendingBatches.add(region);
                 }
 
-                prevList = list;
-                prevBlock = block;
+                region.addToBatch(state);
             }
-
-            list.add(state);
         }
     }
 

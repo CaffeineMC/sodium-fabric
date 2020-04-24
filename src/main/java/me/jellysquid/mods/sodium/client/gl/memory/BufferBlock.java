@@ -1,11 +1,10 @@
-package me.jellysquid.mods.sodium.client.render.backends.shader.lcb;
+package me.jellysquid.mods.sodium.client.gl.memory;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
-import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL31;
@@ -14,10 +13,8 @@ import org.lwjgl.opengl.GL33;
 import java.util.Set;
 
 public class BufferBlock {
-    private static final int DEFAULT_SIZE = 128 * 1024;
+    private static final int DEFAULT_SIZE = 768 * 1024;
     private static final int DEFAULT_RESIZE_INCREMENT = 512 * 1024;
-
-    private final ChunkSectionPos origin;
 
     private final Set<BufferSegment> freeSegments = new ObjectOpenHashSet<>();
     private final GlVertexArray vertexArray;
@@ -29,8 +26,7 @@ public class BufferBlock {
     private int capacity;
     private int allocCount;
 
-    public BufferBlock(ChunkSectionPos origin) {
-        this.origin = origin;
+    public BufferBlock() {
         this.vertexArray = new GlVertexArray();
 
         this.vertexBuffer = this.createBuffer();
@@ -61,12 +57,14 @@ public class BufferBlock {
         return new GlMutableBuffer(GL15.GL_DYNAMIC_DRAW);
     }
 
-    public void bind(GlVertexAttributeBinding[] attributes) {
+    public GlVertexArray bind(GlVertexAttributeBinding[] attributes) {
         this.vertexArray.bind();
 
         if (!this.vertexArraySetup) {
             this.setupVertexArrayState(attributes);
         }
+
+        return this.vertexArray;
     }
 
     private void setupVertexArrayState(GlVertexAttributeBinding[] attributes) {
@@ -79,10 +77,6 @@ public class BufferBlock {
 
         this.vertexBuffer.unbind(GL15.GL_ARRAY_BUFFER);
         this.vertexArraySetup = true;
-    }
-
-    public void unbind() {
-        this.vertexArray.unbind();
     }
 
     public void beginUpload() {
@@ -162,10 +156,6 @@ public class BufferBlock {
     public void delete() {
         this.vertexBuffer.delete();
         this.vertexArray.delete();
-    }
-
-    public ChunkSectionPos getOrigin() {
-        return this.origin;
     }
 
     public boolean isEmpty() {
