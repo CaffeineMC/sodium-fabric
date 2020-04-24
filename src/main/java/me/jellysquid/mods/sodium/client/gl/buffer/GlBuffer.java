@@ -1,126 +1,91 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
 import me.jellysquid.mods.sodium.client.gl.GlHandle;
-import net.minecraft.client.render.VertexFormat;
 import org.lwjgl.opengl.*;
 
 import java.nio.ByteBuffer;
 
 public abstract class GlBuffer extends GlHandle {
-    protected static final VertexBufferFunctions bufferFuncs = VertexBufferFunctions.pickBest(GL.getCapabilities());
+    public static final CopyBufferFunctions copyBufferFuncs = CopyBufferFunctions.pickBest(GL.getCapabilities());
 
-    protected final int target;
-
-    protected VertexFormat vertexFormat;
     protected int vertexCount = 0;
 
-    protected GlBuffer(int target) {
-        this.target = target;
-        this.setHandle(bufferFuncs.glGenBuffers());
+    protected GlBuffer() {
+        this.setHandle(GL15.glGenBuffers());
     }
 
-    public void unbind() {
-        bufferFuncs.glBindBuffer(this.target, 0);
+    public void unbind(int target) {
+        GL15.glBindBuffer(target, 0);
     }
 
-    public void bind() {
-        bufferFuncs.glBindBuffer(this.target, this.handle());
+    public void bind(int target) {
+        GL15.glBindBuffer(target, this.handle());
     }
 
     public void drawArrays(int mode) {
         GL11.glDrawArrays(mode, 0, this.vertexCount);
     }
 
-    public abstract void upload(BufferUploadData data);
+    public abstract void upload(int target, BufferUploadData data);
 
     public void delete() {
-        bufferFuncs.glDeleteBuffers(this.handle());
+        GL15.glDeleteBuffers(this.handle());
 
         this.invalidateHandle();
     }
 
-    public enum VertexBufferFunctions {
-        BASE {
-            @Override
-            public void glBindBuffer(int target, int id) {
-                GL15.glBindBuffer(target, id);
-            }
+    public abstract void allocate(int target, long size);
 
-            @Override
-            public int glGenBuffers() {
-                return GL15.glGenBuffers();
-            }
+    public static void copy(GlBuffer src, GlBuffer dst, int readOffset, int writeOffset, int copyLen, int bufferSize) {
+        src.bind(GL31.GL_COPY_READ_BUFFER);
 
-            @Override
-            public void glDeleteBuffers(int id) {
-                GL15.glDeleteBuffers(id);
-            }
+        dst.bind(GL31.GL_COPY_WRITE_BUFFER);
+        dst.allocate(GL31.GL_COPY_WRITE_BUFFER, bufferSize);
 
+        copyBufferFuncs.glCopyBufferSubData(GL31.GL_COPY_READ_BUFFER, GL31.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, copyLen);
+
+        dst.unbind(GL31.GL_COPY_WRITE_BUFFER);
+        src.unbind(GL31.GL_COPY_READ_BUFFER);
+    }
+
+    public void uploadSub(int target, int offset, ByteBuffer data) {
+        GL15.glBufferSubData(target, offset, data);
+    }
+
+    public static boolean isBufferCopySupported() {
+        return copyBufferFuncs != CopyBufferFunctions.UNSUPPORTED;
+    }
+
+    private enum CopyBufferFunctions {
+        CORE {
             @Override
-            public void glBufferData(int target, ByteBuffer data, int usage) {
-                GL15.glBufferData(target, data, usage);
+            public void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size) {
+                GL31.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
             }
         },
         ARB {
             @Override
-            public void glBindBuffer(int target, int id) {
-                ARBVertexBufferObject.glBindBufferARB(target, id);
-            }
-
-            @Override
-            public int glGenBuffers() {
-                return ARBVertexBufferObject.glGenBuffersARB();
-            }
-
-            @Override
-            public void glDeleteBuffers(int id) {
-                ARBVertexBufferObject.glDeleteBuffersARB(id);
-            }
-
-            @Override
-            public void glBufferData(int target, ByteBuffer data, int usage) {
-                ARBVertexBufferObject.glBufferDataARB(target, data, usage);
+            public void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size) {
+                ARBCopyBuffer.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
             }
         },
         UNSUPPORTED {
             @Override
-            public void glBindBuffer(int target, int id) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public int glGenBuffers() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void glDeleteBuffers(int id) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void glBufferData(int target, ByteBuffer data, int usage) {
+            public void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size) {
                 throw new UnsupportedOperationException();
             }
         };
 
-        public static VertexBufferFunctions pickBest(GLCapabilities capabilities) {
-            if (capabilities.OpenGL15) {
-                return BASE;
-            } else if (capabilities.GL_ARB_vertex_buffer_object) {
-                return ARB;
+        public static CopyBufferFunctions pickBest(GLCapabilities capabilities) {
+            if (capabilities.OpenGL31) {
+                return CopyBufferFunctions.CORE;
+            } else if (capabilities.GL_ARB_copy_buffer) {
+                return CopyBufferFunctions.ARB;
+            } else {
+                return CopyBufferFunctions.UNSUPPORTED;
             }
-
-            return UNSUPPORTED;
         }
 
-        public abstract void glBindBuffer(int target, int id);
-
-        public abstract int glGenBuffers();
-
-        public abstract void glDeleteBuffers(int id);
-
-        public abstract void glBufferData(int target, ByteBuffer data, int usage);
+        public abstract void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size);
     }
-
 }

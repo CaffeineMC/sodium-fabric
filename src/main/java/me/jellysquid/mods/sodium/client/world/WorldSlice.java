@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.world;
 
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCache;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
@@ -47,7 +47,9 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     private final BiomeCache[] biomeCaches;
     private final BiomeArray[] biomeArrays;
 
-    private final Map<ColorResolver, ColorizerCache> colorResolvers = new Reference2ReferenceArrayMap<>();
+    private final Map<ColorResolver, ColorizerCache> colorResolvers = new Reference2ObjectOpenHashMap<>();
+    private ColorResolver prevColorResolver;
+    private ColorizerCache prevColorCache;
 
     private World world;
     private WorldChunk[] chunks;
@@ -95,7 +97,7 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
         this.biomeArrays = new BiomeArray[CHUNK_COUNT];
     }
 
-    public void init(ChunkBuilder builder, World world, ChunkSectionPos chunkPos, WorldChunk[] chunks) {
+    public void init(ChunkBuilder<?> builder, World world, ChunkSectionPos chunkPos, WorldChunk[] chunks) {
         final int minX = chunkPos.getMinX() - BLOCK_RADIUS;
         final int minY = chunkPos.getMinY() - BLOCK_RADIUS;
         final int minZ = chunkPos.getMinZ() - BLOCK_RADIUS;
@@ -180,11 +182,18 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     }
 
     private ColorizerCache getColorizerCache(ColorResolver resolver) {
+        if (this.prevColorResolver == resolver) {
+            return this.prevColorCache;
+        }
+
         ColorizerCache cache = this.colorResolvers.get(resolver);
 
         if (cache == null) {
             this.colorResolvers.put(resolver, cache = new ColorizerCache(resolver, this));
         }
+
+        this.prevColorResolver = resolver;
+        this.prevColorCache = cache;
 
         return cache;
     }
@@ -224,7 +233,7 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     // FIX: Do not access state on the main thread
     @Override
     public int getColor(BlockPos pos, ColorResolver resolver) {
-        return this.getColorizerCache(resolver).getColor(pos);
+        return this.getColorizerCache(resolver).getBlendedColor(pos);
     }
 
     @Override
@@ -266,7 +275,7 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     }
 
     public Biome getCachedBiome(int x, int y, int z) {
-        return this.biomeCaches[this.getChunkIndexForBlock(x, z)].getBiome(this, x, y, z);
+        return this.biomeCaches[this.getChunkIndexForBlock(x, z)].getBiome(this, x, z);
     }
 
     private int getBlockIndex(int x, int y, int z) {
@@ -329,6 +338,8 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
         this.world = null;
 
         this.colorResolvers.clear();
+        this.prevColorCache = null;
+        this.prevColorResolver = null;
     }
 
     public int getBlockOffsetX() {
@@ -341,5 +352,9 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
 
     public int getBlockOffsetZ() {
         return this.blockOffsetZ;
+    }
+
+    public int getBlockLength() {
+        return BLOCK_LENGTH;
     }
 }

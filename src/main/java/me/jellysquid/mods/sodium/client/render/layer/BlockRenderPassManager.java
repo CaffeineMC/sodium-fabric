@@ -40,7 +40,7 @@ public class BlockRenderPassManager {
         BlockRenderPassManager mapper = new BlockRenderPassManager();
         mapper.addMapping(RenderLayer.getSolid(), BlockRenderPass.SOLID_MIPPED);
         mapper.addMapping(RenderLayer.getCutoutMipped(), BlockRenderPass.SOLID_MIPPED);
-        mapper.addMapping(RenderLayer.getCutout(), BlockRenderPass.SOLID);
+        mapper.addMapping(RenderLayer.getCutout(), BlockRenderPass.CUTOUT);
         mapper.addMapping(RenderLayer.getTranslucent(), BlockRenderPass.TRANSLUCENT);
 
         return mapper;

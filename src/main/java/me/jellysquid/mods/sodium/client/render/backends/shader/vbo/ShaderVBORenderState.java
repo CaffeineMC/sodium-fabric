@@ -1,26 +1,25 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader.vbo;
 
-import me.jellysquid.mods.sodium.client.gl.attribute.GlAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
-import net.minecraft.client.util.math.Vector3d;
+import net.minecraft.util.math.ChunkSectionPos;
+import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 
 public class ShaderVBORenderState implements ChunkRenderState {
     private final GlBuffer buffer;
-    private final GlAttributeBinding[] attributes;
-    private final Vector3d translation;
+    private final ChunkSectionPos translation;
 
-    public ShaderVBORenderState(GlBuffer buffer, GlAttributeBinding[] attributes, Vector3d translation) {
-        this.translation = translation;
+    public ShaderVBORenderState(GlBuffer buffer, ChunkSectionPos origin) {
+        this.translation = origin;
         this.buffer = buffer;
-        this.attributes = attributes;
     }
 
-    public void bind() {
-        this.buffer.bind();
+    public void bind(GlVertexAttributeBinding[] attributes) {
+        this.buffer.bind(GL15.GL_ARRAY_BUFFER);
 
-        for (GlAttributeBinding binding : this.attributes) {
+        for (GlVertexAttributeBinding binding : attributes) {
             GL20.glVertexAttribPointer(binding.index, binding.count, binding.format, binding.normalized, binding.stride, binding.pointer);
         }
     }
@@ -30,7 +29,7 @@ public class ShaderVBORenderState implements ChunkRenderState {
     }
 
     public void unbind() {
-        this.buffer.unbind();
+        this.buffer.unbind(GL15.GL_ARRAY_BUFFER);
     }
 
     @Override
@@ -38,7 +37,7 @@ public class ShaderVBORenderState implements ChunkRenderState {
         this.buffer.delete();
     }
 
-    public Vector3d getTranslation() {
+    public ChunkSectionPos getOrigin() {
         return this.translation;
     }
 }

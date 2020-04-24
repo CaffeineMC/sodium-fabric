@@ -14,6 +14,7 @@ import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.util.RenderList;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import me.jellysquid.mods.sodium.common.util.collections.FutureDequeDrain;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -40,6 +41,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     private final ArrayDeque<ChunkRender<T>> importantDirtyChunks = new ArrayDeque<>();
     private final ArrayDeque<ChunkRender<T>> dirtyChunks = new ArrayDeque<>();
+    private final ObjectList<ChunkRender<T>> tickableChunks = new ObjectArrayList<>();
 
     @SuppressWarnings("unchecked")
     private final RenderList<T>[] renderLists = new RenderList[BlockRenderPass.count()];
@@ -72,7 +74,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             this.renderLists[i] = new RenderList<>();
         }
 
-        this.builder = new ChunkBuilder<>();
+        this.builder = new ChunkBuilder<>(backend.getVertexFormat(), this.backend);
         this.builder.init(world, renderPassManager);
 
         this.dirty = true;
@@ -96,12 +98,16 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     private void addToLists(ChunkRender<T> render) {
         render.setLastVisibleFrame(this.lastFrameUpdated);
 
-        if (render.needsRebuild()) {
+        if (render.needsRebuild() && render.getColumn().hasNeighbors()) {
             if (render.needsImportantRebuild()) {
                 this.importantDirtyChunks.add(render);
             } else {
                 this.dirtyChunks.add(render);
             }
+        }
+
+        if (render.canTick()) {
+            this.tickableChunks.add(render);
         }
 
         if (!render.isEmpty()) {
@@ -166,10 +172,6 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             if (!adj.isVisible(frustum)) {
                 return;
             }
-        }
-
-        if (!adj.getColumn().hasNeighbors()) {
-            return;
         }
 
         adj.setDirection(dir);
@@ -239,8 +241,8 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
             list.sort(Comparator.comparingDouble(o -> o.getSquaredDistance(origin)));
 
-            for (ChunkRender<T> n : list) {
-                queue.enqueue(n);
+            for (ChunkRender<T> render : list) {
+                queue.enqueue(render);
             }
         }
 
@@ -298,6 +300,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     private void resetGraph() {
         this.dirtyChunks.clear();
+        this.tickableChunks.clear();
         this.importantDirtyChunks.clear();
 
         this.visibleBlockEntities.clear();
@@ -403,6 +406,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     public void renderLayer(MatrixStack matrixStack, BlockRenderPass pass, double x, double y, double z) {
+        if (this.renderedLayers.isEmpty()) {
+            this.tickRenders();
+        }
+
         if (!this.renderedLayers.add(pass)) {
             return;
         }
@@ -413,7 +420,13 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             return;
         }
 
-        this.backend.render(renderList.iterator(pass.isTranslucent()), pass, matrixStack, x, y, z);
+        this.backend.render(renderList.iterator(pass.isTranslucent()), matrixStack, x, y, z);
+    }
+
+    private void tickRenders() {
+        for (ChunkRender<T> render : this.tickableChunks) {
+            render.tick();
+        }
     }
 
     public void onFrameChanged() {
@@ -434,6 +447,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
         while (!this.importantDirtyChunks.isEmpty()) {
             ChunkRender<T> render = this.importantDirtyChunks.remove();
+
             futures.add(this.builder.createRebuildFuture(render));
 
             this.dirty = true;
@@ -450,20 +464,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         this.dirty |= submitted > 0;
 
         // Try to complete some other work on the main thread while we wait for rebuilds to complete
-        this.dirty |= this.builder.upload(this.backend);
+        this.dirty |= this.builder.upload();
         this.cleanup();
 
-        this.backend.upload(new Iterator<ChunkBuildResult<T>>() {
-            @Override
-            public boolean hasNext() {
-                return !futures.isEmpty();
-            }
-
-            @Override
-            public ChunkBuildResult<T> next() {
-                return futures.remove().join();
-            }
-        });
+        this.backend.upload(new FutureDequeDrain<>(futures));
     }
 
     public void markDirty() {
@@ -518,16 +522,12 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
-        ChunkRender<T> node = this.getRender(x, y, z);
+        ChunkRender<T> render = this.getRender(x, y, z);
 
-        if (node != null) {
-            node.scheduleRebuild(important);
+        if (render != null) {
+            render.scheduleRebuild(important);
 
-            if (important) {
-                this.importantDirtyChunks.add(node);
-            } else {
-                this.dirtyChunks.add(node);
-            }
+            this.dirty = true;
         }
     }
 }

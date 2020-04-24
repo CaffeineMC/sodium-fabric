@@ -6,9 +6,11 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ShaderLCBChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.vao.ShaderVAOChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.vbo.ShaderVBOChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
@@ -179,6 +181,8 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         }
 
         Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.viewDistance / 8.0D, 1.0D, 2.5D));
+
+        this.client.getProfiler().pop();
     }
 
     private void applySettings() {
@@ -229,10 +233,12 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             this.renderPassManager = BlockRenderPassManager.vanilla();
         }
 
-        if (GlVertexArray.isSupported() && opts.performance.useVertexArrays) {
-            this.chunkRenderBackend = new ShaderVAOChunkRenderBackend();
+        if (GlVertexArray.isSupported() && opts.performance.useLargeBuffers) {
+            this.chunkRenderBackend = new ShaderLCBChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
+        } else if (GlVertexArray.isSupported() && opts.performance.useVertexArrays) {
+            this.chunkRenderBackend = new ShaderVAOChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
         } else {
-            this.chunkRenderBackend = new ShaderVBOChunkRenderBackend();
+            this.chunkRenderBackend = new ShaderVBOChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
         }
 
         this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.renderPassManager, this.world, this.renderDistance);

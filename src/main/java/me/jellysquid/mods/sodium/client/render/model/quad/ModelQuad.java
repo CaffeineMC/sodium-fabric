@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.model.quad;
 
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.Direction;
 
 import static me.jellysquid.mods.sodium.client.util.QuadUtil.*;
 
 public class ModelQuad implements ModelQuadViewMutable {
     private final int[] data = new int[VERTEX_SIZE * 4];
+    private int flags;
 
     @Override
     public void setX(int idx, float x) {
@@ -46,6 +46,11 @@ public class ModelQuad implements ModelQuadViewMutable {
     @Override
     public void setNormal(int idx, int norm) {
         this.data[vertexOffset(idx) + NORMAL_INDEX] = norm;
+    }
+
+    @Override
+    public void setFlags(int flags) {
+        this.flags = flags;
     }
 
     @Override
@@ -90,27 +95,12 @@ public class ModelQuad implements ModelQuadViewMutable {
 
     @Override
     public int getFlags() {
-        return ModelQuadFlags.getQuadFlags(this);
-    }
-
-    @Override
-    public boolean hasColorIndex() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getColorIndex() {
-        throw new UnsupportedOperationException();
+        return this.flags;
     }
 
     @Override
     public int[] getVertexData() {
         return this.data;
-    }
-
-    @Override
-    public Direction getFacing() {
-        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -1,8 +1,7 @@
 package me.jellysquid.mods.sodium.client.util;
 
 public class MathUtil {
-    // TODO: Use Math#fma in Java 9+
-    public static float fma(float a, float b, float c) {
-        return a * b + c;
+    public static boolean isPowerOfTwo(int n) {
+        return ((n & (n - 1)) == 0);
     }
 }

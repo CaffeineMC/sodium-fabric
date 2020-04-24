@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.ChunkSection;
 
 public class ColumnRender<T extends ChunkRenderState> {
     @SuppressWarnings("unchecked")
@@ -17,38 +17,18 @@ public class ColumnRender<T extends ChunkRenderState> {
 
     private final SodiumWorldRenderer renderer;
 
+    private World world;
     private final int chunkX, chunkZ;
-
-    private final float boundsMinX;
-    private final float boundsMinY;
-    private final float boundsMinZ;
-
-    private final float boundsMaxX;
-    private final float boundsMaxY;
-    private final float boundsMaxZ;
-
     private boolean chunkPresent;
-    private boolean visible;
-    private int lastFrame = -1;
 
     public ColumnRender(SodiumWorldRenderer renderer, World world, int chunkX, int chunkZ, RenderFactory<T> factory) {
+        this.world = world;
         this.renderer = renderer;
         this.chunkX = chunkX;
         this.chunkZ = chunkZ;
 
-        int x = chunkX << 4;
-        int z = chunkZ << 4;
-
         this.neighbors[Direction.DOWN.ordinal()] = this;
         this.neighbors[Direction.UP.ordinal()] = this;
-
-        this.boundsMinX = x;
-        this.boundsMinY = Float.NEGATIVE_INFINITY;
-        this.boundsMinZ = z;
-
-        this.boundsMaxX = x + 16.0f;
-        this.boundsMaxY = Float.POSITIVE_INFINITY;
-        this.boundsMaxZ = x + 16.0f;
 
         for (int y = 0; y < 16; y++) {
             this.chunks[y] = factory.create(this, this.chunkX, y, this.chunkZ);
@@ -91,17 +71,6 @@ public class ColumnRender<T extends ChunkRenderState> {
         return ChunkPos.toLong(this.chunkX, this.chunkZ);
     }
 
-    public boolean isVisible(FrustumExtended frustum, int frame) {
-        if (this.lastFrame == frame) {
-            return this.visible;
-        }
-
-        this.visible = frustum.fastAabbTest(this.boundsMinX, this.boundsMinY, this.boundsMinZ, this.boundsMaxX, this.boundsMaxY, this.boundsMaxZ);
-        this.lastFrame = frame;
-
-        return this.visible;
-    }
-
     public int getX() {
         return this.chunkX;
     }
@@ -142,6 +111,10 @@ public class ColumnRender<T extends ChunkRenderState> {
 
     public void onChunkRenderUpdated(ChunkRenderData before, ChunkRenderData after) {
         this.renderer.onChunkRenderUpdated(before, after);
+    }
+
+    public boolean isSectionEmpty(int chunkY) {
+        return ChunkSection.isEmpty(this.world.getChunk(this.chunkX, this.chunkZ).getSectionArray()[chunkY]);
     }
 
     public interface RenderFactory<T extends ChunkRenderState> {

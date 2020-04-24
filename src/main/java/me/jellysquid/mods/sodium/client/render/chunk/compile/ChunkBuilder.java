@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
@@ -12,6 +13,7 @@ import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
 import me.jellysquid.mods.sodium.common.util.arena.Arena;
+import me.jellysquid.mods.sodium.common.util.collections.DequeDrain;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.client.world.ClientWorld;
@@ -21,7 +23,9 @@ import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,14 +34,14 @@ public class ChunkBuilder<T extends ChunkRenderState> {
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
     private final Deque<WrappedTask<T>> buildQueue = new ConcurrentLinkedDeque<>();
-    private final Queue<ChunkBuildResult<T>> uploadQueue = new ConcurrentLinkedDeque<>();
+    private final Deque<ChunkBuildResult<T>> uploadQueue = new ConcurrentLinkedDeque<>();
 
     private final Object jobNotifier = new Object();
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
-    private final Arena<WorldSlice> chunkSliceArena;
+    private final Arena<WorldSlice> worldSliceArena;
 
     private World world;
     private Vector3d cameraPosition;
@@ -45,10 +49,14 @@ public class ChunkBuilder<T extends ChunkRenderState> {
     private BlockRenderPassManager renderPassManager;
 
     private final int limitThreads;
+    private final GlVertexFormat<?> format;
+    private final ChunkRenderBackend<T> backend;
 
-    public ChunkBuilder() {
+    public ChunkBuilder(GlVertexFormat<?> format, ChunkRenderBackend<T> backend) {
+        this.format = format;
+        this.backend = backend;
         this.limitThreads = getOptimalThreadCount();
-        this.chunkSliceArena = new Arena<>(this.getBudget(), WorldSlice::new);
+        this.worldSliceArena = new Arena<>(this.getBudget(), WorldSlice::new);
     }
 
     public int getBudget() {
@@ -65,7 +73,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         }
 
         for (int i = 0; i < this.limitThreads; i++) {
-            ChunkBuildBuffers bufferCache = new ChunkBuildBuffers(this.renderPassManager);
+            ChunkBuildBuffers bufferCache = new ChunkBuildBuffers(this.format, this.renderPassManager);
             WorkerRunnable worker = new WorkerRunnable(bufferCache);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
@@ -115,25 +123,15 @@ public class ChunkBuilder<T extends ChunkRenderState> {
 
         this.world = null;
         this.biomeCacheManager = null;
-        this.chunkSliceArena.reset();
+        this.worldSliceArena.reset();
     }
 
-    public boolean upload(ChunkRenderBackend<T> backend) {
+    public boolean upload() {
         if (this.uploadQueue.isEmpty()) {
             return false;
         }
 
-        backend.upload(new Iterator<ChunkBuildResult<T>>() {
-            @Override
-            public boolean hasNext() {
-                return !ChunkBuilder.this.uploadQueue.isEmpty();
-            }
-
-            @Override
-            public ChunkBuildResult<T> next() {
-                return ChunkBuilder.this.uploadQueue.remove();
-            }
-        });
+        this.backend.upload(new DequeDrain<>(this.uploadQueue));
 
         return true;
     }
@@ -160,10 +158,6 @@ public class ChunkBuilder<T extends ChunkRenderState> {
 
     public void setCameraPosition(double x, double y, double z) {
         this.cameraPosition = new Vector3d(x, y, z);
-    }
-
-    public World getWorld() {
-        return this.world;
     }
 
     public Vector3d getCameraPosition() {
@@ -199,14 +193,14 @@ public class ChunkBuilder<T extends ChunkRenderState> {
             return null;
         }
 
-        WorldSlice slice = this.chunkSliceArena.allocate();
+        WorldSlice slice = this.worldSliceArena.allocate();
         slice.init(this, this.world, pos, chunks);
 
         return slice;
     }
 
     public void releaseChunkSlice(WorldSlice slice) {
-        this.chunkSliceArena.release(slice);
+        this.worldSliceArena.release(slice);
     }
 
     public BiomeCacheManager getBiomeCacheManager() {
@@ -233,7 +227,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         if (slice == null) {
             return new ChunkRenderEmptyBuildTask<>(render);
         } else {
-            return new ChunkRenderRebuildTask<>(this, render, slice);
+            return new ChunkRenderRebuildTask<>(this, render, slice, this.backend.getRenderOffset(render.getChunkPos()));
         }
     }
 
@@ -256,7 +250,10 @@ public class ChunkBuilder<T extends ChunkRenderState> {
                     continue;
                 }
 
-                job.future.complete(job.task.performBuild(this.pipeline, this.bufferCache));
+                ChunkBuildResult<T> result = job.task.performBuild(this.pipeline, this.bufferCache);
+                job.task.releaseResources();
+
+                job.future.complete(result);
             }
         }
 

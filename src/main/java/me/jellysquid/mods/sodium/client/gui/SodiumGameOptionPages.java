@@ -11,6 +11,7 @@ import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.TickBoxControl;
 import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
+import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ShaderLCBChunkRenderBackend;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.AttackIndicator;
 import net.minecraft.client.options.ParticlesOption;
@@ -164,6 +165,15 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
+                .add(OptionImpl.createBuilder(int.class, sodiumOpts)
+                        .setName("Biome Blend")
+                        .setTooltip("Controls the range which biomes will be sampled for block colorization. " +
+                                "Higher values greatly increase the amount of time it takes to build chunks for diminishing improvements in quality.")
+                        .setControl(option -> new SliderControl(option, 0, 7, 1, ControlValueFormatter.quantityOrDisabled("block(s)", "None")))
+                        .setBinding((opts, value) -> opts.quality.biomeBlendDistance = value, opts -> opts.quality.biomeBlendDistance)
+                        .setImpact(OptionImpact.LOW)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Fog")
                         .setTooltip("If enabled, a fog effect will be used for terrain in the distance.")
@@ -203,11 +213,23 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Large Chunk Buffers")
+                        .setTooltip("If enabled, chunks will be batched into larger vertex buffers to avoid expensive state changes. This will greatly " +
+                                "reduce the amount of work the CPU needs to perform, but will not necessarily improve the average frame rate if the GPU " +
+                                "cannot keep up." +
+                                "\n\nRequires OpenGL 3.1+ or support for the ARB_vertex_array_object and ARB_copy_buffer extensions.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.performance.useLargeBuffers = value, opts -> opts.performance.useLargeBuffers)
+                        .setImpact(OptionImpact.EXTREME)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .setEnabled(ShaderLCBChunkRenderBackend.isSupported())
+                        .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Advanced Entity Culling")
                         .setTooltip("If enabled, a secondary culling pass will be performed before attempting to render an entity. This additional pass " +
                                 "takes into account the current set of visible chunks and removes entities which are not in any visible chunks.")
                         .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.HIGH)
+                        .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.useAdvancedEntityCulling = value, opts -> opts.performance.useAdvancedEntityCulling)
                         .build()
                 )
@@ -231,7 +253,7 @@ public class SodiumGameOptionPages {
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Immutable Storage")
-                        .setTooltip("If enabled, immutable storage objects will be used for storing chunk meshes. This can improve performance by giving the driver, " +
+                        .setTooltip("If enabled, immutable storage objects will be used for storing chunk meshes. This can improve performance by giving the driver " +
                                 "more information about how the data will be used, in turn allowing it to apply additional optimizations." +
                                 "\n\nRequires OpenGL 4.4+ or support for the ARB_buffer_storage extension.")
                         .setControl(TickBoxControl::new)
@@ -241,22 +263,11 @@ public class SodiumGameOptionPages {
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Large Chunk Buffers")
-                        .setTooltip("If enabled, chunks will be batched into larger vertex buffers to avoid expensive buffer switches while rendering chunks. " +
-                                "This can provide a huge boost at high render distances when CPU-bound." +
-                                "\n\nRequires OpenGL 3.1+ or support for the ARB_copy_buffer extension.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.performance.useLargeBuffers = value, opts -> opts.performance.useLargeBuffers)
-                        .setImpact(OptionImpact.HIGH)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .setEnabled(false)
-                        .build())
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Animate Only Visible Textures")
                         .setTooltip("If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame " +
                                 "rates on some hardware. If you experience issues with some textures not being animated, disable this option.")
                         .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.HIGH)
+                        .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.animateOnlyVisibleTextures = value, opts -> opts.performance.animateOnlyVisibleTextures)
                         .build()
                 )

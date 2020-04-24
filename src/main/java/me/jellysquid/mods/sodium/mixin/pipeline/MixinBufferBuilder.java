@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.pipeline;
 
 import com.google.common.collect.ImmutableList;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.util.BufferUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;
@@ -65,7 +65,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
     }
 
     @Override
-    public void write(ModelQuadView quad) {
+    public void write(ModelQuadViewMutable quad) {
         int[] data = quad.getVertexData();
 
         int bytes = data.length * 4;

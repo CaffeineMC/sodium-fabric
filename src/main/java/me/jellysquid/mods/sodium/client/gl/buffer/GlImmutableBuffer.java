@@ -10,16 +10,44 @@ import java.nio.ByteBuffer;
 public class GlImmutableBuffer extends GlBuffer {
     private static final BufferStorageFunctions storageFuncs = BufferStorageFunctions.pickBest(GL.getCapabilities());
 
-    public GlImmutableBuffer(int target) {
-        super(target);
+    private final int flags;
+    private boolean allocated;
+
+    public GlImmutableBuffer(int flags) {
+        this.flags = flags;
     }
 
     @Override
-    public void upload(BufferUploadData data) {
-        this.vertexFormat = data.format;
-        this.vertexCount = data.buffer.capacity() / data.format.getVertexSize();
+    public void upload(int target, BufferUploadData data) {
+        if (this.allocated) {
+            throw new IllegalStateException("Storage already allocated");
+        }
 
-        storageFuncs.glBufferStorage(this.target, data.buffer, 0);
+        this.vertexCount = data.buffer.capacity() / data.format.getStride();
+
+        storageFuncs.glBufferStorage(target, data.buffer, this.flags);
+
+        this.allocated = true;
+    }
+
+    @Override
+    public void allocate(int target, long size) {
+        if (this.allocated) {
+            throw new IllegalStateException("Storage already allocated");
+        }
+
+        storageFuncs.glBufferStorage(target, size, this.flags);
+
+        this.allocated = true;
+    }
+
+    @Override
+    public void uploadSub(int target, int offset, ByteBuffer data) {
+        if ((this.flags & GL44.GL_DYNAMIC_STORAGE_BIT) == 0) {
+            throw new IllegalStateException("Storage is not dynamic");
+        }
+
+        super.uploadSub(target, offset, data);
     }
 
     public static boolean isSupported() {
@@ -32,11 +60,21 @@ public class GlImmutableBuffer extends GlBuffer {
             public void glBufferStorage(int target, ByteBuffer data, int flags) {
                 GL44.glBufferStorage(target, data, flags);
             }
+
+            @Override
+            public void glBufferStorage(int target, long size, int flags) {
+                GL44.glBufferStorage(target, size, flags);
+            }
         },
         ARB {
             @Override
             public void glBufferStorage(int target, ByteBuffer data, int flags) {
                 ARBBufferStorage.glBufferStorage(target, data, flags);
+            }
+
+            @Override
+            public void glBufferStorage(int target, long size, int flags) {
+                ARBBufferStorage.glBufferStorage(target, size, flags);
             }
         },
         UNSUPPORTED {
@@ -44,9 +82,15 @@ public class GlImmutableBuffer extends GlBuffer {
             public void glBufferStorage(int target, ByteBuffer data, int flags) {
                 throw new UnsupportedOperationException();
             }
+
+            @Override
+            public void glBufferStorage(int target, long size, int flags) {
+                throw new UnsupportedOperationException();
+            }
         };
 
         public abstract void glBufferStorage(int target, ByteBuffer data, int flags);
+        public abstract void glBufferStorage(int target, long size, int flags);
 
         public static BufferStorageFunctions pickBest(GLCapabilities caps) {
             if (caps.OpenGL44) {

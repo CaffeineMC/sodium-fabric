@@ -7,7 +7,6 @@ import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.render.*;
 import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.util.Rect2i;
 import net.minecraft.sound.SoundEvents;
 import org.lwjgl.opengl.GL11;
 
@@ -55,10 +54,6 @@ public abstract class AbstractWidget implements Drawable, Element {
         consumer.vertex(x1, y1, 1.0D).color(r, g, b, a).next();
         consumer.vertex(x1, y2, 1.0D).color(r, g, b, a).next();
         consumer.vertex(x2, y2, 1.0D).color(r, g, b, a).next();
-    }
-
-    protected static Rect2i growRect2i(Rect2i o, int r) {
-        return new Rect2i(o.getX() - r, o.getY() - r, o.getWidth() + (r * 2), o.getHeight() + (r * 2));
     }
 
     protected void playClickSound() {

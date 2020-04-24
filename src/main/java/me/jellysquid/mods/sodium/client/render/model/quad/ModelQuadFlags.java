@@ -1,18 +1,20 @@
 package me.jellysquid.mods.sodium.client.render.model.quad;
 
+import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.util.math.Direction;
 
 public class ModelQuadFlags {
     public static final int IS_ALIGNED = 0b01;
     public static final int IS_PARTIAL = 0b10;
-    public static final int IS_COMPLEX = IS_ALIGNED | IS_PARTIAL;
+    public static final int NONE = 0;
 
     public static boolean contains(int flags, int mask) {
         return (flags & mask) != 0;
     }
 
-    public static int getQuadFlags(ModelQuadView quad) {
-        Direction face = quad.getFacing();
+    public static int getQuadFlags(BakedQuad bakedQuad) {
+        ModelQuadView quad = (ModelQuadView) bakedQuad;
+        Direction face = bakedQuad.getFace();
 
         float minX = 32.0F;
         float minY = 32.0F;

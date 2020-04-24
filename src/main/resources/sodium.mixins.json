@@ -21,6 +21,7 @@
     "fast_mojmath.MixinMatrix3f",
     "fast_mojmath.MixinMatrix4f",
     "fast_mojmath.MixinMatrixStack",
+    "models.MixinBlockColors",
     "models.MixinMultipartBakedModel",
     "options.MixinGameOptions",
     "options.MixinInGameHud",
@@ -28,6 +29,7 @@
     "options.MixinSettingsScreen",
     "options.MixinWorldRenderer",
     "particles.MixinBillboardParticle",
+    "particles.MixinParticleManager",
     "pipeline.MixinBakedQuad",
     "pipeline.MixinBlockModelRenderer",
     "pipeline.MixinBufferBuilder",
@@ -36,12 +38,7 @@
     "textures.MixinEntityRenderDispatcher",
     "textures.MixinInGameOverlayRenderer",
     "textures.MixinItemRenderer",
-    "textures.MixinSprite"
-  ],
-  "mixins": [
-    "particles.MixinParticleManager"
     "textures.MixinSprite",
-    "particles.MixinBillboardParticle",
     "render.static_fov.MixinGameRenderer"
   ]
 }

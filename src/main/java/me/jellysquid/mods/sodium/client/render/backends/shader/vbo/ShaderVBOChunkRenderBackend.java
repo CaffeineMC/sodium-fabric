@@ -1,10 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader.vbo;
 
-import me.jellysquid.mods.sodium.client.gl.attribute.GlAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
-import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
@@ -12,15 +13,23 @@ import org.lwjgl.opengl.GL20;
 import java.util.Iterator;
 
 public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBackend<ShaderVBORenderState> {
+    public ShaderVBOChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
+        super(format);
+    }
+
     @Override
-    public void render(Iterator<ShaderVBORenderState> renders, BlockRenderPass pass, MatrixStack matrixStack, double x, double y, double z) {
+    public void render(Iterator<ShaderVBORenderState> renders, MatrixStack matrixStack, double x, double y, double z) {
         super.begin(matrixStack);
 
-        for (GlAttributeBinding binding : this.program.attributes) {
+        for (GlVertexAttributeBinding binding : this.activeProgram.attributes) {
             GL20.glEnableVertexAttribArray(binding.index);
         }
 
-        this.program.setMatrices(matrixStack.peek());
+        int chunkX = (int) (x / 16.0D);
+        int chunkY = (int) (y / 16.0D);
+        int chunkZ = (int) (z / 16.0D);
+
+        this.activeProgram.setModelMatrix(matrixStack, x % 16.0D, y % 16.0D, z % 16.0D);
 
         ShaderVBORenderState lastRender = null;
 
@@ -31,9 +40,9 @@ public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBacken
                 return;
             }
 
-            this.program.setModelOffset(vbo.getTranslation(), x, y, z);
+            this.activeProgram.setModelOffset(vbo.getOrigin(), chunkX, chunkY, chunkZ);
 
-            vbo.bind();
+            vbo.bind(this.activeProgram.attributes);
             vbo.draw(GL11.GL_QUADS);
 
             lastRender = vbo;
@@ -43,7 +52,7 @@ public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBacken
             lastRender.unbind();
         }
 
-        for (GlAttributeBinding binding : this.program.attributes) {
+        for (GlVertexAttributeBinding binding : this.activeProgram.attributes) {
             GL20.glDisableVertexAttribArray(binding.index);
         }
 
@@ -57,6 +66,6 @@ public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBacken
 
     @Override
     protected ShaderVBORenderState createRenderState(GlBuffer buffer, ChunkRender<ShaderVBORenderState> render) {
-        return new ShaderVBORenderState(buffer, this.program.attributes, render.getTranslation());
+        return new ShaderVBORenderState(buffer, render.getChunkPos());
     }
 }

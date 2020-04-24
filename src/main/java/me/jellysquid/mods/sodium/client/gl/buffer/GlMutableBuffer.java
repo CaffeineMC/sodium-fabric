@@ -3,15 +3,25 @@ package me.jellysquid.mods.sodium.client.gl.buffer;
 import org.lwjgl.opengl.GL15;
 
 public class GlMutableBuffer extends GlBuffer {
-    public GlMutableBuffer(int target) {
-        super(target);
+    private final int hints;
+
+    public GlMutableBuffer(int hints) {
+        this.hints = hints;
     }
 
     @Override
-    public void upload(BufferUploadData data) {
-        this.vertexFormat = data.format;
-        this.vertexCount = data.buffer.remaining() / data.format.getVertexSize();
+    public void upload(int target, BufferUploadData data) {
+        this.vertexCount = data.buffer.remaining() / data.format.getStride();
 
-        bufferFuncs.glBufferData(this.target, data.buffer, GL15.GL_STATIC_DRAW);
+        GL15.glBufferData(target, data.buffer, this.hints);
+    }
+
+    @Override
+    public void allocate(int target, long size) {
+        GL15.glBufferData(target, size, this.hints);
+    }
+
+    public void invalidate(int target) {
+        this.allocate(target, 0);
     }
 }

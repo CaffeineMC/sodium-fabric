@@ -32,20 +32,21 @@ public class SmoothLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void apply(ModelQuadView quad, BlockPos pos, LightResult out) {
-        Direction face = quad.getFacing();
+    public void apply(ModelQuadView quad, BlockPos pos, LightResult out, Direction face) {
         int flags = quad.getFlags();
 
         final AoNeighborInfo neighborInfo = AoNeighborInfo.get(face);
 
-        if (!ModelQuadFlags.contains(flags, ModelQuadFlags.IS_ALIGNED) || ModelQuadFlags.contains(flags, ModelQuadFlags.IS_PARTIAL)) {
-            this.applyComplex(neighborInfo, quad, pos, face, out);
+        if (flags == ModelQuadFlags.IS_ALIGNED) {
+            this.applyAlignedFullFace(neighborInfo, pos, face, out, flags);
         } else {
-            this.applyAlignedFullFace(neighborInfo, pos, face, out);
+            this.applyComplex(neighborInfo, quad, pos, face, out, flags);
         }
     }
 
-    private void applyComplex(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, Direction dir, LightResult out) {
+    private void applyComplex(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, Direction dir, LightResult out, int flags) {
+        boolean offset = ModelQuadFlags.contains(flags, ModelQuadFlags.IS_ALIGNED);
+
         for (int i = 0; i < 4; i++) {
             float cx = clamp(quad.getX(i));
             float cy = clamp(quad.getY(i));
@@ -57,9 +58,9 @@ public class SmoothLightPipeline implements LightPipeline {
             neighborInfo.calculateCornerWeights(cx, cy, cz, weights);
 
             if (MathHelper.approximatelyEquals(depth, 0.0F)) {
-                this.applyAlignedPartialFace(pos, dir, weights, i, out, true);
+                this.applyAlignedPartialFace(pos, dir, weights, i, out, offset);
             } else if (MathHelper.approximatelyEquals(depth, 1.0F)) {
-                this.applyAlignedPartialFace(pos, dir, weights, i, out, false);
+                this.applyAlignedPartialFace(pos, dir, weights, i, out, offset);
             } else {
                 this.applyInsetPartialFace(pos, dir, depth, 1.0f - depth, weights, i, out);
             }
@@ -102,8 +103,8 @@ public class SmoothLightPipeline implements LightPipeline {
         out.lm[i] = getLightMapCoord(sl, bl);
     }
 
-    private void applyAlignedFullFace(AoNeighborInfo neighborInfo, BlockPos pos, Direction dir, LightResult out) {
-        AoFaceData faceData = this.getCachedFaceData(pos, dir, true);
+    private void applyAlignedFullFace(AoNeighborInfo neighborInfo, BlockPos pos, Direction dir, LightResult out, int flags) {
+        AoFaceData faceData = this.getCachedFaceData(pos, dir, ModelQuadFlags.contains(flags, ModelQuadFlags.IS_ALIGNED));
         neighborInfo.mapCorners(faceData.lm, faceData.ao, out.lm, out.br);
     }
 
