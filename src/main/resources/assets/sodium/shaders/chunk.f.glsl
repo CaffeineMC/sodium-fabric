@@ -12,12 +12,9 @@ uniform vec4 u_FogColor;
 uniform sampler2D u_BlockTex;
 uniform sampler2D u_LightTex;
 
-const float LIGHT_COORD_SCALE = 1.0 / 256.0;
-const float LIGHT_COORD_OFFSET = 1.0 / 32.0;
-
 void main() {
     vec4 sampleBlockTex = texture2D(u_BlockTex, v_TexCoord);
-    vec4 sampleLightTex = texture2D(u_LightTex, (v_LightCoord * LIGHT_COORD_SCALE) + LIGHT_COORD_OFFSET);
+    vec4 sampleLightTex = texture2D(u_LightTex, v_LightCoord);
 
     vec4 texColor = v_Color * sampleBlockTex * sampleLightTex;
 

@@ -26,8 +26,12 @@ uniform mat4 u_ProjectionMatrix;
 uniform mat4 u_ModelViewMatrix;
 uniform vec3 u_ModelOffset;
 
+const float LIGHT_COORD_SCALE = 1.0 / 256.0;
+const float LIGHT_COORD_OFFSET = 1.0 / 32.0;
+
 void main() {
     vec4 viewSpacePos = u_ModelViewMatrix * vec4(a_Pos + u_ModelOffset, 1.0);
+    gl_Position = u_ProjectionMatrix * viewSpacePos;
 
 #ifdef USE_FOG_EXP2
     float dist = length(viewSpacePos) * u_FogDensity;
@@ -41,7 +45,5 @@ void main() {
 
     v_Color = a_Color;
     v_TexCoord = a_TexCoord;
-    v_LightCoord = a_LightCoord;
-
-    gl_Position = u_ProjectionMatrix * viewSpacePos;
+    v_LightCoord = (a_LightCoord * LIGHT_COORD_SCALE) + LIGHT_COORD_OFFSET;
 }
