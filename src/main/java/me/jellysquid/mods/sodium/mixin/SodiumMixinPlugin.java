@@ -24,7 +24,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
         try {
             this.config = SodiumConfig.load(new File("./config/sodium-mixins.properties"), "/sodium.mixins.json");
         } catch (Exception e) {
-            throw new RuntimeException("Could not load configuration file for Lithium", e);
+            throw new RuntimeException("Could not load configuration file for Sodium", e);
         }
 
         this.logger.info("Loaded configuration file for Sodium ({} options available, {} user overrides)",
