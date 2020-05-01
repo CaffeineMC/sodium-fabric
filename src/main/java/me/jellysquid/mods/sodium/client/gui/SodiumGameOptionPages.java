@@ -127,7 +127,7 @@ public class SodiumGameOptionPages {
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.DefaultGraphicsQuality.values()))
                         .setBinding(
                                 (opts, value) -> opts.fancyGraphics = value == SodiumGameOptions.DefaultGraphicsQuality.FANCY,
-                                opts -> (opts.fancyGraphics ? SodiumGameOptions.DefaultGraphicsQuality.FANCY : SodiumGameOptions.DefaultGraphicsQuality.FANCY))
+                                opts -> (opts.fancyGraphics ? SodiumGameOptions.DefaultGraphicsQuality.FANCY : SodiumGameOptions.DefaultGraphicsQuality.FAST))
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
