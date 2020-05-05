@@ -13,15 +13,15 @@ issues.
 
 ### Support development
 
-You can help buy me food and support development while getting early access builds of my mods by [making a monthly pledge to my Patreon!](https://patreon.com/jellysquid) You'll also gain some special perks, such as prioritized support on [my Discord server](https://discord.gg/kcb57Cm).
+You can help buy me food and support development while getting early access builds of my mods by [making a monthly pledge to my Patreon!](https://patreon.com/jellysquid) You'll also gain some special perks, such as prioritized support on [my Discord server](https://jellysquid.me/discord).
 
 <a href="https://www.patreon.com/bePatron?u=824442"><img src="https://github.com/jellysquid3/Phosphor/raw/master/doc/patreon.png" width="200"></a>
 
 ### Join the Discord
 
-You can join the official Discord for my mods by [clicking here](https://discord.gg/UEa6r3d).
+You can join the official Discord for my mods by [clicking here](https://jellysquid.me/discord).
 
-<a href="https://discord.gg/ApPrpT"><img src="https://i.vgy.me/YrTrsE.png"></a>
+<a href="https://jellysquid.me/discord"><img src="https://i.vgy.me/YrTrsE.png"></a>
 
 ### Compiling the mod
 
