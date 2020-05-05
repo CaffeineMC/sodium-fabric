@@ -22,7 +22,7 @@ By submitting changes to this repository, you are hereby agreeing that:
 issues which would pose issues for inclusion or distribution under the above license.
 
 If you do not agree to these terms, please do not submit contributions to this repository. If you have any questions
-about these terms, feel free to get in contact with me through the [public Discord server](https://discord.gg/ApPrpT) or
+about these terms, feel free to get in contact with me through the [public Discord server](https://jellysquid.me/discord) or
 through opening an issue.
 
 ### Code Style
