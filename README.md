@@ -25,17 +25,24 @@ You can join the official Discord for my mods by [clicking here](https://jellysq
 
 ### Compiling the mod
 
-You will need the latest version of Gradle 5.5 present on your system along with the Java 11 JDK. For Windows users, you can use [Chocolatey](https://chocolatey.org) or [SDKMAN](https://sdkman.io/)
-to manage these installations. These should be standard packages on most other operating systems. Alternatively, you can use the included Gradle wrapper with `gradlew`.
+#### Prerequisites
 
-Once the prerequisites have been met, start a build with:
+You will need the JDK 8 (or newer, see section below) installed in order to build Sodium. You can use [Chocolatey](https://chocolatey.org) or [SDKMAN](https://sdkman.io/) to manage Java installations. However, you can also always grab the installers or binary packages directly from [AdoptOpenJDK's website](https://adoptopenjdk.net/) if you do not wish to install a package manager.
 
-```
-gradle build
-```
+The Oracle JDK/JRE builds should be avoided where possible due to their poor quality on Windows. JDK builds which use the OpenJ9 VM might cause issues with building the mod and will generally have much worse in-game performance.
 
-The resulting build artifacts will be present in `build/libs`.
+#### A note on newer Java versions
+
+For the best possible performance with Sodium installed, you should prefer to use a Java 14 runtime for your game client with the [Z Garbage Collector (ZGC)](https://wiki.openjdk.java.net/display/zgc/Main) enabled. However, please be sure you read this entire section before upgrading.
+
+If you build the mod with JDK 11 or newer, you *must* upgrade your game client's runtime to at least the version you are building with. If you try to use an older runtime while building with a newer version, [your game may crash or not render anything at all](https://github.com/jellysquid3/sodium-fabric/issues/16). Additionally, if you are using the Java 11 runtime or newer for your client, you should install [Voyager mod for Fabric](https://github.com/modmuss50/Voyager) to patch a [known world generation bug](https://bugs.mojang.com/browse/MC-149777) which can cause rare crashes.
+
+The official Minecraft launcher (and most other third-party launchers) will often use Java 8 runtime in order to work around [bugs in the Intel HD 2xxx/3xxx graphics drivers on Windows 10](https://github.com/LWJGL/lwjgl/issues/119). If you are not affected by these issues, you can usually upgrade the runtime by modifying your game profile's settings in your launcher of choice.
+
+#### Compiling
+
+Navigate to the directory you've cloned this repository and launch a build with Gradle using `gradlew build` on Windows or `./gradlew build` on macOS/Linux. The resulting build artifacts will be present in `build/libs`.
 
 ### License
 
-Sodium is licensed under GNU LGPLv3, a free and open-source license. For more information, please see the [license file](https://github.com/jellysquid3/lithium/blob/master/LICENSE.txt).
+Sodium is licensed under GNU LGPLv3, a free and open-source license. For more information, please see the [license file](https://github.com/jellysquid3/sodium-fabric/blob/master/LICENSE.txt).
