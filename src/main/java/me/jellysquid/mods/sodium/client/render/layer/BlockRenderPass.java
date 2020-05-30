@@ -2,9 +2,9 @@ package me.jellysquid.mods.sodium.client.render.layer;
 
 import net.minecraft.client.render.RenderLayer;
 
+// TODO: Move away from using an enum, make this extensible
 public enum BlockRenderPass {
-    SOLID(RenderLayer.getCutout(), false),
-    SOLID_MIPPED(RenderLayer.getCutoutMipped(), false),
+    SOLID(RenderLayer.getSolid(), false),
     CUTOUT(RenderLayer.getCutout(), false),
     CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false),
     TRANSLUCENT(RenderLayer.getTranslucent(), true);

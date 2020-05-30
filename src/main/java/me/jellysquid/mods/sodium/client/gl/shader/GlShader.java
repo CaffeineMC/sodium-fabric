@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.shader;
 
-import me.jellysquid.mods.sodium.client.gl.GlHandle;
+import me.jellysquid.mods.sodium.client.gl.GlObject;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,7 +11,10 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
 
-public class GlShader extends GlHandle {
+/**
+ * A compiled OpenGL shader object.
+ */
+public class GlShader extends GlObject {
     private static final Logger LOGGER = LogManager.getLogger(GlShader.class);
 
     private final Identifier name;
@@ -42,17 +45,28 @@ public class GlShader extends GlHandle {
         this.setHandle(handle);
     }
 
+    /**
+     * Adds an additional list of defines to the top of a GLSL shader file just after the version declaration. This
+     * allows for ghetto shader specialization.
+     */
     private static String processShader(String src, List<String> defines) {
         StringBuilder builder = new StringBuilder(src.length());
+        boolean patched = false;
 
         try (BufferedReader reader = new BufferedReader(new StringReader(src))) {
             String line;
 
             while ((line = reader.readLine()) != null) {
+                // Write the line out to the patched GLSL code string
                 builder.append(line).append("\n");
 
-                if (line.startsWith("#version")) {
+                // Now, see if the line we just wrote declares the version
+                // If we haven't already added our define declarations, add them just after the version declaration
+                if (!patched && line.startsWith("#version")) {
                     writeDefines(builder, defines);
+
+                    // We did our work, don't add them again
+                    patched = true;
                 }
             }
         } catch (IOException e) {

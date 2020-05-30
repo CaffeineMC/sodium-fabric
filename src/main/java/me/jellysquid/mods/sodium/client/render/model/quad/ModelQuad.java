@@ -2,8 +2,12 @@ package me.jellysquid.mods.sodium.client.render.model.quad;
 
 import net.minecraft.client.texture.Sprite;
 
-import static me.jellysquid.mods.sodium.client.util.QuadUtil.*;
+import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
 
+/**
+ * A simple implementation of the {@link ModelQuadViewMutable} interface which can provide an on-heap scratch area
+ * for storing quad vertex data.
+ */
 public class ModelQuad implements ModelQuadViewMutable {
     private final int[] data = new int[VERTEX_SIZE * 4];
     private int flags;

@@ -18,8 +18,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.util.RenderList;
-import me.jellysquid.mods.sodium.client.world.ChunkManagerWithStatusListener;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
+import me.jellysquid.mods.sodium.client.world.ChunkStatusListenerManager;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -35,6 +35,9 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.SortedSet;
 
+/**
+ * Provides an extension to vanilla's {@link WorldRenderer}.
+ */
 public class SodiumWorldRenderer implements ChunkStatusListener {
     private static SodiumWorldRenderer instance;
 
@@ -43,16 +46,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private ClientWorld world;
     private int renderDistance;
 
-    private double lastTranslucentSortX;
-    private double lastTranslucentSortY;
-    private double lastTranslucentSortZ;
+    private double lastTranslucentSortX, lastTranslucentSortY, lastTranslucentSortZ;
+    private double lastCameraX, lastCameraY, lastCameraZ;
 
-    private double lastCameraX;
-    private double lastCameraY;
-    private double lastCameraZ;
-
-    private double lastCameraPitch;
-    private double lastCameraYaw;
+    private double lastCameraPitch, lastCameraYaw;
 
     private boolean useEntityCulling;
 
@@ -64,9 +61,24 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private BlockRenderPassManager renderPassManager;
     private ChunkRenderBackend<?> chunkRenderBackend;
 
+    /**
+     * Instantiates Sodium's world renderer. This should be called at the time of the world renderer initialization.
+     */
     public static SodiumWorldRenderer create() {
         if (instance == null) {
             instance = new SodiumWorldRenderer(MinecraftClient.getInstance());
+        }
+
+        return instance;
+    }
+
+    /**
+     * @throws IllegalStateException If the renderer has not yet been created
+     * @return The current instance of this type
+     */
+    public static SodiumWorldRenderer getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("Renderer not initialized");
         }
 
         return instance;
@@ -95,11 +107,14 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         } else {
             this.initRenderer();
 
-            ((ChunkManagerWithStatusListener) world.getChunkManager()).setListener(this);
+            ((ChunkStatusListenerManager) world.getChunkManager()).setListener(this);
         }
     }
 
-    public int getCompletedChunkCount() {
+    /**
+     * @return The number of chunk renders which are visible in the current camera's frustum
+     */
+    public int getVisibleChunkCount() {
         int count = 0;
 
         for (BlockRenderPass pass : BlockRenderPass.VALUES) {
@@ -113,21 +128,30 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         return count;
     }
 
+    /**
+     * Notifies the chunk renderer that the graph scene has changed and should be re-computed.
+     */
     public void scheduleTerrainUpdate() {
-        // seems to be called before init
+        // BUG: seems to be called before init
         if (this.chunkRenderManager != null) {
             this.chunkRenderManager.markDirty();
         }
     }
 
+    /**
+     * @return True if no chunks are pending rebuilds
+     */
     public boolean isTerrainRenderComplete() {
         return this.chunkRenderManager.isBuildComplete();
     }
 
-    public void update(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
+    /**
+     * Called 
+     */
+    public void renderChunks(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
         this.frustum = frustum;
 
-        this.applySettings();
+        this.useEntityCulling = SodiumClientMod.options().performance.useAdvancedEntityCulling;
         this.chunkRenderManager.onFrameChanged();
 
         Vec3d cameraPos = camera.getPos();
@@ -185,11 +209,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.client.getProfiler().pop();
     }
 
-    private void applySettings() {
-        this.useEntityCulling = SodiumClientMod.options().performance.useAdvancedEntityCulling;
-    }
-
-    public void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
+    /**
+     * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
+     */
+    public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
         BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
         pass.startDrawing();
 
@@ -347,24 +370,23 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         return false;
     }
 
-    public static SodiumWorldRenderer getInstance() {
-        if (instance == null) {
-            throw new IllegalStateException("Renderer not initialized");
-        }
-
-        return instance;
-    }
-
+    /**
+     * @return The frustum of the current player's camera used to cull chunks
+     */
     public Frustum getFrustum() {
         return this.frustum;
     }
 
     public String getChunksDebugString() {
         // C: visible/total
+        // TODO: add dirty and queued counts
         return String.format("C: %s/%s", this.chunkRenderManager.getVisibleSectionCount(), this.chunkRenderManager.getTotalSections());
     }
 
-    public void scheduleRebuildForArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean important) {
+    /**
+     * Schedules chunk rebuilds for all chunks in the specified block region.
+     */
+    public void scheduleRebuildForBlockArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean important) {
         int minChunkX = minX >> 4;
         int minChunkY = minY >> 4;
         int minChunkZ = minZ >> 4;
@@ -382,6 +404,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         }
     }
 
+    /**
+     * Schedules a chunk rebuild for the render belonging to the given chunk section position.
+     */
     public void scheduleRebuildForChunk(int x, int y, int z, boolean important) {
         this.chunkRenderManager.scheduleRebuild(x, y, z, important);
     }

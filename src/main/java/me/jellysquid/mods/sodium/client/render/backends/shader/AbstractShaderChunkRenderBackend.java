@@ -6,8 +6,8 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlImmutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
+import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
-import me.jellysquid.mods.sodium.client.gl.shader.GlShaderProgram;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import me.jellysquid.mods.sodium.client.render.backends.AbstractChunkRenderBackend;
@@ -15,7 +15,7 @@ import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.backends.shader.FogShaderComponent.FogMode;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkMesh;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
@@ -25,12 +25,12 @@ import java.util.EnumMap;
 import java.util.Iterator;
 
 public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderState> extends AbstractChunkRenderBackend<T> {
-    private final EnumMap<FogMode, ChunkShader> shaders = new EnumMap<>(FogMode.class);
+    private final EnumMap<FogMode, ChunkProgram> shaders = new EnumMap<>(FogMode.class);
 
     protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
     protected final boolean useImmutableStorage;
 
-    protected ChunkShader activeProgram;
+    protected ChunkProgram activeProgram;
 
     public AbstractShaderChunkRenderBackend(GlVertexFormat<ChunkMeshAttribute> format) {
         this.vertexFormat = format;
@@ -41,15 +41,15 @@ public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderStat
         this.shaders.put(FogMode.EXP2, createShader(format, FogMode.EXP2));
     }
 
-    private static ChunkShader createShader(GlVertexFormat<ChunkMeshAttribute> format, FogMode fogMode) {
-        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium:chunk.v.glsl"), fogMode.getDefines());
-        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium:chunk.f.glsl"), fogMode.getDefines());
+    private static ChunkProgram createShader(GlVertexFormat<ChunkMeshAttribute> format, FogMode fogMode) {
+        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium:chunk_gl20.v.glsl"), fogMode.getDefines());
+        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium:chunk_gl20.f.glsl"), fogMode.getDefines());
 
         try {
-            return GlShaderProgram.builder(new Identifier("sodium", "chunk_shader"))
+            return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
                     .attach(vertShader)
                     .attach(fragShader)
-                    .link((program, name) -> new ChunkShader(program, name, format, fogMode.getFactory()));
+                    .link((program, name) -> new ChunkProgram(program, name, format, fogMode.getFactory()));
         } finally {
             vertShader.delete();
             fragShader.delete();
@@ -63,7 +63,7 @@ public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderStat
         while (queue.hasNext()) {
             ChunkBuildResult<T> result = queue.next();
 
-            ChunkRender<T> render = result.render;
+            ChunkRenderContainer<T> render = result.render;
             ChunkRenderData data = result.data;
 
             render.resetRenderStates();
@@ -93,7 +93,7 @@ public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderStat
     public void begin(MatrixStack matrixStack) {
         super.begin(matrixStack);
 
-        this.activeProgram = this.shaders.get(FogMode.chooseFogMode());
+        this.activeProgram = this.shaders.get(FogMode.getActiveMode());
         this.activeProgram.bind();
     }
 
@@ -107,12 +107,12 @@ public abstract class AbstractShaderChunkRenderBackend<T extends ChunkRenderStat
 
     @Override
     public void delete() {
-        for (ChunkShader shader : this.shaders.values()) {
+        for (ChunkProgram shader : this.shaders.values()) {
             shader.delete();
         }
     }
 
-    protected abstract T createRenderState(GlBuffer buffer, ChunkRender<T> render);
+    protected abstract T createRenderState(GlBuffer buffer, ChunkRenderContainer<T> render);
 
     @Override
     public GlVertexFormat<ChunkMeshAttribute> getVertexFormat() {

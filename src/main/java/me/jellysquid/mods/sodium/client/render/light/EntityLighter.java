@@ -10,7 +10,7 @@ public class EntityLighter {
     private static final double MAX_LIGHT_VAL = 15.0;
     private static final double MAX_LIGHTMAP_COORD = 240.0D;
 
-    public static int getAdvancedLight(Entity entity, float tickDelta) {
+    public static int getBlendedLight(Entity entity, float tickDelta) {
         boolean calcBlockLight = !entity.isOnFire();
 
         // Find the interpolated position of the entity

@@ -46,7 +46,7 @@ public abstract class MixinEntityRenderer<T extends Entity> {
         int blockLight = this.getBlockLightWrapper(entity, tickDelta);
 
         if (blockLight == 0xDEADBEEF) {
-            return EntityLighter.getAdvancedLight(entity, tickDelta);
+            return EntityLighter.getBlendedLight(entity, tickDelta);
         }
 
         return this.getSimpleLight(entity, tickDelta, blockLight);

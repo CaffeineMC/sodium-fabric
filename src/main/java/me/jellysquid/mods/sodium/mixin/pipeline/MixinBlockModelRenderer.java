@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.model.quad.consumer.FallbackQuadConsumer;
+import me.jellysquid.mods.sodium.client.render.model.quad.consumer.FallbackQuadSink;
 import me.jellysquid.mods.sodium.client.render.pipeline.BlockRenderPipeline;
 import me.jellysquid.mods.sodium.client.render.pipeline.GlobalRenderer;
 import net.minecraft.block.BlockState;
@@ -24,7 +24,7 @@ public class MixinBlockModelRenderer {
         GlobalRenderer renderer = GlobalRenderer.getInstance(world);
         BlockRenderPipeline blockRenderer = renderer.getBlockRenderer();
 
-        boolean ret = blockRenderer.renderModel(null, world, model, state, pos, new FallbackQuadConsumer(consumer, matrixStack), cull, rand, seed);
+        boolean ret = blockRenderer.renderModel(null, world, model, state, pos, new FallbackQuadSink(consumer, matrixStack), cull, rand, seed);
 
         cir.setReturnValue(ret);
     }

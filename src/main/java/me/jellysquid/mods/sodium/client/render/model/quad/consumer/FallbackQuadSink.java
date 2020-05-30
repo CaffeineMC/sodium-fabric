@@ -1,22 +1,31 @@
 package me.jellysquid.mods.sodium.client.render.model.quad.consumer;
 
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadSink;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadViewMutable;
-import me.jellysquid.mods.sodium.client.util.ColorUtil;
-import me.jellysquid.mods.sodium.client.util.QuadUtil;
+import me.jellysquid.mods.sodium.client.util.ColorARGB;
+import me.jellysquid.mods.sodium.client.util.Norm3b;
+import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.*;
 
-public class FallbackQuadConsumer implements ModelQuadConsumer {
+/**
+ * A fallback implementation of {@link ModelQuadSink} for when we're writing into an arbitrary {@link BufferBuilder}.
+ * This implementation is considerably slower than other sinks as it must perform many matrix transformations for every
+ * vertex and unpack values as assumptions can't be made about what the backing buffer type is.
+ */
+public class FallbackQuadSink implements ModelQuadSink {
     private final VertexConsumer consumer;
+
+    // Hoisted matrices to avoid lookups in peeking
     private final Matrix4f modelMatrix;
     private final Matrix3f normalMatrix;
 
+    // Cached vectors to avoid allocations
     private final Vector4f vector;
     private final Vector3f normal;
 
-    public FallbackQuadConsumer(VertexConsumer consumer, MatrixStack matrixStack) {
+    public FallbackQuadSink(VertexConsumer consumer, MatrixStack matrixStack) {
         this.consumer = consumer;
         this.modelMatrix = matrixStack.peek().getModel();
         this.normalMatrix = matrixStack.peek().getNormal();
@@ -39,10 +48,10 @@ public class FallbackQuadConsumer implements ModelQuadConsumer {
 
             int color = quad.getColor(i);
 
-            float r = ColorUtil.normalize(ColorUtil.unpackColorR(color));
-            float g = ColorUtil.normalize(ColorUtil.unpackColorG(color));
-            float b = ColorUtil.normalize(ColorUtil.unpackColorB(color));
-            float a = ColorUtil.normalize(ColorUtil.unpackColorA(color));
+            float r = ColorARGB.normalize(ColorARGB.unpackRed(color));
+            float g = ColorARGB.normalize(ColorARGB.unpackGreen(color));
+            float b = ColorARGB.normalize(ColorARGB.unpackBlue(color));
+            float a = ColorARGB.normalize(ColorARGB.unpackAlpha(color));
 
             float u = quad.getTexU(i);
             float v = quad.getTexV(i);
@@ -50,9 +59,9 @@ public class FallbackQuadConsumer implements ModelQuadConsumer {
             int light = quad.getLight(i);
             int norm = quad.getNormal(i);
 
-            float normX = QuadUtil.unpackNormalX(norm);
-            float normY = QuadUtil.unpackNormalY(norm);
-            float normZ = QuadUtil.unpackNormalZ(norm);
+            float normX = Norm3b.unpackX(norm);
+            float normY = Norm3b.unpackY(norm);
+            float normZ = Norm3b.unpackZ(norm);
 
             normVec.set(normX, normY, normZ);
             normVec.transform(this.normalMatrix);

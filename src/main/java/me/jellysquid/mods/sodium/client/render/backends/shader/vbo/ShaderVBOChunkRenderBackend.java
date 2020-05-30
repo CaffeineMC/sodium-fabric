@@ -5,13 +5,16 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
 import java.util.Iterator;
 
+/**
+ * A simple chunk rendering backend which mirrors that of vanilla's own pretty closely.
+ */
 public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBackend<ShaderVBORenderState> {
     public ShaderVBOChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
@@ -29,7 +32,7 @@ public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBacken
         int chunkY = (int) (y / 16.0D);
         int chunkZ = (int) (z / 16.0D);
 
-        this.activeProgram.setModelMatrix(matrixStack, x % 16.0D, y % 16.0D, z % 16.0D);
+        this.activeProgram.setupModelViewMatrix(matrixStack, x % 16.0D, y % 16.0D, z % 16.0D);
 
         ShaderVBORenderState lastRender = null;
 
@@ -40,7 +43,7 @@ public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBacken
                 return;
             }
 
-            this.activeProgram.setModelOffset(vbo.getOrigin(), chunkX, chunkY, chunkZ);
+            this.activeProgram.setupChunk(vbo.getOrigin(), chunkX, chunkY, chunkZ);
 
             vbo.bind(this.activeProgram.attributes);
             vbo.draw(GL11.GL_QUADS);
@@ -65,7 +68,7 @@ public class ShaderVBOChunkRenderBackend extends AbstractShaderChunkRenderBacken
     }
 
     @Override
-    protected ShaderVBORenderState createRenderState(GlBuffer buffer, ChunkRender<ShaderVBORenderState> render) {
+    protected ShaderVBORenderState createRenderState(GlBuffer buffer, ChunkRenderContainer<ShaderVBORenderState> render) {
         return new ShaderVBORenderState(buffer, render.getChunkPos());
     }
 }

@@ -4,14 +4,27 @@ import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.util.math.Direction;
 
 public class ModelQuadFlags {
+    /**
+     * Indicates that the quad is aligned to the block grid.
+     */
     public static final int IS_ALIGNED = 0b01;
-    public static final int IS_PARTIAL = 0b10;
-    public static final int NONE = 0;
 
+    /**
+     * Indicates that the quad does not fully cover the given face for the model.
+     */
+    public static final int IS_PARTIAL = 0b10;
+
+    /**
+     * @return True if the bit-flag of {@link ModelQuadFlags} contains the given flag
+     */
     public static boolean contains(int flags, int mask) {
         return (flags & mask) != 0;
     }
 
+    /**
+     * Calculates the properties of the given quad. This data is used later by the light pipeline in order to make
+     * certain optimizations.
+     */
     public static int getQuadFlags(BakedQuad bakedQuad) {
         ModelQuadView quad = (ModelQuadView) bakedQuad;
         Direction face = bakedQuad.getFace();
@@ -37,48 +50,48 @@ public class ModelQuadFlags {
             maxZ = Math.max(maxZ, z);
         }
 
-        boolean f1 = false, f0 = false;
+        boolean partial = false, aligned = false;
 
         switch (face) {
             case DOWN:
-                f0 = minY == maxY && minY < 1.0E-4F;
+                aligned = minY == maxY && minY < 0.0001f;
                 break;
             case UP:
-                f0 = minY == maxY && maxY > 0.9999F;
+                aligned = minY == maxY && maxY > 0.9999F;
                 break;
             case NORTH:
-                f0 = minZ == maxZ && minZ < 1.0E-4F;
+                aligned = minZ == maxZ && minZ < 0.0001f;
                 break;
             case SOUTH:
-                f0 = minZ == maxZ && maxZ > 0.9999F;
+                aligned = minZ == maxZ && maxZ > 0.9999F;
                 break;
             case WEST:
-                f0 = minX == maxX && minX < 1.0E-4F;
+                aligned = minX == maxX && minX < 0.0001f;
                 break;
             case EAST:
-                f0 = minX == maxX && maxX > 0.9999F;
+                aligned = minX == maxX && maxX > 0.9999F;
                 break;
         }
 
         switch (face.getAxis()) {
             case X:
-                f1 = minY >= 1.0E-4F || minZ >= 1.0E-4F || maxY <= 0.9999F || maxZ <= 0.9999F;
+                partial = minY >= 0.0001f || minZ >= 0.0001f || maxY <= 0.9999F || maxZ <= 0.9999F;
                 break;
             case Y:
-                f1 = minX >= 1.0E-4F || minZ >= 1.0E-4F || maxX <= 0.9999F || maxZ <= 0.9999F;
+                partial = minX >= 0.0001f || minZ >= 0.0001f || maxX <= 0.9999F || maxZ <= 0.9999F;
                 break;
             case Z:
-                f1 = minX >= 1.0E-4F || minY >= 1.0E-4F || maxX <= 0.9999F || maxY <= 0.9999F;
+                partial = minX >= 0.0001f || minY >= 0.0001f || maxX <= 0.9999F || maxY <= 0.9999F;
                 break;
         }
 
         int flags = 0;
 
-        if (f1) {
+        if (partial) {
             flags |= IS_PARTIAL;
         }
 
-        if (f0) {
+        if (aligned) {
             flags |= IS_ALIGNED;
         }
 

@@ -1,18 +1,21 @@
 package me.jellysquid.mods.sodium.client.gl.shader;
 
-import me.jellysquid.mods.sodium.client.gl.GlHandle;
+import me.jellysquid.mods.sodium.client.gl.GlObject;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
-public abstract class GlShaderProgram extends GlHandle {
-    private static final Logger LOGGER = LogManager.getLogger(GlShaderProgram.class);
+/**
+ * An OpenGL shader program.
+ */
+public abstract class GlProgram extends GlObject {
+    private static final Logger LOGGER = LogManager.getLogger(GlProgram.class);
 
     private final Identifier name;
 
-    protected GlShaderProgram(Identifier name, int program) {
+    protected GlProgram(Identifier name, int program) {
         this.name = name;
         this.setHandle(program);
     }
@@ -33,6 +36,12 @@ public abstract class GlShaderProgram extends GlHandle {
         return this.name;
     }
 
+    /**
+     * Retrieves the index of the uniform with the given name.
+     * @param name The name of the uniform to find the index of
+     * @return The uniform's index
+     * @throws NullPointerException If no uniform exists with the given name
+     */
     public int getUniformLocation(String name) {
         int index = GL20.glGetUniformLocation(this.handle(), name);
 
@@ -43,6 +52,12 @@ public abstract class GlShaderProgram extends GlHandle {
         return index;
     }
 
+    /**
+     * Retrieves the index of the vertex attribute (shader input) with the given name.
+     * @param name The name of the vertex attribute to find the index of
+     * @return The vertex attribute's index
+     * @throws NullPointerException If no vertex attribute exists with the given name
+     */
     public int getAttributeLocation(String name) {
         int index = GL20.glGetAttribLocation(this.handle(), name);
 
@@ -74,7 +89,16 @@ public abstract class GlShaderProgram extends GlHandle {
             return this;
         }
 
-        public <P extends GlShaderProgram> P link(ShaderTypeFactory<P> factory) {
+        /**
+         * Links the attached shaders to this program and returns a user-defined container which wraps the shader
+         * program. This container can, for example, provide methods for updating the specific uniforms of that shader
+         * set.
+         *
+         * @param factory The factory which will create the shader program's container
+         * @param <P> The type which should be instantiated with the new program's handle
+         * @return An instantiated shader container as provided by the factory
+         */
+        public <P extends GlProgram> P link(ProgramFactory<P> factory) {
             GL20.glLinkProgram(this.program);
 
             String log = GL20.glGetProgramInfoLog(this.program);
@@ -99,7 +123,7 @@ public abstract class GlShaderProgram extends GlHandle {
         }
     }
 
-    public interface ShaderTypeFactory<P extends GlShaderProgram> {
+    public interface ProgramFactory<P extends GlProgram> {
         P create(Identifier name, int handle);
     }
 }
