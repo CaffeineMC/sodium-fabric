@@ -4,7 +4,7 @@ import me.jellysquid.mods.sodium.client.render.light.cache.LightDataCache;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
-import static me.jellysquid.mods.sodium.client.render.light.cache.ChunkLightDataCache.*;
+import static me.jellysquid.mods.sodium.client.render.light.cache.ArrayLightDataCache.*;
 
 class AoFaceData {
     public final int[] lm = new int[4];
@@ -106,7 +106,7 @@ class AoFaceData {
         final float c2ao;
 
         if (!e2op && !e1op) {
-            // FIX: Use c1 instead of c0 to fix lighting errors in some directions
+            // FIX: Use e1 instead of c0 to fix lighting errors in some directions
             c2lm = e1lm;
             c2ao = e1ao;
         } else {
@@ -119,7 +119,7 @@ class AoFaceData {
         final float c3ao;
 
         if (!e3op && !e1op) {
-            // FIX: Use c1 instead of c0 to fix lighting errors in some directions
+            // FIX: Use e1 instead of c0 to fix lighting errors in some directions
             c3lm = e1lm;
             c3ao = e1ao;
         } else {

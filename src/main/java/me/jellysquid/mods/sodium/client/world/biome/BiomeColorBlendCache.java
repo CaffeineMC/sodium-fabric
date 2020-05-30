@@ -7,7 +7,7 @@ import net.minecraft.world.level.ColorResolver;
 
 import java.util.Arrays;
 
-public class ColorizerCache {
+public class BiomeColorBlendCache {
     private final ColorResolver resolver;
     private final WorldSlice slice;
 
@@ -18,7 +18,7 @@ public class ColorizerCache {
     private final int length;
     private final int minX, minZ;
 
-    public ColorizerCache(ColorResolver resolver, WorldSlice slice) {
+    public BiomeColorBlendCache(ColorResolver resolver, WorldSlice slice) {
         this.resolver = resolver;
         this.slice = slice;
         this.radius = SodiumClientMod.options().quality.biomeBlendDistance;
@@ -26,7 +26,7 @@ public class ColorizerCache {
         this.minX = slice.getBlockOffsetX() - this.radius - 2;
         this.minZ = slice.getBlockOffsetZ() - this.radius - 2;
 
-        this.length = slice.getBlockLength() + ((this.radius + 2) * 2);
+        this.length = WorldSlice.BLOCK_LENGTH + ((this.radius + 2) * 2);
 
         this.cache = new int[this.length * this.length];
         this.blendedColors = new int[this.length * this.length];
@@ -89,6 +89,6 @@ public class ColorizerCache {
     }
 
     private int calculateColor(int x, int z) {
-        return this.resolver.getColor(this.slice.getCachedBiome(x, 0, z), x, z);
+        return this.resolver.getColor(this.slice.getCachedBiome(x, z), x, z);
     }
 }

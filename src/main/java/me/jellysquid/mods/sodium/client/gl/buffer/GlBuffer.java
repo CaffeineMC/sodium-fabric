@@ -1,13 +1,14 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
-import me.jellysquid.mods.sodium.client.gl.GlHandle;
-import org.lwjgl.opengl.*;
+import me.jellysquid.mods.sodium.client.gl.GlObject;
+import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL31;
 
 import java.nio.ByteBuffer;
 
-public abstract class GlBuffer extends GlHandle {
-    public static final CopyBufferFunctions copyBufferFuncs = CopyBufferFunctions.pickBest(GL.getCapabilities());
-
+public abstract class GlBuffer extends GlObject {
     protected int vertexCount = 0;
 
     protected GlBuffer() {
@@ -26,7 +27,9 @@ public abstract class GlBuffer extends GlHandle {
         GL11.glDrawArrays(mode, 0, this.vertexCount);
     }
 
-    public abstract void upload(int target, BufferUploadData data);
+    public abstract void allocate(int target, long size);
+
+    public abstract void upload(int target, VertexData data);
 
     public void delete() {
         GL15.glDeleteBuffers(this.handle());
@@ -34,7 +37,9 @@ public abstract class GlBuffer extends GlHandle {
         this.invalidateHandle();
     }
 
-    public abstract void allocate(int target, long size);
+    public void uploadSub(int target, int offset, ByteBuffer data) {
+        GL15.glBufferSubData(target, offset, data);
+    }
 
     public static void copy(GlBuffer src, GlBuffer dst, int readOffset, int writeOffset, int copyLen, int bufferSize) {
         src.bind(GL31.GL_COPY_READ_BUFFER);
@@ -42,50 +47,9 @@ public abstract class GlBuffer extends GlHandle {
         dst.bind(GL31.GL_COPY_WRITE_BUFFER);
         dst.allocate(GL31.GL_COPY_WRITE_BUFFER, bufferSize);
 
-        copyBufferFuncs.glCopyBufferSubData(GL31.GL_COPY_READ_BUFFER, GL31.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, copyLen);
+        GlFunctions.BUFFER_COPY.glCopyBufferSubData(GL31.GL_COPY_READ_BUFFER, GL31.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, copyLen);
 
         dst.unbind(GL31.GL_COPY_WRITE_BUFFER);
         src.unbind(GL31.GL_COPY_READ_BUFFER);
-    }
-
-    public void uploadSub(int target, int offset, ByteBuffer data) {
-        GL15.glBufferSubData(target, offset, data);
-    }
-
-    public static boolean isBufferCopySupported() {
-        return copyBufferFuncs != CopyBufferFunctions.UNSUPPORTED;
-    }
-
-    private enum CopyBufferFunctions {
-        CORE {
-            @Override
-            public void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size) {
-                GL31.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
-            }
-        },
-        ARB {
-            @Override
-            public void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size) {
-                ARBCopyBuffer.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
-            }
-        },
-        UNSUPPORTED {
-            @Override
-            public void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size) {
-                throw new UnsupportedOperationException();
-            }
-        };
-
-        public static CopyBufferFunctions pickBest(GLCapabilities capabilities) {
-            if (capabilities.OpenGL31) {
-                return CopyBufferFunctions.CORE;
-            } else if (capabilities.GL_ARB_copy_buffer) {
-                return CopyBufferFunctions.ARB;
-            } else {
-                return CopyBufferFunctions.UNSUPPORTED;
-            }
-        }
-
-        public abstract void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size);
     }
 }

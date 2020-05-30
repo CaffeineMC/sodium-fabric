@@ -2,6 +2,9 @@ package me.jellysquid.mods.sodium.client.gl.attribute;
 
 import org.lwjgl.opengl.GL11;
 
+/**
+ * An enumeration over the supported data types that can be used for vertex attributes.
+ */
 public enum GlVertexAttributeFormat {
     FLOAT(GL11.GL_FLOAT, 4),
     SHORT(GL11.GL_SHORT, 2),

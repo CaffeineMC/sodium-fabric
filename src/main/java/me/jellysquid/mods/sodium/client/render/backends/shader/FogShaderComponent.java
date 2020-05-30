@@ -9,11 +9,21 @@ import java.nio.FloatBuffer;
 import java.util.List;
 import java.util.function.Function;
 
+/**
+ * These shader implementations try to remain compatible with the deprecated fixed function pipeline by manually
+ * copying the state into each shader's uniforms. The shader code itself is a straight-forward implementation of the
+ * fog functions themselves from the fixed-function pipeline, except that they use the distance from the camera
+ * rather than the z-buffer to produce better looking fog that doesn't move with the player's view angle.
+ *
+ * Minecraft itself will actually try to enable distance-based fog by using the proprietary NV_fog_distance extension,
+ * but as the name implies, this only works on graphics cards produced by NVIDIA. The shader implementation however does
+ * not depend on any vendor-specific extensions and is written using very simple GLSL code.
+ */
 public abstract class FogShaderComponent {
     public abstract void setup();
 
     public static class None extends FogShaderComponent {
-        public None(ChunkShader program) {
+        public None(ChunkProgram program) {
 
         }
 
@@ -27,7 +37,7 @@ public abstract class FogShaderComponent {
         private final int uFogColor;
         private final int uFogDensity;
 
-        public Exp2(ChunkShader program) {
+        public Exp2(ChunkProgram program) {
             this.uFogColor = program.getUniformLocation("u_FogColor");
             this.uFogDensity = program.getUniformLocation("u_FogDensity");
         }
@@ -45,7 +55,7 @@ public abstract class FogShaderComponent {
         private final int uFogLength;
         private final int uFogEnd;
 
-        public Linear(ChunkShader program) {
+        public Linear(ChunkProgram program) {
             this.uFogColor = program.getUniformLocation("u_FogColor");
             this.uFogLength = program.getUniformLocation("u_FogLength");
             this.uFogEnd = program.getUniformLocation("u_FogEnd");
@@ -63,6 +73,10 @@ public abstract class FogShaderComponent {
         }
     }
 
+    /**
+     * Copies the fog color from the deprecated fixed function pipeline and uploads it to the uniform at the
+     * given binding index.
+     */
     private static void setupColorUniform(int index) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             FloatBuffer bufFogColor = stack.mallocFloat(4);
@@ -76,15 +90,15 @@ public abstract class FogShaderComponent {
         LINEAR(Linear::new, ImmutableList.of("USE_FOG", "USE_FOG_LINEAR")),
         EXP2(Exp2::new, ImmutableList.of("USE_FOG", "USE_FOG_EXP2"));
 
-        private final Function<ChunkShader, FogShaderComponent> factory;
+        private final Function<ChunkProgram, FogShaderComponent> factory;
         private final List<String> defines;
 
-        FogMode(Function<ChunkShader, FogShaderComponent> factory, List<String> defines) {
+        FogMode(Function<ChunkProgram, FogShaderComponent> factory, List<String> defines) {
             this.factory = factory;
             this.defines = defines;
         }
 
-        public Function<ChunkShader, FogShaderComponent> getFactory() {
+        public Function<ChunkProgram, FogShaderComponent> getFactory() {
             return this.factory;
         }
 
@@ -92,7 +106,10 @@ public abstract class FogShaderComponent {
             return this.defines;
         }
 
-        public static FogMode chooseFogMode() {
+        /**
+         * Retrieves the current fog mode from the fixed-function pipeline.
+         */
+        public static FogMode getActiveMode() {
             if (!GL11.glGetBoolean(GL11.GL_FOG)) {
                 return FogMode.NONE;
             }

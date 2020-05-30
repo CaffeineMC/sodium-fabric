@@ -56,7 +56,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     public int getCompletedChunkCount() {
-        return this.renderer.getCompletedChunkCount();
+        return this.renderer.getVisibleChunkCount();
     }
 
     /**
@@ -77,7 +77,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double d, double e, double f) {
-        this.renderer.renderLayer(renderLayer, matrixStack, d, e, f);
+        this.renderer.drawChunkLayer(renderLayer, matrixStack, d, e, f);
     }
 
     /**
@@ -93,7 +93,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
-        this.renderer.update(camera, frustum, hasForcedFrustum, frame, spectator);
+        this.renderer.renderChunks(camera, frustum, hasForcedFrustum, frame, spectator);
     }
 
     @Inject(method = "reload", at = @At("RETURN"))
@@ -107,7 +107,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     public void scheduleBlockRenders(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        this.renderer.scheduleRebuildForArea(minX, minY, minZ, maxX, maxY, maxZ, false);
+        this.renderer.scheduleRebuildForBlockArea(minX, minY, minZ, maxX, maxY, maxZ, false);
     }
 
     /**
@@ -116,7 +116,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     public void scheduleBlockRenders(int x, int y, int z) {
-        this.renderer.scheduleRebuildForArea(x - 1, y - 1, z - 1, x + 1, y + 1, z + 1, false);
+        this.renderer.scheduleRebuildForBlockArea(x - 1, y - 1, z - 1, x + 1, y + 1, z + 1, false);
     }
 
     /**
@@ -125,7 +125,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void scheduleSectionRender(BlockPos pos, boolean important) {
-        this.renderer.scheduleRebuildForArea(pos.getX() - 1, pos.getY() - 1, pos.getZ() - 1, pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1, important);
+        this.renderer.scheduleRebuildForBlockArea(pos.getX() - 1, pos.getY() - 1, pos.getZ() - 1, pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1, important);
     }
 
     /**

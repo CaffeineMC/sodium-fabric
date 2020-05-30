@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile.tasks;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
@@ -23,14 +23,21 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.WorldChunk;
 
+/**
+ * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
+ * to graphics memory on the main thread.
+ *
+ * This task takes a slice of the world from the thread it is created on. Since these slices require rather large
+ * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
+ */
 public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRenderBuildTask<T> {
-    private final ChunkRender<T> render;
+    private final ChunkRenderContainer<T> render;
     private final ChunkBuilder<T> chunkBuilder;
     private final Vector3d camera;
     private final WorldSlice slice;
     private final BlockPos offset;
 
-    public ChunkRenderRebuildTask(ChunkBuilder<T> chunkBuilder, ChunkRender<T> render, WorldSlice slice, BlockPos offset) {
+    public ChunkRenderRebuildTask(ChunkBuilder<T> chunkBuilder, ChunkRenderContainer<T> render, WorldSlice slice, BlockPos offset) {
         this.chunkBuilder = chunkBuilder;
         this.render = render;
         this.camera = chunkBuilder.getCameraPosition();
@@ -115,6 +122,6 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
 
     @Override
     public void releaseResources() {
-        this.chunkBuilder.releaseChunkSlice(this.slice);
+        this.chunkBuilder.releaseWorldSlice(this.slice);
     }
 }

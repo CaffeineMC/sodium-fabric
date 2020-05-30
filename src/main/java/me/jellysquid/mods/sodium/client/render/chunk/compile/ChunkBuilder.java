@@ -4,7 +4,7 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderRebuildTask;
@@ -12,8 +12,8 @@ import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
-import me.jellysquid.mods.sodium.common.util.arena.Arena;
 import me.jellysquid.mods.sodium.common.util.collections.DequeDrain;
+import me.jellysquid.mods.sodium.common.util.pool.ObjectPool;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.client.world.ClientWorld;
@@ -41,7 +41,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
-    private final Arena<WorldSlice> worldSliceArena;
+    private final ObjectPool<WorldSlice> pool;
 
     private World world;
     private Vector3d cameraPosition;
@@ -56,13 +56,21 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         this.format = format;
         this.backend = backend;
         this.limitThreads = getOptimalThreadCount();
-        this.worldSliceArena = new Arena<>(this.getBudget(), WorldSlice::new);
+        this.pool = new ObjectPool<>(this.getSchedulingBudget(), WorldSlice::new);
     }
 
-    public int getBudget() {
+    /**
+     * Returns the remaining number of build tasks which should be scheduled this frame. If an attempt is made to
+     * spawn more tasks than the budget allows, it will block until resources become available.
+     */
+    public int getSchedulingBudget() {
         return Math.max(0, (this.limitThreads * 3) - this.buildQueue.size());
     }
 
+    /**
+     * Spawns a number of work-stealing threads to process results in the build queue. If the builder is already
+     * running, this method does nothing and exits.
+     */
     public void startWorkers() {
         if (this.running.getAndSet(true)) {
             return;
@@ -73,8 +81,10 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         }
 
         for (int i = 0; i < this.limitThreads; i++) {
-            ChunkBuildBuffers bufferCache = new ChunkBuildBuffers(this.format, this.renderPassManager);
-            WorkerRunnable worker = new WorkerRunnable(bufferCache);
+            ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.format, this.renderPassManager);
+            ChunkRenderPipeline pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance());
+
+            WorkerRunnable worker = new WorkerRunnable(buffers, pipeline);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
             thread.setPriority(Math.max(0, Thread.NORM_PRIORITY - 2));
@@ -86,6 +96,11 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         LOGGER.info("Started {} worker threads", this.threads.size());
     }
 
+    /**
+     * Notifies all worker threads to stop and blocks until all workers terminate. After the workers have been shut
+     * down, all tasks are cancelled and the pending queues are cleared. If the builder is already stopped, this
+     * method does nothing and exits.
+     */
     public void stopWorkers() {
         if (!this.running.getAndSet(false)) {
             return;
@@ -123,10 +138,14 @@ public class ChunkBuilder<T extends ChunkRenderState> {
 
         this.world = null;
         this.biomeCacheManager = null;
-        this.worldSliceArena.reset();
+        this.pool.reset();
     }
 
-    public boolean upload() {
+    /**
+     * Processes all pending build task uploads using the chunk render backend.
+     */
+    // TODO: Limit the amount of time this can take per frame
+    public boolean performPendingUploads() {
         if (this.uploadQueue.isEmpty()) {
             return false;
         }
@@ -152,22 +171,34 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         return job.future;
     }
 
-    public void enqueueUpload(ChunkBuildResult<T> result) {
-        this.uploadQueue.add(result);
-    }
-
+    /**
+     * Sets the current camera position of the player used for task prioritization.
+     */
     public void setCameraPosition(double x, double y, double z) {
         this.cameraPosition = new Vector3d(x, y, z);
     }
 
+    /**
+     * Returns the current camera position of the player used for task prioritization.
+     */
     public Vector3d getCameraPosition() {
         return this.cameraPosition;
     }
 
-    public boolean isEmpty() {
+    /**
+     * @return True if the build queue is empty
+     */
+    public boolean isBuildQueueEmpty() {
         return this.buildQueue.isEmpty();
     }
 
+    /**
+     * Initializes this chunk builder for the given world. If the builder is already running (which can happen during
+     * a world teleportation event), the worker threads will first be stopped and all pending tasks will be discarded
+     * before being started again.
+     * @param world The world instance
+     * @param renderPassManager The render pass manager used for the world
+     */
     public void init(ClientWorld world, BlockRenderPassManager renderPassManager) {
         if (world == null) {
             throw new NullPointerException("World is null");
@@ -182,47 +213,94 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         this.startWorkers();
     }
 
+    /**
+     * Returns the "optimal" number of threads to be used for chunk build tasks. This is always at least one thread,
+     * but can be up to the number of available processor threads on the system.
+     */
     private static int getOptimalThreadCount() {
         return Math.max(1, Runtime.getRuntime().availableProcessors());
     }
 
-    public WorldSlice createChunkSlice(ChunkSectionPos pos) {
-        WorldChunk[] chunks = WorldSlice.getChunks(this.world, pos);
+    /**
+     * Creates a {@link WorldSlice} around the given chunk section. If the chunk section is empty, null is returned.
+     * @param pos The position of the chunk section
+     * @return A world slice containing the section's context for rendering, or null if it has none
+     */
+    public WorldSlice createWorldSlice(ChunkSectionPos pos) {
+        WorldChunk[] chunks = WorldSlice.createChunkSlice(this.world, pos);
 
         if (chunks == null) {
             return null;
         }
 
-        WorldSlice slice = this.worldSliceArena.allocate();
+        WorldSlice slice = this.pool.allocate();
         slice.init(this, this.world, pos, chunks);
 
         return slice;
     }
 
-    public void releaseChunkSlice(WorldSlice slice) {
-        this.worldSliceArena.release(slice);
+    /**
+     * Releases a world slice from a build task back to this builder's object pool.
+     * @param slice The chunk slice to release
+     */
+    public void releaseWorldSlice(WorldSlice slice) {
+        this.pool.release(slice);
     }
 
+    /**
+     * Returns the global biome cache for this world
+     */
     public BiomeCacheManager getBiomeCacheManager() {
         return this.biomeCacheManager;
     }
 
-    public void clearCachesForChunk(int x, int z) {
+    /**
+     * Called after a chunk's status is changed in the world (i.e. after a load or unload.) This is used to reset any
+     * caches which depend on its data and to release any pooled resources attached to it.
+     * @param x The x-position of the chunk
+     * @param z The z-position of the chunk
+     */
+    public void onChunkStatusChanged(int x, int z) {
         this.biomeCacheManager.dropCachesForChunk(x, z);
     }
 
-    public void rebuild(ChunkRender<T> render) {
-        this.createRebuildFuture(render).thenAccept(this::enqueueUpload);
+    /**
+     * Creates a rebuild task and defers it to the work queue. When the task is completed, it will be moved onto the
+     * completed uploads queued which will then be drained during the next available synchronization point with the
+     * main thread.
+     * @param render The render to rebuild
+     */
+    public void deferRebuild(ChunkRenderContainer<T> render) {
+        this.scheduleRebuildTaskAsync(render)
+                .thenAccept(this::enqueueUpload);
     }
 
-    public CompletableFuture<ChunkBuildResult<T>> createRebuildFuture(ChunkRender<T> render) {
+
+    /**
+     * Enqueues the build task result to the pending result queue to be later processed during the next available
+     * synchronization point on the main thread.
+     * @param result The build task's result
+     */
+    private void enqueueUpload(ChunkBuildResult<T> result) {
+        this.uploadQueue.add(result);
+    }
+
+    /**
+     * Schedules the rebuild task asynchronously on the worker pool, returning a future wrapping the task.
+     * @param render The render to rebuild
+     */
+    public CompletableFuture<ChunkBuildResult<T>> scheduleRebuildTaskAsync(ChunkRenderContainer<T> render) {
         return this.schedule(this.createRebuildTask(render));
     }
 
-    private ChunkRenderBuildTask<T> createRebuildTask(ChunkRender<T> render) {
+    /**
+     * Creates a task to rebuild the geometry of a {@link ChunkRenderContainer}.
+     * @param render The render to rebuild
+     */
+    private ChunkRenderBuildTask<T> createRebuildTask(ChunkRenderContainer<T> render) {
         render.cancelRebuildTask();
 
-        WorldSlice slice = this.createChunkSlice(render.getChunkPos());
+        WorldSlice slice = this.createWorldSlice(render.getChunkPos());
 
         if (slice == null) {
             return new ChunkRenderEmptyBuildTask<>(render);
@@ -232,31 +310,46 @@ public class ChunkBuilder<T extends ChunkRenderState> {
     }
 
     private class WorkerRunnable implements Runnable {
-        private final ChunkBuildBuffers bufferCache;
         private final AtomicBoolean running = ChunkBuilder.this.running;
 
-        private final ChunkRenderPipeline pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance());
+        // The re-useable build buffers used by this worker for building chunk meshes
+        private final ChunkBuildBuffers bufferCache;
 
-        public WorkerRunnable(ChunkBuildBuffers bufferCache) {
+        // Making this thread-local provides a small boost to performance by avoiding the overhead in synchronizing
+        // caches between different CPU cores
+        private final ChunkRenderPipeline pipeline;
+
+        public WorkerRunnable(ChunkBuildBuffers bufferCache, ChunkRenderPipeline pipeline) {
             this.bufferCache = bufferCache;
+            this.pipeline = pipeline;
         }
 
         @Override
         public void run() {
+            // Run until the chunk builder shuts down
             while (this.running.get()) {
                 WrappedTask<T> job = this.getNextJob();
 
+                // If the job is null or no longer valid, keep searching for a task
                 if (job == null || job.future.isCancelled()) {
                     continue;
                 }
 
+                // Perform the build task with this worker's local resources and obtain the result
                 ChunkBuildResult<T> result = job.task.performBuild(this.pipeline, this.bufferCache);
+
+                // After the result has been obtained, it's safe to release any resources attached to the task
                 job.task.releaseResources();
 
+                // Notify the future that the result is now available
                 job.future.complete(result);
             }
         }
 
+        /**
+         * Returns the next task which this worker can work on or blocks until one becomes available. If no tasks are
+         * currently available, it will wait on {@link ChunkBuilder#jobNotifier} field until notified.
+         */
         private WrappedTask<T> getNextJob() {
             WrappedTask<T> job = ChunkBuilder.this.buildQueue.poll();
 

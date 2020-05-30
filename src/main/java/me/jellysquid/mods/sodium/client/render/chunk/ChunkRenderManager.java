@@ -39,9 +39,9 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     private final ObjectList<ColumnRender<T>> unloadQueue = new ObjectArrayList<>();
 
-    private final ArrayDeque<ChunkRender<T>> importantDirtyChunks = new ArrayDeque<>();
-    private final ArrayDeque<ChunkRender<T>> dirtyChunks = new ArrayDeque<>();
-    private final ObjectList<ChunkRender<T>> tickableChunks = new ObjectArrayList<>();
+    private final ArrayDeque<ChunkRenderContainer<T>> importantDirtyChunks = new ArrayDeque<>();
+    private final ArrayDeque<ChunkRenderContainer<T>> dirtyChunks = new ArrayDeque<>();
+    private final ObjectList<ChunkRenderContainer<T>> tickableChunks = new ObjectArrayList<>();
 
     @SuppressWarnings("unchecked")
     private final RenderList<T>[] renderLists = new RenderList[BlockRenderPass.count()];
@@ -50,7 +50,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     private final ObjectSet<BlockRenderPass> renderedLayers = new ObjectOpenHashSet<>();
 
-    private final ObjectArrayFIFOQueue<ChunkRender<T>> iterationQueue = new ObjectArrayFIFOQueue<>();
+    private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> iterationQueue = new ObjectArrayFIFOQueue<>();
 
     private final SodiumWorldRenderer renderer;
     private final ClientWorld world;
@@ -83,10 +83,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     public void updateGraph(Camera camera, Vec3d cameraPos, BlockPos blockPos, int frame, FrustumExtended frustum, boolean spectator) {
         this.init(blockPos, camera, cameraPos, frustum, frame, spectator);
 
-        ObjectArrayFIFOQueue<ChunkRender<T>> queue = this.iterationQueue;
+        ObjectArrayFIFOQueue<ChunkRenderContainer<T>> queue = this.iterationQueue;
 
         while (!queue.isEmpty()) {
-            ChunkRender<T> render = queue.dequeue();
+            ChunkRenderContainer<T> render = queue.dequeue();
 
             this.addToLists(render);
             this.addNeighbors(render, frustum, frame);
@@ -95,10 +95,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         this.dirty = false;
     }
 
-    private void addToLists(ChunkRender<T> render) {
+    private void addToLists(ChunkRenderContainer<T> render) {
         render.setLastVisibleFrame(this.lastFrameUpdated);
 
-        if (render.needsRebuild() && render.getColumn().hasNeighbors()) {
+        if (render.needsRebuild() && render.getColumn().hasNeighborChunkData()) {
             if (render.needsImportantRebuild()) {
                 this.importantDirtyChunks.add(render);
             } else {
@@ -131,31 +131,31 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         }
     }
 
-    private void addNeighbors(ChunkRender<T> render, FrustumExtended frustum, int frame) {
+    private void addNeighbors(ChunkRenderContainer<T> render, FrustumExtended frustum, int frame) {
         ColumnRender<T> column = render.getColumn();
 
         for (Direction dir : DirectionUtil.HORIZONTAL_DIRECTIONS) {
             ColumnRender<T> adjColumn = column.getNeighbor(dir);
 
             if (adjColumn != null) {
-                ChunkRender<T> adj = adjColumn.getChunk(render.getChunkY());
+                ChunkRenderContainer<T> adj = adjColumn.getChunk(render.getChunkY());
 
-                if (adj != null && adj.getRebuildFrame() != frame) {
+                if (adj != null && adj.getLastGraphUpdateFrame() != frame) {
                     this.addNeighbor(render, adj, dir, frustum, frame);
                 }
             }
         }
 
         for (Direction dir : DirectionUtil.VERTICAL_DIRECTIONS) {
-            ChunkRender<T> adj = column.getChunk(render.getChunkY() + dir.getOffsetY());
+            ChunkRenderContainer<T> adj = column.getChunk(render.getChunkY() + dir.getOffsetY());
 
-            if (adj != null && adj.getRebuildFrame() != frame) {
+            if (adj != null && adj.getLastGraphUpdateFrame() != frame) {
                 this.addNeighbor(render, adj, dir, frustum, frame);
             }
         }
     }
 
-    private void addNeighbor(ChunkRender<T> render, ChunkRender<T> adj, Direction dir, FrustumExtended frustum, int frame) {
+    private void addNeighbor(ChunkRenderContainer<T> render, ChunkRenderContainer<T> adj, Direction dir, FrustumExtended frustum, int frame) {
         if (this.useCulling) {
             if (render.canCull(dir)) {
                 return;
@@ -175,7 +175,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         }
 
         adj.setDirection(dir);
-        adj.setRebuildFrame(frame);
+        adj.setLastGraphUpdateFrame(frame);
         adj.updateCullingState(render.getCullingState(), dir.getOpposite());
 
         this.iterationQueue.enqueue(adj);
@@ -187,11 +187,11 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         this.resetGraph();
 
         MinecraftClient client = MinecraftClient.getInstance();
-        ObjectArrayFIFOQueue<ChunkRender<T>> queue = this.iterationQueue;
+        ObjectArrayFIFOQueue<ChunkRenderContainer<T>> queue = this.iterationQueue;
 
         boolean cull = client.chunkCullingEnabled;
 
-        ChunkRender<T> node = this.getRenderForBlock(origin.getX(), origin.getY(), origin.getZ());
+        ChunkRenderContainer<T> node = this.getRenderForBlock(origin.getX(), origin.getY(), origin.getZ());
 
         if (node != null) {
             node.resetGraphState();
@@ -211,7 +211,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
                     cull = false;
                 }
 
-                node.setRebuildFrame(frame);
+                node.setLastGraphUpdateFrame(frame);
             }
 
             queue.enqueue(node);
@@ -222,17 +222,17 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             int x = MathHelper.floor(cameraPos.x / 16.0D) * 16;
             int z = MathHelper.floor(cameraPos.z / 16.0D) * 16;
 
-            List<ChunkRender<T>> list = new ArrayList<>();
+            List<ChunkRenderContainer<T>> list = new ArrayList<>();
 
             for (int x2 = -this.renderDistance; x2 <= this.renderDistance; ++x2) {
                 for (int z2 = -this.renderDistance; z2 <= this.renderDistance; ++z2) {
-                    ChunkRender<T> chunk = this.getRenderForBlock(x + (x2 << 4) + 8, y, z + (z2 << 4) + 8);
+                    ChunkRenderContainer<T> chunk = this.getRenderForBlock(x + (x2 << 4) + 8, y, z + (z2 << 4) + 8);
 
                     if (chunk == null || !chunk.isVisible(frustum)) {
                         continue;
                     }
 
-                    chunk.setRebuildFrame(frame);
+                    chunk.setLastGraphUpdateFrame(frame);
                     chunk.resetGraphState();
 
                     list.add(chunk);
@@ -241,7 +241,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
             list.sort(Comparator.comparingDouble(o -> o.getSquaredDistance(origin)));
 
-            for (ChunkRender<T> render : list) {
+            for (ChunkRenderContainer<T> render : list) {
                 queue.enqueue(render);
             }
         }
@@ -249,11 +249,11 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         this.useCulling = cull;
     }
 
-    public ChunkRender<T> getRenderForBlock(int x, int y, int z) {
+    public ChunkRenderContainer<T> getRenderForBlock(int x, int y, int z) {
         return this.getRender(x >> 4, y >> 4, z >> 4);
     }
 
-    public ChunkRender<T> getRender(int x, int y, int z) {
+    public ChunkRenderContainer<T> getRender(int x, int y, int z) {
         ColumnRender<T> column = this.columns.get(ChunkPos.toLong(x, z));
 
         if (column != null) {
@@ -338,13 +338,13 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     @Override
     public void onChunkAdded(int x, int z) {
-        this.builder.clearCachesForChunk(x, z);
+        this.builder.onChunkStatusChanged(x, z);
         this.loadChunk(x, z);
     }
 
     @Override
     public void onChunkRemoved(int x, int z) {
-        this.builder.clearCachesForChunk(x, z);
+        this.builder.onChunkStatusChanged(x, z);
         this.enqueueChunkUnload(x, z);
     }
 
@@ -383,8 +383,8 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         return column;
     }
 
-    private ChunkRender<T> createChunkRender(ColumnRender<T> column, int x, int y, int z) {
-        return new ChunkRender<>(this.backend, column, x, y, z);
+    private ChunkRenderContainer<T> createChunkRender(ColumnRender<T> column, int x, int y, int z) {
+        return new ChunkRenderContainer<>(this.backend, column, x, y, z);
     }
 
     private void unloadColumn(ColumnRender<T> column) {
@@ -398,7 +398,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             }
         }
 
-        this.columns.remove(column.getKey());
+        this.columns.remove(column.getChunkPosLong());
     }
 
     private ColumnRender<T> getRenderColumn(int x, int z) {
@@ -424,7 +424,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     private void tickRenders() {
-        for (ChunkRender<T> render : this.tickableChunks) {
+        for (ChunkRenderContainer<T> render : this.tickableChunks) {
             render.tick();
         }
     }
@@ -434,7 +434,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     public boolean isChunkVisible(int x, int y, int z) {
-        ChunkRender<T> render = this.getRender(x, y, z);
+        ChunkRenderContainer<T> render = this.getRender(x, y, z);
 
         return render != null && render.getLastVisibleFrame() == this.lastFrameUpdated;
     }
@@ -442,29 +442,29 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     public void updateChunks() {
         Deque<CompletableFuture<ChunkBuildResult<T>>> futures = new ArrayDeque<>();
 
-        int budget = this.builder.getBudget();
+        int budget = this.builder.getSchedulingBudget();
         int submitted = 0;
 
         while (!this.importantDirtyChunks.isEmpty()) {
-            ChunkRender<T> render = this.importantDirtyChunks.remove();
+            ChunkRenderContainer<T> render = this.importantDirtyChunks.remove();
 
-            futures.add(this.builder.createRebuildFuture(render));
+            futures.add(this.builder.scheduleRebuildTaskAsync(render));
 
             this.dirty = true;
             submitted++;
         }
 
         while (submitted < budget && !this.dirtyChunks.isEmpty()) {
-            ChunkRender<T> render = this.dirtyChunks.remove();
+            ChunkRenderContainer<T> render = this.dirtyChunks.remove();
 
-            this.builder.rebuild(render);
+            this.builder.deferRebuild(render);
             submitted++;
         }
 
         this.dirty |= submitted > 0;
 
         // Try to complete some other work on the main thread while we wait for rebuilds to complete
-        this.dirty |= this.builder.upload();
+        this.dirty |= this.builder.performPendingUploads();
         this.cleanup();
 
         this.backend.upload(new FutureDequeDrain<>(futures));
@@ -489,7 +489,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     public boolean isBuildComplete() {
-        return this.builder.isEmpty();
+        return this.builder.isBuildQueueEmpty();
     }
 
     public void setCameraPosition(double x, double y, double z) {
@@ -522,7 +522,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
-        ChunkRender<T> render = this.getRender(x, y, z);
+        ChunkRenderContainer<T> render = this.getRender(x, y, z);
 
         if (render != null) {
             render.scheduleRebuild(important);

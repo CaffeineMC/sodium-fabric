@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.pipeline;
 
 import com.google.common.collect.ImmutableList;
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadSink;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.util.BufferUtil;
 import net.minecraft.client.render.BufferBuilder;
@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
-public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements ModelQuadConsumer {
+public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements ModelQuadSink {
     @Shadow
     private VertexFormat format;
 

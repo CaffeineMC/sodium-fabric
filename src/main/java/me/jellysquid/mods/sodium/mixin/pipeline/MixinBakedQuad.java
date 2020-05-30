@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static me.jellysquid.mods.sodium.client.util.QuadUtil.*;
+import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
 
 @Mixin(BakedQuad.class)
 public class MixinBakedQuad implements ModelQuadView {
@@ -74,5 +74,15 @@ public class MixinBakedQuad implements ModelQuadView {
     @Override
     public int getFlags() {
         return this.cachedFlags;
+    }
+
+    @Override
+    public int getLight(int idx) {
+        return this.vertexData[vertexOffset(idx) + LIGHT_INDEX];
+    }
+
+    @Override
+    public int getNormal(int idx) {
+        return this.vertexData[vertexOffset(idx) + NORMAL_INDEX];
     }
 }

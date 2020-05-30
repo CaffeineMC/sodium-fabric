@@ -2,13 +2,13 @@ package me.jellysquid.mods.sodium.client.render.pipeline;
 
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
-import me.jellysquid.mods.sodium.client.render.light.LightResult;
+import me.jellysquid.mods.sodium.client.render.light.QuadLightData;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuad;
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadFlags;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadSink;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadViewMutable;
-import me.jellysquid.mods.sodium.client.util.ColorUtil;
-import me.jellysquid.mods.sodium.client.util.QuadUtil;
+import me.jellysquid.mods.sodium.client.util.ColorARGB;
+import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.Block;
@@ -42,7 +42,7 @@ public class FluidRenderPipeline {
     private final LightPipeline smoothLightPipeline;
     private final LightPipeline flatLightPipeline;
 
-    private final LightResult lightResult = new LightResult();
+    private final QuadLightData quadLightData = new QuadLightData();
     private final BlockPos.Mutable mpos = new BlockPos.Mutable();
 
     public FluidRenderPipeline(MinecraftClient client, LightPipeline smoothLightPipeline, LightPipeline flatLightPipeline) {
@@ -56,7 +56,7 @@ public class FluidRenderPipeline {
 
         this.waterOverlaySprite = ModelLoader.WATER_OVERLAY.getSprite();
 
-        int normal = QuadUtil.encodeNormal(0.0f, 1.0f, 0.0f);
+        int normal = Norm3b.pack(0.0f, 1.0f, 0.0f);
 
         for (int i = 0; i < 4; i++) {
             this.quad.setNormal(i, normal);
@@ -94,7 +94,7 @@ public class FluidRenderPipeline {
         return true;
     }
 
-    public boolean render(ChunkRenderData.Builder meshInfo, WorldSlice world, BlockPos pos, ModelQuadConsumer consumer, FluidState fluidState) {
+    public boolean render(ChunkRenderData.Builder meshInfo, WorldSlice world, BlockPos pos, ModelQuadSink consumer, FluidState fluidState) {
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();
@@ -131,7 +131,7 @@ public class FluidRenderPipeline {
         float yOffset = sfDown ? 0.001F : 0.0F;
 
         final ModelQuadViewMutable quad = this.quad;
-        final LightResult light = this.lightResult;
+        final QuadLightData light = this.quadLightData;
 
         LightPipeline lighter = !lava && MinecraftClient.isAmbientOcclusionEnabled() ? this.smoothLightPipeline : this.flatLightPipeline;
         lighter.reset();
@@ -339,12 +339,12 @@ public class FluidRenderPipeline {
         return rendered;
     }
 
-    private void applyLighting(ModelQuadViewMutable quad, BlockPos pos, LightPipeline lighter, LightResult light, Direction dir) {
-        lighter.apply(quad, pos, light, dir);
+    private void applyLighting(ModelQuadViewMutable quad, BlockPos pos, LightPipeline lighter, QuadLightData light, Direction dir) {
+        lighter.calculate(quad, pos, light, dir);
     }
 
-    private void writeQuad(ModelQuadConsumer consumer, ModelQuadViewMutable quad, float r, float g, float b, boolean flipLight) {
-        LightResult lightResult = this.lightResult;
+    private void writeQuad(ModelQuadSink consumer, ModelQuadViewMutable quad, float r, float g, float b, boolean flipLight) {
+        QuadLightData quadLightData = this.quadLightData;
 
         int lightIndex, lightOrder;
 
@@ -357,10 +357,10 @@ public class FluidRenderPipeline {
         }
 
         for (int i = 0; i < 4; i++) {
-            float br = lightResult.br[lightIndex];
-            int lm = lightResult.lm[lightIndex];
+            float br = quadLightData.br[lightIndex];
+            int lm = quadLightData.lm[lightIndex];
 
-            quad.setColor(i, ColorUtil.encodeRGBA(r * br, g * br, b * br, 1.0f));
+            quad.setColor(i, ColorARGB.pack(r * br, g * br, b * br, 1.0f));
             quad.setLight(i, lm);
 
             lightIndex += lightOrder;

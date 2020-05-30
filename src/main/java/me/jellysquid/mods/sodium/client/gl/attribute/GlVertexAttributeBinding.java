@@ -1,5 +1,8 @@
 package me.jellysquid.mods.sodium.client.gl.attribute;
 
+/**
+ * An immutable binding between the generic attribute in a given vertex format and shader input.
+ */
 public class GlVertexAttributeBinding {
     public final int index;
     public final int count;

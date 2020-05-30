@@ -11,6 +11,7 @@ public class GlobalRenderer {
 
     private final BlockRenderPipeline blockRenderer;
     private final HashLightDataCache lightCache;
+    
     private GlobalRenderer() {
         MinecraftClient client = MinecraftClient.getInstance();
 

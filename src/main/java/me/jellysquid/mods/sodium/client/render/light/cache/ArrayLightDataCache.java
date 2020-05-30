@@ -4,16 +4,21 @@ import net.minecraft.world.BlockRenderView;
 
 import java.util.Arrays;
 
-public class ChunkLightDataCache extends LightDataCache {
+/**
+ * A light data cache which uses a flat-array to store the light data for the blocks in a given chunk and its direct
+ * neighbors. This is considerably faster than using a hash table to lookup values for a given block position and
+ * can be re-used by {@link me.jellysquid.mods.sodium.client.world.WorldSlice} to avoid allocations.
+ */
+public class ArrayLightDataCache extends LightDataCache {
     private final long[] light;
     private final int xSize, ySize, zSize;
     private int xOffset, yOffset, zOffset;
 
-    public ChunkLightDataCache(int size) {
+    public ArrayLightDataCache(int size) {
         this(size, size, size);
     }
 
-    public ChunkLightDataCache(int xSize, int ySize, int zSize) {
+    public ArrayLightDataCache(int xSize, int ySize, int zSize) {
         this.xSize = xSize;
         this.ySize = ySize;
         this.zSize = zSize;
@@ -34,6 +39,7 @@ public class ChunkLightDataCache extends LightDataCache {
     }
 
     private int index(int x, int y, int z) {
+        // TODO: simplify
         return (z - this.zOffset) * this.xSize * this.ySize + (y - this.yOffset) * this.zSize + x - this.xOffset;
     }
 

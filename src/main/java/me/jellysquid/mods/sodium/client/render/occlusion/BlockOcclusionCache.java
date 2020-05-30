@@ -19,39 +19,47 @@ public class BlockOcclusionCache {
         this.map.defaultReturnValue((byte) 127);
     }
 
-    public boolean shouldDrawSide(BlockState state, BlockView view, BlockPos pos, Direction facing) {
-        BlockPos adjPos = this.cpos.set(pos).setOffset(facing);
+    /**
+     * @param state The state of the block in the world
+     * @param view The world view for this render context
+     * @param pos The position of the block
+     * @param dir The facing direction of the side to check
+     * @return True if the block side facing {@param dir} is not occluded, otherwise false
+     */
+    public boolean shouldDrawSide(BlockState state, BlockView view, BlockPos pos, Direction dir) {
+        BlockPos adjPos = this.cpos.set(pos).setOffset(dir);
         BlockState adjState = view.getBlockState(adjPos);
 
-        if (state.isSideInvisible(adjState, facing)) {
+        if (!adjState.isOpaque()) {
+            return true;
+        }
+
+        if (state.isSideInvisible(adjState, dir)) {
             return false;
         }
 
-        if (adjState.isOpaque()) {
-            NeighborGroup cache = this.cache;
-            cache.self = state;
-            cache.other = adjState;
-            cache.facing = facing;
+        NeighborGroup cache = this.cache;
+        cache.self = state;
+        cache.other = adjState;
+        cache.facing = dir;
 
-            Object2ByteOpenHashMap<NeighborGroup> map = this.map;
+        Object2ByteOpenHashMap<NeighborGroup> map = this.map;
 
-            byte cached = map.getByte(cache);
+        byte cached = map.getByte(cache);
 
-            if (cached != 127) {
-                return cached != 0;
-            }
-
-            VoxelShape selfShape = state.getCullingFace(view, pos, facing);
-            VoxelShape adjShape = adjState.getCullingFace(view, adjPos, facing.getOpposite());
-
-            boolean ret = VoxelShapes.matchesAnywhere(selfShape, adjShape, BooleanBiFunction.ONLY_FIRST);
-
-            map.put(cache.copy(), (byte) (ret ? 1 : 0));
-
-            return ret;
+        if (cached != 127) {
+            return cached != 0;
         }
 
-        return true;
+        VoxelShape selfShape = state.getCullingFace(view, pos, dir);
+        VoxelShape adjShape = adjState.getCullingFace(view, adjPos, dir.getOpposite());
+
+        boolean ret = VoxelShapes.matchesAnywhere(selfShape, adjShape, BooleanBiFunction.ONLY_FIRST);
+
+        map.put(cache.copy(), (byte) (ret ? 1 : 0));
+
+        return ret;
+
     }
 
     public static final class NeighborGroup {
@@ -76,13 +84,13 @@ public class BlockOcclusionCache {
 
         @Override
         public boolean equals(Object o) {
-            if (o instanceof NeighborGroup) {
-                NeighborGroup that = (NeighborGroup) o;
-
-                return this.self == that.self && this.other == that.other && this.facing == that.facing;
+            if (!(o instanceof NeighborGroup)) {
+                return false;
             }
 
-            return false;
+            NeighborGroup that = (NeighborGroup) o;
+
+            return this.self == that.self && this.other == that.other && this.facing == that.facing;
         }
 
         @Override

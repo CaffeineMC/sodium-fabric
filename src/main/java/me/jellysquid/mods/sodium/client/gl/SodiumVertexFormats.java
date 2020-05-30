@@ -21,11 +21,11 @@ public class SodiumVertexFormats {
     private static final Reference2ObjectMap<GlVertexFormat<?>, ModelQuadEncoder> encoders = new Reference2ObjectOpenHashMap<>();
 
     static {
-        registerEncoder(CHUNK_MESH_VANILLA, (buffer, position, quad, x, y, z) -> {
+        registerEncoder(CHUNK_MESH_VANILLA, (quad, buffer, position) -> {
             for (int i = 0; i < 4; i++) {
-                buffer.putFloat(position, quad.getX(i) + x);
-                buffer.putFloat(position + 4, quad.getY(i) + y);
-                buffer.putFloat(position + 8, quad.getZ(i) + z);
+                buffer.putFloat(position, quad.getX(i));
+                buffer.putFloat(position + 4, quad.getY(i));
+                buffer.putFloat(position + 8, quad.getZ(i));
                 buffer.putInt(position + 12, quad.getColor(i));
                 buffer.putFloat(position + 16, quad.getTexU(i));
                 buffer.putFloat(position + 20, quad.getTexV(i));
