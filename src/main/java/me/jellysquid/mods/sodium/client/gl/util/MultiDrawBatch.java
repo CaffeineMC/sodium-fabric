@@ -1,11 +1,16 @@
 package me.jellysquid.mods.sodium.client.gl.util;
 
-import net.minecraft.client.util.GlAllocationUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
+/**
+ * Provides a fixed-size queue for batching draw calls for vertex data in the same buffer. This internally
+ * uses {@link GL14#glMultiDrawArrays(int, IntBuffer, IntBuffer)} and should be compatible on any relevant platform.
+ */
 public class MultiDrawBatch {
     private final IntBuffer bufIndices;
     private final IntBuffer bufLen;
@@ -18,12 +23,9 @@ public class MultiDrawBatch {
         this.bufLen = allocateIntBuffer(capacity);
     }
 
-    public void reset() {
-        this.bufIndices.clear();
-        this.bufLen.clear();
-        this.count = 0;
-    }
-
+    /**
+     * Adds the given set of vertices to the draw queue.
+     */
     public void add(int offset, int len) {
         if (this.count++ >= this.capacity) {
             throw new RuntimeException("Maximum batch size exceeded");
@@ -33,17 +35,25 @@ public class MultiDrawBatch {
         this.bufLen.put(len);
     }
 
+    /**
+     * Performs a multi-draw with the given queue, clearing it afterwards.
+     */
     public void draw() {
         this.bufIndices.flip();
         this.bufLen.flip();
 
         GL14.glMultiDrawArrays(GL11.GL_QUADS, this.bufIndices, this.bufLen);
 
-        this.reset();
+        this.bufIndices.clear();
+        this.bufLen.clear();
+
+        this.count = 0;
     }
     
     private static IntBuffer allocateIntBuffer(int size) {
-        return GlAllocationUtils.allocateByteBuffer(size * 4).asIntBuffer();
+        return ByteBuffer.allocateDirect(size * 4)
+                .order(ByteOrder.nativeOrder())
+                .asIntBuffer();
     }
 
     public boolean isEmpty() {

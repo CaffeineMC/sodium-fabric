@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.common.util.arena;
+package me.jellysquid.mods.sodium.common.util.pool;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,13 +34,13 @@ public abstract class ReusableObject {
 
     /**
      * Called when the last reference is released. The implementation should release all resources of their own as to not
-     * cause memory leaks when this object is added back to an arena.
+     * cause memory leaks when this object is added back to an pool.
      */
     protected abstract void reset();
 
     public void acquireOwner() {
         if (!this.refCount.compareAndSet(0, 1)) {
-            throw new IllegalStateException("Object in arena still has references");
+            throw new IllegalStateException("Object in pool still has references");
         }
     }
 }

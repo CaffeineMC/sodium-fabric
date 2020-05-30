@@ -4,7 +4,13 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import java.util.Iterator;
 
+/**
+ * A simple extension over {@link ObjectArrayList} which provides iterator methods in either FIFO or LIFO ordering.
+ */
 public class RenderList<T> extends ObjectArrayList<T> {
+    /**
+     * @return An iterator which returns elements in FIFO order or LIFO order if {@param backwards} is set
+     */
     public Iterator<T> iterator(boolean backwards) {
         if (backwards) {
             return new Iterator<T>() {

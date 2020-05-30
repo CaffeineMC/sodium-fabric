@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.model.quad.blender;
 
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.util.ColorUtil;
+import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.util.math.BlockPos;
@@ -46,26 +46,27 @@ public class BilinearVertexColorBlender implements VertexColorBlender {
 
         // All the colors are the same, so the results of interpolation will be useless.
         if (c1 == c2 && c2 == c3 && c3 == c4) {
-            fr = ColorUtil.unpackColorR(c1);
-            fg = ColorUtil.unpackColorG(c1);
-            fb = ColorUtil.unpackColorB(c1);
+            fr = ColorARGB.unpackRed(c1);
+            fg = ColorARGB.unpackGreen(c1);
+            fb = ColorARGB.unpackBlue(c1);
         } else {
+            // TODO: avoid float conversions here
             // RGB components for each corner's color
-            final float c1r = ColorUtil.unpackColorR(c1);
-            final float c1g = ColorUtil.unpackColorG(c1);
-            final float c1b = ColorUtil.unpackColorB(c1);
+            final float c1r = ColorARGB.unpackRed(c1);
+            final float c1g = ColorARGB.unpackGreen(c1);
+            final float c1b = ColorARGB.unpackBlue(c1);
 
-            final float c2r = ColorUtil.unpackColorR(c2);
-            final float c2g = ColorUtil.unpackColorG(c2);
-            final float c2b = ColorUtil.unpackColorB(c2);
+            final float c2r = ColorARGB.unpackRed(c2);
+            final float c2g = ColorARGB.unpackGreen(c2);
+            final float c2b = ColorARGB.unpackBlue(c2);
 
-            final float c3r = ColorUtil.unpackColorR(c3);
-            final float c3g = ColorUtil.unpackColorG(c3);
-            final float c3b = ColorUtil.unpackColorB(c3);
+            final float c3r = ColorARGB.unpackRed(c3);
+            final float c3g = ColorARGB.unpackGreen(c3);
+            final float c3b = ColorARGB.unpackBlue(c3);
 
-            final float c4r = ColorUtil.unpackColorR(c4);
-            final float c4g = ColorUtil.unpackColorG(c4);
-            final float c4b = ColorUtil.unpackColorB(c4);
+            final float c4r = ColorARGB.unpackRed(c4);
+            final float c4g = ColorARGB.unpackGreen(c4);
+            final float c4b = ColorARGB.unpackBlue(c4);
 
             // Compute the final color values across the Z axis
             final float r1r = c1r + ((c2r - c1r) * fracZ);
@@ -83,9 +84,9 @@ public class BilinearVertexColorBlender implements VertexColorBlender {
         }
 
         // Normalize and darken the returned color
-        return ColorUtil.mulPackedRGB(color,
-                ColorUtil.normalize(fr) * brightness,
-                ColorUtil.normalize(fg) * brightness,
-                ColorUtil.normalize(fb) * brightness);
+        return ColorARGB.mulPacked(color,
+                ColorARGB.normalize(fr) * brightness,
+                ColorARGB.normalize(fg) * brightness,
+                ColorARGB.normalize(fb) * brightness);
     }
 }

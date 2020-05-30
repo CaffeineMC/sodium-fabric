@@ -4,6 +4,9 @@ import it.unimi.dsi.fastutil.longs.Long2LongLinkedOpenHashMap;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
 
+/**
+ * A light data cache which uses a hash table to store previously accessed values.
+ */
 public class HashLightDataCache extends LightDataCache {
     private final Long2LongLinkedOpenHashMap map = new Long2LongLinkedOpenHashMap(1024, 0.50f);
 

@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.world.biome;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import me.jellysquid.mods.sodium.common.util.arena.Arena;
+import me.jellysquid.mods.sodium.common.util.pool.ObjectPool;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.biome.source.BiomeAccessType;
 
@@ -10,11 +10,11 @@ public class BiomeCacheManager {
     private static final int CACHE_SIZE = 256;
     private static final int ARENA_SIZE = 64;
 
-    private final Arena<BiomeCache> arena;
+    private final ObjectPool<BiomeCache> pool;
     private final Long2ReferenceLinkedOpenHashMap<BiomeCache> caches = new Long2ReferenceLinkedOpenHashMap<>(CACHE_SIZE, 0.5f);
 
     public BiomeCacheManager(BiomeAccessType type, long seed) {
-        this.arena = new Arena<>(ARENA_SIZE, () -> new BiomeCache(type, seed));
+        this.pool = new ObjectPool<>(ARENA_SIZE, () -> new BiomeCache(type, seed));
     }
 
     public void populateArrays(int centerX, int centerY, int centerZ, BiomeCache[] array) {
@@ -35,12 +35,12 @@ public class BiomeCacheManager {
                         this.release(this.caches.removeLast());
                     }
 
-                    this.caches.put(key, cache = this.arena.allocate());
+                    this.caches.put(key, cache = this.pool.allocate());
                 }
 
-                this.arena.acquireReference(cache);
+                this.pool.acquireReference(cache);
 
-                array[WorldSlice.getChunkIndex(x - minX, z - minZ)] = cache;
+                array[WorldSlice.getLocalChunkIndex(x - minX, z - minZ)] = cache;
             }
         }
     }
@@ -60,6 +60,6 @@ public class BiomeCacheManager {
     }
 
     public void release(BiomeCache cache) {
-        this.arena.release(cache);
+        this.pool.release(cache);
     }
 }

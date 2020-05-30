@@ -2,10 +2,10 @@ package me.jellysquid.mods.sodium.client.render.pipeline;
 
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
-import me.jellysquid.mods.sodium.client.render.light.cache.ChunkLightDataCache;
+import me.jellysquid.mods.sodium.client.render.light.cache.ArrayLightDataCache;
 import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadConsumer;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadSink;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.BlockState;
@@ -18,7 +18,7 @@ import net.minecraft.world.BlockRenderView;
 import java.util.Random;
 
 public class ChunkRenderPipeline {
-    private final ChunkLightDataCache lightDataCache;
+    private final ArrayLightDataCache lightDataCache;
     private final BlockRenderPipeline blockRenderer;
     private final FluidRenderPipeline fluidRenderer;
 
@@ -27,7 +27,7 @@ public class ChunkRenderPipeline {
     private final Random random = new XoRoShiRoRandom();
 
     public ChunkRenderPipeline(MinecraftClient client) {
-        this.lightDataCache = new ChunkLightDataCache(WorldSlice.BLOCK_LENGTH);
+        this.lightDataCache = new ArrayLightDataCache(WorldSlice.BLOCK_LENGTH);
 
         LightPipeline smoothLightPipeline = new SmoothLightPipeline(this.lightDataCache);
         LightPipeline flatLightPipeline = new FlatLightPipeline(this.lightDataCache);
@@ -38,11 +38,11 @@ public class ChunkRenderPipeline {
         this.models = client.getBakedModelManager().getBlockModels();
     }
 
-    public void renderBlock(ChunkRenderData.Builder meshInfo, BlockState state, BlockPos pos, BlockRenderView world, ModelQuadConsumer consumer, boolean cull) {
+    public void renderBlock(ChunkRenderData.Builder meshInfo, BlockState state, BlockPos pos, BlockRenderView world, ModelQuadSink consumer, boolean cull) {
         this.blockRenderer.renderModel(meshInfo, world, this.models.getModel(state), state, pos, consumer, cull, this.random, state.getRenderingSeed(pos));
     }
 
-    public void renderFluid(ChunkRenderData.Builder meshInfo, BlockPos.Mutable pos, WorldSlice world, ModelQuadConsumer consumer, FluidState fluidState) {
+    public void renderFluid(ChunkRenderData.Builder meshInfo, BlockPos.Mutable pos, WorldSlice world, ModelQuadSink consumer, FluidState fluidState) {
         this.fluidRenderer.render(meshInfo, world, pos, consumer, fluidState);
     }
 

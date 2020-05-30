@@ -2,8 +2,8 @@ package me.jellysquid.mods.sodium.mixin.buffers;
 
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.render.pipeline.DirectVertexConsumer;
-import me.jellysquid.mods.sodium.client.util.ColorUtil;
-import me.jellysquid.mods.sodium.client.util.QuadUtil;
+import me.jellysquid.mods.sodium.client.util.ColorARGB;
+import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import me.jellysquid.mods.sodium.common.util.matrix.MatrixUtil;
 import net.minecraft.client.render.*;
@@ -60,7 +60,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             return;
         }
 
-        this.vertex(x, y, z, ColorUtil.encodeRGBA(r, g, b, a), u, v, light1, light2, QuadUtil.encodeNormal(normX, normY, normZ));
+        this.vertex(x, y, z, ColorARGB.pack(r, g, b, a), u, v, light1, light2, Norm3b.pack(normX, normY, normZ));
     }
 
     @Override
@@ -263,9 +263,9 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             if (colorize) {
                 int color = quadView.getColor(i);
 
-                float oR = ColorUtil.normalize(ColorUtil.unpackColorR(color));
-                float oG = ColorUtil.normalize(ColorUtil.unpackColorG(color));
-                float oB = ColorUtil.normalize(ColorUtil.unpackColorB(color));
+                float oR = ColorARGB.normalize(ColorARGB.unpackRed(color));
+                float oG = ColorARGB.normalize(ColorARGB.unpackGreen(color));
+                float oB = ColorARGB.normalize(ColorARGB.unpackBlue(color));
 
                 fR = oR * brightness * r;
                 fG = oG * brightness * g;
@@ -279,7 +279,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             float u = quadView.getTexU(i);
             float v = quadView.getTexV(i);
 
-            int color = ColorUtil.encodeRGBA(fR, fG, fB, 1.0F);
+            int color = ColorARGB.pack(fR, fG, fB, 1.0F);
 
             Vector4f pos = new Vector4f(x, y, z, 1.0F);
             pos.transform(modelMatrix);

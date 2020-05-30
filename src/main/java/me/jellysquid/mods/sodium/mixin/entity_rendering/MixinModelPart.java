@@ -4,8 +4,8 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.render.model.ModelPartCuboidExtended;
 import me.jellysquid.mods.sodium.client.render.model.ModelPartQuadExtended;
 import me.jellysquid.mods.sodium.client.render.pipeline.DirectVertexConsumer;
-import me.jellysquid.mods.sodium.client.util.ColorUtil;
-import me.jellysquid.mods.sodium.client.util.QuadUtil;
+import me.jellysquid.mods.sodium.client.util.ColorARGB;
+import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.*;
@@ -45,7 +45,7 @@ public class MixinModelPart {
         Matrix4f modelMatrix = matrices.getModel();
         Matrix3f normalMatrix = matrices.getNormal();
 
-        int color = ColorUtil.encodeRGBA(red, green, blue, alpha);
+        int color = ColorARGB.pack(red, green, blue, alpha);
 
         final Vector3f normVec = this.normVec;
         final Vector4f posVec = this.posVec;
@@ -56,24 +56,22 @@ public class MixinModelPart {
                 normVec.set(dir.getX(), dir.getY(), dir.getZ());
                 normVec.transform(normalMatrix);
 
-                int norm = QuadUtil.encodeNormal(normVec);
-
                 final float[] data = ((ModelPartQuadExtended) quad).getFlattenedData();
 
-                int k = 0;
+                int i = 0;
 
-                while (k < data.length) {
-                    float x = data[k++];
-                    float y = data[k++];
-                    float z = data[k++];
+                while (i < data.length) {
+                    float x = data[i++];
+                    float y = data[i++];
+                    float z = data[i++];
 
-                    float u = data[k++];
-                    float v = data[k++];
+                    float u = data[i++];
+                    float v = data[i++];
 
                     posVec.set(x, y, z, 1.0f);
                     posVec.transform(modelMatrix);
 
-                    vertexConsumer.vertex(posVec.getX(), posVec.getY(), posVec.getZ(), color, u, v, overlay, light, norm);
+                    vertexConsumer.vertex(posVec.getX(), posVec.getY(), posVec.getZ(), color, u, v, overlay, light, Norm3b.pack(normVec));
                 }
             }
         }

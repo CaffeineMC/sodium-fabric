@@ -17,7 +17,21 @@ import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
 
-public class SodiumChunkManager extends ClientChunkManager implements ChunkManagerWithStatusListener {
+/**
+ * An implementation of {@link net.minecraft.world.chunk.ChunkManager} for the client world which uses a simple
+ * integer key to object hash table. This generally provides improved performance over the vanilla implementation
+ * through reducing code complexity, eliminating expensive floor-modulo operations, and removing the usage of atomic
+ * references.
+ *
+ * The usage of an atomic reference array is not necessary with Sodium's renderer implementation as it does not access
+ * world state or chunks concurrently from other worker threads, which fixes a number of synchronization issues in the
+ * process.
+ *
+ * This implementation allows for a {@link ChunkStatusListener} to be attached, allowing the game renderer to receive
+ * notifications when chunks are loaded or unloaded instead of resorting to expensive polling techniques, which would
+ * usually resort in chunk queries being slammed every frame when many chunks have pending rebuilds.
+ */
+public class SodiumChunkManager extends ClientChunkManager implements ChunkStatusListenerManager {
     private final Long2ObjectOpenHashMap<WorldChunk> chunks = new Long2ObjectOpenHashMap<>();
     private final ClientWorld world;
     private final WorldChunk emptyChunk;
@@ -39,6 +53,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
 
     @Override
     public void unload(int x, int z) {
+        // If this request unloads a chunk, notify the listener
         if (this.chunks.remove(toChunkKey(x, z)) != null) {
             this.onChunkUnloaded(x, z);
         }
@@ -81,6 +96,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
 
     @Override
     public WorldChunk loadChunkFromPacket(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int flag) {
+        // Do not try to load chunks outside the load distance
         if (!this.isWithinLoadDistance(x, z)) {
             return null;
         }
@@ -89,7 +105,9 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
 
         WorldChunk chunk = this.chunks.get(key);
 
+        // If the chunk does not yet exist, create it now
         if (chunk == null) {
+            // [VanillaCopy] If the packet didn't contain any biome data and the chunk doesn't exist yet, abort
             if (biomes == null) {
                 return null;
             }
@@ -99,6 +117,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
 
         chunk.loadFromPacket(biomes, buf, tag, flag);
 
+        // Perform post-load actions and notify the chunk listener that a chunk was just loaded
         this.onChunkLoaded(x, z, chunk);
 
         return chunk;
@@ -168,23 +187,28 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkManag
     }
 
     private void onChunkLoaded(int x, int z, WorldChunk chunk) {
+        // [VanillaCopy] Mark the chunk as eligible for block and sky lighting
         LightingProvider lightEngine = this.getLightingProvider();
         lightEngine.setLightEnabled(new ChunkPos(x, z), true);
 
         ChunkSection[] sections = chunk.getSectionArray();
 
+        // [VanillaCopy] Notify the light engine that this chunk's sections have been updated
         for (int y = 0; y < sections.length; ++y) {
             lightEngine.updateSectionStatus(ChunkSectionPos.from(x, y, z), ChunkSection.isEmpty(sections[y]));
         }
 
+        // Sodium doesn't actually use vanilla's global color cache, but we keep it around for compatibility purposes
         this.world.resetChunkColor(x, z);
 
+        // Notify the chunk listener
         if (this.listener != null) {
             this.listener.onChunkAdded(x, z);
         }
     }
 
     private void onChunkUnloaded(int x, int z) {
+        // Notify the chunk listener
         if (this.listener != null) {
             this.listener.onChunkRemoved(x, z);
         }
