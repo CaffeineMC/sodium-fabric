@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
+import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 
 /**
  * A build task which does no computation and always return an empty build result. These tasks are created whenever
@@ -21,7 +22,7 @@ public class ChunkRenderEmptyBuildTask<T extends ChunkRenderState> extends Chunk
     }
 
     @Override
-    public ChunkBuildResult<T> performBuild(ChunkRenderPipeline pipeline, ChunkBuildBuffers buffers) {
+    public ChunkBuildResult<T> performBuild(ChunkRenderPipeline pipeline, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
         return new ChunkBuildResult<>(this.render, ChunkRenderData.EMPTY);
     }
 
