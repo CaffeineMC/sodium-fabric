@@ -250,11 +250,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         SodiumGameOptions opts = SodiumClientMod.options();
 
-        if (opts.performance.useRenderLayerConsolidation) {
-            this.renderPassManager = BlockRenderPassManager.consolidated();
-        } else {
-            this.renderPassManager = BlockRenderPassManager.vanilla();
-        }
+        this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
 
         if (GlVertexArray.isSupported() && opts.performance.useLargeBuffers) {
             this.chunkRenderBackend = new ShaderLCBChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
