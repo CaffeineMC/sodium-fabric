@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
+import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 
 /**
  * Build tasks are immutable jobs (with optional prioritization) which contain all the necessary state to perform
@@ -24,13 +25,16 @@ public abstract class ChunkRenderBuildTask<T extends ChunkRenderState> {
      *
      * @param pipeline The render pipeline to use for building this chunk
      * @param buffers The temporary scratch buffers for rendering block data
-     * @return The build result of this task, containing any data which needs to be uploaded on the main-thread
+     * @param cancellationSource The cancellation source which can be used to query if the task is cancelled
+     * @return The build result of this task, containing any data which needs to be uploaded on the main-thread, or null
+     *         if the task was cancelled.
      */
-    public abstract ChunkBuildResult<T> performBuild(ChunkRenderPipeline pipeline, ChunkBuildBuffers buffers);
+    public abstract ChunkBuildResult<T> performBuild(ChunkRenderPipeline pipeline, ChunkBuildBuffers buffers,
+                                                     CancellationSource cancellationSource);
 
     /**
-     * Called on the main render thread when the task is completed and its results are uploaded. The implementation
-     * should release any resources it's still holding onto at this point.
+     * Called on the main render thread when the task's execution returns. The implementation should release any
+     * resources it's still holding onto at this point.
      */
     public abstract void releaseResources();
 }

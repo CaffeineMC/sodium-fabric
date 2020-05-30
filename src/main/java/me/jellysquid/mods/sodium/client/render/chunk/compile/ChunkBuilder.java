@@ -10,6 +10,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderEm
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
+import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
 import me.jellysquid.mods.sodium.common.util.collections.DequeDrain;
@@ -331,18 +332,24 @@ public class ChunkBuilder<T extends ChunkRenderState> {
                 WrappedTask<T> job = this.getNextJob();
 
                 // If the job is null or no longer valid, keep searching for a task
-                if (job == null || job.future.isCancelled()) {
+                if (job == null || job.isCancelled()) {
                     continue;
                 }
 
                 // Perform the build task with this worker's local resources and obtain the result
-                ChunkBuildResult<T> result = job.task.performBuild(this.pipeline, this.bufferCache);
+                ChunkBuildResult<T> result = job.task.performBuild(this.pipeline, this.bufferCache, job);
 
                 // After the result has been obtained, it's safe to release any resources attached to the task
                 job.task.releaseResources();
 
-                // Notify the future that the result is now available
-                job.future.complete(result);
+                // The result can be null if the task is cancelled
+                if (result != null) {
+                    // Notify the future that the result is now available
+                    job.future.complete(result);
+                } else if (!job.isCancelled()) {
+                    // If the job wasn't cancelled and no result was produced, we've hit a bug
+                    job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
+                }
             }
         }
 
@@ -366,13 +373,18 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         }
     }
 
-    private static class WrappedTask<T extends ChunkRenderState> {
+    private static class WrappedTask<T extends ChunkRenderState> implements CancellationSource {
         private final ChunkRenderBuildTask<T> task;
         private final CompletableFuture<ChunkBuildResult<T>> future;
 
         private WrappedTask(ChunkRenderBuildTask<T> task) {
             this.task = task;
             this.future = new CompletableFuture<>();
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return this.future.isCancelled();
         }
     }
 }

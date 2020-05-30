@@ -8,6 +8,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
+import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
@@ -46,7 +47,7 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
     }
 
     @Override
-    public ChunkBuildResult<T> performBuild(ChunkRenderPipeline pipeline, ChunkBuildBuffers buffers) {
+    public ChunkBuildResult<T> performBuild(ChunkRenderPipeline pipeline, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
         pipeline.init(this.slice, this.slice.getBlockOffsetX(), this.slice.getBlockOffsetY(), this.slice.getBlockOffsetZ());
 
         ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
@@ -64,6 +65,10 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
         BlockPos offset = this.offset;
 
         for (int y = minY; y < maxY; y++) {
+            if (cancellationSource.isCancelled()) {
+                return null;
+            }
+
             for (int z = minZ; z < maxZ; z++) {
                 for (int x = minX; x < maxX; x++) {
                     BlockState blockState = this.slice.getBlockState(x, y, z);
