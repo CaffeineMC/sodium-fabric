@@ -27,6 +27,7 @@ public class ChunkRenderData {
     private final Object2ObjectMap<BlockRenderPass, ChunkMesh> meshes;
 
     private final ChunkOcclusionData occlusionData;
+    private final boolean isEmpty;
 
     public ChunkRenderData(List<BlockEntity> globalBlockEntities, List<BlockEntity> blockEntities, List<Sprite> animatedSprites, ChunkOcclusionData occlusionData, Object2ObjectMap<BlockRenderPass, ChunkMesh> meshes) {
         this.globalBlockEntities = globalBlockEntities;
@@ -34,14 +35,15 @@ public class ChunkRenderData {
         this.animatedSprites = animatedSprites;
         this.occlusionData = occlusionData;
         this.meshes = meshes;
+
+        this.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.meshes.isEmpty();
     }
 
     /**
      * @return True if the chunk has no renderables, otherwise false
      */
     public boolean isEmpty() {
-        // TODO: check block entities
-        return this.meshes.isEmpty();
+        return this.isEmpty;
     }
 
     /**
