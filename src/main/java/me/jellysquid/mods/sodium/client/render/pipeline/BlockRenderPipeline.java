@@ -5,8 +5,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.render.light.QuadLightData;
 import me.jellysquid.mods.sodium.client.render.model.quad.*;
-import me.jellysquid.mods.sodium.client.render.model.quad.blender.BilinearVertexColorBlender;
 import me.jellysquid.mods.sodium.client.render.model.quad.blender.FlatVertexColorBlender;
+import me.jellysquid.mods.sodium.client.render.model.quad.blender.SmoothVertexColorBlender;
 import me.jellysquid.mods.sodium.client.render.model.quad.blender.VertexColorBlender;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
@@ -51,7 +51,7 @@ public class BlockRenderPipeline {
         if (biomeBlendRadius <= 0) {
             this.colorBlender = new FlatVertexColorBlender();
         } else {
-            this.colorBlender = new BilinearVertexColorBlender();
+            this.colorBlender = new SmoothVertexColorBlender();
         }
     }
 
