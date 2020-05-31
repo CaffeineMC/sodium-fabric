@@ -391,9 +391,16 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         int maxChunkY = maxY >> 4;
         int maxChunkZ = maxZ >> 4;
 
-        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-            for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-                for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+        this.scheduleRebuildForChunks(minChunkX, minChunkY, minChunkZ, maxChunkX, maxChunkY, maxChunkZ, important);
+    }
+
+    /**
+     * Schedules chunk rebuilds for all chunks in the specified chunk region.
+     */
+    public void scheduleRebuildForChunks(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, boolean important) {
+        for (int chunkX = minX; chunkX <= maxX; chunkX++) {
+            for (int chunkY = minY; chunkY <= maxY; chunkY++) {
+                for (int chunkZ = minZ; chunkZ <= maxZ; chunkZ++) {
                     this.scheduleRebuildForChunk(chunkX, chunkY, chunkZ, important);
                 }
             }
