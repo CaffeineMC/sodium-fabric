@@ -116,7 +116,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     public void scheduleBlockRenders(int x, int y, int z) {
-        this.renderer.scheduleRebuildForBlockArea(x - 1, y - 1, z - 1, x + 1, y + 1, z + 1, false);
+        this.renderer.scheduleRebuildForChunks(x - 1, y - 1, z - 1, x + 1, y + 1, z + 1, false);
     }
 
     /**
