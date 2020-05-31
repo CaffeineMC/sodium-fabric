@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.model.quad.blender;
 
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import net.minecraft.block.BlockState;
@@ -7,7 +8,7 @@ import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
 
-public class BilinearVertexColorBlender implements VertexColorBlender {
+public class SmoothVertexColorBlender implements VertexColorBlender {
     private final int[] cachedRet = new int[4];
     private final BlockPos.Mutable mpos = new BlockPos.Mutable();
 
@@ -16,13 +17,39 @@ public class BilinearVertexColorBlender implements VertexColorBlender {
         final int[] colors = this.cachedRet;
 
         for (int i = 0; i < 4; i++) {
-            colors[i] = this.getVertexColor(provider, state, world, quad.getX(i), quad.getZ(i), origin, quad.getColor(i), colorIndex, brightness[i]);
+            float x = quad.getX(i);
+            float z = quad.getZ(i);
+
+            // If the vertex is aligned to the block grid, we do not need to interpolate
+            if (ModelQuadFlags.contains(quad.getFlags(), ModelQuadFlags.IS_ALIGNED)) {
+                colors[i] = this.getVertexColor(provider, state, world, x, z, origin, quad.getColor(i), colorIndex, brightness[i]);
+            } else {
+                colors[i] = this.getInterpolatedVertexColor(provider, state, world, x, z, origin, quad.getColor(i), colorIndex, brightness[i]);
+            }
         }
 
         return colors;
     }
 
     private int getVertexColor(BlockColorProvider provider, BlockState state, BlockRenderView world, float posX, float posZ, BlockPos origin, int color, int colorIndex, float brightness) {
+        final float x = origin.getX() + posX;
+        final float z = origin.getZ() + posZ;
+
+        final int intX = (int) x;
+        final int intZ = (int) z;
+
+        final BlockPos.Mutable mpos = this.mpos;
+
+        final int f = provider.getColor(state, world, mpos.set(intX, origin.getY(), intZ), colorIndex);
+
+        final float fr = ColorARGB.normalize(ColorARGB.unpackRed(f)) * brightness;
+        final float fg = ColorARGB.normalize(ColorARGB.unpackGreen(f)) * brightness;
+        final float fb = ColorARGB.normalize(ColorARGB.unpackBlue(f)) * brightness;
+
+        return ColorARGB.mulPacked(color, fr, fg, fb);
+    }
+
+    private int getInterpolatedVertexColor(BlockColorProvider provider, BlockState state, BlockRenderView world, float posX, float posZ, BlockPos origin, int color, int colorIndex, float brightness) {
         final BlockPos.Mutable mpos = this.mpos;
 
         final float x = origin.getX() + posX;
