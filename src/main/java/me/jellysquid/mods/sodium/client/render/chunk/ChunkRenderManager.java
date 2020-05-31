@@ -22,6 +22,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.*;
@@ -32,6 +33,11 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStatusListener {
+    /**
+     * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
+     */
+    private static final double NEARBY_CHUNK_DISTANCE = Math.pow(48, 2.0);
+
     private final ChunkBuilder<T> builder;
     private final ChunkRenderBackend<T> backend;
 
@@ -448,7 +454,12 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         while (!this.importantDirtyChunks.isEmpty()) {
             ChunkRenderContainer<T> render = this.importantDirtyChunks.remove();
 
-            futures.add(this.builder.scheduleRebuildTaskAsync(render));
+            // Do not allow distant chunks to block rendering
+            if (this.isChunkNearby(render)) {
+                futures.add(this.builder.scheduleRebuildTaskAsync(render));
+            } else {
+                this.builder.deferRebuild(render);
+            }
 
             this.dirty = true;
             submitted++;
@@ -529,5 +540,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
             this.dirty = true;
         }
+    }
+
+    private boolean isChunkNearby(ChunkRenderContainer<T> render) {
+        Vector3d camera = this.builder.getCameraPosition();
+        return render.getSquaredDistance(camera.x, camera.y, camera.z) <= NEARBY_CHUNK_DISTANCE;
     }
 }
