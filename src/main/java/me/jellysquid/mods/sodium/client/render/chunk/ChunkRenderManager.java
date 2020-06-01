@@ -23,7 +23,6 @@ import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3d;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.ChunkSection;
@@ -138,21 +137,13 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     private void addNeighbors(ChunkRenderContainer<T> render, FrustumExtended frustum, int frame) {
-        ColumnRender<T> column = render.getColumn();
+        for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
+            ColumnRender<T> column = render.getColumn().getNeighbor(dir);
 
-        for (Direction dir : DirectionUtil.HORIZONTAL_DIRECTIONS) {
-            ColumnRender<T> adjColumn = column.getNeighbor(dir);
-
-            if (adjColumn != null) {
-                ChunkRenderContainer<T> adj = adjColumn.getChunk(render.getChunkY());
-
-                if (adj != null && adj.getLastGraphUpdateFrame() != frame) {
-                    this.addNeighbor(render, adj, dir, frustum, frame);
-                }
+            if (column == null) {
+                continue;
             }
-        }
 
-        for (Direction dir : DirectionUtil.VERTICAL_DIRECTIONS) {
             ChunkRenderContainer<T> adj = column.getChunk(render.getChunkY() + dir.getOffsetY());
 
             if (adj != null && adj.getLastGraphUpdateFrame() != frame) {
@@ -201,23 +192,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
         if (node != null) {
             node.resetGraphState();
+            node.setLastGraphUpdateFrame(frame);
 
-            // Player is within bounds and inside a node
-            Set<Direction> openFaces = this.getOpenChunkFaces(origin);
-
-            if (openFaces.size() == 1) {
-                Vector3f vector3f = camera.getHorizontalPlane();
-                Direction direction = Direction.getFacing(vector3f.getX(), vector3f.getY(), vector3f.getZ()).getOpposite();
-
-                openFaces.remove(direction);
-            }
-
-            if (!openFaces.isEmpty() || spectator) {
-                if (spectator && this.world.getBlockState(origin).isFullOpaque(this.world, origin)) {
-                    cull = false;
-                }
-
-                node.setLastGraphUpdateFrame(frame);
+            if (spectator && this.world.getBlockState(origin).isFullOpaque(this.world, origin)) {
+                cull = false;
             }
 
             queue.enqueue(node);
