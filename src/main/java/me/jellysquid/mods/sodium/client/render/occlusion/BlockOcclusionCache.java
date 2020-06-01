@@ -23,25 +23,25 @@ public class BlockOcclusionCache {
      * @param state The state of the block in the world
      * @param view The world view for this render context
      * @param pos The position of the block
-     * @param dir The facing direction of the side to check
+     * @param facing The facing direction of the side to check
      * @return True if the block side facing {@param dir} is not occluded, otherwise false
      */
-    public boolean shouldDrawSide(BlockState state, BlockView view, BlockPos pos, Direction dir) {
-        BlockPos adjPos = this.cpos.set(pos).setOffset(dir);
+    public boolean shouldDrawSide(BlockState state, BlockView view, BlockPos pos, Direction facing) {
+        BlockPos adjPos = this.cpos.set(pos).setOffset(facing);
         BlockState adjState = view.getBlockState(adjPos);
+
+        if (state.isSideInvisible(adjState, facing)) {
+            return false;
+        }
 
         if (!adjState.isOpaque()) {
             return true;
         }
 
-        if (state.isSideInvisible(adjState, dir)) {
-            return false;
-        }
-
         NeighborGroup cache = this.cache;
         cache.self = state;
         cache.other = adjState;
-        cache.facing = dir;
+        cache.facing = facing;
 
         Object2ByteOpenHashMap<NeighborGroup> map = this.map;
 
@@ -51,8 +51,8 @@ public class BlockOcclusionCache {
             return cached != 0;
         }
 
-        VoxelShape selfShape = state.getCullingFace(view, pos, dir);
-        VoxelShape adjShape = adjState.getCullingFace(view, adjPos, dir.getOpposite());
+        VoxelShape selfShape = state.getCullingFace(view, pos, facing);
+        VoxelShape adjShape = adjState.getCullingFace(view, adjPos, facing.getOpposite());
 
         boolean ret = VoxelShapes.matchesAnywhere(selfShape, adjShape, BooleanBiFunction.ONLY_FIRST);
 
