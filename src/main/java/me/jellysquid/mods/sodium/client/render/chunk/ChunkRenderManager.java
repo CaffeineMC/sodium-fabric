@@ -44,8 +44,8 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     private final ObjectList<ColumnRender<T>> unloadQueue = new ObjectArrayList<>();
 
-    private final ArrayDeque<ChunkRenderContainer<T>> importantDirtyChunks = new ArrayDeque<>();
-    private final ArrayDeque<ChunkRenderContainer<T>> dirtyChunks = new ArrayDeque<>();
+    private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> importantDirtyChunks = new ObjectArrayFIFOQueue<>();
+    private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> dirtyChunks = new ObjectArrayFIFOQueue<>();
     private final ObjectList<ChunkRenderContainer<T>> tickableChunks = new ObjectArrayList<>();
 
     @SuppressWarnings("unchecked")
@@ -105,9 +105,9 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
         if (render.needsRebuild() && render.getColumn().hasNeighborChunkData()) {
             if (render.needsImportantRebuild()) {
-                this.importantDirtyChunks.add(render);
+                this.importantDirtyChunks.enqueue(render);
             } else {
-                this.dirtyChunks.add(render);
+                this.dirtyChunks.enqueue(render);
             }
         }
 
@@ -430,7 +430,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         int submitted = 0;
 
         while (!this.importantDirtyChunks.isEmpty()) {
-            ChunkRenderContainer<T> render = this.importantDirtyChunks.remove();
+            ChunkRenderContainer<T> render = this.importantDirtyChunks.dequeue();
 
             // Do not allow distant chunks to block rendering
             if (this.isChunkNearby(render)) {
@@ -444,7 +444,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         }
 
         while (submitted < budget && !this.dirtyChunks.isEmpty()) {
-            ChunkRenderContainer<T> render = this.dirtyChunks.remove();
+            ChunkRenderContainer<T> render = this.dirtyChunks.dequeue();
 
             this.builder.deferRebuild(render);
             submitted++;
