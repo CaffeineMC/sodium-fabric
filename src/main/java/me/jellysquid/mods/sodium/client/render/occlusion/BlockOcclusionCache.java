@@ -10,13 +10,15 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 
 public class BlockOcclusionCache {
-    private final Object2ByteOpenHashMap<NeighborGroup> map;
-    private final NeighborGroup cache = new NeighborGroup();
+    private static final byte UNCACHED_VALUE = (byte) 127;
+
+    private final Object2ByteOpenHashMap<CachedOcclusionShapeTest> map;
+    private final CachedOcclusionShapeTest cachedTest = new CachedOcclusionShapeTest();
     private final BlockPos.Mutable cpos = new BlockPos.Mutable();
 
     public BlockOcclusionCache() {
         this.map = new Object2ByteOpenHashMap<>(2048, 0.75F);
-        this.map.defaultReturnValue((byte) 127);
+        this.map.defaultReturnValue(UNCACHED_VALUE);
     }
 
     /**
@@ -38,69 +40,63 @@ public class BlockOcclusionCache {
             return true;
         }
 
-        NeighborGroup cache = this.cache;
-        cache.self = state;
-        cache.other = adjState;
-        cache.facing = facing;
-
-        Object2ByteOpenHashMap<NeighborGroup> map = this.map;
-
-        byte cached = map.getByte(cache);
-
-        if (cached != 127) {
-            return cached != 0;
-        }
-
         VoxelShape selfShape = state.getCullingFace(view, pos, facing);
         VoxelShape adjShape = adjState.getCullingFace(view, adjPos, facing.getOpposite());
 
+        if (selfShape == VoxelShapes.fullCube() && adjShape == VoxelShapes.fullCube()) {
+            return false;
+        }
+
+        CachedOcclusionShapeTest cache = this.cachedTest;
+        cache.a = selfShape;
+        cache.b = adjShape;
+
+        byte cached = this.map.getByte(cache);
+
+        if (cached != UNCACHED_VALUE) {
+            return cached == 1;
+        }
+
         boolean ret = VoxelShapes.matchesAnywhere(selfShape, adjShape, BooleanBiFunction.ONLY_FIRST);
 
-        map.put(cache.copy(), (byte) (ret ? 1 : 0));
+        this.map.put(cache.copy(), (byte) (ret ? 1 : 0));
 
         return ret;
-
     }
 
-    public static final class NeighborGroup {
-        private BlockState self;
-        private BlockState other;
+    private static final class CachedOcclusionShapeTest {
+        private VoxelShape a, b;
 
-        private Direction facing;
-
-        public NeighborGroup copy() {
-            return new NeighborGroup(this.self, this.other, this.facing);
-        }
-
-        public NeighborGroup() {
+        private CachedOcclusionShapeTest() {
 
         }
 
-        private NeighborGroup(BlockState self, BlockState other, Direction facing) {
-            this.self = self;
-            this.other = other;
-            this.facing = facing;
+        private CachedOcclusionShapeTest(VoxelShape a, VoxelShape b) {
+            this.a = a;
+            this.b = b;
+        }
+
+        public CachedOcclusionShapeTest copy() {
+            return new CachedOcclusionShapeTest(this.a, this.b);
         }
 
         @Override
         public boolean equals(Object o) {
-            if (!(o instanceof NeighborGroup)) {
+            if (!(o instanceof CachedOcclusionShapeTest)) {
                 return false;
             }
 
-            NeighborGroup that = (NeighborGroup) o;
+            CachedOcclusionShapeTest that = (CachedOcclusionShapeTest) o;
 
-            return this.self == that.self && this.other == that.other && this.facing == that.facing;
+            return this.a == that.a && this.b == that.b;
         }
 
         @Override
         public int hashCode() {
-            int result = this.self.hashCode();
-            result = 31 * result + this.other.hashCode();
-            result = 31 * result + this.facing.hashCode();
+            int result = System.identityHashCode(this.a);
+            result = 31 * result + System.identityHashCode(this.b);
 
             return result;
         }
     }
-
 }
