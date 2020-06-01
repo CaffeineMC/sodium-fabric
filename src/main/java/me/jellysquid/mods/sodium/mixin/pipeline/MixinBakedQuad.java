@@ -52,11 +52,6 @@ public class MixinBakedQuad implements ModelQuadView {
     }
 
     @Override
-    public int[] getVertexData() {
-        return this.vertexData;
-    }
-
-    @Override
     public Sprite getSprite() {
         return this.sprite;
     }

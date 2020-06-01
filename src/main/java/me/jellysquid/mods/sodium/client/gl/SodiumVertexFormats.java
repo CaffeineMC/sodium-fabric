@@ -6,34 +6,23 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttribute;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadEncoder;
+import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
 
 public class SodiumVertexFormats {
     /**
-     * Standard vertex format with single-precision floating point values. Closely mirrors the vanilla vertex format.
+     * Standard vertex format with single-precision floating point values. Matches vanilla's own vertex format.
      */
     public static final GlVertexFormat<ChunkMeshAttribute> CHUNK_MESH_VANILLA = GlVertexAttribute.builder(ChunkMeshAttribute.class)
             .add(ChunkMeshAttribute.POSITION, new GlVertexAttribute(GlVertexAttributeFormat.FLOAT, 3, false, 0))
             .add(ChunkMeshAttribute.COLOR, new GlVertexAttribute(GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true, 12))
             .add(ChunkMeshAttribute.TEXTURE, new GlVertexAttribute(GlVertexAttributeFormat.FLOAT, 2, false, 16))
             .add(ChunkMeshAttribute.LIGHT, new GlVertexAttribute(GlVertexAttributeFormat.SHORT, 2, false, 24))
-            .build(28);
+            .build(32);
 
     private static final Reference2ObjectMap<GlVertexFormat<?>, ModelQuadEncoder> encoders = new Reference2ObjectOpenHashMap<>();
 
     static {
-        registerEncoder(CHUNK_MESH_VANILLA, (quad, buffer, position) -> {
-            for (int i = 0; i < 4; i++) {
-                buffer.putFloat(position, quad.getX(i));
-                buffer.putFloat(position + 4, quad.getY(i));
-                buffer.putFloat(position + 8, quad.getZ(i));
-                buffer.putInt(position + 12, quad.getColor(i));
-                buffer.putFloat(position + 16, quad.getTexU(i));
-                buffer.putFloat(position + 20, quad.getTexV(i));
-                buffer.putInt(position + 24, quad.getLight(i));
-
-                position += 28;
-            }
-        });
+        registerEncoder(CHUNK_MESH_VANILLA, ModelQuadView::copyInto);
     }
 
     public static void registerEncoder(GlVertexFormat<?> format, ModelQuadEncoder encoder) {
