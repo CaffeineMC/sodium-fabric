@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
@@ -285,6 +286,10 @@ public class ChunkRenderContainer<T extends ChunkRenderState> {
         return this.getSquaredDistance(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
     }
 
+    public double getSquaredDistanceXZ(Vector3d pos) {
+        return this.getSquaredDistanceXZ(pos.x, pos.z);
+    }
+
     /**
      * @return The squared distance from the center of this chunk in the world to the given position
      */
@@ -294,6 +299,16 @@ public class ChunkRenderContainer<T extends ChunkRenderState> {
         double zDist = z - this.getCenterZ();
 
         return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
+    }
+
+    /**
+     * @return The squared distance from the center of this chunk in the world to the given position
+     */
+    public double getSquaredDistanceXZ(double x, double z) {
+        double xDist = x - this.getCenterX();
+        double zDist = z - this.getCenterZ();
+
+        return (xDist * xDist) + (zDist * zDist);
     }
 
     /**
