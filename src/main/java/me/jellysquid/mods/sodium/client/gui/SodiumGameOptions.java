@@ -24,6 +24,7 @@ public class SodiumGameOptions {
         public boolean useAdvancedEntityCulling = true;
         public boolean useImmutableStorage = true;
         public boolean useParticleCulling = true;
+        public boolean useFogOcclusion = true;
     }
 
     public static class QualitySettings {

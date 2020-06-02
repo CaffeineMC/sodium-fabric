@@ -4,6 +4,8 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.*;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.util.GlFogHelper;
 import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
@@ -63,7 +65,8 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     private final int renderDistance;
 
     private int lastFrameUpdated;
-    private boolean useCulling;
+    private double fogRenderCutoff;
+    private boolean useOcclusionCulling, useFogCulling;
     private boolean dirty;
 
     private int countRenderedSection;
@@ -153,7 +156,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     }
 
     private void addNeighbor(ChunkRenderContainer<T> render, ChunkRenderContainer<T> adj, Direction dir, FrustumExtended frustum, int frame) {
-        if (this.useCulling) {
+        if (this.useOcclusionCulling) {
             if (render.canCull(dir)) {
                 return;
             }
@@ -164,6 +167,10 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
                 if (flow != null && !render.isVisibleThrough(flow.getOpposite(), dir)) {
                     return;
                 }
+            }
+
+            if (this.useFogCulling && render.getSquaredDistanceXZ(this.builder.getCameraPosition()) >= this.fogRenderCutoff) {
+                return;
             }
 
             if (!adj.isVisible(frustum)) {
@@ -230,7 +237,17 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
             }
         }
 
-        this.useCulling = cull;
+        this.useOcclusionCulling = cull;
+        this.useFogCulling = false;
+
+        if (SodiumClientMod.options().performance.useFogOcclusion) {
+            float dist = GlFogHelper.getFogCutoff();
+
+            if (dist != 0.0f) {
+                this.useFogCulling = true;
+                this.fogRenderCutoff = dist * dist;
+            }
+        }
     }
 
     public ChunkRenderContainer<T> getRenderForBlock(int x, int y, int z) {
