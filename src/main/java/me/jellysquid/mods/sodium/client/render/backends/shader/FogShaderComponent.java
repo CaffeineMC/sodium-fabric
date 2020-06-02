@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader;
 
 import com.google.common.collect.ImmutableList;
+import me.jellysquid.mods.sodium.client.gl.util.GlFogHelper;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryStack;
@@ -46,7 +47,7 @@ public abstract class FogShaderComponent {
         public void setup() {
             FogShaderComponent.setupColorUniform(this.uFogColor);
 
-            GL20.glUniform1f(this.uFogDensity, GL11.glGetFloat(GL11.GL_FOG_DENSITY));
+            GL20.glUniform1f(this.uFogDensity, GlFogHelper.getFogDensity());
         }
     }
 
@@ -65,8 +66,8 @@ public abstract class FogShaderComponent {
         public void setup() {
             FogShaderComponent.setupColorUniform(this.uFogColor);
 
-            float end = GL11.glGetFloat(GL11.GL_FOG_END);
-            float start = GL11.glGetFloat(GL11.GL_FOG_START);
+            float end = GlFogHelper.getFogEnd();
+            float start = GlFogHelper.getFogStart();
 
             GL20.glUniform1f(this.uFogLength, end - start);
             GL20.glUniform1f(this.uFogEnd, end);
