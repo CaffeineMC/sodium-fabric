@@ -1,9 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.FrustumExtended;
-import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
-import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.texture.Sprite;
@@ -12,8 +10,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -21,11 +17,11 @@ import java.util.concurrent.CompletableFuture;
  * The render state object for a chunk section. This contains all the graphics state for each render pass along with
  * data about the render in the chunk visibility graph.
  */
-public class ChunkRenderContainer<T extends ChunkRenderState> {
+public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private final ColumnRender<T> column;
     private final int chunkX, chunkY, chunkZ;
 
-    private final T[] renderState;
+    private T graphicsState;
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<Void> rebuildTask = null;
@@ -47,7 +43,7 @@ public class ChunkRenderContainer<T extends ChunkRenderState> {
     private final float boundsMaxY;
     private final float boundsMaxZ;
 
-    public ChunkRenderContainer(ChunkRenderBackend<T> backend, ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
+    public ChunkRenderContainer(ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
         this.column = column;
 
         this.chunkX = chunkX;
@@ -64,9 +60,6 @@ public class ChunkRenderContainer<T extends ChunkRenderState> {
         this.boundsMaxX = originX + 16.0f;
         this.boundsMaxY = originY + 16.0f;
         this.boundsMaxZ = originZ + 16.0f;
-
-        //noinspection unchecked
-        this.renderState = (T[]) Array.newInstance(backend.getRenderStateType(), BlockRenderPass.count());
 
         if (column.isSectionEmpty(chunkY)) {
             this.setData(ChunkRenderData.EMPTY);
@@ -122,13 +115,6 @@ public class ChunkRenderContainer<T extends ChunkRenderState> {
     }
 
     /**
-     * Sets the graphics state of the render for the given render pass.
-     */
-    public void setRenderState(BlockRenderPass pass, T data) {
-        this.renderState[pass.ordinal()] = data;
-    }
-
-    /**
      * Deletes all data attached to this render and drops any pending tasks. This should be used when the render falls
      * out of view or otherwise needs to be destroyed. After the render has been destroyed, the object can no longer
      * be used.
@@ -136,7 +122,11 @@ public class ChunkRenderContainer<T extends ChunkRenderState> {
     public void delete() {
         this.cancelRebuildTask();
         this.setData(ChunkRenderData.ABSENT);
-        this.resetRenderStates();
+
+        if (this.graphicsState != null) {
+            this.graphicsState.delete();
+            this.graphicsState = null;
+        }
     }
 
     public void setData(ChunkRenderData info) {
@@ -354,24 +344,6 @@ public class ChunkRenderContainer<T extends ChunkRenderState> {
         return this.lastVisibleFrame;
     }
 
-    /**
-     * Resets all graphics state for this render, deleting any resources which were allocated for it.
-     */
-    public void resetRenderStates() {
-        for (T state : this.renderState) {
-            if (state != null) {
-                state.delete();
-            }
-        }
-
-        Arrays.fill(this.renderState, null);
-    }
-
-    @Deprecated
-    public T[] getRenderStates() {
-        return this.renderState;
-    }
-
     public boolean hasData() {
         return this.data != ChunkRenderData.EMPTY;
     }
@@ -385,5 +357,13 @@ public class ChunkRenderContainer<T extends ChunkRenderState> {
 
     public BlockPos getOrigin() {
         return new BlockPos(this.getOriginX(), this.getOriginY(), this.getOriginZ());
+    }
+
+    public T getGraphicsState() {
+        return this.graphicsState;
+    }
+
+    public void setGraphicsState(T state) {
+        this.graphicsState = state;
     }
 }

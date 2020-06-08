@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gl.shader;
 
 import me.jellysquid.mods.sodium.client.gl.GlObject;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttribute;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,6 +75,10 @@ public abstract class GlProgram extends GlObject {
         this.invalidateHandle();
     }
 
+    public void bindShaderInput(String name, GlVertexAttribute attribute) {
+        GL20.glBindAttribLocation(this.handle(), attribute.getIndex(), name);
+    }
+
     public static class Builder {
         private final Identifier name;
         private final int program;
@@ -83,7 +88,7 @@ public abstract class GlProgram extends GlObject {
             this.program = GL20.glCreateProgram();
         }
 
-        public Builder attach(GlShader shader) {
+        public Builder attachShader(GlShader shader) {
             GL20.glAttachShader(this.program, shader.handle());
 
             return this;
@@ -98,7 +103,7 @@ public abstract class GlProgram extends GlObject {
          * @param <P> The type which should be instantiated with the new program's handle
          * @return An instantiated shader container as provided by the factory
          */
-        public <P extends GlProgram> P link(ProgramFactory<P> factory) {
+        public <P extends GlProgram> P build(ProgramFactory<P> factory) {
             GL20.glLinkProgram(this.program);
 
             String log = GL20.glGetProgramInfoLog(this.program);
@@ -116,8 +121,8 @@ public abstract class GlProgram extends GlObject {
             return factory.create(this.name, this.program);
         }
 
-        public Builder attribute(int index, String name) {
-            GL20.glBindAttribLocation(this.program, index, name);
+        public Builder bindAttribute(String name, GlVertexAttribute attribute) {
+            GL20.glBindAttribLocation(this.program, attribute.getIndex(), name);
 
             return this;
         }

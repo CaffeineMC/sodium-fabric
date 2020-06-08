@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 
 /**
  * Instantiates a {@link ChunkRenderContainer} type which contains the given typed render state data.
  * @param <T> The type of render state this render contains
  */
-public interface ChunkRenderFactory<T extends ChunkRenderState> {
+public interface ChunkRenderFactory<T extends ChunkGraphicsState> {
     /**
      * @param column The {@link ColumnRender} this chunk will belong to
      * @param x The x-position of the chunk section

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.tasks;
 
-import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
@@ -31,7 +31,7 @@ import net.minecraft.world.chunk.WorldChunk;
  * This task takes a slice of the world from the thread it is created on. Since these slices require rather large
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
-public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRenderBuildTask<T> {
+public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkRenderBuildTask<T> {
     private final ChunkRenderContainer<T> render;
     private final ChunkBuilder<T> chunkBuilder;
     private final Vector3d camera;
@@ -119,7 +119,7 @@ public class ChunkRenderRebuildTask<T extends ChunkRenderState> extends ChunkRen
             }
         }
 
-        meshInfo.addMeshes(buffers.createMeshes(this.camera, this.render.getOrigin()));
+        meshInfo.setMeshData(buffers.createMeshes(this.camera, this.render.getOrigin()));
         meshInfo.setOcclusionData(occluder.build());
 
         return new ChunkBuildResult<>(this.render, meshInfo.build());

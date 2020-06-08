@@ -24,7 +24,11 @@ public abstract class GlBuffer extends GlObject {
     }
 
     public void drawArrays(int mode) {
-        GL11.glDrawArrays(mode, 0, this.vertexCount);
+        this.drawArrays(mode, 0, this.vertexCount);
+    }
+
+    public void drawArrays(int mode, int first, int count) {
+        GL11.glDrawArrays(mode, first, count);
     }
 
     public abstract void allocate(int target, long size);

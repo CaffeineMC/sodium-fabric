@@ -1,10 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
@@ -24,19 +21,19 @@ public class ChunkRenderData {
     private final List<BlockEntity> blockEntities;
     private final List<Sprite> animatedSprites;
 
-    private final Object2ObjectMap<BlockRenderPass, ChunkMesh> meshes;
+    private final ChunkMeshData meshData;
 
     private final ChunkOcclusionData occlusionData;
     private final boolean isEmpty;
 
-    public ChunkRenderData(List<BlockEntity> globalBlockEntities, List<BlockEntity> blockEntities, List<Sprite> animatedSprites, ChunkOcclusionData occlusionData, Object2ObjectMap<BlockRenderPass, ChunkMesh> meshes) {
+    public ChunkRenderData(List<BlockEntity> globalBlockEntities, List<BlockEntity> blockEntities, List<Sprite> animatedSprites, ChunkOcclusionData occlusionData, ChunkMeshData meshData) {
         this.globalBlockEntities = globalBlockEntities;
         this.blockEntities = blockEntities;
         this.animatedSprites = animatedSprites;
         this.occlusionData = occlusionData;
-        this.meshes = meshes;
+        this.meshData = meshData;
 
-        this.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.meshes.isEmpty();
+        this.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.meshData.isEmpty();
     }
 
     /**
@@ -77,8 +74,8 @@ public class ChunkRenderData {
     /**
      * The collection of chunk meshes belonging to this render.
      */
-    public Collection<ChunkMesh> getMeshes() {
-        return this.meshes.values();
+    public ChunkMeshData getMeshData() {
+        return this.meshData;
     }
 
     public static class Builder {
@@ -86,8 +83,7 @@ public class ChunkRenderData {
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
-        private final Object2ObjectMap<BlockRenderPass, ChunkMesh> meshes = new Object2ObjectArrayMap<>(4);
-
+        private ChunkMeshData meshData = ChunkMeshData.EMPTY;
         private ChunkOcclusionData occlusionData;
 
         public void setOcclusionData(ChunkOcclusionData data) {
@@ -115,26 +111,8 @@ public class ChunkRenderData {
             }
         }
 
-        /**
-         * Adds the collection of meshes to this data container. See {@link Builder#addMesh(ChunkMesh)}.
-         * @param meshes The collection of non-null meshes
-         */
-        public void addMeshes(List<ChunkMesh> meshes) {
-            for (ChunkMesh mesh : meshes) {
-                this.addMesh(mesh);
-            }
-        }
-
-        /**
-         * Adds the given mesh to this data container for use in uploads and rendering. A chunk data container can only
-         * contain one mesh for a given render pass.
-         * @throws IllegalArgumentException If a mesh is already attached for the given render pass
-         * @param mesh The chunk mesh to add to this container
-         */
-        public void addMesh(ChunkMesh mesh) {
-            if (this.meshes.putIfAbsent(mesh.getRenderPass(), mesh) != null) {
-                throw new IllegalArgumentException("Mesh already added");
-            }
+        public void setMeshData(ChunkMeshData data) {
+            this.meshData = data;
         }
 
         /**
@@ -147,7 +125,7 @@ public class ChunkRenderData {
         }
 
         public ChunkRenderData build() {
-            return new ChunkRenderData(this.globalEntities, this.blockEntities, new ObjectArrayList<>(this.animatedSprites), this.occlusionData, this.meshes);
+            return new ChunkRenderData(this.globalEntities, this.blockEntities, new ObjectArrayList<>(this.animatedSprites), this.occlusionData, this.meshData);
         }
     }
 
@@ -157,6 +135,7 @@ public class ChunkRenderData {
 
         ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
         meshInfo.setOcclusionData(occlusionData);
+        meshInfo.setMeshData(ChunkMeshData.EMPTY);
 
         return meshInfo.build();
     }

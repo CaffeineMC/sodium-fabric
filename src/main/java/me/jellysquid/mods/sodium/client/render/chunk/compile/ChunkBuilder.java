@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkRenderBuildTask;
@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ChunkBuilder<T extends ChunkRenderState> {
+public class ChunkBuilder<T extends ChunkGraphicsState> {
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
     private final Deque<WrappedTask<T>> buildQueue = new ConcurrentLinkedDeque<>();
@@ -373,7 +373,7 @@ public class ChunkBuilder<T extends ChunkRenderState> {
         }
     }
 
-    private static class WrappedTask<T extends ChunkRenderState> implements CancellationSource {
+    private static class WrappedTask<T extends ChunkGraphicsState> implements CancellationSource {
         private final ChunkRenderBuildTask<T> task;
         private final CompletableFuture<ChunkBuildResult<T>> future;
 

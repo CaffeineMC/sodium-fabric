@@ -22,7 +22,6 @@ public class SodiumGameOptions {
         public boolean useLargeBuffers = false;
         public boolean animateOnlyVisibleTextures = true;
         public boolean useAdvancedEntityCulling = true;
-        public boolean useImmutableStorage = true;
         public boolean useParticleCulling = true;
         public boolean useFogOcclusion = true;
     }

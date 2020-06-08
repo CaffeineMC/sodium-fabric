@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.tasks;
 
-import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
@@ -14,7 +14,7 @@ import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
  * actor thread. In cases where new chunk renders are being created and scheduled, the scheduler will prefer to just
  * synchronously update the render's data to an empty state to speed things along.
  */
-public class ChunkRenderEmptyBuildTask<T extends ChunkRenderState> extends ChunkRenderBuildTask<T> {
+public class ChunkRenderEmptyBuildTask<T extends ChunkGraphicsState> extends ChunkRenderBuildTask<T> {
     private final ChunkRenderContainer<T> render;
 
     public ChunkRenderEmptyBuildTask(ChunkRenderContainer<T> render) {

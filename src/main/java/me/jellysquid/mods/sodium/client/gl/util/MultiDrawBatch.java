@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.gl.util;
 
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 
 import java.nio.ByteBuffer;
@@ -38,11 +37,11 @@ public class MultiDrawBatch {
     /**
      * Performs a multi-draw with the given queue, clearing it afterwards.
      */
-    public void draw() {
+    public void draw(int mode) {
         this.bufIndices.flip();
         this.bufLen.flip();
 
-        GL14.glMultiDrawArrays(GL11.GL_QUADS, this.bufIndices, this.bufLen);
+        GL14.glMultiDrawArrays(mode, this.bufIndices, this.bufLen);
 
         this.bufIndices.clear();
         this.bufLen.clear();

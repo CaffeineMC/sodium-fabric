@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkSection;
 
-public class ColumnRender<T extends ChunkRenderState> {
+public class ColumnRender<T extends ChunkGraphicsState> {
     @SuppressWarnings("unchecked")
     private final ChunkRenderContainer<T>[] chunks = new ChunkRenderContainer[16];
 
