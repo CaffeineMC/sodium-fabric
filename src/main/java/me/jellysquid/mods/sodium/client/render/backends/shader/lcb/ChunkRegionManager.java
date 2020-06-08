@@ -2,12 +2,14 @@ package me.jellysquid.mods.sodium.client.render.backends.shader.lcb;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
+import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
-public class ChunkRegionManager {
+public class ChunkRegionManager<T extends ChunkGraphicsState> {
     // Buffers span 4x2x4 chunks
     private static final int BUFFER_WIDTH = 4;
     private static final int BUFFER_HEIGHT = 4;
@@ -28,14 +30,19 @@ public class ChunkRegionManager {
         Validate.isTrue(MathUtil.isPowerOfTwo(BUFFER_HEIGHT));
     }
 
-    private final Long2ReferenceOpenHashMap<ChunkRegion> regions = new Long2ReferenceOpenHashMap<>();
+    private final Long2ReferenceOpenHashMap<ChunkRegion<T>> regions = new Long2ReferenceOpenHashMap<>();
+    private final GlVertexFormat<?> vertexFormat;
 
-    public ChunkRegion createRegion(ChunkSectionPos pos) {
-        ChunkRegion region = this.regions.get(getIndex(pos));
+    public ChunkRegionManager(GlVertexFormat<?> vertexFormat) {
+        this.vertexFormat = vertexFormat;
+    }
+
+    public ChunkRegion<T> createRegion(ChunkSectionPos pos) {
+        ChunkRegion<T> region = this.regions.get(getIndex(pos));
 
         if (region == null) {
             ChunkSectionPos origin = ChunkSectionPos.from(pos.getX() & BUFFER_WIDTH_M, pos.getY() & BUFFER_HEIGHT_M, pos.getZ() & BUFFER_LENGTH_M);
-            region = new ChunkRegion(origin, BUFFER_SIZE);
+            region = new ChunkRegion<>(origin, BUFFER_SIZE);
 
             this.regions.put(getIndex(pos), region);
         }
@@ -48,19 +55,20 @@ public class ChunkRegionManager {
     }
 
     public void delete() {
-        for (ChunkRegion region : this.regions.values()) {
-            region.delete();
+        for (ChunkRegion<T> region : this.regions.values()) {
+            region.deleteResources();
         }
 
         this.regions.clear();
     }
 
     public void cleanup() {
-        for (ObjectIterator<ChunkRegion> iterator = this.regions.values().iterator(); iterator.hasNext(); ) {
-            ChunkRegion block = iterator.next();
+        for (ObjectIterator<ChunkRegion<T>> iterator = this.regions.values().iterator(); iterator.hasNext(); ) {
+            ChunkRegion<T> region = iterator.next();
 
-            if (block.isEmpty()) {
-                block.delete();
+            if (region.isArenaEmpty()) {
+                region.deleteResources();
+
                 iterator.remove();
             }
         }

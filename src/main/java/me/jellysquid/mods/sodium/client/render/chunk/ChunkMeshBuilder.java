@@ -111,7 +111,7 @@ public class ChunkMeshBuilder implements ModelQuadSink {
     /**
      * Ends the stream of written data and makes a copy of it to be passed around.
      */
-    public ByteBuffer end() {
+    public void copyInto(ByteBuffer dst) {
         // Mark the slice of memory that needs to be copied
         this.buffer.position(0);
         this.buffer.limit(this.position);
@@ -119,14 +119,14 @@ public class ChunkMeshBuilder implements ModelQuadSink {
         // Allocate a new buffer which is just large enough to contain the slice of vertex data
         // The buffer is then flipped after the operation so the callee sees a range of bytes from (0,len] which can
         // then be immediately passed to native libraries or the graphics driver
-        ByteBuffer copy = GlAllocationUtils.allocateByteBuffer(this.buffer.limit());
-        copy.put(this.buffer.slice());
-        copy.flip();
+        dst.put(this.buffer.slice());
 
         // Reset the position and limit set earlier of the backing scratch buffer
         this.buffer.clear();
         this.position = 0;
+    }
 
-        return copy;
+    public int getSize() {
+        return this.position;
     }
 }

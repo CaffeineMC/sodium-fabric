@@ -1,8 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader;
 
-import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats.ChunkMeshAttribute;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
@@ -35,9 +32,7 @@ public class ChunkProgram extends GlProgram {
     // Scratch buffer
     private final FloatBuffer uModelOffsetBuffer;
 
-    public final GlVertexAttributeBinding[] attributes;
-
-    public ChunkProgram(Identifier name, int handle, GlVertexFormat<ChunkMeshAttribute> format, Function<ChunkProgram, FogShaderComponent> fogShaderFunction) {
+    public ChunkProgram(Identifier name, int handle, Function<ChunkProgram, FogShaderComponent> fogShaderFunction) {
         super(name, handle);
 
         this.uModelViewMatrix = this.getUniformLocation("u_ModelViewMatrix");
@@ -46,18 +41,6 @@ public class ChunkProgram extends GlProgram {
 
         this.uBlockTex = this.getUniformLocation("u_BlockTex");
         this.uLightTex = this.getUniformLocation("u_LightTex");
-
-        int aPos = this.getAttributeLocation("a_Pos");
-        int aColor = this.getAttributeLocation("a_Color");
-        int aTexCoord = this.getAttributeLocation("a_TexCoord");
-        int aLightCoord = this.getAttributeLocation("a_LightCoord");
-
-        this.attributes = new GlVertexAttributeBinding[] {
-                new GlVertexAttributeBinding(aPos, format, ChunkMeshAttribute.POSITION),
-                new GlVertexAttributeBinding(aColor, format, ChunkMeshAttribute.COLOR),
-                new GlVertexAttributeBinding(aTexCoord, format, ChunkMeshAttribute.TEXTURE),
-                new GlVertexAttributeBinding(aLightCoord, format, ChunkMeshAttribute.LIGHT)
-        };
 
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(3);
         this.fogShader = fogShaderFunction.apply(this);

@@ -17,7 +17,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
-import me.jellysquid.mods.sodium.client.util.RenderList;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListenerManager;
 import net.minecraft.block.entity.BlockEntity;
@@ -115,17 +114,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
      * @return The number of chunk renders which are visible in the current camera's frustum
      */
     public int getVisibleChunkCount() {
-        int count = 0;
-
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            RenderList<?> list = this.chunkRenderManager.getRenderList(pass);
-
-            if (list != null) {
-                count += list.size();
-            }
-        }
-
-        return count;
+        return this.chunkRenderManager.getRenderList().size();
     }
 
     /**

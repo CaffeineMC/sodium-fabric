@@ -3,10 +3,12 @@ package me.jellysquid.mods.sodium.client.gl.attribute;
 import java.util.EnumMap;
 
 public class GlVertexAttribute {
+    private final int index;
     private final int format;
     private final int count;
     private final int pointer;
     private final int size;
+    private final int stride;
 
     private final boolean normalized;
 
@@ -17,17 +19,23 @@ public class GlVertexAttribute {
      *                   as fixed-point values (false)
      * @param pointer The offset to the first component in the attribute
      */
-    public GlVertexAttribute(GlVertexAttributeFormat format, int count, boolean normalized, int pointer) {
+    public GlVertexAttribute(int index, GlVertexAttributeFormat format, int count, boolean normalized, int pointer, int stride) {
+        this.index = index;
         this.format = format.getGlFormat();
         this.size = format.getSize() * count;
 
         this.count = count;
         this.normalized = normalized;
         this.pointer = pointer;
+        this.stride = stride;
     }
 
-    public static <T extends Enum<T>> GlVertexAttribute.Builder<T> builder(Class<T> type) {
-        return new Builder<>(type);
+    public static <T extends Enum<T>> GlVertexAttribute.Builder<T> builder(Class<T> type, int stride) {
+        return new Builder<>(type, stride);
+    }
+
+    public int getIndex() {
+        return this.index;
     }
 
     public long getSize() {
@@ -50,13 +58,23 @@ public class GlVertexAttribute {
         return this.normalized;
     }
 
+    public int getStride() {
+        return this.stride;
+    }
+
     public static class Builder<T extends Enum<T>> {
         private final EnumMap<T, GlVertexAttribute> attributes;
         private final Class<T> type;
+        private final int stride;
 
-        public Builder(Class<T> type) {
+        public Builder(Class<T> type, int stride) {
             this.type = type;
             this.attributes = new EnumMap<>(type);
+            this.stride = stride;
+        }
+
+        public Builder<T> addElement(T type, int pointer, GlVertexAttributeFormat format, int count, boolean normalized) {
+            return this.addElement(type, new GlVertexAttribute(this.attributes.size(), format, count, normalized, pointer, this.stride));
         }
 
         /**
@@ -66,7 +84,15 @@ public class GlVertexAttribute {
          * @param attribute The attribute to bind
          * @throws IllegalStateException If an attribute is already bound to the generic type
          */
-        public Builder<T> add(T type, GlVertexAttribute attribute) {
+        private Builder<T> addElement(T type, GlVertexAttribute attribute) {
+            if (attribute.pointer >= this.stride) {
+                throw new IllegalArgumentException("Element starts outside vertex format");
+            }
+
+            if (attribute.pointer + attribute.size > this.stride) {
+                throw new IllegalArgumentException("Element extends outside vertex format");
+            }
+
             if (this.attributes.put(type, attribute) != null) {
                 throw new IllegalStateException("Generic attribute " + type.name() + " already defined in vertex format");
             }
@@ -74,14 +100,11 @@ public class GlVertexAttribute {
             return this;
         }
 
+
         /**
-         * Creates a {@link GlVertexFormat} from the current builder with the given stride in order to allow users to
-         * add padding to the end of their vertex format to satisfy alignment constraints.
-         *
-         * @param stride The stride (size) of the vertex format in bytes
-         * @throws IllegalArgumentException If the stride is too small to allow all attributes to fit
+         * Creates a {@link GlVertexFormat} from the current builder.
          */
-        public GlVertexFormat<T> build(int stride) {
+        public GlVertexFormat<T> build() {
             int size = 0;
 
             for (T key : this.type.getEnumConstants()) {
@@ -96,11 +119,11 @@ public class GlVertexAttribute {
 
             // The stride must be large enough to cover all attributes. This still allows for additional padding
             // to be added to the end of the vertex to accommodate alignment restrictions.
-            if (stride < size) {
+            if (this.stride < size) {
                 throw new IllegalArgumentException("Stride is too small");
             }
 
-            return new GlVertexFormat<>(this.type, this.attributes, stride);
+            return new GlVertexFormat<>(this.type, this.attributes, this.stride);
         }
     }
 }

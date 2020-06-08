@@ -3,6 +3,8 @@ package me.jellysquid.mods.sodium.client.render.backends;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
+import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -14,7 +16,7 @@ import java.util.Iterator;
  * the handling of uploading their data to the graphics card and rendering responsibilities.
  * @param <T> The type of graphics state to be used in chunk render containers
  */
-public interface ChunkRenderBackend<T extends ChunkRenderState> {
+public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
     /**
      * Drains the iterator of items and processes each build task's result serially. After this method returns, all
      * drained results should be processed.
@@ -23,23 +25,19 @@ public interface ChunkRenderBackend<T extends ChunkRenderState> {
 
     /**
      * Renders the given chunk render list to the active framebuffer.
+     * @param pass
      * @param renders The render list
      * @param matrixStack The current matrix stack containing the model-view matrices for rendering
      * @param x The x-position of the camera in world space
      * @param y The y-position of the camera in world space
      * @param z The z-position of the camera in world space
      */
-    void render(Iterator<T> renders, MatrixStack matrixStack, double x, double y, double z);
+    void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<T>> renders, MatrixStack matrixStack, double x, double y, double z);
 
     /**
      * Deletes this render backend and any resources attached to it.
      */
     void delete();
-
-    /**
-     * Returns the type of render state to be attached to each chunk render container.
-     */
-    Class<T> getRenderStateType();
 
     /**
      * Returns the vertex format used by this chunk render backend for rendering meshes.

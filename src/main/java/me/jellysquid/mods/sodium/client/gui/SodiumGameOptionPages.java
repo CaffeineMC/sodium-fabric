@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
-import me.jellysquid.mods.sodium.client.gl.buffer.GlImmutableBuffer;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
@@ -207,7 +206,7 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Large Chunk Buffers")
+                        .setName("Use Large Chunk Buffers")
                         .setTooltip("If enabled, chunks will be batched into larger vertex buffers to avoid expensive state changes. This will greatly " +
                                 "reduce the amount of work the CPU needs to perform, but will not necessarily improve the average frame rate if the GPU " +
                                 "cannot keep up." +
@@ -219,24 +218,13 @@ public class SodiumGameOptionPages {
                         .setEnabled(ShaderLCBChunkRenderBackend.isSupported())
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Fast Chunk Setup")
+                        .setName("Use Vertex Array Objects")
                         .setTooltip("If enabled, Vertex Array Objects will be used in chunk rendering to avoid needing to setup array pointers every chunk render. " +
                                 "\n\nRequires OpenGL 3.0+ or support for the ARB_vertex_array_object extension.")
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.performance.useVertexArrays = value, opts -> opts.performance.useVertexArrays)
                         .setImpact(OptionImpact.MEDIUM)
                         .setEnabled(GlVertexArray.isSupported())
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build())
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Immutable Storage")
-                        .setTooltip("If enabled, immutable storage objects will be used for storing chunk meshes. This can improve performance by giving the driver " +
-                                "more information about how the data will be used, in turn allowing it to apply additional optimizations." +
-                                "\n\nRequires OpenGL 4.4+ or support for the ARB_buffer_storage extension.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.performance.useImmutableStorage = value, opts -> opts.performance.useImmutableStorage)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setEnabled(GlImmutableBuffer.isSupported())
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)

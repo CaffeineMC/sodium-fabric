@@ -1,27 +1,32 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader.lcb;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
+import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
+import me.jellysquid.mods.sodium.client.gl.arena.GlBufferRegion;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
-import me.jellysquid.mods.sodium.client.gl.memory.BufferBlock;
-import me.jellysquid.mods.sodium.client.gl.memory.BufferSegment;
+import me.jellysquid.mods.sodium.client.gl.util.MultiDrawBatch;
+import me.jellysquid.mods.sodium.client.gl.util.VertexSlice;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkMesh;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Shader-based chunk renderer which makes use of a custom memory allocator on top of large buffer objects to allow
@@ -65,62 +70,66 @@ import java.util.Iterator;
  * in buffer bind/setup/draw calls. Using the default settings of 4x2x4 chunk region buffers, the number of calls can be
  * reduced up to a factor of ~32x.
  */
-public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBackend<ShaderLCBRenderState> {
-    private final ChunkRegionManager bufferManager;
+public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBackend<ShaderLCBGraphicsState> {
+    private final ChunkRegionManager<ShaderLCBGraphicsState> bufferManager;
     private final GlMutableBuffer uploadBuffer;
 
-    private final ObjectList<ChunkRegion> pendingBatches = new ObjectArrayList<>();
+    private final ObjectArrayFIFOQueue<ChunkRegion<ShaderLCBGraphicsState>> pendingBatches = new ObjectArrayFIFOQueue<>();
+    private final ObjectArrayFIFOQueue<ChunkRegion<ShaderLCBGraphicsState>> pendingUploads = new ObjectArrayFIFOQueue<>();
 
     public ShaderLCBChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
 
-        this.bufferManager = new ChunkRegionManager();
-        this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
+        this.bufferManager = new ChunkRegionManager<>(this.vertexFormat);
+        this.uploadBuffer = new GlMutableBuffer(GL15.GL_STATIC_COPY);
     }
 
     @Override
-    public void upload(Iterator<ChunkBuildResult<ShaderLCBRenderState>> queue) {
+    public void upload(Iterator<ChunkBuildResult<ShaderLCBGraphicsState>> queue) {
+        this.setupUploadBatches(queue);
+
         GlMutableBuffer uploadBuffer = this.uploadBuffer;
         uploadBuffer.bind(GL15.GL_ARRAY_BUFFER);
 
-        BufferBlock prevBlock = null;
+        while (!this.pendingUploads.isEmpty()) {
+            ChunkRegion<ShaderLCBGraphicsState> region = this.pendingUploads.dequeue();
 
-        while (queue.hasNext()) {
-            ChunkBuildResult<ShaderLCBRenderState> result = queue.next();
+            GlBufferArena arena = region.getBufferArena();
+            arena.bind();
 
-            ChunkRenderContainer<ShaderLCBRenderState> render = result.render;
-            ChunkRenderData data = result.data;
+            ObjectArrayList<ChunkBuildResult<ShaderLCBGraphicsState>> uploadQueue = region.getUploadQueue();
+            arena.ensureCapacity(getUploadQueuePayloadSize(uploadQueue));
 
-            render.resetRenderStates();
-            render.setData(data);
+            for (ChunkBuildResult<ShaderLCBGraphicsState> result : uploadQueue) {
+                ChunkRenderContainer<ShaderLCBGraphicsState> render = result.render;
+                ChunkRenderData data = result.data;
 
-            for (ChunkMesh mesh : data.getMeshes()) {
-                ChunkSectionPos pos = render.getChunkPos();
+                ShaderLCBGraphicsState graphics = render.getGraphicsState();
 
-                ChunkRegion region = this.bufferManager.createRegion(pos);
-                BufferBlock block = region.getBuffer();
-
-                if (prevBlock != block) {
-                    if (prevBlock != null) {
-                        prevBlock.endUploads();
-                    }
-
-                    block.beginUpload();
-
-                    prevBlock = block;
+                // De-allocate the existing buffer arena for this render
+                // This will allow it to be cheaply re-allocated just below
+                if (graphics != null) {
+                    graphics.delete();
                 }
 
-                VertexData upload = mesh.takePendingUpload();
-                uploadBuffer.upload(GL15.GL_ARRAY_BUFFER, upload);
+                ChunkMeshData meshData = data.getMeshData();
 
-                BufferSegment segment = block.upload(GL15.GL_ARRAY_BUFFER, 0, upload.buffer.capacity());
+                if (meshData.hasData()) {
+                    VertexData upload = meshData.takePendingUpload();
+                    uploadBuffer.upload(GL15.GL_ARRAY_BUFFER, upload);
 
-                render.setRenderState(mesh.getRenderPass(), new ShaderLCBRenderState(region, segment, this.vertexFormat));
+                    GlBufferRegion segment = arena.upload(GL15.GL_ARRAY_BUFFER, 0, upload.buffer.capacity());
+
+                    render.setGraphicsState(new ShaderLCBGraphicsState(region, segment, meshData, this.vertexFormat));
+                } else {
+                    render.setGraphicsState(null);
+                }
+
+                render.setData(data);
             }
-        }
 
-        if (prevBlock != null) {
-            prevBlock.endUploads();
+            arena.unbind();
+            uploadQueue.clear();
         }
 
         uploadBuffer.invalidate(GL15.GL_ARRAY_BUFFER);
@@ -128,10 +137,10 @@ public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBacken
     }
 
     @Override
-    public void render(Iterator<ShaderLCBRenderState> renders, MatrixStack matrixStack, double x, double y, double z) {
+    public void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<ShaderLCBGraphicsState>> renders, MatrixStack matrixStack, double x, double y, double z) {
         this.bufferManager.cleanup();
 
-        this.setupBatches(renders);
+        this.setupDrawBatches(pass, renders);
         this.begin(matrixStack);
 
         int chunkX = (int) (x / 16.0D);
@@ -140,47 +149,93 @@ public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBacken
 
         this.activeProgram.setupModelViewMatrix(matrixStack, x % 16.0D, y % 16.0D, z % 16.0D);
 
-        GlVertexArray prevArray = null;
+        GlVertexArray prevVao = null;
 
-        for (ChunkRegion region : this.pendingBatches) {
+        while (!this.pendingBatches.isEmpty()) {
+            ChunkRegion<?> region = this.pendingBatches.dequeue();
+
             this.activeProgram.setupChunk(region.getOrigin(), chunkX, chunkY, chunkZ);
 
-            prevArray = region.drawBatch(this.activeProgram.attributes);
+            GlVertexArray vao = region.getVertexArray();
+            vao.bind();
+
+            GlBuffer vbo = region.getBufferArena().getBuffer();
+
+            // Check if the VAO's bindings need to be updated
+            // This happens whenever the backing buffer object for the arena changes
+            if (region.getPrevVbo() != vbo) {
+                vbo.bind(GL15.GL_ARRAY_BUFFER);
+
+                this.vertexFormat.bindVertexAttributes();
+                this.vertexFormat.enableVertexAttributes();
+
+                vbo.unbind(GL15.GL_ARRAY_BUFFER);
+
+                region.setPrevVbo(vbo);
+            }
+
+            MultiDrawBatch batch = region.getDrawBatch();
+            batch.draw(GL11.GL_QUADS);
+
+            prevVao = vao;
         }
 
-        if (prevArray != null) {
-            prevArray.unbind();
+        if (prevVao != null) {
+            prevVao.unbind();
         }
-
-        this.pendingBatches.clear();
 
         this.end(matrixStack);
     }
 
-    private void setupBatches(Iterator<ShaderLCBRenderState> renders) {
+    private void setupUploadBatches(Iterator<ChunkBuildResult<ShaderLCBGraphicsState>> renders) {
         while (renders.hasNext()) {
-            ShaderLCBRenderState state = renders.next();
+            ChunkBuildResult<ShaderLCBGraphicsState> result = renders.next();
 
-            if (state != null) {
-                ChunkRegion region = state.getRegion();
+            ChunkRegion<ShaderLCBGraphicsState> region = this.bufferManager.createRegion(result.render.getChunkPos());
+            ObjectArrayList<ChunkBuildResult<ShaderLCBGraphicsState>> uploadQueue = region.getUploadQueue();
 
-                if (region.isBatchEmpty()) {
-                    this.pendingBatches.add(region);
-                }
-
-                region.addToBatch(state);
+            if (uploadQueue.isEmpty()) {
+                this.pendingUploads.enqueue(region);
             }
+
+            uploadQueue.add(result);
         }
     }
 
-    @Override
-    public Class<ShaderLCBRenderState> getRenderStateType() {
-        return ShaderLCBRenderState.class;
+    private void setupDrawBatches(BlockRenderPass pass, Iterator<ChunkRenderContainer<ShaderLCBGraphicsState>> renders) {
+        while (renders.hasNext()) {
+            ChunkRenderContainer<ShaderLCBGraphicsState> render = renders.next();
+            ShaderLCBGraphicsState state = render.getGraphicsState();
+
+            if (state == null) {
+                continue;
+            }
+
+            long slice = state.getSliceForLayer(pass);
+
+            if (VertexSlice.isEmpty(slice)) {
+                continue;
+            }
+
+            ChunkRegion<ShaderLCBGraphicsState> region = state.getRegion();
+            MultiDrawBatch batch = region.getDrawBatch();
+
+            if (batch.isEmpty()) {
+                this.pendingBatches.enqueue(region);
+            }
+
+            batch.add(VertexSlice.unpackFirst(slice), VertexSlice.unpackCount(slice));
+        }
     }
 
-    @Override
-    protected ShaderLCBRenderState createRenderState(GlBuffer buffer, ChunkRenderContainer<ShaderLCBRenderState> render) {
-        throw new UnsupportedOperationException();
+    private static int getUploadQueuePayloadSize(List<ChunkBuildResult<ShaderLCBGraphicsState>> queue) {
+        int size = 0;
+
+        for (ChunkBuildResult<ShaderLCBGraphicsState> result : queue) {
+            size += result.data.getMeshData().getSize();
+        }
+
+        return size;
     }
 
     @Override

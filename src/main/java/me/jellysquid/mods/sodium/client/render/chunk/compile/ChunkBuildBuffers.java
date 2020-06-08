@@ -1,17 +1,20 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkMesh;
+import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.util.GlAllocationUtils;
 import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * A collection of temporary buffers for each worker thread which will be used to build chunk meshes for given render
@@ -45,8 +48,9 @@ public class ChunkBuildBuffers {
      * Creates immutable baked chunk meshes from all non-empty scratch buffers and resets the state of all mesh
      * builders. This is used after all blocks have been rendered to pass the finished meshes over to the graphics card.
      */
-    public List<ChunkMesh> createMeshes(Vector3d camera, BlockPos pos) {
-        List<ChunkMesh> layers = new ArrayList<>();
+    public ChunkMeshData createMeshes(Vector3d camera, BlockPos pos) {
+        Map<BlockRenderPass, BufferSlice> layers = new Reference2ObjectArrayMap<>();
+        int bufferLen = 0;
 
         for (int i = 0; i < this.builders.length; i++) {
             ChunkMeshBuilder builder = this.builders[i];
@@ -63,10 +67,29 @@ public class ChunkBuildBuffers {
                         (float) camera.z - (float) pos.getZ());
             }
 
-            VertexData upload = new VertexData(builder.end(), this.format);
-            layers.add(new ChunkMesh(pass, upload));
+            int start = bufferLen;
+            int size = builder.getSize();
+
+            layers.put(pass, new BufferSlice(start, size));
+            bufferLen += size;
         }
 
-        return layers;
+        if (bufferLen <= 0) {
+            return ChunkMeshData.EMPTY;
+        }
+
+        ByteBuffer buffer = GlAllocationUtils.allocateByteBuffer(bufferLen);
+
+        for (Map.Entry<BlockRenderPass, BufferSlice> layer : layers.entrySet()) {
+            BufferSlice slice = layer.getValue();
+            buffer.position(slice.start);
+
+            this.builders[layer.getKey().ordinal()]
+                    .copyInto(buffer);
+        }
+
+        buffer.flip();
+
+        return new ChunkMeshData(new VertexData(buffer, this.format), layers);
     }
 }

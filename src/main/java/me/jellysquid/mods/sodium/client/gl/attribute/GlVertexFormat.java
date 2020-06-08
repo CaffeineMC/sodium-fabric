@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.gl.attribute;
 
+import org.lwjgl.opengl.GL20;
+
 import java.util.EnumMap;
 
 /**
@@ -10,12 +12,15 @@ import java.util.EnumMap;
  */
 public class GlVertexFormat<T extends Enum<T>> {
     private final Class<T> attributeEnum;
-    private final EnumMap<T, GlVertexAttribute> attributes;
+    private final EnumMap<T, GlVertexAttribute> attributesKeyed;
+    private final GlVertexAttribute[] attributesArray;
+
     private final int stride;
 
-    public GlVertexFormat(Class<T> attributeEnum, EnumMap<T, GlVertexAttribute> attributes, int stride) {
+    public GlVertexFormat(Class<T> attributeEnum, EnumMap<T, GlVertexAttribute> attributesKeyed, int stride) {
         this.attributeEnum = attributeEnum;
-        this.attributes = attributes;
+        this.attributesKeyed = attributesKeyed;
+        this.attributesArray = attributesKeyed.values().toArray(new GlVertexAttribute[0]);
         this.stride = stride;
     }
 
@@ -24,7 +29,7 @@ public class GlVertexFormat<T extends Enum<T>> {
      * @throws NullPointerException If the attribute does not exist in this format
      */
     public GlVertexAttribute getAttribute(T name) {
-        GlVertexAttribute attr = this.attributes.get(name);
+        GlVertexAttribute attr = this.attributesKeyed.get(name);
 
         if (attr == null) {
             throw new NullPointerException("No attribute exists for " + name.toString());
@@ -43,6 +48,28 @@ public class GlVertexFormat<T extends Enum<T>> {
     @Override
     public String toString() {
         return String.format("GlVertexFormat<%s>{attributes=%d,stride=%d}", this.attributeEnum.getName(),
-                this.attributes.size(), this.stride);
+                this.attributesKeyed.size(), this.stride);
+    }
+
+    public GlVertexAttribute[] getAttributesArray() {
+        return this.attributesArray;
+    }
+
+    public void enableVertexAttributes() {
+        for (GlVertexAttribute binding : this.getAttributesArray()) {
+            GL20.glEnableVertexAttribArray(binding.getIndex());
+        }
+    }
+
+    public void disableVertexAttributes() {
+        for (GlVertexAttribute binding : this.getAttributesArray()) {
+            GL20.glDisableVertexAttribArray(binding.getIndex());
+        }
+    }
+
+    public void bindVertexAttributes() {
+        for (GlVertexAttribute binding : this.getAttributesArray()) {
+            GL20.glVertexAttribPointer(binding.getIndex(), binding.getCount(), binding.getFormat(), binding.isNormalized(), binding.getStride(), binding.getPointer());
+        }
     }
 }
