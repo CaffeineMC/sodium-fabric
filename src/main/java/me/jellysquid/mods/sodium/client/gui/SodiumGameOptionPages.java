@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
+import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
@@ -227,6 +228,19 @@ public class SodiumGameOptionPages {
                         .setEnabled(GlVertexArray.isSupported())
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Compact Vertex Format")
+                        .setTooltip("If enabled, a more compact vertex format will be used for chunk meshes by limiting the precision of vertex attributes. This format " +
+                                "can reduce graphics memory usage and bandwidth requirements by up to 30%, but could cause problems " +
+                                "with exotic block models." +
+                                "\n\nRequires OpenGL 3.0+ or support for ARB_half_float_vertex.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setBinding((opts, value) -> opts.performance.useCompactVertexFormat = value, opts -> opts.performance.useCompactVertexFormat)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .setEnabled(SodiumVertexFormats.CHUNK_MESH_COMPACT.isSupported())
+                        .build()
+                )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Fog Occlusion")
                         .setTooltip("If enabled, chunks which are determined to be fully hidden by fog effects will be skipped during rendering. This " +
