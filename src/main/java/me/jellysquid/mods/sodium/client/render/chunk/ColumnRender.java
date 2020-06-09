@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -98,20 +99,6 @@ public class ColumnRender<T extends ChunkGraphicsState> {
     }
 
     /**
-     * @return The x-position of this chunk in the world
-     */
-    public int getChunkX() {
-        return this.chunkX;
-    }
-
-    /**
-     * @return The z-position of this chunk in the world
-     */
-    public int getChunkZ() {
-        return this.chunkZ;
-    }
-
-    /**
      * @return True if this render has all its neighbor chunks loaded in the world
      */
     public boolean hasNeighborChunkData() {
@@ -166,4 +153,45 @@ public class ColumnRender<T extends ChunkGraphicsState> {
         return ChunkSection.isEmpty(this.world.getChunk(this.chunkX, this.chunkZ).getSectionArray()[sectionY]);
     }
 
+    public double getSquaredDistanceXZ(Vector3d pos) {
+        return this.getSquaredDistanceXZ(pos.x, pos.z);
+    }
+
+    /**
+     * @return The squared distance from the center of this chunk in the world to the given position
+     */
+    public double getSquaredDistanceXZ(double x, double z) {
+        double xDist = x - this.getCenterX();
+        double zDist = z - this.getCenterZ();
+
+        return (xDist * xDist) + (zDist * zDist);
+    }
+
+    /**
+     * @return The x-coordinate of the origin position of this chunk render
+     */
+    public int getOriginX() {
+        return this.chunkX << 4;
+    }
+
+    /**
+     * @return The z-coordinate of the origin position of this chunk render
+     */
+    public int getOriginZ() {
+        return this.chunkZ << 4;
+    }
+
+    /**
+     * @return The x-coordinate of the center position of this chunk render
+     */
+    private double getCenterX() {
+        return this.getOriginX() + 8.0D;
+    }
+
+    /**
+     * @return The z-coordinate of the center position of this chunk render
+     */
+    private double getCenterZ() {
+        return this.getOriginZ() + 8.0D;
+    }
 }
