@@ -273,6 +273,8 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
                     adj.setAdjacentRender(dir.getOpposite(), null);
                 }
             }
+
+            render.delete();
         }
 
         this.dirty = true;
