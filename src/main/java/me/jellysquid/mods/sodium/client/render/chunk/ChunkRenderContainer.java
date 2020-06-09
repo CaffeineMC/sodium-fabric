@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.FrustumExtended;
+import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -17,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
  * data about the render in the chunk visibility graph.
  */
 public class ChunkRenderContainer<T extends ChunkGraphicsState> {
-    private final ColumnRender<T> column;
+    private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
     private T graphicsState;
@@ -28,44 +29,22 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private boolean needsRebuild;
     private boolean needsImportantRebuild;
 
-    private int rebuildFrame = -1;
-
+    private Direction direction;
+    private int visibleFrame = -1;
     private byte cullingState;
-    private byte direction;
-
     private long visibilityData;
 
-    private final float boundsMinX;
-    private final float boundsMinY;
-    private final float boundsMinZ;
+    private final ChunkRenderContainer<T>[] adjacent;
 
-    private final float boundsMaxX;
-    private final float boundsMaxY;
-    private final float boundsMaxZ;
-
-    public ChunkRenderContainer(ColumnRender<T> column, int chunkX, int chunkY, int chunkZ) {
-        this.column = column;
+    public ChunkRenderContainer(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
+        this.worldRenderer = worldRenderer;
 
         this.chunkX = chunkX;
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
 
-        int originX = chunkX << 4;
-        int originY = chunkY << 4;
-        int originZ = chunkZ << 4;
-
-        this.boundsMinX = originX;
-        this.boundsMinY = originY;
-        this.boundsMinZ = originZ;
-        this.boundsMaxX = originX + 16.0f;
-        this.boundsMaxY = originY + 16.0f;
-        this.boundsMaxZ = originZ + 16.0f;
-
-        if (column.isSectionEmpty(chunkY)) {
-            this.setData(ChunkRenderData.EMPTY);
-        } else {
-            this.scheduleRebuild(false);
-        }
+        // noinspection unchecked
+        this.adjacent = new ChunkRenderContainer[DirectionUtil.DIRECTION_COUNT];
     }
 
     /**
@@ -101,17 +80,10 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     }
 
     /**
-     * The y-coordinate of the chunk section belonging to this render.
-     */
-    public int getChunkY() {
-        return this.chunkY;
-    }
-
-    /**
      * @return True if the adjacent chunk can be seen through this one, otherwise false
      */
     public boolean isVisibleThrough(Direction from, Direction to) {
-        return (this.visibilityData & (1L << (from.ordinal() + (to.ordinal() * 6)))) != 0L;
+        return (this.visibilityData & (1L << ((from.ordinal() << 3) + to.ordinal()))) != 0L;
     }
 
     /**
@@ -140,12 +112,12 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         for (Direction from : DirectionUtil.ALL_DIRECTIONS) {
             for (Direction to : DirectionUtil.ALL_DIRECTIONS) {
                 if (this.data.isVisibleThrough(from, to)) {
-                    this.visibilityData |= (1L << (from.ordinal() + (to.ordinal() * 6)));
+                    this.visibilityData |= (1L << ((from.ordinal() << 3) + to.ordinal()));
                 }
             }
         }
 
-        this.column.onChunkRenderUpdated(this.data, info);
+        this.worldRenderer.onChunkRenderUpdated(this.data, info);
     }
 
     /**
@@ -178,7 +150,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
      * @return True if this render can cull an adjacent neighbor, otherwise false
      */
     public boolean canCull(Direction dir) {
-        return (this.cullingState & 1 << dir.ordinal()) > 0;
+        return (this.cullingState & 1 << dir.ordinal()) != 0;
     }
 
     /**
@@ -186,7 +158,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
      * search is intitiated.
      */
     public void resetGraphState() {
-        this.direction = -1;
+        this.direction = null;
         this.cullingState = 0;
     }
 
@@ -194,21 +166,21 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
      * Sets the direction in which this node was traversed through on the chunk graph.
      */
     public void setDirection(Direction dir) {
-        this.direction = (byte) dir.ordinal();
+        this.direction = dir;
     }
 
     /**
      * Sets the frame index which this render was last updated on the chunk graph.
      */
     public void setVisibleFrame(int frame) {
-        this.rebuildFrame = frame;
+        this.visibleFrame = frame;
     }
 
     /**
      * Returns the last frame index which this render was updated on the chunk graph.
      */
     public int getLastVisibleFrame() {
-        return this.rebuildFrame;
+        return this.visibleFrame;
     }
 
     /**
@@ -219,19 +191,16 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     }
 
     /**
-     * Returns the chunk render column which this section render is a part of.
-     */
-    public ColumnRender<T> getColumn() {
-        return this.column;
-    }
-
-    /**
      * Tests if the given chunk render is visible within the provided frustum.
      * @param frustum The frustum to test against
      * @return True if visible, otherwise false
      */
-    public boolean isVisible(FrustumExtended frustum) {
-        return frustum.fastAabbTest(this.boundsMinX, this.boundsMinY, this.boundsMinZ, this.boundsMaxX, this.boundsMaxY, this.boundsMaxZ);
+    public boolean isOutsideFrustum(FrustumExtended frustum) {
+        float x = this.getOriginX();
+        float y = this.getOriginY();
+        float z = this.getOriginZ();
+
+        return !frustum.fastAabbTest(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
     }
 
     /**
@@ -319,11 +288,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
      * Returns the direction in which this node was traversed through in the chunk graph.
      */
     public Direction getDirection() {
-        if (this.direction < 0) {
-            return null;
-        }
-
-        return DirectionUtil.ALL_DIRECTIONS[this.direction];
+        return this.direction;
     }
 
     /**
@@ -346,10 +311,56 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     }
 
     public boolean canRebuild() {
-        return this.column.hasNeighborChunkData();
+        for (Direction dir : DirectionUtil.HORIZONTAL_DIRECTIONS) {
+            ChunkRenderContainer<T> adj = this.adjacent[dir.ordinal()];
+
+            if (adj == null) {
+                return false;
+            }
+
+            Direction corner;
+
+            // Access the adjacent corner chunk from the neighbor in this direction
+            if (dir == Direction.NORTH) {
+                corner = Direction.EAST;
+            } else if (dir == Direction.SOUTH) {
+                corner = Direction.WEST;
+            } else if (dir == Direction.WEST) {
+                corner = Direction.NORTH;
+            } else if (dir == Direction.EAST) {
+                corner = Direction.SOUTH;
+            } else {
+                continue;
+            }
+
+            // If no neighbor has been attached, the chunk is not present
+            if (adj.getAdjacentRender(corner) == null) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    public boolean hasData() {
-        return this.data != ChunkRenderData.EMPTY;
+    /**
+     * @return The squared distance from the center of this chunk in the world to the given position
+     */
+    public double getSquaredDistanceXZ(double x, double z) {
+        double xDist = x - this.getCenterX();
+        double zDist = z - this.getCenterZ();
+
+        return (xDist * xDist) + (zDist * zDist);
+    }
+
+    public void setAdjacentRender(Direction dir, ChunkRenderContainer<T> adj) {
+        this.adjacent[dir.ordinal()] = adj;
+    }
+
+    public ChunkRenderContainer<T> getAdjacentRender(Direction dir) {
+        return this.adjacent[dir.ordinal()];
+    }
+
+    public long getChunkPosLong() {
+        return ChunkSectionPos.asLong(this.chunkX, this.chunkY, this.chunkZ);
     }
 }
