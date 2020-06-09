@@ -114,7 +114,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
      * @return The number of chunk renders which are visible in the current camera's frustum
      */
     public int getVisibleChunkCount() {
-        return this.chunkRenderManager.getRenderList().size();
+        return this.chunkRenderManager.getVisibleChunks().size();
     }
 
     /**
@@ -181,14 +181,12 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         this.client.getProfiler().swap("update");
 
-        BlockPos blockPos = camera.getBlockPos();
-
         this.chunkRenderManager.updateChunks();
 
         if (!hasForcedFrustum && this.chunkRenderManager.isDirty()) {
             this.client.getProfiler().push("iteration");
 
-            this.chunkRenderManager.updateGraph(camera, cameraPos, blockPos, frame, (FrustumExtended) frustum, spectator);
+            this.chunkRenderManager.updateGraph(camera, (FrustumExtended) frustum, frame, spectator);
 
             this.client.getProfiler().pop();
         }

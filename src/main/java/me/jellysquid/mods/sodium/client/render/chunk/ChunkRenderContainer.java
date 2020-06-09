@@ -5,7 +5,6 @@ import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
@@ -30,10 +29,11 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private boolean needsImportantRebuild;
 
     private int rebuildFrame = -1;
-    private int lastVisibleFrame = -1;
 
     private byte cullingState;
     private byte direction;
+
+    private long visibilityData;
 
     private final float boundsMinX;
     private final float boundsMinY;
@@ -111,7 +111,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
      * @return True if the adjacent chunk can be seen through this one, otherwise false
      */
     public boolean isVisibleThrough(Direction from, Direction to) {
-        return this.data.isVisibleThrough(from, to);
+        return (this.visibilityData & (1L << (from.ordinal() + (to.ordinal() * 6)))) != 0L;
     }
 
     /**
@@ -134,8 +134,18 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
             throw new NullPointerException("Mesh information must not be null");
         }
 
-        this.column.onChunkRenderUpdated(this.data, info);
         this.data = info;
+        this.visibilityData = 0;
+
+        for (Direction from : DirectionUtil.ALL_DIRECTIONS) {
+            for (Direction to : DirectionUtil.ALL_DIRECTIONS) {
+                if (this.data.isVisibleThrough(from, to)) {
+                    this.visibilityData |= (1L << (from.ordinal() + (to.ordinal() * 6)));
+                }
+            }
+        }
+
+        this.column.onChunkRenderUpdated(this.data, info);
     }
 
     /**
@@ -159,7 +169,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
      * @param parent The culling state of the previous node
      * @param dir The direction in which this node was traversed into from the parent
      */
-    public void updateCullingState(byte parent, Direction dir) {
+    public void setCullingState(byte parent, Direction dir) {
         this.cullingState = (byte) (parent | (1 << dir.ordinal()));
     }
 
@@ -181,20 +191,6 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     }
 
     /**
-     * Sets the frame index which this render was last updated on the chunk graph.
-     */
-    public void setLastGraphUpdateFrame(int frame) {
-        this.rebuildFrame = frame;
-    }
-
-    /**
-     * Sets the frame index which this render was last visible on after culling.
-     */
-    public void setLastVisibleFrame(int frame) {
-        this.lastVisibleFrame = frame;
-    }
-
-    /**
      * Sets the direction in which this node was traversed through on the chunk graph.
      */
     public void setDirection(Direction dir) {
@@ -202,9 +198,16 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     }
 
     /**
+     * Sets the frame index which this render was last updated on the chunk graph.
+     */
+    public void setVisibleFrame(int frame) {
+        this.rebuildFrame = frame;
+    }
+
+    /**
      * Returns the last frame index which this render was updated on the chunk graph.
      */
-    public int getLastGraphUpdateFrame() {
+    public int getLastVisibleFrame() {
         return this.rebuildFrame;
     }
 
@@ -276,10 +279,6 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         return this.getSquaredDistance(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
     }
 
-    public double getSquaredDistanceXZ(Vector3d pos) {
-        return this.getSquaredDistanceXZ(pos.x, pos.z);
-    }
-
     /**
      * @return The squared distance from the center of this chunk in the world to the given position
      */
@@ -289,16 +288,6 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         double zDist = z - this.getCenterZ();
 
         return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
-    }
-
-    /**
-     * @return The squared distance from the center of this chunk in the world to the given position
-     */
-    public double getSquaredDistanceXZ(double x, double z) {
-        double xDist = x - this.getCenterX();
-        double zDist = z - this.getCenterZ();
-
-        return (xDist * xDist) + (zDist * zDist);
     }
 
     /**
@@ -338,17 +327,6 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     }
 
     /**
-     * @return The frame index which this render was last visible
-     */
-    public int getLastVisibleFrame() {
-        return this.lastVisibleFrame;
-    }
-
-    public boolean hasData() {
-        return this.data != ChunkRenderData.EMPTY;
-    }
-
-    /**
      * @return True if the render can be ticked, otherwise false
      */
     public boolean canTick() {
@@ -365,5 +343,13 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
     public void setGraphicsState(T state) {
         this.graphicsState = state;
+    }
+
+    public boolean canRebuild() {
+        return this.column.hasNeighborChunkData();
+    }
+
+    public boolean hasData() {
+        return this.data != ChunkRenderData.EMPTY;
     }
 }
