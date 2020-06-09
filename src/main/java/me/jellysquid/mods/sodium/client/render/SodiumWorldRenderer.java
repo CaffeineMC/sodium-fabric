@@ -165,8 +165,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
 
-        boolean dirty = this.chunkRenderManager.isDirty() ||
-                cameraPos.x != this.lastCameraX || cameraPos.y != this.lastCameraY || cameraPos.z != this.lastCameraZ ||
+        boolean dirty = cameraPos.x != this.lastCameraX || cameraPos.y != this.lastCameraY || cameraPos.z != this.lastCameraZ ||
                 pitch != this.lastCameraPitch || yaw != this.lastCameraYaw;
 
         if (dirty) {
@@ -363,7 +362,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     public String getChunksDebugString() {
         // C: visible/total
         // TODO: add dirty and queued counts
-        return String.format("C: %s/%s", this.chunkRenderManager.getVisibleSectionCount(), this.chunkRenderManager.getTotalSections());
+        return String.format("C: %s/%s", this.chunkRenderManager.getVisibleChunks().size(), this.chunkRenderManager.getTotalSections());
     }
 
     /**
