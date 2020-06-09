@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ShaderLCBChunkRenderBackend;
@@ -238,12 +239,20 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
 
-        if (GlVertexArray.isSupported() && opts.performance.useLargeBuffers) {
-            this.chunkRenderBackend = new ShaderLCBChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
-        } else if (GlVertexArray.isSupported() && opts.performance.useVertexArrays) {
-            this.chunkRenderBackend = new ShaderVAOChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
+        final GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format;
+
+        if (opts.performance.useCompactVertexFormat) {
+            format = SodiumVertexFormats.CHUNK_MESH_COMPACT;
         } else {
-            this.chunkRenderBackend = new ShaderVBOChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
+            format = SodiumVertexFormats.CHUNK_MESH_VANILLA;
+        }
+
+        if (GlVertexArray.isSupported() && opts.performance.useLargeBuffers) {
+            this.chunkRenderBackend = new ShaderLCBChunkRenderBackend(format);
+        } else if (GlVertexArray.isSupported() && opts.performance.useVertexArrays) {
+            this.chunkRenderBackend = new ShaderVAOChunkRenderBackend(format);
+        } else {
+            this.chunkRenderBackend = new ShaderVBOChunkRenderBackend(format);
         }
 
         this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.renderPassManager, this.world, this.renderDistance);

@@ -73,10 +73,11 @@ public class FluidRenderPipeline {
     }
 
     private boolean isSideExposed(WorldSlice world, int x, int y, int z, Direction dir, float height) {
-        BlockState blockState = world.getBlockState(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
+        BlockPos pos = this.mpos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
+        BlockState blockState = world.getBlockState(pos);
 
         if (blockState.isOpaque()) {
-            VoxelShape shape = blockState.getCullingShape(world, this.mpos.set(x, y, z));
+            VoxelShape shape = blockState.getCullingShape(world, pos);
 
             // Hoist these checks to avoid allocating the shape below
             if (shape == VoxelShapes.fullCube()) {
