@@ -10,8 +10,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public class ChunkRegion<T extends ChunkGraphicsState> {
-    private static final int ARENA_INITIAL_SIZE = 1536 * 1024;
-    private static final int ARENA_RESIZE_INCREMENT = 768 * 1024;
+    private static final int ARENA_INITIAL_SIZE = 2048 * 1024;
+    private static final int ARENA_RESIZE_INCREMENT = 1024 * 1024;
 
     private final ChunkSectionPos origin;
 
