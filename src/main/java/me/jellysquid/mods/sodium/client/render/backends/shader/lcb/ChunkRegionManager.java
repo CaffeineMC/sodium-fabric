@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.render.backends.shader.lcb;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.BlockPos;
@@ -10,10 +9,11 @@ import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
 public class ChunkRegionManager<T extends ChunkGraphicsState> {
-    // Buffers span 4x2x4 chunks
-    private static final int BUFFER_WIDTH = 4;
+    // Regions contain 8x4x8 chunks
+    private static final int BUFFER_WIDTH = 8;
     private static final int BUFFER_HEIGHT = 4;
-    private static final int BUFFER_LENGTH = 4;
+    private static final int BUFFER_LENGTH = 8;
+
     private static final int BUFFER_SIZE = BUFFER_WIDTH * BUFFER_HEIGHT * BUFFER_LENGTH;
 
     private static final int BUFFER_WIDTH_SH = Integer.bitCount(BUFFER_WIDTH - 1);
@@ -31,11 +31,6 @@ public class ChunkRegionManager<T extends ChunkGraphicsState> {
     }
 
     private final Long2ReferenceOpenHashMap<ChunkRegion<T>> regions = new Long2ReferenceOpenHashMap<>();
-    private final GlVertexFormat<?> vertexFormat;
-
-    public ChunkRegionManager(GlVertexFormat<?> vertexFormat) {
-        this.vertexFormat = vertexFormat;
-    }
 
     public ChunkRegion<T> createRegion(ChunkSectionPos pos) {
         ChunkRegion<T> region = this.regions.get(getIndex(pos));

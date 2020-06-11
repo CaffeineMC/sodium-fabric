@@ -80,7 +80,7 @@ public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBacken
     public ShaderLCBChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
 
-        this.bufferManager = new ChunkRegionManager<>(this.vertexFormat);
+        this.bufferManager = new ChunkRegionManager<>();
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STATIC_COPY);
     }
 

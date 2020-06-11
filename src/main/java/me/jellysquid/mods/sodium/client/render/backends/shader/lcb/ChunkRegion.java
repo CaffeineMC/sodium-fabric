@@ -10,6 +10,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public class ChunkRegion<T extends ChunkGraphicsState> {
+    private static final int ARENA_INITIAL_SIZE = 1536 * 1024;
+    private static final int ARENA_RESIZE_INCREMENT = 768 * 1024;
+
     private final ChunkSectionPos origin;
 
     private final GlBufferArena arena;
@@ -22,7 +25,7 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
 
     public ChunkRegion(ChunkSectionPos origin, int size) {
         this.origin = origin;
-        this.arena = new GlBufferArena(768 * 1024, 512 * 1024);
+        this.arena = new GlBufferArena(ARENA_INITIAL_SIZE, ARENA_RESIZE_INCREMENT);
         this.batch = new MultiDrawBatch(size);
         this.uploads = new ObjectArrayList<>();
         this.vao = new GlVertexArray();
