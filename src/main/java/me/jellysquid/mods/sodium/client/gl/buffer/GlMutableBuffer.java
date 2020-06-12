@@ -2,6 +2,8 @@ package me.jellysquid.mods.sodium.client.gl.buffer;
 
 import org.lwjgl.opengl.GL15;
 
+import java.nio.ByteBuffer;
+
 /**
  * A mutable buffer type which is supported with OpenGL 1.5+. The buffer's storage can be reallocated at any time
  * without needing to re-create the buffer itself.
@@ -14,10 +16,8 @@ public class GlMutableBuffer extends GlBuffer {
     }
 
     @Override
-    public void upload(int target, VertexData data) {
-        this.vertexCount = data.buffer.remaining() / data.format.getStride();
-
-        GL15.glBufferData(target, data.buffer, this.hints);
+    public void upload(int target, ByteBuffer buf) {
+        GL15.glBufferData(target, buf, this.hints);
     }
 
     @Override

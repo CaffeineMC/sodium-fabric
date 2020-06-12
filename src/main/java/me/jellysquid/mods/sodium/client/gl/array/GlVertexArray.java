@@ -8,7 +8,7 @@ import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
  */
 public class GlVertexArray extends GlObject {
     public GlVertexArray() {
-        if (!isSupported()) {
+        if (!GlFunctions.isVertexArraySupported()) {
             throw new UnsupportedOperationException("Vertex arrays are unsupported on this platform");
         }
 
@@ -29,7 +29,4 @@ public class GlVertexArray extends GlObject {
         this.invalidateHandle();
     }
 
-    public static boolean isSupported() {
-        return GlFunctions.isVertexArraySupported();
-    }
 }

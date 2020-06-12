@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.textures;
 
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteExtended;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.item.ItemRenderer;

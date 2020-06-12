@@ -7,17 +7,16 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
-import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
-import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ShaderLCBChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.backends.shader.vao.ShaderVAOChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.backends.shader.vbo.ShaderVBOChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
-import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.gl46.GL46ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListenerManager;
 import net.minecraft.block.entity.BlockEntity;
@@ -239,24 +238,39 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
 
-        final GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format;
+        final GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> vertexFormat;
 
         if (opts.performance.useCompactVertexFormat) {
-            format = SodiumVertexFormats.CHUNK_MESH_COMPACT;
+            vertexFormat = SodiumVertexFormats.CHUNK_MESH_COMPACT;
         } else {
-            format = SodiumVertexFormats.CHUNK_MESH_VANILLA;
+            vertexFormat = SodiumVertexFormats.CHUNK_MESH_FULL;
         }
 
-        if (GlVertexArray.isSupported() && opts.performance.useLargeBuffers) {
-            this.chunkRenderBackend = new ShaderLCBChunkRenderBackend(format);
-        } else if (GlVertexArray.isSupported() && opts.performance.useVertexArrays) {
-            this.chunkRenderBackend = new ShaderVAOChunkRenderBackend(format);
-        } else {
-            this.chunkRenderBackend = new ShaderVBOChunkRenderBackend(format);
-        }
+        this.chunkRenderBackend = createChunkRenderBackend(opts.performance.chunkRendererBackend, vertexFormat);
+        this.chunkRenderBackend.createShaders();
 
         this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.renderPassManager, this.world, this.renderDistance);
         this.chunkRenderManager.restoreChunks(this.loadedChunkPositions);
+    }
+
+    private static ChunkRenderBackend<?> createChunkRenderBackend(SodiumGameOptions.ChunkRendererBackendOption opt,
+                                                           GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> vertexFormat) {
+        switch (opt) {
+            case GL46:
+                if (GL46ChunkRenderBackend.isSupported()) {
+                    return new GL46ChunkRenderBackend(vertexFormat);
+                }
+            case GL30:
+                if (GL30ChunkRenderBackend.isSupported()) {
+                    return new GL30ChunkRenderBackend(vertexFormat);
+                }
+            case GL20:
+                if (GL20ChunkRenderBackend.isSupported()) {
+                    return new GL20ChunkRenderBackend(vertexFormat);
+                }
+            default:
+                throw new IllegalArgumentException("No suitable chunk render backends exist");
+        }
     }
 
     public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,

@@ -1,11 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.light.LightPipeline;
-import me.jellysquid.mods.sodium.client.render.light.cache.ArrayLightDataCache;
-import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
-import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadSink;
+import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
+import me.jellysquid.mods.sodium.client.model.light.cache.ArrayLightDataCache;
+import me.jellysquid.mods.sodium.client.model.light.flat.FlatLightPipeline;
+import me.jellysquid.mods.sodium.client.model.light.smooth.SmoothLightPipeline;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadSink;
+import me.jellysquid.mods.sodium.client.render.block.BlockRenderPipeline;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.fluid.FluidRenderPipeline;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.BlockState;

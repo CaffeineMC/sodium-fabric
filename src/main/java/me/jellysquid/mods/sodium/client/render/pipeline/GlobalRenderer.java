@@ -1,8 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.light.cache.HashLightDataCache;
-import me.jellysquid.mods.sodium.client.render.light.flat.FlatLightPipeline;
-import me.jellysquid.mods.sodium.client.render.light.smooth.SmoothLightPipeline;
+import me.jellysquid.mods.sodium.client.model.light.cache.HashLightDataCache;
+import me.jellysquid.mods.sodium.client.model.light.flat.FlatLightPipeline;
+import me.jellysquid.mods.sodium.client.model.light.smooth.SmoothLightPipeline;
+import me.jellysquid.mods.sodium.client.render.block.BlockRenderPipeline;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.world.BlockRenderView;
 

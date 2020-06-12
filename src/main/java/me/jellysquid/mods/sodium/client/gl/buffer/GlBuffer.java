@@ -31,9 +31,15 @@ public abstract class GlBuffer extends GlObject {
         GL11.glDrawArrays(mode, first, count);
     }
 
+    public abstract void upload(int target, ByteBuffer buf);
+
     public abstract void allocate(int target, long size);
 
-    public abstract void upload(int target, VertexData data);
+    public void upload(int target, VertexData data) {
+        this.vertexCount = data.buffer.remaining() / data.format.getStride();
+
+        this.upload(target, data.buffer);
+    }
 
     public void delete() {
         GL15.glDeleteBuffers(this.handle());

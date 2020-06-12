@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.texture.Sprite;
@@ -238,6 +238,18 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
      */
     public int getOriginZ() {
         return this.chunkZ << 4;
+    }
+
+    public int getChunkX() {
+        return this.chunkX;
+    }
+
+    public int getChunkY() {
+        return this.chunkY;
+    }
+
+    public int getChunkZ() {
+        return this.chunkZ;
     }
 
     /**

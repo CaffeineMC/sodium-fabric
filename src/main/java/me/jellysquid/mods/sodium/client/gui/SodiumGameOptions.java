@@ -4,12 +4,18 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.gl46.GL46ChunkRenderBackend;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.function.BooleanSupplier;
+import java.util.stream.Stream;
 
 public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
@@ -18,8 +24,7 @@ public class SodiumGameOptions {
     private File file;
 
     public static class PerformanceSettings {
-        public boolean useVertexArrays = true;
-        public boolean useLargeBuffers = false;
+        public ChunkRendererBackendOption chunkRendererBackend = ChunkRendererBackendOption.DEFAULT;
         public boolean animateOnlyVisibleTextures = true;
         public boolean useAdvancedEntityCulling = true;
         public boolean useParticleCulling = true;
@@ -39,6 +44,47 @@ public class SodiumGameOptions {
 
         public LightingQuality smoothLighting = LightingQuality.HIGH;
         public int biomeBlendDistance = 3;
+    }
+
+    public enum ChunkRendererBackendOption implements TextProvider {
+        GL20("OpenGL 2.0", GL46ChunkRenderBackend::isSupported),
+        GL30("OpenGL 3.0", GL30ChunkRenderBackend::isSupported),
+        GL46("OpenGL 4.6", GL20ChunkRenderBackend::isSupported);
+
+        public static final ChunkRendererBackendOption DEFAULT = pickBestBackend();
+
+        private final String name;
+        private final BooleanSupplier supportedFunc;
+
+        ChunkRendererBackendOption(String name, BooleanSupplier supportedFunc) {
+            this.name = name;
+            this.supportedFunc = supportedFunc;
+        }
+
+        @Override
+        public String getLocalizedName() {
+            return this.name;
+        }
+
+        public boolean isSupported() {
+            return this.supportedFunc.getAsBoolean();
+        }
+
+        public static ChunkRendererBackendOption[] getAvailableOptions() {
+            return streamAvailableOptions()
+                    .toArray(ChunkRendererBackendOption[]::new);
+        }
+
+        public static Stream<ChunkRendererBackendOption> streamAvailableOptions() {
+            return Arrays.stream(ChunkRendererBackendOption.values())
+                    .filter(ChunkRendererBackendOption::isSupported);
+        }
+
+        private static ChunkRendererBackendOption pickBestBackend() {
+            return streamAvailableOptions()
+                    .findFirst()
+                    .orElseThrow(IllegalStateException::new);
+        }
     }
 
     public enum DefaultGraphicsQuality implements TextProvider {
