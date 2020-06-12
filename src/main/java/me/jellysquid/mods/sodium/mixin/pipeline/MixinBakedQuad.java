@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFlags;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;

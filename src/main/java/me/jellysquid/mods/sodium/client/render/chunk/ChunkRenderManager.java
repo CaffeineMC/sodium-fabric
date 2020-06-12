@@ -8,11 +8,11 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.util.GlFogHelper;
 import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.render.backends.ChunkGraphicsState;
-import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
-import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.util.RenderList;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -305,7 +305,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
             return;
         }
 
-        this.backend.render(pass, this.visibleChunks.iterator(pass.isTranslucent()), matrixStack, x, y, z);
+        this.backend.render(pass, this.visibleChunks.iterator(pass.isTranslucent()), matrixStack, new ChunkCameraContext(x, y, z));
     }
 
     private void tickRenders() {

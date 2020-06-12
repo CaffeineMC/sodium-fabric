@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.buffers;
 
-import me.jellysquid.mods.sodium.client.render.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.render.pipeline.DirectVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.DirectVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;

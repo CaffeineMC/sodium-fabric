@@ -1,9 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.entity_rendering;
 
 import it.unimi.dsi.fastutil.objects.ObjectList;
-import me.jellysquid.mods.sodium.client.render.model.ModelPartCuboidExtended;
-import me.jellysquid.mods.sodium.client.render.model.ModelPartQuadExtended;
-import me.jellysquid.mods.sodium.client.render.pipeline.DirectVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.DirectVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.ModelPartCuboidExtended;
+import me.jellysquid.mods.sodium.client.model.ModelPartQuadExtended;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.client.model.ModelPart;

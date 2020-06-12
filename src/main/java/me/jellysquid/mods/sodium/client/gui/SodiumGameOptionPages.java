@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
-import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
@@ -11,7 +10,6 @@ import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.TickBoxControl;
 import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
-import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ShaderLCBChunkRenderBackend;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.AttackIndicator;
 import net.minecraft.client.options.ParticlesOption;
@@ -206,33 +204,22 @@ public class SodiumGameOptionPages {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Large Chunk Buffers")
-                        .setTooltip("If enabled, chunks will be batched into larger vertex buffers to avoid expensive state changes. This will greatly " +
-                                "reduce the amount of work the CPU needs to perform, but will not necessarily improve the average frame rate if the GPU " +
-                                "cannot keep up." +
-                                "\n\nRequires OpenGL 3.1+ or support for the ARB_vertex_array_object and ARB_copy_buffer extensions.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.performance.useLargeBuffers = value, opts -> opts.performance.useLargeBuffers)
-                        .setImpact(OptionImpact.EXTREME)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .setEnabled(ShaderLCBChunkRenderBackend.isSupported())
-                        .build())
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Vertex Array Objects")
-                        .setTooltip("If enabled, Vertex Array Objects will be used in chunk rendering to avoid needing to setup array pointers every chunk render. " +
-                                "\n\nRequires OpenGL 3.0+ or support for the ARB_vertex_array_object extension.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.performance.useVertexArrays = value, opts -> opts.performance.useVertexArrays)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setEnabled(GlVertexArray.isSupported())
+                .add(OptionImpl.createBuilder(SodiumGameOptions.ChunkRendererBackendOption.class, sodiumOpts)
+                        .setName("Chunk Renderer")
+                        .setTooltip("Modern versions of OpenGL provide features which can be used to greatly reduce driver overhead when rendering chunks. " +
+                                "You should use the latest supported feature set for optimal performance. If you're experiencing chunk rendering issues or driver crashes, try " +
+                                "using the older (and possibly more stable) feature sets.")
+                        .setControl((opt) -> new CyclingControl<>(opt, SodiumGameOptions.ChunkRendererBackendOption.getAvailableOptions()))
+                        .setBinding((opts, value) -> opts.performance.chunkRendererBackend = value, opts -> opts.performance.chunkRendererBackend)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
+                .build());
+
+        groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Compact Vertex Format")
                         .setTooltip("If enabled, a more compact vertex format will be used for chunk meshes by limiting the precision of vertex attributes. This format " +
-                                "can reduce graphics memory usage and bandwidth requirements by up to 30%, but could cause problems " +
-                                "with exotic block models." +
+                                "can reduce graphics memory usage and bandwidth requirements by up to 30%, but could cause problems with exotic block models." +
                                 "\n\nRequires OpenGL 3.0+ or support for ARB_half_float_vertex.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)

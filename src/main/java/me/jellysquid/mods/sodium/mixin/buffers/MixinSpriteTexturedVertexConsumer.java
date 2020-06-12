@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.buffers;
 
-import me.jellysquid.mods.sodium.client.render.pipeline.DirectVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.DirectVertexConsumer;
 import net.minecraft.client.render.SpriteTexturedVertexConsumer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.texture.Sprite;

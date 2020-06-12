@@ -13,13 +13,12 @@ public class SodiumClientMod implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        LOGGER = LogManager.getLogger("Sodium");
-        CONFIG = SodiumGameOptions.load(new File("config/sodium-options.json"));
+
     }
 
     public static SodiumGameOptions options() {
         if (CONFIG == null) {
-            throw new NullPointerException("Config is not available");
+            CONFIG = SodiumGameOptions.load(new File("config/sodium-options.json"));
         }
 
         return CONFIG;
@@ -27,7 +26,7 @@ public class SodiumClientMod implements ClientModInitializer {
 
     public static Logger logger() {
         if (LOGGER == null) {
-            throw new NullPointerException("Logger is not available");
+            LOGGER = LogManager.getLogger("Sodium");
         }
 
         return LOGGER;

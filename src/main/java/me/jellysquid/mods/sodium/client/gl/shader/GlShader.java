@@ -9,7 +9,6 @@ import org.lwjgl.opengl.GL20;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.List;
 
 /**
  * A compiled OpenGL shader object.
@@ -18,13 +17,13 @@ public class GlShader extends GlObject {
     private static final Logger LOGGER = LogManager.getLogger(GlShader.class);
 
     private final Identifier name;
-    private final List<String> defines;
+    private final ShaderConstants constants;
 
-    public GlShader(ShaderType type, Identifier name, String src, List<String> defines) {
+    public GlShader(ShaderType type, Identifier name, String src, ShaderConstants constants) {
         this.name = name;
-        this.defines = defines;
+        this.constants = constants;
 
-        src = processShader(src, defines);
+        src = processShader(src, constants);
 
         int handle = GL20.glCreateShader(type.id);
         GL20.glShaderSource(handle, src);
@@ -49,7 +48,7 @@ public class GlShader extends GlObject {
      * Adds an additional list of defines to the top of a GLSL shader file just after the version declaration. This
      * allows for ghetto shader specialization.
      */
-    private static String processShader(String src, List<String> defines) {
+    private static String processShader(String src, ShaderConstants constants) {
         StringBuilder builder = new StringBuilder(src.length());
         boolean patched = false;
 
@@ -63,7 +62,9 @@ public class GlShader extends GlObject {
                 // Now, see if the line we just wrote declares the version
                 // If we haven't already added our define declarations, add them just after the version declaration
                 if (!patched && line.startsWith("#version")) {
-                    writeDefines(builder, defines);
+                    for (String macro : constants.getDefineStrings()) {
+                        builder.append(macro).append('\n');
+                    }
 
                     // We did our work, don't add them again
                     patched = true;
@@ -74,12 +75,6 @@ public class GlShader extends GlObject {
         }
 
         return builder.toString();
-    }
-
-    private static void writeDefines(StringBuilder builder, List<String> defines) {
-        for (String define : defines) {
-            builder.append("#define ").append(define).append("\n");
-        }
     }
 
     public Identifier getName() {

@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL43;
 
 /**
  * An OpenGL shader program.
@@ -53,30 +54,20 @@ public abstract class GlProgram extends GlObject {
         return index;
     }
 
-    /**
-     * Retrieves the index of the vertex attribute (shader input) with the given name.
-     * @param name The name of the vertex attribute to find the index of
-     * @return The vertex attribute's index
-     * @throws NullPointerException If no vertex attribute exists with the given name
-     */
-    public int getAttributeLocation(String name) {
-        int index = GL20.glGetAttribLocation(this.handle(), name);
-
-        if (index < 0) {
-            throw new NullPointerException("No attribute exists with name: " + name);
-        }
-
-        return index;
-    }
-
     public void delete() {
         GL20.glDeleteProgram(this.handle());
 
         this.invalidateHandle();
     }
 
-    public void bindShaderInput(String name, GlVertexAttribute attribute) {
-        GL20.glBindAttribLocation(this.handle(), attribute.getIndex(), name);
+    protected int getBufferLocation(String name) {
+        int index = GL43.glGetUniformBlockIndex(this.handle(), name);
+
+        if (index < 0) {
+            throw new NullPointerException("No uniform block exists with name: " + name);
+        }
+
+        return index;
     }
 
     public static class Builder {

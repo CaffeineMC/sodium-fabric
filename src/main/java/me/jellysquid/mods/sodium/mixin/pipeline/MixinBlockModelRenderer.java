@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.pipeline;
 
-import me.jellysquid.mods.sodium.client.render.model.quad.consumer.FallbackQuadSink;
-import me.jellysquid.mods.sodium.client.render.pipeline.BlockRenderPipeline;
+import me.jellysquid.mods.sodium.client.model.quad.consumer.FallbackQuadSink;
+import me.jellysquid.mods.sodium.client.render.block.BlockRenderPipeline;
 import me.jellysquid.mods.sodium.client.render.pipeline.GlobalRenderer;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
