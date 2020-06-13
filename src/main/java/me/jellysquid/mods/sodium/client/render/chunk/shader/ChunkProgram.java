@@ -16,10 +16,11 @@ import java.util.function.Function;
  */
 public abstract class ChunkProgram extends GlProgram {
     // The model size of a chunk (16^3)
-    protected static final float MODEL_SIZE = 16.0f;
+    protected static final float MODEL_SIZE = 32.0f;
 
     // Uniform variable binding indexes
     private final int uModelViewProjectionMatrix;
+    private final int uModelScale;
     private final int uBlockTex;
     private final int uLightTex;
 
@@ -33,6 +34,7 @@ public abstract class ChunkProgram extends GlProgram {
 
         this.uBlockTex = this.getUniformLocation("u_BlockTex");
         this.uLightTex = this.getUniformLocation("u_LightTex");
+        this.uModelScale = this.getUniformLocation("u_ModelScale");
 
         this.fogShader = fogShaderFunction.apply(this);
     }
@@ -40,6 +42,7 @@ public abstract class ChunkProgram extends GlProgram {
     public void setup(MatrixStack matrixStack) {
         GL20.glUniform1i(this.uBlockTex, 0);
         GL20.glUniform1i(this.uLightTex, 2);
+        GL20.glUniform3f(this.uModelScale, MODEL_SIZE, MODEL_SIZE, MODEL_SIZE);
 
         this.fogShader.setup();
 

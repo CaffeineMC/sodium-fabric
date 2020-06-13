@@ -55,16 +55,6 @@ public class GlVertexFormat<T extends Enum<T>> {
         return this.attributesArray;
     }
 
-    public boolean isSupported() {
-        for (GlVertexAttribute attrib : this.getAttributesArray()) {
-            if (!attrib.isFormatSupported()) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     public void enableVertexAttributes() {
         for (GlVertexAttribute binding : this.getAttributesArray()) {
             GL20.glEnableVertexAttribArray(binding.getIndex());
@@ -79,10 +69,6 @@ public class GlVertexFormat<T extends Enum<T>> {
 
     public void bindVertexAttributes() {
         for (GlVertexAttribute attrib : this.getAttributesArray()) {
-            if (!attrib.isFormatSupported()) {
-                throw new UnsupportedOperationException("Format not supported for attribute: " + attrib);
-            }
-
             GL20.glVertexAttribPointer(attrib.getIndex(), attrib.getCount(), attrib.getFormat(), attrib.isNormalized(), attrib.getStride(), attrib.getPointer());
         }
     }

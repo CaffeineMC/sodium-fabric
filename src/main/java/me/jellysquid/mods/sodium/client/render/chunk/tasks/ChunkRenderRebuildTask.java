@@ -119,7 +119,7 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
             }
         }
 
-        meshInfo.setMeshData(buffers.createMeshes(this.camera, this.render.getOrigin()));
+        meshInfo.setMeshData(buffers.createMeshes(this.camera, this.render.getRenderOrigin()));
         meshInfo.setOcclusionData(occluder.build());
 
         return new ChunkBuildResult<>(this.render, meshInfo.build());

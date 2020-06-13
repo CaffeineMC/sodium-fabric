@@ -13,13 +13,13 @@ public class LCBGraphicsState implements ChunkGraphicsState {
     private final ChunkRegion<LCBGraphicsState> region;
 
     private final GlBufferRegion segment;
-    private final long[] layers;
+    private final long[] slices;
 
     public LCBGraphicsState(ChunkRegion<LCBGraphicsState> region, GlBufferRegion segment, ChunkMeshData meshData, GlVertexFormat<?> vertexFormat) {
         this.region = region;
         this.segment = segment;
 
-        this.layers = new long[BlockRenderPass.count()];
+        this.slices = new long[BlockRenderPass.count()];
 
         for (BlockRenderPass pass : BlockRenderPass.VALUES) {
             BufferSlice slice = meshData.getSlice(pass);
@@ -28,7 +28,7 @@ public class LCBGraphicsState implements ChunkGraphicsState {
                 int start = (segment.getStart() + slice.start) / vertexFormat.getStride();
                 int count = slice.len / vertexFormat.getStride();
 
-                this.layers[pass.ordinal()] = VertexSlice.pack(start, count);
+                this.slices[pass.ordinal()] = VertexSlice.pack(start, count);
             }
         }
     }
@@ -43,6 +43,6 @@ public class LCBGraphicsState implements ChunkGraphicsState {
     }
 
     public long getSliceForLayer(BlockRenderPass pass) {
-        return this.layers[pass.ordinal()];
+        return this.slices[pass.ordinal()];
     }
 }

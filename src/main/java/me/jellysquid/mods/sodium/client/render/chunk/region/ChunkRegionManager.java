@@ -9,19 +9,15 @@ import org.apache.commons.lang3.Validate;
 
 public class ChunkRegionManager<T extends ChunkGraphicsState> {
     // Regions contain 8x4x8 chunks
-    public static final int BUFFER_WIDTH = 8;
-    public static final int BUFFER_HEIGHT = 4;
-    public static final int BUFFER_LENGTH = 8;
+    public static final int BUFFER_WIDTH = 4;
+    public static final int BUFFER_HEIGHT = 2;
+    public static final int BUFFER_LENGTH = 4;
 
     public static final int BUFFER_SIZE = BUFFER_WIDTH * BUFFER_HEIGHT * BUFFER_LENGTH;
 
     private static final int BUFFER_WIDTH_SH = Integer.bitCount(BUFFER_WIDTH - 1);
     private static final int BUFFER_HEIGHT_SH = Integer.bitCount(BUFFER_HEIGHT - 1);
     private static final int BUFFER_LENGTH_SH = Integer.bitCount(BUFFER_LENGTH - 1);
-
-    private static final int BUFFER_WIDTH_M = -BUFFER_WIDTH;
-    private static final int BUFFER_HEIGHT_M = -BUFFER_HEIGHT;
-    private static final int BUFFER_LENGTH_M = -BUFFER_LENGTH;
 
     static {
         Validate.isTrue(MathUtil.isPowerOfTwo(BUFFER_WIDTH));
@@ -31,21 +27,20 @@ public class ChunkRegionManager<T extends ChunkGraphicsState> {
 
     private final Long2ReferenceOpenHashMap<ChunkRegion<T>> regions = new Long2ReferenceOpenHashMap<>();
 
-    public ChunkRegion<T> createRegion(ChunkSectionPos pos) {
-        ChunkRegion<T> region = this.regions.get(getIndex(pos));
+    public ChunkRegion<T> getOrCreateRegion(int x, int y, int z) {
+        long key = getRegionKey(x, y, z);
+
+        ChunkRegion<T> region = this.regions.get(key);
 
         if (region == null) {
-            ChunkSectionPos origin = ChunkSectionPos.from(pos.getX() & BUFFER_WIDTH_M, pos.getY() & BUFFER_HEIGHT_M, pos.getZ() & BUFFER_LENGTH_M);
-            region = new ChunkRegion<>(origin, BUFFER_SIZE);
-
-            this.regions.put(getIndex(pos), region);
+            this.regions.put(key, region = new ChunkRegion<>(BUFFER_SIZE));
         }
 
         return region;
     }
 
-    public static long getIndex(ChunkSectionPos pos) {
-        return ChunkSectionPos.asLong(pos.getX() >> BUFFER_WIDTH_SH, pos.getY() >> BUFFER_HEIGHT_SH, pos.getZ() >> BUFFER_LENGTH_SH);
+    public static long getRegionKey(int x, int y, int z) {
+        return ChunkSectionPos.asLong(x >> BUFFER_WIDTH_SH, y >> BUFFER_HEIGHT_SH, z >> BUFFER_LENGTH_SH);
     }
 
     public void delete() {

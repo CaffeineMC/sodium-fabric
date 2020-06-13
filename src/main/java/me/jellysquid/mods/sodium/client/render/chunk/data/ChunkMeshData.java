@@ -22,10 +22,6 @@ public class ChunkMeshData {
         return this.layers.isEmpty();
     }
 
-    public Iterable<? extends BlockRenderPass> getLayers() {
-        return this.layers.keySet();
-    }
-
     public BufferSlice getSlice(BlockRenderPass pass) {
         return this.layers.get(pass);
     }
@@ -47,11 +43,10 @@ public class ChunkMeshData {
     }
 
     public int getSize() {
-        // TODO: this is ugly...
-        if (this.pendingUpload == null) {
-            return 0;
+        if (this.pendingUpload != null) {
+            return this.pendingUpload.buffer.capacity();
         }
 
-        return this.pendingUpload.buffer.capacity();
+        return 0;
     }
 }

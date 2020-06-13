@@ -305,7 +305,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         if (slice == null) {
             return new ChunkRenderEmptyBuildTask<>(render);
         } else {
-            return new ChunkRenderRebuildTask<>(this, render, slice, render.getOrigin());
+            return new ChunkRenderRebuildTask<>(this, render, slice, render.getRenderOrigin());
         }
     }
 

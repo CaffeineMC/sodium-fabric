@@ -21,7 +21,7 @@ public class ChunkMultiDrawBatch {
     public ChunkMultiDrawBatch(int capacity) {
         this.bufIndices = allocateByteBuffer(capacity * 4).asIntBuffer();
         this.bufLen = allocateByteBuffer(capacity * 4).asIntBuffer();
-        this.bufOffsets = allocateByteBuffer(capacity * 12).asFloatBuffer();
+        this.bufOffsets = allocateByteBuffer(capacity * 16).asFloatBuffer();
     }
 
     private static ByteBuffer allocateByteBuffer(int size) {
@@ -66,7 +66,7 @@ public class ChunkMultiDrawBatch {
         this.bufIndices.put(i, first);
         this.bufLen.put(i, count);
 
-        int j = i * 3;
+        int j = i * 4;
         this.bufOffsets.put(j++, x);
         this.bufOffsets.put(j++, y);
         this.bufOffsets.put(j  , z);

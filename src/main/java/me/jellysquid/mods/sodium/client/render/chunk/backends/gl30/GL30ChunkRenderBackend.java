@@ -42,13 +42,13 @@ public class GL30ChunkRenderBackend extends ChunkRenderBackendOneshot<VAOGraphic
 
             if (meshData.hasData()) {
                 if (graphics == null) {
-                    graphics = new VAOGraphicsState(this.vertexFormat, render.getChunkPos());
-                    render.setGraphicsState(graphics);
+                    render.setGraphicsState(graphics = new VAOGraphicsState());
                 }
 
                 graphics.upload(meshData);
             } else if (graphics != null) {
                 graphics.delete();
+
                 render.setGraphicsState(null);
             }
 
@@ -76,9 +76,9 @@ public class GL30ChunkRenderBackend extends ChunkRenderBackendOneshot<VAOGraphic
                 continue;
             }
 
-            float modelX = camera.getChunkModelOffset(render.getOriginX(), camera.blockOriginX, camera.originX);
-            float modelY = camera.getChunkModelOffset(render.getOriginY(), camera.blockOriginY, camera.originY);
-            float modelZ = camera.getChunkModelOffset(render.getOriginZ(), camera.blockOriginZ, camera.originZ);
+            float modelX = camera.getChunkModelOffset(render.getRenderX(), camera.blockOriginX, camera.originX);
+            float modelY = camera.getChunkModelOffset(render.getRenderY(), camera.blockOriginY, camera.originY);
+            float modelZ = camera.getChunkModelOffset(render.getRenderZ(), camera.blockOriginZ, camera.originZ);
 
             this.activeProgram.uploadChunkModelOffset(modelX, modelY, modelZ);
 

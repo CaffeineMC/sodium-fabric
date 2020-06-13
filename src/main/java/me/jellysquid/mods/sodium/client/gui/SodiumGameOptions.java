@@ -178,6 +178,8 @@ public class SodiumGameOptions {
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse config", e);
             }
+
+            config.sanitize();
         } else {
             config = new SodiumGameOptions();
         }
@@ -186,6 +188,12 @@ public class SodiumGameOptions {
         config.writeChanges();
 
         return config;
+    }
+
+    private void sanitize() {
+        if (this.performance.chunkRendererBackend == null) {
+            this.performance.chunkRendererBackend = ChunkRendererBackendOption.DEFAULT;
+        }
     }
 
     public void writeChanges() {

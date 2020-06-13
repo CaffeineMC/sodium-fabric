@@ -18,6 +18,6 @@ public class ChunkProgramMultidraw extends ChunkProgram {
     }
 
     public void uploadModelOffsetUniforms(FloatBuffer buffer) {
-        GL20.glUniform3fv(this.uModelOffsetsLocation, buffer);
+        GL20.glUniform4fv(this.uModelOffsetsLocation, buffer);
     }
 }
