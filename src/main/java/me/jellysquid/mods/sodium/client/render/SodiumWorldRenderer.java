@@ -90,6 +90,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     public void setWorld(ClientWorld world) {
         this.world = world;
         this.loadedChunkPositions.clear();
+        this.globalBlockEntities.clear();
 
         if (world == null) {
             if (this.chunkRenderManager != null) {
