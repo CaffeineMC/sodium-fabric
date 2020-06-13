@@ -1,17 +1,16 @@
-#version 140
-#extension GL_ARB_shader_draw_parameters : enable
+#version 110
 
-in vec3 a_Pos; // The position of the vertex
-in vec4 a_Color; // The color of the vertex
-in vec2 a_TexCoord; // The block texture coordinate of the vertex
-in vec2 a_LightCoord; // The light map texture coordinate of the vertex
+attribute vec3 a_Pos; // The position of the vertex
+attribute vec4 a_Color; // The color of the vertex
+attribute vec2 a_TexCoord; // The block texture coordinate of the vertex
+attribute vec2 a_LightCoord; // The light map texture coordinate of the vertex
 
-out vec4 v_Color;
-out vec2 v_TexCoord;
-out vec2 v_LightCoord;
+varying vec4 v_Color;
+varying vec2 v_TexCoord;
+varying vec2 v_LightCoord;
 
 #ifdef USE_FOG
-out float v_FogFactor;
+varying float v_FogFactor;
 #endif
 
 #ifdef USE_FOG_EXP2
@@ -24,12 +23,24 @@ uniform float u_FogEnd;
 #endif
 
 uniform mat4 u_ModelViewProjectionMatrix;
-uniform vec4 u_ModelOffsets[MAX_BATCH_SIZE];
 uniform vec3 u_ModelScale;
+
+#ifdef USE_MULTIDRAW
+#extension GL_ARB_shader_draw_parameters : enable
+uniform vec4 u_ModelOffsets[MAX_BATCH_SIZE];
+#else
+uniform vec3 u_ModelOffset;
+#endif
 
 void main() {
     // The model translation for this draw call.
-    vec3 modelOffset = u_ModelOffsets[gl_DrawIDARB].xyz;
+    vec3 modelOffset;
+
+#ifdef USE_MULTIDRAW
+    modelOffset = u_ModelOffsets[gl_DrawIDARB].xyz;
+#else
+    modelOffset = u_ModelOffset;
+#endif
 
     // Translates the vertex position around the position of the camera
     // This can be used to calculate the distance of the vertex from the camera without needing to
