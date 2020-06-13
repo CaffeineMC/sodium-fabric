@@ -47,9 +47,9 @@ public class SodiumGameOptions {
     }
 
     public enum ChunkRendererBackendOption implements TextProvider {
-        GL20("OpenGL 2.0", GL46ChunkRenderBackend::isSupported),
+        GL46("OpenGL 4.6", GL20ChunkRenderBackend::isSupported),
         GL30("OpenGL 3.0", GL30ChunkRenderBackend::isSupported),
-        GL46("OpenGL 4.6", GL20ChunkRenderBackend::isSupported);
+        GL20("OpenGL 2.0", GL46ChunkRenderBackend::isSupported);
 
         public static final ChunkRendererBackendOption DEFAULT = pickBestBackend();
 
