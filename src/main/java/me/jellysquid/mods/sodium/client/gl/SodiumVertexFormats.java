@@ -16,7 +16,7 @@ public class SodiumVertexFormats {
             .addElement(ChunkMeshAttribute.POSITION, 0, GlVertexAttributeFormat.FLOAT, 3, false)
             .addElement(ChunkMeshAttribute.COLOR, 12, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true)
             .addElement(ChunkMeshAttribute.TEXTURE, 16, GlVertexAttributeFormat.FLOAT, 2, false)
-            .addElement(ChunkMeshAttribute.LIGHT, 24, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false)
+            .addElement(ChunkMeshAttribute.LIGHT, 24, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, true)
             .build();
 
     /**
@@ -28,7 +28,7 @@ public class SodiumVertexFormats {
             .addElement(ChunkMeshAttribute.POSITION, 0, GlVertexAttributeFormat.UNSIGNED_SHORT, 3, true)
             .addElement(ChunkMeshAttribute.COLOR, 8, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true)
             .addElement(ChunkMeshAttribute.TEXTURE, 12, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, true)
-            .addElement(ChunkMeshAttribute.LIGHT, 16, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false)
+            .addElement(ChunkMeshAttribute.LIGHT, 16, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, true)
             .build();
 
     private static final Reference2ObjectMap<GlVertexFormat<?>, ModelQuadEncoder> encoders = new Reference2ObjectOpenHashMap<>();
@@ -42,7 +42,7 @@ public class SodiumVertexFormats {
                 buffer.putInt(position + 12, quad.getColor(i));
                 buffer.putFloat(position + 16, quad.getTexU(i));
                 buffer.putFloat(position + 20, quad.getTexV(i));
-                buffer.putInt(position + 24, quad.getLight(i));
+                buffer.putInt(position + 24, encodeLightMapTexCoord(quad.getLight(i)));
 
                 position += 32;
             }
@@ -56,7 +56,7 @@ public class SodiumVertexFormats {
                 buffer.putInt(position + 8, quad.getColor(i));
                 buffer.putShort(position + 12, denormalizeFloatAsShort(quad.getTexU(i)));
                 buffer.putShort(position + 14, denormalizeFloatAsShort(quad.getTexV(i)));
-                buffer.putInt(position + 16, quad.getLight(i));
+                buffer.putInt(position + 16, encodeLightMapTexCoord(quad.getLight(i)));
 
                 position += 20;
             }
@@ -95,5 +95,27 @@ public class SodiumVertexFormats {
      */
     private static short denormalizeFloatAsShort(float value) {
         return (short) (value * 65536.0f);
+    }
+
+    /**
+     * This moves some work out the shader code and simplifies things a bit. In vanilla, the game encodes light map
+     * texture coordinates as two un-normalized unsigned shorts in the range 0..255. Using the fixed-function pipeline,
+     * it then applies a matrix transformation which normalizes these coordinates and applies a centering offset. This
+     * operation has non-zero overhead and complicates shader code a bit.
+     *
+     * To work around the problem, this function instead normalizes these light map texture coordinates and applies the
+     * centering offset, allowing it to be baked into the vertex data itself.
+     *
+     * @param light The light map value
+     * @return The light map texture coordinates as two unsigned shorts with a center offset applied
+     */
+    private static int encodeLightMapTexCoord(int light) {
+        int sl = (light >> 16) & 255;
+        sl = (sl << 8) + 2048;
+
+        int bl = light & 255;
+        bl = (bl << 8) + 2048;
+
+        return (sl << 16) | bl;
     }
 }
