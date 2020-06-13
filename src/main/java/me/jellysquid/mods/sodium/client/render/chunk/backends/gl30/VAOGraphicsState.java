@@ -10,25 +10,18 @@ import me.jellysquid.mods.sodium.client.gl.util.VertexSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.opengl.GL15;
 
 public class VAOGraphicsState implements ChunkGraphicsState {
-    private final GlVertexFormat<?> vertexFormat;
-
     private final GlVertexArray vertexArray;
     private GlBuffer vertexBuffer;
 
-    private final ChunkSectionPos origin;
     private final long[] layers;
 
-    public VAOGraphicsState(GlVertexFormat<?> vertexFormat, ChunkSectionPos origin) {
-        this.vertexFormat = vertexFormat;
+    public VAOGraphicsState() {
         this.vertexBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
         this.vertexArray = new GlVertexArray();
         this.layers = new long[BlockRenderPass.count()];
-
-        this.origin = origin;
     }
 
     @Override
@@ -49,10 +42,6 @@ public class VAOGraphicsState implements ChunkGraphicsState {
         return this.vertexBuffer;
     }
 
-    public ChunkSectionPos getOrigin() {
-        return this.origin;
-    }
-
     public void upload(ChunkMeshData meshData) {
         this.vertexArray.bind();
 
@@ -66,10 +55,11 @@ public class VAOGraphicsState implements ChunkGraphicsState {
         this.vertexBuffer.bind(GL15.GL_ARRAY_BUFFER);
         this.vertexBuffer.upload(GL15.GL_ARRAY_BUFFER, vertexData);
 
-        this.vertexFormat.bindVertexAttributes();
-        this.vertexFormat.enableVertexAttributes();
+        GlVertexFormat<?> vertexFormat = vertexData.format;
+        vertexFormat.bindVertexAttributes();
+        vertexFormat.enableVertexAttributes();
 
-        int stride = this.vertexFormat.getStride();
+        int stride = vertexFormat.getStride();
 
         for (BlockRenderPass pass : BlockRenderPass.VALUES) {
             BufferSlice slice = meshData.getSlice(pass);

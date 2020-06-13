@@ -62,10 +62,6 @@ public class GlVertexAttribute {
         return this.stride;
     }
 
-    public boolean isFormatSupported() {
-        return this.format != GlVertexAttributeFormat.UNSUPPORTED_FORMAT;
-    }
-
     public static class Builder<T extends Enum<T>> {
         private final EnumMap<T, GlVertexAttribute> attributes;
         private final Class<T> type;

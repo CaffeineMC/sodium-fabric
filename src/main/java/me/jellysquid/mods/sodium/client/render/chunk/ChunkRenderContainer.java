@@ -240,16 +240,16 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         return this.chunkZ << 4;
     }
 
-    public int getChunkX() {
-        return this.chunkX;
+    public int getRenderX() {
+        return this.getOriginX() - 8;
     }
 
-    public int getChunkY() {
-        return this.chunkY;
+    public int getRenderY() {
+        return this.getOriginY() - 8;
     }
 
-    public int getChunkZ() {
-        return this.chunkZ;
+    public int getRenderZ() {
+        return this.getOriginZ() - 8;
     }
 
     /**
@@ -310,8 +310,8 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         return !this.getData().getAnimatedSprites().isEmpty();
     }
 
-    public BlockPos getOrigin() {
-        return new BlockPos(this.getOriginX(), this.getOriginY(), this.getOriginZ());
+    public BlockPos getRenderOrigin() {
+        return new BlockPos(this.getRenderX(), this.getRenderY(), this.getRenderZ());
     }
 
     public T getGraphicsState() {
@@ -372,7 +372,15 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         return this.adjacent[dir.ordinal()];
     }
 
-    public long getChunkPosLong() {
-        return ChunkSectionPos.asLong(this.chunkX, this.chunkY, this.chunkZ);
+    public int getChunkX() {
+        return this.chunkX;
+    }
+
+    public int getChunkY() {
+        return this.chunkY;
+    }
+
+    public int getChunkZ() {
+        return this.chunkZ;
     }
 }

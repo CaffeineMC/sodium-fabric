@@ -38,13 +38,14 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
 
             if (meshData.hasData()) {
                 if (graphics == null) {
-                    graphics = new VBOGraphicsState(this.vertexFormat, render.getChunkPos());
+                    graphics = new VBOGraphicsState();
                     render.setGraphicsState(graphics);
                 }
 
                 graphics.upload(meshData);
             } else if (graphics != null) {
                 graphics.delete();
+
                 render.setGraphicsState(null);
             }
 
@@ -74,9 +75,9 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
                 continue;
             }
 
-            float modelX = camera.getChunkModelOffset(render.getOriginX(), camera.blockOriginX, camera.originX);
-            float modelY = camera.getChunkModelOffset(render.getOriginY(), camera.blockOriginY, camera.originY);
-            float modelZ = camera.getChunkModelOffset(render.getOriginZ(), camera.blockOriginZ, camera.originZ);
+            float modelX = camera.getChunkModelOffset(render.getRenderX(), camera.blockOriginX, camera.originX);
+            float modelY = camera.getChunkModelOffset(render.getRenderY(), camera.blockOriginY, camera.originY);
+            float modelZ = camera.getChunkModelOffset(render.getRenderZ(), camera.blockOriginZ, camera.originZ);
 
             this.activeProgram.uploadChunkModelOffset(modelX, modelY, modelZ);
 

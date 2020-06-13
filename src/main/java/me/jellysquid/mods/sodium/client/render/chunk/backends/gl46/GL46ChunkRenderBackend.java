@@ -189,8 +189,9 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
     private void setupUploadBatches(Iterator<ChunkBuildResult<LCBGraphicsState>> renders) {
         while (renders.hasNext()) {
             ChunkBuildResult<LCBGraphicsState> result = renders.next();
+            ChunkRenderContainer<LCBGraphicsState> render = result.render;
 
-            ChunkRegion<LCBGraphicsState> region = this.bufferManager.createRegion(result.render.getChunkPos());
+            ChunkRegion<LCBGraphicsState> region = this.bufferManager.getOrCreateRegion(render.getChunkX(), render.getChunkY(), render.getChunkZ());
             ObjectArrayList<ChunkBuildResult<LCBGraphicsState>> uploadQueue = region.getUploadQueue();
 
             if (uploadQueue.isEmpty()) {
@@ -228,9 +229,9 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
             int start = VertexSlice.unpackFirst(slice);
             int count = VertexSlice.unpackCount(slice);
 
-            float modelX = camera.getChunkModelOffset(render.getOriginX(), camera.blockOriginX, camera.originX);
-            float modelY = camera.getChunkModelOffset(render.getOriginY(), camera.blockOriginY, camera.originY);
-            float modelZ = camera.getChunkModelOffset(render.getOriginZ(), camera.blockOriginZ, camera.originZ);
+            float modelX = camera.getChunkModelOffset(render.getRenderX(), camera.blockOriginX, camera.originX);
+            float modelY = camera.getChunkModelOffset(render.getRenderY(), camera.blockOriginY, camera.originY);
+            float modelZ = camera.getChunkModelOffset(render.getRenderZ(), camera.blockOriginZ, camera.originZ);
 
             batch.addChunkRender(start, count, modelX, modelY, modelZ);
         }
@@ -240,7 +241,8 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
         int size = 0;
 
         for (ChunkBuildResult<LCBGraphicsState> result : queue) {
-            size += result.data.getMeshData().getSize();
+            ChunkMeshData mesh = result.data.getMeshData();
+            size += mesh.getSize();
         }
 
         return size;
