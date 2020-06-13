@@ -44,7 +44,13 @@ public class ChunkMeshBuilder implements ModelQuadSink {
      */
     private float x, y, z;
 
+    /**
+     * The scale to be applied to all offsets and quads written into this mesh builder.
+     */
+    private float scale;
+
     public ChunkMeshBuilder(GlVertexFormat<?> format, int initialSize) {
+        this.scale = 1.0f / 32.0f;
         this.stride = format.getStride() * 4;
         this.encoder = SodiumVertexFormats.getEncoder(format);
 
@@ -53,9 +59,9 @@ public class ChunkMeshBuilder implements ModelQuadSink {
     }
 
     public void setOffset(int x, int y, int z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+        this.x = x * this.scale;
+        this.y = y * this.scale;
+        this.z = z * this.scale;
     }
 
     @Override
@@ -74,9 +80,9 @@ public class ChunkMeshBuilder implements ModelQuadSink {
 
         // Translate the quad to its local position in the chunk
         for (int i = 0; i < 4; i++) {
-            quad.setX(i, quad.getX(i) + this.x);
-            quad.setY(i, quad.getY(i) + this.y);
-            quad.setZ(i, quad.getZ(i) + this.z);
+            quad.setX(i, (quad.getX(i) * this.scale) + this.x);
+            quad.setY(i, (quad.getY(i) * this.scale) + this.y);
+            quad.setZ(i, (quad.getZ(i) * this.scale) + this.z);
         }
 
         // Write the quad to the backing buffer using the marked position from earlier
