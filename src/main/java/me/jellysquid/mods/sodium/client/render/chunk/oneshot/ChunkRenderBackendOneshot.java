@@ -22,11 +22,11 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkGraphicsState> ex
 
     @Override
     protected GlShader createVertexShader(ChunkFogMode fogMode) {
-        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_oneshot_gl20.v.glsl"), fogMode.getDefines());
+        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"), fogMode.getDefines());
     }
 
     @Override
     protected GlShader createFragmentShader(ChunkFogMode fogMode) {
-        return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_oneshot_gl20.f.glsl"), fogMode.getDefines());
+        return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"), fogMode.getDefines());
     }
 }

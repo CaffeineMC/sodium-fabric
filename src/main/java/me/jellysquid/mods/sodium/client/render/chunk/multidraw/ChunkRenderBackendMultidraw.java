@@ -27,16 +27,23 @@ public abstract class ChunkRenderBackendMultidraw<T extends ChunkGraphicsState> 
 
     @Override
     protected GlShader createVertexShader(ChunkFogMode fogMode) {
-        ShaderConstants.Builder constants = ShaderConstants.builder();
-        constants.define("MAX_BATCH_SIZE", String.valueOf(this.maxBatchSize));
-
-        fogMode.addConstants(constants);
-
-        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_multidraw_gl31.v.glsl"), constants.build());
+        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"),
+                this.createShaderConstants(fogMode));
     }
 
     @Override
     protected GlShader createFragmentShader(ChunkFogMode fogMode) {
-        return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_multidraw_gl31.f.glsl"), fogMode.getDefines());
+        return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"),
+                this.createShaderConstants(fogMode));
+    }
+
+    private ShaderConstants createShaderConstants(ChunkFogMode fogMode) {
+        ShaderConstants.Builder constants = ShaderConstants.builder();
+        constants.define("USE_MULTIDRAW");
+        constants.define("MAX_BATCH_SIZE", String.valueOf(this.maxBatchSize));
+
+        fogMode.addConstants(constants);
+
+        return constants.build();
     }
 }
