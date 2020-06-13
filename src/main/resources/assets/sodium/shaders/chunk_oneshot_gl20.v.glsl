@@ -26,9 +26,6 @@ uniform mat4 u_ModelViewProjectionMatrix;
 uniform vec3 u_ModelOffset;
 uniform vec3 u_ModelScale;
 
-const float LIGHT_COORD_SCALE = 1.0 / 256.0;
-const float LIGHT_COORD_OFFSET = 1.0 / 32.0;
-
 void main() {
     // Translates the vertex position around the position of the camera
     // This can be used to calculate the distance of the vertex from the camera without needing to
@@ -56,11 +53,5 @@ void main() {
     // Pass the color and texture coordinates to the fragment shader
     v_Color = a_Color;
     v_TexCoord = a_TexCoord;
-
-    // Compute the texture coordinate on the light map which will be used in the fragment shader
-    // This is more legacy cruft from vanilla's fixed function pipeline. Each light map texture coordinate is
-    // normalized and centered on texels through the use of a texture transformation matrix. It's not clear to me
-    // why this couldn't be pre-computed on the CPU, but here we are. This should compile to a fused-multiply-add, in
-    // which case it will be faster than matrix math.
-    v_LightCoord = (a_LightCoord * LIGHT_COORD_SCALE) + LIGHT_COORD_OFFSET;
+    v_LightCoord = a_LightCoord;
 }
