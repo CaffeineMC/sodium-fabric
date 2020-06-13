@@ -1,4 +1,7 @@
 #version 110
+#ifdef USE_MULTIDRAW
+#extension GL_ARB_shader_draw_parameters : require
+#endif
 
 attribute vec3 a_Pos; // The position of the vertex
 attribute vec4 a_Color; // The color of the vertex
@@ -26,7 +29,6 @@ uniform mat4 u_ModelViewProjectionMatrix;
 uniform vec3 u_ModelScale;
 
 #ifdef USE_MULTIDRAW
-#extension GL_ARB_shader_draw_parameters : enable
 uniform vec4 u_ModelOffsets[MAX_BATCH_SIZE];
 #else
 uniform vec3 u_ModelOffset;
