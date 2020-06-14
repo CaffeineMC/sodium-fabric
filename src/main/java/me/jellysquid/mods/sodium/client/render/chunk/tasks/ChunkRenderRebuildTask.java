@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
@@ -52,6 +52,7 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
 
         ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
+        ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
         int minX = this.render.getOriginX();
         int minY = this.render.getOriginY();
@@ -83,10 +84,11 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
                     if (block.getRenderType(blockState) == BlockRenderType.MODEL) {
                         RenderLayer layer = RenderLayers.getBlockLayer(blockState);
 
-                        ChunkMeshBuilder builder = buffers.get(layer);
+                        ChunkBuildBuffers.ChunkBuildBufferDelegate builder = buffers.get(layer);
                         builder.setOffset(x - offset.getX(), y - offset.getY(), z - offset.getZ());
 
-                        pipeline.renderBlock(meshInfo, blockState, pos, this.slice, buffers.get(layer), true);
+                        pipeline.renderBlock(meshInfo, blockState, pos, this.slice, builder, true);
+                        bounds.addBlock(x, y, z);
                     }
 
                     FluidState fluidState = block.getFluidState(blockState);
@@ -94,10 +96,11 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
                     if (!fluidState.isEmpty()) {
                         RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
 
-                        ChunkMeshBuilder builder = buffers.get(layer);
+                        ChunkBuildBuffers.ChunkBuildBufferDelegate builder = buffers.get(layer);
                         builder.setOffset(x - offset.getX(), y - offset.getY(), z - offset.getZ());
 
                         pipeline.renderFluid(meshInfo, pos, this.slice, builder, fluidState);
+                        bounds.addBlock(x, y, z);
                     }
 
                     if (block.hasBlockEntity()) {
@@ -110,6 +113,8 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
                                 meshInfo.addBlockEntity(entity, !renderer.rendersOutsideBoundingBox(entity));
                             }
                         }
+
+                        bounds.addBlock(x, y, z);
                     }
 
                     if (blockState.isFullOpaque(this.slice, pos)) {
@@ -121,6 +126,7 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
 
         meshInfo.setMeshData(buffers.createMeshes(this.camera, this.render.getRenderOrigin()));
         meshInfo.setOcclusionData(occluder.build());
+        meshInfo.setBounds(bounds.build(this.render.getChunkPos()));
 
         return new ChunkBuildResult<>(this.render, meshInfo.build());
     }

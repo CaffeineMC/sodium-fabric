@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.*;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.util.GlFogHelper;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
@@ -59,6 +60,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     private boolean dirty;
 
     private double cameraX, cameraY, cameraZ;
+    private boolean useAggressiveCulling;
 
     public ChunkRenderManager(SodiumWorldRenderer renderer, ChunkRenderBackend<T> backend, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
         this.backend = backend;
@@ -136,7 +138,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
         if (!render.isEmpty()) {
             if (render.getGraphicsState() != null) {
-                this.visibleChunks.add(render);
+                this.addVisibleChunk(render);
             }
 
             Collection<BlockEntity> blockEntities = render.getData().getBlockEntities();
@@ -147,6 +149,44 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         }
     }
 
+    private void addVisibleChunk(ChunkRenderContainer<T> render) {
+        this.visibleChunks.add(render);
+
+        if (this.useAggressiveCulling) {
+            render.resetVisibleFaces();
+
+            ChunkRenderBounds bounds = render.getBounds();
+
+            if (bounds != null) {
+                if (this.cameraY > bounds.y1) {
+                    render.markFaceVisible(ModelQuadFacing.UP);
+                }
+
+                if (this.cameraY < bounds.y2) {
+                    render.markFaceVisible(ModelQuadFacing.DOWN);
+                }
+
+                if (this.cameraX > bounds.x1) {
+                    render.markFaceVisible(ModelQuadFacing.EAST);
+                }
+
+                if (this.cameraX < bounds.x2) {
+                    render.markFaceVisible(ModelQuadFacing.WEST);
+                }
+
+                if (this.cameraZ > bounds.z1) {
+                    render.markFaceVisible(ModelQuadFacing.SOUTH);
+                }
+
+                if (this.cameraZ < bounds.z2) {
+                    render.markFaceVisible(ModelQuadFacing.NORTH);
+                }
+            }
+        } else {
+            render.markAllFacesVisible();
+        }
+    }
+
     private void init(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
         this.cameraX = camera.getPos().x;
         this.cameraY = camera.getPos().y;
@@ -154,6 +194,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
         this.lastFrameUpdated = frame;
         this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
+        this.useAggressiveCulling = SodiumClientMod.options().performance.useAggressiveChunkCulling;
 
         this.resetGraph();
 

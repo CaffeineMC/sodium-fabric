@@ -11,8 +11,9 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
-import me.jellysquid.mods.sodium.client.gl.util.VertexSlice;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelPart;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
@@ -81,7 +82,7 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
     private final GlMutableBuffer uploadBuffer;
 
     public GL46ChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
-        super(format, ChunkRegionManager.BUFFER_SIZE);
+        super(format, ChunkRegionManager.BUFFER_SIZE * 7);
 
         this.bufferManager = new ChunkRegionManager<>();
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
@@ -205,35 +206,38 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
     private void setupDrawBatches(BlockRenderPass pass, Iterator<ChunkRenderContainer<LCBGraphicsState>> renders, ChunkCameraContext camera) {
         while (renders.hasNext()) {
             ChunkRenderContainer<LCBGraphicsState> render = renders.next();
-            LCBGraphicsState state = render.getGraphicsState();
+            LCBGraphicsState graphics = render.getGraphicsState();
 
-            if (state == null) {
+            if (graphics == null) {
                 continue;
             }
-
-            long slice = state.getSliceForLayer(pass);
-
-            if (VertexSlice.isEmpty(slice)) {
-                continue;
-            }
-
-            ChunkRegion<LCBGraphicsState> region = state.getRegion();
-            ChunkMultiDrawBatch batch = region.getDrawBatch();
-
-            if (!batch.isBuilding()) {
-                batch.begin();
-
-                this.pendingBatches.enqueue(region);
-            }
-
-            int start = VertexSlice.unpackFirst(slice);
-            int count = VertexSlice.unpackCount(slice);
 
             float modelX = camera.getChunkModelOffset(render.getRenderX(), camera.blockOriginX, camera.originX);
             float modelY = camera.getChunkModelOffset(render.getRenderY(), camera.blockOriginY, camera.originY);
             float modelZ = camera.getChunkModelOffset(render.getRenderZ(), camera.blockOriginZ, camera.originZ);
 
-            batch.addChunkRender(start, count, modelX, modelY, modelZ);
+            for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+                if (!render.isFaceVisible(facing)) {
+                    continue;
+                }
+
+                ChunkModelPart part = graphics.getModelPart(ChunkModelPart.encodeKey(pass, facing));
+
+                if (part == null) {
+                    continue;
+                }
+
+                ChunkRegion<LCBGraphicsState> region = graphics.getRegion();
+                ChunkMultiDrawBatch batch = region.getDrawBatch();
+
+                if (!batch.isBuilding()) {
+                    batch.begin();
+
+                    this.pendingBatches.enqueue(region);
+                }
+
+                batch.addChunkRender(part.start, part.count, modelX, modelY, modelZ);
+            }
         }
     }
 

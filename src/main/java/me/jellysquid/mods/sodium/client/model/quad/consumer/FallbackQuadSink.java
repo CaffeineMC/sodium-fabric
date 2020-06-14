@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.quad.consumer;
 
+import me.jellysquid.mods.sodium.client.model.ModelQuadSinkDelegate;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadSink;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
@@ -14,7 +16,7 @@ import net.minecraft.client.util.math.*;
  * This implementation is considerably slower than other sinks as it must perform many matrix transformations for every
  * vertex and unpack values as assumptions can't be made about what the backing buffer type is.
  */
-public class FallbackQuadSink implements ModelQuadSink {
+public class FallbackQuadSink implements ModelQuadSink, ModelQuadSinkDelegate {
     private final VertexConsumer consumer;
 
     // Hoisted matrices to avoid lookups in peeking
@@ -68,5 +70,10 @@ public class FallbackQuadSink implements ModelQuadSink {
 
             this.consumer.vertex(posVec.getX(), posVec.getY(), posVec.getZ(), r, g, b, a, u, v, OverlayTexture.DEFAULT_UV, light, normVec.getX(), normVec.getY(), normVec.getZ());
         }
+    }
+
+    @Override
+    public ModelQuadSink get(ModelQuadFacing facing) {
+        return this;
     }
 }

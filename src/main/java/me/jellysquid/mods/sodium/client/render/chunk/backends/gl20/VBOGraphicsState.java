@@ -1,23 +1,23 @@
 package me.jellysquid.mods.sodium.client.render.chunk.backends.gl20;
 
+import it.unimi.dsi.fastutil.bytes.Byte2ReferenceMap;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
-import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
-import me.jellysquid.mods.sodium.client.gl.util.VertexSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelPart;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import org.lwjgl.opengl.GL15;
 
 public class VBOGraphicsState implements ChunkGraphicsState {
     private final GlBuffer buffer;
-    private final long[] layers;
+    private final ChunkModelPart[] parts;
 
     public VBOGraphicsState() {
         this.buffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
-        this.layers = new long[BlockRenderPass.count()];
+        this.parts = new ChunkModelPart[ChunkModelPart.count()];
     }
 
     @Override
@@ -35,17 +35,13 @@ public class VBOGraphicsState implements ChunkGraphicsState {
         GlVertexFormat<?> vertexFormat = data.format;
         int stride = vertexFormat.getStride();
 
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            BufferSlice slice = meshData.getSlice(pass);
-
-            if (slice != null) {
-                this.layers[pass.ordinal()] = VertexSlice.pack(slice.start / stride, slice.len / stride);
-            }
+        for (Byte2ReferenceMap.Entry<ChunkModelSlice> entry : meshData.getBuffers().byte2ReferenceEntrySet()) {
+            this.parts[entry.getByteKey()] = new ChunkModelPart(entry.getValue().start / stride, entry.getValue().len / stride);
         }
     }
 
-    public long getSliceForLayer(BlockRenderPass pass) {
-        return this.layers[pass.ordinal()];
+    public ChunkModelPart getModelPart(byte key) {
+        return this.parts[key];
     }
 
     public GlBuffer getBuffer() {

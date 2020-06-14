@@ -10,6 +10,7 @@ public enum BlockRenderPass {
     TRANSLUCENT(RenderLayer.getTranslucent(), true);
 
     public static final BlockRenderPass[] VALUES = BlockRenderPass.values();
+    public static final int COUNT = VALUES.length;
 
     private final RenderLayer layer;
     private final boolean translucent;
@@ -17,10 +18,6 @@ public enum BlockRenderPass {
     BlockRenderPass(RenderLayer layer, boolean translucent) {
         this.layer = layer;
         this.translucent = translucent;
-    }
-
-    public static int count() {
-        return VALUES.length;
     }
 
     public boolean isTranslucent() {

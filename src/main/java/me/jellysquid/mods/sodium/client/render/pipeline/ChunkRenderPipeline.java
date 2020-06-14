@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
+import me.jellysquid.mods.sodium.client.model.ModelQuadSinkDelegate;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.cache.ArrayLightDataCache;
 import me.jellysquid.mods.sodium.client.model.light.flat.FlatLightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.smooth.SmoothLightPipeline;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadSink;
 import me.jellysquid.mods.sodium.client.render.block.BlockRenderPipeline;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.fluid.FluidRenderPipeline;
@@ -40,11 +40,11 @@ public class ChunkRenderPipeline {
         this.models = client.getBakedModelManager().getBlockModels();
     }
 
-    public void renderBlock(ChunkRenderData.Builder meshInfo, BlockState state, BlockPos pos, BlockRenderView world, ModelQuadSink consumer, boolean cull) {
+    public void renderBlock(ChunkRenderData.Builder meshInfo, BlockState state, BlockPos pos, BlockRenderView world, ModelQuadSinkDelegate consumer, boolean cull) {
         this.blockRenderer.renderModel(meshInfo, world, this.models.getModel(state), state, pos, consumer, cull, this.random, state.getRenderingSeed(pos));
     }
 
-    public void renderFluid(ChunkRenderData.Builder meshInfo, BlockPos.Mutable pos, WorldSlice world, ModelQuadSink consumer, FluidState fluidState) {
+    public void renderFluid(ChunkRenderData.Builder meshInfo, BlockPos.Mutable pos, WorldSlice world, ModelQuadSinkDelegate consumer, FluidState fluidState) {
         this.fluidRenderer.render(meshInfo, world, pos, consumer, fluidState);
     }
 

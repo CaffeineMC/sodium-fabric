@@ -1,10 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.fluid;
 
+import me.jellysquid.mods.sodium.client.model.ModelQuadSinkDelegate;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuad;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadSink;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
@@ -95,7 +96,7 @@ public class FluidRenderPipeline {
         return true;
     }
 
-    public boolean render(ChunkRenderData.Builder meshInfo, WorldSlice world, BlockPos pos, ModelQuadSink consumer, FluidState fluidState) {
+    public boolean render(ChunkRenderData.Builder meshInfo, WorldSlice world, BlockPos pos, ModelQuadSinkDelegate consumer, FluidState fluidState) {
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();
@@ -344,7 +345,7 @@ public class FluidRenderPipeline {
         lighter.calculate(quad, pos, light, dir);
     }
 
-    private void writeQuad(ModelQuadSink consumer, ModelQuadViewMutable quad, float r, float g, float b, boolean flipLight) {
+    private void writeQuad(ModelQuadSinkDelegate consumer, ModelQuadViewMutable quad, float r, float g, float b, boolean flipLight) {
         QuadLightData quadLightData = this.quadLightData;
 
         int lightIndex, lightOrder;
@@ -367,7 +368,8 @@ public class FluidRenderPipeline {
             lightIndex += lightOrder;
         }
 
-        consumer.write(quad);
+        consumer.get(ModelQuadFacing.NONE)
+                .write(quad);
     }
 
     private void writeVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {

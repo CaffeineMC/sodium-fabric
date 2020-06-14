@@ -1,29 +1,27 @@
 package me.jellysquid.mods.sodium.client.render.chunk.data;
 
+import it.unimi.dsi.fastutil.bytes.Byte2ReferenceMap;
+import it.unimi.dsi.fastutil.bytes.Byte2ReferenceMaps;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
-import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-
-import java.util.Collections;
-import java.util.Map;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelSlice;
 
 public class ChunkMeshData {
-    public static final ChunkMeshData EMPTY = new ChunkMeshData(null, Collections.emptyMap());
+    public static final ChunkMeshData EMPTY = new ChunkMeshData(null, Byte2ReferenceMaps.emptyMap());
 
-    private final Map<BlockRenderPass, BufferSlice> layers;
+    private final Byte2ReferenceMap<ChunkModelSlice> parts;
     private VertexData pendingUpload;
 
-    public ChunkMeshData(VertexData pendingUpload, Map<BlockRenderPass, BufferSlice> layers) {
+    public ChunkMeshData(VertexData pendingUpload, Byte2ReferenceMap<ChunkModelSlice> parts) {
         this.pendingUpload = pendingUpload;
-        this.layers = layers;
+        this.parts = parts;
     }
 
     public boolean isEmpty() {
-        return this.layers.isEmpty();
+        return this.parts.isEmpty();
     }
 
-    public BufferSlice getSlice(BlockRenderPass pass) {
-        return this.layers.get(pass);
+    public Byte2ReferenceMap<ChunkModelSlice> getBuffers() {
+        return this.parts;
     }
 
     public VertexData takePendingUpload() {
