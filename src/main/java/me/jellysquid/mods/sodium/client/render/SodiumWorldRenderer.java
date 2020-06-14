@@ -199,6 +199,8 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     }
 
     public void beginChunkRendering(MatrixStack matrixStack) {
+        RenderSystem.enableFog();
+
         this.chunkRenderBackend.beginRenders(matrixStack);
     }
 
@@ -229,6 +231,8 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     }
 
     public void endChunkRendering(MatrixStack matrixStack) {
+        RenderSystem.disableFog();
+
         this.chunkRenderBackend.endRenders(matrixStack);
     }
 
