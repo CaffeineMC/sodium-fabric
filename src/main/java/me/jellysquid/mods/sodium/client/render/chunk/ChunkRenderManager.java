@@ -3,7 +3,9 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.objects.*;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.util.GlFogHelper;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
@@ -21,7 +23,6 @@ import me.jellysquid.mods.sodium.common.util.collections.FutureDequeDrain;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.ChunkSection;
@@ -46,8 +47,6 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
     private final RenderList<ChunkRenderContainer<T>> visibleChunks = new RenderList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
-
-    private final ObjectSet<BlockRenderPass> renderedLayers = new ObjectOpenHashSet<>();
 
     private final SodiumWorldRenderer renderer;
     private final ClientWorld world;
@@ -337,26 +336,8 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         return render;
     }
 
-    public void renderLayer(MatrixStack matrixStack, BlockRenderPass pass, double x, double y, double z) {
-        if (this.renderedLayers.isEmpty()) {
-            this.tickRenders();
-        }
-
-        if (!this.renderedLayers.add(pass)) {
-            return;
-        }
-
-        this.backend.render(pass, this.visibleChunks.iterator(pass.isTranslucent()), matrixStack, new ChunkCameraContext(x, y, z));
-    }
-
-    private void tickRenders() {
-        for (ChunkRenderContainer<T> render : this.visibleChunks) {
-            render.tick();
-        }
-    }
-
-    public void onFrameChanged() {
-        this.renderedLayers.clear();
+    public void renderLayer(BlockRenderPass pass, double x, double y, double z) {
+        this.backend.render(pass, this.visibleChunks.iterator(pass.isTranslucent()), new ChunkCameraContext(x, y, z));
     }
 
     public boolean isChunkVisible(int x, int y, int z) {

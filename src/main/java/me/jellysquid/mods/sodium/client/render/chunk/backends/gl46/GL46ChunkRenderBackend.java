@@ -140,11 +140,36 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
         uploadBuffer.unbind(GL15.GL_ARRAY_BUFFER);
     }
 
-    @Override
-    public void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<LCBGraphicsState>> renders, MatrixStack matrixStack, ChunkCameraContext camera) {
-        super.begin(matrixStack);
+    private void setupUploadBatches(Iterator<ChunkBuildResult<LCBGraphicsState>> renders) {
+        while (renders.hasNext()) {
+            ChunkBuildResult<LCBGraphicsState> result = renders.next();
+            ChunkRenderContainer<LCBGraphicsState> render = result.render;
 
+            ChunkRegion<LCBGraphicsState> region = this.bufferManager.getOrCreateRegion(render.getChunkX(), render.getChunkY(), render.getChunkZ());
+            ObjectArrayList<ChunkBuildResult<LCBGraphicsState>> uploadQueue = region.getUploadQueue();
+
+            if (uploadQueue.isEmpty()) {
+                this.pendingUploads.enqueue(region);
+            }
+
+            uploadQueue.add(result);
+        }
+    }
+
+    @Override
+    public void beginRenders(MatrixStack matrixStack) {
         this.bufferManager.cleanup();
+
+        super.beginRenders(matrixStack);
+    }
+
+    @Override
+    public void endRenders(MatrixStack matrixStack) {
+        super.endRenders(matrixStack);
+    }
+
+    @Override
+    public void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<LCBGraphicsState>> renders, ChunkCameraContext camera) {
         this.setupDrawBatches(pass, renders, camera);
 
         GlVertexArray prevVao = null;
@@ -184,24 +209,6 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
 
         if (prevVao != null) {
             prevVao.unbind();
-        }
-
-        this.end(matrixStack);
-    }
-
-    private void setupUploadBatches(Iterator<ChunkBuildResult<LCBGraphicsState>> renders) {
-        while (renders.hasNext()) {
-            ChunkBuildResult<LCBGraphicsState> result = renders.next();
-            ChunkRenderContainer<LCBGraphicsState> render = result.render;
-
-            ChunkRegion<LCBGraphicsState> region = this.bufferManager.getOrCreateRegion(render.getChunkX(), render.getChunkY(), render.getChunkZ());
-            ObjectArrayList<ChunkBuildResult<LCBGraphicsState>> uploadQueue = region.getUploadQueue();
-
-            if (uploadQueue.isEmpty()) {
-                this.pendingUploads.enqueue(region);
-            }
-
-            uploadQueue.add(result);
         }
     }
 

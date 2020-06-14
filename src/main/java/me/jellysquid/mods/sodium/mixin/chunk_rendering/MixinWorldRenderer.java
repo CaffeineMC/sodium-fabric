@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.SortedSet;
@@ -72,12 +73,61 @@ public abstract class MixinWorldRenderer {
         this.renderer.scheduleTerrainUpdate();
     }
 
+    @Inject(method = "render",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/render/WorldRenderer;renderLayer(Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/util/math/MatrixStack;DDD)V",
+                    shift = At.Shift.BEFORE,
+                    ordinal = 0),
+            slice = @Slice(
+                    from = @At(value = "CONSTANT", args = "stringValue=terrain"),
+                    to = @At(value = "CONSTANT", args = "stringValue=entities")
+            ))
+    private void preRenderOpaqueChunks(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
+        this.renderer.beginChunkRendering(matrices);
+    }
+
+    @Inject(method = "render",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/render/DiffuseLighting;enableForLevel(Lnet/minecraft/client/util/math/Matrix4f;)V",
+                    shift = At.Shift.BEFORE),
+            slice = @Slice(
+                    from = @At(value = "CONSTANT", args = "stringValue=terrain"),
+                    to = @At(value = "CONSTANT", args = "stringValue=entities")
+            ))
+    private void postRenderOpaqueChunks(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
+        this.renderer.endChunkRendering(matrices);
+    }
+
+    @Inject(method = "render",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/render/WorldRenderer;renderLayer(Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/util/math/MatrixStack;DDD)V",
+                    shift = At.Shift.BEFORE),
+            slice = @Slice(
+                    from = @At(value = "CONSTANT", args = "stringValue=translucent"),
+                    to = @At(value = "CONSTANT", args = "stringValue=particles")
+            ))
+    private void preRenderTranslucentChunks(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
+        this.renderer.beginChunkRendering(matrices);
+    }
+
+    @Inject(method = "render",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/render/WorldRenderer;renderLayer(Lnet/minecraft/client/render/RenderLayer;Lnet/minecraft/client/util/math/MatrixStack;DDD)V",
+                    shift = At.Shift.AFTER),
+            slice = @Slice(
+                    from = @At(value = "CONSTANT", args = "stringValue=translucent"),
+                    to = @At(value = "CONSTANT", args = "stringValue=particles")
+            ))
+    private void postRenderTranslucentChunks(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
+        this.renderer.endChunkRendering(matrices);
+    }
+
     /**
      * @author JellySquid
      */
     @Overwrite
     private void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double d, double e, double f) {
-        this.renderer.drawChunkLayer(renderLayer, matrixStack, d, e, f);
+        this.renderer.drawChunkLayer(renderLayer, d, e, f);
     }
 
     /**

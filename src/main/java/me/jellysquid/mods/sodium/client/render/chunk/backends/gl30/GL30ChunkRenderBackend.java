@@ -14,7 +14,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.oneshot.ChunkRenderBackendOneshot;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
@@ -61,9 +60,7 @@ public class GL30ChunkRenderBackend extends ChunkRenderBackendOneshot<VAOGraphic
     }
 
     @Override
-    public void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<VAOGraphicsState>> renders, MatrixStack matrixStack, ChunkCameraContext camera) {
-        super.begin(matrixStack);
-
+    public void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<VAOGraphicsState>> renders, ChunkCameraContext camera) {
         GlVertexArray lastRender = null;
         GlMultiDrawBatch batch = this.batch;
 
@@ -114,8 +111,6 @@ public class GL30ChunkRenderBackend extends ChunkRenderBackendOneshot<VAOGraphic
         if (lastRender != null) {
             lastRender.unbind();
         }
-
-        this.end(matrixStack);
     }
 
     public static boolean isSupported() {
