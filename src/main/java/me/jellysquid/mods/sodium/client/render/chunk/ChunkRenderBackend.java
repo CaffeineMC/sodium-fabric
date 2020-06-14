@@ -20,14 +20,14 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
      */
     void upload(Iterator<ChunkBuildResult<T>> queue);
 
+    void beginRenders(MatrixStack matrixStack);
+
+    void endRenders(MatrixStack matrixStack);
+
     /**
      * Renders the given chunk render list to the active framebuffer.
-     * @param pass
-     * @param renders The render list
-     * @param matrixStack The current matrix stack containing the model-view matrices for rendering
-     * @param camera
      */
-    void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<T>> renders, MatrixStack matrixStack, ChunkCameraContext camera);
+    void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<T>> renders, ChunkCameraContext camera);
 
     void createShaders();
 
