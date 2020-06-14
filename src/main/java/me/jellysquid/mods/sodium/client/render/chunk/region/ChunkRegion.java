@@ -22,7 +22,7 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
     public ChunkRegion(int size) {
         int arenaSize = EXPECTED_CHUNK_SIZE * size;
         this.arena = new GlBufferArena(arenaSize, arenaSize);
-        this.batch = new ChunkMultiDrawBatch(size);
+        this.batch = new ChunkMultiDrawBatch(size * 7);
         this.uploads = new ObjectArrayList<>();
         this.vao = new GlVertexArray();
     }

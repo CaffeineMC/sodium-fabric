@@ -1,27 +1,27 @@
 package me.jellysquid.mods.sodium.client.render.chunk.backends.gl30;
 
+import it.unimi.dsi.fastutil.bytes.Byte2ReferenceMap;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
-import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
-import me.jellysquid.mods.sodium.client.gl.util.VertexSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelPart;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import org.lwjgl.opengl.GL15;
 
 public class VAOGraphicsState implements ChunkGraphicsState {
     private final GlVertexArray vertexArray;
     private GlBuffer vertexBuffer;
 
-    private final long[] layers;
+    private final ChunkModelPart[] parts;
 
     public VAOGraphicsState() {
         this.vertexBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
         this.vertexArray = new GlVertexArray();
-        this.layers = new long[BlockRenderPass.count()];
+        this.parts = new ChunkModelPart[ChunkModelPart.count()];
     }
 
     @Override
@@ -30,8 +30,8 @@ public class VAOGraphicsState implements ChunkGraphicsState {
         this.vertexArray.delete();
     }
 
-    public long getSliceForLayer(BlockRenderPass pass) {
-        return this.layers[pass.ordinal()];
+    public ChunkModelPart getModelPart(byte key) {
+        return this.parts[key];
     }
 
     public GlVertexArray getVertexArray() {
@@ -61,12 +61,9 @@ public class VAOGraphicsState implements ChunkGraphicsState {
 
         int stride = vertexFormat.getStride();
 
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            BufferSlice slice = meshData.getSlice(pass);
 
-            if (slice != null) {
-                this.layers[pass.ordinal()] = VertexSlice.pack(slice.start / stride, slice.len / stride);
-            }
+        for (Byte2ReferenceMap.Entry<ChunkModelSlice> entry : meshData.getBuffers().byte2ReferenceEntrySet()) {
+            this.parts[entry.getByteKey()] = new ChunkModelPart(entry.getValue().start / stride, entry.getValue().len / stride);
         }
 
         this.vertexBuffer.unbind(GL15.GL_ARRAY_BUFFER);

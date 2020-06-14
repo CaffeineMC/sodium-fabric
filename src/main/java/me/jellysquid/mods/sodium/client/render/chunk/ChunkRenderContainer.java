@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
@@ -32,6 +33,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private Direction direction;
     private int visibleFrame = -1;
     private byte cullingState;
+    private byte visibleFaces;
     private long visibilityData;
 
     private final ChunkRenderContainer<T>[] adjacent;
@@ -382,5 +384,25 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
     public int getChunkZ() {
         return this.chunkZ;
+    }
+
+    public void resetVisibleFaces() {
+        this.visibleFaces = (byte) (1 << ModelQuadFacing.NONE.ordinal());
+    }
+
+    public void markFaceVisible(ModelQuadFacing facing) {
+        this.visibleFaces |= (byte) (1 << facing.ordinal());
+    }
+
+    public boolean isFaceVisible(ModelQuadFacing facing) {
+        return (this.visibleFaces & (1 << facing.ordinal())) != 0;
+    }
+
+    public ChunkRenderBounds getBounds() {
+        return this.data.getBounds();
+    }
+
+    public void markAllFacesVisible() {
+        this.visibleFaces = 0b1111111;
     }
 }

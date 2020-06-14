@@ -216,6 +216,16 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Aggressive Chunk Culling")
+                        .setTooltip("If enabled, an additional culling pass will be performed on the CPU to determine which planes of a chunk mesh are visible. This " +
+                                "can eliminate a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setBinding((opts, value) -> opts.performance.useAggressiveChunkCulling = value, opts -> opts.performance.useAggressiveChunkCulling)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Compact Vertex Format")
                         .setTooltip("If enabled, a more compact vertex format will be used for chunk meshes by limiting the precision of vertex attributes. This format " +
                                 "can reduce graphics memory usage and bandwidth requirements by up to 30%, but could cause problems with exotic block models.")

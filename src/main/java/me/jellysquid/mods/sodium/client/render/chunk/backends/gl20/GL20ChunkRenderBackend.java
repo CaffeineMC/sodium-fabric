@@ -3,8 +3,10 @@ package me.jellysquid.mods.sodium.client.render.chunk.backends.gl20;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
-import me.jellysquid.mods.sodium.client.gl.util.VertexSlice;
+import me.jellysquid.mods.sodium.client.gl.util.GlMultiDrawBatch;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelPart;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
@@ -14,6 +16,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
 
 import java.util.Iterator;
 
@@ -21,6 +24,8 @@ import java.util.Iterator;
  * A simple chunk rendering backend which mirrors that of vanilla's own pretty closely.
  */
 public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphicsState> {
+    private final GlMultiDrawBatch batch = new GlMultiDrawBatch(ChunkModelPart.count());
+
     public GL20ChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
     }
@@ -60,6 +65,7 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
         this.vertexFormat.enableVertexAttributes();
 
         GlBuffer lastRender = null;
+        GlMultiDrawBatch batch = this.batch;
 
         while (renders.hasNext()) {
             ChunkRenderContainer<VBOGraphicsState> render = renders.next();
@@ -69,26 +75,42 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
                 return;
             }
 
-            long slice = graphics.getSliceForLayer(pass);
-
-            if (VertexSlice.isEmpty(slice)) {
-                continue;
-            }
-
             float modelX = camera.getChunkModelOffset(render.getRenderX(), camera.blockOriginX, camera.originX);
             float modelY = camera.getChunkModelOffset(render.getRenderY(), camera.blockOriginY, camera.originY);
             float modelZ = camera.getChunkModelOffset(render.getRenderZ(), camera.blockOriginZ, camera.originZ);
 
-            this.activeProgram.uploadChunkModelOffset(modelX, modelY, modelZ);
+            for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+                if (!render.isFaceVisible(facing)) {
+                    continue;
+                }
 
-            GlBuffer buffer = graphics.getBuffer();
-            buffer.bind(GL15.GL_ARRAY_BUFFER);
+                ChunkModelPart part = graphics.getModelPart(ChunkModelPart.encodeKey(pass, facing));
 
-            this.vertexFormat.bindVertexAttributes();
+                if (part == null) {
+                    continue;
+                }
 
-            buffer.drawArrays(GL11.GL_QUADS, VertexSlice.unpackFirst(slice), VertexSlice.unpackCount(slice));
+                if (!batch.isBuilding()) {
+                    batch.begin();
 
-            lastRender = buffer;
+                    this.activeProgram.uploadChunkModelOffset(modelX, modelY, modelZ);
+
+                    GlBuffer buffer = graphics.getBuffer();
+                    buffer.bind(GL15.GL_ARRAY_BUFFER);
+
+                    this.vertexFormat.bindVertexAttributes();
+
+                    lastRender = buffer;
+                }
+
+                batch.addChunkRender(part.start, part.count);
+            }
+
+            if (batch.isBuilding()) {
+                batch.end();
+
+                GL20.glMultiDrawArrays(GL11.GL_QUADS, this.batch.getIndicesBuffer(), this.batch.getLengthBuffer());
+            }
         }
 
         if (lastRender != null) {
