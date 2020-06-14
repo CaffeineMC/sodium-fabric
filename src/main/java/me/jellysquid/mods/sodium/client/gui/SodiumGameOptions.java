@@ -40,7 +40,6 @@ public class SodiumGameOptions {
         public MipmapQuality mipmapQuality = MipmapQuality.NEAREST;
 
         public boolean enableVignette = true;
-        public boolean enableFog = true;
         public boolean enableClouds = true;
 
         public LightingQuality smoothLighting = LightingQuality.HIGH;
