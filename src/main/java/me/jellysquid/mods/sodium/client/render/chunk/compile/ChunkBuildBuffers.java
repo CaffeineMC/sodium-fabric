@@ -88,7 +88,7 @@ public class ChunkBuildBuffers {
                 int start = bufferLen;
                 int size = builder.getSize();
 
-                staging.put(ChunkModelPart.encodeKey(pass, facing), new ChunkModelSlice(start, size, builder));
+                staging.put(ChunkModelPart.encodeKey(pass, facing), new ChunkModelSlice(pass, builder, start, size));
 
                 bufferLen += size;
             }
