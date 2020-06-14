@@ -24,7 +24,7 @@ public class SodiumGameOptions {
     private File file;
 
     public static class PerformanceSettings {
-        public ChunkRendererBackendOption chunkRendererBackend = ChunkRendererBackendOption.DEFAULT;
+        public ChunkRendererBackendOption chunkRendererBackend = ChunkRendererBackendOption.BEST;
         public boolean animateOnlyVisibleTextures = true;
         public boolean useAdvancedEntityCulling = true;
         public boolean useParticleCulling = true;
@@ -51,7 +51,7 @@ public class SodiumGameOptions {
         GL30("OpenGL 3.0", GL30ChunkRenderBackend::isSupported),
         GL20("OpenGL 2.0", GL20ChunkRenderBackend::isSupported);
 
-        public static final ChunkRendererBackendOption DEFAULT = pickBestBackend();
+        public static final ChunkRendererBackendOption BEST = pickBestBackend();
 
         private final String name;
         private final BooleanSupplier supportedFunc;
@@ -192,7 +192,7 @@ public class SodiumGameOptions {
 
     private void sanitize() {
         if (this.performance.chunkRendererBackend == null) {
-            this.performance.chunkRendererBackend = ChunkRendererBackendOption.DEFAULT;
+            this.performance.chunkRendererBackend = ChunkRendererBackendOption.BEST;
         }
     }
 

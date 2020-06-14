@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.AttackIndicator;
 import net.minecraft.client.options.ParticlesOption;
+import net.minecraft.client.util.TextFormat;
 import net.minecraft.client.util.Window;
 
 import java.util.ArrayList;
@@ -200,7 +201,8 @@ public class SodiumGameOptionPages {
                         .setName("Chunk Renderer")
                         .setTooltip("Modern versions of OpenGL provide features which can be used to greatly reduce driver overhead when rendering chunks. " +
                                 "You should use the latest supported feature set for optimal performance. If you're experiencing chunk rendering issues or driver crashes, try " +
-                                "using the older (and possibly more stable) feature sets.")
+                                "using the older (and possibly more stable) feature sets." +
+                                "\n\n" + TextFormat.GRAY + "Your graphics card has support for up to the " + SodiumGameOptions.ChunkRendererBackendOption.BEST.getLocalizedName() + " feature set." + TextFormat.WHITE)
                         .setControl((opt) -> new CyclingControl<>(opt, SodiumGameOptions.ChunkRendererBackendOption.getAvailableOptions()))
                         .setBinding((opts, value) -> opts.performance.chunkRendererBackend = value, opts -> opts.performance.chunkRendererBackend)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
