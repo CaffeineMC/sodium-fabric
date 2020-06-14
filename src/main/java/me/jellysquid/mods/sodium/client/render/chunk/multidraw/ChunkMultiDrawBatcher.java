@@ -11,14 +11,15 @@ import java.nio.IntBuffer;
  * Provides a fixed-size queue for batching draw calls for vertex data in the same buffer. This internally
  * uses {@link GL14#glMultiDrawArrays(int, IntBuffer, IntBuffer)} and should be compatible on any relevant platform.
  */
-public class ChunkMultiDrawBatch {
+public class ChunkMultiDrawBatcher {
     private final FloatBuffer bufOffsets;
     private final IntBuffer bufIndices;
     private final IntBuffer bufLen;
     private int count;
+    private int readIndex;
     private boolean isBuilding;
 
-    public ChunkMultiDrawBatch(int capacity) {
+    public ChunkMultiDrawBatcher(int capacity) {
         this.bufIndices = allocateByteBuffer(capacity * 4).asIntBuffer();
         this.bufLen = allocateByteBuffer(capacity * 4).asIntBuffer();
         this.bufOffsets = allocateByteBuffer(capacity * 16).asFloatBuffer();
@@ -46,14 +47,36 @@ public class ChunkMultiDrawBatch {
         this.bufLen.clear();
         this.bufOffsets.clear();
         this.count = 0;
+        this.readIndex = 0;
 
         this.isBuilding = true;
     }
 
-    public void end() {
-        this.bufIndices.limit(this.count);
-        this.bufLen.limit(this.count);
+    public boolean getNextBatch(int maxBatchSize) {
+        if (this.readIndex >= this.count) {
+            return false;
+        }
 
+        int start = this.readIndex;
+        int count = Math.min(maxBatchSize, this.count - this.readIndex);
+
+        this.readIndex += count;
+
+        int end = start + count;
+
+        this.bufIndices.position(start);
+        this.bufIndices.limit(end);
+
+        this.bufLen.position(start);
+        this.bufLen.limit(end);
+
+        this.bufOffsets.position(start * 4);
+        this.bufOffsets.limit(end * 4);
+
+        return true;
+    }
+
+    public void end() {
         this.isBuilding = false;
     }
 

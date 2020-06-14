@@ -10,7 +10,7 @@ import org.apache.commons.lang3.Validate;
 public class ChunkRegionManager<T extends ChunkGraphicsState> {
     // Regions contain 8x4x8 chunks
     public static final int BUFFER_WIDTH = 4;
-    public static final int BUFFER_HEIGHT = 1;
+    public static final int BUFFER_HEIGHT = 2;
     public static final int BUFFER_LENGTH = 4;
 
     public static final int BUFFER_SIZE = BUFFER_WIDTH * BUFFER_HEIGHT * BUFFER_LENGTH;
