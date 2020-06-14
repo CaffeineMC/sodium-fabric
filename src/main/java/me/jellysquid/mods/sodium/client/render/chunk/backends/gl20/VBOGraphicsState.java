@@ -9,15 +9,18 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelPart;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import org.lwjgl.opengl.GL15;
 
 public class VBOGraphicsState implements ChunkGraphicsState {
     private final GlBuffer buffer;
     private final ChunkModelPart[] parts;
+    private final boolean[] presentLayers;
 
     public VBOGraphicsState() {
         this.buffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
         this.parts = new ChunkModelPart[ChunkModelPart.count()];
+        this.presentLayers = new boolean[BlockRenderPass.COUNT];
     }
 
     @Override
@@ -37,6 +40,7 @@ public class VBOGraphicsState implements ChunkGraphicsState {
 
         for (Byte2ReferenceMap.Entry<ChunkModelSlice> entry : meshData.getBuffers().byte2ReferenceEntrySet()) {
             this.parts[entry.getByteKey()] = new ChunkModelPart(entry.getValue().start / stride, entry.getValue().len / stride);
+            this.presentLayers[entry.getValue().pass.ordinal()] = true;
         }
     }
 
@@ -46,5 +50,9 @@ public class VBOGraphicsState implements ChunkGraphicsState {
 
     public GlBuffer getBuffer() {
         return this.buffer;
+    }
+
+    public boolean containsDataForPass(BlockRenderPass pass) {
+        return this.presentLayers[pass.ordinal()];
     }
 }

@@ -68,7 +68,7 @@ public class GL30ChunkRenderBackend extends ChunkRenderBackendOneshot<VAOGraphic
             ChunkRenderContainer<VAOGraphicsState> render = renders.next();
             VAOGraphicsState graphics = render.getGraphicsState();
 
-            if (graphics == null) {
+            if (graphics == null || !graphics.containsDataForPass(pass)) {
                 continue;
             }
 

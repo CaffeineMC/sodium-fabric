@@ -67,8 +67,8 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
             ChunkRenderContainer<VBOGraphicsState> render = renders.next();
             VBOGraphicsState graphics = render.getGraphicsState();
 
-            if (graphics == null) {
-                return;
+            if (graphics == null || !graphics.containsDataForPass(pass)) {
+                continue;
             }
 
             float modelX = camera.getChunkModelOffset(render.getRenderX(), camera.blockOriginX, camera.originX);

@@ -217,7 +217,7 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
             ChunkRenderContainer<LCBGraphicsState> render = renders.next();
             LCBGraphicsState graphics = render.getGraphicsState();
 
-            if (graphics == null) {
+            if (graphics == null || !graphics.containsDataForPass(pass)) {
                 continue;
             }
 
