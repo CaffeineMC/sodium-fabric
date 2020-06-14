@@ -90,7 +90,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(ParticlesOption.class, vanillaOpts)
                         .setName("Particles")
                         .setTooltip("Controls the maximum number of particles which can be present on screen at any one time.")
-                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.values(), new String[] { "All", "Decreased", "Minimal" }))
+                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new String[] { "All", "Decreased", "Minimal" }))
                         .setBinding((opts, value) -> opts.particles = value, (opts) -> opts.particles)
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
@@ -106,7 +106,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(AttackIndicator.class, vanillaOpts)
                         .setName("Attack Indicator")
                         .setTooltip("Controls where the Attack Indicator is displayed on screen.")
-                        .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.values(), new String[] { "Off", "Crosshair", "Hotbar" }))
+                        .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.class, new String[] { "Off", "Crosshair", "Hotbar" }))
                         .setBinding((opts, value) -> opts.attackIndicator = value, (opts) -> opts.attackIndicator)
                         .build())
                 .build());
@@ -122,7 +122,7 @@ public class SodiumGameOptionPages {
                         .setName("Graphics Quality")
                         .setTooltip("The default graphics quality controls some legacy options and is necessary for mod compatibility. If the options below are left to " +
                                 "\"Default\", they will use this setting.")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.DefaultGraphicsQuality.values()))
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.DefaultGraphicsQuality.class))
                         .setBinding(
                                 (opts, value) -> opts.fancyGraphics = value == SodiumGameOptions.DefaultGraphicsQuality.FANCY,
                                 opts -> (opts.fancyGraphics ? SodiumGameOptions.DefaultGraphicsQuality.FANCY : SodiumGameOptions.DefaultGraphicsQuality.FAST))
@@ -135,14 +135,14 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
                         .setName("Clouds Quality")
                         .setTooltip("Controls the quality of rendered clouds in the sky.")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.values()))
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.class))
                         .setBinding((opts, value) -> opts.quality.cloudQuality = value, opts -> opts.quality.cloudQuality)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
                         .setName("Weather Quality")
                         .setTooltip("Controls the quality of rain and snow effects.")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.values()))
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.class))
                         .setBinding((opts, value) -> opts.quality.weatherQuality = value, opts -> opts.quality.weatherQuality)
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
@@ -152,7 +152,7 @@ public class SodiumGameOptionPages {
                                 "\nOff - No smooth lighting." +
                                 "\nLow - Smooth block lighting only." +
                                 "\nHigh - Smooth block and entity lighting.")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.LightingQuality.values()))
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.LightingQuality.class))
                         .setBinding((opts, value) -> opts.quality.smoothLighting = value, opts -> opts.quality.smoothLighting)
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -203,7 +203,8 @@ public class SodiumGameOptionPages {
                                 "You should use the latest supported feature set for optimal performance. If you're experiencing chunk rendering issues or driver crashes, try " +
                                 "using the older (and possibly more stable) feature sets." +
                                 "\n\n" + TextFormat.GRAY + "Your graphics card has support for up to the " + SodiumGameOptions.ChunkRendererBackendOption.BEST.getLocalizedName() + " feature set." + TextFormat.WHITE)
-                        .setControl((opt) -> new CyclingControl<>(opt, SodiumGameOptions.ChunkRendererBackendOption.getAvailableOptions()))
+                        .setControl((opt) -> new CyclingControl<>(opt, SodiumGameOptions.ChunkRendererBackendOption.class,
+                                SodiumGameOptions.ChunkRendererBackendOption.getAvailableOptions()))
                         .setBinding((opts, value) -> opts.performance.chunkRendererBackend = value, opts -> opts.performance.chunkRendererBackend)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
