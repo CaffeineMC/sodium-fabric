@@ -18,7 +18,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkMultiDrawBatch;
+import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkMultiDrawBatcher;
 import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkRenderBackendMultidraw;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
@@ -82,7 +82,7 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
     private final GlMutableBuffer uploadBuffer;
 
     public GL46ChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
-        super(format, ChunkRegionManager.BUFFER_SIZE * 7);
+        super(format);
 
         this.bufferManager = new ChunkRegionManager<>();
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
@@ -170,12 +170,14 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
                 region.setPrevVbo(vbo);
             }
 
-            ChunkMultiDrawBatch batch = region.getDrawBatch();
-            batch.end();
+            ChunkMultiDrawBatcher batcher = region.getDrawBatcher();
+            batcher.end();
 
-            this.activeProgram.uploadModelOffsetUniforms(batch.getUniformUploadBuffer());
+            while (batcher.getNextBatch(MAX_BATCH_SIZE)) {
+                this.activeProgram.uploadModelOffsetUniforms(batcher.getUniformUploadBuffer());
 
-            GL14.glMultiDrawArrays(GL11.GL_QUADS, batch.getIndicesBuffer(), batch.getLengthBuffer());
+                GL14.glMultiDrawArrays(GL11.GL_QUADS, batcher.getIndicesBuffer(), batcher.getLengthBuffer());
+            }
 
             prevVao = vao;
         }
@@ -228,7 +230,7 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultidraw<LCBGraph
                 }
 
                 ChunkRegion<LCBGraphicsState> region = graphics.getRegion();
-                ChunkMultiDrawBatch batch = region.getDrawBatch();
+                ChunkMultiDrawBatcher batch = region.getDrawBatcher();
 
                 if (!batch.isBuilding()) {
                     batch.begin();

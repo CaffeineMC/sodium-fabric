@@ -12,12 +12,14 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkRenderShaderBac
 import net.minecraft.util.Identifier;
 
 public abstract class ChunkRenderBackendMultidraw<T extends ChunkGraphicsState> extends ChunkRenderShaderBackend<T, ChunkProgramMultidraw> {
-    private final int maxBatchSize;
+    /**
+     * Controls the maximum number of chunk renders that can be performed in a single draw call. This directly controls
+     * the amount of memory allocated for uniform arrays in the shader.
+     */
+    protected static final int MAX_BATCH_SIZE = 32;
 
-    public ChunkRenderBackendMultidraw(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format, int maxBatchSize) {
+    public ChunkRenderBackendMultidraw(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
-
-        this.maxBatchSize = maxBatchSize;
     }
 
     @Override
@@ -40,7 +42,7 @@ public abstract class ChunkRenderBackendMultidraw<T extends ChunkGraphicsState> 
     private ShaderConstants createShaderConstants(ChunkFogMode fogMode) {
         ShaderConstants.Builder constants = ShaderConstants.builder();
         constants.define("USE_MULTIDRAW");
-        constants.define("MAX_BATCH_SIZE", String.valueOf(this.maxBatchSize));
+        constants.define("MAX_BATCH_SIZE", String.valueOf(MAX_BATCH_SIZE));
 
         fogMode.addConstants(constants);
 

@@ -4,16 +4,17 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkMultiDrawBatch;
+import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkMultiDrawBatcher;
 
 public class ChunkRegion<T extends ChunkGraphicsState> {
     private static final int EXPECTED_CHUNK_SIZE = 8 * 1024;
 
     private final GlBufferArena arena;
     private final GlVertexArray vao;
-    private final ChunkMultiDrawBatch batch;
+    private final ChunkMultiDrawBatcher batch;
 
     private final ObjectArrayList<ChunkBuildResult<T>> uploads;
 
@@ -22,7 +23,7 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
     public ChunkRegion(int size) {
         int arenaSize = EXPECTED_CHUNK_SIZE * size;
         this.arena = new GlBufferArena(arenaSize, arenaSize);
-        this.batch = new ChunkMultiDrawBatch(size * 7);
+        this.batch = new ChunkMultiDrawBatcher(size * ModelQuadFacing.COUNT);
         this.uploads = new ObjectArrayList<>();
         this.vao = new GlVertexArray();
     }
@@ -44,7 +45,7 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
         return this.uploads;
     }
 
-    public ChunkMultiDrawBatch getDrawBatch() {
+    public ChunkMultiDrawBatcher getDrawBatcher() {
         return this.batch;
     }
 
