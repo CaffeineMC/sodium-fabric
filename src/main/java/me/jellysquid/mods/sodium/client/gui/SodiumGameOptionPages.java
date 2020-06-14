@@ -166,13 +166,6 @@ public class SodiumGameOptionPages {
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Fog")
-                        .setTooltip("If enabled, a fog effect will be used for terrain in the distance.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.quality.enableFog = value, opts -> opts.quality.enableFog)
-                        .setImpact(OptionImpact.LOW)
-                        .build())
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Vignette")
                         .setTooltip("If enabled, a vignette effect will be rendered on the player's view. This is very unlikely to make a difference " +
                                 "to frame rates unless you are fill-rate limited.")
