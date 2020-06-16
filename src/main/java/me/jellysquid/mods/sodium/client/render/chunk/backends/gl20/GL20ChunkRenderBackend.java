@@ -59,7 +59,11 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
     }
 
     @Override
-    public void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<VBOGraphicsState>> renders, ChunkCameraContext camera) {
+    public void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<VBOGraphicsState>> renders, MatrixStack matrixStack, ChunkCameraContext camera) {
+        super.begin(matrixStack);
+
+        this.vertexFormat.enableVertexAttributes();
+
         GlBuffer lastRender = null;
         GlMultiDrawBatch batch = this.batch;
 
@@ -112,20 +116,10 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
         if (lastRender != null) {
             lastRender.unbind(GL15.GL_ARRAY_BUFFER);
         }
-    }
 
-    @Override
-    public void beginRenders(MatrixStack matrixStack) {
-        super.beginRenders(matrixStack);
-
-        this.vertexFormat.enableVertexAttributes();
-    }
-
-    @Override
-    public void endRenders(MatrixStack matrixStack) {
         this.vertexFormat.disableVertexAttributes();
 
-        super.endRenders(matrixStack);
+        super.end(matrixStack);
     }
 
     public static boolean isSupported() {

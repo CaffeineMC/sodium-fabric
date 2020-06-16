@@ -10,7 +10,6 @@ import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
@@ -60,7 +59,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private ChunkRenderManager<?> chunkRenderManager;
     private BlockRenderPassManager renderPassManager;
     private ChunkRenderBackend<?> chunkRenderBackend;
-    private boolean chunksNeedTicking = false;
 
     /**
      * Instantiates Sodium's world renderer. This should be called at the time of the world renderer initialization.
@@ -144,6 +142,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.frustum = frustum;
 
         this.useEntityCulling = SodiumClientMod.options().performance.useAdvancedEntityCulling;
+        this.chunkRenderManager.onFrameChanged();
 
         Vec3d cameraPos = camera.getPos();
 
@@ -183,7 +182,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.client.getProfiler().swap("update");
 
         this.chunkRenderManager.updateChunks();
-        this.chunksNeedTicking = true;
 
         if (!hasForcedFrustum && this.chunkRenderManager.isDirty()) {
             this.client.getProfiler().push("iteration");
@@ -198,42 +196,18 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.client.getProfiler().pop();
     }
 
-    public void beginChunkRendering(MatrixStack matrixStack) {
-        RenderSystem.enableFog();
-
-        this.chunkRenderBackend.beginRenders(matrixStack);
-    }
-
     /**
      * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
-    public void drawChunkLayer(RenderLayer renderLayer, double x, double y, double z) {
+    public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
         BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
         pass.startDrawing();
 
-        if (this.chunksNeedTicking) {
-            this.tickChunks();
-        }
-
-        this.chunkRenderManager.renderLayer(pass, x, y, z);
+        this.chunkRenderManager.renderLayer(matrixStack, pass, x, y, z);
 
         pass.endDrawing();
 
         RenderSystem.clearCurrentColor();
-    }
-
-    private void tickChunks() {
-        this.chunksNeedTicking = false;
-
-        for (ChunkRenderContainer<?> render : this.chunkRenderManager.getVisibleChunks()) {
-            render.tick();
-        }
-    }
-
-    public void endChunkRendering(MatrixStack matrixStack) {
-        RenderSystem.disableFog();
-
-        this.chunkRenderBackend.endRenders(matrixStack);
     }
 
     public void renderChunkDebugInfo(Camera camera) {
