@@ -31,7 +31,7 @@ public abstract class MixinClientChunkManager implements ChunkLightUnloadQueue {
     @Shadow
     public abstract LightingProvider getLightingProvider();
 
-    private static final int BATCH_SIZE = 16;
+    private static final int BATCH_SIZE = 64;
 
     private final Queue<ChunkPos> unloadQueue = new ConcurrentLinkedQueue<>();
 
