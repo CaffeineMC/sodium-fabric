@@ -10,6 +10,7 @@ import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.backends.shader.cr.CRChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ShaderLCBChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.vao.ShaderVAOChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.vbo.ShaderVBOChunkRenderBackend;
@@ -190,6 +191,14 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     }
 
     public void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
+        if (chunkRenderBackend instanceof CRChunkRenderBackend) {
+            if (renderLayer == RenderLayer.getTranslucent()) {
+                ((CRChunkRenderBackend) chunkRenderBackend).renderTranslucentBlocks(matrixStack);
+            }
+
+            return;
+        }
+
         BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
         pass.startDrawing();
 
@@ -233,7 +242,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             this.renderPassManager = BlockRenderPassManager.vanilla();
         }
 
-        if (GlVertexArray.isSupported() && opts.performance.useLargeBuffers) {
+        if (GlVertexArray.isSupported() && opts.performance.useConditionalRendering) {
+            this.chunkRenderBackend = new CRChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
+        } else if (GlVertexArray.isSupported() && opts.performance.useLargeBuffers) {
             this.chunkRenderBackend = new ShaderLCBChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
         } else if (GlVertexArray.isSupported() && opts.performance.useVertexArrays) {
             this.chunkRenderBackend = new ShaderVAOChunkRenderBackend(SodiumVertexFormats.CHUNK_MESH_VANILLA);
@@ -387,8 +398,15 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.chunkRenderManager.scheduleRebuild(x, y, z, important);
     }
 
-    public void onSolidBlockRenderingBegin() {
-        chunkRenderManager.onBlockRenderingStarted();
+    public void onSolidBlockRenderingBegin(MatrixStack matrixStack) {
+        chunkRenderManager.onBeignRenderingSolidBlocks(
+                matrixStack,
+                new BlockRenderPass[] {
+                        this.renderPassManager.getRenderPassForLayer(RenderLayer.getSolid()),
+                        this.renderPassManager.getRenderPassForLayer(RenderLayer.getCutout()),
+                        this.renderPassManager.getRenderPassForLayer(RenderLayer.getCutoutMipped())
+                }
+        );
     }
 
 }

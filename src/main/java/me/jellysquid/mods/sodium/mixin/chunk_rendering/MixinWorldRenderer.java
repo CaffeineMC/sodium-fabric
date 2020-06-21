@@ -78,7 +78,7 @@ public abstract class MixinWorldRenderer {
     @Overwrite
     private void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double d, double e, double f) {
         if (renderLayer == RenderLayer.getSolid()) {
-            renderer.onSolidBlockRenderingBegin();
+            renderer.onSolidBlockRenderingBegin(matrixStack);
         }
 
         this.renderer.renderLayer(renderLayer, matrixStack, d, e, f);

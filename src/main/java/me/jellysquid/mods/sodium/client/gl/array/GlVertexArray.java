@@ -17,6 +17,10 @@ public class GlVertexArray extends GlHandle {
         func.glBindVertexArray(0);
     }
 
+    public static void unbindVertexArray(){
+        func.glBindVertexArray(0);
+    }
+
     public void bind() {
         func.glBindVertexArray(this.handle());
     }

@@ -3,14 +3,15 @@ package me.jellysquid.mods.sodium.client.render.backends.shader.cr;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.memory.BufferSegment;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
-import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ChunkRegion;
 
 public class CRRenderState implements ChunkRenderState {
-    private final ChunkRegion region;
+    @Deprecated
+    private final CRChunkRegion region;
+    @Deprecated
     private final BufferSegment segment;
     private final int start, length;
 
-    public CRRenderState(ChunkRegion region, BufferSegment segment, GlVertexFormat<?> format) {
+    public CRRenderState(CRChunkRegion region, BufferSegment segment, GlVertexFormat<?> format) {
         this.region = region;
         this.segment = segment;
         this.start = segment.getStart() / format.getStride();
@@ -22,11 +23,13 @@ public class CRRenderState implements ChunkRenderState {
         this.segment.delete();
     }
 
+    @Deprecated
     public BufferSegment getSegment() {
         return this.segment;
     }
 
-    public ChunkRegion getRegion() {
+    @Deprecated
+    public CRChunkRegion getRegion() {
         return this.region;
     }
 

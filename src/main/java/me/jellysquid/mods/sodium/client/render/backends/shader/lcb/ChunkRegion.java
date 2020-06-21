@@ -6,7 +6,7 @@ import me.jellysquid.mods.sodium.client.gl.memory.BufferBlock;
 import me.jellysquid.mods.sodium.client.gl.util.MultiDrawBatch;
 import net.minecraft.util.math.ChunkSectionPos;
 
-public class ChunkRegion {
+public class ChunkRegion extends AbstractChunkRegion {
     private final ChunkSectionPos origin;
     private final MultiDrawBatch batch;
     private final BufferBlock buffer;
@@ -25,10 +25,12 @@ public class ChunkRegion {
         return this.buffer;
     }
 
+    @Override
     public boolean isEmpty() {
         return this.buffer.isEmpty();
     }
 
+    @Override
     public void delete() {
         this.buffer.delete();
     }

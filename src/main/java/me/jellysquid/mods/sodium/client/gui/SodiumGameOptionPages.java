@@ -219,6 +219,16 @@ public class SodiumGameOptionPages {
                         .setEnabled(ShaderLCBChunkRenderBackend.isSupported())
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Advanced Occlusion Culling")
+                        .setTooltip("Use occlusion query and conditional rendering with LCB." +
+                                "\nIf enabled, overwrites LCB Option\n\nRequires OpenGL [TODO]")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.performance.useConditionalRendering = value, opts -> opts.performance.useConditionalRendering)
+                        .setImpact(OptionImpact.EXTREME)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .setEnabled(true)// TODO detect hardware support
+                        .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Advanced Entity Culling")
                         .setTooltip("If enabled, a secondary culling pass will be performed before attempting to render an entity. This additional pass " +
                                 "takes into account the current set of visible chunks and removes entities which are not in any visible chunks.")

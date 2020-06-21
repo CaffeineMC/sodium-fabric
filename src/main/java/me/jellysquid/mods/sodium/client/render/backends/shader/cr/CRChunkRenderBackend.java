@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader.cr;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectList;
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
@@ -11,31 +10,91 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.memory.BufferBlock;
 import me.jellysquid.mods.sodium.client.gl.memory.BufferSegment;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ChunkRegion;
 import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ChunkRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkMesh;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRender;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.VertexBuffer;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.Vec3d;
+import org.apache.logging.log4j.util.TriConsumer;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRenderState> {
 
-    private final ChunkRegionManager bufferManager;
+    private static int discriminator = 0;
+
+    private final ChunkRegionManager<CRChunkRegion> regionManager;
     private final GlMutableBuffer uploadBuffer;
 
-    private final ObjectList<ChunkRegion> pendingBatches = new ObjectArrayList<>();
+    private ArrayList<CRChunkRegion> nearRegions = new ArrayList<>();
+    private ArrayList<CRChunkRegion> farRegions = new ArrayList<>();
+
+
+    private VertexBuffer boundingBoxBuf;
 
     public CRChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
 
-        this.bufferManager = new ChunkRegionManager();
+        this.regionManager = new ChunkRegionManager<CRChunkRegion>(
+                CRChunkRegion::new
+        );
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
+
+
+        initBoundingBoxVertexBuffer();
+    }
+
+    private void initBoundingBoxVertexBuffer() {
+        double len = 4 * 16;
+
+        BufferBuilder boundingBoxBuffer;
+
+        boundingBoxBuffer = new BufferBuilder(6 * 4 * 3);
+
+        boundingBoxBuffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
+
+        Consumer<Vec3d> putVertex = (vec) -> {
+            boundingBoxBuffer.vertex(vec.x, vec.y, vec.z)
+                    .color(255, 0, 255, 255).next();
+        };
+
+        TriConsumer<Vec3d, Vec3d, Vec3d> putQuad = (base, vec1, vec2) -> {
+            putVertex.accept(base);
+            putVertex.accept(base.add(vec1));
+            putVertex.accept(base.add(vec1).add(vec2));
+            putVertex.accept(base.add(vec2));
+        };
+
+        Vec3d xAxis = new Vec3d(len, 0, 0);
+        Vec3d yAxis = new Vec3d(0, len, 0);
+        Vec3d zAxis = new Vec3d(0, 0, len);
+
+        putQuad.accept(Vec3d.ZERO, xAxis, zAxis);//bottom
+        putQuad.accept(Vec3d.ZERO, zAxis, yAxis);//left
+        putQuad.accept(Vec3d.ZERO, yAxis, xAxis);//back
+
+        putQuad.accept(yAxis, zAxis, xAxis);//top
+        putQuad.accept(xAxis, yAxis, zAxis);//right
+        putQuad.accept(zAxis, xAxis, yAxis);//front
+
+        boundingBoxBuffer.end();
+
+        boundingBoxBuf = new VertexBuffer(VertexFormats.POSITION_COLOR);
+        boundingBoxBuf.upload(boundingBoxBuffer);
     }
 
     @Override
@@ -57,7 +116,7 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
             for (ChunkMesh mesh : data.getMeshes()) {
                 ChunkSectionPos pos = render.getChunkPos();
 
-                ChunkRegion region = this.bufferManager.createRegion(pos);
+                CRChunkRegion region = this.regionManager.createRegion(pos);
                 BufferBlock block = region.getBuffer();
 
                 if (prevBlock != block) {
@@ -75,7 +134,10 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
                 BufferSegment segment = block.upload(GL15.GL_ARRAY_BUFFER, 0, upload.buffer.capacity());
 
-                render.setRenderState(mesh.getRenderPass(), new CRRenderState(region, segment, this.vertexFormat));
+                render.setRenderState(
+                        mesh.getRenderPass(),
+                        new CRRenderState(region, segment, this.vertexFormat)
+                );
             }
         }
 
@@ -89,48 +151,215 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
     @Override
     public void render(Iterator<CRRenderState> renders, MatrixStack matrixStack, double x, double y, double z) {
-        this.bufferManager.cleanup();
 
-        this.setupBatches(renders);
-        this.begin(matrixStack);
+        throw new UnsupportedOperationException();
+
+    }
+
+
+    private static Vec3d getCameraPos() {
+        return MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+    }
+
+    private boolean isNearRegion(CRChunkRegion region) {
+        //TODO change it
+        return nearRegions.size() < 5;
+    }
+
+    public void onBlockRenderingStarted(
+            ArrayList<ChunkRender<CRRenderState>> sectionsToRender,
+            MatrixStack matrixStack,
+            BlockRenderPass[] solidRenderPasses
+    ) {
+        prepareRendering(sectionsToRender);
+
+        renderNearSolidBlocks(matrixStack, solidRenderPasses);
+
+        performQueries(matrixStack);
+
+        renderFarSolidBlocks(matrixStack, solidRenderPasses);
+    }
+
+    private void prepareRendering(ArrayList<ChunkRender<CRRenderState>> sectionsToRender) {
+        discriminator++;
+
+        purge();
+
+        nearRegions.clear();
+        farRegions.clear();
+
+        for (ChunkRender<CRRenderState> section : sectionsToRender) {
+            CRChunkRegion region = regionManager.createRegion(section.getChunkPos());
+
+            // check whether it's already added
+            if (region.discriminator != discriminator) {
+                region.discriminator = discriminator;
+
+
+                if (isNearRegion(region)) {
+                    nearRegions.add(region);
+                } else {
+                    farRegions.add(region);
+                }
+
+                // This should not be really needed
+                region.resetBatches();
+            }
+
+            CRRenderState[] renderStates = section.getRenderStates();
+            for (int passIndex = 0; passIndex < renderStates.length; passIndex++) {
+                CRRenderState state = renderStates[passIndex];
+                if (state != null) {
+                    region.addToBatch(
+                            BlockRenderPass.values()[passIndex],
+                            state.getStart(),
+                            state.getLength()
+                    );
+                }
+            }
+        }
+    }
+
+    private void drawRegions(
+            MatrixStack matrixStack,
+            BlockRenderPass pass,
+            Iterator<CRChunkRegion> regions,
+            Consumer<CRChunkRegion> drawCall
+    ) {
+        pass.startDrawing();
+
+        Vec3d cameraPos = getCameraPos();
+
+        double x = cameraPos.x;
+        double y = cameraPos.y;
+        double z = cameraPos.z;
 
         int chunkX = (int) (x / 16.0D);
         int chunkY = (int) (y / 16.0D);
         int chunkZ = (int) (z / 16.0D);
 
+        this.begin(matrixStack);
+
         this.activeProgram.setModelMatrix(matrixStack, x % 16.0D, y % 16.0D, z % 16.0D);
 
-        GlVertexArray prevArray = null;
+        while (regions.hasNext()) {
+            CRChunkRegion region = regions.next();
 
-        for (ChunkRegion region : this.pendingBatches) {
             this.activeProgram.setModelOffset(region.getOrigin(), chunkX, chunkY, chunkZ);
 
-            prevArray = region.drawBatch(this.activeProgram.attributes);
+            drawCall.accept(region);
         }
 
-        if (prevArray != null) {
-            prevArray.unbind();
-        }
-
-        this.pendingBatches.clear();
+        GlVertexArray.unbindVertexArray();
 
         this.end(matrixStack);
+
+        pass.endDrawing();
     }
 
-    private void setupBatches(Iterator<CRRenderState> renders) {
-        while (renders.hasNext()) {
-            CRRenderState state = renders.next();
-
-            if (state != null) {
-                ChunkRegion region = state.getRegion();
-
-                if (region.isBatchEmpty()) {
-                    this.pendingBatches.add(region);
-                }
-
-                region.addToBatch(state.getStart(), state.getLength());
-            }
+    private void renderNearSolidBlocks(MatrixStack matrixStack, BlockRenderPass[] passes) {
+        for (BlockRenderPass pass : passes) {
+            drawRegions(
+                    matrixStack, pass, this.nearRegions.iterator(),
+                    region -> {
+                        region.drawBatch(pass, this.activeProgram.attributes);
+                    }
+            );
         }
+    }
+
+    private void performQueries(MatrixStack matrixStack) {
+        Vec3d cameraPos = getCameraPos();
+
+        double x = cameraPos.x;
+        double y = cameraPos.y;
+        double z = cameraPos.z;
+
+        int chunkX = (int) (x / 16.0D);
+        int chunkY = (int) (y / 16.0D);
+        int chunkZ = (int) (z / 16.0D);
+
+        RenderSystem.enableCull();
+        RenderSystem.disableAlphaTest();
+        RenderSystem.disableBlend();
+        RenderSystem.disableLighting();
+        RenderSystem.disableColorMaterial();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.colorMask(false, false, false, false);
+        RenderSystem.color4f(1, 1, 1, 1);
+        GL20.glUseProgram(0);
+
+        boundingBoxBuf.bind();
+        VertexFormats.POSITION_COLOR.startDrawing(0);
+
+        for (CRChunkRegion region : farRegions) {
+            region.getQueryObject().performQueryAnySamplePassedConservative(() -> {
+                matrixStack.push();
+                matrixStack.translate(
+                        region.getOrigin().getMinX() - x,
+                        region.getOrigin().getMinY() - y,
+                        region.getOrigin().getMinZ() - z
+                );
+                // TODO change it to shader?
+                boundingBoxBuf.draw(matrixStack.peek().getModel(), GL11.GL_QUADS);
+                matrixStack.pop();
+            });
+        }
+
+        RenderSystem.glBindBuffer(34962, () -> 0);
+
+        RenderSystem.depthMask(true);
+        RenderSystem.colorMask(true, true, true, true);
+        RenderSystem.enableCull();
+
+    }
+
+    private void renderFarSolidBlocks(MatrixStack matrixStack, BlockRenderPass[] passes) {
+        for (BlockRenderPass pass : passes) {
+            drawRegions(
+                    matrixStack, pass, this.farRegions.iterator(),
+                    region -> {
+                        region.drawBatch(
+                                pass, this.activeProgram.attributes,
+                                (r) -> {
+                                    region.getQueryObject().performConditionalRendering(
+                                            shouldWait(),
+                                            r
+                                    );
+                                }
+                        );
+                    }
+            );
+        }
+    }
+
+    public void renderTranslucentBlocks(MatrixStack matrixStack) {
+        BlockRenderPass pass = BlockRenderPass.TRANSLUCENT;
+
+        drawRegions(
+                matrixStack, pass, this.nearRegions.iterator(),
+                region -> {
+                    region.drawBatch(pass, this.activeProgram.attributes);
+                }
+        );
+
+        drawRegions(
+                matrixStack, pass, this.farRegions.iterator(),
+                region -> {
+                    region.drawBatch(
+                            pass, this.activeProgram.attributes,
+                            (r) -> {
+                                region.getQueryObject().performConditionalRendering(
+                                        shouldWait(),
+                                        r
+                                );
+                            }
+                    );
+                }
+        );
+
+        //debugStat();
     }
 
     @Override
@@ -147,17 +376,40 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
     public void delete() {
         super.delete();
 
-        this.bufferManager.delete();
+        this.regionManager.delete();
         this.uploadBuffer.delete();
     }
 
     @Override
     public BlockPos getRenderOffset(ChunkSectionPos pos) {
-        return this.bufferManager.getRenderOffset(pos);
+        return this.regionManager.getRenderOffset(pos);
     }
 
     public static boolean isSupported() {
         return GlVertexArray.isSupported() && GlBuffer.isBufferCopySupported();
     }
 
+    void purge() {
+        regionManager.cleanup();
+    }
+
+    boolean shouldWait() {
+        return false;
+    }
+
+    void debugStat() {
+        int visible = 0;
+        int invisible = 0;
+
+        for (CRChunkRegion region : farRegions) {
+            boolean result = region.getQueryObject().fetchQueryResultBooleanSynced();
+            if (result) {
+                visible++;
+            } else {
+                invisible++;
+            }
+        }
+
+        System.out.println(" " + nearRegions.size() + " " + visible + " " + invisible);
+    }
 }

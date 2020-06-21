@@ -7,12 +7,15 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
-public class ChunkRegionManager {
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+public class ChunkRegionManager<RegionType extends AbstractChunkRegion> {
     // Buffers span 4x2x4 chunks
     private static final int BUFFER_WIDTH = 4;
     private static final int BUFFER_HEIGHT = 4;
     private static final int BUFFER_LENGTH = 4;
-    private static final int BUFFER_SIZE = BUFFER_WIDTH * BUFFER_HEIGHT * BUFFER_LENGTH;
+    public static final int BUFFER_SIZE = BUFFER_WIDTH * BUFFER_HEIGHT * BUFFER_LENGTH;
 
     private static final int BUFFER_WIDTH_SH = Integer.bitCount(BUFFER_WIDTH - 1);
     private static final int BUFFER_HEIGHT_SH = Integer.bitCount(BUFFER_HEIGHT - 1);
@@ -28,14 +31,22 @@ public class ChunkRegionManager {
         Validate.isTrue(MathUtil.isPowerOfTwo(BUFFER_HEIGHT));
     }
 
-    private final Long2ReferenceOpenHashMap<ChunkRegion> regions = new Long2ReferenceOpenHashMap<>();
+    private final Long2ReferenceOpenHashMap<RegionType> regions = new Long2ReferenceOpenHashMap<>();
 
-    public ChunkRegion createRegion(ChunkSectionPos pos) {
-        ChunkRegion region = this.regions.get(getIndex(pos));
+    private final Function<ChunkSectionPos, RegionType> regionConstructor;
+
+    public ChunkRegionManager(
+            Function<ChunkSectionPos, RegionType> regionConstructor
+    ) {
+        this.regionConstructor = regionConstructor;
+    }
+
+    public RegionType createRegion(ChunkSectionPos pos) {
+        RegionType region = this.regions.get(getIndex(pos));
 
         if (region == null) {
             ChunkSectionPos origin = ChunkSectionPos.from(pos.getX() & BUFFER_WIDTH_M, pos.getY() & BUFFER_HEIGHT_M, pos.getZ() & BUFFER_LENGTH_M);
-            region = new ChunkRegion(origin, BUFFER_SIZE);
+            region = regionConstructor.apply(origin);
 
             this.regions.put(getIndex(pos), region);
         }
@@ -48,7 +59,7 @@ public class ChunkRegionManager {
     }
 
     public void delete() {
-        for (ChunkRegion region : this.regions.values()) {
+        for (RegionType region : this.regions.values()) {
             region.delete();
         }
 
@@ -56,8 +67,8 @@ public class ChunkRegionManager {
     }
 
     public void cleanup() {
-        for (ObjectIterator<ChunkRegion> iterator = this.regions.values().iterator(); iterator.hasNext(); ) {
-            ChunkRegion block = iterator.next();
+        for (ObjectIterator<RegionType> iterator = this.regions.values().iterator(); iterator.hasNext(); ) {
+            RegionType block = iterator.next();
 
             if (block.isEmpty()) {
                 block.delete();

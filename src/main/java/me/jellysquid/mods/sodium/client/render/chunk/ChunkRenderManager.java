@@ -8,6 +8,7 @@ import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.ChunkRenderState;
+import me.jellysquid.mods.sodium.client.render.backends.shader.cr.CRChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.layer.BlockRenderPassManager;
@@ -64,8 +65,7 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     private int countRenderedSection;
     private int countVisibleSection;
 
-    public boolean isCROC = false;
-    private ArrayList<ChunkRender<T>> crocChunksToRender = new ArrayList<>();
+    private ArrayList<ChunkRender<T>> crChunksToRender = new ArrayList<>();
 
     public ChunkRenderManager(SodiumWorldRenderer renderer, ChunkRenderBackend<T> backend, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
         this.backend = backend;
@@ -85,6 +85,8 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
     public void updateGraph(Camera camera, Vec3d cameraPos, BlockPos blockPos, int frame, FrustumExtended frustum, boolean spectator) {
         this.init(blockPos, camera, cameraPos, frustum, frame, spectator);
+
+        crChunksToRender.clear();
 
         ObjectArrayFIFOQueue<ChunkRender<T>> queue = this.iterationQueue;
 
@@ -116,8 +118,8 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         if (!render.isEmpty()) {
             this.countVisibleSection++;
 
-            if (isCROC) {
-                crocChunksToRender.add(render);
+            if (backend instanceof CRChunkRenderBackend) {
+                crChunksToRender.add(render);
             } else {
                 T[] states = render.getRenderStates();
 
@@ -538,7 +540,14 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         }
     }
 
-    public void onBlockRenderingStarted(){
-
+    public void onBeignRenderingSolidBlocks(
+            MatrixStack matrixStack,
+            BlockRenderPass[] solidPasses
+    ) {
+        if (backend instanceof CRChunkRenderBackend) {
+            ((CRChunkRenderBackend) backend).onBlockRenderingStarted(
+                    (ArrayList)crChunksToRender, matrixStack, solidPasses
+            );
+        }
     }
 }

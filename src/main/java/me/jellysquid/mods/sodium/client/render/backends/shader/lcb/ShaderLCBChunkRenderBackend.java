@@ -23,7 +23,7 @@ import org.lwjgl.opengl.GL15;
 import java.util.Iterator;
 
 public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBackend<ShaderLCBRenderState> {
-    private final ChunkRegionManager bufferManager;
+    private final ChunkRegionManager<ChunkRegion> bufferManager;
     private final GlMutableBuffer uploadBuffer;
 
     private final ObjectList<ChunkRegion> pendingBatches = new ObjectArrayList<>();
@@ -31,7 +31,9 @@ public class ShaderLCBChunkRenderBackend extends AbstractShaderChunkRenderBacken
     public ShaderLCBChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
 
-        this.bufferManager = new ChunkRegionManager();
+        this.bufferManager = new ChunkRegionManager<>(
+                origin -> new ChunkRegion(origin, ChunkRegionManager.BUFFER_SIZE)
+        );
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
     }
 
