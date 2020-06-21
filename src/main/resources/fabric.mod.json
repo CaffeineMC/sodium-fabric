@@ -34,5 +34,8 @@
   },
   "breaks": {
     "optifabric": "*"
+  },
+  "custom": {
+    "modmenu:clientsideOnly": true
   }
 }
