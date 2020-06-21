@@ -3,12 +3,18 @@ package me.jellysquid.mods.sodium.client.render.backends.shader.cr;
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttribute;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.BufferUploadData;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.memory.BufferBlock;
 import me.jellysquid.mods.sodium.client.gl.memory.BufferSegment;
+import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
+import me.jellysquid.mods.sodium.client.gl.shader.GlShaderProgram;
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ChunkRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
@@ -21,6 +27,7 @@ import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Vec3d;
@@ -43,8 +50,8 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
     private ArrayList<CRChunkRegion> nearRegions = new ArrayList<>();
     private ArrayList<CRChunkRegion> farRegions = new ArrayList<>();
 
-
     private VertexBuffer boundingBoxBuf;
+    private BoundingBoxShader boundingBoxShader;
 
     public CRChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
@@ -54,8 +61,9 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
         );
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
 
-
         initBoundingBoxVertexBuffer();
+
+        boundingBoxShader = createBoundingBoxShader();
     }
 
     private void initBoundingBoxVertexBuffer() {
@@ -65,11 +73,12 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
         boundingBoxBuffer = new BufferBuilder(6 * 4 * 3);
 
-        boundingBoxBuffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
+        boundingBoxBuffer.begin(GL11.GL_QUADS, VertexFormats.POSITION);
 
         Consumer<Vec3d> putVertex = (vec) -> {
             boundingBoxBuffer.vertex(vec.x, vec.y, vec.z)
-                    .color(255, 0, 255, 255).next();
+                    //.color(255, 0, 255, 255)
+                    .next();
         };
 
         TriConsumer<Vec3d, Vec3d, Vec3d> putQuad = (base, vec1, vec2) -> {
@@ -93,8 +102,27 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
         boundingBoxBuffer.end();
 
-        boundingBoxBuf = new VertexBuffer(VertexFormats.POSITION_COLOR);
+        boundingBoxBuf = new VertexBuffer(VertexFormats.POSITION);
         boundingBoxBuf.upload(boundingBoxBuffer);
+    }
+
+    private BoundingBoxShader createBoundingBoxShader() {
+        GlVertexFormat<BoundingBoxShader.VertexAttribute> format = GlVertexAttribute.builder(BoundingBoxShader.VertexAttribute.class)
+                .add(BoundingBoxShader.VertexAttribute.POSITION, new GlVertexAttribute(GlVertexAttributeFormat.FLOAT, 3, false, 0))
+                .build(12);
+
+        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium:bounding_box.v.glsl"));
+        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium:bounding_box.f.glsl"));
+
+        try {
+            return GlShaderProgram.builder(new Identifier("sodium", "bounding_box_shader"))
+                    .attach(vertShader)
+                    .attach(fragShader)
+                    .link((program, name) -> new BoundingBoxShader(program, name, format));
+        } finally {
+            vertShader.delete();
+            fragShader.delete();
+        }
     }
 
     @Override
@@ -156,7 +184,6 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
     }
 
-
     private static Vec3d getCameraPos() {
         return MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
     }
@@ -177,7 +204,7 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
         performQueries(matrixStack);
 
-        renderFarSolidBlocks(matrixStack, solidRenderPasses);
+//        renderFarSolidBlocks(matrixStack, solidRenderPasses);
     }
 
     private void prepareRendering(ArrayList<ChunkRender<CRRenderState>> sectionsToRender) {
@@ -284,27 +311,60 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
         RenderSystem.disableBlend();
         RenderSystem.disableLighting();
         RenderSystem.disableColorMaterial();
+        RenderSystem.disableFog();
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.colorMask(false, false, false, false);
         RenderSystem.color4f(1, 1, 1, 1);
-        GL20.glUseProgram(0);
 
-        boundingBoxBuf.bind();
-        VertexFormats.POSITION_COLOR.startDrawing(0);
+        if (shouldUseBoundingBoxShader()) {
+            boundingBoxShader.bind();
 
-        for (CRChunkRegion region : farRegions) {
-            region.getQueryObject().performQueryAnySamplePassedConservative(() -> {
-                matrixStack.push();
-                matrixStack.translate(
-                        region.getOrigin().getMinX() - x,
-                        region.getOrigin().getMinY() - y,
-                        region.getOrigin().getMinZ() - z
-                );
-                // TODO change it to shader?
-                boundingBoxBuf.draw(matrixStack.peek().getModel(), GL11.GL_QUADS);
-                matrixStack.pop();
-            });
+            boundingBoxShader.setModelMatrix(matrixStack, x % 16.0D, y % 16.0D, z % 16.0D);
+
+            boundingBoxBuf.bind();
+
+            VertexFormats.POSITION.startDrawing(0);
+
+            for (CRChunkRegion region : farRegions) {
+
+                boundingBoxShader.setModelOffset(region.getOrigin(), chunkX, chunkY, chunkZ);
+
+                region.getQueryObject().performQueryAnySamplePassedConservative(() -> {
+                    matrixStack.push();
+                    matrixStack.translate(
+                            region.getOrigin().getMinX() - x,
+                            region.getOrigin().getMinY() - y,
+                            region.getOrigin().getMinZ() - z
+                    );
+
+                    boundingBoxBuf.draw(matrixStack.peek().getModel(), GL11.GL_QUADS);
+                    matrixStack.pop();
+                });
+            }
+
+            boundingBoxShader.unbind();
+        } else {
+            GL20.glUseProgram(0);
+
+            boundingBoxBuf.bind();
+            VertexFormats.POSITION_COLOR.startDrawing(0);
+
+            for (CRChunkRegion region : farRegions) {
+                region.getQueryObject().performQueryAnySamplePassedConservative(() -> {
+                    matrixStack.push();
+                    matrixStack.translate(
+                            region.getOrigin().getMinX() - x,
+                            region.getOrigin().getMinY() - y,
+                            region.getOrigin().getMinZ() - z
+                    );
+
+                    boundingBoxBuf.draw(matrixStack.peek().getModel(), GL11.GL_QUADS);
+                    matrixStack.pop();
+                });
+            }
+
+
         }
 
         RenderSystem.glBindBuffer(34962, () -> 0);
@@ -315,7 +375,7 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
     }
 
-    private void renderFarSolidBlocks(MatrixStack matrixStack, BlockRenderPass[] passes) {
+    public void renderFarSolidBlocks(MatrixStack matrixStack, BlockRenderPass[] passes) {
         for (BlockRenderPass pass : passes) {
             drawRegions(
                     matrixStack, pass, this.farRegions.iterator(),
@@ -395,6 +455,10 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
     boolean shouldWait() {
         return false;
+    }
+
+    boolean shouldUseBoundingBoxShader() {
+        return true;
     }
 
     void debugStat() {
