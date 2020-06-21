@@ -64,6 +64,9 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
     private int countRenderedSection;
     private int countVisibleSection;
 
+    public boolean isCROC = false;
+    private ArrayList<ChunkRender<T>> crocChunksToRender = new ArrayList<>();
+
     public ChunkRenderManager(SodiumWorldRenderer renderer, ChunkRenderBackend<T> backend, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
         this.backend = backend;
         this.renderer = renderer;
@@ -113,20 +116,24 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
         if (!render.isEmpty()) {
             this.countVisibleSection++;
 
-            T[] states = render.getRenderStates();
+            if (isCROC) {
+                crocChunksToRender.add(render);
+            } else {
+                T[] states = render.getRenderStates();
 
-            for (int i = 0; i < states.length; i++) {
-                T state = states[i];
+                for (int i = 0; i < states.length; i++) {
+                    T state = states[i];
 
-                if (state != null) {
-                    this.renderLists[i].add(state);
+                    if (state != null) {
+                        this.renderLists[i].add(state);
+                    }
                 }
-            }
 
-            Collection<BlockEntity> blockEntities = render.getData().getBlockEntities();
+                Collection<BlockEntity> blockEntities = render.getData().getBlockEntities();
 
-            if (!blockEntities.isEmpty()) {
-                this.visibleBlockEntities.addAll(blockEntities);
+                if (!blockEntities.isEmpty()) {
+                    this.visibleBlockEntities.addAll(blockEntities);
+                }
             }
         }
     }
@@ -529,5 +536,9 @@ public class ChunkRenderManager<T extends ChunkRenderState> implements ChunkStat
 
             this.dirty = true;
         }
+    }
+
+    public void onBlockRenderingStarted(){
+
     }
 }

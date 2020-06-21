@@ -37,6 +37,10 @@ public class ChunkRegion {
         this.batch.add(state.getStart(), state.getLength());
     }
 
+    public void addToBatch(int startIndex, int length) {
+        this.batch.add(startIndex, length);
+    }
+
     public GlVertexArray drawBatch(GlVertexAttributeBinding[] attributes) {
         GlVertexArray array = this.buffer.bind(attributes);
         this.batch.draw();

@@ -317,6 +317,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     /**
      * Returns whether or not the entity intersects with any visible chunks in the graph.
+     *
      * @return True if the entity is visible, otherwise false
      */
     public boolean isEntityVisible(Entity entity) {
@@ -385,4 +386,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     public void scheduleRebuildForChunk(int x, int y, int z, boolean important) {
         this.chunkRenderManager.scheduleRebuild(x, y, z, important);
     }
+
+    public void onSolidBlockRenderingBegin() {
+        chunkRenderManager.onBlockRenderingStarted();
+    }
+
 }
