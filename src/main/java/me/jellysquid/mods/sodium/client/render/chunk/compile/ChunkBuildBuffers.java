@@ -1,13 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import it.unimi.dsi.fastutil.bytes.Byte2ReferenceArrayMap;
-import it.unimi.dsi.fastutil.bytes.Byte2ReferenceMap;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
+import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
 import me.jellysquid.mods.sodium.client.model.ModelQuadSinkDelegate;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelPart;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
@@ -17,6 +14,7 @@ import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.util.math.BlockPos;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * A collection of temporary buffers for each worker thread which will be used to build chunk meshes for given render
@@ -61,37 +59,34 @@ public class ChunkBuildBuffers {
      * Creates immutable baked chunk meshes from all non-empty scratch buffers and resets the state of all mesh
      * builders. This is used after all blocks have been rendered to pass the finished meshes over to the graphics card.
      */
-    public ChunkMeshData createMeshes(Vector3d camera, BlockPos pos) {
-        Byte2ReferenceMap<ChunkModelSlice> staging = new Byte2ReferenceArrayMap<>();
+    public ChunkMeshData createMesh(Vector3d camera, BlockPos pos, BlockRenderPass pass) {
+        ChunkMeshData meshData = new ChunkMeshData();
 
         int bufferLen = 0;
 
-        for (int passId = 0; passId < this.builders.length; passId++) {
-            ChunkMeshBuilder[] builders = this.builders[passId];
+        ChunkMeshBuilder[] builders = this.builders[pass.ordinal()];
 
-            for (int facingId = 0; facingId < builders.length; facingId++) {
-                ChunkMeshBuilder builder = builders[facingId];
+        for (int facingId = 0; facingId < builders.length; facingId++) {
+            ChunkMeshBuilder builder = builders[facingId];
 
-                if (builder == null || builder.isEmpty()) {
-                    continue;
-                }
-
-                BlockRenderPass pass = this.renderPassManager.getRenderPass(passId);
-                ModelQuadFacing facing = ModelQuadFacing.VALUES[facingId];
-
-                if (pass.isTranslucent()) {
-                    builder.sortQuads((float) camera.x - (float) pos.getX(),
-                            (float) camera.y - (float) pos.getY(),
-                            (float) camera.z - (float) pos.getZ());
-                }
-
-                int start = bufferLen;
-                int size = builder.getSize();
-
-                staging.put(ChunkModelPart.encodeKey(pass, facing), new ChunkModelSlice(pass, builder, start, size));
-
-                bufferLen += size;
+            if (builder == null || builder.isEmpty()) {
+                continue;
             }
+
+            ModelQuadFacing facing = ModelQuadFacing.VALUES[facingId];
+
+            if (pass.isTranslucent()) {
+                builder.sortQuads((float) camera.x - (float) pos.getX(),
+                        (float) camera.y - (float) pos.getY(),
+                        (float) camera.z - (float) pos.getZ());
+            }
+
+            int start = bufferLen;
+            int size = builder.getSize();
+
+            meshData.setModelSlice(facing, new BufferSlice(start, size));
+
+            bufferLen += size;
         }
 
         if (bufferLen <= 0) {
@@ -100,16 +95,19 @@ public class ChunkBuildBuffers {
 
         ByteBuffer buffer = GlAllocationUtils.allocateByteBuffer(bufferLen);
 
-        for (Byte2ReferenceMap.Entry<ChunkModelSlice> entry : staging.byte2ReferenceEntrySet()) {
-            ChunkModelSlice slice = entry.getValue();
+        for (Map.Entry<ModelQuadFacing, BufferSlice> entry : meshData.getSlices()) {
+            BufferSlice slice = entry.getValue();
             buffer.position(slice.start);
 
-            slice.builder.copyInto(buffer);
+            this.builders[pass.ordinal()][entry.getKey().ordinal()]
+                    .copyInto(buffer);
         }
 
         buffer.flip();
 
-        return new ChunkMeshData(new VertexData(buffer, this.format), staging);
+        meshData.setVertexData(new VertexData(buffer, this.format));
+
+        return meshData;
     }
 
     public static class ChunkBuildBufferDelegate implements ModelQuadSinkDelegate {

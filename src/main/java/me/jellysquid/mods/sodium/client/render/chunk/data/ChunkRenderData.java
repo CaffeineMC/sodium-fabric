@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBounds;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
@@ -19,26 +20,20 @@ public class ChunkRenderData {
             .build();
     public static final ChunkRenderData EMPTY = createEmptyData();
 
-    private final List<BlockEntity> globalBlockEntities;
-    private final List<BlockEntity> blockEntities;
-    private final List<Sprite> animatedSprites;
+    private List<BlockEntity> globalBlockEntities;
+    private List<BlockEntity> blockEntities;
 
-    private final ChunkMeshData meshData;
+    private EnumMap<BlockRenderPass, ChunkMeshData> meshes;
 
-    private final ChunkOcclusionData occlusionData;
-    private final boolean isEmpty;
+    private ChunkOcclusionData occlusionData;
+    private ChunkRenderBounds bounds;
 
-    private final ChunkRenderBounds bounds;
+    private List<Sprite> animatedSprites;
 
-    public ChunkRenderData(List<BlockEntity> globalBlockEntities, List<BlockEntity> blockEntities, List<Sprite> animatedSprites, ChunkOcclusionData occlusionData, ChunkMeshData meshData, ChunkRenderBounds bounds) {
-        this.globalBlockEntities = globalBlockEntities;
-        this.blockEntities = blockEntities;
-        this.animatedSprites = animatedSprites;
-        this.occlusionData = occlusionData;
-        this.meshData = meshData;
-        this.bounds = bounds;
+    private boolean isEmpty;
 
-        this.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.meshData.isEmpty();
+    private ChunkRenderData() {
+
     }
 
     /**
@@ -83,18 +78,25 @@ public class ChunkRenderData {
     /**
      * The collection of chunk meshes belonging to this render.
      */
-    public ChunkMeshData getMeshData() {
-        return this.meshData;
+    public ChunkMeshData getMesh(BlockRenderPass pass) {
+        return this.meshes.get(pass);
     }
 
     public static class Builder {
-        private final List<BlockEntity> globalEntities = new ArrayList<>();
+        private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
-        private ChunkMeshData meshData = ChunkMeshData.EMPTY;
+        private final EnumMap<BlockRenderPass, ChunkMeshData> meshes = new EnumMap<>(BlockRenderPass.class);
+
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds;
+
+        public Builder() {
+            for (BlockRenderPass pass : BlockRenderPass.VALUES) {
+                this.setMesh(pass, ChunkMeshData.EMPTY);
+            }
+        }
 
         public void setBounds(ChunkRenderBounds bounds) {
             this.bounds = bounds;
@@ -125,8 +127,8 @@ public class ChunkRenderData {
             }
         }
 
-        public void setMeshData(ChunkMeshData data) {
-            this.meshData = data;
+        public void setMesh(BlockRenderPass pass, ChunkMeshData data) {
+            this.meshes.put(pass, data);
         }
 
         /**
@@ -135,11 +137,21 @@ public class ChunkRenderData {
          * @param cull True if the block entity can be culled to this chunk render's volume, otherwise false
          */
         public void addBlockEntity(BlockEntity entity, boolean cull) {
-            (cull ? this.blockEntities : this.globalEntities).add(entity);
+            (cull ? this.blockEntities : this.globalBlockEntities).add(entity);
         }
 
         public ChunkRenderData build() {
-            return new ChunkRenderData(this.globalEntities, this.blockEntities, new ObjectArrayList<>(this.animatedSprites), this.occlusionData, this.meshData, this.bounds);
+            ChunkRenderData data = new ChunkRenderData();
+            data.globalBlockEntities = this.globalBlockEntities;
+            data.blockEntities = this.blockEntities;
+            data.occlusionData = this.occlusionData;
+            data.meshes = this.meshes;
+            data.bounds = this.bounds;
+            data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
+
+            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.meshes.isEmpty();
+
+            return data;
         }
     }
 
@@ -149,7 +161,6 @@ public class ChunkRenderData {
 
         ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
         meshInfo.setOcclusionData(occlusionData);
-        meshInfo.setMeshData(ChunkMeshData.EMPTY);
 
         return meshInfo.build();
     }

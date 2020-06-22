@@ -44,7 +44,10 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> importantRebuildQueue = new ObjectArrayFIFOQueue<>();
     private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> rebuildQueue = new ObjectArrayFIFOQueue<>();
 
-    private final RenderList<ChunkRenderContainer<T>> visibleChunks = new RenderList<>();
+    @SuppressWarnings("unchecked")
+    private final RenderList<ChunkRenderContainer<T>>[] chunkRenderLists = new RenderList[BlockRenderPass.COUNT];
+    private final ObjectList<ChunkRenderContainer<T>> tickableChunks = new ObjectArrayList<>();
+
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
     private final ObjectSet<BlockRenderPass> renderedLayers = new ObjectOpenHashSet<>();
@@ -62,6 +65,8 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     private double cameraX, cameraY, cameraZ;
     private boolean useAggressiveCulling;
 
+    private int visibleChunkCount;
+
     public ChunkRenderManager(SodiumWorldRenderer renderer, ChunkRenderBackend<T> backend, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
         this.backend = backend;
         this.renderer = renderer;
@@ -72,6 +77,10 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         this.builder.init(world, renderPassManager);
 
         this.dirty = true;
+
+        for (int i = 0; i < this.chunkRenderLists.length; i++) {
+            this.chunkRenderLists[i] = new RenderList<>();
+        }
     }
 
     public void updateGraph(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
@@ -82,7 +91,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         while (!queue.isEmpty()) {
             ChunkRenderContainer<T> render = queue.dequeue();
 
-            this.addChunkToRenderLists(render);
+            this.setChunkVisible(render);
             this.addChunkNeighbors(render, frustum, frame);
         }
 
@@ -127,7 +136,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         this.iterationQueue.enqueue(adj);
     }
 
-    private void addChunkToRenderLists(ChunkRenderContainer<T> render) {
+    private void setChunkVisible(ChunkRenderContainer<T> render) {
         if (render.needsRebuild() && render.canRebuild()) {
             if (render.needsImportantRebuild()) {
                 this.importantRebuildQueue.enqueue(render);
@@ -137,8 +146,8 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         }
 
         if (!render.isEmpty()) {
-            if (render.getGraphicsState() != null) {
-                this.addVisibleChunk(render);
+            if (this.addChunkToRenderLists(render)) {
+                this.onChunkAdded(render);
             }
 
             Collection<BlockEntity> blockEntities = render.getData().getBlockEntities();
@@ -149,9 +158,24 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         }
     }
 
-    private void addVisibleChunk(ChunkRenderContainer<T> render) {
-        this.visibleChunks.add(render);
+    private boolean addChunkToRenderLists(ChunkRenderContainer<T> render) {
+        T[] states = render.getGraphicsStates();
 
+        boolean anyVisible = false;
+
+        for (int i = 0; i < states.length; i++) {
+            T state = states[i];
+
+            if (state != null) {
+                this.chunkRenderLists[i].add(render);
+                anyVisible = true;
+            }
+        }
+
+        return anyVisible;
+    }
+
+    private void onChunkAdded(ChunkRenderContainer<T> render) {
         if (this.useAggressiveCulling) {
             render.resetVisibleFaces();
 
@@ -185,6 +209,12 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         } else {
             render.markAllFacesVisible();
         }
+
+        if (render.isTickable()) {
+            this.tickableChunks.add(render);
+        }
+
+        this.visibleChunkCount++;
     }
 
     private void init(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
@@ -262,7 +292,13 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         this.importantRebuildQueue.clear();
 
         this.visibleBlockEntities.clear();
-        this.visibleChunks.clear();
+
+        for (RenderList<ChunkRenderContainer<T>> list : this.chunkRenderLists) {
+            list.clear();
+        }
+
+        this.tickableChunks.clear();
+        this.visibleChunkCount = 0;
     }
 
     public Collection<BlockEntity> getVisibleBlockEntities() {
@@ -326,7 +362,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         int y = ChunkSectionPos.getY(pos);
         int z = ChunkSectionPos.getZ(pos);
 
-        ChunkRenderContainer<T> render = new ChunkRenderContainer<>(this.renderer, x, y, z);
+        ChunkRenderContainer<T> render = new ChunkRenderContainer<>(this.backend, this.renderer, x, y, z);
 
         if (ChunkSection.isEmpty(this.world.getChunk(x, z).getSectionArray()[y])) {
             render.setData(ChunkRenderData.EMPTY);
@@ -346,11 +382,13 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
             return;
         }
 
-        this.backend.render(pass, this.visibleChunks.iterator(pass.isTranslucent()), matrixStack, new ChunkCameraContext(x, y, z));
+        this.backend.begin(matrixStack);
+        this.backend.render(pass, this.chunkRenderLists[pass.ordinal()].iterator(pass.isTranslucent()), matrixStack, new ChunkCameraContext(x, y, z));
+        this.backend.end(matrixStack);
     }
 
     private void tickRenders() {
-        for (ChunkRenderContainer<T> render : this.visibleChunks) {
+        for (ChunkRenderContainer<T> render : this.tickableChunks) {
             render.tick();
         }
     }
@@ -458,7 +496,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         return render.getSquaredDistance(this.cameraX, this.cameraY, this.cameraZ) <= NEARBY_CHUNK_DISTANCE;
     }
 
-    public RenderList<ChunkRenderContainer<T>> getVisibleChunks() {
-        return this.visibleChunks;
+    public int getVisibleChunkCount() {
+        return this.visibleChunkCount;
     }
 }

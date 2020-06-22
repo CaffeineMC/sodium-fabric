@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.texture.Sprite;
@@ -11,6 +12,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
+import java.lang.reflect.Array;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -22,7 +24,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
-    private T graphicsState;
+    private final T[] graphicsStates;
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<Void> rebuildTask = null;
@@ -37,8 +39,10 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private long visibilityData;
 
     private final ChunkRenderContainer<T>[] adjacent;
+    private boolean tickable;
+    private boolean hasAnyGraphicsState;
 
-    public ChunkRenderContainer(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
+    public ChunkRenderContainer(ChunkRenderBackend<T> backend, SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
         this.worldRenderer = worldRenderer;
 
         this.chunkX = chunkX;
@@ -47,6 +51,9 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
         // noinspection unchecked
         this.adjacent = new ChunkRenderContainer[DirectionUtil.DIRECTION_COUNT];
+
+        //noinspection unchecked
+        this.graphicsStates = (T[]) Array.newInstance(backend.getGraphicsStateType(), BlockRenderPass.COUNT);
     }
 
     /**
@@ -96,10 +103,19 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     public void delete() {
         this.cancelRebuildTask();
         this.setData(ChunkRenderData.ABSENT);
+        this.deleteGraphicsState();
+    }
 
-        if (this.graphicsState != null) {
-            this.graphicsState.delete();
-            this.graphicsState = null;
+    private void deleteGraphicsState() {
+        T[] states = this.graphicsStates;
+
+        for (int i = 0; i < states.length; i++) {
+            T state = states[i];
+
+            if (state != null) {
+                state.delete();
+                states[i] = null;
+            }
         }
     }
 
@@ -120,6 +136,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         }
 
         this.worldRenderer.onChunkRenderUpdated(this.data, info);
+        this.tickable = !info.getAnimatedSprites().isEmpty();
     }
 
     /**
@@ -305,23 +322,16 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         return this.direction;
     }
 
-    /**
-     * @return True if the render can be ticked, otherwise false
-     */
-    public boolean canTick() {
-        return !this.getData().getAnimatedSprites().isEmpty();
-    }
-
     public BlockPos getRenderOrigin() {
         return new BlockPos(this.getRenderX(), this.getRenderY(), this.getRenderZ());
     }
 
-    public T getGraphicsState() {
-        return this.graphicsState;
+    public T[] getGraphicsStates() {
+        return this.graphicsStates;
     }
 
-    public void setGraphicsState(T state) {
-        this.graphicsState = state;
+    public void setGraphicsState(BlockRenderPass pass, T state) {
+        this.graphicsStates[pass.ordinal()] = state;
     }
 
     public boolean canRebuild() {
@@ -404,5 +414,17 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
     public void markAllFacesVisible() {
         this.visibleFaces = 0b1111111;
+    }
+
+    public T getGraphicsState(BlockRenderPass pass) {
+        return this.graphicsStates[pass.ordinal()];
+    }
+
+    public boolean isTickable() {
+        return this.tickable;
+    }
+
+    public boolean hasAnyGraphicsState() {
+        return this.hasAnyGraphicsState;
     }
 }

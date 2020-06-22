@@ -115,7 +115,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
      * @return The number of chunk renders which are visible in the current camera's frustum
      */
     public int getVisibleChunkCount() {
-        return this.chunkRenderManager.getVisibleChunks().size();
+        return this.chunkRenderManager.getVisibleChunkCount();
     }
 
     /**
@@ -386,7 +386,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     public String getChunksDebugString() {
         // C: visible/total
         // TODO: add dirty and queued counts
-        return String.format("C: %s/%s", this.chunkRenderManager.getVisibleChunks().size(), this.chunkRenderManager.getTotalSections());
+        return String.format("C: %s/%s", this.chunkRenderManager.getVisibleChunkCount(), this.chunkRenderManager.getTotalSections());
     }
 
     /**

@@ -55,12 +55,14 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P e
 
     protected abstract P createShaderProgram(Identifier name, int handle, ChunkFogMode fogMode);
 
+    @Override
     public void begin(MatrixStack matrixStack) {
         this.activeProgram = this.programs.get(ChunkFogMode.getActiveMode());
         this.activeProgram.bind();
         this.activeProgram.setup(matrixStack);
     }
 
+    @Override
     public void end(MatrixStack matrixStack) {
         this.activeProgram.unbind();
     }

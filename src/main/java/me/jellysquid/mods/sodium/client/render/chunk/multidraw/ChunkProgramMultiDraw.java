@@ -8,10 +8,10 @@ import org.lwjgl.opengl.GL20;
 import java.nio.FloatBuffer;
 import java.util.function.Function;
 
-public class ChunkProgramMultidraw extends ChunkProgram {
+public class ChunkProgramMultiDraw extends ChunkProgram {
     private final int uModelOffsetsLocation;
 
-    public ChunkProgramMultidraw(Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction) {
+    public ChunkProgramMultiDraw(Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction) {
         super(name, handle, fogShaderFunction);
 
         this.uModelOffsetsLocation = this.getUniformLocation("u_ModelOffsets");

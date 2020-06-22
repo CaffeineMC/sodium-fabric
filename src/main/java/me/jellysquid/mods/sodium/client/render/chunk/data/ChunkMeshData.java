@@ -1,50 +1,51 @@
 package me.jellysquid.mods.sodium.client.render.chunk.data;
 
-import it.unimi.dsi.fastutil.bytes.Byte2ReferenceMap;
-import it.unimi.dsi.fastutil.bytes.Byte2ReferenceMaps;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelSlice;
+import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 public class ChunkMeshData {
-    public static final ChunkMeshData EMPTY = new ChunkMeshData(null, Byte2ReferenceMaps.emptyMap());
+    public static final ChunkMeshData EMPTY = new ChunkMeshData();
 
-    private final Byte2ReferenceMap<ChunkModelSlice> parts;
-    private VertexData pendingUpload;
+    private final EnumMap<ModelQuadFacing, BufferSlice> parts = new EnumMap<>(ModelQuadFacing.class);
+    private VertexData vertexData;
 
-    public ChunkMeshData(VertexData pendingUpload, Byte2ReferenceMap<ChunkModelSlice> parts) {
-        this.pendingUpload = pendingUpload;
-        this.parts = parts;
+    public void setVertexData(VertexData vertexData) {
+        this.vertexData = vertexData;
     }
 
-    public boolean isEmpty() {
-        return this.parts.isEmpty();
+    public void setModelSlice(ModelQuadFacing facing, BufferSlice slice) {
+        this.parts.put(facing, slice);
     }
 
-    public Byte2ReferenceMap<ChunkModelSlice> getBuffers() {
-        return this.parts;
-    }
-
-    public VertexData takePendingUpload() {
-        VertexData data = this.pendingUpload;
+    public VertexData takeVertexData() {
+        VertexData data = this.vertexData;
 
         if (data == null) {
             throw new NullPointerException("No pending data to upload");
         }
 
-        this.pendingUpload = null;
+        this.vertexData = null;
 
         return data;
     }
 
-    public boolean hasData() {
-        return this.pendingUpload != null;
+    public boolean hasVertexData() {
+        return this.vertexData != null;
     }
 
-    public int getSize() {
-        if (this.pendingUpload != null) {
-            return this.pendingUpload.buffer.capacity();
+    public int getVertexDataSize() {
+        if (this.vertexData != null) {
+            return this.vertexData.buffer.capacity();
         }
 
         return 0;
+    }
+
+    public Iterable<? extends Map.Entry<ModelQuadFacing, BufferSlice>> getSlices() {
+        return this.parts.entrySet();
     }
 }
