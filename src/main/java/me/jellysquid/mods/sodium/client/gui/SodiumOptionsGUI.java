@@ -33,6 +33,8 @@ public class SodiumOptionsGUI extends Screen {
 
     private FlatButtonWidget applyButton, resetButton, closeButton;
 
+    private boolean hasChanges = false;
+
     public SodiumOptionsGUI(Screen prevScreen) {
         super(new TranslatableText("Sodium Options"));
 
@@ -161,6 +163,7 @@ public class SodiumOptionsGUI extends Screen {
         this.applyButton.setEnabled(hasChanges);
         this.resetButton.setEnabled(hasChanges);
         this.closeButton.setEnabled(!hasChanges);
+        this.hasChanges = hasChanges;
 
         if (hovered != null) {
             this.renderOptionTooltip(hovered, mouseX, mouseY, delta);
@@ -241,10 +244,23 @@ public class SodiumOptionsGUI extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
+        boolean isHoldingShift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
+
+        // show vanilla video settings
+        if (keyCode == GLFW.GLFW_KEY_P && isHoldingShift) {
             MinecraftClient.getInstance().openScreen(new VideoOptionsScreen(this.prevScreen, MinecraftClient.getInstance().options));
 
             return true;
+        }
+
+        // close if no unsaved changes, or always with shift-esc
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE && (isHoldingShift || !hasChanges)) {
+            onClose();
+        }
+
+        // apply changes
+        if ((keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_SPACE) && hasChanges) {
+            applyChanges();
         }
 
         return false;
