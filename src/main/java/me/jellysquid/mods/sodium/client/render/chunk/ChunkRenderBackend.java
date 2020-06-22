@@ -31,6 +31,10 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
 
     void createShaders();
 
+    void begin(MatrixStack matrixStack);
+
+    void end(MatrixStack matrixStack);
+
     /**
      * Deletes this render backend and any resources attached to it.
      */
@@ -40,4 +44,6 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
      * Returns the vertex format used by this chunk render backend for rendering meshes.
      */
     GlVertexFormat<ChunkMeshAttribute> getVertexFormat();
+
+    Class<T> getGraphicsStateType();
 }
