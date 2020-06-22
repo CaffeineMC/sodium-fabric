@@ -10,18 +10,24 @@ import java.util.Arrays;
 import java.util.Map;
 
 public abstract class ChunkOneshotGraphicsState implements ChunkGraphicsState {
-    private final BufferSlice[] parts;
+    private final long[] parts;
+    private int facesWithData;
 
     protected ChunkOneshotGraphicsState() {
-        this.parts = new BufferSlice[ModelQuadFacing.COUNT];
+        this.parts = new long[ModelQuadFacing.COUNT];
     }
 
-    public BufferSlice getModelPart(ModelQuadFacing facing) {
-        return this.parts[facing.ordinal()];
+    public long getModelPart(ModelQuadFacing facing) {
+        return this.getModelPart(facing.ordinal());
     }
 
-    protected void setModelPart(ModelQuadFacing facing, BufferSlice part) {
-        this.parts[facing.ordinal()] = part;
+    public long getModelPart(int facing) {
+        return this.parts[facing];
+    }
+
+    protected void setModelPart(ModelQuadFacing facing, long slice) {
+        this.parts[facing.ordinal()] = slice;
+        this.facesWithData |= 1 << facing.ordinal();
     }
 
     public abstract void upload(ChunkMeshData mesh);
@@ -31,13 +37,18 @@ public abstract class ChunkOneshotGraphicsState implements ChunkGraphicsState {
     protected void setupModelParts(ChunkMeshData meshData, GlVertexFormat<?> vertexFormat) {
         int stride = vertexFormat.getStride();
 
-        Arrays.fill(this.parts, null);
+        Arrays.fill(this.parts, 0L);
+        this.facesWithData = 0;
 
-        for (Map.Entry<ModelQuadFacing, me.jellysquid.mods.sodium.client.gl.util.BufferSlice> entry : meshData.getSlices()) {
+        for (Map.Entry<ModelQuadFacing, BufferSlice> entry : meshData.getSlices()) {
             ModelQuadFacing facing = entry.getKey();
-            me.jellysquid.mods.sodium.client.gl.util.BufferSlice slice = entry.getValue();
+            BufferSlice slice = entry.getValue();
 
-            this.setModelPart(facing, new BufferSlice(slice.start / stride, slice.len / stride));
+            this.setModelPart(facing, BufferSlice.pack(slice.start / stride, slice.len / stride));
         }
+    }
+
+    public int getFacesWithData() {
+        return this.facesWithData;
     }
 }

@@ -1,9 +1,8 @@
 package me.jellysquid.mods.sodium.client.gl.util;
 
 import org.lwjgl.opengl.GL14;
+import org.lwjgl.system.MemoryUtil;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
 /**
@@ -17,13 +16,8 @@ public class GlMultiDrawBatch {
     private boolean isBuilding;
 
     public GlMultiDrawBatch(int capacity) {
-        this.bufIndices = allocateByteBuffer(capacity * 4).asIntBuffer();
-        this.bufLen = allocateByteBuffer(capacity * 4).asIntBuffer();
-    }
-
-    private static ByteBuffer allocateByteBuffer(int size) {
-        return ByteBuffer.allocateDirect(size)
-                .order(ByteOrder.nativeOrder());
+        this.bufIndices = MemoryUtil.memAllocInt(capacity);
+        this.bufLen = MemoryUtil.memAllocInt(capacity);
     }
 
     public IntBuffer getIndicesBuffer() {
@@ -61,5 +55,10 @@ public class GlMultiDrawBatch {
 
     public boolean isBuilding() {
         return this.isBuilding;
+    }
+
+    public void delete() {
+        MemoryUtil.memFree(this.bufIndices);
+        MemoryUtil.memFree(this.bufLen);
     }
 }
