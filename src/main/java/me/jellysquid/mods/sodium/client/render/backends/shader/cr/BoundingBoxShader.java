@@ -1,8 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.backends.shader.cr;
 
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttribute;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
+import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShaderProgram;
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -38,6 +43,25 @@ public class BoundingBoxShader extends GlShaderProgram {
         };
 
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(3);
+    }
+
+    static BoundingBoxShader createBoundingBoxShader() {
+        GlVertexFormat<VertexAttribute> format = GlVertexAttribute.builder(VertexAttribute.class)
+                .add(VertexAttribute.POSITION, new GlVertexAttribute(GlVertexAttributeFormat.FLOAT, 3, false, 0))
+                .build(12);
+
+        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium:bounding_box.v.glsl"));
+        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium:bounding_box.f.glsl"));
+
+        try {
+            return builder(new Identifier("sodium", "bounding_box_shader"))
+                    .attach(vertShader)
+                    .attach(fragShader)
+                    .link((program, name) -> new BoundingBoxShader(program, name, format));
+        } finally {
+            vertShader.delete();
+            fragShader.delete();
+        }
     }
 
     @Override

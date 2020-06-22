@@ -3,18 +3,12 @@ package me.jellysquid.mods.sodium.client.render.backends.shader.cr;
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttribute;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.BufferUploadData;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.memory.BufferBlock;
 import me.jellysquid.mods.sodium.client.gl.memory.BufferSegment;
-import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
-import me.jellysquid.mods.sodium.client.gl.shader.GlShaderProgram;
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import me.jellysquid.mods.sodium.client.render.backends.shader.AbstractShaderChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.backends.shader.lcb.ChunkRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkBuildResult;
@@ -27,7 +21,6 @@ import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Vec3d;
@@ -63,7 +56,7 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
         initBoundingBoxVertexBuffer();
 
-        boundingBoxShader = createBoundingBoxShader();
+        boundingBoxShader = BoundingBoxShader.createBoundingBoxShader();
     }
 
     private void initBoundingBoxVertexBuffer() {
@@ -104,25 +97,6 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
         boundingBoxBuf = new VertexBuffer(VertexFormats.POSITION);
         boundingBoxBuf.upload(boundingBoxBuffer);
-    }
-
-    private BoundingBoxShader createBoundingBoxShader() {
-        GlVertexFormat<BoundingBoxShader.VertexAttribute> format = GlVertexAttribute.builder(BoundingBoxShader.VertexAttribute.class)
-                .add(BoundingBoxShader.VertexAttribute.POSITION, new GlVertexAttribute(GlVertexAttributeFormat.FLOAT, 3, false, 0))
-                .build(12);
-
-        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium:bounding_box.v.glsl"));
-        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium:bounding_box.f.glsl"));
-
-        try {
-            return GlShaderProgram.builder(new Identifier("sodium", "bounding_box_shader"))
-                    .attach(vertShader)
-                    .attach(fragShader)
-                    .link((program, name) -> new BoundingBoxShader(program, name, format));
-        } finally {
-            vertShader.delete();
-            fragShader.delete();
-        }
     }
 
     @Override
@@ -190,7 +164,7 @@ public class CRChunkRenderBackend extends AbstractShaderChunkRenderBackend<CRRen
 
     private boolean isNearRegion(CRChunkRegion region) {
         //TODO change it
-        return nearRegions.size() < 5;
+        return nearRegions.size() < 8;
     }
 
     public void onBlockRenderingStarted(
