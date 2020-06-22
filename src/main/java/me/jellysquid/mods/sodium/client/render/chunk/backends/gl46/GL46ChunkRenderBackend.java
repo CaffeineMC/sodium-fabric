@@ -216,16 +216,22 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             float modelY = camera.getChunkModelOffset(render.getRenderY(), camera.blockOriginY, camera.originY);
             float modelZ = camera.getChunkModelOffset(render.getRenderZ(), camera.blockOriginZ, camera.originZ);
 
-            for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
-                if (!render.isFaceVisible(facing)) {
+            int visible = (render.getVisibleFaces() & graphics.getFacesWithData());
+
+            if (visible == 0) {
+                continue;
+            }
+
+            int[] masks = ModelQuadFacing.BITS;
+
+            for (int i = 0; i < masks.length; i++) {
+                int mask = masks[i];
+
+                if ((visible & mask) == 0) {
                     continue;
                 }
 
-                BufferSlice part = graphics.getModelPart(facing);
-
-                if (part == null) {
-                    continue;
-                }
+                long part = graphics.getModelPart(i);
 
                 ChunkRegion<LCBGraphicsState> region = graphics.getRegion();
                 ChunkMultiDrawBatcher batch = region.getDrawBatcher();
@@ -236,7 +242,7 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
                     this.pendingBatches.enqueue(region);
                 }
 
-                batch.addChunkRender(part.start, part.len, modelX, modelY, modelZ);
+                batch.addChunkRender(BufferSlice.unpackStart(part), BufferSlice.unpackLength(part), modelX, modelY, modelZ);
             }
         }
     }

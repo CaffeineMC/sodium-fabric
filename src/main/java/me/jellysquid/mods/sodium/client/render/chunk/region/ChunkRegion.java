@@ -39,6 +39,7 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
     public void deleteResources() {
         this.arena.delete();
         this.vao.delete();
+        this.batch.delete();
     }
 
     public ObjectArrayList<ChunkBuildResult<T>> getUploadQueue() {

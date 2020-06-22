@@ -404,8 +404,8 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         this.visibleFaces |= (byte) (1 << facing.ordinal());
     }
 
-    public boolean isFaceVisible(ModelQuadFacing facing) {
-        return (this.visibleFaces & (1 << facing.ordinal())) != 0;
+    public byte getVisibleFaces() {
+        return this.visibleFaces;
     }
 
     public ChunkRenderBounds getBounds() {

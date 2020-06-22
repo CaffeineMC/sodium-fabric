@@ -13,6 +13,13 @@ public enum ModelQuadFacing {
 
     public static final ModelQuadFacing[] VALUES = ModelQuadFacing.values();
     public static final int COUNT = VALUES.length;
+    public static final int[] BITS = new int[COUNT];
+
+    static {
+        for (int i = 0; i < BITS.length; i++) {
+            BITS[i] = 1 << i;
+        }
+    }
 
     public static ModelQuadFacing fromDirection(Direction dir) {
         switch (dir) {
