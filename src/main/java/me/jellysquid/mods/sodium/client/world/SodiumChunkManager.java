@@ -22,16 +22,18 @@ import net.minecraft.world.chunk.light.LightingProvider;
  * integer key to object hash table. This generally provides improved performance over the vanilla implementation
  * through reducing code complexity, eliminating expensive floor-modulo operations, and removing the usage of atomic
  * references.
- *
+ * <p>
  * The usage of an atomic reference array is not necessary with Sodium's renderer implementation as it does not access
  * world state or chunks concurrently from other worker threads, which fixes a number of synchronization issues in the
  * process.
- *
+ * <p>
  * This implementation allows for a {@link ChunkStatusListener} to be attached, allowing the game renderer to receive
  * notifications when chunks are loaded or unloaded instead of resorting to expensive polling techniques, which would
  * usually resort in chunk queries being slammed every frame when many chunks have pending rebuilds.
  */
 public class SodiumChunkManager extends ClientChunkManager implements ChunkStatusListenerManager {
+    private static final boolean doThreadChecking = false;
+
     private final Long2ObjectOpenHashMap<WorldChunk> chunks = new Long2ObjectOpenHashMap<>();
     private final ClientWorld world;
     private final WorldChunk emptyChunk;
@@ -43,16 +45,32 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     private long prevChunkKey = Long.MIN_VALUE;
     private WorldChunk prevChunk;
 
+    private Thread clientThread;
+
     public SodiumChunkManager(ClientWorld world, int radius) {
         super(world, radius);
 
         this.world = world;
         this.emptyChunk = new EmptyChunk(world, new ChunkPos(0, 0));
         this.radius = getChunkMapRadius(radius);
+
+        this.clientThread = Thread.currentThread();
+    }
+
+    private void checkThread() {
+        if (doThreadChecking) {
+            Thread currentThread = Thread.currentThread();
+
+            if (currentThread != this.clientThread) {
+                throw new RuntimeException();
+            }
+        }
     }
 
     @Override
     public void unload(int x, int z) {
+        checkThread();
+
         // If this request unloads a chunk, notify the listener
         if (this.chunks.remove(toChunkKey(x, z)) != null) {
             this.onChunkUnloaded(x, z);
@@ -62,6 +80,8 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     }
 
     private void unload(long pos) {
+        checkThread();
+
         if (this.chunks.remove(pos) != null) {
             this.onChunkUnloaded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos));
         }
@@ -76,6 +96,8 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public WorldChunk getChunk(int x, int z, ChunkStatus status, boolean create) {
+        checkThread();
+
         long key = toChunkKey(x, z);
 
         if (key == this.prevChunkKey) {
@@ -96,10 +118,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public WorldChunk loadChunkFromPacket(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int flag) {
-        // Do not try to load chunks outside the load distance
-        if (!this.isWithinLoadDistance(x, z)) {
-            return null;
-        }
+        checkThread();
 
         long key = toChunkKey(x, z);
 
@@ -125,12 +144,16 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public void setChunkMapCenter(int x, int z) {
+        checkThread();
+
         this.centerX = x;
         this.centerZ = z;
     }
 
     @Override
     public void updateLoadDistance(int dist) {
+        checkThread();
+
         int radius = getChunkMapRadius(dist);
 
         if (this.radius == radius) {
@@ -138,11 +161,12 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
         }
 
         this.radius = dist;
-
-        this.checkChunks();
     }
 
+    @Deprecated
     private void checkChunks() {
+        checkThread();
+
         LongList queue = new LongArrayList();
 
         LongIterator it = this.chunks.keySet().iterator();
@@ -187,6 +211,8 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     }
 
     private void onChunkLoaded(int x, int z, WorldChunk chunk) {
+        checkThread();
+
         // [VanillaCopy] Mark the chunk as eligible for block and sky lighting
         LightingProvider lightEngine = this.getLightingProvider();
         lightEngine.setLightEnabled(new ChunkPos(x, z), true);
@@ -208,6 +234,8 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     }
 
     private void onChunkUnloaded(int x, int z) {
+        checkThread();
+
         // Notify the chunk listener
         if (this.listener != null) {
             this.listener.onChunkRemoved(x, z);
