@@ -11,7 +11,7 @@ public interface ControlValueFormatter {
         return (v) -> v + "x";
     }
 
-    static ControlValueFormatter quanity(String name) {
+    static ControlValueFormatter quantity(String name) {
         return (v) -> v + " " + name;
     }
 

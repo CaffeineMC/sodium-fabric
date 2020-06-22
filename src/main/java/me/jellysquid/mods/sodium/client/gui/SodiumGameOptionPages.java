@@ -40,7 +40,7 @@ public class SodiumGameOptionPages {
                         .setName("View Distance")
                         .setTooltip("The view distance controls how far away terrain will be rendered. Lower distances mean that less terrain will be " +
                                 "rendered, improving frame rates.")
-                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.quanity("Chunks")))
+                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.quantity("Chunks")))
                         .setBinding((options, value) -> options.viewDistance = value, options -> options.viewDistance)
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -57,7 +57,7 @@ public class SodiumGameOptionPages {
                         .setName("FPS Limit")
                         .setTooltip("Limits the maximum number of frames per second. In effect, this will throttle the game and can be useful when you want to conserve " +
                                 "battery life or multi-task between other applications.")
-                        .setControl(option -> new SliderControl(option, 5, 300, 5, ControlValueFormatter.quanity("FPS")))
+                        .setControl(option -> new SliderControl(option, 5, 300, 5, ControlValueFormatter.quantity("FPS")))
                         .setBinding((opts, value) -> {
                             opts.maxFps = value;
                             MinecraftClient.getInstance().getWindow().setFramerateLimit(value);
