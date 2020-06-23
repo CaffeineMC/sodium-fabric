@@ -14,22 +14,24 @@ public class LCBGraphicsState implements ChunkGraphicsState {
     private final ChunkRegion<LCBGraphicsState> region;
 
     private final GlBufferRegion segment;
-    private final BufferSlice[] parts;
+    private final long[] parts;
+    private int facesWithData;
 
     public LCBGraphicsState(ChunkRegion<LCBGraphicsState> region, GlBufferRegion segment, ChunkMeshData meshData, GlVertexFormat<?> vertexFormat) {
         this.region = region;
         this.segment = segment;
 
-        this.parts = new BufferSlice[ModelQuadFacing.COUNT];
+        this.parts = new long[ModelQuadFacing.COUNT];
 
-        for (Map.Entry<ModelQuadFacing, me.jellysquid.mods.sodium.client.gl.util.BufferSlice> entry : meshData.getSlices()) {
+        for (Map.Entry<ModelQuadFacing, BufferSlice> entry : meshData.getSlices()) {
             ModelQuadFacing facing = entry.getKey();
-            me.jellysquid.mods.sodium.client.gl.util.BufferSlice slice = entry.getValue();
+            BufferSlice slice = entry.getValue();
 
             int start = (segment.getStart() + slice.start) / vertexFormat.getStride();
             int count = slice.len / vertexFormat.getStride();
 
-            this.parts[facing.ordinal()] = new BufferSlice(start, count);
+            this.parts[facing.ordinal()] = BufferSlice.pack(start, count);
+            this.facesWithData |= 1 << facing.ordinal();
         }
     }
 
@@ -42,7 +44,11 @@ public class LCBGraphicsState implements ChunkGraphicsState {
         return this.region;
     }
 
-    public BufferSlice getModelPart(ModelQuadFacing facing) {
-        return this.parts[facing.ordinal()];
+    public long getModelPart(int facing) {
+        return this.parts[facing];
+    }
+
+    public int getFacesWithData() {
+        return this.facesWithData;
     }
 }

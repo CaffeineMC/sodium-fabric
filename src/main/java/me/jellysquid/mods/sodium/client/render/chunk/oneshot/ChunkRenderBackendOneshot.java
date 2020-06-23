@@ -87,7 +87,7 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
             if (state != null) {
                 this.buildBatch(render, state);
 
-                if (!this.batch.isEmpty()) {
+                if (this.batch.isBuilding()) {
                     this.prepareDraw(camera, render);
                     this.drawBatch(state);
                 }
@@ -104,27 +104,43 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
     }
 
     protected void buildBatch(ChunkRenderContainer<?> render, T state) {
+        int visible = (render.getVisibleFaces() & state.getFacesWithData());
+
+        if (visible == 0) {
+            return;
+        }
+
         GlMultiDrawBatch batch = this.batch;
         batch.begin();
 
-        for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
-            if (render.isFaceVisible(facing)) {
-                BufferSlice part = state.getModelPart(facing);
+        int[] masks = ModelQuadFacing.BITS;
 
-                if (part != null) {
-                    batch.addChunkRender(part.start, part.len);
-                }
+        for (int i = 0; i < masks.length; i++) {
+            int mask = masks[i];
+
+            if ((visible & mask) == 0) {
+                continue;
             }
-        }
 
-        batch.end();
+            long part = state.getModelPart(i);
+            batch.addChunkRender(BufferSlice.unpackStart(part), BufferSlice.unpackLength(part));
+        }
     }
 
     protected void drawBatch(T state) {
+        this.batch.end();
+
         state.bind();
 
         GL20.glMultiDrawArrays(GL11.GL_QUADS, this.batch.getIndicesBuffer(), this.batch.getLengthBuffer());
     }
 
     protected abstract T createGraphicsState();
+
+    @Override
+    public void delete() {
+        super.delete();
+
+        this.batch.delete();
+    }
 }
