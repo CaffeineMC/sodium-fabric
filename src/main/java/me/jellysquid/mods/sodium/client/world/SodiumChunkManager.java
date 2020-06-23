@@ -45,7 +45,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     private long prevChunkKey = Long.MIN_VALUE;
     private WorldChunk prevChunk;
 
-    private Thread clientThread;
+    private final Thread clientThread;
 
     public SodiumChunkManager(ClientWorld world, int radius) {
         super(world, radius);
@@ -69,7 +69,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public void unload(int x, int z) {
-        checkThread();
+        this.checkThread();
 
         // If this request unloads a chunk, notify the listener
         if (this.chunks.remove(toChunkKey(x, z)) != null) {
@@ -80,7 +80,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     }
 
     private void unload(long pos) {
-        checkThread();
+        this.checkThread();
 
         if (this.chunks.remove(pos) != null) {
             this.onChunkUnloaded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos));
@@ -96,7 +96,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public WorldChunk getChunk(int x, int z, ChunkStatus status, boolean create) {
-        checkThread();
+        this.checkThread();
 
         long key = toChunkKey(x, z);
 
@@ -118,7 +118,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public WorldChunk loadChunkFromPacket(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int flag) {
-        checkThread();
+        this.checkThread();
 
         long key = toChunkKey(x, z);
 
@@ -144,7 +144,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public void setChunkMapCenter(int x, int z) {
-        checkThread();
+        this.checkThread();
 
         this.centerX = x;
         this.centerZ = z;
@@ -152,7 +152,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public void updateLoadDistance(int dist) {
-        checkThread();
+        this.checkThread();
 
         int radius = getChunkMapRadius(dist);
 
@@ -162,11 +162,11 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
         this.radius = dist;
 
-        checkChunks();
+        this.checkChunks();
     }
 
     private void checkChunks() {
-        checkThread();
+        this.checkThread();
 
         LongList queue = new LongArrayList();
 
@@ -212,7 +212,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     }
 
     private void onChunkLoaded(int x, int z, WorldChunk chunk) {
-        checkThread();
+        this.checkThread();
 
         // [VanillaCopy] Mark the chunk as eligible for block and sky lighting
         LightingProvider lightEngine = this.getLightingProvider();
@@ -235,7 +235,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     }
 
     private void onChunkUnloaded(int x, int z) {
-        checkThread();
+        this.checkThread();
 
         // Notify the chunk listener
         if (this.listener != null) {
