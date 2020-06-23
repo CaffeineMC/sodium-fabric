@@ -161,9 +161,10 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
         }
 
         this.radius = dist;
+
+        checkChunks();
     }
 
-    @Deprecated
     private void checkChunks() {
         checkThread();
 
