@@ -11,20 +11,20 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkRenderShaderBackend;
 import net.minecraft.util.Identifier;
 
-public abstract class ChunkRenderBackendMultidraw<T extends ChunkGraphicsState> extends ChunkRenderShaderBackend<T, ChunkProgramMultidraw> {
+public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> extends ChunkRenderShaderBackend<T, ChunkProgramMultiDraw> {
     /**
      * Controls the maximum number of chunk renders that can be performed in a single draw call. This directly controls
      * the amount of memory allocated for uniform arrays in the shader.
      */
     protected static final int MAX_BATCH_SIZE = 32;
 
-    public ChunkRenderBackendMultidraw(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
+    public ChunkRenderBackendMultiDraw(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
     }
 
     @Override
-    protected ChunkProgramMultidraw createShaderProgram(Identifier name, int handle, ChunkFogMode fogMode) {
-        return new ChunkProgramMultidraw(name, handle, fogMode.getFactory());
+    protected ChunkProgramMultiDraw createShaderProgram(Identifier name, int handle, ChunkFogMode fogMode) {
+        return new ChunkProgramMultiDraw(name, handle, fogMode.getFactory());
     }
 
     @Override

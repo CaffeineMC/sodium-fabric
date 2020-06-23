@@ -23,7 +23,7 @@ public class ChunkProgramOneshot extends ChunkProgram {
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(3);
     }
 
-    public void uploadChunkModelOffset(float x, float y, float z) {
+    public void setModelOffset(float x, float y, float z) {
         FloatBuffer buf = this.uModelOffsetBuffer;
         buf.put(0, x);
         buf.put(1, y);

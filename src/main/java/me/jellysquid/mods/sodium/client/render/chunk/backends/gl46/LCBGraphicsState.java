@@ -1,37 +1,37 @@
 package me.jellysquid.mods.sodium.client.render.chunk.backends.gl46;
 
-import it.unimi.dsi.fastutil.bytes.Byte2ReferenceMap;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferRegion;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
+import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelPart;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkModelSlice;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
+
+import java.util.Map;
 
 public class LCBGraphicsState implements ChunkGraphicsState {
     private final ChunkRegion<LCBGraphicsState> region;
 
     private final GlBufferRegion segment;
-    private final ChunkModelPart[] parts;
-    private final boolean[] passes;
+    private final long[] parts;
+    private int facesWithData;
 
     public LCBGraphicsState(ChunkRegion<LCBGraphicsState> region, GlBufferRegion segment, ChunkMeshData meshData, GlVertexFormat<?> vertexFormat) {
         this.region = region;
         this.segment = segment;
 
-        this.parts = new ChunkModelPart[ChunkModelPart.count()];
-        this.passes = new boolean[BlockRenderPass.COUNT];
+        this.parts = new long[ModelQuadFacing.COUNT];
 
-        for (Byte2ReferenceMap.Entry<ChunkModelSlice> entry : meshData.getBuffers().byte2ReferenceEntrySet()) {
-            ChunkModelSlice slice = entry.getValue();
+        for (Map.Entry<ModelQuadFacing, BufferSlice> entry : meshData.getSlices()) {
+            ModelQuadFacing facing = entry.getKey();
+            BufferSlice slice = entry.getValue();
 
             int start = (segment.getStart() + slice.start) / vertexFormat.getStride();
             int count = slice.len / vertexFormat.getStride();
 
-            this.parts[entry.getByteKey()] = new ChunkModelPart(start, count);
-            this.passes[slice.pass.ordinal()] = true;
+            this.parts[facing.ordinal()] = BufferSlice.pack(start, count);
+            this.facesWithData |= 1 << facing.ordinal();
         }
     }
 
@@ -44,11 +44,11 @@ public class LCBGraphicsState implements ChunkGraphicsState {
         return this.region;
     }
 
-    public boolean containsDataForPass(BlockRenderPass pass) {
-        return this.passes[pass.ordinal()];
+    public long getModelPart(int facing) {
+        return this.parts[facing];
     }
 
-    public ChunkModelPart getModelPart(byte key) {
-        return this.parts[key];
+    public int getFacesWithData() {
+        return this.facesWithData;
     }
 }
