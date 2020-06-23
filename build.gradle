@@ -33,6 +33,10 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Sodium itself doesn't use Fabric API at all, this is purely for optional dependency testing -ADCL
+    modApi "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    modApi "io.github.prospector:modmenu:${project.modmenu_version}"
 }
 
 processResources {

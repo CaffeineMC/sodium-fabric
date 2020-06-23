@@ -20,6 +20,9 @@
     ],
     "client": [
       "me.jellysquid.mods.sodium.client.SodiumClientMod"
+    ],
+    "modmenu": [
+      "me.jellysquid.mods.sodium.client.ModMenuApiImpl"
     ]
   },
   "custom": {
