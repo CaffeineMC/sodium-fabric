@@ -18,10 +18,15 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
 public class SodiumGameOptions {
+    public final GeneralSettings general = new GeneralSettings();
     public final QualitySettings quality = new QualitySettings();
     public final PerformanceSettings performance = new PerformanceSettings();
 
     private File file;
+
+    public static class GeneralSettings {
+        public int guiScalePercentage = 100;
+    }
 
     public static class PerformanceSettings {
         public ChunkRendererBackendOption chunkRendererBackend = ChunkRendererBackendOption.BEST;

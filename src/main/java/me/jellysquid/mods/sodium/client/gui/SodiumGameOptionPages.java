@@ -27,6 +27,15 @@ public class SodiumGameOptionPages {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(int.class, sodiumOpts)
+                        .setName("GUI Scale")
+                        .setTooltip("Scales the game's GUI. Setting to 0% gives the smallest GUI, and 100% the largest.")
+                        .setControl(option -> new SliderControl(option, 0, 100, 10, v -> v + "%"))
+                        .setBinding((opts, value) -> {
+                            opts.general.guiScalePercentage = value;
+                            MinecraftClient.getInstance().onResolutionChanged();
+                        }, opts -> opts.general.guiScalePercentage)
+                        .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName("View Distance")
                         .setTooltip("The view distance controls how far away terrain will be rendered. Lower distances mean that less terrain will be " +
