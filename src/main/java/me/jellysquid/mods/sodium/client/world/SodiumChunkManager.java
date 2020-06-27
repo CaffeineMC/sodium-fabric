@@ -1,9 +1,7 @@
 package me.jellysquid.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongList;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.CompoundTag;
@@ -96,11 +94,6 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public WorldChunk loadChunkFromPacket(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int flag) {
-        // Do not try to load chunks outside the load distance
-        if (!this.isWithinLoadDistance(x, z)) {
-            return null;
-        }
-
         long key = toChunkKey(x, z);
 
         WorldChunk chunk = this.chunks.get(key);
@@ -130,20 +123,8 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     }
 
     @Override
-    public void updateLoadDistance(int dist) {
-        int radius = getChunkMapRadius(dist);
-
-        if (this.radius == radius) {
-            return;
-        }
-
-        this.radius = dist;
-
-        this.checkChunks();
-    }
-
-    private void checkChunks() {
-        LongList queue = new LongArrayList();
+    public void updateLoadDistance(int loadDistance) {
+        this.radius = getChunkMapRadius(loadDistance);
 
         LongIterator it = this.chunks.keySet().iterator();
 
@@ -153,22 +134,11 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
             int x = ChunkPos.getPackedX(pos);
             int z = ChunkPos.getPackedZ(pos);
 
-            if (!this.isWithinLoadDistance(x, z)) {
-                queue.add(pos);
+            // Remove any chunks which are outside the load radius
+            if (Math.abs(x - this.centerX) > this.radius || Math.abs(z - this.centerZ) > this.radius) {
+                it.remove();
             }
         }
-
-        if (!queue.isEmpty()) {
-            it = queue.iterator();
-
-            while (it.hasNext()) {
-                this.unload(it.nextLong());
-            }
-        }
-    }
-
-    private boolean isWithinLoadDistance(int x, int z) {
-        return Math.abs(x - this.centerX) <= this.radius && Math.abs(z - this.centerZ) <= this.radius;
     }
 
     @Override
