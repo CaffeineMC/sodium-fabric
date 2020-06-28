@@ -18,6 +18,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterator;
 import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkDrawCallBatcher;
 import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkDrawParamsVector;
 import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkRenderBackendMultiDraw;
@@ -130,7 +131,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
                         GlBufferRegion segment = arena.upload(GL15.GL_ARRAY_BUFFER, 0, upload.buffer.capacity());
 
-                        render.setGraphicsState(pass, new LCBGraphicsState(region, segment, meshData, this.vertexFormat));
+                        render.setGraphicsState(pass, new LCBGraphicsState(render, region, segment, meshData, this.vertexFormat));
                     } else {
                         render.setGraphicsState(pass, null);
                     }
@@ -148,7 +149,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     }
 
     @Override
-    public void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<LCBGraphicsState>> renders, MatrixStack matrixStack, ChunkCameraContext camera) {
+    public void render(BlockRenderPass pass, ChunkRenderListIterator<LCBGraphicsState> renders, MatrixStack matrixStack, ChunkCameraContext camera) {
         this.bufferManager.cleanup();
         this.setupDrawBatches(pass, renders, camera);
 
@@ -230,33 +231,23 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         }
     }
 
-    private void setupDrawBatches(BlockRenderPass pass, Iterator<ChunkRenderContainer<LCBGraphicsState>> renders, ChunkCameraContext camera) {
+    private void setupDrawBatches(BlockRenderPass pass, ChunkRenderListIterator<LCBGraphicsState> it, ChunkCameraContext camera) {
         this.uniformBufferBuilder.begin();
 
         int drawCount = 0;
 
-        while (renders.hasNext()) {
-            ChunkRenderContainer<LCBGraphicsState> render = renders.next();
-            LCBGraphicsState graphics = render.getGraphicsState(pass);
-
-            if (graphics == null) {
-                continue;
-            }
-
-            int visible = render.getVisibleFaces() & graphics.getFacesWithData();
-
-            if (visible == 0) {
-                continue;
-            }
+        while (it.hasNext()) {
+            LCBGraphicsState state = it.getGraphicsState();
+            int visible = it.getVisibleFaces();
 
             int index = drawCount++;
-            float x = camera.getChunkModelOffset(render.getRenderX(), camera.blockOriginX, camera.originX);
-            float y = camera.getChunkModelOffset(render.getRenderY(), camera.blockOriginY, camera.originY);
-            float z = camera.getChunkModelOffset(render.getRenderZ(), camera.blockOriginZ, camera.originZ);
+            float x = camera.getChunkModelOffset(state.getX(), camera.blockOriginX, camera.originX);
+            float y = camera.getChunkModelOffset(state.getY(), camera.blockOriginY, camera.originY);
+            float z = camera.getChunkModelOffset(state.getZ(), camera.blockOriginZ, camera.originZ);
 
             this.uniformBufferBuilder.pushChunkDrawParams(x, y, z);
 
-            ChunkRegion<LCBGraphicsState> region = graphics.getRegion();
+            ChunkRegion<LCBGraphicsState> region = state.getRegion();
             ChunkDrawCallBatcher batch = region.getDrawBatcher();
 
             if (!batch.isBuilding()) {
@@ -269,13 +260,15 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
             for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
                 if ((visible & mask) != 0) {
-                    long part = graphics.getModelPart(i);
+                    long part = state.getModelPart(i);
 
                     batch.addIndirectDrawCall(BufferSlice.unpackStart(part), BufferSlice.unpackLength(part), index, 1);
                 }
 
                 mask <<= 1;
             }
+
+            it.advance();
         }
 
         this.uniformBufferBuilder.end();

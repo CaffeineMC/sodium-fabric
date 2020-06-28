@@ -397,9 +397,6 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         this.visibleFaces |= (byte) (1 << facing.ordinal());
     }
 
-    public byte getVisibleFaces() {
-        return this.visibleFaces;
-    }
 
     public ChunkRenderBounds getBounds() {
         return this.data.getBounds();

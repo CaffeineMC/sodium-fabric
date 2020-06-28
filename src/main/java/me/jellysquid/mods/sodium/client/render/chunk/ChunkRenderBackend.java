@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterator;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
 
@@ -27,7 +28,7 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
      * @param matrixStack The current matrix stack containing the model-view matrices for rendering
      * @param camera
      */
-    void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<T>> renders, MatrixStack matrixStack, ChunkCameraContext camera);
+    void render(BlockRenderPass pass, ChunkRenderListIterator<T> renders, MatrixStack matrixStack, ChunkCameraContext camera);
 
     void createShaders();
 

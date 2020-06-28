@@ -4,21 +4,20 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 
 import java.util.Arrays;
 import java.util.Map;
 
-public abstract class ChunkOneshotGraphicsState implements ChunkGraphicsState {
+public abstract class ChunkOneshotGraphicsState extends ChunkGraphicsState {
     private final long[] parts;
     private int facesWithData;
 
-    protected ChunkOneshotGraphicsState() {
-        this.parts = new long[ModelQuadFacing.COUNT];
-    }
+    protected ChunkOneshotGraphicsState(ChunkRenderContainer<?> container) {
+        super(container);
 
-    public long getModelPart(ModelQuadFacing facing) {
-        return this.getModelPart(facing.ordinal());
+        this.parts = new long[ModelQuadFacing.COUNT];
     }
 
     public long getModelPart(int facing) {
@@ -46,9 +45,5 @@ public abstract class ChunkOneshotGraphicsState implements ChunkGraphicsState {
 
             this.setModelPart(facing, BufferSlice.pack(slice.start / stride, slice.len / stride));
         }
-    }
-
-    public int getFacesWithData() {
-        return this.facesWithData;
     }
 }

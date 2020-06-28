@@ -5,19 +5,22 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
 
 import java.util.Map;
 
-public class LCBGraphicsState implements ChunkGraphicsState {
+public class LCBGraphicsState extends ChunkGraphicsState {
     private final ChunkRegion<LCBGraphicsState> region;
 
     private final GlBufferRegion segment;
     private final long[] parts;
     private int facesWithData;
 
-    public LCBGraphicsState(ChunkRegion<LCBGraphicsState> region, GlBufferRegion segment, ChunkMeshData meshData, GlVertexFormat<?> vertexFormat) {
+    public LCBGraphicsState(ChunkRenderContainer<?> container, ChunkRegion<LCBGraphicsState> region, GlBufferRegion segment, ChunkMeshData meshData, GlVertexFormat<?> vertexFormat) {
+        super(container);
+
         this.region = region;
         this.segment = segment;
 
