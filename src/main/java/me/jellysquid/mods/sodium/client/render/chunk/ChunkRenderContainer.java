@@ -224,17 +224,15 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
     /**
      * Ensures that all resources attached to the given chunk render are "ticked" forward. This should be called every
-     * time before this render is drawn if {@link ChunkRenderContainer#canTick()} is true.
+     * time before this render is drawn if {@link ChunkRenderContainer#isTickable()} is true.
      */
     public void tick() {
         List<Sprite> sprites = this.getData().getAnimatedSprites();
 
-        // This check is unnecessary if callers only perform ticking when we signal to do so, but just in case
-        if (!sprites.isEmpty()) {// We would like to avoid allocating an iterator here
-            // noinspection ForLoopReplaceableByForEach
-            for (int i = 0, size = sprites.size(); i < size; i++) {
-                SpriteUtil.ensureSpriteReady(sprites.get(i));
-            }
+        // We would like to avoid allocating an iterator here
+        // noinspection ForLoopReplaceableByForEach
+        for (int i = 0, size = sprites.size(); i < size; i++) {
+            SpriteUtil.markSpriteActive(sprites.get(i));
         }
     }
 
