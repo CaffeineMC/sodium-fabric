@@ -20,7 +20,7 @@ public class ChunkProgramOneshot extends ChunkProgram {
         super(name, handle, fogShaderFunction);
 
         this.dModelOffset = this.getUniformLocation("d_ModelOffset");
-        this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(3);
+        this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(4);
     }
 
     public void setModelOffset(float x, float y, float z) {
@@ -29,6 +29,6 @@ public class ChunkProgramOneshot extends ChunkProgram {
         buf.put(1, y);
         buf.put(2, z);
 
-        GL20.glUniform3fv(this.dModelOffset, buf);
+        GL20.glUniform4fv(this.dModelOffset, buf);
     }
 }
