@@ -7,14 +7,14 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkMultiDrawBatcher;
+import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkDrawCallBatcher;
 
 public class ChunkRegion<T extends ChunkGraphicsState> {
     private static final int EXPECTED_CHUNK_SIZE = 8 * 1024;
 
     private final GlBufferArena arena;
     private final GlVertexArray vao;
-    private final ChunkMultiDrawBatcher batch;
+    private final ChunkDrawCallBatcher batch;
 
     private final ObjectArrayList<ChunkBuildResult<T>> uploads;
 
@@ -22,10 +22,12 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
 
     public ChunkRegion(int size) {
         int arenaSize = EXPECTED_CHUNK_SIZE * size;
+
         this.arena = new GlBufferArena(arenaSize, arenaSize);
-        this.batch = new ChunkMultiDrawBatcher(size * ModelQuadFacing.COUNT);
         this.uploads = new ObjectArrayList<>();
         this.vao = new GlVertexArray();
+
+        this.batch = ChunkDrawCallBatcher.create(size * ModelQuadFacing.COUNT);
     }
 
     public GlBufferArena getBufferArena() {
@@ -46,7 +48,7 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
         return this.uploads;
     }
 
-    public ChunkMultiDrawBatcher getDrawBatcher() {
+    public ChunkDrawCallBatcher getDrawBatcher() {
         return this.batch;
     }
 
@@ -54,11 +56,11 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
         return this.vao;
     }
 
-    public void setPrevVbo(GlBuffer buffer) {
-        this.prevBuffer = buffer;
+    public boolean isDirty() {
+        return this.prevBuffer != this.arena.getBuffer();
     }
 
-    public GlBuffer getPrevVbo() {
-        return this.prevBuffer;
+    public void markClean() {
+        this.prevBuffer = this.arena.getBuffer();
     }
 }

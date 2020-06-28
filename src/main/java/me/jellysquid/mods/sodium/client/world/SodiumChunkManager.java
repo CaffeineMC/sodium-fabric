@@ -52,7 +52,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     @Override
     public void unload(int x, int z) {
         // If this request unloads a chunk, notify the listener
-        if (this.chunks.remove(toChunkKey(x, z)) != null) {
+        if (this.chunks.remove(createChunkKey(x, z)) != null) {
             this.onChunkUnloaded(x, z);
         }
 
@@ -74,7 +74,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public WorldChunk getChunk(int x, int z, ChunkStatus status, boolean create) {
-        long key = toChunkKey(x, z);
+        long key = createChunkKey(x, z);
 
         if (key == this.prevChunkKey) {
             return this.prevChunk;
@@ -94,7 +94,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public WorldChunk loadChunkFromPacket(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int flag) {
-        long key = toChunkKey(x, z);
+        long key = createChunkKey(x, z);
 
         WorldChunk chunk = this.chunks.get(key);
 
@@ -184,7 +184,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
         }
     }
 
-    private static long toChunkKey(int x, int z) {
+    private static long createChunkKey(int x, int z) {
         return ChunkPos.toLong(x, z);
     }
 

@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.backends.gl46;
+package me.jellysquid.mods.sodium.client.render.chunk.backends.gl43;
 
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferRegion;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;

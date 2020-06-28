@@ -11,7 +11,7 @@ import java.util.function.Function;
 
 public class ChunkProgramOneshot extends ChunkProgram {
     // Uniform variable index for model offset
-    private final int uModelOffset;
+    private final int dModelOffset;
 
     // Scratch buffer
     private final FloatBuffer uModelOffsetBuffer;
@@ -19,7 +19,7 @@ public class ChunkProgramOneshot extends ChunkProgram {
     public ChunkProgramOneshot(Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction) {
         super(name, handle, fogShaderFunction);
 
-        this.uModelOffset = this.getUniformLocation("u_ModelOffset");
+        this.dModelOffset = this.getUniformLocation("d_ModelOffset");
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(3);
     }
 
@@ -29,6 +29,6 @@ public class ChunkProgramOneshot extends ChunkProgram {
         buf.put(1, y);
         buf.put(2, z);
 
-        GL20.glUniform3fv(this.uModelOffset, buf);
+        GL20.glUniform3fv(this.dModelOffset, buf);
     }
 }

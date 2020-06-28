@@ -57,4 +57,8 @@ public class UnsafeUtil {
 
         return UNSAFE;
     }
+
+    public static Unsafe instanceNullable() {
+        return UNSAFE;
+    }
 }

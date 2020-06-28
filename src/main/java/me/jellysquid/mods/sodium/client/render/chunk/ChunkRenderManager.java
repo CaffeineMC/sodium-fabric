@@ -378,13 +378,14 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
             this.tickRenders();
         }
 
-        if (!this.renderedLayers.add(pass)) {
-            return;
-        }
+        if (this.renderedLayers.add(pass)) {
+            RenderList<ChunkRenderContainer<T>> renderList = this.chunkRenderLists[pass.ordinal()];
+            Iterator<ChunkRenderContainer<T>> iterator = renderList.iterator(pass.isTranslucent());
 
-        this.backend.begin(matrixStack);
-        this.backend.render(pass, this.chunkRenderLists[pass.ordinal()].iterator(pass.isTranslucent()), matrixStack, new ChunkCameraContext(x, y, z));
-        this.backend.end(matrixStack);
+            this.backend.begin(matrixStack);
+            this.backend.render(pass, iterator, matrixStack, new ChunkCameraContext(x, y, z));
+            this.backend.end(matrixStack);
+        }
     }
 
     private void tickRenders() {

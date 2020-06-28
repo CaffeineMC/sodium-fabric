@@ -1,8 +1,4 @@
 #version 110
-#ifdef USE_MULTIDRAW
-#extension GL_ARB_shader_draw_parameters : require
-#endif
-
 attribute vec3 a_Pos; // The position of the vertex
 attribute vec4 a_Color; // The color of the vertex
 attribute vec2 a_TexCoord; // The block texture coordinate of the vertex
@@ -28,26 +24,19 @@ uniform float u_FogEnd;
 uniform mat4 u_ModelViewProjectionMatrix;
 uniform vec3 u_ModelScale;
 
+// The model translation for this draw call.
+// If multi-draw is enabled, then the model offset will come from an attribute buffer.
 #ifdef USE_MULTIDRAW
-uniform vec4 u_ModelOffsets[MAX_BATCH_SIZE];
+attribute vec4 d_ModelOffset;
 #else
-uniform vec3 u_ModelOffset;
+uniform vec4 d_ModelOffset;
 #endif
 
 void main() {
-    // The model translation for this draw call.
-    vec3 modelOffset;
-
-#ifdef USE_MULTIDRAW
-    modelOffset = u_ModelOffsets[gl_DrawIDARB].xyz;
-#else
-    modelOffset = u_ModelOffset;
-#endif
-
     // Translates the vertex position around the position of the camera
     // This can be used to calculate the distance of the vertex from the camera without needing to
     // transform it into model-view space with a matrix, which is much slower.
-    vec4 pos = vec4((a_Pos * u_ModelScale) + modelOffset, 1.0);
+    vec4 pos = vec4((a_Pos * u_ModelScale) + d_ModelOffset.xyz, 1.0);
 
     // Apply the matrix transformations to the vertex position to place it into model-view-projection space
     gl_Position = u_ModelViewProjectionMatrix * pos;
