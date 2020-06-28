@@ -93,7 +93,7 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
-        this.renderer.renderChunks(camera, frustum, hasForcedFrustum, frame, spectator);
+        this.renderer.updateChunks(camera, frustum, hasForcedFrustum, frame, spectator);
     }
 
     @Inject(method = "reload", at = @At("RETURN"))

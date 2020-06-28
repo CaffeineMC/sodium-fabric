@@ -13,7 +13,6 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
 import java.lang.reflect.Array;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -227,12 +226,8 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
      * time before this render is drawn if {@link ChunkRenderContainer#isTickable()} is true.
      */
     public void tick() {
-        List<Sprite> sprites = this.getData().getAnimatedSprites();
-
-        // We would like to avoid allocating an iterator here
-        // noinspection ForLoopReplaceableByForEach
-        for (int i = 0, size = sprites.size(); i < size; i++) {
-            SpriteUtil.markSpriteActive(sprites.get(i));
+        for (Sprite sprite : this.data.getAnimatedSprites()) {
+            SpriteUtil.markSpriteActive(sprite);
         }
     }
 
