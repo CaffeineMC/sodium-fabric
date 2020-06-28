@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.oneshot.ChunkOneshotGraphicsState;
 import org.lwjgl.opengl.GL15;
@@ -13,7 +14,9 @@ public class VAOGraphicsState extends ChunkOneshotGraphicsState {
     private final GlVertexArray vertexArray;
     private final GlBuffer vertexBuffer;
 
-    public VAOGraphicsState() {
+    public VAOGraphicsState(ChunkRenderContainer<?> container) {
+        super(container);
+
         this.vertexBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
         this.vertexArray = new GlVertexArray();
     }

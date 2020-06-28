@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.backends.gl20;
 
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.oneshot.ChunkRenderBackendOneshot;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL15;
@@ -36,8 +37,8 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
     }
 
     @Override
-    protected VBOGraphicsState createGraphicsState() {
-        return new VBOGraphicsState();
+    protected VBOGraphicsState createGraphicsState(ChunkRenderContainer<VBOGraphicsState> container) {
+        return new VBOGraphicsState(container);
     }
 
     public static boolean isSupported() {

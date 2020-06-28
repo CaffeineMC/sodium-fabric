@@ -13,6 +13,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterator;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkRenderShaderBackend;
@@ -59,7 +60,7 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
 
                 if (mesh.hasVertexData()) {
                     if (state == null) {
-                        state = this.createGraphicsState();
+                        state = this.createGraphicsState(render);
                     }
 
                     state.upload(mesh);
@@ -79,46 +80,36 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
     }
 
     @Override
-    public void render(BlockRenderPass pass, Iterator<ChunkRenderContainer<T>> renders, MatrixStack matrixStack, ChunkCameraContext camera) {
-        while (renders.hasNext()) {
-            ChunkRenderContainer<T> render = renders.next();
-            T state = render.getGraphicsState(pass);
+    public void render(BlockRenderPass pass, ChunkRenderListIterator<T> it, MatrixStack matrixStack, ChunkCameraContext camera) {
+        while (it.hasNext()) {
+            T state = it.getGraphicsState();
+            int visibleFaces = it.getVisibleFaces();
 
-            if (state != null) {
-                this.buildBatch(render, state);
+            this.buildBatch(state, visibleFaces);
 
-                if (this.batch.isBuilding()) {
-                    this.prepareDraw(camera, render);
-                    this.drawBatch(state);
-                }
+            if (this.batch.isBuilding()) {
+                this.prepareDrawBatch(camera, state);
+                this.drawBatch(state);
             }
+
+            it.advance();
         }
     }
 
-    protected void prepareDraw(ChunkCameraContext camera, ChunkRenderContainer<T> render) {
-        float modelX = camera.getChunkModelOffset(render.getRenderX(), camera.blockOriginX, camera.originX);
-        float modelY = camera.getChunkModelOffset(render.getRenderY(), camera.blockOriginY, camera.originY);
-        float modelZ = camera.getChunkModelOffset(render.getRenderZ(), camera.blockOriginZ, camera.originZ);
+    protected void prepareDrawBatch(ChunkCameraContext camera, T state) {
+        float modelX = camera.getChunkModelOffset(state.getX(), camera.blockOriginX, camera.originX);
+        float modelY = camera.getChunkModelOffset(state.getY(), camera.blockOriginY, camera.originY);
+        float modelZ = camera.getChunkModelOffset(state.getZ(), camera.blockOriginZ, camera.originZ);
 
         this.activeProgram.setModelOffset(modelX, modelY, modelZ);
     }
 
-    protected void buildBatch(ChunkRenderContainer<?> render, T state) {
-        int visible = (render.getVisibleFaces() & state.getFacesWithData());
-
-        if (visible == 0) {
-            return;
-        }
-
+    protected void buildBatch(T state, int visibleFaces) {
         GlMultiDrawBatch batch = this.batch;
         batch.begin();
 
-        int[] masks = ModelQuadFacing.BITS;
-
-        for (int i = 0; i < masks.length; i++) {
-            int mask = masks[i];
-
-            if ((visible & mask) == 0) {
+        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
+            if ((visibleFaces & (1 << i)) == 0) {
                 continue;
             }
 
@@ -135,7 +126,7 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
         GL20.glMultiDrawArrays(GL11.GL_QUADS, this.batch.getIndicesBuffer(), this.batch.getLengthBuffer());
     }
 
-    protected abstract T createGraphicsState();
+    protected abstract T createGraphicsState(ChunkRenderContainer<T> container);
 
     @Override
     public void delete() {
