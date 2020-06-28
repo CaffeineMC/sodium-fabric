@@ -14,6 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinInGameOverlayRenderer {
     @Inject(method = "renderFireOverlay", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/texture/TextureManager;bindTexture(Lnet/minecraft/util/Identifier;)V", shift = At.Shift.AFTER))
     private static void preFireOverlayRender(MinecraftClient client, MatrixStack stack, CallbackInfo ci) {
-        SpriteUtil.ensureSpriteReady(ModelLoader.FIRE_1.getSprite());
+        SpriteUtil.markSpriteActive(ModelLoader.FIRE_1.getSprite());
     }
 }
