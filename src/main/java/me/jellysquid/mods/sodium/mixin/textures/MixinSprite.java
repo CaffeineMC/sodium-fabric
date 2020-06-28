@@ -52,7 +52,7 @@ public abstract class MixinSprite implements SpriteExtended {
 
     @Override
     public void uploadPendingChanges() {
-        if (this.onDemand && this.hasPendingUpdate) {
+        if (this.hasPendingUpdate && this.onDemand) {
             this.uploadTexture();
         }
     }

@@ -6,7 +6,7 @@ import com.google.gson.GsonBuilder;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.gl46.GL46ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 
 import java.io.File;
 import java.io.FileReader;
@@ -47,7 +47,7 @@ public class SodiumGameOptions {
     }
 
     public enum ChunkRendererBackendOption implements TextProvider {
-        GL46("OpenGL 4.6", GL46ChunkRenderBackend::isSupported),
+        GL43("OpenGL 4.3", GL43ChunkRenderBackend::isSupported),
         GL30("OpenGL 3.0", GL30ChunkRenderBackend::isSupported),
         GL20("OpenGL 2.0", GL20ChunkRenderBackend::isSupported);
 

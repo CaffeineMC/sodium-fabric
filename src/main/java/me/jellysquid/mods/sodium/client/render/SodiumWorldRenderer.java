@@ -13,7 +13,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.gl46.GL46ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
@@ -257,9 +257,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private static ChunkRenderBackend<?> createChunkRenderBackend(SodiumGameOptions.ChunkRendererBackendOption opt,
                                                            GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> vertexFormat) {
         switch (opt) {
-            case GL46:
-                if (GL46ChunkRenderBackend.isSupported()) {
-                    return new GL46ChunkRenderBackend(vertexFormat);
+            case GL43:
+                if (GL43ChunkRenderBackend.isSupported()) {
+                    return new GL43ChunkRenderBackend(vertexFormat);
                 }
             case GL30:
                 if (GL30ChunkRenderBackend.isSupported()) {

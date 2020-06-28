@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.backends.gl46;
+package me.jellysquid.mods.sodium.client.render.chunk.backends.gl43;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -18,15 +18,17 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkMultiDrawBatcher;
+import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkDrawCallBatcher;
+import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkDrawParamsVector;
 import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkRenderBackendMultiDraw;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegionManager;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL33;
+import org.lwjgl.opengl.GL43;
 
 import java.util.Iterator;
 import java.util.List;
@@ -64,28 +66,31 @@ import java.util.List;
  * you can copy the contents of the scratch buffer into the chunk region buffer, rise and repeat. I'm not happy with
  * this solution, but it performs surprisingly well across all hardware I tried.
  *
- * While eliminating most of the buffer switches provides a considerable reduction to CPU overhead, it's still possible
- * to reduce it further as we're still issuing one draw call per section. Fortunately, OpenGL 1.4+ provides an easy way
- * to work around this issue with glMultiDrawArrays. This function allows us to perform multiple draws with one call by
- * passing pointers to an array of offsets and counts, and is fairly easy to translate the existing code to use.
- *
  * With both of these changes, the amount of CPU time taken by rendering chunks linearly decreases with the reduction
  * in buffer bind/setup/draw calls. Using the default settings of 4x2x4 chunk region buffers, the number of calls can be
  * reduced up to a factor of ~32x.
  */
-public class GL46ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraphicsState> {
+public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraphicsState> {
+    private static final int UNIFORM_SIZE = 16;
+
     private final ChunkRegionManager<LCBGraphicsState> bufferManager;
 
     private final ObjectArrayFIFOQueue<ChunkRegion<LCBGraphicsState>> pendingBatches = new ObjectArrayFIFOQueue<>();
     private final ObjectArrayFIFOQueue<ChunkRegion<LCBGraphicsState>> pendingUploads = new ObjectArrayFIFOQueue<>();
 
     private final GlMutableBuffer uploadBuffer;
+    private final GlMutableBuffer uniformBuffer;
 
-    public GL46ChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
+    private final ChunkDrawParamsVector uniformBufferBuilder;
+
+    public GL43ChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
 
         this.bufferManager = new ChunkRegionManager<>();
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
+        this.uniformBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
+
+        this.uniformBufferBuilder = ChunkDrawParamsVector.create(2048);
     }
 
     @Override
@@ -149,35 +154,28 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
         GlVertexArray prevVao = null;
 
+        this.uniformBuffer.bind(GL15.GL_ARRAY_BUFFER);
+        this.uniformBuffer.upload(GL15.GL_ARRAY_BUFFER, this.uniformBufferBuilder.getBuffer());
+
         while (!this.pendingBatches.isEmpty()) {
             ChunkRegion<?> region = this.pendingBatches.dequeue();
 
             GlVertexArray vao = region.getVertexArray();
             vao.bind();
 
-            GlBuffer vbo = region.getBufferArena().getBuffer();
-
             // Check if the VAO's bindings need to be updated
             // This happens whenever the backing buffer object for the arena changes
-            if (region.getPrevVbo() != vbo) {
-                vbo.bind(GL15.GL_ARRAY_BUFFER);
+            if (region.isDirty()) {
+                this.setupArrayBufferState(region.getBufferArena());
+                this.setupUniformBufferState();
 
-                this.vertexFormat.bindVertexAttributes();
-                this.vertexFormat.enableVertexAttributes();
-
-                vbo.unbind(GL15.GL_ARRAY_BUFFER);
-
-                region.setPrevVbo(vbo);
+                region.markClean();
             }
 
-            ChunkMultiDrawBatcher batcher = region.getDrawBatcher();
-            batcher.end();
+            ChunkDrawCallBatcher batch = region.getDrawBatcher();
+            batch.end();
 
-            while (batcher.getNextBatch(MAX_BATCH_SIZE)) {
-                this.activeProgram.uploadModelOffsetUniforms(batcher.getUniformUploadBuffer());
-
-                GL14.glMultiDrawArrays(GL11.GL_QUADS, batcher.getIndicesBuffer(), batcher.getLengthBuffer());
-            }
+            GL43.glMultiDrawArraysIndirect(GL11.GL_QUADS, batch.getBuffer(), batch.getCount(), 0 /* tightly packed */);
 
             prevVao = vao;
         }
@@ -185,6 +183,35 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         if (prevVao != null) {
             prevVao.unbind();
         }
+
+        this.uniformBuffer.unbind(GL15.GL_ARRAY_BUFFER);
+    }
+
+    private void setupArrayBufferState(GlBufferArena arena) {
+        GlBuffer vbo = arena.getBuffer();
+        vbo.bind(GL15.GL_ARRAY_BUFFER);
+
+        this.vertexFormat.bindVertexAttributes();
+        this.vertexFormat.enableVertexAttributes();
+    }
+
+    private void setupUniformBufferState() {
+        this.uniformBuffer.bind(GL15.GL_ARRAY_BUFFER);
+
+        int index = this.activeProgram.getModelOffsetAttributeLocation();
+
+        // Bind a packed array buffer containing model transformations for each chunk. This provides an alternative to
+        // gl_DrawID in OpenGL 4.6 and should work on more hardware.
+        //
+        // The base instance value assigned to each indirect draw call decides the starting offset of vertices in a
+        // "instanced" vertex attributes. By specifying a divisor of 1, an instanced vertex attribute will always point
+        // to the starting element (the base instance) in the array buffer, thereby acting as a per-draw constant.
+        //
+        // This provides performance as good as a uniform array without the need to split draw call batches due to
+        // uniform array size limits. All uniforms can be uploaded and bound in a single call.
+        GL33.glVertexAttribPointer(index, 4, GL11.GL_FLOAT, false, 0, 0L);
+        GL33.glVertexAttribDivisor(index, 1);
+        GL33.glEnableVertexAttribArray(index);
     }
 
     private void setupUploadBatches(Iterator<ChunkBuildResult<LCBGraphicsState>> renders) {
@@ -204,6 +231,10 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     }
 
     private void setupDrawBatches(BlockRenderPass pass, Iterator<ChunkRenderContainer<LCBGraphicsState>> renders, ChunkCameraContext camera) {
+        this.uniformBufferBuilder.begin();
+
+        int drawCount = 0;
+
         while (renders.hasNext()) {
             ChunkRenderContainer<LCBGraphicsState> render = renders.next();
             LCBGraphicsState graphics = render.getGraphicsState(pass);
@@ -212,39 +243,42 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
                 continue;
             }
 
-            float modelX = camera.getChunkModelOffset(render.getRenderX(), camera.blockOriginX, camera.originX);
-            float modelY = camera.getChunkModelOffset(render.getRenderY(), camera.blockOriginY, camera.originY);
-            float modelZ = camera.getChunkModelOffset(render.getRenderZ(), camera.blockOriginZ, camera.originZ);
-
-            int visible = (render.getVisibleFaces() & graphics.getFacesWithData());
+            int visible = render.getVisibleFaces() & graphics.getFacesWithData();
 
             if (visible == 0) {
                 continue;
             }
 
-            int[] masks = ModelQuadFacing.BITS;
+            int index = drawCount++;
+            float x = camera.getChunkModelOffset(render.getRenderX(), camera.blockOriginX, camera.originX);
+            float y = camera.getChunkModelOffset(render.getRenderY(), camera.blockOriginY, camera.originY);
+            float z = camera.getChunkModelOffset(render.getRenderZ(), camera.blockOriginZ, camera.originZ);
 
-            for (int i = 0; i < masks.length; i++) {
-                int mask = masks[i];
+            this.uniformBufferBuilder.pushChunkDrawParams(x, y, z);
 
-                if ((visible & mask) == 0) {
-                    continue;
+            ChunkRegion<LCBGraphicsState> region = graphics.getRegion();
+            ChunkDrawCallBatcher batch = region.getDrawBatcher();
+
+            if (!batch.isBuilding()) {
+                batch.begin();
+
+                this.pendingBatches.enqueue(region);
+            }
+
+            int mask = 0b1;
+
+            for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
+                if ((visible & mask) != 0) {
+                    long part = graphics.getModelPart(i);
+
+                    batch.addIndirectDrawCall(BufferSlice.unpackStart(part), BufferSlice.unpackLength(part), index, 1);
                 }
 
-                long part = graphics.getModelPart(i);
-
-                ChunkRegion<LCBGraphicsState> region = graphics.getRegion();
-                ChunkMultiDrawBatcher batch = region.getDrawBatcher();
-
-                if (!batch.isBuilding()) {
-                    batch.begin();
-
-                    this.pendingBatches.enqueue(region);
-                }
-
-                batch.addChunkRender(BufferSlice.unpackStart(part), BufferSlice.unpackLength(part), modelX, modelY, modelZ);
+                mask <<= 1;
             }
         }
+
+        this.uniformBufferBuilder.end();
     }
 
     private static int getUploadQueuePayloadSize(List<ChunkBuildResult<LCBGraphicsState>> queue) {
@@ -275,7 +309,6 @@ public class GL46ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
     public static boolean isSupported() {
         return GlFunctions.isVertexArraySupported() &&
-                GlFunctions.isBufferCopySupported() &&
-                GlFunctions.isShaderDrawParametersSupported();
+                GlFunctions.isBufferCopySupported();
     }
 }
