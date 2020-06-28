@@ -29,6 +29,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.*;
+import net.minecraft.util.profiler.Profiler;
 
 import java.util.Collection;
 import java.util.Set;
@@ -136,21 +137,19 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     }
 
     /**
-     * Called 
+     * Called prior to any chunk rendering in order to update necessary state.
      */
-    public void renderChunks(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
+    public void updateChunks(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
         this.frustum = frustum;
 
         this.useEntityCulling = SodiumClientMod.options().performance.useAdvancedEntityCulling;
-        this.chunkRenderManager.onFrameChanged();
-
-        Vec3d cameraPos = camera.getPos();
 
         if (this.client.options.viewDistance != this.renderDistance) {
             this.reload();
         }
 
-        this.world.getProfiler().push("camera");
+        Profiler profiler = this.client.getProfiler();
+        profiler.push("camera_setup");
 
         ClientPlayerEntity player = this.client.player;
 
@@ -158,10 +157,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             throw new IllegalStateException("Client instance has no active player entity");
         }
 
-        this.chunkRenderManager.setCameraPosition(cameraPos.x, cameraPos.y, cameraPos.z);
+        Vec3d cameraPos = camera.getPos();
 
-        this.world.getProfiler().swap("cull");
-        this.client.getProfiler().swap("culling");
+        this.chunkRenderManager.setCameraPosition(cameraPos.x, cameraPos.y, cameraPos.z);
 
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
@@ -179,21 +177,23 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.lastCameraPitch = pitch;
         this.lastCameraYaw = yaw;
 
-        this.client.getProfiler().swap("update");
+        profiler.swap("chunk_update");
 
         this.chunkRenderManager.updateChunks();
 
         if (!hasForcedFrustum && this.chunkRenderManager.isDirty()) {
-            this.client.getProfiler().push("iteration");
+            profiler.swap("chunk_graph_rebuild");
 
             this.chunkRenderManager.updateGraph(camera, (FrustumExtended) frustum, frame, spectator);
-
-            this.client.getProfiler().pop();
         }
 
-        Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.viewDistance / 8.0D, 1.0D, 2.5D));
+        profiler.swap("visible_chunk_tick");
 
-        this.client.getProfiler().pop();
+        this.chunkRenderManager.tickVisibleRenders();
+
+        profiler.pop();
+
+        Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.viewDistance / 8.0D, 1.0D, 2.5D));
     }
 
     /**
