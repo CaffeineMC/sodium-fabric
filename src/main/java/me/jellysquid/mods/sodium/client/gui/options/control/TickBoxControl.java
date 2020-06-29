@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
+import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.util.Rect2i;
 
 public class TickBoxControl implements Control<Boolean> {
@@ -11,7 +12,7 @@ public class TickBoxControl implements Control<Boolean> {
     }
 
     @Override
-    public ControlElement<Boolean> createElement(Rect2i dim) {
+    public ControlElement<Boolean> createElement(Dim2i dim) {
         return new TickBoxControlElement(this.option, dim);
     }
 
@@ -23,10 +24,10 @@ public class TickBoxControl implements Control<Boolean> {
     private static class TickBoxControlElement extends ControlElement<Boolean> {
         private final Rect2i button;
 
-        public TickBoxControlElement(Option<Boolean> option, Rect2i dim) {
+        public TickBoxControlElement(Option<Boolean> option, Dim2i dim) {
             super(option, dim);
 
-            this.button = new Rect2i(dim.getX() + dim.getWidth() - 16, dim.getY() + (dim.getHeight() / 2) - 5, 10, 10);
+            this.button = new Rect2i(dim.getLimitX() - 16, dim.getCenterY() - 5, 10, 10);
         }
 
         @Override
@@ -58,7 +59,7 @@ public class TickBoxControl implements Control<Boolean> {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (this.option.isAvailable() && button == 0 && this.dim.contains((int) mouseX, (int) mouseY)) {
+            if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
                 this.option.setValue(!this.option.getValue());
                 this.playClickSound();
 

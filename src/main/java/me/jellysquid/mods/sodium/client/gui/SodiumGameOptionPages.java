@@ -13,7 +13,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.AttackIndicator;
 import net.minecraft.client.options.Option;
 import net.minecraft.client.options.ParticlesOption;
-import net.minecraft.client.util.TextFormat;
 import net.minecraft.client.util.Window;
 
 import java.util.ArrayList;
@@ -31,32 +30,42 @@ public class SodiumGameOptionPages {
                         .setName("View Distance")
                         .setTooltip("The view distance controls how far away terrain will be rendered. Lower distances mean that less terrain will be " +
                                 "rendered, improving frame rates.")
-                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.quanity("Chunks")))
+                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.quantity("Chunks")))
                         .setBinding((options, value) -> options.viewDistance = value, options -> options.viewDistance)
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
-                .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
-                        .setName("V-Sync")
-                        .setTooltip("If enabled, the game's frame rate will be synchronized to the monitor's refresh rate, making for a generally smoother experience " +
-                                "at the expense of overall input latency. This setting might reduce performance if your system is too slow.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding(new VanillaBooleanOptionBinding(Option.VSYNC))
-                        .setImpact(OptionImpact.VARIES)
-                        .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName("FPS Limit")
-                        .setTooltip("Limits the maximum number of frames per second. In effect, this will throttle the game and can be useful when you want to conserve " +
-                                "battery life or multi-task between other applications.")
-                        .setControl(option -> new SliderControl(option, 5, 300, 5, ControlValueFormatter.quanity("FPS")))
+                        .setName("Brightness")
+                        .setTooltip("Controls the brightness (gamma) of the game.")
+                        .setControl(opt -> new SliderControl(opt, 0, 100, 1, ControlValueFormatter.brightness()))
+                        .setBinding((opts, value) -> opts.gamma = value * 0.01D, (opts) -> (int) (opts.gamma / 0.01D))
+                        .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Clouds")
+                        .setTooltip("Controls whether or not clouds will be visible.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.quality.enableClouds = value, (opts) -> opts.quality.enableClouds)
+                        .setImpact(OptionImpact.LOW)
+                        .build())
+                .build());
+
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
+                        .setName("GUI Scale")
+                        .setTooltip("Sets the maximum scale factor to be used for the user interface. If 'auto' is used, then the largest scale factor " +
+                                "will always be used.")
+                        .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.guiScale()))
                         .setBinding((opts, value) -> {
-                            opts.maxFps = value;
-                            MinecraftClient.getInstance().getWindow().setFramerateLimit(value);
-                        }, opts -> opts.maxFps)
+                            opts.guiScale = value;
+
+                            MinecraftClient client = MinecraftClient.getInstance();
+                            client.onResolutionChanged();
+                        }, opts -> opts.guiScale)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName("Fullscreen")
-                        .setTooltip("If enabled, the game will display in full-screen.")
+                        .setTooltip("If enabled, the game will display in full-screen (if supported).")
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> {
                             opts.fullscreen = value;
@@ -72,28 +81,24 @@ public class SodiumGameOptionPages {
                             }
                         }, (opts) -> opts.fullscreen)
                         .build())
-                .build());
-
-        groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName("Brightness")
-                        .setTooltip("Controls the brightness (gamma) of the game.")
-                        .setControl(opt -> new SliderControl(opt, 0, 100, 1, ControlValueFormatter.percentage()))
-                        .setBinding((opts, value) -> opts.gamma = value * 0.01D, (opts) -> (int) (opts.gamma / 0.01D))
-                        .build())
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Clouds")
-                        .setTooltip("Controls whether or not clouds will be visible.")
+                .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
+                        .setName("V-Sync")
+                        .setTooltip("If enabled, the game's frame rate will be synchronized to the monitor's refresh rate, making for a generally smoother experience " +
+                                "at the expense of overall input latency. This setting might reduce performance if your system is too slow.")
                         .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.quality.enableClouds = value, (opts) -> opts.quality.enableClouds)
-                        .setImpact(OptionImpact.LOW)
+                        .setBinding(new VanillaBooleanOptionBinding(Option.VSYNC))
+                        .setImpact(OptionImpact.VARIES)
                         .build())
-                .add(OptionImpl.createBuilder(ParticlesOption.class, vanillaOpts)
-                        .setName("Particles")
-                        .setTooltip("Controls the maximum number of particles which can be present on screen at any one time.")
-                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new String[] { "All", "Decreased", "Minimal" }))
-                        .setBinding((opts, value) -> opts.particles = value, (opts) -> opts.particles)
-                        .setImpact(OptionImpact.MEDIUM)
+                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
+                        .setName("FPS Limit")
+                        .setTooltip("Limits the maximum number of frames per second. In effect, this will throttle the game and can be useful when you want to conserve " +
+                                "battery life or multi-task between other applications. If V-Sync is enabled, this option will be ignored unless it is lower than your " +
+                                "display's refresh rate.")
+                        .setControl(option -> new SliderControl(option, 5, 260, 5, ControlValueFormatter.fpsLimit()))
+                        .setBinding((opts, value) -> {
+                            opts.maxFps = value;
+                            MinecraftClient.getInstance().getWindow().setFramerateLimit(value);
+                        }, opts -> opts.maxFps)
                         .build())
                 .build());
 
@@ -147,12 +152,19 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.quality.weatherQuality = value, opts -> opts.quality.weatherQuality)
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
+                .add(OptionImpl.createBuilder(ParticlesOption.class, vanillaOpts)
+                        .setName("Particle Quality")
+                        .setTooltip("Controls the maximum number of particles which can be present on screen at any one time.")
+                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new String[] { "High", "Medium", "Low" }))
+                        .setBinding((opts, value) -> opts.particles = value, (opts) -> opts.particles)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)
                         .setName("Smooth Lighting")
                         .setTooltip("Controls the quality of smooth lighting effects.\n" +
-                                "\nOff - No smooth lighting." +
-                                "\nLow - Smooth block lighting only." +
-                                "\nHigh - Smooth block and entity lighting.")
+                                "\nOff - No smooth lighting" +
+                                "\nLow - Smooth block lighting only" +
+                                "\nHigh (new!) - Smooth block and entity lighting")
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.LightingQuality.class))
                         .setBinding((opts, value) -> opts.quality.smoothLighting = value, opts -> opts.quality.smoothLighting)
                         .setImpact(OptionImpact.MEDIUM)
@@ -194,16 +206,15 @@ public class SodiumGameOptionPages {
         return new OptionPage("Quality", ImmutableList.copyOf(groups));
     }
 
-    public static OptionPage performance() {
+    public static OptionPage advanced() {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(SodiumGameOptions.ChunkRendererBackendOption.class, sodiumOpts)
                         .setName("Chunk Renderer")
                         .setTooltip("Modern versions of OpenGL provide features which can be used to greatly reduce driver overhead when rendering chunks. " +
-                                "You should use the latest supported feature set for optimal performance. If you're experiencing chunk rendering issues or driver crashes, try " +
-                                "using the older (and possibly more stable) feature sets." +
-                                "\n\n" + TextFormat.GRAY + "Your graphics card has support for up to the " + SodiumGameOptions.ChunkRendererBackendOption.BEST.getLocalizedName() + " feature set." + TextFormat.WHITE)
+                                "You should use the latest feature set allowed by Sodium for optimal performance. If you're experiencing chunk rendering issues " +
+                                "or driver crashes, try using the older (and possibly more stable) feature sets.")
                         .setControl((opt) -> new CyclingControl<>(opt, SodiumGameOptions.ChunkRendererBackendOption.class,
                                 SodiumGameOptions.ChunkRendererBackendOption.getAvailableOptions()))
                         .setBinding((opts, value) -> opts.performance.chunkRendererBackend = value, opts -> opts.performance.chunkRendererBackend)
@@ -272,6 +283,6 @@ public class SodiumGameOptionPages {
                 )
                 .build());
 
-        return new OptionPage("Performance", ImmutableList.copyOf(groups));
+        return new OptionPage("Advanced", ImmutableList.copyOf(groups));
     }
 }

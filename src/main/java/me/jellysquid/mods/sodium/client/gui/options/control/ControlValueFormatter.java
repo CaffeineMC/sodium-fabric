@@ -1,6 +1,26 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
 public interface ControlValueFormatter {
+    static ControlValueFormatter guiScale() {
+        return (v) -> (v == 0) ? "Auto" : v + "x";
+    }
+
+    static ControlValueFormatter fpsLimit() {
+        return (v) -> (v == 260) ? "Unlimited" : v + " FPS";
+    }
+
+    static ControlValueFormatter brightness() {
+        return (v) -> {
+            if (v == 0) {
+                return "Moody";
+            } else if (v == 100) {
+                return "Bright";
+            } else {
+                return v + "%";
+            }
+        };
+    }
+
     String format(int value);
 
     static ControlValueFormatter percentage() {
@@ -11,7 +31,7 @@ public interface ControlValueFormatter {
         return (v) -> v + "x";
     }
 
-    static ControlValueFormatter quanity(String name) {
+    static ControlValueFormatter quantity(String name) {
         return (v) -> v + " " + name;
     }
 

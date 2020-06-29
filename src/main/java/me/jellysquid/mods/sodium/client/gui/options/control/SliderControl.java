@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
+import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.util.Rect2i;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.Validate;
@@ -26,7 +27,7 @@ public class SliderControl implements Control<Integer> {
     }
 
     @Override
-    public ControlElement<Integer> createElement(Rect2i dim) {
+    public ControlElement<Integer> createElement(Dim2i dim) {
         return new Button(this.option, dim, this.min, this.max, this.interval, this.mode);
     }
 
@@ -47,7 +48,7 @@ public class SliderControl implements Control<Integer> {
 
         private double thumbPosition;
 
-        public Button(Option<Integer> option, Rect2i dim, int min, int max, int interval, ControlValueFormatter formatter) {
+        public Button(Option<Integer> option, Dim2i dim, int min, int max, int interval, ControlValueFormatter formatter) {
             super(option, dim);
 
             this.min = min;
@@ -56,7 +57,7 @@ public class SliderControl implements Control<Integer> {
             this.thumbPosition = this.getThumbPositionForValue(option.getValue());
             this.formatter = formatter;
 
-            this.sliderBounds = new Rect2i(dim.getX() + dim.getWidth() - 96, dim.getY() + (dim.getHeight() / 2) - 5, 90, 10);
+            this.sliderBounds = new Rect2i(dim.getLimitX() - 96, dim.getCenterY() - 5, 90, 10);
         }
 
         @Override

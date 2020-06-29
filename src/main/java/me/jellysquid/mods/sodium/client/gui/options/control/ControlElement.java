@@ -2,17 +2,17 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.widgets.AbstractWidget;
-import net.minecraft.client.util.Rect2i;
+import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.util.TextFormat;
 
 public class ControlElement<T> extends AbstractWidget {
     protected final Option<T> option;
 
-    protected final Rect2i dim;
+    protected final Dim2i dim;
 
     protected boolean hovered;
 
-    public ControlElement(Option<T> option, Rect2i dim) {
+    public ControlElement(Option<T> option, Dim2i dim) {
         this.option = option;
         this.dim = dim;
     }
@@ -36,17 +36,17 @@ public class ControlElement<T> extends AbstractWidget {
             label = String.valueOf(TextFormat.GRAY) + TextFormat.STRIKETHROUGH + name;
         }
 
-        this.hovered = this.dim.contains(mouseX, mouseY);
+        this.hovered = this.dim.containsCursor(mouseX, mouseY);
 
-        this.drawRect(this.dim.getX(), this.dim.getY(), this.dim.getX() + this.dim.getWidth(), this.dim.getY() + this.dim.getHeight(), this.hovered ? 0xE0000000 : 0x90000000);
-        this.drawString(label, this.dim.getX() + 6, this.dim.getY() + (this.dim.getHeight() / 2) - 4, 0xFFFFFFFF);
+        this.drawRect(this.dim.getOriginX(), this.dim.getOriginY(), this.dim.getLimitX(), this.dim.getLimitY(), this.hovered ? 0xE0000000 : 0x90000000);
+        this.drawString(label, this.dim.getOriginX() + 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
     }
 
     public Option<T> getOption() {
         return this.option;
     }
 
-    public Rect2i getDimensions() {
+    public Dim2i getDimensions() {
         return this.dim;
     }
 }

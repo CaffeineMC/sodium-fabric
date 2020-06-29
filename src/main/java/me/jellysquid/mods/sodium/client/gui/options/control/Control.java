@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
-import net.minecraft.client.util.Rect2i;
+import me.jellysquid.mods.sodium.client.util.Dim2i;
 
 public interface Control<T> {
     Option<T> getOption();
 
-    ControlElement<T> createElement(Rect2i dim);
+    ControlElement<T> createElement(Dim2i dim);
 
 }
