@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.util;
 
-import sun.nio.ch.DirectBuffer;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
@@ -34,15 +34,15 @@ public class BufferUtil {
         }
 
         // Check that unsafe intrinsics can be used and that the byte buffer points to off-heap memory
-        if (USE_UNSAFE && buffer instanceof DirectBuffer) {
-            copyIntArrayUnsafe(data, limit, offset, (DirectBuffer) buffer);
+        if (USE_UNSAFE && buffer.isDirect()) {
+            copyIntArrayUnsafe(data, limit, offset, MemoryUtil.memAddress(buffer));
         } else {
             copyIntArrayDefault(data, limit, offset, buffer);
         }
     }
 
-    private static void copyIntArrayUnsafe(int[] data, int limit, int offset, DirectBuffer buffer) {
-        UnsafeUtil.instance().copyMemory(data, UnsafeUtil.INT_ARRAY_OFFSET, null, buffer.address() + offset, limit * 4);
+    private static void copyIntArrayUnsafe(int[] data, int limit, int offset, long addr) {
+        UnsafeUtil.instance().copyMemory(data, UnsafeUtil.INT_ARRAY_OFFSET, null, addr + offset, limit * 4);
     }
 
     private static void copyIntArrayDefault(int[] data, int limit, int offset, ByteBuffer buffer) {

@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.multidraw;
 
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
+import org.lwjgl.system.MemoryUtil;
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -36,7 +36,7 @@ public abstract class ChunkDrawCallBatcher extends BufferBuilder {
         public UnsafeChunkDrawCallBatcher(int capacity) {
             super(capacity);
 
-            this.basePointer = ((DirectBuffer) this.buffer).address();
+            this.basePointer = MemoryUtil.memAddress(this.buffer);
         }
 
         @Override

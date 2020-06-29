@@ -12,11 +12,11 @@ import net.minecraft.client.util.math.Matrix3f;
 import net.minecraft.client.util.math.Matrix4f;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector4f;
+import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -85,7 +85,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
 
     @SuppressWarnings("SuspiciousNameCombination")
     private void vertexUnsafe(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
-        long i = ((DirectBuffer) this.buffer).address() + this.elementOffset;
+        long i = MemoryUtil.memAddress(this.buffer, this.elementOffset);
 
         Unsafe unsafe = UnsafeUtil.instance();
         unsafe.putFloat(i, x);
@@ -197,7 +197,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
     }
 
     private void vertexParticleUnsafe(float x, float y, float z, float u, float v, int color, int light) {
-        long i = ((DirectBuffer) this.buffer).address() + this.elementOffset;
+        long i = MemoryUtil.memAddress(this.buffer, this.elementOffset);
 
         Unsafe unsafe = UnsafeUtil.instance();
         unsafe.putFloat(i, x);
