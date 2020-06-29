@@ -7,10 +7,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.color.block.BlockColors;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockRenderView;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -26,16 +23,6 @@ public class MixinBlockColors implements BlockColorsExtended {
         this.blocksToColor = new Reference2ReferenceOpenHashMap<>();
         this.blocksToColor.defaultReturnValue(DEFAULT_PROVIDER);
     }
-
-    /**
-     * @author JellySquid
-     * @reason Use the optimized backing collection type
-     */
-    @Overwrite
-    public int getColor(BlockState state, BlockRenderView view, BlockPos pos, int tint) {
-        return this.blocksToColor.get(state.getBlock()).getColor(state, view, pos, tint);
-    }
-
 
     @Inject(method = "registerColorProvider", at = @At("HEAD"))
     private void preRegisterColor(BlockColorProvider provider, Block[] blocks, CallbackInfo ci) {
