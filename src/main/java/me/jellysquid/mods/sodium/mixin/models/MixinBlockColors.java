@@ -29,6 +29,7 @@ public class MixinBlockColors implements BlockColorsExtended {
 
     /**
      * @author JellySquid
+     * @reason Use the optimized backing collection type
      */
     @Overwrite
     public int getColor(BlockState state, BlockRenderView view, BlockPos pos, int tint) {

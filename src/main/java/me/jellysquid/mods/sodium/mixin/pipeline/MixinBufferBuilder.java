@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.pipeline;
 import com.google.common.collect.ImmutableList;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadSink;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
+import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;
 import net.minecraft.client.render.VertexFormat;
@@ -41,22 +42,22 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
 
     /**
      * @author JellySquid
+     * @reason Remove modulo operations and recursion
      */
     @Overwrite
     public void nextElement() {
         ImmutableList<VertexFormatElement> elements = this.format.getElements();
 
-        // avoid the modulo!
-        if (++this.currentElementId >= elements.size()) {
-            this.currentElementId -= elements.size();
-        }
+        do {
+            this.elementOffset += this.currentElement.getSize();
 
-        this.elementOffset += this.currentElement.getSize();
-        this.currentElement = elements.get(this.currentElementId);
+            // Wrap around the element pointer without using modulo
+            if (++this.currentElementId >= elements.size()) {
+                this.currentElementId -= elements.size();
+            }
 
-        if (this.currentElement.getType() == VertexFormatElement.Type.PADDING) {
-            this.nextElement();
-        }
+            this.currentElement = elements.get(this.currentElementId);
+        } while (this.currentElement.getType() == VertexFormatElement.Type.PADDING);
 
         if (this.colorFixed && this.currentElement.getType() == VertexFormatElement.Type.COLOR) {
             this.color(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha);
@@ -65,11 +66,11 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
 
     @Override
     public void write(ModelQuadViewMutable quad) {
-        this.grow(32);
+        this.grow(ModelQuadUtil.VERTEX_SIZE_BYTES);
 
         quad.copyInto(this.buffer, this.elementOffset);
 
+        this.elementOffset += ModelQuadUtil.VERTEX_SIZE_BYTES;
         this.vertexCount += 4;
-        this.elementOffset += 32;
     }
 }

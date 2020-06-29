@@ -20,6 +20,7 @@ public abstract class MixinSprite implements SpriteExtended {
     private int frameTicks;
 
     @Shadow
+    @Final
     private AnimationResourceMetadata animationMetadata;
 
     @Shadow
@@ -37,6 +38,7 @@ public abstract class MixinSprite implements SpriteExtended {
 
     /**
      * @author JellySquid
+     * @reason Allow conditional texture updating
      */
     @Overwrite
     public void tickAnimation() {
