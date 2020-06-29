@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
-import net.minecraft.client.util.Rect2i;
+import me.jellysquid.mods.sodium.client.util.Dim2i;
 import org.apache.commons.lang3.Validate;
 
 public class CyclingControl<T extends Enum<T>> implements Control<T> {
@@ -52,7 +52,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
     }
 
     @Override
-    public ControlElement<T> createElement(Rect2i dim) {
+    public ControlElement<T> createElement(Dim2i dim) {
         return new CyclingControlElement<>(this.option, dim, this.allowedValues, this.names);
     }
 
@@ -61,7 +61,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
         private final String[] names;
         private int currentIndex;
 
-        public CyclingControlElement(Option<T> option, Rect2i dim, T[] allowedValues, String[] names) {
+        public CyclingControlElement(Option<T> option, Dim2i dim, T[] allowedValues, String[] names) {
             super(option, dim);
 
             this.allowedValues = allowedValues;
@@ -84,12 +84,12 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
             String name = this.names[value.ordinal()];
 
             int strWidth = this.getStringWidth(name);
-            this.drawString(name, this.dim.getX() + this.dim.getWidth() - strWidth - 6, this.dim.getY() + (this.dim.getHeight() / 2) - 4, 0xFFFFFFFF);
+            this.drawString(name, this.dim.getLimitX() - strWidth - 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
         }
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (this.option.isAvailable() && button == 0 && this.dim.contains((int) mouseX, (int) mouseY)) {
+            if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
                 this.currentIndex = (this.currentIndex + 1) % this.allowedValues.length;
                 this.option.setValue(this.allowedValues[this.currentIndex]);
                 this.playClickSound();

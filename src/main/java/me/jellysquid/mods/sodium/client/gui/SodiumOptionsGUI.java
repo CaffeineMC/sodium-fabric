@@ -5,21 +5,21 @@ import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
+import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.VideoOptionsScreen;
-import net.minecraft.client.util.Rect2i;
 import net.minecraft.client.util.TextFormat;
 import net.minecraft.text.TranslatableText;
-import org.apache.commons.lang3.Validate;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class SodiumOptionsGUI extends Screen {
     private final List<OptionPage> pages = new ArrayList<>();
@@ -31,7 +31,9 @@ public class SodiumOptionsGUI extends Screen {
 
     private OptionPage currentPage;
 
-    private FlatButtonWidget applyButton, resetButton, closeButton;
+    private FlatButtonWidget applyButton, closeButton, undoButton;
+    private boolean hasPendingChanges;
+    private ControlElement<?> hoveredElement;
 
     public SodiumOptionsGUI(Screen prevScreen) {
         super(new TranslatableText("Sodium Options"));
@@ -40,7 +42,7 @@ public class SodiumOptionsGUI extends Screen {
 
         this.pages.add(SodiumGameOptionPages.general());
         this.pages.add(SodiumGameOptionPages.quality());
-        this.pages.add(SodiumGameOptionPages.performance());
+        this.pages.add(SodiumGameOptionPages.advanced());
     }
 
     public void setPage(OptionPage page) {
@@ -73,26 +75,18 @@ public class SodiumOptionsGUI extends Screen {
         this.rebuildGUIPages();
         this.rebuildGUIOptions();
 
-        this.applyButton = new FlatButtonWidget(new Rect2i(10, this.height - 30, 80, 20), "Apply", this::applyChanges);
-        this.closeButton = new FlatButtonWidget(new Rect2i(96, this.height - 30, 80, 20), "Close", this::popScreen);
+        this.undoButton = new FlatButtonWidget(new Dim2i(this.width - 211, this.height - 30, 65, 20), "Undo", this::undoChanges);
+        this.applyButton = new FlatButtonWidget(new Dim2i(this.width - 142, this.height - 30, 65, 20), "Apply", this::applyChanges);
+        this.closeButton = new FlatButtonWidget(new Dim2i(this.width - 73, this.height - 30, 65, 20), "Close", this::onClose);
 
+        this.children.add(this.undoButton);
         this.children.add(this.applyButton);
         this.children.add(this.closeButton);
-
-        this.resetButton = new FlatButtonWidget(new Rect2i(this.width - 96, this.height - 30, 80, 20), "Reset", this::resetChanges);
-
-        this.children.add(this.resetButton);
 
         for (Element element : this.children) {
             if (element instanceof Drawable) {
                 this.drawable.add((Drawable) element);
             }
-        }
-    }
-
-    private void resetChanges() {
-        for (Option<?> option : this.currentPage.getOptions()) {
-            option.reset();
         }
     }
 
@@ -103,7 +97,7 @@ public class SodiumOptionsGUI extends Screen {
         for (OptionPage page : this.pages) {
             int width = 10 + this.font.getStringWidth(page.getName());
 
-            FlatButtonWidget button = new FlatButtonWidget(new Rect2i(x, y, width, 16), page.getName(), () -> this.setPage(page));
+            FlatButtonWidget button = new FlatButtonWidget(new Dim2i(x, y, width, 16), page.getName(), () -> this.setPage(page));
             button.setSelected(this.currentPage == page);
 
             x += width + 6;
@@ -117,18 +111,19 @@ public class SodiumOptionsGUI extends Screen {
         int y = 28;
 
         for (OptionGroup group : this.currentPage.getGroups()) {
+            // Add each option's control element
             for (Option<?> option : group.getOptions()) {
                 Control<?> control = option.getControl();
-                ControlElement<?> element = control.createElement(new Rect2i(x, y, 200, 18));
-
-                Validate.notNull(element);
+                ControlElement<?> element = control.createElement(new Dim2i(x, y, 200, 18));
 
                 this.controls.add(element);
                 this.children.add(element);
 
+                // Move down to the next option
                 y += 18;
             }
 
+            // Add padding beneath each option group
             y += 4;
         }
     }
@@ -137,47 +132,62 @@ public class SodiumOptionsGUI extends Screen {
     public void render(int mouseX, int mouseY, float delta) {
         super.renderBackground();
 
-        this.update(mouseX, mouseY, delta);
+        this.updateControls();
 
         for (Drawable drawable : this.drawable) {
             drawable.render(mouseX, mouseY, delta);
         }
+
+        if (this.hoveredElement != null) {
+            this.renderOptionTooltip(this.hoveredElement);
+        }
     }
 
-    private void update(int mouseX, int mouseY, float delta) {
-        ControlElement<?> hovered = null;
-        boolean hasChanges = false;
+    private void updateControls() {
+        ControlElement<?> hovered = this.getActiveControls()
+                .filter(ControlElement::isHovered)
+                .findFirst()
+                .orElse(null);
 
-        for (ControlElement<?> element : this.controls) {
-            if (element.isHovered()) {
-                hovered = element;
-            }
+        boolean hasChanges = this.getAllOptions()
+                .anyMatch(Option::hasChanged);
 
-            if (element.getOption().hasChanged()) {
-                hasChanges = true;
+        for (OptionPage page : this.pages) {
+            for (Option<?> option : page.getOptions()) {
+                if (option.hasChanged()) {
+                    hasChanges = true;
+                }
             }
         }
 
         this.applyButton.setEnabled(hasChanges);
-        this.resetButton.setEnabled(hasChanges);
+        this.undoButton.setVisible(hasChanges);
         this.closeButton.setEnabled(!hasChanges);
 
-        if (hovered != null) {
-            this.renderOptionTooltip(hovered, mouseX, mouseY, delta);
-        }
+        this.hasPendingChanges = hasChanges;
+        this.hoveredElement = hovered;
+    }
+
+    private Stream<Option<?>> getAllOptions() {
+        return this.pages.stream()
+                .flatMap(s -> s.getOptions().stream());
+    }
+
+    private Stream<ControlElement<?>> getActiveControls() {
+        return this.controls.stream();
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
-    private void renderOptionTooltip(ControlElement<?> element, int mouseX, int mouseY, float delta) {
-        Rect2i dim = element.getDimensions();
-
+    private void renderOptionTooltip(ControlElement<?> element) {
+        Dim2i dim = element.getDimensions();
 
         int textPadding = 3;
         int boxPadding = 3;
-        int boxX = dim.getX() + dim.getWidth() + boxPadding;
-        int boxY = dim.getY() + boxPadding;
 
-        int boxWidth = Math.min(this.width - (dim.getX() + dim.getWidth() + (boxPadding * 2)), 280);
+        int boxWidth = 200;
+
+        int boxY = dim.getOriginY();
+        int boxX = dim.getLimitX() + boxPadding;
 
         Option<?> option = element.getOption();
         List<String> tooltip = new ArrayList<>(this.font.wrapStringToWidthAsList(option.getTooltip(), boxWidth - (textPadding * 2)));
@@ -190,6 +200,13 @@ public class SodiumOptionsGUI extends Screen {
         }
 
         int boxHeight = (tooltip.size() * 12) + boxPadding;
+        int boxYLimit = boxY + boxHeight;
+        int boxYCutoff = this.height - 40;
+
+        // If the box is going to be cutoff on the Y-axis, move it back up the difference
+        if (boxYLimit > boxYCutoff) {
+            boxY -= boxYLimit - boxYCutoff;
+        }
 
         this.fillGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xE0000000, 0xE0000000);
 
@@ -208,16 +225,16 @@ public class SodiumOptionsGUI extends Screen {
         final HashSet<OptionStorage<?>> dirtyStorages = new HashSet<>();
         final EnumSet<OptionFlag> flags = EnumSet.noneOf(OptionFlag.class);
 
-        for (Option<?> option : this.currentPage.getOptions()) {
+        this.getAllOptions().forEach((option -> {
             if (!option.hasChanged()) {
-                continue;
+                return;
             }
 
             option.applyChanges();
 
             flags.addAll(option.getFlags());
             dirtyStorages.add(option.getStorage());
-        }
+        }));
 
         MinecraftClient client = MinecraftClient.getInstance();
 
@@ -235,8 +252,9 @@ public class SodiumOptionsGUI extends Screen {
         }
     }
 
-    private void popScreen() {
-        MinecraftClient.getInstance().openScreen(this.prevScreen);
+    private void undoChanges() {
+        this.getAllOptions()
+                .forEach(Option::reset);
     }
 
     @Override
@@ -247,6 +265,16 @@ public class SodiumOptionsGUI extends Screen {
             return true;
         }
 
-        return false;
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean shouldCloseOnEsc() {
+        return !this.hasPendingChanges;
+    }
+
+    @Override
+    public void onClose() {
+        this.minecraft.openScreen(this.prevScreen);
     }
 }
