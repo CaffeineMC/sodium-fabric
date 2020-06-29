@@ -10,6 +10,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuild
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
+import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
 import me.jellysquid.mods.sodium.common.util.collections.DequeDrain;
@@ -208,7 +209,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         this.world = world;
         this.renderPassManager = renderPassManager;
-        this.biomeCacheManager = new BiomeCacheManager(world.getDimension().getType().getBiomeAccessType(), world.getSeed());
+        this.biomeCacheManager = new BiomeCacheManager(world.getDimension().getBiomeAccessType(), ((ClientWorldExtended) world).getBiomeSeed());
 
         this.startWorkers();
     }

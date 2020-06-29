@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.occlusion;
 
 import it.unimi.dsi.fastutil.objects.Object2ByteOpenHashMap;
 import net.minecraft.block.BlockState;
-import net.minecraft.util.BooleanBiFunction;
+import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
@@ -29,7 +29,7 @@ public class BlockOcclusionCache {
      * @return True if the block side facing {@param dir} is not occluded, otherwise false
      */
     public boolean shouldDrawSide(BlockState state, BlockView view, BlockPos pos, Direction facing) {
-        BlockPos adjPos = this.cpos.set(pos).setOffset(facing);
+        BlockPos adjPos = this.cpos.set(pos).offset(facing);
         BlockState adjState = view.getBlockState(adjPos);
 
         if (state.isSideInvisible(adjState, facing)) {

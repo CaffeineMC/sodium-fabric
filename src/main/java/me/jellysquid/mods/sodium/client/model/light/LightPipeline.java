@@ -11,13 +11,13 @@ import net.minecraft.util.math.Direction;
 public interface LightPipeline {
     /**
      * Calculates the light data for a given block model quad, storing the result in {@param out}.
-     *
-     * @param quad The block model quad
+     *  @param quad The block model quad
      * @param pos The block position of the model this quad belongs to
      * @param out The data arrays which will store the calculated light data results
      * @param face The pre-computed facing vector of the quad
+     * @param shade
      */
-    void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction face);
+    void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction face, boolean shade);
 
     /**
      * Resets the state of the light pipeline, allowing it to be re-used for the lighting of subsequent quads. This

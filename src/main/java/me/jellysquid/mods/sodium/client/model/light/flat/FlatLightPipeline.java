@@ -29,7 +29,7 @@ public class FlatLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction face) {
+    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction face, boolean shade) {
         // No ambient occlusion exists when using flat shading.
         Arrays.fill(out.br, 1.0f);
 

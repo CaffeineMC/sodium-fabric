@@ -11,6 +11,7 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStor
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.AttackIndicator;
+import net.minecraft.client.options.GraphicsMode;
 import net.minecraft.client.options.Option;
 import net.minecraft.client.options.ParticlesOption;
 import net.minecraft.client.util.Window;
@@ -124,14 +125,14 @@ public class SodiumGameOptionPages {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(SodiumGameOptions.DefaultGraphicsQuality.class, vanillaOpts)
+                .add(OptionImpl.createBuilder(GraphicsMode.class, vanillaOpts)
                         .setName("Graphics Quality")
                         .setTooltip("The default graphics quality controls some legacy options and is necessary for mod compatibility. If the options below are left to " +
                                 "\"Default\", they will use this setting.")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.DefaultGraphicsQuality.class))
+                        .setControl(option -> new CyclingControl<>(option, GraphicsMode.class, new String[] { "Fast", "Fancy", "Fabulous" }))
                         .setBinding(
-                                (opts, value) -> opts.fancyGraphics = value == SodiumGameOptions.DefaultGraphicsQuality.FANCY,
-                                opts -> (opts.fancyGraphics ? SodiumGameOptions.DefaultGraphicsQuality.FANCY : SodiumGameOptions.DefaultGraphicsQuality.FAST))
+                                (opts, value) -> opts.graphicsMode = value,
+                                opts -> opts.graphicsMode)
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())

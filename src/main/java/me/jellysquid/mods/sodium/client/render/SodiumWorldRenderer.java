@@ -296,8 +296,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
                 int stage = breakingInfos.last().getStage();
 
                 if (stage >= 0) {
-                    VertexConsumer transformer = new TransformingVertexConsumer(bufferBuilders.getEffectVertexConsumers().getBuffer(ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.get(stage)), matrices.peek());
-                    consumer = (layer) -> layer.method_23037() ? VertexConsumers.dual(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
+                    MatrixStack.Entry entry = matrices.peek();
+                    VertexConsumer transformer = new TransformingVertexConsumer(bufferBuilders.getEffectVertexConsumers().getBuffer(ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.get(stage)), entry.getModel(), entry.getNormal());
+                    consumer = (layer) -> layer.hasCrumbling() ? VertexConsumers.dual(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
                 }
             }
 
@@ -355,13 +356,13 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         Box box = entity.getVisibilityBoundingBox();
 
-        int minX = MathHelper.floor(box.x1 - 0.5D) >> 4;
-        int minY = MathHelper.floor(box.y1 - 0.5D) >> 4;
-        int minZ = MathHelper.floor(box.z1 - 0.5D) >> 4;
+        int minX = MathHelper.floor(box.minX - 0.5D) >> 4;
+        int minY = MathHelper.floor(box.minY - 0.5D) >> 4;
+        int minZ = MathHelper.floor(box.minZ - 0.5D) >> 4;
 
-        int maxX = MathHelper.floor(box.x2 + 0.5D) >> 4;
-        int maxY = MathHelper.floor(box.y2 + 0.5D) >> 4;
-        int maxZ = MathHelper.floor(box.z2 + 0.5D) >> 4;
+        int maxX = MathHelper.floor(box.maxX + 0.5D) >> 4;
+        int maxY = MathHelper.floor(box.maxY + 0.5D) >> 4;
+        int maxZ = MathHelper.floor(box.maxZ + 0.5D) >> 4;
 
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {

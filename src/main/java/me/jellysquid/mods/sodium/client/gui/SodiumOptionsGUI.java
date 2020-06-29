@@ -11,7 +11,9 @@ import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.VideoOptionsScreen;
-import net.minecraft.client.util.TextFormat;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.StringRenderable;
 import net.minecraft.text.TranslatableText;
 import org.lwjgl.glfw.GLFW;
 
@@ -95,7 +97,7 @@ public class SodiumOptionsGUI extends Screen {
         int y = 6;
 
         for (OptionPage page : this.pages) {
-            int width = 10 + this.font.getStringWidth(page.getName());
+            int width = 10 + this.textRenderer.getWidth(page.getName());
 
             FlatButtonWidget button = new FlatButtonWidget(new Dim2i(x, y, width, 16), page.getName(), () -> this.setPage(page));
             button.setSelected(this.currentPage == page);
@@ -129,17 +131,17 @@ public class SodiumOptionsGUI extends Screen {
     }
 
     @Override
-    public void render(int mouseX, int mouseY, float delta) {
-        super.renderBackground();
+    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
+        super.renderBackground(matrixStack);
 
         this.updateControls();
 
         for (Drawable drawable : this.drawable) {
-            drawable.render(mouseX, mouseY, delta);
+            drawable.render(matrixStack, mouseX, mouseY, delta);
         }
 
         if (this.hoveredElement != null) {
-            this.renderOptionTooltip(this.hoveredElement);
+            this.renderOptionTooltip(matrixStack, this.hoveredElement);
         }
     }
 
@@ -177,8 +179,7 @@ public class SodiumOptionsGUI extends Screen {
         return this.controls.stream();
     }
 
-    @SuppressWarnings("SuspiciousNameCombination")
-    private void renderOptionTooltip(ControlElement<?> element) {
+    private void renderOptionTooltip(MatrixStack matrixStack, ControlElement<?> element) {
         Dim2i dim = element.getDimensions();
 
         int textPadding = 3;
@@ -190,13 +191,12 @@ public class SodiumOptionsGUI extends Screen {
         int boxX = dim.getLimitX() + boxPadding;
 
         Option<?> option = element.getOption();
-        List<String> tooltip = new ArrayList<>(this.font.wrapStringToWidthAsList(option.getTooltip(), boxWidth - (textPadding * 2)));
+        List<StringRenderable> tooltip = this.textRenderer.wrapLines(option.getTooltip(), boxWidth - (textPadding * 2));
 
         OptionImpact impact = option.getImpact();
 
         if (impact != null) {
-            tooltip.add("");
-            tooltip.add(TextFormat.GRAY + "Performance Impact: " + impact.toDisplayString());
+            tooltip.add(new LiteralText("\n" + "Performance Impact: " + impact.toDisplayString()));
         }
 
         int boxHeight = (tooltip.size() * 12) + boxPadding;
@@ -208,16 +208,16 @@ public class SodiumOptionsGUI extends Screen {
             boxY -= boxYLimit - boxYCutoff;
         }
 
-        this.fillGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xE0000000, 0xE0000000);
+        this.fillGradient(matrixStack, boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xE0000000, 0xE0000000);
 
         for (int i = 0; i < tooltip.size(); i++) {
-            String str = tooltip.get(i);
+            StringRenderable str = tooltip.get(i);
 
-            if (str.isEmpty()) {
+            if (str.getString().isEmpty()) {
                 continue;
             }
 
-            this.font.draw(str, boxX + textPadding, boxY + textPadding + (i * 12), 0xFFFFFFFF);
+            this.textRenderer.draw(matrixStack, str, boxX + textPadding, boxY + textPadding + (i * 12), 0xFFFFFFFF);
         }
     }
 
@@ -275,6 +275,6 @@ public class SodiumOptionsGUI extends Screen {
 
     @Override
     public void onClose() {
-        this.minecraft.openScreen(this.prevScreen);
+        this.client.openScreen(this.prevScreen);
     }
 }
