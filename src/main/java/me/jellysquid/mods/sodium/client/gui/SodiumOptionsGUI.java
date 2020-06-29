@@ -77,11 +77,11 @@ public class SodiumOptionsGUI extends Screen {
         }
 
         this.rebuildGUIPages();
-        this.rebuildGUIOptions();
+        int y = this.rebuildGUIOptions() + 4;
 
-        this.undoButton = new FlatButtonWidget(new Dim2i(this.width - 211, this.height - 30, 65, 20), "Undo", this::undoChanges);
-        this.applyButton = new FlatButtonWidget(new Dim2i(this.width - 142, this.height - 30, 65, 20), "Apply", this::applyChanges);
-        this.closeButton = new FlatButtonWidget(new Dim2i(this.width - 73, this.height - 30, 65, 20), "Close", this::onClose);
+        this.closeButton = new FlatButtonWidget(new Dim2i(10, y, 64, 20), "Close", this::onClose);
+        this.applyButton = new FlatButtonWidget(new Dim2i(78, y, 64, 20), "Apply", this::applyChanges);
+        this.undoButton = new FlatButtonWidget(new Dim2i(146, y, 64, 20), "Undo", this::undoChanges);
 
         this.children.add(this.undoButton);
         this.children.add(this.applyButton);
@@ -110,7 +110,7 @@ public class SodiumOptionsGUI extends Screen {
         }
     }
 
-    private void rebuildGUIOptions() {
+    private int rebuildGUIOptions() {
         int x = 10;
         int y = 28;
 
@@ -130,6 +130,7 @@ public class SodiumOptionsGUI extends Screen {
             // Add padding beneath each option group
             y += 4;
         }
+        return y;
     }
 
     @Override
