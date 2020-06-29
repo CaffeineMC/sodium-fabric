@@ -28,14 +28,15 @@ public abstract class ChunkDrawParamsVector extends BufferBuilder {
 
     public abstract void pushChunkDrawParams(float x, float y, float z);
 
-    protected void resize(int size) {
-        this.buffer = MemoryUtil.memRealloc(this.buffer,  Math.max(size * VEC4_SIZE, this.buffer.capacity() * 2));
+    protected void growBuffer() {
+        this.capacity = this.buffer.capacity() * 2;
+        this.buffer = MemoryUtil.memRealloc(this.buffer, this.capacity);
     }
 
     public static class UnsafeChunkDrawCallVector extends ChunkDrawParamsVector {
         private static final Unsafe UNSAFE = UnsafeUtil.instanceNullable();
 
-        private final long basePointer;
+        private long basePointer;
         private long writePointer;
 
         public UnsafeChunkDrawCallVector(int capacity) {
@@ -48,7 +49,7 @@ public abstract class ChunkDrawParamsVector extends BufferBuilder {
         @SuppressWarnings("SuspiciousNameCombination")
         public void pushChunkDrawParams(float x, float y, float z) {
             if (this.count++ >= this.capacity) {
-                this.resize(this.count);
+                this.growBuffer();
             }
 
             UNSAFE.putFloat(this.writePointer    , x);
@@ -56,6 +57,15 @@ public abstract class ChunkDrawParamsVector extends BufferBuilder {
             UNSAFE.putFloat(this.writePointer + 8, z);
 
             this.writePointer += VEC4_SIZE;
+        }
+
+        @Override
+        protected void growBuffer() {
+            super.growBuffer();
+
+            long offset = this.writePointer - this.basePointer;
+            this.basePointer = ((DirectBuffer) this.buffer).address();
+            this.writePointer = this.basePointer + offset;
         }
 
         @Override
@@ -76,7 +86,7 @@ public abstract class ChunkDrawParamsVector extends BufferBuilder {
         @Override
         public void pushChunkDrawParams(float x, float y, float z) {
             if (this.count++ >= this.capacity) {
-                this.resize(this.count);
+                this.growBuffer();
             }
 
             ByteBuffer buf = this.buffer;
