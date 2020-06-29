@@ -52,6 +52,7 @@ public abstract class MixinWorldRenderer {
     }
 
     /**
+     * @reason Redirect to our renderer
      * @author JellySquid
      */
     @Overwrite
@@ -60,6 +61,7 @@ public abstract class MixinWorldRenderer {
     }
 
     /**
+     * @reason Redirect the check to our renderer
      * @author JellySquid
      */
     @Overwrite
@@ -73,6 +75,7 @@ public abstract class MixinWorldRenderer {
     }
 
     /**
+     * @reason Redirect the chunk layer render passes to our renderer
      * @author JellySquid
      */
     @Overwrite
@@ -81,14 +84,7 @@ public abstract class MixinWorldRenderer {
     }
 
     /**
-     * @author JellySquid
-     */
-    @Overwrite
-    private void renderChunkDebugInfo(Camera camera) {
-        this.renderer.renderChunkDebugInfo(camera);
-    }
-
-    /**
+     * @reason Redirect the terrain setup phase to our renderer
      * @author JellySquid
      */
     @Overwrite
@@ -96,13 +92,8 @@ public abstract class MixinWorldRenderer {
         this.renderer.updateChunks(camera, frustum, hasForcedFrustum, frame, spectator);
     }
 
-    @Inject(method = "reload", at = @At("RETURN"))
-    private void reload(CallbackInfo ci) {
-        this.renderer.reload();
-    }
-
     /**
-     * @reason Avoid updating the same chunk multiple times
+     * @reason Redirect chunk updates to our renderer
      * @author JellySquid
      */
     @Overwrite
@@ -111,7 +102,7 @@ public abstract class MixinWorldRenderer {
     }
 
     /**
-     * @reason Avoid updating the same chunk multiple times
+     * @reason Redirect chunk updates to our renderer
      * @author JellySquid
      */
     @Overwrite
@@ -120,7 +111,7 @@ public abstract class MixinWorldRenderer {
     }
 
     /**
-     * @reason Avoid updating the same chunk multiple times
+     * @reason Redirect chunk updates to our renderer
      * @author JellySquid
      */
     @Overwrite
@@ -129,6 +120,7 @@ public abstract class MixinWorldRenderer {
     }
 
     /**
+     * @reason Redirect chunk updates to our renderer
      * @author JellySquid
      */
     @Overwrite
@@ -136,12 +128,18 @@ public abstract class MixinWorldRenderer {
         this.renderer.scheduleRebuildForChunk(x, y, z, important);
     }
 
+    @Inject(method = "reload", at = @At("RETURN"))
+    private void onReload(CallbackInfo ci) {
+        this.renderer.reload();
+    }
+
     @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/WorldRenderer;noCullingBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
-    private void renderTileEntities(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
+    private void onRenderTileEntities(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
         this.renderer.renderTileEntities(matrices, this.bufferBuilders, this.blockBreakingProgressions, camera, tickDelta);
     }
 
     /**
+     * @reason Replace the debug string
      * @author JellySquid
      */
     @Overwrite

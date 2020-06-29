@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 public class MixinMinecraftClient {
     /**
      * @author JellySquid
+     * @reason Make ambient occlusion user configurable
      */
     @Overwrite
     public static boolean isAmbientOcclusionEnabled() {

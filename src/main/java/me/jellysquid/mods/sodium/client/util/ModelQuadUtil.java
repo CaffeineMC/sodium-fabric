@@ -27,6 +27,7 @@ public class ModelQuadUtil {
 
     // Size of vertex format in 4-byte integers
     public static final int VERTEX_SIZE = 8;
+    public static final int VERTEX_SIZE_BYTES = VERTEX_SIZE * 4;
 
     // Cached array of normals for every facing to avoid expensive computation
     static final int[] NORMALS = new int[DirectionUtil.ALL_DIRECTIONS.length];

@@ -29,6 +29,7 @@ public class MixinModelPart {
 
     /**
      * @author JellySquid
+     * @reason Use optimized vertex writer
      */
     @Overwrite
     private void renderCuboids(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
