@@ -41,7 +41,7 @@ public class BlockRenderPipeline {
     private final VertexColorBlender colorBlender;
 
     public BlockRenderPipeline(MinecraftClient client, LightPipeline smoothLightPipeline, LightPipeline flatLightPipeline) {
-        this.blockColors = (BlockColorsExtended) client.getBlockColorMap();
+        this.blockColors = (BlockColorsExtended) client.getBlockColors();
         this.smoothLightPipeline = smoothLightPipeline;
         this.flatLightPipeline = flatLightPipeline;
 
@@ -60,7 +60,7 @@ public class BlockRenderPipeline {
         LightPipeline lighter = this.getLightPipeline(state, model);
         lighter.reset();
 
-        Vec3d offset = state.getOffsetPos(world, pos);
+        Vec3d offset = state.getModelOffset(world, pos);
 
         boolean rendered = false;
 
@@ -100,7 +100,7 @@ public class BlockRenderPipeline {
 
         for (BakedQuad quad : quads) {
             QuadLightData light = this.cachedQuadLightData;
-            lighter.calculate((ModelQuadView) quad, pos, light, quad.getFace());
+            lighter.calculate((ModelQuadView) quad, pos, light, quad.getFace(), quad.hasShade());
 
             if (quad.hasColor() && colorizer == null) {
                 colorizer = this.blockColors.getColorProvider(state);

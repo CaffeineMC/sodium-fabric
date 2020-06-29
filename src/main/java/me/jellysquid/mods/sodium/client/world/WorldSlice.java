@@ -11,6 +11,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.LightType;
@@ -44,7 +45,7 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     public static final int NEIGHBOR_BLOCK_RADIUS = 1;
 
     // The number of outward chunks from the origin chunk to slice
-    public static final int NEIGHBOR_CHUNK_RADIUS = MathHelper.roundUp(NEIGHBOR_BLOCK_RADIUS, 16) >> 4;
+    public static final int NEIGHBOR_CHUNK_RADIUS = MathHelper.roundUpToMultiple(NEIGHBOR_BLOCK_RADIUS, 16) >> 4;
 
     // The length of the chunk section array on each axis
     public static final int SECTION_LENGTH = 1 + (NEIGHBOR_CHUNK_RADIUS * 2);
@@ -245,6 +246,11 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     }
 
     @Override
+    public float getBrightness(Direction direction, boolean shaded) {
+        return this.world.getBrightness(direction, shaded);
+    }
+
+    @Override
     public LightingProvider getLightingProvider() {
         return this.world.getLightingProvider();
     }
@@ -288,6 +294,16 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
             default:
                 return 0;
         }
+    }
+
+    @Override
+    public int getBaseLightLevel(BlockPos pos, int ambientDarkness) {
+        return 0;
+    }
+
+    @Override
+    public boolean isSkyVisible(BlockPos pos) {
+        return false;
     }
 
     private int getLightLevel(ChunkNibbleArray[] arrays, BlockPos pos) {

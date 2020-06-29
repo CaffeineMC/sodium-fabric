@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import net.minecraft.client.options.CloudRenderMode;
 import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.options.GraphicsMode;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -14,7 +15,7 @@ public class MixinGameOptions {
     public int viewDistance;
 
     @Shadow
-    public boolean fancyGraphics;
+    public GraphicsMode graphicsMode;
 
     /**
      * @author JellySquid
@@ -28,6 +29,6 @@ public class MixinGameOptions {
             return CloudRenderMode.OFF;
         }
 
-        return options.quality.cloudQuality.isFancy(this.fancyGraphics) ? CloudRenderMode.FANCY : CloudRenderMode.FAST;
+        return options.quality.cloudQuality.isFancy(this.graphicsMode) ? CloudRenderMode.FANCY : CloudRenderMode.FAST;
     }
 }

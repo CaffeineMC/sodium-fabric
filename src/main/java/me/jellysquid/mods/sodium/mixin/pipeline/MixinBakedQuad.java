@@ -27,7 +27,7 @@ public class MixinBakedQuad implements ModelQuadView {
     private int cachedFlags;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, CallbackInfo ci) {
+    private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
         this.cachedFlags = ModelQuadFlags.getQuadFlags((BakedQuad) (Object) this);
     }
 

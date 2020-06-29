@@ -52,13 +52,6 @@ public abstract class MixinSprite implements SpriteExtended {
         }
     }
 
-    @Override
-    public void uploadPendingChanges() {
-        if (this.hasPendingUpdate && this.onDemand) {
-            this.uploadTexture();
-        }
-    }
-
     private void uploadTexture() {
         if (this.frameTicks >= this.animationMetadata.getFrameTime(this.frameIndex)) {
             int prevFrameIndex = this.animationMetadata.getFrameIndex(this.frameIndex);
@@ -90,6 +83,6 @@ public abstract class MixinSprite implements SpriteExtended {
     }
 
     private void updateInterpolatedTexture() {
-        this.interpolation.method_24128();
+        this.interpolation.apply();
     }
 }

@@ -263,7 +263,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
             node.resetGraphState();
             node.setVisibleFrame(frame);
 
-            if (spectator && this.world.getBlockState(origin).isFullOpaque(this.world, origin)) {
+            if (spectator && this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin)) {
                 this.useOcclusionCulling = false;
             }
 

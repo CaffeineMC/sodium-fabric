@@ -4,4 +4,4 @@ accessible class net/minecraft/client/model/ModelPart$Vertex
 accessible class net/minecraft/client/model/ModelPart$Quad
 accessible class net/minecraft/client/texture/Sprite$Interpolation
 
-accessible method net/minecraft/client/texture/Sprite$Interpolation method_24128 ()V
+accessible method net/minecraft/client/texture/Sprite$Interpolation apply ()V

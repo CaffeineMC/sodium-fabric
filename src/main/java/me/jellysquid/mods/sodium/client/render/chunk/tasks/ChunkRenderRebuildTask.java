@@ -118,7 +118,7 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
                         bounds.addBlock(x, y, z);
                     }
 
-                    if (blockState.isFullOpaque(this.slice, pos)) {
+                    if (blockState.isOpaqueFullCube(this.slice, pos)) {
                         occluder.markClosed(pos);
                     }
                 }

@@ -26,7 +26,7 @@
     "options.MixinGameOptions",
     "options.MixinInGameHud",
     "options.MixinMinecraftClient",
-    "options.MixinSettingsScreen",
+    "options.MixinOptionsScreen",
     "options.MixinWorldRenderer",
     "particles.MixinBillboardParticle",
     "particles.MixinParticleManager",

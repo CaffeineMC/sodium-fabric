@@ -1,18 +1,18 @@
 package me.jellysquid.mods.sodium.client.gui.options;
 
-import net.minecraft.client.util.TextFormat;
+import net.minecraft.util.Formatting;
 
 public enum OptionImpact {
-    LOW(TextFormat.GREEN, "Low"),
-    MEDIUM(TextFormat.YELLOW, "Medium"),
-    HIGH(TextFormat.GOLD, "High"),
-    EXTREME(TextFormat.RED, "Extreme"),
-    VARIES(TextFormat.WHITE, "Varies");
+    LOW(Formatting.GREEN, "Low"),
+    MEDIUM(Formatting.YELLOW, "Medium"),
+    HIGH(Formatting.GOLD, "High"),
+    EXTREME(Formatting.RED, "Extreme"),
+    VARIES(Formatting.WHITE, "Varies");
 
-    private final TextFormat color;
+    private final Formatting color;
     private final String text;
 
-    OptionImpact(TextFormat color, String text) {
+    OptionImpact(Formatting color, String text) {
         this.color = color;
         this.text = text;
     }
