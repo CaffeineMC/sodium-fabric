@@ -38,6 +38,20 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
      */
     private static final double NEARBY_CHUNK_DISTANCE = Math.pow(48, 2.0);
 
+    /**
+     * The minimum distance the culling plane can be from the player's camera. This helps to prevent mathematical
+     * errors that occur when the fog distance is less than 8 blocks in width, such as when using a blindness potion.
+     */
+    private static final float FOG_PLANE_MIN_DISTANCE = (float) Math.pow(8.0f, 2.0);
+
+    /**
+     * The distance past the fog's far plane at which to begin culling. Distance calculations use the center of each
+     * chunk from the camera's position, and as such, special care is needed to ensure that the culling plane is pushed
+     * back far enough. I'm sure there's a mathematical formula that should be used here in place of the constant,
+     * but this value works fine in testing.
+     */
+    private static final float FOG_PLANE_OFFSET = 5.0f;
+
     private final ChunkBuilder<T> builder;
     private final ChunkRenderBackend<T> backend;
 
@@ -100,10 +114,6 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     }
 
     private void addChunkNeighbors(ChunkRenderContainer<T> parent, FrustumExtended frustum, int frame) {
-        if (this.useFogCulling && parent.getSquaredDistanceXZ(this.cameraX, this.cameraZ) >= this.fogRenderCutoff) {
-            return;
-        }
-
         for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
             ChunkRenderContainer<T> adj = parent.getAdjacentRender(dir);
 
@@ -117,6 +127,10 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
                 if (flow != null && !parent.isVisibleThrough(flow, dir)) {
                     continue;
                 }
+            }
+
+            if (this.useFogCulling && parent.getSquaredDistanceXZ(this.cameraX, this.cameraZ) >= this.fogRenderCutoff) {
+                continue;
             }
 
             if (adj.isOutsideFrustum(frustum)) {
@@ -284,11 +298,11 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         this.useFogCulling = false;
 
         if (SodiumClientMod.options().performance.useFogOcclusion) {
-            float dist = GlFogHelper.getFogCutoff() + 2.0f;
+            float dist = GlFogHelper.getFogCutoff() + FOG_PLANE_OFFSET;
 
             if (dist != 0.0f) {
                 this.useFogCulling = true;
-                this.fogRenderCutoff = dist * dist;
+                this.fogRenderCutoff = Math.max(FOG_PLANE_MIN_DISTANCE, dist * dist);
             }
         }
     }
