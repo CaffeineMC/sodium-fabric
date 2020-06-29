@@ -9,16 +9,7 @@ varying vec2 v_TexCoord;
 varying vec2 v_LightCoord;
 
 #ifdef USE_FOG
-varying float v_FogFactor;
-#endif
-
-#ifdef USE_FOG_EXP2
-uniform float u_FogDensity;
-#endif
-
-#ifdef USE_FOG_LINEAR
-uniform float u_FogLength; // FogStart - FogEnd
-uniform float u_FogEnd;
+varying float v_FragDistance;
 #endif
 
 uniform mat4 u_ModelViewProjectionMatrix;
@@ -36,28 +27,18 @@ void main() {
     // Translates the vertex position around the position of the camera
     // This can be used to calculate the distance of the vertex from the camera without needing to
     // transform it into model-view space with a matrix, which is much slower.
-    vec4 pos = vec4((a_Pos * u_ModelScale) + d_ModelOffset.xyz, 1.0);
+    vec3 pos = (a_Pos * u_ModelScale) + d_ModelOffset.xyz;
 
-    // Apply the matrix transformations to the vertex position to place it into model-view-projection space
-    gl_Position = u_ModelViewProjectionMatrix * pos;
-
-#ifdef USE_FOG_EXP2
-    // Exp2 fog as defined by the fixed-function pipeline
-    // e^(-density * c^2)
-    float dist = length(pos) * u_FogDensity;
-    v_FogFactor = clamp(1.0 / exp2(dist * dist), 0.0, 1.0);
+#ifdef USE_FOG
+    v_FragDistance = length(pos);
 #endif
 
-#ifdef USE_FOG_LINEAR
-    // Linear fog as defined by the fixed-function pipeline
-    // (end - dist) / (end - start)
-    // The "length" of the linear fog is precomputed on the CPU as the result will be constant for all drawn vertices
-    float dist = length(pos);
-    v_FogFactor = clamp((u_FogEnd - dist) / u_FogLength, 0.0, 1.0);
-#endif
+    // Transform the vertex position into model-view-projection space
+    gl_Position = u_ModelViewProjectionMatrix * vec4(pos, 1.0);
 
     // Pass the color and texture coordinates to the fragment shader
     v_Color = a_Color;
     v_TexCoord = a_TexCoord;
     v_LightCoord = a_LightCoord;
 }
+
