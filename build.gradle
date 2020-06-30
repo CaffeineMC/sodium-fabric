@@ -21,9 +21,6 @@ if (build_id != null) {
 }
 
 minecraft {
-}
-
-minecraft {
     refmapName = "mixins.sodium.refmap.json"
     accessWidener = file("src/main/resources/sodium.accesswidener")
 }
@@ -46,6 +43,20 @@ processResources {
 
     from(sourceSets.main.resources.srcDirs) {
         exclude "fabric.mod.json"
+    }
+}
+
+if (project.use_third_party_mods) {
+    repositories {
+        maven { url = "https://jitpack.io" }
+    }
+
+    dependencies {
+        // DataBreaker applies a number of patches to eliminate the loading of data fixers
+        // This greatly reduces the amount of time needed to start the game, but is generally unsafe in production
+        modRuntime ("com.github.SuperCoder7979:databreaker:${project.databreaker_version}") {
+            transitive = false
+        }
     }
 }
 
