@@ -15,7 +15,7 @@ public interface LightPipeline {
      * @param pos The block position of the model this quad belongs to
      * @param out The data arrays which will store the calculated light data results
      * @param face The pre-computed facing vector of the quad
-     * @param shade
+     * @param shade True if the block is shaded by ambient occlusion
      */
     void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction face, boolean shade);
 

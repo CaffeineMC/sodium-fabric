@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.light.smooth;
 
-import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
+import me.jellysquid.mods.sodium.client.model.light.AbstractLightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.light.cache.LightDataCache;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFlags;
@@ -35,12 +35,7 @@ import net.minecraft.util.math.MathHelper;
  * - Information about a given model quad is cached to enable the light pipeline to make certain assumptions and skip
  *   unnecessary computation
  */
-public class SmoothLightPipeline implements LightPipeline {
-    /**
-     * The cache which light data will be accessed from.
-     */
-    private final LightDataCache lightCache;
-
+public class SmoothLightPipeline extends AbstractLightPipeline {
     /**
      * The cached face data for each side of a block, both inset and outset.
      */
@@ -52,7 +47,7 @@ public class SmoothLightPipeline implements LightPipeline {
     private final float[] weights = new float[4];
 
     public SmoothLightPipeline(LightDataCache lightCache) {
-        this.lightCache = lightCache;
+        super(lightCache);
 
         for (int i = 0; i < this.cachedFaceData.length; i++) {
             this.cachedFaceData[i] = new AoFaceData();
@@ -82,14 +77,6 @@ public class SmoothLightPipeline implements LightPipeline {
         }
 
         this.applySidedBrightnessModifier(out.br, face, shade);
-    }
-
-    private void applySidedBrightnessModifier(float[] arr, Direction face, boolean shade) {
-        float mod = this.lightCache.getWorld().getBrightness(face, shade);
-
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] *= mod;
-        }
     }
 
     private void applyComplex(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, Direction dir, QuadLightData out, int flags) {
