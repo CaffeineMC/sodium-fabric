@@ -28,8 +28,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegionManager;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL33;
-import org.lwjgl.opengl.GL43;
+import org.lwjgl.opengl.GL20;
 
 import java.util.Iterator;
 import java.util.List;
@@ -176,7 +175,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             ChunkDrawCallBatcher batch = region.getDrawBatcher();
             batch.end();
 
-            GL43.glMultiDrawArraysIndirect(GL11.GL_QUADS, batch.getBuffer(), batch.getCount(), 0 /* tightly packed */);
+            GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(GL11.GL_QUADS, batch.getBuffer(), batch.getCount(), 0 /* tightly packed */);
 
             prevVao = vao;
         }
@@ -210,9 +209,10 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         //
         // This provides performance as good as a uniform array without the need to split draw call batches due to
         // uniform array size limits. All uniforms can be uploaded and bound in a single call.
-        GL33.glVertexAttribPointer(index, 4, GL11.GL_FLOAT, false, 0, 0L);
-        GL33.glVertexAttribDivisor(index, 1);
-        GL33.glEnableVertexAttribArray(index);
+        GL20.glVertexAttribPointer(index, 4, GL11.GL_FLOAT, false, 0, 0L);
+        GlFunctions.INSTANCED_ARRAY.glVertexAttribDivisor(index, 1);
+
+        GL20.glEnableVertexAttribArray(index);
     }
 
     private void setupUploadBatches(Iterator<ChunkBuildResult<LCBGraphicsState>> renders) {
@@ -302,6 +302,8 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
     public static boolean isSupported() {
         return GlFunctions.isVertexArraySupported() &&
-                GlFunctions.isBufferCopySupported();
+                GlFunctions.isBufferCopySupported() &&
+                GlFunctions.isIndirectMultiDrawSupported() &&
+                GlFunctions.isInstancedArraySupported();
     }
 }
