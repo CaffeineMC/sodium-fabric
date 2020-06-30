@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.light.flat;
 
-import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
+import me.jellysquid.mods.sodium.client.model.light.AbstractLightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.light.cache.LightDataCache;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFlags;
@@ -16,11 +16,9 @@ import static me.jellysquid.mods.sodium.client.model.light.cache.LightDataCache.
  * A light pipeline which implements "classic-style" lighting through simply using the light value of the adjacent
  * block to a face.
  */
-public class FlatLightPipeline implements LightPipeline {
-    private final LightDataCache lightCache;
-
+public class FlatLightPipeline extends AbstractLightPipeline {
     public FlatLightPipeline(LightDataCache cache) {
-        this.lightCache = cache;
+        super(cache);
     }
 
     @Override
@@ -39,5 +37,7 @@ public class FlatLightPipeline implements LightPipeline {
         } else {
             Arrays.fill(out.lm, unpackLM(this.lightCache.get(pos)));
         }
+
+        this.applySidedBrightnessModifier(out.br, face, shade);
     }
 }
