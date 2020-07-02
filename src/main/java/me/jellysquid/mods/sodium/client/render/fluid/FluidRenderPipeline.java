@@ -136,7 +136,6 @@ public class FluidRenderPipeline {
         final QuadLightData light = this.quadLightData;
 
         LightPipeline lighter = !lava && MinecraftClient.isAmbientOcclusionEnabled() ? this.smoothLightPipeline : this.flatLightPipeline;
-        lighter.reset();
 
         if (sfUp && this.isSideExposed(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
             h1 -= 0.001F;
