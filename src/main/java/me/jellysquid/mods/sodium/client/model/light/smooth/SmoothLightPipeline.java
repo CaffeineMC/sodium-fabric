@@ -42,6 +42,11 @@ public class SmoothLightPipeline extends AbstractLightPipeline {
     private final AoFaceData[] cachedFaceData = new AoFaceData[6 * 2];
 
     /**
+     * The position of the
+     */
+    private long cachedPos = Long.MIN_VALUE;
+
+    /**
      * A temporary array for storing the intermediary results of weight data for non-aligned face blending.
      */
     private final float[] weights = new float[4];
@@ -55,14 +60,9 @@ public class SmoothLightPipeline extends AbstractLightPipeline {
     }
 
     @Override
-    public void reset() {
-        for (AoFaceData data : this.cachedFaceData) {
-            data.reset();
-        }
-    }
-
-    @Override
     public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction face, boolean shade) {
+        this.updateCachedData(pos.asLong());
+
         int flags = quad.getFlags();
 
         final AoNeighborInfo neighborInfo = AoNeighborInfo.get(face);
@@ -169,6 +169,16 @@ public class SmoothLightPipeline extends AbstractLightPipeline {
         }
 
         return data;
+    }
+
+    private void updateCachedData(long key) {
+        if (this.cachedPos != key) {
+            for (AoFaceData data : this.cachedFaceData) {
+                data.reset();
+            }
+
+            this.cachedPos = key;
+        }
     }
 
     /**

@@ -58,7 +58,6 @@ public class BlockRenderPipeline {
 
     public boolean renderModel(ChunkRenderData.Builder meshInfo, BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, ModelQuadSinkDelegate builder, boolean cull, Random random, long seed) {
         LightPipeline lighter = this.getLightPipeline(state, model);
-        lighter.reset();
 
         Vec3d offset = state.getModelOffset(world, pos);
 
