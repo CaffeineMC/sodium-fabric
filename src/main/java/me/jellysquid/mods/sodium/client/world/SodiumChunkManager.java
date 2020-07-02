@@ -1,7 +1,9 @@
 package me.jellysquid.mods.sodium.client.world;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import me.jellysquid.mods.sodium.client.util.collections.FixedLongHashTable;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.CompoundTag;
@@ -14,6 +16,8 @@ import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.EmptyChunk;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
+
+import java.util.concurrent.locks.StampedLock;
 
 /**
  * An implementation of {@link net.minecraft.world.chunk.ChunkManager} for the client world which uses a simple
@@ -30,23 +34,23 @@ import net.minecraft.world.chunk.light.LightingProvider;
  * usually resort in chunk queries being slammed every frame when many chunks have pending rebuilds.
  */
 public class SodiumChunkManager extends ClientChunkManager implements ChunkStatusListenerManager {
-    private final Long2ObjectOpenHashMap<WorldChunk> chunks = new Long2ObjectOpenHashMap<>();
     private final ClientWorld world;
     private final WorldChunk emptyChunk;
 
+    private final StampedLock lock = new StampedLock();
+
+    private FixedLongHashTable<WorldChunk> chunks;
     private ChunkStatusListener listener;
     private int centerX, centerZ;
     private int radius;
 
-    private long prevChunkKey = Long.MIN_VALUE;
-    private WorldChunk prevChunk;
-
-    public SodiumChunkManager(ClientWorld world, int radius) {
-        super(world, radius);
+    public SodiumChunkManager(ClientWorld world, int loadDistance) {
+        super(world, loadDistance);
 
         this.world = world;
         this.emptyChunk = new EmptyChunk(world, new ChunkPos(0, 0));
-        this.radius = getChunkMapRadius(radius);
+        this.radius = getChunkMapRadius(loadDistance);
+        this.chunks = new FixedLongHashTable<>(getChunkMapSize(this.radius), Hash.FAST_LOAD_FACTOR);
     }
 
     @Override
@@ -55,39 +59,37 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
         if (this.chunks.remove(createChunkKey(x, z)) != null) {
             this.onChunkUnloaded(x, z);
         }
-
-        this.clearCache();
-    }
-
-    private void unload(long pos) {
-        if (this.chunks.remove(pos) != null) {
-            this.onChunkUnloaded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos));
-        }
-
-        this.clearCache();
-    }
-
-    private void clearCache() {
-        this.prevChunk = null;
-        this.prevChunkKey = Long.MIN_VALUE;
     }
 
     @Override
     public WorldChunk getChunk(int x, int z, ChunkStatus status, boolean create) {
-        long key = createChunkKey(x, z);
-
-        if (key == this.prevChunkKey) {
-            return this.prevChunk;
-        }
-
-        WorldChunk chunk = this.chunks.get(key);
+        WorldChunk chunk = this.getChunkSafe(createChunkKey(x, z));
 
         if (chunk == null) {
             return create ? this.emptyChunk : null;
         }
 
-        this.prevChunkKey = key;
-        this.prevChunk = chunk;
+        return chunk;
+    }
+
+    private WorldChunk getChunkSafe(long key) {
+        long stamp = this.lock.tryOptimisticRead();
+
+        // Perform an optimistic read, hoping that the map will not be mutated while doing so
+        WorldChunk chunk = this.chunks.get(key);
+
+        // If the collection changed under our feet, the returned value is to be considered invalid
+        // This should happen very rarely.
+        if (!this.lock.validate(stamp)) {
+            // Retrieve the chunk again, but this time acquire a full lock
+            stamp = this.lock.readLock();
+
+            try {
+                chunk = this.chunks.get(key);
+            } finally {
+                this.lock.unlockRead(stamp);
+            }
+        }
 
         return chunk;
     }
@@ -110,7 +112,13 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
             chunk = new WorldChunk(this.world, new ChunkPos(x, z), biomes);
             chunk.loadFromPacket(biomes, buf, tag, verticalStripBitmask);
 
-            this.chunks.put(key, chunk);
+            long stamp = this.lock.writeLock();
+
+            try {
+                this.chunks.put(key, chunk);
+            } finally {
+                this.lock.unlockWrite(stamp);
+            }
         }
 
         // Perform post-load actions and notify the chunk listener that a chunk was just loaded
@@ -129,18 +137,29 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     public void updateLoadDistance(int loadDistance) {
         this.radius = getChunkMapRadius(loadDistance);
 
-        LongIterator it = this.chunks.keySet().iterator();
+        FixedLongHashTable<WorldChunk> copy = new FixedLongHashTable<>(getChunkMapSize(this.radius), Hash.FAST_LOAD_FACTOR);
 
-        while (it.hasNext()) {
-            long pos = it.nextLong();
+        long stamp = this.lock.writeLock();
 
-            int x = ChunkPos.getPackedX(pos);
-            int z = ChunkPos.getPackedZ(pos);
+        try {
+            ObjectIterator<Long2ObjectMap.Entry<WorldChunk>> it = this.chunks.iterator();
 
-            // Remove any chunks which are outside the load radius
-            if (Math.abs(x - this.centerX) > this.radius || Math.abs(z - this.centerZ) > this.radius) {
-                it.remove();
+            while (it.hasNext()) {
+                Long2ObjectMap.Entry<WorldChunk> entry = it.next();
+
+                long pos = entry.getLongKey();
+                int x = ChunkPos.getPackedX(pos);
+                int z = ChunkPos.getPackedZ(pos);
+
+                // Remove any chunks which are outside the load radius
+                if (Math.abs(x - this.centerX) <= this.radius && Math.abs(z - this.centerZ) <= this.radius) {
+                    copy.put(pos, entry.getValue());
+                }
             }
+
+            this.chunks = copy;
+        } finally {
+            this.lock.unlockWrite(stamp);
         }
     }
 
@@ -193,5 +212,10 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     private static int getChunkMapRadius(int radius) {
         return Math.max(2, radius) + 3;
+    }
+
+    private static int getChunkMapSize(int radius) {
+        int n = (radius * 2) + 1;
+        return n * n;
     }
 }
