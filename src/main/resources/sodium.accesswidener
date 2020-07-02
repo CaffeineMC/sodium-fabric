@@ -5,3 +5,4 @@ accessible class net/minecraft/client/model/ModelPart$Quad
 accessible class net/minecraft/client/texture/Sprite$Interpolation
 
 accessible method net/minecraft/client/texture/Sprite$Interpolation apply ()V
+accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
