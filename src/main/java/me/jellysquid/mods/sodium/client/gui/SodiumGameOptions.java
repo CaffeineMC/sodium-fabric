@@ -32,6 +32,7 @@ public class SodiumGameOptions {
         public boolean useFogOcclusion = true;
         public boolean useCompactVertexFormat = true;
         public boolean useAggressiveChunkCulling = true;
+        public boolean useMemoryIntrinsics = true;
     }
 
     public static class QualitySettings {

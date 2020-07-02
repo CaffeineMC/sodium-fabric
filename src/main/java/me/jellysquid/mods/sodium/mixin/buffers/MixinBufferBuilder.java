@@ -22,8 +22,6 @@ import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
 public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements DirectVertexConsumer, BufferVertexConsumer {
-    private static final boolean UNSAFE = UnsafeUtil.isAvailable();
-
     @Shadow
     private int elementOffset;
 
@@ -69,7 +67,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             throw new IllegalStateException();
         }
 
-        if (UNSAFE) {
+        if (UnsafeUtil.isAvailable()) {
             this.vertexUnsafe(x, y, z, color, u, v, overlay, light, normal);
         } else {
             this.vertexFallback(x, y, z, color, u, v, overlay, light, normal);
@@ -156,7 +154,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             throw new IllegalStateException("Invalid vertex format");
         }
 
-        if (UNSAFE) {
+        if (UnsafeUtil.isAvailable()) {
             this.vertexParticleUnsafe(x, y, z, u, v, color, light);
         } else {
             this.vertexParticleFallback(x, y, z, u, v, color, light);
@@ -284,7 +282,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             Vector4f pos = new Vector4f(x, y, z, 1.0F);
             pos.transform(modelMatrix);
 
-            if (UNSAFE) {
+            if (UnsafeUtil.isAvailable()) {
                 this.vertexUnsafe(pos.getX(), pos.getY(), pos.getZ(), color, u, v, overlay, light[i], norm);
             } else {
                 this.vertexFallback(pos.getX(), pos.getY(), pos.getZ(), color, u, v, overlay, light[i], norm);

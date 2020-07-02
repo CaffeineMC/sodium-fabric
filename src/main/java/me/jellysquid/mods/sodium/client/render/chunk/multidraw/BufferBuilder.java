@@ -1,13 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.chunk.multidraw;
 
-import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
 public abstract class BufferBuilder {
-    protected static final boolean USE_UNSAFE = UnsafeUtil.isAvailable();
-
     protected ByteBuffer buffer;
     protected int count;
 

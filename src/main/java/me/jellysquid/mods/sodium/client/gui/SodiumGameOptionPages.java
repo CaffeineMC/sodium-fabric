@@ -9,6 +9,7 @@ import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.TickBoxControl;
 import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
+import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.AttackIndicator;
 import net.minecraft.client.options.GraphicsMode;
@@ -280,6 +281,20 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.animateOnlyVisibleTextures = value, opts -> opts.performance.animateOnlyVisibleTextures)
+                        .build()
+                )
+                .build());
+
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Memory Intrinsics")
+                        .setTooltip("If enabled, special intrinsics will be used to speed up the copying of client memory in certain vertex-limited scenarios, such " +
+                                "as particle and text rendering. This option only exists for debugging purposes and should be left enabled unless you know what " +
+                                "you are doing.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setEnabled(UnsafeUtil.isSupported())
+                        .setBinding((opts, value) -> opts.performance.useMemoryIntrinsics = value, opts -> opts.performance.useMemoryIntrinsics)
                         .build()
                 )
                 .build());

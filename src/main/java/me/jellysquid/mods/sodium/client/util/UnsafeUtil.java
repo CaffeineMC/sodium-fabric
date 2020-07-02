@@ -1,11 +1,14 @@
 package me.jellysquid.mods.sodium.client.util;
 
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 
 public class UnsafeUtil {
-    private static final boolean USE_UNSAFE = true;
+    private static final boolean SUPPORTED;
+    private static boolean AVAILABLE;
+
     private static final Unsafe UNSAFE;
 
     /**
@@ -16,8 +19,9 @@ public class UnsafeUtil {
 
     static {
         UNSAFE = findUnsafe();
+        SUPPORTED = UNSAFE != null;
 
-        if (UNSAFE != null) {
+        if (SUPPORTED) {
             INT_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(int[].class);
         } else {
             INT_ARRAY_OFFSET = -1;
@@ -25,34 +29,39 @@ public class UnsafeUtil {
     }
 
     private static Unsafe findUnsafe() {
-        if (!USE_UNSAFE) {
-            return null;
-        }
-
         try {
             Field field = Unsafe.class.getDeclaredField("theUnsafe");
             field.setAccessible(true);
 
             return (Unsafe) field.get(null);
         } catch (ReflectiveOperationException e) {
-            // TODO: log error
-            return null;
+            SodiumClientMod.logger().warn("Could not find Unsafe intrinsics", e);
         }
+
+        return null;
     }
 
     /**
-     * @return True if {@link UnsafeUtil#instance()} can be used, otherwise false
+     * @return True if unsafe intrinsics are available and enabled
      */
     public static boolean isAvailable() {
-        return UNSAFE != null;
+        return AVAILABLE;
     }
 
     /**
-     * Returns an exposed instance of {@link Unsafe}, or throws an exception if it is unavailable.
+     * @return True if unsafe intrinsics are supported on this platform
+     */
+    public static boolean isSupported() {
+        return SUPPORTED;
+    }
+
+    /**
+     * Returns an exposed instance of {@link Unsafe}.
+     * @throws UnsupportedOperationException If {@link UnsafeUtil#isAvailable()} is false
      */
     public static Unsafe instance() {
         if (!isAvailable()) {
-            throw new UnsupportedOperationException("Unsafe is not available on this platform");
+            throw new UnsupportedOperationException("Unsafe intrinsics are not available");
         }
 
         return UNSAFE;
@@ -60,5 +69,9 @@ public class UnsafeUtil {
 
     public static Unsafe instanceNullable() {
         return UNSAFE;
+    }
+
+    public static void setEnabled(boolean enabled) {
+        AVAILABLE = UNSAFE != null && enabled;
     }
 }

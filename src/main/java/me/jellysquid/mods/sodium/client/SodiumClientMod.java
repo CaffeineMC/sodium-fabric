@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client;
 
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
+import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.fabricmc.api.ClientModInitializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,5 +31,9 @@ public class SodiumClientMod implements ClientModInitializer {
         }
 
         return LOGGER;
+    }
+
+    public static void onConfigChanged(SodiumGameOptions options) {
+        UnsafeUtil.setEnabled(options.performance.useMemoryIntrinsics);
     }
 }

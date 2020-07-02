@@ -5,9 +5,6 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteBuffer;
 
 public class BufferUtil {
-    // Hoist the computation into a constant static field so the JVM can optimize the branch away
-    private static final boolean USE_UNSAFE = UnsafeUtil.isAvailable();
-
     /**
      * Copies a slice of integers from the source array into the destination buffer at its current position. This exists
      * to facilitate fast copies of integer arrays from heap memory to native memory since the ByteBuffer interface
@@ -33,8 +30,7 @@ public class BufferUtil {
             throw new IllegalArgumentException("Destination buffer is too small");
         }
 
-        // Check that unsafe intrinsics can be used and that the byte buffer points to off-heap memory
-        if (USE_UNSAFE && buffer.isDirect()) {
+        if (UnsafeUtil.isAvailable() && buffer.isDirect()) {
             copyIntArrayUnsafe(data, limit, offset, MemoryUtil.memAddress(buffer));
         } else {
             copyIntArrayDefault(data, limit, offset, buffer);

@@ -18,9 +18,6 @@ import java.nio.FloatBuffer;
 @SuppressWarnings("PointlessArithmeticExpression")
 @Mixin(Matrix4f.class)
 public abstract class MixinMatrix4f implements Matrix4fExtended {
-    private static final boolean USE_UNSAFE = UnsafeUtil.isAvailable();
-    private static final Unsafe UNSAFE = UnsafeUtil.instanceNullable();
-
     @Shadow
     protected float a00;
     @Shadow
@@ -241,7 +238,7 @@ public abstract class MixinMatrix4f implements Matrix4fExtended {
             throw new BufferUnderflowException();
         }
 
-        if (USE_UNSAFE) {
+        if (UnsafeUtil.isAvailable()) {
             this.writeToBufferUnsafe(buf);
         } else {
             this.writeToBufferSafe(buf);
@@ -251,22 +248,23 @@ public abstract class MixinMatrix4f implements Matrix4fExtended {
     private void writeToBufferUnsafe(FloatBuffer buf) {
         long addr = MemoryUtil.memAddress(buf);
 
-        UNSAFE.putFloat(addr + 0, this.a00);
-        UNSAFE.putFloat(addr + 4, this.a10);
-        UNSAFE.putFloat(addr + 8, this.a20);
-        UNSAFE.putFloat(addr + 12, this.a30);
-        UNSAFE.putFloat(addr + 16, this.a01);
-        UNSAFE.putFloat(addr + 20, this.a11);
-        UNSAFE.putFloat(addr + 24, this.a21);
-        UNSAFE.putFloat(addr + 28, this.a31);
-        UNSAFE.putFloat(addr + 32, this.a02);
-        UNSAFE.putFloat(addr + 36, this.a12);
-        UNSAFE.putFloat(addr + 40, this.a22);
-        UNSAFE.putFloat(addr + 44, this.a32);
-        UNSAFE.putFloat(addr + 48, this.a03);
-        UNSAFE.putFloat(addr + 52, this.a13);
-        UNSAFE.putFloat(addr + 56, this.a23);
-        UNSAFE.putFloat(addr + 60, this.a33);
+        Unsafe unsafe = UnsafeUtil.instance();
+        unsafe.putFloat(addr + 0, this.a00);
+        unsafe.putFloat(addr + 4, this.a10);
+        unsafe.putFloat(addr + 8, this.a20);
+        unsafe.putFloat(addr + 12, this.a30);
+        unsafe.putFloat(addr + 16, this.a01);
+        unsafe.putFloat(addr + 20, this.a11);
+        unsafe.putFloat(addr + 24, this.a21);
+        unsafe.putFloat(addr + 28, this.a31);
+        unsafe.putFloat(addr + 32, this.a02);
+        unsafe.putFloat(addr + 36, this.a12);
+        unsafe.putFloat(addr + 40, this.a22);
+        unsafe.putFloat(addr + 44, this.a32);
+        unsafe.putFloat(addr + 48, this.a03);
+        unsafe.putFloat(addr + 52, this.a13);
+        unsafe.putFloat(addr + 56, this.a23);
+        unsafe.putFloat(addr + 60, this.a33);
     }
 
     private void writeToBufferSafe(FloatBuffer buf) {
