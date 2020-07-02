@@ -28,8 +28,8 @@ public abstract class ChunkDrawParamsVector extends BufferBuilder {
     public abstract void pushChunkDrawParams(float x, float y, float z);
 
     protected void growBuffer() {
-        this.capacity = this.buffer.capacity() * 2;
-        this.buffer = MemoryUtil.memRealloc(this.buffer, this.capacity);
+        this.capacity = this.capacity * 2;
+        this.buffer = MemoryUtil.memRealloc(this.buffer, this.capacity * VEC4_SIZE);
     }
 
     public static class UnsafeChunkDrawCallVector extends ChunkDrawParamsVector {
