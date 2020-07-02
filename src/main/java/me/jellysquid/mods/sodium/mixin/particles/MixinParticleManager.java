@@ -10,6 +10,7 @@ import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Box;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -64,7 +65,10 @@ public class MixinParticleManager {
         filtered.clear();
 
         for (Particle particle : queue) {
-            if (this.cullingFrustum.isVisible(particle.getBoundingBox())) {
+            Box box = particle.getBoundingBox();
+
+            // Hack: Grow the particle's bounding box in order to work around mis-behaved particles
+            if (this.cullingFrustum.isVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
                 filtered.add(particle);
             }
         }
