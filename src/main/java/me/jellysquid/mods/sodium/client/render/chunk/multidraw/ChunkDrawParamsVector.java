@@ -22,7 +22,7 @@ public abstract class ChunkDrawParamsVector extends BufferBuilder {
     }
 
     public static ChunkDrawParamsVector create(int capacity) {
-        return USE_UNSAFE ? new UnsafeChunkDrawCallVector(capacity) : new NioChunkDrawCallVector(capacity);
+        return UnsafeUtil.isAvailable() ? new UnsafeChunkDrawCallVector(capacity) : new NioChunkDrawCallVector(capacity);
     }
 
     public abstract void pushChunkDrawParams(float x, float y, float z);

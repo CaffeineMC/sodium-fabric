@@ -22,7 +22,7 @@ public abstract class ChunkDrawCallBatcher extends BufferBuilder {
     }
 
     public static ChunkDrawCallBatcher create(int capacity) {
-        return USE_UNSAFE ? new UnsafeChunkDrawCallBatcher(capacity) : new NioChunkDrawCallBatcher(capacity);
+        return UnsafeUtil.isAvailable() ? new UnsafeChunkDrawCallBatcher(capacity) : new NioChunkDrawCallBatcher(capacity);
     }
 
     public abstract void addIndirectDrawCall(int first, int count, int baseInstance, int instanceCount);
