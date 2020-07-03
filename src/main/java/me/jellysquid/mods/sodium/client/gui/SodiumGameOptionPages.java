@@ -237,8 +237,9 @@ public class SodiumGameOptionPages {
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Compact Vertex Format")
-                        .setTooltip("If enabled, a more compact vertex format will be used for chunk meshes by limiting the precision of vertex attributes. This format " +
-                                "can reduce graphics memory usage and bandwidth requirements by up to 30%, but could cause problems with exotic block models.")
+                        .setTooltip("If enabled, a more compact vertex format will be used for chunk meshes which limits the precision of vertex attributes. This format " +
+                                "will reduce graphics memory usage and bandwidth requirements by around 40%, but could cause z-fighting/flickering texture issues in " +
+                                "some edge cases.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.useCompactVertexFormat = value, opts -> opts.performance.useCompactVertexFormat)
