@@ -53,14 +53,14 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
      * @author JellySquid
      */
     @Overwrite
-    public void vertex(float x, float y, float z, float r, float g, float b, float a, float u, float v, int light1, int light2, float normX, float normY, float normZ) {
+    public void vertex(float x, float y, float z, float r, float g, float b, float a, float u, float v, int overlay, int light, float normX, float normY, float normZ) {
         if (!this.field_21594) {
-            super.vertex(x, y, z, r, g, b, a, u, v, light1, light2, normX, normY, normZ);
+            super.vertex(x, y, z, r, g, b, a, u, v, overlay, light, normX, normY, normZ);
 
             return;
         }
 
-        this.vertexQuad(x, y, z, ColorARGB.pack(r, g, b, a), u, v, light1, light2, Norm3b.pack(normX, normY, normZ));
+        this.vertexQuad(x, y, z, ColorARGB.pack(r, g, b, a), u, v, overlay, light, Norm3b.pack(normX, normY, normZ));
     }
 
     @Override
@@ -69,18 +69,18 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             throw new IllegalStateException();
         }
 
+        int size = this.format.getVertexSize();
+
+        this.grow(size);
+
         if (UnsafeUtil.isAvailable()) {
             this.vertexUnsafe(x, y, z, color, u, v, overlay, light, normal);
         } else {
             this.vertexFallback(x, y, z, color, u, v, overlay, light, normal);
         }
 
-        int size = this.format.getVertexSize();
-
         this.elementOffset += size;
         this.vertexCount++;
-
-        this.grow(size);
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
@@ -156,18 +156,18 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             throw new IllegalStateException("Invalid vertex format");
         }
 
+        int size = this.format.getVertexSize();
+
+        this.grow(size);
+
         if (UnsafeUtil.isAvailable()) {
             this.vertexParticleUnsafe(x, y, z, u, v, color, light);
         } else {
             this.vertexParticleFallback(x, y, z, u, v, color, light);
         }
 
-        int size = this.format.getVertexSize();
-
         this.elementOffset += size;
         this.vertexCount++;
-
-        this.grow(size);
     }
 
     private void vertexParticleFallback(float x, float y, float z, float u, float v, int color, int light) {
@@ -240,9 +240,6 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
         Matrix3f normalMatrix = matrices.getNormal();
 
         int norm = MatrixUtil.computeNormal(normalMatrix, quad.getFace());
-        int vertexSize = this.format.getVertexSize();
-
-        this.grow(vertexSize * 4);
 
         for (int i = 0; i < 4; i++) {
             float x = quadView.getX(i);
@@ -279,14 +276,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             Vector4f pos = new Vector4f(x, y, z, 1.0F);
             pos.transform(modelMatrix);
 
-            if (UnsafeUtil.isAvailable()) {
-                this.vertexUnsafe(pos.getX(), pos.getY(), pos.getZ(), color, u, v, overlay, light[i], norm);
-            } else {
-                this.vertexFallback(pos.getX(), pos.getY(), pos.getZ(), color, u, v, overlay, light[i], norm);
-            }
-
-            this.vertexCount++;
-            this.elementOffset += vertexSize;
+            this.vertexQuad(pos.getX(), pos.getY(), pos.getZ(), color, u, v, overlay, light[i], norm);
         }
     }
 }
