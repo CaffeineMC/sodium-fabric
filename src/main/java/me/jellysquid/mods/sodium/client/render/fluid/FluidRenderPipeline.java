@@ -63,8 +63,6 @@ public class FluidRenderPipeline {
             this.quad.setNormal(i, normal);
         }
 
-        this.quad.setFlags(ModelQuadFlags.IS_ALIGNED);
-
         this.smoothLightPipeline = smoothLightPipeline;
         this.flatLightPipeline = flatLightPipeline;
     }
@@ -136,6 +134,8 @@ public class FluidRenderPipeline {
         final QuadLightData light = this.quadLightData;
 
         LightPipeline lighter = !lava && MinecraftClient.isAmbientOcclusionEnabled() ? this.smoothLightPipeline : this.flatLightPipeline;
+
+        this.quad.setFlags(0);
 
         if (sfUp && this.isSideExposed(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
             h1 -= 0.001F;
@@ -223,6 +223,8 @@ public class FluidRenderPipeline {
 
             rendered = true;
         }
+
+        this.quad.setFlags(ModelQuadFlags.IS_ALIGNED);
 
         for (Direction dir : DirectionUtil.HORIZONTAL_DIRECTIONS) {
             float c1;

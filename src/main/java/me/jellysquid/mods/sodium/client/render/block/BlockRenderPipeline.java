@@ -39,6 +39,7 @@ public class BlockRenderPipeline {
     private final QuadLightData cachedQuadLightData = new QuadLightData();
 
     private final VertexColorBlender colorBlender;
+    private final boolean useAmbientOcclusion;
 
     public BlockRenderPipeline(MinecraftClient client, LightPipeline smoothLightPipeline, LightPipeline flatLightPipeline) {
         this.blockColors = (BlockColorsExtended) client.getBlockColors();
@@ -46,6 +47,7 @@ public class BlockRenderPipeline {
         this.flatLightPipeline = flatLightPipeline;
 
         this.occlusionCache = new BlockOcclusionCache();
+        this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
 
         int biomeBlendRadius = SodiumClientMod.options().quality.biomeBlendDistance;
 
@@ -57,8 +59,7 @@ public class BlockRenderPipeline {
     }
 
     public boolean renderModel(ChunkRenderData.Builder meshInfo, BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, ModelQuadSinkDelegate builder, boolean cull, Random random, long seed) {
-        LightPipeline lighter = this.getLightPipeline(state, model);
-
+        LightPipeline lighter = this.getLighter(state, model);
         Vec3d offset = state.getModelOffset(world, pos);
 
         boolean rendered = false;
@@ -113,7 +114,9 @@ public class BlockRenderPipeline {
         }
     }
 
-    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelQuadSinkDelegate consumer, Vec3d offset, BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light, ModelQuadFacing facing) {
+    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelQuadSinkDelegate consumer,
+                            Vec3d offset, BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light,
+                            ModelQuadFacing facing) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
 
         ModelQuadOrientation order = ModelQuadOrientation.orient(light.br);
@@ -156,9 +159,11 @@ public class BlockRenderPipeline {
                 .write(copy);
     }
 
-    private LightPipeline getLightPipeline(BlockState state, BakedModel model) {
-        boolean smooth = MinecraftClient.isAmbientOcclusionEnabled() && (state.getLuminance() == 0) && model.useAmbientOcclusion();
-
-        return smooth ? this.smoothLightPipeline : this.flatLightPipeline;
+    private LightPipeline getLighter(BlockState state, BakedModel model) {
+        if (this.useAmbientOcclusion && model.useAmbientOcclusion() && state.getLuminance() == 0) {
+            return this.smoothLightPipeline;
+        } else {
+            return this.flatLightPipeline;
+        }
     }
 }
