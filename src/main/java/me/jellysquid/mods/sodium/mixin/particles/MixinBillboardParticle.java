@@ -1,11 +1,12 @@
 package me.jellysquid.mods.sodium.mixin.particles;
 
-import me.jellysquid.mods.sodium.client.model.DirectVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.ParticleVertexConsumer;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Quaternion;
@@ -17,7 +18,7 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(BillboardParticle.class)
 public abstract class MixinBillboardParticle extends Particle {
     @Shadow
-    public abstract float getSize(float float_1);
+    public abstract float getSize(float tickDelta);
 
     @Shadow
     protected abstract float getMinU();
@@ -40,20 +41,26 @@ public abstract class MixinBillboardParticle extends Particle {
      * @author JellySquid
      */
     @Overwrite
-    public void buildGeometry(VertexConsumer vertices, Camera camera, float tickDelta) {
-        Vec3d cameraPos = camera.getPos();
+    public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
+        Vec3d vec3d = camera.getPos();
 
-        float posX = (float) (MathHelper.lerp(tickDelta, this.prevPosX, this.x) - cameraPos.getX());
-        float posY = (float) (MathHelper.lerp(tickDelta, this.prevPosY, this.y) - cameraPos.getY());
-        float posZ = (float) (MathHelper.lerp(tickDelta, this.prevPosZ, this.z) - cameraPos.getZ());
+        float x = (float) (MathHelper.lerp(tickDelta, this.prevPosX, this.x) - vec3d.getX());
+        float y = (float) (MathHelper.lerp(tickDelta, this.prevPosY, this.y) - vec3d.getY());
+        float z = (float) (MathHelper.lerp(tickDelta, this.prevPosZ, this.z) - vec3d.getZ());
 
-        Quaternion rotation = camera.getRotation();
+        Quaternion quaternion;
 
-        if (this.angle != 0.0F) {
-            rotation = this.rotateCamera(rotation, tickDelta);
+        if (this.angle == 0.0F) {
+            quaternion = camera.getRotation();
+        } else {
+            float angle = MathHelper.lerp(tickDelta, this.prevAngle, this.angle);
+
+            quaternion = new Quaternion(camera.getRotation());
+            quaternion.hamiltonProduct(Vector3f.POSITIVE_Z.getRadialQuaternion(angle));
         }
 
         float size = this.getSize(tickDelta);
+        int light = this.getColorMultiplier(tickDelta);
 
         float minU = this.getMinU();
         float maxU = this.getMaxU();
@@ -61,66 +68,49 @@ public abstract class MixinBillboardParticle extends Particle {
         float maxV = this.getMaxV();
 
         int color = ColorARGB.pack(this.colorRed, this.colorGreen, this.colorBlue, this.colorAlpha);
-        int brightness = this.getColorMultiplier(tickDelta);
 
-        this.addVertex(vertices, -1.0F, -1.0F, maxU, maxV, color, brightness, rotation, size, posX, posY, posZ);
-        this.addVertex(vertices, -1.0F, 1.0F, maxU, minV, color, brightness, rotation, size, posX, posY, posZ);
-        this.addVertex(vertices, 1.0F, 1.0F, minU, minV, color, brightness, rotation, size, posX, posY, posZ);
-        this.addVertex(vertices, 1.0F, -1.0F, minU, maxV, color, brightness, rotation, size, posX, posY, posZ);
+        ParticleVertexConsumer vertices = (ParticleVertexConsumer) vertexConsumer;
+
+        addVertex(vertices, quaternion,-1.0F, -1.0F, x, y, z, maxU, maxV, color, light, size);
+        addVertex(vertices, quaternion,-1.0F, 1.0F, x, y, z, maxU, minV, color, light, size);
+        addVertex(vertices, quaternion,1.0F, 1.0F, x, y, z, minU, minV, color, light, size);
+        addVertex(vertices, quaternion,1.0F, -1.0F, x, y, z, minU, maxV, color, light, size);
     }
 
-    protected Quaternion rotateCamera(Quaternion rotation, float tickDelta) {
-        float angle = MathHelper.lerp(tickDelta, this.prevAngle, this.angle);
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    private static void addVertex(ParticleVertexConsumer vertices, Quaternion rotation,
+                           float x, float y, float posX, float posY, float posZ, float u, float v, int color, int light, float size) {
+        // Quaternion q0 = new Quaternion(rotation);
+        float q0x = rotation.getX();
+        float q0y = rotation.getY();
+        float q0z = rotation.getZ();
+        float q0w = rotation.getW();
 
-        float rx = rotation.getX();
-        float ry = rotation.getY();
-        float rz = rotation.getZ();
-        float rw = rotation.getW();
+        // q0.hamiltonProduct(x, y, 0.0f, 0.0f)
+        float q1x = (q0w * x) - (q0z * y);
+        float q1y = (q0w * y) + (q0z * x);
+        float q1w = (q0x * y) - (q0y * x);
+        float q1z = -(q0x * x) - (q0y * y);
 
-        float r0 = angle / 2.0F;
-        float r1 = MathHelper.sin(r0);
-        float r2 = MathHelper.cos(r0);
+        // Quaternion q2 = new Quaternion(rotation);
+        // q2.conjugate()
+        float q2x = -q0x;
+        float q2y = -q0y;
+        float q2z = -q0z;
+        float q2w = q0w;
 
-        float zx = rx * r2 + ry * r1;
-        float zy = -(rx * r1) + ry * r2;
-        float zz = rw * r1 + rz * r2;
-        float zw = rw * r2 - rz * r1;
+        // q2.hamiltonProduct(q1)
+        float q3x = q1z * q2x + q1x * q2w + q1y * q2z - q1w * q2y;
+        float q3y = q1z * q2y - q1x * q2z + q1y * q2w + q1w * q2x;
+        float q3z = q1z * q2z + q1x * q2y - q1y * q2x + q1w * q2w;
 
-        return new Quaternion(zx, zy, zz, zw);
-    }
+        // Vector3f f = new Vector3f(q2.getX(), q2.getY(), q2.getZ())
+        // f.multiply(size)
+        // f.add(pos)
+        float fx = (q3x * size) + posX;
+        float fy = (q3y * size) + posY;
+        float fz = (q3z * size) + posZ;
 
-    private void addVertex(VertexConsumer vertices, float x, float y, float u, float v, int color, int brightness, Quaternion rotation, float scale, float offsetX, float offsetY, float offsetZ) {
-        float rx = rotation.getX();
-        float ry = rotation.getY();
-        float rz = rotation.getZ();
-        float rw = rotation.getW();
-
-        // Quaternion.hamiltonProduct(x, y, 1.0F, 0.0F)
-        float qx = rw * x + ry - rz * y;
-        float qy = rw * y - rx + rz * x;
-        float qz = rw + rx * y - ry * x;
-        float qw = -(rx * x) - (ry * y - rz);
-
-        // Quaternion.conjugate
-        float cx = -rx;
-        float cy = -ry;
-        float cz = -rz;
-
-        // Quaternion.hamiltonProduct
-        float fx = qw * cx + qx * rw + qy * cz - qz * cy;
-        float fy = qw * cy - qx * cz + qy * rw + qz * cx;
-        float fz = qw * cz + qx * cy - qy * cx + qz * rw;
-
-        fx = fx * scale + offsetX;
-        fy = fy * scale + offsetY;
-        fz = fz * scale + offsetZ;
-
-        DirectVertexConsumer directVertexConsumer = DirectVertexConsumer.getDirectVertexConsumer(vertices);
-
-        if (directVertexConsumer != null) {
-            directVertexConsumer.vertexParticle(fx, fy, fz, u, v, color, brightness);
-        } else {
-            vertices.vertex(fx, fy, fz).texture(u, v).color(this.colorRed, this.colorGreen, this.colorBlue, this.colorAlpha).light(brightness).next();
-        }
+        vertices.vertexParticle(fx, fy, fz, u, v, color, light);
     }
 }

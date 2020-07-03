@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.buffers;
 
-import me.jellysquid.mods.sodium.client.model.DirectVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.ParticleVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.QuadVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
@@ -21,7 +22,8 @@ import sun.misc.Unsafe;
 import java.nio.ByteBuffer;
 
 @Mixin(BufferBuilder.class)
-public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements DirectVertexConsumer, BufferVertexConsumer {
+public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements
+        ParticleVertexConsumer, QuadVertexConsumer, BufferVertexConsumer {
     @Shadow
     private int elementOffset;
 
@@ -218,11 +220,6 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
 
         unsafe.putInt(i, light);
         i += 4;
-    }
-
-    @Override
-    public boolean canUseDirectWriting() {
-        return true;
     }
 
     @Override
