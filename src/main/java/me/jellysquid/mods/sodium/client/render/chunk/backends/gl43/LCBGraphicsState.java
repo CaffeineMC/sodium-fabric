@@ -16,7 +16,6 @@ public class LCBGraphicsState extends ChunkGraphicsState {
 
     private final GlBufferRegion segment;
     private final long[] parts;
-    private int facesWithData;
 
     public LCBGraphicsState(ChunkRenderContainer<?> container, ChunkRegion<LCBGraphicsState> region, GlBufferRegion segment, ChunkMeshData meshData, GlVertexFormat<?> vertexFormat) {
         super(container);
@@ -34,7 +33,6 @@ public class LCBGraphicsState extends ChunkGraphicsState {
             int count = slice.len / vertexFormat.getStride();
 
             this.parts[facing.ordinal()] = BufferSlice.pack(start, count);
-            this.facesWithData |= 1 << facing.ordinal();
         }
     }
 
@@ -51,7 +49,4 @@ public class LCBGraphicsState extends ChunkGraphicsState {
         return this.parts[facing];
     }
 
-    public int getFacesWithData() {
-        return this.facesWithData;
-    }
 }

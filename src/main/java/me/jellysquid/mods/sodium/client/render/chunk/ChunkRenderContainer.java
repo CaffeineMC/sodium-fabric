@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
@@ -34,12 +33,10 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private Direction direction;
     private int visibleFrame = -1;
     private byte cullingState;
-    private byte visibleFaces;
     private long visibilityData;
 
     private final ChunkRenderContainer<T>[] adjacent;
     private boolean tickable;
-    private boolean hasAnyGraphicsState;
 
     public ChunkRenderContainer(ChunkRenderBackend<T> backend, SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
         this.worldRenderer = worldRenderer;
@@ -389,21 +386,8 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         return this.chunkZ;
     }
 
-    public void resetVisibleFaces() {
-        this.visibleFaces = (byte) (1 << ModelQuadFacing.NONE.ordinal());
-    }
-
-    public void markFaceVisible(ModelQuadFacing facing) {
-        this.visibleFaces |= (byte) (1 << facing.ordinal());
-    }
-
-
     public ChunkRenderBounds getBounds() {
         return this.data.getBounds();
-    }
-
-    public void markAllFacesVisible() {
-        this.visibleFaces = 0b1111111;
     }
 
     public T getGraphicsState(BlockRenderPass pass) {
@@ -412,9 +396,5 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
     public boolean isTickable() {
         return this.tickable;
-    }
-
-    public boolean hasAnyGraphicsState() {
-        return this.hasAnyGraphicsState;
     }
 }

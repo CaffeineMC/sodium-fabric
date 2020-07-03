@@ -47,7 +47,7 @@ public class ChunkMeshBuilder implements ModelQuadSink {
     /**
      * The scale to be applied to all offsets and quads written into this mesh builder.
      */
-    private float scale;
+    private final float scale;
 
     public ChunkMeshBuilder(GlVertexFormat<?> format, int initialSize) {
         this.scale = 1.0f / 32.0f;

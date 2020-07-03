@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.gl.buffer;
 
 import me.jellysquid.mods.sodium.client.gl.GlObject;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL31;
 
@@ -23,14 +22,6 @@ public abstract class GlBuffer extends GlObject {
         GL15.glBindBuffer(target, this.handle());
     }
 
-    public void drawArrays(int mode) {
-        this.drawArrays(mode, 0, this.vertexCount);
-    }
-
-    public void drawArrays(int mode, int first, int count) {
-        GL11.glDrawArrays(mode, first, count);
-    }
-
     public abstract void upload(int target, ByteBuffer buf);
 
     public abstract void allocate(int target, long size);
@@ -45,10 +36,6 @@ public abstract class GlBuffer extends GlObject {
         GL15.glDeleteBuffers(this.handle());
 
         this.invalidateHandle();
-    }
-
-    public void uploadSub(int target, int offset, ByteBuffer data) {
-        GL15.glBufferSubData(target, offset, data);
     }
 
     public static void copy(GlBuffer src, GlBuffer dst, int readOffset, int writeOffset, int copyLen, int bufferSize) {

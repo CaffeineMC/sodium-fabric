@@ -10,7 +10,7 @@ import org.lwjgl.opengl.GL33;
 import java.util.Set;
 
 public class GlBufferArena {
-    private final int initialSize, resizeIncrement;
+    private final int resizeIncrement;
 
     private final Set<GlBufferRegion> freeRegions = new ObjectLinkedOpenHashSet<>();
 
@@ -27,7 +27,6 @@ public class GlBufferArena {
         this.vertexBuffer.allocate(GL31.GL_COPY_WRITE_BUFFER, initialSize);
         this.vertexBuffer.unbind(GL31.GL_COPY_WRITE_BUFFER);
 
-        this.initialSize = initialSize;
         this.resizeIncrement = resizeIncrement;
         this.capacity = initialSize;
     }

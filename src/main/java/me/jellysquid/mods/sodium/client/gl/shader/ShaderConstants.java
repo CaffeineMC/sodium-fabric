@@ -3,8 +3,6 @@ package me.jellysquid.mods.sodium.client.gl.shader;
 import java.util.*;
 
 public class ShaderConstants {
-    public static final ShaderConstants EMPTY = new ShaderConstants(Collections.emptyList());
-
     private final List<String> defines;
 
     private ShaderConstants(List<String> defines) {
