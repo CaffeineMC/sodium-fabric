@@ -46,9 +46,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private ClientWorld world;
     private int renderDistance;
 
-    private double lastTranslucentSortX, lastTranslucentSortY, lastTranslucentSortZ;
     private double lastCameraX, lastCameraY, lastCameraZ;
-
     private double lastCameraPitch, lastCameraYaw;
 
     private boolean useEntityCulling;
@@ -208,10 +206,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         pass.endDrawing();
 
         RenderSystem.clearCurrentColor();
-    }
-
-    public void renderChunkDebugInfo(Camera camera) {
-        // TODO: re-implement
     }
 
     public void reload() {

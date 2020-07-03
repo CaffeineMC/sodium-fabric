@@ -30,9 +30,6 @@ public abstract class MixinWorldRenderer {
     @Final
     private Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions;
 
-    @Shadow
-    public abstract void render(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f);
-
     private SodiumWorldRenderer renderer;
 
     @Redirect(method = "reload", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;viewDistance:I", ordinal = 1))

@@ -286,16 +286,4 @@ public abstract class MixinMatrix4f implements Matrix4fExtended {
         buf.put(15, this.a33);
     }
 
-    @Override
-    public void writeTranslation(FloatBuffer buf, float x, float y, float z) {
-        float a03 = this.a00 * x + this.a01 * y + this.a02 * z + this.a03;
-        float a13 = this.a10 * x + this.a11 * y + this.a12 * z + this.a13;
-        float a23 = this.a20 * x + this.a21 * y + this.a22 * z + this.a23;
-        float a33 = this.a30 * x + this.a31 * y + this.a32 * z + this.a33;
-
-        buf.put(12, a03);
-        buf.put(13, a13);
-        buf.put(14, a23);
-        buf.put(15, a33);
-    }
 }

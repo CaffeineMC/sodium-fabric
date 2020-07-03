@@ -25,7 +25,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkRenderBacken
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegionManager;
-import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -71,8 +70,6 @@ import java.util.List;
  * reduced up to a factor of ~32x.
  */
 public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraphicsState> {
-    private static final int UNIFORM_SIZE = 16;
-
     private final ChunkRegionManager<LCBGraphicsState> bufferManager;
 
     private final ObjectArrayFIFOQueue<ChunkRegion<LCBGraphicsState>> pendingBatches = new ObjectArrayFIFOQueue<>();
@@ -148,9 +145,9 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     }
 
     @Override
-    public void render(BlockRenderPass pass, ChunkRenderListIterator<LCBGraphicsState> renders, MatrixStack matrixStack, ChunkCameraContext camera) {
+    public void render(ChunkRenderListIterator<LCBGraphicsState> renders, ChunkCameraContext camera) {
         this.bufferManager.cleanup();
-        this.setupDrawBatches(pass, renders, camera);
+        this.setupDrawBatches(renders, camera);
 
         GlVertexArray prevVao = null;
 
@@ -231,7 +228,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         }
     }
 
-    private void setupDrawBatches(BlockRenderPass pass, ChunkRenderListIterator<LCBGraphicsState> it, ChunkCameraContext camera) {
+    private void setupDrawBatches(ChunkRenderListIterator<LCBGraphicsState> it, ChunkCameraContext camera) {
         this.uniformBufferBuilder.begin();
 
         int drawCount = 0;

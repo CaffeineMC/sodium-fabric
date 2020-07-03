@@ -12,7 +12,6 @@ import java.util.Map;
 
 public abstract class ChunkOneshotGraphicsState extends ChunkGraphicsState {
     private final long[] parts;
-    private int facesWithData;
 
     protected ChunkOneshotGraphicsState(ChunkRenderContainer<?> container) {
         super(container);
@@ -26,7 +25,6 @@ public abstract class ChunkOneshotGraphicsState extends ChunkGraphicsState {
 
     protected void setModelPart(ModelQuadFacing facing, long slice) {
         this.parts[facing.ordinal()] = slice;
-        this.facesWithData |= 1 << facing.ordinal();
     }
 
     public abstract void upload(ChunkMeshData mesh);
@@ -37,7 +35,6 @@ public abstract class ChunkOneshotGraphicsState extends ChunkGraphicsState {
         int stride = vertexFormat.getStride();
 
         Arrays.fill(this.parts, 0L);
-        this.facesWithData = 0;
 
         for (Map.Entry<ModelQuadFacing, BufferSlice> entry : meshData.getSlices()) {
             ModelQuadFacing facing = entry.getKey();

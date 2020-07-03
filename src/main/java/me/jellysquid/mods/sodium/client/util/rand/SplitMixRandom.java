@@ -79,7 +79,7 @@ public class SplitMixRandom {
     }
 
     public void nextBytes(final byte[] bytes) {
-        int i = bytes.length, n = 0;
+        int i = bytes.length, n;
 
         while (i != 0) {
             n = Math.min(i, 8);

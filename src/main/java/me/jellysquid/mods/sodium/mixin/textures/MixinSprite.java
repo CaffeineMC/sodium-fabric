@@ -12,8 +12,6 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(Sprite.class)
 public abstract class MixinSprite implements SpriteExtended {
-    private boolean onDemand = false;
-    private boolean hasPendingUpdate = false;
     private boolean forceNextUpdate;
 
     @Shadow
@@ -44,10 +42,9 @@ public abstract class MixinSprite implements SpriteExtended {
     public void tickAnimation() {
         this.frameTicks++;
 
-        this.hasPendingUpdate = true;
-        this.onDemand = SodiumClientMod.options().performance.animateOnlyVisibleTextures;
+        boolean onDemand = SodiumClientMod.options().performance.animateOnlyVisibleTextures;
 
-        if (!this.onDemand || this.forceNextUpdate) {
+        if (!onDemand || this.forceNextUpdate) {
             this.uploadTexture();
         }
     }
@@ -73,7 +70,6 @@ public abstract class MixinSprite implements SpriteExtended {
             }
         }
 
-        this.hasPendingUpdate = false;
         this.forceNextUpdate = false;
     }
 

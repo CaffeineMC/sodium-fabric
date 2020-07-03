@@ -39,8 +39,6 @@ public class SodiumGameOptions {
         public GraphicsQuality cloudQuality = GraphicsQuality.DEFAULT;
         public GraphicsQuality weatherQuality = GraphicsQuality.DEFAULT;
 
-        public MipmapQuality mipmapQuality = MipmapQuality.NEAREST;
-
         public boolean enableVignette = true;
         public boolean enableClouds = true;
 
@@ -89,23 +87,6 @@ public class SodiumGameOptions {
         }
     }
 
-    public enum DefaultGraphicsQuality implements TextProvider {
-        FAST("Fast"),
-        FANCY("Fancy"),
-        FABULOUS("Fabulous");
-
-        private final String name;
-
-        DefaultGraphicsQuality(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getLocalizedName() {
-            return this.name;
-        }
-    }
-
     public enum GraphicsQuality implements TextProvider {
         DEFAULT("Default"),
         FAST("Fast"),
@@ -124,24 +105,6 @@ public class SodiumGameOptions {
 
         public boolean isFancy(GraphicsMode graphicsMode) {
             return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsMode.FANCY || graphicsMode == GraphicsMode.FABULOUS));
-        }
-    }
-
-    public enum MipmapQuality implements TextProvider {
-        NEAREST("Nearest"),
-        LINEAR("Linear"),
-        BI_LINEAR("Bi-Linear"),
-        TRI_LINEAR("Tri-Linear");
-
-        private final String name;
-
-        MipmapQuality(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getLocalizedName() {
-            return this.name;
         }
     }
 

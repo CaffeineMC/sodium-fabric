@@ -13,11 +13,8 @@
   },
   "license": "LGPL-3.0-only",
   "icon": "assets/sodium/icon.png",
-  "environment": "*",
+  "environment": "client",
   "entrypoints": {
-    "main": [
-      "me.jellysquid.mods.sodium.common.SodiumMod"
-    ],
     "client": [
       "me.jellysquid.mods.sodium.client.SodiumClientMod"
     ]

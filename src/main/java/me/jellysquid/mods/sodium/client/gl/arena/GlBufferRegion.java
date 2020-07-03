@@ -19,10 +19,6 @@ public class GlBufferRegion {
         return this.len;
     }
 
-    public GlBufferArena getArena() {
-        return this.arena;
-    }
-
     public void delete() {
         this.arena.free(this);
     }

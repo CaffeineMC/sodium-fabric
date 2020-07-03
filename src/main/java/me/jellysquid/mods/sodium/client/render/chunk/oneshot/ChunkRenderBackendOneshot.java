@@ -17,7 +17,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterat
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkRenderShaderBackend;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
@@ -80,7 +79,7 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
     }
 
     @Override
-    public void render(BlockRenderPass pass, ChunkRenderListIterator<T> it, MatrixStack matrixStack, ChunkCameraContext camera) {
+    public void render(ChunkRenderListIterator<T> it, ChunkCameraContext camera) {
         while (it.hasNext()) {
             T state = it.getGraphicsState();
             int visibleFaces = it.getVisibleFaces();

@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats.ChunkMeshAttribut
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterator;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
 
 import java.util.Iterator;
@@ -23,12 +22,10 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
 
     /**
      * Renders the given chunk render list to the active framebuffer.
-     * @param pass
-     * @param renders The render list
-     * @param matrixStack The current matrix stack containing the model-view matrices for rendering
-     * @param camera
+     * @param renders An iterator over the list of chunks to be rendered
+     * @param camera The camera context containing chunk offsets for the current render
      */
-    void render(BlockRenderPass pass, ChunkRenderListIterator<T> renders, MatrixStack matrixStack, ChunkCameraContext camera);
+    void render(ChunkRenderListIterator<T> renders, ChunkCameraContext camera);
 
     void createShaders();
 

@@ -17,11 +17,9 @@ public class GlShader extends GlObject {
     private static final Logger LOGGER = LogManager.getLogger(GlShader.class);
 
     private final Identifier name;
-    private final ShaderConstants constants;
 
     public GlShader(ShaderType type, Identifier name, String src, ShaderConstants constants) {
         this.name = name;
-        this.constants = constants;
 
         src = processShader(src, constants);
 
