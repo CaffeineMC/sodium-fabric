@@ -226,12 +226,12 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Aggressive Chunk Culling")
+                        .setName("Use Chunk Face Culling")
                         .setTooltip("If enabled, an additional culling pass will be performed on the CPU to determine which planes of a chunk mesh are visible. This " +
                                 "can eliminate a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.performance.useAggressiveChunkCulling = value, opts -> opts.performance.useAggressiveChunkCulling)
+                        .setBinding((opts, value) -> opts.performance.useChunkFaceCulling = value, opts -> opts.performance.useChunkFaceCulling)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )
