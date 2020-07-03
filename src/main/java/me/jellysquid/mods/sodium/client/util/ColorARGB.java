@@ -48,33 +48,33 @@ public class ColorARGB {
 
     /**
      * @param color The packed 32-bit ARGB color to unpack
-     * @return The blue color component as a floating point number in the range of 0..255
+     * @return The blue color component in the range of 0..255
      */
-    public static float unpackAlpha(int color) {
+    public static int unpackAlpha(int color) {
         return color >> 24 & 0xFF;
     }
 
     /**
      * @param color The packed 32-bit ARGB color to unpack
-     * @return The red color component as a floating point number in the range of 0..255
+     * @return The red color component in the range of 0..255
      */
-    public static float unpackRed(int color) {
+    public static int unpackRed(int color) {
         return color >> 16 & 0xFF;
     }
 
     /**
      * @param color The packed 32-bit ARGB color to unpack
-     * @return The green color component as a floating point number in the range of 0..255
+     * @return The green color component in the range of 0..255
      */
-    public static float unpackGreen(int color) {
+    public static int unpackGreen(int color) {
         return color >> 8 & 0xFF;
     }
 
     /**
      * @param color The packed 32-bit ARGB color to unpack
-     * @return The blue color component as a floating point number in the range of 0..255
+     * @return The blue color component in the range of 0..255
      */
-    public static float unpackBlue(int color) {
+    public static int unpackBlue(int color) {
         return color & 0xFF;
     }
 

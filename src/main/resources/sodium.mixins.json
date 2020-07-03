@@ -39,5 +39,8 @@
     "textures.MixinInGameOverlayRenderer",
     "textures.MixinItemRenderer",
     "textures.MixinSprite"
+  ],
+  "mixins": [
+    "pipeline.MixinVertexConsumer"
   ]
 }
