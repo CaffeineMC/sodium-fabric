@@ -60,11 +60,11 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             return;
         }
 
-        this.vertex(x, y, z, ColorARGB.pack(r, g, b, a), u, v, light1, light2, Norm3b.pack(normX, normY, normZ));
+        this.vertexQuad(x, y, z, ColorARGB.pack(r, g, b, a), u, v, light1, light2, Norm3b.pack(normX, normY, normZ));
     }
 
     @Override
-    public void vertex(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
+    public void vertexQuad(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
         if (this.colorFixed) {
             throw new IllegalStateException();
         }

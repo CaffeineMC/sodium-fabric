@@ -15,5 +15,5 @@ public interface QuadVertexConsumer {
      * @param light   The light of the vertex
      * @param normal  The normal of the vertex
      */
-    void vertex(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal);
+    void vertexQuad(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal);
 }
