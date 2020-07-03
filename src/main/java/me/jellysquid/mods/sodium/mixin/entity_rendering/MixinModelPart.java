@@ -67,7 +67,7 @@ public class MixinModelPart {
                     posVec1.set(x, y, z, 1.0f);
                     posVec1.transform(modelMatrix);
 
-                    vertices.vertex(posVec1.getX(), posVec1.getY(), posVec1.getZ(), color, u, v, overlay, light, Norm3b.pack(normVec1));
+                    vertices.vertexQuad(posVec1.getX(), posVec1.getY(), posVec1.getZ(), color, u, v, overlay, light, Norm3b.pack(normVec1));
                 }
             }
         }

@@ -20,11 +20,11 @@ public abstract class MixinSpriteTexturedVertexConsumer implements QuadVertexCon
     private Sprite sprite;
 
     @Override
-    public void vertex(float x, float y, float z, int color, float u, float v, int overlay, int light, int norm) {
+    public void vertexQuad(float x, float y, float z, int color, float u, float v, int overlay, int light, int norm) {
         u = this.sprite.getFrameU(u * 16.0F);
         v = this.sprite.getFrameV(v * 16.0F);
 
-        ((QuadVertexConsumer) this.parent).vertex(x, y, z, color, u, v, overlay, light, norm);
+        ((QuadVertexConsumer) this.parent).vertexQuad(x, y, z, color, u, v, overlay, light, norm);
     }
 
     @Override
