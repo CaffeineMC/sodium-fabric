@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.light.flat;
 
-import me.jellysquid.mods.sodium.client.model.light.AbstractLightPipeline;
+import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.light.cache.LightDataCache;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFlags;
@@ -16,16 +16,18 @@ import static me.jellysquid.mods.sodium.client.model.light.cache.LightDataCache.
  * A light pipeline which implements "classic-style" lighting through simply using the light value of the adjacent
  * block to a face.
  */
-public class FlatLightPipeline extends AbstractLightPipeline {
-    public FlatLightPipeline(LightDataCache cache) {
-        super(cache);
+public class FlatLightPipeline implements LightPipeline {
+    /**
+     * The cache which light data will be accessed from.
+     */
+    private final LightDataCache lightCache;
+
+    public FlatLightPipeline(LightDataCache lightCache) {
+        this.lightCache = lightCache;
     }
 
     @Override
     public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction face, boolean shade) {
-        // No ambient occlusion exists when using flat shading.
-        Arrays.fill(out.br, 1.0f);
-
         // If the face is aligned, use the light data above it
         if ((quad.getFlags() & ModelQuadFlags.IS_ALIGNED) != 0) {
             Arrays.fill(out.lm, unpackLM(this.lightCache.get(pos, face)));
@@ -33,6 +35,6 @@ public class FlatLightPipeline extends AbstractLightPipeline {
             Arrays.fill(out.lm, unpackLM(this.lightCache.get(pos)));
         }
 
-        this.applySidedBrightnessModifier(out.br, face, shade);
+        Arrays.fill(out.br, this.lightCache.getWorld().getBrightness(face, shade));
     }
 }

@@ -24,36 +24,28 @@ class AoFaceData {
         final int adjY;
         final int adjZ;
 
-        final int adkX = x + direction.getOffsetX();
-        final int adkY = y + direction.getOffsetY();
-        final int adkZ = z + direction.getOffsetZ();
-
-        final int calm;
-        final float caao;
-
         if (offset) {
-            adjX = adkX;
-            adjY = adkY;
-            adjZ = adkZ;
-
-            calm = unpackLM(cache.get(adkX, adkY, adkZ));
-            caao = unpackAO(cache.get(adjX, adjY, adjZ));
+            adjX = x + direction.getOffsetX();
+            adjY = y + direction.getOffsetY();
+            adjZ = z + direction.getOffsetZ();
         } else {
             adjX = x;
             adjY = y;
             adjZ = z;
-
-            long adkWord = cache.get(adkX, adkY, adkZ);
-
-            if (!unpackFO(adkWord)) {
-                calm = unpackLM(adkWord);
-                caao = unpackAO(cache.get(x, y, z));
-            } else {
-                long l = cache.get(x, y, z);
-                calm = unpackLM(l);
-                caao = unpackAO(l);
-            }
         }
+
+        long adjWord = cache.get(adjX, adjY, adjZ);
+
+        final int calm;
+
+        // Use the origin block's light values if the adjacent one is opaque
+        if (offset && unpackFO(adjWord)) {
+            calm = unpackLM(cache.get(x, y, z));
+        } else {
+            calm = unpackLM(adjWord);
+        }
+
+        final float caao = unpackAO(adjWord);
 
         Direction[] faces = AoNeighborInfo.get(direction).faces;
 
