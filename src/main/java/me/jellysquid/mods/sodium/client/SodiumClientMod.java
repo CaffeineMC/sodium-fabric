@@ -19,7 +19,7 @@ public class SodiumClientMod implements ClientModInitializer {
 
     public static SodiumGameOptions options() {
         if (CONFIG == null) {
-            CONFIG = SodiumGameOptions.load(new File("config/sodium-options.json"));
+            CONFIG = loadConfig();
         }
 
         return CONFIG;
@@ -31,6 +31,13 @@ public class SodiumClientMod implements ClientModInitializer {
         }
 
         return LOGGER;
+    }
+
+    private static SodiumGameOptions loadConfig() {
+        SodiumGameOptions config = SodiumGameOptions.load(new File("config/sodium-options.json"));
+        onConfigChanged(config);
+
+        return config;
     }
 
     public static void onConfigChanged(SodiumGameOptions options) {

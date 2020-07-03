@@ -26,6 +26,8 @@ public class UnsafeUtil {
         } else {
             INT_ARRAY_OFFSET = -1;
         }
+
+        setEnabled(true);
     }
 
     private static Unsafe findUnsafe() {
@@ -72,6 +74,6 @@ public class UnsafeUtil {
     }
 
     public static void setEnabled(boolean enabled) {
-        AVAILABLE = UNSAFE != null && enabled;
+        AVAILABLE = isSupported() && enabled;
     }
 }

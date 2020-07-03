@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gui;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
@@ -23,6 +24,10 @@ public class SodiumGameOptions {
     public final PerformanceSettings performance = new PerformanceSettings();
 
     private File file;
+
+    public void notifyListeners() {
+        SodiumClientMod.onConfigChanged(this);
+    }
 
     public static class PerformanceSettings {
         public ChunkRendererBackendOption chunkRendererBackend = ChunkRendererBackendOption.BEST;
