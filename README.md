@@ -1,45 +1,75 @@
-# Sodium
-![GitHub license](https://img.shields.io/github/license/jellysquid3/Sodium.svg)
-![GitHub issues](https://img.shields.io/github/issues/jellysquid3/Sodium.svg)
-![GitHub tag](https://img.shields.io/github/tag/jellysquid3/Sodium.svg)
+![Project icon](https://git-assets.jellysquid.me/hotlink-ok/sodium/icon-rounded-128px.png)
 
-Sodium is a free and open-source optimization mod which attempts to improve frame rates,
-reduce micro-stutter, and fix graphical issues in Minecraft.
+# Sodium (for Fabric)
+![GitHub license](https://img.shields.io/github/license/jellysquid3/sodium-fabric.svg)
+![GitHub issues](https://img.shields.io/github/issues/jellysquid3/sodium-fabric.svg)
+![GitHub tag](https://img.shields.io/github/tag/jellysquid3/sodium-fabric.svg)
+[![Discord chat](https://img.shields.io/badge/chat%20on-discord-7289DA)](https://jellysquid.me/discord)
 
-:warning: Sodium has had a lot of time to shape up lately, but the mod is still alpha software. You may run into small graphical issues or crashes while using it. Additionally, the [Fabric Rendering API](https://fabricmc.net/wiki/documentation:rendering) is not yet supported, which may cause crashes or prevent other mods from rendering correctly. Please be aware of these issues before using it in your game.
+Sodium is a free and open-source optimization mod for the Minecraft client that improves frame rates, reduces
+micro-stutter, and fixes graphical issues in Minecraft. 
 
-### Support development
+:warning: Sodium has had a lot of time to shape up lately, but the mod is still alpha software. You may run into small
+graphical issues or crashes while using it. Additionally, the
+[Fabric Rendering API](https://fabricmc.net/wiki/documentation:rendering) is not yet supported, which may cause crashes
+or prevent other mods from rendering correctly. Please be aware of these issues before using it in your game.
 
-You can help buy me food and support development while getting early access builds of my mods by [making a monthly pledge to my Patreon!](https://patreon.com/jellysquid) You'll also gain some special perks, such as prioritized support on [my Discord server](https://jellysquid.me/discord).
+### Downloads
 
-<a href="https://www.patreon.com/bePatron?u=824442"><img src="https://github.com/jellysquid3/Phosphor/raw/master/doc/patreon.png" width="200"></a>
+You can find downloads for Sodium through the
+[GitHub releases page](https://github.com/jellysquid3/sodium-fabric/releases). Once Sodium matures and leaves the stage
+of alpha software, builds will be published on CurseForge. 
 
-### Join the Discord
+### Community
 
-You can join the official Discord for my mods by [clicking here](https://jellysquid.me/discord).
+If you'd like to get help with the mod, check out the latest developments, or be notified when there's a new release,
+the Discord community might be for you! You can join the official server for my mods by clicking
+[here](https://jellysquid.me).
 
-<a href="https://jellysquid.me/discord"><img src="https://i.vgy.me/YrTrsE.png"></a>
+### Building from source
 
-### Compiling the mod
+If you're hacking on the code or would like to compile a custom build of Sodium from the latest sources, you'll want
+to start here.
 
 #### Prerequisites
 
-You will need the JDK 8 (or newer, see section below) installed in order to build Sodium. You can use [Chocolatey](https://chocolatey.org) or [SDKMAN](https://sdkman.io/) to manage Java installations. However, you can also always grab the installers or binary packages directly from [AdoptOpenJDK's website](https://adoptopenjdk.net/) if you do not wish to install a package manager.
+You will need to install JDK 8 (or newer, see below) in order to build Sodium. You can either install this through
+a package manager such as [Chocolatey](https://chocolatey.org/) on Windows or [SDKMAN!](https://sdkman.io/) on other
+platforms. If you'd prefer to not use a package manager, you can always grab the installers or packages directly from
+[AdoptOpenJDK](https://adoptopenjdk.net/).
 
-The Oracle JDK/JRE builds should be avoided where possible due to their poor quality on Windows. JDK builds which use the OpenJ9 VM might cause issues with building the mod and will generally have much worse in-game performance.
+On Windows, the Oracle JDK/JRE builds should be avoided where possible due to their poor quality. Always prefer using
+the open-source builds from AdoptOpenJDK when possible.
 
 #### A note on newer Java versions
 
-For the best possible performance with Sodium installed, you should prefer to use a Java 14 runtime for your game client with the [Z Garbage Collector (ZGC)](https://wiki.openjdk.java.net/display/zgc/Main) enabled. However, please be sure you read this entire section before upgrading.
+For the best possible experience with Sodium installed, you should prefer to use a Java 14 runtime for your game client
+with the [Z Garbage Collector (ZGC)](https://wiki.openjdk.java.net/display/zgc/Main) enabled. This is purely optional,
+but will generally help to improve frame times by reducing garbage collection pause times. However, please be sure
+you read this entire section before upgrading your Java runtime.
 
-If you build the mod with JDK 11 or newer, you *must* upgrade your game client's runtime to at least the version you are building with. If you try to use an older runtime while building with a newer version, [your game may crash or not render anything at all](https://github.com/jellysquid3/sodium-fabric/issues/16). Additionally, if you are using the Java 11 runtime or newer for your client, you should install [Voyager mod for Fabric](https://github.com/modmuss50/Voyager) to patch a [known world generation bug](https://bugs.mojang.com/browse/MC-149777) which can cause rare crashes.
+If you build the mod with JDK 11 or newer, you *must* upgrade your game client's runtime to at least the version you are
+building with. If you try to use an older runtime while building with a newer version,
+[your game may crash or not render anything at all](https://github.com/jellysquid3/sodium-fabric/issues/16).
+Additionally, if you are using the Java 11 runtime or newer for your client, you should install
+[Voyager mod for Fabric](https://github.com/modmuss50/Voyager) to patch a
+[known world generation bug](https://bugs.mojang.com/browse/MC-149777) which can cause rare crashes.
 
-The official Minecraft launcher (and most other third-party launchers) will often use Java 8 runtime in order to work around [bugs in the Intel HD 2xxx/3xxx graphics drivers on Windows 10](https://github.com/LWJGL/lwjgl/issues/119). If you are not affected by these issues, you can usually upgrade the runtime by modifying your game profile's settings in your launcher of choice.
+The official Minecraft launcher (and most other third-party launchers) will often use Java 8 runtime in order to work
+around [bugs in the Intel HD 2xxx/3xxx graphics drivers on Windows 10](https://github.com/LWJGL/lwjgl/issues/119). If
+you are not affected by these issues, you can usually upgrade the runtime by modifying your game profile's settings in
+your launcher of choice.
 
 #### Compiling
 
-Navigate to the directory you've cloned this repository and launch a build with Gradle using `gradlew build` on Windows or `./gradlew build` on macOS/Linux. The resulting build artifacts will be present in `build/libs`.
+Navigate to the directory you've cloned this repository and launch a build with Gradle using `gradlew build` (Windows)
+or `./gradlew build` (macOS/Linux). If you are not using the Gradle wrapper, simply replace `gradlew` with `gradle`
+or the path to it.
+
+The initial setup may take a few minutes. After Gradle has finished building everything, you can find the resulting
+artifacts in `build/libs`.
 
 ### License
 
-Sodium is licensed under GNU LGPLv3, a free and open-source license. For more information, please see the [license file](https://github.com/jellysquid3/sodium-fabric/blob/master/LICENSE.txt).
+Sodium is licensed under GNU LGPLv3, a free and open-source license. For more information, please see the
+[license file](https://github.com/jellysquid3/sodium-fabric/blob/1.16.x/dev/LICENSE.txt).
