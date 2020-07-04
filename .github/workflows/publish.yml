@@ -1,0 +1,28 @@
+name: Publish Release
+
+on:
+  release:
+     types:
+       - published
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+      - name: Set up JDK 8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: Upload assets to CurseForge
+        run: ./gradlew build
+        env:
+          BUILD_RELEASE: ${{ github.event.prerelease == false }}
+      - name: Upload assets to GitHub
+        uses: AButler/upload-release-assets@v2.0
+        with:
+          files: 'build/libs/*;LICENSE'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
