@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.fast_mojmath;
+package me.jellysquid.mods.sodium.mixin.mojmath;
 
 import me.jellysquid.mods.sodium.client.render.FrustumExtended;
 import net.minecraft.client.render.Frustum;

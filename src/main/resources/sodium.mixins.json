@@ -17,12 +17,10 @@
     "entity_rendering.MixinEntityRenderer",
     "entity_rendering.MixinModelPart",
     "entity_rendering.MixinModelPart$MixinQuad",
-    "fast_mojmath.MixinFrustum",
-    "fast_mojmath.MixinMatrix3f",
-    "fast_mojmath.MixinMatrix4f",
-    "fast_mojmath.MixinMatrixStack",
     "models.MixinBlockColors",
     "models.MixinMultipartBakedModel",
+    "mojmath.MixinFrustum",
+    "mojmath.matrices.MixinMatrixStack",
     "options.MixinGameOptions",
     "options.MixinInGameHud",
     "options.MixinMinecraftClient",
@@ -41,6 +39,10 @@
     "textures.MixinSprite"
   ],
   "mixins": [
+    "buffers.MixinBufferBuilder",
+    "mojmath.matrices.MixinMatrix3f",
+    "mojmath.matrices.MixinMatrix4f",
+    "mojmath.matrices.MixinVertexConsumer",
     "pipeline.MixinVertexConsumer"
   ]
 }
