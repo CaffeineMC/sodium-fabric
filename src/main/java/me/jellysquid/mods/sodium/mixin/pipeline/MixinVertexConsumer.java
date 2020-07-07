@@ -1,15 +1,17 @@
 package me.jellysquid.mods.sodium.mixin.pipeline;
 
+import me.jellysquid.mods.sodium.client.model.GlyphVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.ParticleVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.QuadVertexConsumer;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.util.math.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(VertexConsumer.class)
-public interface MixinVertexConsumer extends ParticleVertexConsumer, QuadVertexConsumer {
+public interface MixinVertexConsumer extends ParticleVertexConsumer, QuadVertexConsumer, GlyphVertexConsumer {
     @Shadow
     VertexConsumer vertex(double x, double y, double z);
 
@@ -48,6 +50,15 @@ public interface MixinVertexConsumer extends ParticleVertexConsumer, QuadVertexC
         this.overlay(overlay);
         this.light(light);
         this.normal(Norm3b.unpackX(normal), Norm3b.unpackY(normal), Norm3b.unpackZ(normal));
+        this.next();
+    }
+
+    @Override
+    default void vertexGlyph(Matrix4f matrix, float x, float y, float z, int color, float u, float v, int light) {
+        this.vertex(x, y, z);
+        this.color(ColorARGB.unpackRed(color), ColorARGB.unpackGreen(color), ColorARGB.unpackBlue(color), ColorARGB.unpackAlpha(color));
+        this.texture(u, v);
+        this.light(light);
         this.next();
     }
 }
