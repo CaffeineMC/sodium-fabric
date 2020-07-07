@@ -343,7 +343,7 @@ public class FluidRenderPipeline {
     }
 
     private void applyLighting(ModelQuadViewMutable quad, BlockPos pos, LightPipeline lighter, QuadLightData light, Direction dir) {
-        lighter.calculate(quad, pos, light, dir, true);
+        lighter.calculate(quad, pos, light, dir, false);
     }
 
     private void writeQuad(ModelQuadSinkDelegate consumer, ModelQuadViewMutable quad, float r, float g, float b, boolean flipLight) {
