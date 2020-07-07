@@ -46,10 +46,9 @@ public abstract class MixinClientWorld extends World {
      */
     @Overwrite
     public void randomBlockDisplayTick(int xCenter, int yCenter, int zCenter, int radius, Random random, boolean spawnBarrierParticles, BlockPos.Mutable pos) {
-        // CHANGE: use slightly less distributed `rand(radius * 2) - radius` instead of `rand(radius) - rand(radius)`
-        int x = xCenter + (random.nextInt(radius * 2) - radius);
-        int y = yCenter + (random.nextInt(radius * 2) - radius);
-        int z = zCenter + (random.nextInt(radius * 2) - radius);
+        int x = xCenter + (random.nextInt(radius) - random.nextInt(radius));
+        int y = yCenter + (random.nextInt(radius) - random.nextInt(radius));
+        int z = zCenter + (random.nextInt(radius) - random.nextInt(radius));
 
         pos.set(x, y, z);
 
