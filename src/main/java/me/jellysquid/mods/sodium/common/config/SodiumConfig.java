@@ -4,6 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.api.metadata.CustomValue;
+import net.fabricmc.loader.api.metadata.ModMetadata;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,6 +22,8 @@ import java.util.Properties;
 @SuppressWarnings("CanBeFinal")
 public class SodiumConfig {
     private static final Logger LOGGER = LogManager.getLogger("SodiumConfig");
+
+    private static final String JSON_KEY_SODIUM_OPTIONS = "sodium:options";
 
     private final Map<String, Option> options = new HashMap<>();
 
@@ -75,6 +81,43 @@ public class SodiumConfig {
         }
     }
 
+    private void applyModOverrides() {
+        for (ModContainer container : FabricLoader.getInstance().getAllMods()) {
+            ModMetadata meta = container.getMetadata();
+            if (meta.containsCustomValue(JSON_KEY_SODIUM_OPTIONS)) {
+                CustomValue lithiumOverrides = meta.getCustomValue(JSON_KEY_SODIUM_OPTIONS);
+                if (lithiumOverrides.getType() != CustomValue.CvType.OBJECT) {
+                    LOGGER.warn("Mod '{}' contains invalid Sodium option overrides, ignoring", meta.getId());
+                    continue;
+                }
+
+                for (Map.Entry<String, CustomValue> entry : lithiumOverrides.getAsObject()) {
+                    String optionName = entry.getKey();
+                    Option option = this.options.get(optionName);
+
+                    if (option == null) {
+                        LOGGER.warn("Mod '{}' attempted to override option '{}', which doesn't exist, ignoring", meta.getId(), optionName);
+                        continue;
+                    }
+
+                    if (entry.getValue().getType() != CustomValue.CvType.BOOLEAN) {
+                        LOGGER.warn("Mod '{}' attempted to override option '{}' with an invalid value, ignoring", meta.getId(), optionName);
+                        continue;
+                    }
+
+                    boolean enabled = entry.getValue().getAsBoolean();
+                    // disabling the option takes precedence over enabling
+                    if (!enabled && option.isEnabled()) {
+                        option.clearModsDefiningValue();
+                    }
+                    if (!enabled || option.isEnabled() || option.getModsDefiningValue().isEmpty()) {
+                        option.addModOverride(enabled, meta.getId());
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Returns the most specific Mixin rule for the specified class name.
      */
@@ -126,6 +169,7 @@ public class SodiumConfig {
         SodiumConfig config = new SodiumConfig();
         config.discoverMixins(mixinPath);
         config.read(props);
+        config.applyModOverrides();
 
         return config;
     }
@@ -162,7 +206,7 @@ public class SodiumConfig {
     public int getOptionOverrideCount() {
         return (int) this.options.values()
                 .stream()
-                .filter(Option::isUserDefined)
+                .filter(option -> option.isUserDefined() || !option.getModsDefiningValue().isEmpty())
                 .count();
     }
 }
