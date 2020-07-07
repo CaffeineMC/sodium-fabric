@@ -1,11 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.buffers;
 
+import me.jellysquid.mods.sodium.client.model.GlyphVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.ParticleVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.QuadVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
+import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
 import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;
@@ -23,9 +25,10 @@ import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
 
+@SuppressWarnings({ "SameParameterValue", "SuspiciousNameCombination" })
 @Mixin(BufferBuilder.class)
 public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
-        implements ParticleVertexConsumer, QuadVertexConsumer {
+        implements ParticleVertexConsumer, QuadVertexConsumer, GlyphVertexConsumer {
     @Shadow
     private VertexFormat format;
 
@@ -145,9 +148,9 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
         this.grow(size);
 
         if (UnsafeUtil.isAvailable()) {
-            this.vertexUnsafe(x, y, z, color, u, v, overlay, light, normal);
+            this.vertexQuadUnsafe(x, y, z, color, u, v, overlay, light, normal);
         } else {
-            this.vertexFallback(x, y, z, color, u, v, overlay, light, normal);
+            this.vertexQuadSafe(x, y, z, color, u, v, overlay, light, normal);
         }
 
         this.elementOffset += size;
@@ -170,7 +173,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
-    private void vertexUnsafe(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
+    private void vertexQuadUnsafe(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
         long i = MemoryUtil.memAddress(this.buffer, this.elementOffset);
 
         Unsafe unsafe = UnsafeUtil.instance();
@@ -203,7 +206,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
         unsafe.putInt(i, normal);
     }
 
-    private void vertexFallback(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
+    private void vertexQuadSafe(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
         int i = this.elementOffset;
 
         ByteBuffer buffer = this.buffer;
@@ -292,5 +295,93 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
 
             this.vertexQuad(pos.getX(), pos.getY(), pos.getZ(), color, u, v, overlay, light[i], norm);
         }
+    }
+
+    @Override
+    public void vertexGlyph(Matrix4f matrix, float x, float y, float z, int color, float u, float v, int light) {
+        Matrix4fExtended matrixExt = MatrixUtil.getExtendedMatrix(matrix);
+
+        float x2 = matrixExt.transformVecX(x, y, z);
+        float y2 = matrixExt.transformVecY(x, y, z);
+        float z2 = matrixExt.transformVecZ(x, y, z);
+
+        if (this.format != VertexFormats.POSITION_COLOR_TEXTURE_LIGHT) {
+            this.vertexGlyphFallback(x2, y2, z2, color, u, v, light);
+            return;
+        }
+
+        int size = this.format.getVertexSize();
+
+        this.grow(size);
+
+        if (UnsafeUtil.isAvailable()) {
+            this.vertexGlyphUnsafe(x2, y2, z2, color, u, v, light);
+        } else {
+            this.vertexGlyphSafe(x2, y2, z2, color, u, v, light);
+        }
+
+        this.elementOffset += size;
+        this.vertexCount++;
+    }
+
+    private void vertexGlyphFallback(float x, float y, float z, int color, float u, float v, int light) {
+        this.vertex(x, y, z);
+        this.color(ColorARGB.unpackRed(color), ColorARGB.unpackGreen(color), ColorARGB.unpackBlue(color),
+                ColorARGB.unpackAlpha(color));
+        this.texture(u, v);
+        this.light(light);
+        this.next();
+    }
+
+    private void vertexGlyphSafe(float x, float y, float z, int color, float u, float v, int light) {
+        int i = this.elementOffset;
+
+        ByteBuffer buffer = this.buffer;
+        buffer.putFloat(i, x);
+        i += 4;
+
+        buffer.putFloat(i, y);
+        i += 4;
+
+        buffer.putFloat(i, z);
+        i += 4;
+
+        buffer.putInt(i, color);
+        i += 4;
+
+        buffer.putFloat(i, u);
+        i += 4;
+
+        buffer.putFloat(i, v);
+        i += 4;
+
+        buffer.putInt(i, light);
+        i += 4;
+    }
+
+    private void vertexGlyphUnsafe(float x, float y, float z, int color, float u, float v, int light) {
+        long i = MemoryUtil.memAddress(this.buffer, this.elementOffset);
+
+        Unsafe unsafe = UnsafeUtil.instance();
+        unsafe.putFloat(i, x);
+        i += 4;
+
+        unsafe.putFloat(i, y);
+        i += 4;
+
+        unsafe.putFloat(i, z);
+        i += 4;
+
+        unsafe.putInt(i, color);
+        i += 4;
+
+        unsafe.putFloat(i, u);
+        i += 4;
+
+        unsafe.putFloat(i, v);
+        i += 4;
+
+        unsafe.putInt(i, light);
+        i += 4;
     }
 }
