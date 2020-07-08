@@ -120,18 +120,19 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
             throw new NullPointerException("Mesh information must not be null");
         }
 
-        this.data = info;
         this.visibilityData = 0;
 
         for (Direction from : DirectionUtil.ALL_DIRECTIONS) {
             for (Direction to : DirectionUtil.ALL_DIRECTIONS) {
-                if (this.data.isVisibleThrough(from, to)) {
+                if (info.isVisibleThrough(from, to)) {
                     this.visibilityData |= (1L << ((from.ordinal() << 3) + to.ordinal()));
                 }
             }
         }
 
         this.worldRenderer.onChunkRenderUpdated(this.data, info);
+        this.data = info;
+
         this.tickable = !info.getAnimatedSprites().isEmpty();
     }
 
