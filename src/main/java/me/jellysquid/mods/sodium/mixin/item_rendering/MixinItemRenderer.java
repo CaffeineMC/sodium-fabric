@@ -73,7 +73,8 @@ public class MixinItemRenderer {
                     colorProvider = ((ItemColorsExtended) this.colorMap).getColorProvider(stack);
                 }
 
-                color = colorProvider.getColor(stack, bakedQuad.getColorIndex());
+                color = (colorProvider.getColor(stack, bakedQuad.getColorIndex()));
+                color |= 0xFF000000; // Drop alpha channel
             }
 
             ModelQuadView quad = ((ModelQuadView) bakedQuad);
