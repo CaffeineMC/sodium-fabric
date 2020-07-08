@@ -18,11 +18,13 @@ public class GlMutableBuffer extends GlBuffer {
     @Override
     public void upload(int target, ByteBuffer buf) {
         GL15.glBufferData(target, buf, this.hints);
+        this.size = buf.capacity();
     }
 
     @Override
-    public void allocate(int target, long size) {
+    public void allocate(int target, int size) {
         GL15.glBufferData(target, size, this.hints);
+        this.size = size;
     }
 
     public void invalidate(int target) {

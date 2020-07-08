@@ -4,33 +4,38 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
+import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.oneshot.ChunkOneshotGraphicsState;
 import org.lwjgl.opengl.GL15;
 
 public class VBOGraphicsState extends ChunkOneshotGraphicsState {
-    private final GlBuffer buffer;
+    private final GlBuffer vertexBuffer;
     private GlVertexFormat<?> vertexFormat;
 
-    public VBOGraphicsState(ChunkRenderContainer<?> container) {
-        super(container);
+    public VBOGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<?> container) {
+        super(memoryTracker, container);
 
-        this.buffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
+        this.vertexBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
     }
 
     @Override
     public void delete() {
-        this.buffer.delete();
+        this.memoryTracker.onMemoryFreeAndRelease(this.vertexBuffer.getSize());
+
+        this.vertexBuffer.delete();
     }
 
     @Override
     public void upload(ChunkMeshData meshData) {
         VertexData data = meshData.takeVertexData();
 
-        this.buffer.bind(GL15.GL_ARRAY_BUFFER);
-        this.buffer.upload(GL15.GL_ARRAY_BUFFER, data);
-        this.buffer.unbind(GL15.GL_ARRAY_BUFFER);
+        this.vertexBuffer.bind(GL15.GL_ARRAY_BUFFER);
+        this.vertexBuffer.upload(GL15.GL_ARRAY_BUFFER, data);
+        this.memoryTracker.onMemoryAllocateAndUse(this.vertexBuffer.getSize());
+
+        this.vertexBuffer.unbind(GL15.GL_ARRAY_BUFFER);
 
         this.vertexFormat = data.format;
 
@@ -39,11 +44,7 @@ public class VBOGraphicsState extends ChunkOneshotGraphicsState {
 
     @Override
     public void bind() {
-        this.buffer.bind(GL15.GL_ARRAY_BUFFER);
+        this.vertexBuffer.bind(GL15.GL_ARRAY_BUFFER);
         this.vertexFormat.bindVertexAttributes();
-    }
-
-    public GlBuffer getBuffer() {
-        return this.buffer;
     }
 }

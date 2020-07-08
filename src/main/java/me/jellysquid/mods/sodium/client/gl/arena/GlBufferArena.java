@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gl.arena;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
+import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL33;
@@ -12,6 +13,7 @@ import java.util.Set;
 public class GlBufferArena {
     private final int resizeIncrement;
 
+    private final MemoryTracker memoryTracker;
     private final Set<GlBufferRegion> freeRegions = new ObjectLinkedOpenHashSet<>();
 
     private GlBuffer vertexBuffer;
@@ -20,18 +22,25 @@ public class GlBufferArena {
     private int position;
     private int capacity;
     private int allocCount;
+    private int usedBytes;
 
-    public GlBufferArena(int initialSize, int resizeIncrement) {
+    public GlBufferArena(MemoryTracker memoryTracker, int initialSize, int resizeIncrement) {
+        this.memoryTracker = memoryTracker;
+
         this.vertexBuffer = this.createBuffer();
         this.vertexBuffer.bind(GL31.GL_COPY_WRITE_BUFFER);
         this.vertexBuffer.allocate(GL31.GL_COPY_WRITE_BUFFER, initialSize);
         this.vertexBuffer.unbind(GL31.GL_COPY_WRITE_BUFFER);
+
+        this.memoryTracker.onMemoryAllocate(this.vertexBuffer.getSize());
 
         this.resizeIncrement = resizeIncrement;
         this.capacity = initialSize;
     }
 
     private void resize(int size) {
+        this.memoryTracker.onMemoryRelease(this.vertexBuffer.getSize());
+
         GlBuffer src = this.vertexBuffer;
         src.unbind(GL31.GL_COPY_WRITE_BUFFER);
 
@@ -44,6 +53,8 @@ public class GlBufferArena {
 
         this.vertexBuffer = dst;
         this.capacity = size;
+
+        this.memoryTracker.onMemoryAllocate(this.vertexBuffer.getSize());
     }
 
     private GlBuffer createBuffer() {
@@ -87,7 +98,9 @@ public class GlBufferArena {
             throw new IllegalArgumentException("Segment already freed");
         }
 
+        this.memoryTracker.onMemoryFree(segment.getLength());
         this.allocCount--;
+        this.usedBytes -= segment.getLength();
     }
 
     private GlBufferRegion alloc(int len) {
@@ -100,6 +113,9 @@ public class GlBufferArena {
         }
 
         this.allocCount++;
+        this.usedBytes += segment.getLength();
+
+        this.memoryTracker.onMemoryUse(segment.getLength());
 
         return segment;
     }
@@ -133,6 +149,9 @@ public class GlBufferArena {
     }
 
     public void delete() {
+        this.memoryTracker.onMemoryFree(this.usedBytes);
+        this.memoryTracker.onMemoryRelease(this.vertexBuffer.getSize());
+
         this.vertexBuffer.delete();
     }
 

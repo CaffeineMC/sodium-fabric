@@ -31,10 +31,7 @@ public class ChunkRenderData {
     private List<Sprite> animatedSprites;
 
     private boolean isEmpty;
-
-    private ChunkRenderData() {
-
-    }
+    private int meshByteSize;
 
     /**
      * @return True if the chunk has no renderables, otherwise false
@@ -80,6 +77,10 @@ public class ChunkRenderData {
      */
     public ChunkMeshData getMesh(BlockRenderPass pass) {
         return this.meshes.get(pass);
+    }
+
+    public int getMeshSize() {
+        return this.meshByteSize;
     }
 
     public static class Builder {
@@ -148,8 +149,15 @@ public class ChunkRenderData {
             data.meshes = this.meshes;
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
-
             data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.meshes.isEmpty();
+
+            int size = 0;
+
+            for (ChunkMeshData meshData : this.meshes.values()) {
+                size += meshData.getVertexDataSize();
+            }
+
+            data.meshByteSize = size;
 
             return data;
         }

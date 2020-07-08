@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
 import me.jellysquid.mods.sodium.client.gl.util.GlMultiDrawBatch;
+import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
@@ -25,6 +26,7 @@ import java.util.Iterator;
 
 public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsState> extends ChunkRenderShaderBackend<T, ChunkProgramOneshot> {
     private final GlMultiDrawBatch batch = new GlMultiDrawBatch(ModelQuadFacing.COUNT);
+    private final MemoryTracker memoryTracker = new MemoryTracker();
 
     public ChunkRenderBackendOneshot(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
@@ -59,7 +61,7 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
 
                 if (mesh.hasVertexData()) {
                     if (state == null) {
-                        state = this.createGraphicsState(render);
+                        state = this.createGraphicsState(this.memoryTracker, render);
                     }
 
                     state.upload(mesh);
@@ -125,12 +127,17 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
         GL20.glMultiDrawArrays(GL11.GL_QUADS, this.batch.getIndicesBuffer(), this.batch.getLengthBuffer());
     }
 
-    protected abstract T createGraphicsState(ChunkRenderContainer<T> container);
+    protected abstract T createGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<T> container);
 
     @Override
     public void delete() {
         super.delete();
 
         this.batch.delete();
+    }
+
+    @Override
+    public MemoryTracker getMemoryTracker() {
+        return this.memoryTracker;
     }
 }

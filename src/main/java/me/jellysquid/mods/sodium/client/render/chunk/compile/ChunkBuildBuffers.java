@@ -90,7 +90,7 @@ public class ChunkBuildBuffers {
         }
 
         if (bufferLen <= 0) {
-            return ChunkMeshData.EMPTY;
+            return null;
         }
 
         ByteBuffer buffer = GlAllocationUtils.allocateByteBuffer(bufferLen);

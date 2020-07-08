@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.backends.gl43;
 
+import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
@@ -12,6 +13,7 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
+import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
@@ -79,11 +81,12 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     private final GlMutableBuffer uniformBuffer;
 
     private final ChunkDrawParamsVector uniformBufferBuilder;
+    private final MemoryTracker memoryTracker = new MemoryTracker();
 
     public GL43ChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
 
-        this.bufferManager = new ChunkRegionManager<>();
+        this.bufferManager = new ChunkRegionManager<>(this.memoryTracker);
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
         this.uniformBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
 
@@ -217,7 +220,17 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             ChunkBuildResult<LCBGraphicsState> result = renders.next();
             ChunkRenderContainer<LCBGraphicsState> render = result.render;
 
-            ChunkRegion<LCBGraphicsState> region = this.bufferManager.getOrCreateRegion(render.getChunkX(), render.getChunkY(), render.getChunkZ());
+            ChunkRegion<LCBGraphicsState> region = this.bufferManager.getRegion(render.getChunkX(), render.getChunkY(), render.getChunkZ());
+
+            if (region == null) {
+                if (result.data.getMeshSize() <= 0) {
+                    render.setData(result.data);
+                    continue;
+                }
+
+                region = this.bufferManager.getOrCreateRegion(render.getChunkX(), render.getChunkY(), render.getChunkZ());
+            }
+
             ObjectArrayList<ChunkBuildResult<LCBGraphicsState>> uploadQueue = region.getUploadQueue();
 
             if (uploadQueue.isEmpty()) {
@@ -275,10 +288,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         int size = 0;
 
         for (ChunkBuildResult<LCBGraphicsState> result : queue) {
-            for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-                ChunkMeshData mesh = result.data.getMesh(pass);
-                size += mesh.getVertexDataSize();
-            }
+            size += result.data.getMeshSize();
         }
 
         return size;
@@ -302,5 +312,20 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
                 GlFunctions.isBufferCopySupported() &&
                 GlFunctions.isIndirectMultiDrawSupported() &&
                 GlFunctions.isInstancedArraySupported();
+    }
+
+    @Override
+    public String getRendererName() {
+        return "Multidraw (GL 4.3)";
+    }
+
+    @Override
+    public MemoryTracker getMemoryTracker() {
+        return this.memoryTracker;
+    }
+
+    @Override
+    public List<String> getDebugStrings() {
+        return Lists.newArrayList("Allocated Regions: " + this.bufferManager.getAllocatedRegionCount());
     }
 }

@@ -4,13 +4,14 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
+import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkDrawCallBatcher;
 
 public class ChunkRegion<T extends ChunkGraphicsState> {
-    private static final int EXPECTED_CHUNK_SIZE = 8 * 1024;
+    private static final int EXPECTED_CHUNK_SIZE = 4 * 1024;
 
     private final GlBufferArena arena;
     private final GlVertexArray vao;
@@ -20,10 +21,10 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
 
     private GlBuffer prevBuffer;
 
-    public ChunkRegion(int size) {
+    public ChunkRegion(MemoryTracker memoryTracker, int size) {
         int arenaSize = EXPECTED_CHUNK_SIZE * size;
 
-        this.arena = new GlBufferArena(arenaSize, arenaSize);
+        this.arena = new GlBufferArena(memoryTracker, arenaSize, arenaSize);
         this.uploads = new ObjectArrayList<>();
         this.vao = new GlVertexArray();
 
