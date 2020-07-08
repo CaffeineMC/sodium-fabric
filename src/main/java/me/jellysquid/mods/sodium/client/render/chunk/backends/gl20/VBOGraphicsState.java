@@ -32,6 +32,8 @@ public class VBOGraphicsState extends ChunkOneshotGraphicsState {
         VertexData data = meshData.takeVertexData();
 
         this.vertexBuffer.bind(GL15.GL_ARRAY_BUFFER);
+
+        this.memoryTracker.onMemoryFreeAndRelease(this.vertexBuffer.getSize());
         this.vertexBuffer.upload(GL15.GL_ARRAY_BUFFER, data);
         this.memoryTracker.onMemoryAllocateAndUse(this.vertexBuffer.getSize());
 

@@ -29,6 +29,8 @@ public class VAOGraphicsState extends ChunkOneshotGraphicsState {
         this.vertexArray.bind();
 
         this.vertexBuffer.bind(GL15.GL_ARRAY_BUFFER);
+
+        this.memoryTracker.onMemoryFreeAndRelease(this.vertexBuffer.getSize());
         this.vertexBuffer.upload(GL15.GL_ARRAY_BUFFER, vertexData);
         this.memoryTracker.onMemoryAllocateAndUse(this.vertexBuffer.getSize());
 
