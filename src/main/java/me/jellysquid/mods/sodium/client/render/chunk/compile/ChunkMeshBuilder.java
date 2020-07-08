@@ -3,8 +3,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadEncoder;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadSink;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
+import me.jellysquid.mods.sodium.client.model.quad.sink.ModelQuadSink;
 import net.minecraft.client.util.GlAllocationUtils;
 
 import java.nio.ByteBuffer;

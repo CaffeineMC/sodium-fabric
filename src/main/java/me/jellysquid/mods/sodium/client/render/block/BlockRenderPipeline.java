@@ -1,13 +1,17 @@
 package me.jellysquid.mods.sodium.client.render.block;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.model.ModelQuadSinkDelegate;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.QuadLightData;
-import me.jellysquid.mods.sodium.client.model.quad.*;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuad;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.model.quad.blender.FlatVertexColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.blender.SmoothVertexColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.blender.VertexColorBlender;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
+import me.jellysquid.mods.sodium.client.model.quad.sink.ModelQuadSinkDelegate;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;

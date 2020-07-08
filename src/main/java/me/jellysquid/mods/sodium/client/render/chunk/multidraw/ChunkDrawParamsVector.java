@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
  * Provides a resizeable vector backed by native memory that can be used to build an array of chunk draw call
  * parameters.
  */
-public abstract class ChunkDrawParamsVector extends BufferBuilder {
+public abstract class ChunkDrawParamsVector extends StructBuffer {
     private static final int VEC4_SIZE = 16;
 
     protected int capacity;

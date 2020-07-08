@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.quad;
 
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
+
 /**
  * Provides a mutable view to a model quad.
  */

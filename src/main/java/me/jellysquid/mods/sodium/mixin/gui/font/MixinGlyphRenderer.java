@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.gui.font;
 
-import me.jellysquid.mods.sodium.client.model.GlyphVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.consumer.GlyphVertexConsumer;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import net.minecraft.client.font.GlyphRenderer;
 import net.minecraft.client.render.VertexConsumer;

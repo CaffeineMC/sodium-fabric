@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.particles;
 
-import me.jellysquid.mods.sodium.client.model.ParticleVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.consumer.ParticleVertexConsumer;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;

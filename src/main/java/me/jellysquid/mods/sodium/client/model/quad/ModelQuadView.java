@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.quad;
 
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import net.minecraft.client.texture.Sprite;
 
 import java.nio.ByteBuffer;

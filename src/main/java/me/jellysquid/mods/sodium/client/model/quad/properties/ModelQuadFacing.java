@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.model.quad;
+package me.jellysquid.mods.sodium.client.model.quad.properties;
 
 import net.minecraft.util.math.Direction;
 
