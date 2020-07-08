@@ -94,8 +94,8 @@ public class SodiumGameOptions {
 
     public enum GraphicsQuality implements TextProvider {
         DEFAULT("Default"),
-        FAST("Fast"),
-        FANCY("Fancy");
+        FANCY("Fancy"),
+        FAST("Fast");
 
         private final String name;
 
@@ -114,9 +114,9 @@ public class SodiumGameOptions {
     }
 
     public enum LightingQuality implements TextProvider {
-        OFF("Off"),
+        HIGH("High"),
         LOW("Low"),
-        HIGH("High");
+        OFF("Off");
 
         private final String name;
 
