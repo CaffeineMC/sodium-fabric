@@ -428,7 +428,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
             ChunkRenderContainer<T> render = this.importantRebuildQueue.dequeue();
 
             // Do not allow distant chunks to block rendering
-            if (!this.isChunkNearby(render)) {
+            if (!this.isChunkPrioritized(render)) {
                 this.builder.deferRebuild(render);
             } else {
                 futures.add(this.builder.scheduleRebuildTaskAsync(render));
@@ -501,13 +501,20 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         ChunkRenderContainer<T> render = this.getRender(x, y, z);
 
         if (render != null) {
-            render.scheduleRebuild(important);
+            // Nearby chunks are always rendered immediately
+            important = important || this.isChunkPrioritized(render);
+
+            // Only enqueue chunks for updates during the next frame if it is visible and wasn't already dirty
+            if (render.scheduleRebuild(important) && render.getLastVisibleFrame() == this.lastFrameUpdated) {
+                (render.needsImportantRebuild() ? this.importantRebuildQueue : this.rebuildQueue)
+                        .enqueue(render);
+            }
 
             this.dirty = true;
         }
     }
 
-    private boolean isChunkNearby(ChunkRenderContainer<T> render) {
+    public boolean isChunkPrioritized(ChunkRenderContainer<T> render) {
         return render.getSquaredDistance(this.cameraX, this.cameraY, this.cameraZ) <= NEARBY_CHUNK_DISTANCE;
     }
 

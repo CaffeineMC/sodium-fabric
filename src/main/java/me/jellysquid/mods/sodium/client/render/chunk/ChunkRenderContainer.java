@@ -140,10 +140,15 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
      * Marks this render as needing an update. Important updates are scheduled as "blocking" and will prevent the next
      * frame from being rendered until the update is performed.
      * @param important True if the update is blocking, otherwise false
+     * @return
      */
-    public void scheduleRebuild(boolean important) {
+    public boolean scheduleRebuild(boolean important) {
+        boolean changed = !this.needsRebuild || (!this.needsImportantRebuild && important);
+
         this.needsImportantRebuild = important;
         this.needsRebuild = true;
+
+        return changed;
     }
 
     /**
