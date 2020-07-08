@@ -4,13 +4,13 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
-public abstract class BufferBuilder {
+public abstract class StructBuffer {
     protected ByteBuffer buffer;
     protected int count;
 
     private boolean isBuilding;
 
-    protected BufferBuilder(int bytes) {
+    protected StructBuffer(int bytes) {
         this.buffer = MemoryUtil.memAlloc(bytes);
     }
 

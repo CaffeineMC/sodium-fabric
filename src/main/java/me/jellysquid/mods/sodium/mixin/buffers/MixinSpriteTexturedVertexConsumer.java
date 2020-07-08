@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.buffers;
 
-import me.jellysquid.mods.sodium.client.model.ParticleVertexConsumer;
-import me.jellysquid.mods.sodium.client.model.QuadVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.consumer.ParticleVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.consumer.QuadVertexConsumer;
 import net.minecraft.client.render.SpriteTexturedVertexConsumer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.texture.Sprite;

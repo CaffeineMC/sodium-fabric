@@ -1,9 +1,7 @@
-package me.jellysquid.mods.sodium.client.model.quad.consumer;
+package me.jellysquid.mods.sodium.client.model.quad.sink;
 
-import me.jellysquid.mods.sodium.client.model.ModelQuadSinkDelegate;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadSink;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.client.render.BufferBuilder;

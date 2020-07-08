@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.model.quad;
+package me.jellysquid.mods.sodium.client.model.quad.properties;
 
 /**
  * Defines the orientation of vertices in a model quad. This information be used to re-orient the quad's vertices to a

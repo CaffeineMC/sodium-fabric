@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.pipeline;
 
-import me.jellysquid.mods.sodium.client.model.GlyphVertexConsumer;
-import me.jellysquid.mods.sodium.client.model.ParticleVertexConsumer;
-import me.jellysquid.mods.sodium.client.model.QuadVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.consumer.GlyphVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.consumer.ParticleVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.consumer.QuadVertexConsumer;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.client.render.VertexConsumer;

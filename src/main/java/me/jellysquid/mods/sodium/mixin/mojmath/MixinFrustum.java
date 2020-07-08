@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.mojmath;
 
-import me.jellysquid.mods.sodium.client.render.FrustumExtended;
+import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.util.math.Matrix4f;

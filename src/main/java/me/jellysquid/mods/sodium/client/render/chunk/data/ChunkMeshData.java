@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 
 import java.util.EnumMap;
 import java.util.Map;

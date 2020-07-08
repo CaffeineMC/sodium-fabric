@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.model;
+package me.jellysquid.mods.sodium.client.model.consumer;
 
 import net.minecraft.util.math.Matrix4f;
 

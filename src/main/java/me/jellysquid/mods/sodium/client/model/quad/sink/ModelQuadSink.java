@@ -1,4 +1,6 @@
-package me.jellysquid.mods.sodium.client.model.quad;
+package me.jellysquid.mods.sodium.client.model.quad.sink;
+
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
 
 /**
  * A "sink" interface which model quads can be written to for rendering. This is used as to provide an abstraction
