@@ -16,9 +16,7 @@ or prevent other mods from rendering correctly. Please be aware of these issues 
 
 ### Downloads
 
-You can find downloads for Sodium through the
-[GitHub releases page](https://github.com/jellysquid3/sodium-fabric/releases). Once Sodium matures and leaves the stage
-of alpha software, builds will be published on CurseForge. 
+You can find downloads for Sodium through the Discord server. Downloads are pinned in the #sodium channel.
 
 ### Community
 
