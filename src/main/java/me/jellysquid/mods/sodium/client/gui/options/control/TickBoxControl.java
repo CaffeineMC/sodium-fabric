@@ -18,6 +18,11 @@ public class TickBoxControl implements Control<Boolean> {
     }
 
     @Override
+    public int getMaxWidth() {
+        return 30;
+    }
+
+    @Override
     public Option<Boolean> getOption() {
         return this.option;
     }

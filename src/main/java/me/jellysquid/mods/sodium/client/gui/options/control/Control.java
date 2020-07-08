@@ -8,4 +8,5 @@ public interface Control<T> {
 
     ControlElement<T> createElement(Dim2i dim);
 
+    int getMaxWidth();
 }

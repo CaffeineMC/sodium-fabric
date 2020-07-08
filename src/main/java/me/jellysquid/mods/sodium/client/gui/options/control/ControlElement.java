@@ -27,6 +27,10 @@ public class ControlElement<T> extends AbstractWidget {
         String name = this.option.getName();
         String label;
 
+        if (this.hovered && this.font.getWidth(name) > (this.dim.getWidth() - this.option.getControl().getMaxWidth())) {
+            name = name.substring(0, Math.min(name.length(), 10)) + "...";
+        }
+
         if (this.option.isAvailable()) {
             if (this.option.hasChanged()) {
                 label = Formatting.ITALIC + name + " *";
@@ -38,6 +42,7 @@ public class ControlElement<T> extends AbstractWidget {
         }
 
         this.hovered = this.dim.containsCursor(mouseX, mouseY);
+
 
         this.drawRect(this.dim.getOriginX(), this.dim.getOriginY(), this.dim.getLimitX(), this.dim.getLimitY(), this.hovered ? 0xE0000000 : 0x90000000);
         this.drawString(matrixStack, label, this.dim.getOriginX() + 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);

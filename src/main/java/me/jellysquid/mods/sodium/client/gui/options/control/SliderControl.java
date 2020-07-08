@@ -37,6 +37,11 @@ public class SliderControl implements Control<Integer> {
         return this.option;
     }
 
+    @Override
+    public int getMaxWidth() {
+        return 130;
+    }
+
     private static class Button extends ControlElement<Integer> {
         private static final int THUMB_WIDTH = 2, TRACK_HEIGHT = 1;
 

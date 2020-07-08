@@ -57,6 +57,11 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
         return new CyclingControlElement<>(this.option, dim, this.allowedValues, this.names);
     }
 
+    @Override
+    public int getMaxWidth() {
+        return 70;
+    }
+
     private static class CyclingControlElement<T extends Enum<T>> extends ControlElement<T> {
         private final T[] allowedValues;
         private final String[] names;
