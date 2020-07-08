@@ -141,4 +141,10 @@ public class XoRoShiRoRandom extends Random {
             this.hasSavedState = true;
         }
     }
+
+    public XoRoShiRoRandom setSeedAndReturn(final long seed) {
+        this.setSeed(seed);
+
+        return this;
+    }
 }

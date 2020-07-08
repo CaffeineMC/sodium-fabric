@@ -43,7 +43,7 @@ public interface MixinVertexConsumer extends ParticleVertexConsumer, QuadVertexC
     }
 
     @Override
-    default void vertexQuad(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
+    default void vertexQuad(float x, float y, float z, int color, float u, float v, int light, int overlay, int normal) {
         this.vertex(x, y, z);
         this.color(ColorARGB.unpackRed(color), ColorARGB.unpackGreen(color), ColorARGB.unpackBlue(color), ColorARGB.unpackAlpha(color));
         this.texture(u, v);

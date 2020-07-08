@@ -19,6 +19,8 @@
     "entity_rendering.MixinModelPart",
     "gui.MixinDebugHud",
     "gui.font.MixinGlyphRenderer",
+    "item_rendering.MixinItemColors",
+    "item_rendering.MixinItemRenderer",
     "models.MixinBlockColors",
     "models.MixinMultipartBakedModel",
     "mojmath.MixinFrustum",
@@ -41,7 +43,6 @@
     "render_layers.MixinRenderLayers",
     "textures.MixinEntityRenderDispatcher",
     "textures.MixinInGameOverlayRenderer",
-    "textures.MixinItemRenderer",
     "textures.MixinSprite"
   ]
 }
