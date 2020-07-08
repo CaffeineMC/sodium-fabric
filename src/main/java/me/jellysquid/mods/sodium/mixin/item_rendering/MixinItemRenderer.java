@@ -21,7 +21,7 @@ public class MixinItemRenderer {
         return random;
     }
 
-    @Redirect(method = "renderBakedItemModel", at = @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/util/math/Direction;values()[Lnet/minecraft/util/math/Direction;"))
+    @Redirect(method = "renderBakedItemModel", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/Direction;values()[Lnet/minecraft/util/math/Direction;"))
     public Direction[] reduceDirectionArrayAllocations() {
         return DirectionUtil.ALL_DIRECTIONS;
     }
