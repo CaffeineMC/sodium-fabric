@@ -14,6 +14,7 @@
     "chunk_rendering.MixinClientWorld",
     "chunk_rendering.MixinWorldRenderer",
     "client_world_ticking.MixinClientWorld",
+    "debug.MixinDebugHud",
     "entity_rendering.MixinCuboid",
     "entity_rendering.MixinEntityRenderer",
     "entity_rendering.MixinModelPart",

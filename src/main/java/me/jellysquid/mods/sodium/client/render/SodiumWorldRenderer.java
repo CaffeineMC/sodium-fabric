@@ -401,4 +401,8 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     public void scheduleRebuildForChunk(int x, int y, int z, boolean important) {
         this.chunkRenderManager.scheduleRebuild(x, y, z, important);
     }
+
+    public ChunkRenderBackend<?> getChunkRenderer() {
+        return this.chunkRenderBackend;
+    }
 }

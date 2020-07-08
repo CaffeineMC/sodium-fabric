@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
+import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.oneshot.ChunkOneshotGraphicsState;
@@ -14,8 +15,8 @@ public class VAOGraphicsState extends ChunkOneshotGraphicsState {
     private final GlVertexArray vertexArray;
     private final GlBuffer vertexBuffer;
 
-    public VAOGraphicsState(ChunkRenderContainer<?> container) {
-        super(container);
+    public VAOGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<?> container) {
+        super(memoryTracker, container);
 
         this.vertexBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
         this.vertexArray = new GlVertexArray();
@@ -29,6 +30,7 @@ public class VAOGraphicsState extends ChunkOneshotGraphicsState {
 
         this.vertexBuffer.bind(GL15.GL_ARRAY_BUFFER);
         this.vertexBuffer.upload(GL15.GL_ARRAY_BUFFER, vertexData);
+        this.memoryTracker.onMemoryAllocateAndUse(this.vertexBuffer.getSize());
 
         GlVertexFormat<?> vertexFormat = vertexData.format;
         vertexFormat.bindVertexAttributes();
@@ -47,6 +49,8 @@ public class VAOGraphicsState extends ChunkOneshotGraphicsState {
 
     @Override
     public void delete() {
+        this.memoryTracker.onMemoryFreeAndRelease(this.vertexBuffer.getSize());
+
         this.vertexBuffer.delete();
         this.vertexArray.delete();
     }

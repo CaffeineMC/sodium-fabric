@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.backends.gl30;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
+import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.oneshot.ChunkRenderBackendOneshot;
 import net.minecraft.client.util.math.MatrixStack;
@@ -31,11 +32,16 @@ public class GL30ChunkRenderBackend extends ChunkRenderBackendOneshot<VAOGraphic
     }
 
     @Override
-    protected VAOGraphicsState createGraphicsState(ChunkRenderContainer<VAOGraphicsState> container) {
-        return new VAOGraphicsState(container);
+    protected VAOGraphicsState createGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<VAOGraphicsState> container) {
+        return new VAOGraphicsState(memoryTracker, container);
     }
 
     public static boolean isSupported() {
         return GlFunctions.isVertexArraySupported();
+    }
+
+    @Override
+    public String getRendererName() {
+        return "Oneshot (GL 3.0)";
     }
 }

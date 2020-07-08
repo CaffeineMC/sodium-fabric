@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
@@ -126,7 +127,11 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
         }
 
         for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            meshInfo.setMesh(pass, buffers.createMesh(this.camera, this.render.getRenderOrigin(), pass));
+            ChunkMeshData mesh = buffers.createMesh(this.camera, this.render.getRenderOrigin(), pass);
+
+            if (mesh != null) {
+                meshInfo.setMesh(pass, mesh);
+            }
         }
 
         meshInfo.setOcclusionData(occluder.build());

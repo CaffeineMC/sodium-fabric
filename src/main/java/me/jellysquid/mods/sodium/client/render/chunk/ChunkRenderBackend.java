@@ -2,11 +2,14 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
+import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterator;
 import net.minecraft.client.util.math.MatrixStack;
 
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * The chunk render backend takes care of managing the graphics resource state of chunk render containers. This includes
@@ -44,4 +47,16 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
     GlVertexFormat<ChunkMeshAttribute> getVertexFormat();
 
     Class<T> getGraphicsStateType();
+
+    default MemoryTracker getMemoryTracker() {
+        return null;
+    }
+
+    default String getRendererName() {
+        return this.getClass().getSimpleName();
+    }
+
+    default List<String> getDebugStrings() {
+        return Collections.emptyList();
+    }
 }
