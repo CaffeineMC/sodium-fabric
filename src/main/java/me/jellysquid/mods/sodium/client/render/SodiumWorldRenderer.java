@@ -20,6 +20,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManag
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListenerManager;
+import me.jellysquid.mods.sodium.common.util.ListUtil;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -32,7 +33,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.*;
 import net.minecraft.util.profiler.Profiler;
 
-import java.util.Collection;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -327,17 +327,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     }
 
     public void onChunkRenderUpdated(ChunkRenderData meshBefore, ChunkRenderData meshAfter) {
-        Collection<BlockEntity> entitiesBefore = meshBefore.getGlobalBlockEntities();
-
-        if (!entitiesBefore.isEmpty()) {
-            this.globalBlockEntities.removeAll(entitiesBefore);
-        }
-
-        Collection<BlockEntity> entitiesAfter = meshAfter.getGlobalBlockEntities();
-
-        if (!entitiesAfter.isEmpty()) {
-            this.globalBlockEntities.addAll(entitiesAfter);
-        }
+        ListUtil.updateList(this.globalBlockEntities, meshBefore.getGlobalBlockEntities(), meshAfter.getGlobalBlockEntities());
     }
 
     /**
