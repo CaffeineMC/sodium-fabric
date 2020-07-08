@@ -102,7 +102,11 @@ public class BlockRenderPipeline {
                                 ModelQuadFacing facing) {
         BlockColorProvider colorizer = null;
 
-        for (BakedQuad quad : quads) {
+        // This is a very hot allocation, iterate over it manually
+        // noinspection ForLoopReplaceableByForEach
+        for (int i = 0, quadsSize = quads.size(); i < quadsSize; i++) {
+            BakedQuad quad = quads.get(i);
+
             QuadLightData light = this.cachedQuadLightData;
             lighter.calculate((ModelQuadView) quad, pos, light, quad.getFace(), quad.hasShade());
 
