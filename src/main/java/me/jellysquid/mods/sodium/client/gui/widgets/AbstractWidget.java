@@ -51,10 +51,10 @@ public abstract class AbstractWidget implements Drawable, Element {
     }
 
     protected static void addQuad(VertexConsumer consumer, int x1, int y1, int x2, int y2, float a, float r, float g, float b) {
-        consumer.vertex(x2, y1, 1.0D).color(r, g, b, a).next();
-        consumer.vertex(x1, y1, 1.0D).color(r, g, b, a).next();
-        consumer.vertex(x1, y2, 1.0D).color(r, g, b, a).next();
-        consumer.vertex(x2, y2, 1.0D).color(r, g, b, a).next();
+        consumer.vertex(x2, y1, 0.0D).color(r, g, b, a).next();
+        consumer.vertex(x1, y1, 0.0D).color(r, g, b, a).next();
+        consumer.vertex(x1, y2, 0.0D).color(r, g, b, a).next();
+        consumer.vertex(x2, y2, 0.0D).color(r, g, b, a).next();
     }
 
     protected void playClickSound() {
