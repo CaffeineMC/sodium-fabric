@@ -1,103 +1,65 @@
 package me.jellysquid.mods.sodium.mixin.entity_rendering;
 
 import it.unimi.dsi.fastutil.objects.ObjectList;
-import me.jellysquid.mods.sodium.client.model.ModelPartCuboidExtended;
-import me.jellysquid.mods.sodium.client.model.ModelPartQuadExtended;
+import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
 import me.jellysquid.mods.sodium.client.model.QuadVertexConsumer;
 import me.jellysquid.mods.sodium.client.util.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
+import me.jellysquid.mods.sodium.client.util.math.Matrix3fExtended;
+import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
+import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Vector3f;
-import net.minecraft.client.util.math.Vector4f;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Matrix3f;
-import net.minecraft.util.math.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ModelPart.class)
 public class MixinModelPart {
+    private static final float NORM = 1.0F / 16.0F;
+
     @Shadow
     @Final
     private ObjectList<ModelPart.Cuboid> cuboids;
 
-    private final Vector4f posVec = new Vector4f();
-    private final Vector3f normVec = new Vector3f();
-
     /**
      * @author JellySquid
-     * @reason Use optimized vertex writer
+     * @reason Use optimized vertex writer, avoid allocations, use quick matrix transformations
      */
     @Overwrite
     private void renderCuboids(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
-        QuadVertexConsumer vertices = (QuadVertexConsumer) vertexConsumer;
-        Matrix4f modelMatrix = matrices.getModel();
-        Matrix3f normalMatrix = matrices.getNormal();
+        Matrix3fExtended normalExt = MatrixUtil.getExtendedMatrix(matrices.getNormal());
+        Matrix4fExtended modelExt = MatrixUtil.getExtendedMatrix(matrices.getModel());
+
+        QuadVertexConsumer quadConsumer = (QuadVertexConsumer) vertexConsumer;
 
         int color = ColorARGB.pack(red, green, blue, alpha);
 
-        final Vector3f normVec1 = this.normVec;
-        final Vector4f posVec1 = this.posVec;
-
         for (ModelPart.Cuboid cuboid : this.cuboids) {
-            for (ModelPart.Quad quad : ((ModelPartCuboidExtended) cuboid).getQuads()) {
-                Vector3f dir = quad.direction;
-                normVec1.set(dir.getX(), dir.getY(), dir.getZ());
-                normVec1.transform(normalMatrix);
+            for (ModelPart.Quad quad : ((ModelCuboidAccessor) cuboid).getQuads()) {
+                float normX = normalExt.transformVecX(quad.direction);
+                float normY = normalExt.transformVecY(quad.direction);
+                float normZ = normalExt.transformVecZ(quad.direction);
 
-                final float[] data = ((ModelPartQuadExtended) quad).getFlattenedData();
+                int norm = Norm3b.pack(normX, normY, normZ);
 
-                int i = 0;
+                for (ModelPart.Vertex vertex : quad.vertices) {
+                    Vector3f pos = vertex.pos;
 
-                while (i < data.length) {
-                    float x = data[i++];
-                    float y = data[i++];
-                    float z = data[i++];
+                    float x1 = pos.getX() * NORM;
+                    float y1 = pos.getY() * NORM;
+                    float z1 = pos.getZ() * NORM;
 
-                    float u = data[i++];
-                    float v = data[i++];
+                    float x2 = modelExt.transformVecX(x1, y1, z1);
+                    float y2 = modelExt.transformVecY(x1, y1, z1);
+                    float z2 = modelExt.transformVecZ(x1, y1, z1);
 
-                    posVec1.set(x, y, z, 1.0f);
-                    posVec1.transform(modelMatrix);
-
-                    vertices.vertexQuad(posVec1.getX(), posVec1.getY(), posVec1.getZ(), color, u, v, overlay, light, Norm3b.pack(normVec1));
+                    quadConsumer.vertexQuad(x2, y2, z2, color, vertex.u, vertex.v, overlay, light, norm);
                 }
             }
-        }
-    }
-
-    @Mixin(ModelPart.Quad.class)
-    private static class MixinQuad implements ModelPartQuadExtended {
-        private float[] data;
-
-        @Inject(method = "<init>", at = @At("RETURN"))
-        private void init(ModelPart.Vertex[] vertices, float float_1, float float_2, float float_3, float float_4, float float_5, float float_6, boolean boolean_1, Direction direction_1, CallbackInfo ci) {
-            this.data = new float[vertices.length * 5];
-
-            for (int i = 0; i < vertices.length; i++) {
-                ModelPart.Vertex vertex = vertices[i];
-
-                int j = i * 5;
-
-                this.data[j] = vertex.pos.getX() / 16.0F;
-                this.data[j + 1] = vertex.pos.getY() / 16.0F;
-                this.data[j + 2] = vertex.pos.getZ() / 16.0F;
-
-                this.data[j + 3] = vertex.u;
-                this.data[j + 4] = vertex.v;
-            }
-        }
-
-        @Override
-        public float[] getFlattenedData() {
-            return this.data;
         }
     }
 }
