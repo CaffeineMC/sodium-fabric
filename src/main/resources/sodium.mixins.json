@@ -16,7 +16,6 @@
     "entity_rendering.MixinCuboid",
     "entity_rendering.MixinEntityRenderer",
     "entity_rendering.MixinModelPart",
-    "entity_rendering.MixinModelPart$MixinQuad",
     "gui.MixinDebugHud",
     "gui.font.MixinGlyphRenderer",
     "models.MixinBlockColors",

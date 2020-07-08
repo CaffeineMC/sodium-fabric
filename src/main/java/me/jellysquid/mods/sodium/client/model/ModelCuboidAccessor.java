@@ -2,6 +2,6 @@ package me.jellysquid.mods.sodium.client.model;
 
 import net.minecraft.client.model.ModelPart;
 
-public interface ModelPartCuboidExtended {
+public interface ModelCuboidAccessor {
     ModelPart.Quad[] getQuads();
 }
