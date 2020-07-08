@@ -9,6 +9,7 @@
   "client": [
     "buffers.MixinBufferBuilder",
     "buffers.MixinSpriteTexturedVertexConsumer",
+    "buffers.fast_sort.MixinBufferBuilder",
     "chunk_rendering.MixinChunkBuilder",
     "chunk_rendering.MixinClientWorld",
     "chunk_rendering.MixinWorldRenderer",
