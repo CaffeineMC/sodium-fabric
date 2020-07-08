@@ -133,7 +133,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
     }
 
     @Override
-    public void vertexQuad(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
+    public void vertexQuad(float x, float y, float z, int color, float u, float v, int light, int overlay, int normal) {
         if (this.colorFixed) {
             throw new IllegalStateException();
         }
@@ -293,7 +293,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
             Vector4f pos = new Vector4f(x, y, z, 1.0F);
             pos.transform(modelMatrix);
 
-            this.vertexQuad(pos.getX(), pos.getY(), pos.getZ(), color, u, v, overlay, light[i], norm);
+            this.vertexQuad(pos.getX(), pos.getY(), pos.getZ(), color, u, v, light[i], overlay, norm);
         }
     }
 

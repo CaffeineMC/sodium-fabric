@@ -57,7 +57,7 @@ public class MixinModelPart {
                     float y2 = modelExt.transformVecY(x1, y1, z1);
                     float z2 = modelExt.transformVecZ(x1, y1, z1);
 
-                    quadConsumer.vertexQuad(x2, y2, z2, color, vertex.u, vertex.v, overlay, light, norm);
+                    quadConsumer.vertexQuad(x2, y2, z2, color, vertex.u, vertex.v, light, overlay, norm);
                 }
             }
         }
