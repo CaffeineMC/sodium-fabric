@@ -22,6 +22,8 @@ public interface VertexColorBlender {
      * @param origin The position of the block being rendered
      * @param colorIndex The color index for this vertex which will be passed to the color provider
      * @param brightness The array of brightness
+     *
+     * @return An array of integer colors in ABGR format
      */
     int[] getColors(BlockColorProvider provider, BlockState state, BlockRenderView world, ModelQuadView quad,
                     BlockPos origin, int colorIndex, float[] brightness);

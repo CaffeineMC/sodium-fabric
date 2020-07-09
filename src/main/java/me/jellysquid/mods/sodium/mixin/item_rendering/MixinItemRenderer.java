@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.item_rendering;
 import me.jellysquid.mods.sodium.client.model.consumer.QuadVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.client.util.ColorRGBA;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import me.jellysquid.mods.sodium.client.world.biome.ItemColorsExtended;
@@ -68,13 +69,12 @@ public class MixinItemRenderer {
         for (BakedQuad bakedQuad : quads) {
             int color = 0xFFFFFFFF;
 
-            if (bakedQuad.hasColor()) {
+            if (!stack.isEmpty() && bakedQuad.hasColor()) {
                 if (colorProvider == null) {
                     colorProvider = ((ItemColorsExtended) this.colorMap).getColorProvider(stack);
                 }
 
-                color = (colorProvider.getColor(stack, bakedQuad.getColorIndex()));
-                color |= 0xFF000000; // Drop alpha channel
+                color = ColorRGBA.repackABGR((colorProvider.getColor(stack, bakedQuad.getColorIndex())), 255);
             }
 
             ModelQuadView quad = ((ModelQuadView) bakedQuad);

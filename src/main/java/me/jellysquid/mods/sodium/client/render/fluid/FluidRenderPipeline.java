@@ -8,7 +8,7 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.model.quad.sink.ModelQuadSinkDelegate;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.util.ColorARGB;
+import me.jellysquid.mods.sodium.client.util.ColorRGBA;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -363,7 +363,7 @@ public class FluidRenderPipeline {
             float br = quadLightData.br[lightIndex];
             int lm = quadLightData.lm[lightIndex];
 
-            quad.setColor(i, ColorARGB.pack(r * br, g * br, b * br, 1.0f));
+            quad.setColor(i, ColorRGBA.packABGR(r * br, g * br, b * br, 1.0f));
             quad.setLight(i, lm);
 
             lightIndex += lightOrder;

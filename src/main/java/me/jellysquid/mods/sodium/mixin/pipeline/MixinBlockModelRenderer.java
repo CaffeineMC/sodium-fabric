@@ -6,7 +6,7 @@ import me.jellysquid.mods.sodium.client.model.quad.sink.FallbackQuadSink;
 import me.jellysquid.mods.sodium.client.render.block.BlockRenderPipeline;
 import me.jellysquid.mods.sodium.client.render.pipeline.GlobalRenderer;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.util.ColorARGB;
+import me.jellysquid.mods.sodium.client.util.ColorRGBA;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -57,7 +57,7 @@ public class MixinBlockModelRenderer {
         green = MathHelper.clamp(green, 0.0F, 1.0F);
         blue = MathHelper.clamp(blue, 0.0F, 1.0F);
 
-        int defaultColor = ColorARGB.pack(red, green, blue, 1.0F);
+        int defaultColor = ColorRGBA.packABGR(red, green, blue, 1.0F);
 
         for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {
             List<BakedQuad> quads = bakedModel.getQuads(blockState, direction, random.setSeedAndReturn(42L));
