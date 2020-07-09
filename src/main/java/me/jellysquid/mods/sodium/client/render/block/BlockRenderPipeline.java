@@ -14,7 +14,7 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientati
 import me.jellysquid.mods.sodium.client.model.quad.sink.ModelQuadSinkDelegate;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
-import me.jellysquid.mods.sodium.client.util.ColorARGB;
+import me.jellysquid.mods.sodium.client.util.ColorRGBA;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -151,7 +151,7 @@ public class BlockRenderPipeline {
             float br = light.br[srcIndex];
 
             if (colors == null) {
-                copy.setColor(dstIndex, ColorARGB.mulPacked(src.getColor(srcIndex), br, br, br));
+                copy.setColor(dstIndex, ColorRGBA.mulPackABGR(src.getColor(srcIndex), br, br, br));
             } else {
                 copy.setColor(dstIndex, colors[srcIndex]);
             }

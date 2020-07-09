@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.quad.blender;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.util.ColorARGB;
+import me.jellysquid.mods.sodium.client.util.ColorRGBA;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.util.math.BlockPos;
@@ -17,14 +17,14 @@ public class FlatVertexColorBlender implements VertexColorBlender {
     public int[] getColors(BlockColorProvider provider, BlockState state, BlockRenderView world, ModelQuadView quad, BlockPos origin, int colorIndex, float[] brightness) {
         int biomeColor = provider.getColor(state, world, origin, colorIndex);
 
-        float r = ColorARGB.normalize(ColorARGB.unpackRed(biomeColor));
-        float g = ColorARGB.normalize(ColorARGB.unpackGreen(biomeColor));
-        float b = ColorARGB.normalize(ColorARGB.unpackBlue(biomeColor));
+        float r = ColorRGBA.normalize(ColorRGBA.unpackRed(biomeColor));
+        float g = ColorRGBA.normalize(ColorRGBA.unpackGreen(biomeColor));
+        float b = ColorRGBA.normalize(ColorRGBA.unpackBlue(biomeColor));
 
         int[] colors = this.cachedRet;
 
         for (int i = 0; i < 4; i++) {
-            colors[i] = ColorARGB.mulPacked(quad.getColor(i), r * brightness[i],  g * brightness[i], b * brightness[i]);
+            colors[i] = ColorRGBA.mulPackABGR(quad.getColor(i), r * brightness[i],  g * brightness[i], b * brightness[i]);
         }
 
         return colors;
