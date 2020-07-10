@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.model.light;
+package me.jellysquid.mods.sodium.client.model.light.data;
 
 /**
  * Stores the computed light data for a block model quad. The vertex order of each array is defined as that of the

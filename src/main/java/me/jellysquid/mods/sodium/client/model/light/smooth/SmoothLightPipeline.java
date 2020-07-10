@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.model.light.smooth;
 
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
-import me.jellysquid.mods.sodium.client.model.light.QuadLightData;
-import me.jellysquid.mods.sodium.client.model.light.cache.LightDataCache;
+import me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess;
+import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import net.minecraft.util.math.BlockPos;
@@ -39,7 +39,7 @@ public class SmoothLightPipeline implements LightPipeline {
     /**
      * The cache which light data will be accessed from.
      */
-    private final LightDataCache lightCache;
+    private final LightDataAccess lightCache;
 
     /**
      * The cached face data for each side of a block, both inset and outset.
@@ -56,7 +56,7 @@ public class SmoothLightPipeline implements LightPipeline {
      */
     private final float[] weights = new float[4];
 
-    public SmoothLightPipeline(LightDataCache cache) {
+    public SmoothLightPipeline(LightDataAccess cache) {
         this.lightCache = cache;
 
         for (int i = 0; i < this.cachedFaceData.length; i++) {

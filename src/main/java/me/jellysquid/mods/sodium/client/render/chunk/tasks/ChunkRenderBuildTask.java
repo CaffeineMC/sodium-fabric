@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
+import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 
 /**
@@ -29,7 +29,7 @@ public abstract class ChunkRenderBuildTask<T extends ChunkGraphicsState> {
      * @return The build result of this task, containing any data which needs to be uploaded on the main-thread, or null
      *         if the task was cancelled.
      */
-    public abstract ChunkBuildResult<T> performBuild(ChunkRenderPipeline pipeline, ChunkBuildBuffers buffers,
+    public abstract ChunkBuildResult<T> performBuild(ChunkRenderContext pipeline, ChunkBuildBuffers buffers,
                                                      CancellationSource cancellationSource);
 
     /**

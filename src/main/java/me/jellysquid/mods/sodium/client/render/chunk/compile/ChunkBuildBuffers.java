@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.sink.ModelQuadSinkDelegate;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import net.minecraft.client.render.RenderLayer;
@@ -14,7 +15,10 @@ import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.util.math.BlockPos;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * A collection of temporary buffers for each worker thread which will be used to build chunk meshes for given render
@@ -23,7 +27,8 @@ import java.util.Map;
  */
 public class ChunkBuildBuffers {
     private final ChunkBuildBufferDelegate[] delegates;
-    private final ChunkMeshBuilder[][] builders;
+    private final ChunkMeshBuilder[][] buildersByLayer;
+    private final List<ChunkMeshBuilder> builders;
     private final GlVertexFormat<?> format;
 
     private final BlockRenderPassManager renderPassManager;
@@ -33,18 +38,22 @@ public class ChunkBuildBuffers {
         this.renderPassManager = renderPassManager;
 
         this.delegates = new ChunkBuildBufferDelegate[BlockRenderPass.COUNT];
-        this.builders = new ChunkMeshBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
+        this.buildersByLayer = new ChunkMeshBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
 
         for (RenderLayer layer : RenderLayer.getBlockLayers()) {
             int passId = this.renderPassManager.getRenderPassId(layer);
 
             for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
-                this.builders[passId][facing.ordinal()] =
+                this.buildersByLayer[passId][facing.ordinal()] =
                         new ChunkMeshBuilder(format, layer.getExpectedBufferSize() / ModelQuadFacing.COUNT);
             }
 
-            this.delegates[passId] = new ChunkBuildBufferDelegate(this.builders[passId]);
+            this.delegates[passId] = new ChunkBuildBufferDelegate(this.buildersByLayer[passId]);
         }
+
+        this.builders = Arrays.stream(this.buildersByLayer)
+                .flatMap(Arrays::stream)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -60,16 +69,21 @@ public class ChunkBuildBuffers {
      * builders. This is used after all blocks have been rendered to pass the finished meshes over to the graphics card.
      */
     public ChunkMeshData createMesh(Vector3d camera, BlockPos pos, BlockRenderPass pass) {
+        ChunkMeshBuilder[] builders = this.buildersByLayer[pass.ordinal()];
+
         ChunkMeshData meshData = new ChunkMeshData();
-
         int bufferLen = 0;
-
-        ChunkMeshBuilder[] builders = this.builders[pass.ordinal()];
 
         for (int facingId = 0; facingId < builders.length; facingId++) {
             ChunkMeshBuilder builder = builders[facingId];
 
-            if (builder == null || builder.isEmpty()) {
+            if (builder == null) {
+                continue;
+            }
+
+            builder.finish();
+
+            if (builder.isEmpty()) {
                 continue;
             }
 
@@ -99,8 +113,8 @@ public class ChunkBuildBuffers {
             BufferSlice slice = entry.getValue();
             buffer.position(slice.start);
 
-            this.builders[pass.ordinal()][entry.getKey().ordinal()]
-                    .copyInto(buffer);
+            ChunkMeshBuilder builder = this.buildersByLayer[pass.ordinal()][entry.getKey().ordinal()];
+            builder.copyInto(buffer);
         }
 
         buffer.flip();
@@ -108,6 +122,12 @@ public class ChunkBuildBuffers {
         meshData.setVertexData(new VertexData(buffer, this.format));
 
         return meshData;
+    }
+
+    public void init(ChunkRenderData.Builder renderData) {
+        for (ChunkMeshBuilder builder : this.builders) {
+            builder.begin(renderData);
+        }
     }
 
     public static class ChunkBuildBufferDelegate implements ModelQuadSinkDelegate {

@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.model.light.flat;
 
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
-import me.jellysquid.mods.sodium.client.model.light.QuadLightData;
-import me.jellysquid.mods.sodium.client.model.light.cache.LightDataCache;
+import me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess;
+import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import net.minecraft.util.math.BlockPos;
@@ -10,7 +10,7 @@ import net.minecraft.util.math.Direction;
 
 import java.util.Arrays;
 
-import static me.jellysquid.mods.sodium.client.model.light.cache.LightDataCache.unpackLM;
+import static me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess.unpackLM;
 
 /**
  * A light pipeline which implements "classic-style" lighting through simply using the light value of the adjacent
@@ -20,9 +20,9 @@ public class FlatLightPipeline implements LightPipeline {
     /**
      * The cache which light data will be accessed from.
      */
-    private final LightDataCache lightCache;
+    private final LightDataAccess lightCache;
 
-    public FlatLightPipeline(LightDataCache lightCache) {
+    public FlatLightPipeline(LightDataAccess lightCache) {
         this.lightCache = lightCache;
     }
 

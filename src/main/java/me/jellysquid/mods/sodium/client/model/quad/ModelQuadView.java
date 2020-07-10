@@ -55,6 +55,11 @@ public interface ModelQuadView {
     int getNormal(int idx);
 
     /**
+     * @return The color index of this quad.
+     */
+    int getColorIndex();
+
+    /**
      * Copies this quad's data into the specified buffer starting at the given position.
      * @param buf The buffer to write this quad's data to
      * @param position The starting byte index to write to

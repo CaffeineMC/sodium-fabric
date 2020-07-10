@@ -42,6 +42,10 @@ public class ColorABGR implements ColorU8 {
         return pack((int) r, (int) g, (int) b, 0xFF);
     }
 
+    public static int mul(int color, float w) {
+        return mul(color, w, w, w);
+    }
+
     /**
      * @param color The packed 32-bit ABGR color to unpack
      * @return The red color component in the range of 0..255
@@ -72,5 +76,9 @@ public class ColorABGR implements ColorU8 {
      */
     public static int unpackAlpha(int color) {
         return color >> 24 & 0xFF;
+    }
+
+    public static int pack(float r, float g, float b) {
+        return pack(r, g, b, 255);
     }
 }

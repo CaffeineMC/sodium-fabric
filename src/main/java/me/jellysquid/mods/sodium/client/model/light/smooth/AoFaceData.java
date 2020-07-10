@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.light.smooth;
 
-import me.jellysquid.mods.sodium.client.model.light.cache.LightDataCache;
+import me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
@@ -15,7 +15,7 @@ class AoFaceData {
 
     private int flags;
 
-    public void initLightData(LightDataCache cache, BlockPos pos, Direction direction, boolean offset) {
+    public void initLightData(LightDataAccess cache, BlockPos pos, Direction direction, boolean offset) {
         final int x = pos.getX();
         final int y = pos.getY();
         final int z = pos.getZ();

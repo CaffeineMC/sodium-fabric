@@ -10,52 +10,49 @@ import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
 
-public class SmoothVertexColorBlender implements VertexColorBlender {
+public class SmoothBiomeColorBlender implements BiomeColorBlender {
     private final int[] cachedRet = new int[4];
+
     private final BlockPos.Mutable mpos = new BlockPos.Mutable();
 
     @Override
-    public int[] getColors(BlockColorProvider provider, BlockState state, BlockRenderView world, ModelQuadView quad, BlockPos origin, int colorIndex, float[] brightness) {
+    public int[] getColors(BlockColorProvider colorizer, BlockRenderView world, BlockState state, BlockPos origin,
+                           ModelQuadView quad) {
         final int[] colors = this.cachedRet;
 
-        for (int i = 0; i < 4; i++) {
-            float x = quad.getX(i);
-            float z = quad.getZ(i);
+        boolean aligned = ModelQuadFlags.contains(quad.getFlags(), ModelQuadFlags.IS_ALIGNED);
 
+        for (int i = 0; i < 4; i++) {
             // If the vertex is aligned to the block grid, we do not need to interpolate
-            if (ModelQuadFlags.contains(quad.getFlags(), ModelQuadFlags.IS_ALIGNED)) {
-                colors[i] = this.getVertexColor(provider, state, world, x, z, origin, quad.getColor(i), colorIndex, brightness[i]);
+            if (aligned) {
+                colors[i] = this.getVertexColor(colorizer, world, state, origin, quad, i);
             } else {
-                colors[i] = this.getInterpolatedVertexColor(provider, state, world, x, z, origin, quad.getColor(i), colorIndex, brightness[i]);
+                colors[i] = this.getInterpolatedVertexColor(colorizer, world, state, origin, quad, i);
             }
         }
 
         return colors;
     }
 
-    private int getVertexColor(BlockColorProvider provider, BlockState state, BlockRenderView world, float posX, float posZ, BlockPos origin, int color, int colorIndex, float brightness) {
-        final float x = origin.getX() + posX;
-        final float z = origin.getZ() + posZ;
+    private int getVertexColor(BlockColorProvider colorizer, BlockRenderView world, BlockState state, BlockPos origin,
+                               ModelQuadView quad, int vertexIdx) {
+        final int x = (int) (origin.getX() + quad.getX(vertexIdx));
+        final int z = (int) (origin.getZ() + quad.getZ(vertexIdx));
 
-        final int intX = (int) x;
-        final int intZ = (int) z;
+        final int color = this.getBlockColor(colorizer, world, state, origin, x, z, quad.getColorIndex());
 
-        final BlockPos.Mutable mpos = this.mpos;
-
-        final int f = provider.getColor(state, world, mpos.set(intX, origin.getY(), intZ), colorIndex);
-
-        final float fr = ColorU8.normalize(ColorARGB.unpackRed(f)) * brightness;
-        final float fg = ColorU8.normalize(ColorARGB.unpackGreen(f)) * brightness;
-        final float fb = ColorU8.normalize(ColorARGB.unpackBlue(f)) * brightness;
-
-        return ColorABGR.mul(color, fr, fg, fb);
+        return ColorARGB.toABGR(color);
     }
 
-    private int getInterpolatedVertexColor(BlockColorProvider provider, BlockState state, BlockRenderView world, float posX, float posZ, BlockPos origin, int color, int colorIndex, float brightness) {
-        final BlockPos.Mutable mpos = this.mpos;
+    private int getBlockColor(BlockColorProvider colorizer, BlockRenderView world, BlockState state, BlockPos origin,
+                              int x, int z, int colorIdx) {
+        return colorizer.getColor(state, world, this.mpos.set(x, origin.getY(), z), colorIdx);
+    }
 
-        final float x = origin.getX() + posX;
-        final float z = origin.getZ() + posZ;
+    private int getInterpolatedVertexColor(BlockColorProvider colorizer, BlockRenderView world, BlockState state,
+                                           BlockPos origin, ModelQuadView quad, int vertexIdx) {
+        final float x = origin.getX() + quad.getX(vertexIdx);
+        final float z = origin.getZ() + quad.getZ(vertexIdx);
 
         // Integer component of position vector
         final int intX = (int) x;
@@ -66,10 +63,10 @@ public class SmoothVertexColorBlender implements VertexColorBlender {
         final float fracZ = z - intZ;
 
         // Retrieve the color values for each neighbor
-        final int c1 = provider.getColor(state, world, mpos.set(intX, origin.getY(), intZ), colorIndex);
-        final int c2 = provider.getColor(state, world, mpos.set(intX, origin.getY(), intZ + 1), colorIndex);
-        final int c3 = provider.getColor(state, world, mpos.set(intX + 1, origin.getY(), intZ), colorIndex);
-        final int c4 = provider.getColor(state, world, mpos.set(intX + 1, origin.getY(), intZ + 1), colorIndex);
+        final int c1 = this.getBlockColor(colorizer, world, state, origin, intX, intZ, quad.getColorIndex());
+        final int c2 = this.getBlockColor(colorizer, world, state, origin, intX, intZ + 1, quad.getColorIndex());
+        final int c3 = this.getBlockColor(colorizer, world, state, origin, intX + 1, intZ, quad.getColorIndex());
+        final int c4 = this.getBlockColor(colorizer, world, state, origin, intX + 1, intZ + 1, quad.getColorIndex());
 
         final float fr, fg, fb;
 
@@ -112,10 +109,6 @@ public class SmoothVertexColorBlender implements VertexColorBlender {
             fb = r1b + ((r2b - r1b) * fracX);
         }
 
-        // Normalize and darken the returned color
-        return ColorABGR.mul(color,
-                ColorU8.normalize(fr) * brightness,
-                ColorU8.normalize(fg) * brightness,
-                ColorU8.normalize(fb) * brightness);
+        return ColorABGR.pack(ColorU8.normalize(fr), ColorU8.normalize(fg), ColorU8.normalize(fb));
     }
 }
