@@ -107,42 +107,57 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         while (!queue.isEmpty()) {
             ChunkRenderContainer<T> render = queue.dequeue();
 
-            this.setChunkVisible(render);
-            this.addChunkNeighbors(render, frustum, frame);
+            if (render.needsRebuild() && render.canRebuild()) {
+                if (render.needsImportantRebuild()) {
+                    this.importantRebuildQueue.enqueue(render);
+                } else {
+                    this.rebuildQueue.enqueue(render);
+                }
+            }
+
+            if (!render.isEmpty()) {
+                this.addChunkToRenderLists(render);
+
+                Collection<BlockEntity> blockEntities = render.getData().getBlockEntities();
+
+                if (!blockEntities.isEmpty()) {
+                    this.visibleBlockEntities.addAll(blockEntities);
+                }
+            }
+
+            for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
+                if (!render.canCull(dir)) {
+                    this.addChunkNeighbor(render, frustum, dir, frame);
+                }
+            }
         }
 
         this.dirty = false;
     }
 
-    private void addChunkNeighbors(ChunkRenderContainer<T> parent, FrustumExtended frustum, int frame) {
-        for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
-            ChunkRenderContainer<T> adj = parent.getAdjacentRender(dir);
+    private void addChunkNeighbor(ChunkRenderContainer<T> parent, FrustumExtended frustum, Direction dir, int frame) {
+        ChunkRenderContainer<T> adj = parent.getAdjacentRender(dir);
 
-            if (adj == null || adj.getLastVisibleFrame() == frame || parent.canCull(dir)) {
-                continue;
-            }
-
-            if (this.useOcclusionCulling) {
-                Direction flow = parent.getDirection();
-
-                if (flow != null && !parent.isVisibleThrough(flow, dir)) {
-                    continue;
-                }
-            }
-
-            if (this.useFogCulling && parent.getSquaredDistanceXZ(this.cameraX, this.cameraZ) >= this.fogRenderCutoff) {
-                continue;
-            }
-
-            if (adj.isOutsideFrustum(frustum)) {
-                continue;
-            }
-
-            this.addChunkNeighbor(parent, adj, dir, frame);
+        if (adj == null || adj.getLastVisibleFrame() == frame) {
+            return;
         }
-    }
 
-    private void addChunkNeighbor(ChunkRenderContainer<T> parent, ChunkRenderContainer<T> adj, Direction dir, int frame) {
+        if (this.useOcclusionCulling) {
+            Direction flow = parent.getDirection();
+
+            if (flow != null && !parent.isVisibleThrough(flow, dir)) {
+                return;
+            }
+        }
+
+        if (this.useFogCulling && parent.getSquaredDistanceXZ(this.cameraX, this.cameraZ) >= this.fogRenderCutoff) {
+            return;
+        }
+
+        if (adj.isOutsideFrustum(frustum)) {
+            return;
+        }
+
         Direction flow = dir.getOpposite();
 
         adj.setDirection(flow);
@@ -152,28 +167,8 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         this.iterationQueue.enqueue(adj);
     }
 
-    private void setChunkVisible(ChunkRenderContainer<T> render) {
-        if (render.needsRebuild() && render.canRebuild()) {
-            if (render.needsImportantRebuild()) {
-                this.importantRebuildQueue.enqueue(render);
-            } else {
-                this.rebuildQueue.enqueue(render);
-            }
-        }
-
-        if (!render.isEmpty()) {
-            this.addChunkToRenderLists(render);
-
-            Collection<BlockEntity> blockEntities = render.getData().getBlockEntities();
-
-            if (!blockEntities.isEmpty()) {
-                this.visibleBlockEntities.addAll(blockEntities);
-            }
-        }
-    }
-
     private void addChunkToRenderLists(ChunkRenderContainer<T> render) {
-        int visibleFaces = this.computeVisibleFaces(render);
+        int visibleFaces = this.computeVisibleFaces(render) & render.getFacesWithData();
 
         if (visibleFaces == 0) {
             return;
@@ -206,6 +201,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         int visibleFaces;
 
         if (this.useAggressiveCulling) {
+            // Always render groups of vertices not belonging to any given face
             visibleFaces = 1 << ModelQuadFacing.NONE.ordinal();
 
             ChunkRenderBounds bounds = render.getBounds();

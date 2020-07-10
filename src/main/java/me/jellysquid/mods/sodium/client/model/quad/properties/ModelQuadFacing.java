@@ -5,10 +5,10 @@ import net.minecraft.util.math.Direction;
 public enum ModelQuadFacing {
     UP,
     DOWN,
-    NORTH,
-    SOUTH,
     EAST,
     WEST,
+    SOUTH,
+    NORTH,
     NONE;
 
     public static final ModelQuadFacing[] VALUES = ModelQuadFacing.values();

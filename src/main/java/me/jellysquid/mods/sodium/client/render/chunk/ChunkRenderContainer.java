@@ -404,4 +404,8 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     public boolean isTickable() {
         return this.tickable;
     }
+
+    public int getFacesWithData() {
+        return this.data.getFacesWithData();
+    }
 }
