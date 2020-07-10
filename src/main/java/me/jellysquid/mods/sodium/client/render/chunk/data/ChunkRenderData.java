@@ -2,6 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
@@ -31,6 +33,7 @@ public class ChunkRenderData {
 
     private boolean isEmpty;
     private int meshByteSize;
+    private int facesWithData;
 
     /**
      * @return True if the chunk has no renderables, otherwise false
@@ -80,6 +83,10 @@ public class ChunkRenderData {
 
     public int getMeshSize() {
         return this.meshByteSize;
+    }
+
+    public int getFacesWithData() {
+        return this.facesWithData;
     }
 
     public static class Builder {
@@ -138,15 +145,21 @@ public class ChunkRenderData {
             data.meshes = this.meshes;
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
-            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.meshes.isEmpty();
 
+            int facesWithData = 0;
             int size = 0;
 
             for (ChunkMeshData meshData : this.meshes.values()) {
                 size += meshData.getVertexDataSize();
+
+                for (Map.Entry<ModelQuadFacing, BufferSlice> entry : meshData.getSlices()) {
+                    facesWithData |= 1 << entry.getKey().ordinal();
+                }
             }
 
+            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && facesWithData == 0;
             data.meshByteSize = size;
+            data.facesWithData = facesWithData;
 
             return data;
         }
