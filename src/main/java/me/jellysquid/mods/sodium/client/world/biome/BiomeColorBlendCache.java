@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.level.ColorResolver;
@@ -68,13 +69,13 @@ public class BiomeColorBlendCache {
             for (int z2 = minZ; z2 <= maxZ; z2++) {
                 int color = this.getColor(x2, z2);
 
-                r += (color & 0xFF0000) >> 16;
-                g += (color & 0x00FF00) >> 8;
-                b += (color & 0x0000FF);
+                r += ColorARGB.unpackRed(color);
+                g += ColorARGB.unpackGreen(color);
+                b += ColorARGB.unpackBlue(color);
             }
         }
 
-        return (((r / area) & 255) << 16) | (((g / area) & 255) << 8) | ((b / area) & 255);
+        return ColorARGB.pack(r / area, g / area, b / area, 255);
     }
 
     private int getColor(int x, int z) {

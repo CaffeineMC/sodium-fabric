@@ -2,7 +2,9 @@ package me.jellysquid.mods.sodium.client.model.quad.blender;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.util.ColorRGBA;
+import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
+import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
+import me.jellysquid.mods.sodium.client.util.color.ColorU8;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.util.math.BlockPos;
@@ -42,11 +44,11 @@ public class SmoothVertexColorBlender implements VertexColorBlender {
 
         final int f = provider.getColor(state, world, mpos.set(intX, origin.getY(), intZ), colorIndex);
 
-        final float fr = ColorRGBA.normalize(ColorRGBA.unpackRed(f)) * brightness;
-        final float fg = ColorRGBA.normalize(ColorRGBA.unpackGreen(f)) * brightness;
-        final float fb = ColorRGBA.normalize(ColorRGBA.unpackBlue(f)) * brightness;
+        final float fr = ColorU8.normalize(ColorARGB.unpackRed(f)) * brightness;
+        final float fg = ColorU8.normalize(ColorARGB.unpackGreen(f)) * brightness;
+        final float fb = ColorU8.normalize(ColorARGB.unpackBlue(f)) * brightness;
 
-        return ColorRGBA.mulPackABGR(color, fr, fg, fb);
+        return ColorABGR.mul(color, fr, fg, fb);
     }
 
     private int getInterpolatedVertexColor(BlockColorProvider provider, BlockState state, BlockRenderView world, float posX, float posZ, BlockPos origin, int color, int colorIndex, float brightness) {
@@ -73,27 +75,27 @@ public class SmoothVertexColorBlender implements VertexColorBlender {
 
         // All the colors are the same, so the results of interpolation will be useless.
         if (c1 == c2 && c2 == c3 && c3 == c4) {
-            fr = ColorRGBA.unpackRed(c1);
-            fg = ColorRGBA.unpackGreen(c1);
-            fb = ColorRGBA.unpackBlue(c1);
+            fr = ColorARGB.unpackRed(c1);
+            fg = ColorARGB.unpackGreen(c1);
+            fb = ColorARGB.unpackBlue(c1);
         } else {
             // TODO: avoid float conversions here
             // RGB components for each corner's color
-            final float c1r = ColorRGBA.unpackRed(c1);
-            final float c1g = ColorRGBA.unpackGreen(c1);
-            final float c1b = ColorRGBA.unpackBlue(c1);
+            final float c1r = ColorARGB.unpackRed(c1);
+            final float c1g = ColorARGB.unpackGreen(c1);
+            final float c1b = ColorARGB.unpackBlue(c1);
 
-            final float c2r = ColorRGBA.unpackRed(c2);
-            final float c2g = ColorRGBA.unpackGreen(c2);
-            final float c2b = ColorRGBA.unpackBlue(c2);
+            final float c2r = ColorARGB.unpackRed(c2);
+            final float c2g = ColorARGB.unpackGreen(c2);
+            final float c2b = ColorARGB.unpackBlue(c2);
 
-            final float c3r = ColorRGBA.unpackRed(c3);
-            final float c3g = ColorRGBA.unpackGreen(c3);
-            final float c3b = ColorRGBA.unpackBlue(c3);
+            final float c3r = ColorARGB.unpackRed(c3);
+            final float c3g = ColorARGB.unpackGreen(c3);
+            final float c3b = ColorARGB.unpackBlue(c3);
 
-            final float c4r = ColorRGBA.unpackRed(c4);
-            final float c4g = ColorRGBA.unpackGreen(c4);
-            final float c4b = ColorRGBA.unpackBlue(c4);
+            final float c4r = ColorARGB.unpackRed(c4);
+            final float c4g = ColorARGB.unpackGreen(c4);
+            final float c4b = ColorARGB.unpackBlue(c4);
 
             // Compute the final color values across the Z axis
             final float r1r = c1r + ((c2r - c1r) * fracZ);
@@ -111,9 +113,9 @@ public class SmoothVertexColorBlender implements VertexColorBlender {
         }
 
         // Normalize and darken the returned color
-        return ColorRGBA.mulPackABGR(color,
-                ColorRGBA.normalize(fr) * brightness,
-                ColorRGBA.normalize(fg) * brightness,
-                ColorRGBA.normalize(fb) * brightness);
+        return ColorABGR.mul(color,
+                ColorU8.normalize(fr) * brightness,
+                ColorU8.normalize(fg) * brightness,
+                ColorU8.normalize(fb) * brightness);
     }
 }

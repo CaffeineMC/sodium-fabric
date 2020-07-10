@@ -3,8 +3,8 @@ package me.jellysquid.mods.sodium.mixin.entity_rendering;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
 import me.jellysquid.mods.sodium.client.model.consumer.QuadVertexConsumer;
-import me.jellysquid.mods.sodium.client.util.ColorRGBA;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
+import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.math.Matrix3fExtended;
 import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
 import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
@@ -36,7 +36,7 @@ public class MixinModelPart {
 
         QuadVertexConsumer quadConsumer = (QuadVertexConsumer) vertexConsumer;
 
-        int color = ColorRGBA.packABGR(red, green, blue, alpha);
+        int color = ColorABGR.pack(red, green, blue, alpha);
 
         for (ModelPart.Cuboid cuboid : this.cuboids) {
             for (ModelPart.Quad quad : ((ModelCuboidAccessor) cuboid).getQuads()) {
