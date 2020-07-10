@@ -2,8 +2,9 @@ package me.jellysquid.mods.sodium.client.model.quad.sink;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.util.ColorRGBA;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
+import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
+import me.jellysquid.mods.sodium.client.util.color.ColorU8;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.VertexConsumer;
@@ -52,10 +53,10 @@ public class FallbackQuadSink implements ModelQuadSink, ModelQuadSinkDelegate {
 
             int color = quad.getColor(i);
 
-            float r = ColorRGBA.normalize(ColorRGBA.unpackRed(color));
-            float g = ColorRGBA.normalize(ColorRGBA.unpackGreen(color));
-            float b = ColorRGBA.normalize(ColorRGBA.unpackBlue(color));
-            float a = ColorRGBA.normalize(ColorRGBA.unpackAlpha(color));
+            float r = ColorU8.normalize(ColorABGR.unpackRed(color));
+            float g = ColorU8.normalize(ColorABGR.unpackGreen(color));
+            float b = ColorU8.normalize(ColorABGR.unpackBlue(color));
+            float a = ColorU8.normalize(ColorABGR.unpackAlpha(color));
 
             float u = quad.getTexU(i);
             float v = quad.getTexV(i);

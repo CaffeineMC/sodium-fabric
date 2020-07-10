@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.gui.font;
 
 import me.jellysquid.mods.sodium.client.model.consumer.GlyphVertexConsumer;
-import me.jellysquid.mods.sodium.client.util.ColorRGBA;
+import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.font.GlyphRenderer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.util.math.Matrix4f;
@@ -59,7 +59,7 @@ public class MixinGlyphRenderer {
         float w1 = italic ? 1.0F - 0.25F * y1 : 0.0F;
         float w2 = italic ? 1.0F - 0.25F * y2 : 0.0F;
 
-        int color = ColorRGBA.packABGR(red, green, blue, alpha);
+        int color = ColorABGR.pack(red, green, blue, alpha);
 
         GlyphVertexConsumer glyphs = ((GlyphVertexConsumer) vertexConsumer);
         glyphs.vertexGlyph(matrix, x1 + w1, h1, 0.0F, color, this.uMin, this.vMin, light);

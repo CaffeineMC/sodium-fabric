@@ -4,9 +4,10 @@ import me.jellysquid.mods.sodium.client.model.consumer.GlyphVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.consumer.ParticleVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.consumer.QuadVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.util.ColorRGBA;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
+import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
+import me.jellysquid.mods.sodium.client.util.color.ColorU8;
 import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
 import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
 import net.minecraft.client.render.BufferBuilder;
@@ -74,8 +75,8 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
     private void vertexParticleFallback(float x, float y, float z, float u, float v, int color, int light) {
         this.vertex(x, y, z);
         this.texture(u, v);
-        this.color(ColorRGBA.unpackRed(color), ColorRGBA.unpackGreen(color), ColorRGBA.unpackBlue(color),
-                ColorRGBA.unpackAlpha(color));
+        this.color(ColorABGR.unpackRed(color), ColorABGR.unpackGreen(color), ColorABGR.unpackBlue(color),
+                ColorABGR.unpackAlpha(color));
         this.light(light);
         this.next();
     }
@@ -159,8 +160,8 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
 
     private void vertexQuadFallback(float x, float y, float z, int color, float u, float v, int overlay, int light, int normal) {
         this.vertex(x, y, z);
-        this.color(ColorRGBA.unpackRed(color), ColorRGBA.unpackGreen(color), ColorRGBA.unpackBlue(color),
-                ColorRGBA.unpackAlpha(color));
+        this.color(ColorABGR.unpackRed(color), ColorABGR.unpackGreen(color), ColorABGR.unpackBlue(color),
+                ColorABGR.unpackAlpha(color));
         this.texture(u, v);
 
         if (this.field_21595) {
@@ -272,9 +273,9 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
             if (colorize) {
                 int color = quadView.getColor(i);
 
-                float oR = ColorRGBA.normalize(ColorRGBA.unpackRed(color));
-                float oG = ColorRGBA.normalize(ColorRGBA.unpackGreen(color));
-                float oB = ColorRGBA.normalize(ColorRGBA.unpackBlue(color));
+                float oR = ColorU8.normalize(ColorABGR.unpackRed(color));
+                float oG = ColorU8.normalize(ColorABGR.unpackGreen(color));
+                float oB = ColorU8.normalize(ColorABGR.unpackBlue(color));
 
                 fR = oR * brightness * r;
                 fG = oG * brightness * g;
@@ -288,7 +289,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
             float u = quadView.getTexU(i);
             float v = quadView.getTexV(i);
 
-            int color = ColorRGBA.packABGR(fR, fG, fB, 1.0F);
+            int color = ColorABGR.pack(fR, fG, fB, 1.0F);
 
             Vector4f pos = new Vector4f(x, y, z, 1.0F);
             pos.transform(modelMatrix);
@@ -326,8 +327,8 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
 
     private void vertexGlyphFallback(float x, float y, float z, int color, float u, float v, int light) {
         this.vertex(x, y, z);
-        this.color(ColorRGBA.unpackRed(color), ColorRGBA.unpackGreen(color), ColorRGBA.unpackBlue(color),
-                ColorRGBA.unpackAlpha(color));
+        this.color(ColorABGR.unpackRed(color), ColorABGR.unpackGreen(color), ColorABGR.unpackBlue(color),
+                ColorABGR.unpackAlpha(color));
         this.texture(u, v);
         this.light(light);
         this.next();

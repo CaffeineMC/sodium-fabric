@@ -3,8 +3,8 @@ package me.jellysquid.mods.sodium.mixin.pipeline;
 import me.jellysquid.mods.sodium.client.model.consumer.GlyphVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.consumer.ParticleVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.consumer.QuadVertexConsumer;
-import me.jellysquid.mods.sodium.client.util.ColorRGBA;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
+import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.util.math.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,7 +37,7 @@ public interface MixinVertexConsumer extends ParticleVertexConsumer, QuadVertexC
     default void vertexParticle(float x, float y, float z, float u, float v, int color, int light) {
         this.vertex(x, y, z);
         this.texture(u, v);
-        this.color(ColorRGBA.unpackRed(color), ColorRGBA.unpackGreen(color), ColorRGBA.unpackBlue(color), ColorRGBA.unpackAlpha(color));
+        this.color(ColorABGR.unpackRed(color), ColorABGR.unpackGreen(color), ColorABGR.unpackBlue(color), ColorABGR.unpackAlpha(color));
         this.light(light);
         this.next();
     }
@@ -45,7 +45,7 @@ public interface MixinVertexConsumer extends ParticleVertexConsumer, QuadVertexC
     @Override
     default void vertexQuad(float x, float y, float z, int color, float u, float v, int light, int overlay, int normal) {
         this.vertex(x, y, z);
-        this.color(ColorRGBA.unpackRed(color), ColorRGBA.unpackGreen(color), ColorRGBA.unpackBlue(color), ColorRGBA.unpackAlpha(color));
+        this.color(ColorABGR.unpackRed(color), ColorABGR.unpackGreen(color), ColorABGR.unpackBlue(color), ColorABGR.unpackAlpha(color));
         this.texture(u, v);
         this.overlay(overlay);
         this.light(light);
@@ -56,7 +56,7 @@ public interface MixinVertexConsumer extends ParticleVertexConsumer, QuadVertexC
     @Override
     default void vertexGlyph(Matrix4f matrix, float x, float y, float z, int color, float u, float v, int light) {
         this.vertex(x, y, z);
-        this.color(ColorRGBA.unpackRed(color), ColorRGBA.unpackGreen(color), ColorRGBA.unpackBlue(color), ColorRGBA.unpackAlpha(color));
+        this.color(ColorABGR.unpackRed(color), ColorABGR.unpackGreen(color), ColorABGR.unpackBlue(color), ColorABGR.unpackAlpha(color));
         this.texture(u, v);
         this.light(light);
         this.next();

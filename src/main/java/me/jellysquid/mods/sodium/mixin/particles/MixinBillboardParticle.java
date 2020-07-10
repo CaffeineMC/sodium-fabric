@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.particles;
 
 import me.jellysquid.mods.sodium.client.model.consumer.ParticleVertexConsumer;
-import me.jellysquid.mods.sodium.client.util.ColorRGBA;
+import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.Camera;
@@ -67,7 +67,7 @@ public abstract class MixinBillboardParticle extends Particle {
         float minV = this.getMinV();
         float maxV = this.getMaxV();
 
-        int color = ColorRGBA.packABGR(this.colorRed, this.colorGreen, this.colorBlue, this.colorAlpha);
+        int color = ColorABGR.pack(this.colorRed, this.colorGreen, this.colorBlue, this.colorAlpha);
 
         ParticleVertexConsumer vertices = (ParticleVertexConsumer) vertexConsumer;
 
