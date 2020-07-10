@@ -8,7 +8,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManag
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
-import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderPipeline;
+import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -81,9 +81,11 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
             throw new IllegalStateException("Threads are still alive while in the STOPPED state");
         }
 
+        MinecraftClient client = MinecraftClient.getInstance();
+
         for (int i = 0; i < this.limitThreads; i++) {
             ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.format, this.renderPassManager);
-            ChunkRenderPipeline pipeline = new ChunkRenderPipeline(MinecraftClient.getInstance());
+            ChunkRenderContext pipeline = new ChunkRenderContext(client);
 
             WorkerRunnable worker = new WorkerRunnable(buffers, pipeline);
 
@@ -318,9 +320,9 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         // Making this thread-local provides a small boost to performance by avoiding the overhead in synchronizing
         // caches between different CPU cores
-        private final ChunkRenderPipeline pipeline;
+        private final ChunkRenderContext pipeline;
 
-        public WorkerRunnable(ChunkBuildBuffers bufferCache, ChunkRenderPipeline pipeline) {
+        public WorkerRunnable(ChunkBuildBuffers bufferCache, ChunkRenderContext pipeline) {
             this.bufferCache = bufferCache;
             this.pipeline = pipeline;
         }

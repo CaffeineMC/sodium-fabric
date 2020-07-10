@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.model.light.cache;
+package me.jellysquid.mods.sodium.client.model.light.data;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.WorldRenderer;
@@ -23,11 +23,10 @@ import net.minecraft.world.BlockRenderView;
  *
  * You can use the various static pack/unpack methods to extract these values in a usable format.
  */
-public abstract class LightDataCache {
+public abstract class LightDataAccess {
     protected static final FluidState EMPTY_FLUID_STATE = Fluids.EMPTY.getDefaultState();
 
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
-
     protected BlockRenderView world;
 
     public long get(int x, int y, int z, Direction d1, Direction d2) {

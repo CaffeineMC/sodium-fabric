@@ -24,6 +24,9 @@ public class MixinBakedQuad implements ModelQuadView {
     @Final
     protected Sprite sprite;
 
+    @Shadow
+    @Final
+    protected int colorIndex;
     private int cachedFlags;
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -79,5 +82,10 @@ public class MixinBakedQuad implements ModelQuadView {
     @Override
     public int getNormal(int idx) {
         return this.vertexData[vertexOffset(idx) + NORMAL_INDEX];
+    }
+
+    @Override
+    public int getColorIndex() {
+        return this.colorIndex;
     }
 }

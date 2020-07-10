@@ -15,6 +15,9 @@ public class ModelQuad implements ModelQuadViewMutable {
     private final int[] data = new int[VERTEX_SIZE * 4];
     private int flags;
 
+    private Sprite sprite;
+    private int colorIdx;
+
     @Override
     public void setX(int idx, float x) {
         this.data[vertexOffset(idx) + POSITION_INDEX] = Float.floatToRawIntBits(x);
@@ -61,6 +64,16 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
+    public void setSprite(Sprite sprite) {
+        this.sprite = sprite;
+    }
+
+    @Override
+    public void setColorIndex(int index) {
+        this.colorIdx = index;
+    }
+
+    @Override
     public int getLight(int idx) {
         return this.data[vertexOffset(idx) + LIGHT_INDEX];
     }
@@ -68,6 +81,11 @@ public class ModelQuad implements ModelQuadViewMutable {
     @Override
     public int getNormal(int idx) {
         return this.data[vertexOffset(idx) + NORMAL_INDEX];
+    }
+
+    @Override
+    public int getColorIndex() {
+        return this.colorIdx;
     }
 
     @Override
@@ -107,7 +125,7 @@ public class ModelQuad implements ModelQuadViewMutable {
 
     @Override
     public Sprite getSprite() {
-        return null;
+        return this.sprite;
     }
 
     @Override

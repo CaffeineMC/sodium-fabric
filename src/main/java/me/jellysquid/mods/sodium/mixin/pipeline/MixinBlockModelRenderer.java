@@ -3,8 +3,8 @@ package me.jellysquid.mods.sodium.mixin.pipeline;
 import me.jellysquid.mods.sodium.client.model.consumer.QuadVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.sink.FallbackQuadSink;
-import me.jellysquid.mods.sodium.client.render.block.BlockRenderPipeline;
-import me.jellysquid.mods.sodium.client.render.pipeline.GlobalRenderer;
+import me.jellysquid.mods.sodium.client.render.pipeline.BlockRenderer;
+import me.jellysquid.mods.sodium.client.render.pipeline.context.GlobalRenderContext;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -35,10 +35,10 @@ public class MixinBlockModelRenderer {
 
     @Inject(method = "render(Lnet/minecraft/world/BlockRenderView;Lnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;ZLjava/util/Random;JI)Z", at = @At("HEAD"), cancellable = true)
     private void preRenderBlockInWorld(BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, MatrixStack matrixStack, VertexConsumer consumer, boolean cull, Random rand, long seed, int int_1, CallbackInfoReturnable<Boolean> cir) {
-        GlobalRenderer renderer = GlobalRenderer.getInstance(world);
-        BlockRenderPipeline blockRenderer = renderer.getBlockRenderer();
+        GlobalRenderContext renderer = GlobalRenderContext.getInstance(world);
+        BlockRenderer blockRenderer = renderer.getBlockRenderer();
 
-        boolean ret = blockRenderer.renderModel(null, world, model, state, pos, new FallbackQuadSink(consumer, matrixStack), cull, rand, seed);
+        boolean ret = blockRenderer.renderModel(world, state, pos, model, new FallbackQuadSink(consumer, matrixStack), cull, seed);
 
         cir.setReturnValue(ret);
     }
@@ -80,7 +80,6 @@ public class MixinBlockModelRenderer {
         }
 
         for (BakedQuad bakedQuad : list) {
-
             int color = bakedQuad.hasColor() ? defaultColor : 0xFFFFFFFF;
 
             ModelQuadView quad = ((ModelQuadView) bakedQuad);

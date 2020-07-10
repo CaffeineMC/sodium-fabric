@@ -8,7 +8,7 @@ import net.minecraft.world.level.ColorResolver;
 
 import java.util.Arrays;
 
-public class BiomeColorBlendCache {
+public class BiomeColorCache {
     private final ColorResolver resolver;
     private final WorldSlice slice;
 
@@ -19,7 +19,7 @@ public class BiomeColorBlendCache {
     private final int length;
     private final int minX, minZ;
 
-    public BiomeColorBlendCache(ColorResolver resolver, WorldSlice slice) {
+    public BiomeColorCache(ColorResolver resolver, WorldSlice slice) {
         this.resolver = resolver;
         this.slice = slice;
         this.radius = SodiumClientMod.options().quality.biomeBlendDistance;

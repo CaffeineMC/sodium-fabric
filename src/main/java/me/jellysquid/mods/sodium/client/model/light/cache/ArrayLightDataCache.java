@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.light.cache;
 
+import me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess;
 import net.minecraft.world.BlockRenderView;
 
 import java.util.Arrays;
@@ -9,7 +10,7 @@ import java.util.Arrays;
  * neighbors. This is considerably faster than using a hash table to lookup values for a given block position and
  * can be re-used by {@link me.jellysquid.mods.sodium.client.world.WorldSlice} to avoid allocations.
  */
-public class ArrayLightDataCache extends LightDataCache {
+public class ArrayLightDataCache extends LightDataAccess {
     private final long[] light;
     private final int xSize, ySize, zSize;
     private int xOffset, yOffset, zOffset;
@@ -30,7 +31,6 @@ public class ArrayLightDataCache extends LightDataCache {
 
     public void init(BlockRenderView world, int x, int y, int z) {
         this.world = world;
-
         this.xOffset = x;
         this.yOffset = y;
         this.zOffset = z;

@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk;
+package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -33,13 +33,29 @@ public class ChunkRenderBounds {
         private boolean empty = true;
 
         public void addBlock(int x, int y, int z) {
-            this.x1 = Math.min(this.x1, x);
-            this.y1 = Math.min(this.y1, y);
-            this.z1 = Math.min(this.z1, z);
+            if (x < this.x1) {
+                this.x1 = x;
+            }
 
-            this.x2 = Math.max(this.x2, x + 1);
-            this.y2 = Math.max(this.y2, y + 1);
-            this.z2 = Math.max(this.z2, z + 1);
+            if (x > this.x2) {
+                this.x2 = x;
+            }
+
+            if (y < this.y1) {
+                this.y1 = y;
+            }
+
+            if (y > this.y2) {
+                this.y2 = y;
+            }
+
+            if (z < this.z1) {
+                this.z1 = z;
+            }
+
+            if (z > this.z2) {
+                this.z2 = z;
+            }
 
             this.empty = false;
         }
@@ -50,13 +66,13 @@ public class ChunkRenderBounds {
             }
 
             return new ChunkRenderBounds(
-                    Math.max(this.x1, origin.getMinX()),
-                    Math.max(this.y1, origin.getMinY()),
-                    Math.max(this.z1, origin.getMinZ()),
+                    Math.max(this.x1, origin.getMinX()) - 0.5f,
+                    Math.max(this.y1, origin.getMinY()) - 0.5f,
+                    Math.max(this.z1, origin.getMinZ()) - 0.5f,
 
-                    Math.min(this.x2, origin.getMaxX() + 1),
-                    Math.min(this.y2, origin.getMaxY() + 1),
-                    Math.min(this.z2, origin.getMaxZ() + 1)
+                    Math.min(this.x2 + 1, origin.getMaxX()) + 0.5f,
+                    Math.min(this.y2 + 1, origin.getMaxY()) + 0.5f,
+                    Math.min(this.z2 + 1, origin.getMaxZ()) + 0.5f
             );
         }
     }

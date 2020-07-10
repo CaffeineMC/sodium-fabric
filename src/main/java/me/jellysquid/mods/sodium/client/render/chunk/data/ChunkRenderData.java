@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
@@ -105,16 +104,6 @@ public class ChunkRenderData {
 
         public void setOcclusionData(ChunkOcclusionData data) {
             this.occlusionData = data;
-        }
-
-        /**
-         * Adds the sprites to this data container for tracking. See {@link Builder#addSprite(Sprite)}.
-         * @param sprites The collection of sprites to be added
-         */
-        public void addSprites(Sprite[] sprites) {
-            for (Sprite sprite : sprites) {
-                this.addSprite(sprite);
-            }
         }
 
         /**
