@@ -41,6 +41,6 @@ public class SodiumClientMod implements ClientModInitializer {
     }
 
     public static void onConfigChanged(SodiumGameOptions options) {
-        UnsafeUtil.setEnabled(options.performance.useMemoryIntrinsics);
+        UnsafeUtil.setEnabled(options.advanced.useMemoryIntrinsics);
     }
 }

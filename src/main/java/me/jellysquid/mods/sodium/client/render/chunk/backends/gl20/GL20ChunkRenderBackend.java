@@ -42,7 +42,7 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
         return new VBOGraphicsState(memoryTracker, container);
     }
 
-    public static boolean isSupported() {
+    public static boolean isSupported(boolean disableBlacklist) {
         return true;
     }
 

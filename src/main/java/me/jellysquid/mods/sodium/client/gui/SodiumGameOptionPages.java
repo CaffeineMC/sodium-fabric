@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
@@ -225,6 +226,8 @@ public class SodiumGameOptionPages {
     }
 
     public static OptionPage advanced() {
+        boolean disableBlacklist = SodiumClientMod.options().advanced.disableDriverBlacklist;
+
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
@@ -234,8 +237,8 @@ public class SodiumGameOptionPages {
                                 "You should use the latest feature set allowed by Sodium for optimal performance. If you're experiencing chunk rendering issues " +
                                 "or driver crashes, try using the older (and possibly more stable) feature sets.")
                         .setControl((opt) -> new CyclingControl<>(opt, SodiumGameOptions.ChunkRendererBackendOption.class,
-                                SodiumGameOptions.ChunkRendererBackendOption.getAvailableOptions()))
-                        .setBinding((opts, value) -> opts.performance.chunkRendererBackend = value, opts -> opts.performance.chunkRendererBackend)
+                                SodiumGameOptions.ChunkRendererBackendOption.getAvailableOptions(disableBlacklist)))
+                        .setBinding((opts, value) -> opts.advanced.chunkRendererBackend = value, opts -> opts.advanced.chunkRendererBackend)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .build());
@@ -247,7 +250,7 @@ public class SodiumGameOptionPages {
                                 "can eliminate a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.performance.useChunkFaceCulling = value, opts -> opts.performance.useChunkFaceCulling)
+                        .setBinding((opts, value) -> opts.advanced.useChunkFaceCulling = value, opts -> opts.advanced.useChunkFaceCulling)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )
@@ -258,7 +261,7 @@ public class SodiumGameOptionPages {
                                 "some edge cases.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.performance.useCompactVertexFormat = value, opts -> opts.performance.useCompactVertexFormat)
+                        .setBinding((opts, value) -> opts.advanced.useCompactVertexFormat = value, opts -> opts.advanced.useCompactVertexFormat)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )
@@ -268,7 +271,7 @@ public class SodiumGameOptionPages {
                                 "will generally provide a modest improvement to the number of chunks rendered each frame, especially " +
                                 "where fog effects are heavier (i.e. while underwater.)")
                         .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.performance.useFogOcclusion = value, opts -> opts.performance.useFogOcclusion)
+                        .setBinding((opts, value) -> opts.advanced.useFogOcclusion = value, opts -> opts.advanced.useFogOcclusion)
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
@@ -279,7 +282,7 @@ public class SodiumGameOptionPages {
                                 "takes into account the current set of visible chunks and removes entities which are not in any visible chunks.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.performance.useAdvancedEntityCulling = value, opts -> opts.performance.useAdvancedEntityCulling)
+                        .setBinding((opts, value) -> opts.advanced.useAdvancedEntityCulling = value, opts -> opts.advanced.useAdvancedEntityCulling)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
@@ -288,7 +291,7 @@ public class SodiumGameOptionPages {
                                 "to frame rates when many particles are nearby.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.performance.useParticleCulling = value, opts -> opts.performance.useParticleCulling)
+                        .setBinding((opts, value) -> opts.advanced.useParticleCulling = value, opts -> opts.advanced.useParticleCulling)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
@@ -297,7 +300,7 @@ public class SodiumGameOptionPages {
                                 "rates on some hardware. If you experience issues with some textures not being animated, disable this option.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.performance.animateOnlyVisibleTextures = value, opts -> opts.performance.animateOnlyVisibleTextures)
+                        .setBinding((opts, value) -> opts.advanced.animateOnlyVisibleTextures = value, opts -> opts.advanced.animateOnlyVisibleTextures)
                         .build()
                 )
                 .build());
@@ -311,11 +314,23 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setEnabled(UnsafeUtil.isSupported())
-                        .setBinding((opts, value) -> opts.performance.useMemoryIntrinsics = value, opts -> opts.performance.useMemoryIntrinsics)
+                        .setBinding((opts, value) -> opts.advanced.useMemoryIntrinsics = value, opts -> opts.advanced.useMemoryIntrinsics)
                         .build()
                 )
                 .build());
 
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Disable Driver Blacklist")
+                        .setTooltip("If enabled, Sodium will ignore the built-in blacklist of known broken drivers and enable options which are known to be broken " +
+                                "with your system configuration. This might cause serious problems and should not be used unless you really do know better. The settings " +
+                                "screen must be saved, closed, and re-opened after changing this option in order to reveal previously hidden options.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.advanced.disableDriverBlacklist = value, opts -> opts.advanced.disableDriverBlacklist)
+                        .build()
+
+                )
+                .build());
         return new OptionPage("Advanced", ImmutableList.copyOf(groups));
     }
 }

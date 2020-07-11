@@ -16,12 +16,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
 public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
-    public final PerformanceSettings performance = new PerformanceSettings();
+    public final AdvancedSettings advanced = new AdvancedSettings();
 
     private File file;
 
@@ -29,7 +28,7 @@ public class SodiumGameOptions {
         SodiumClientMod.onConfigChanged(this);
     }
 
-    public static class PerformanceSettings {
+    public static class AdvancedSettings {
         public ChunkRendererBackendOption chunkRendererBackend = ChunkRendererBackendOption.BEST;
         public boolean animateOnlyVisibleTextures = true;
         public boolean useAdvancedEntityCulling = true;
@@ -38,6 +37,7 @@ public class SodiumGameOptions {
         public boolean useCompactVertexFormat = true;
         public boolean useChunkFaceCulling = true;
         public boolean useMemoryIntrinsics = true;
+        public boolean disableDriverBlacklist = false;
     }
 
     public static class QualitySettings {
@@ -59,9 +59,9 @@ public class SodiumGameOptions {
         public static final ChunkRendererBackendOption BEST = pickBestBackend();
 
         private final String name;
-        private final BooleanSupplier supportedFunc;
+        private final SupportCheck supportedFunc;
 
-        ChunkRendererBackendOption(String name, BooleanSupplier supportedFunc) {
+        ChunkRendererBackendOption(String name, SupportCheck supportedFunc) {
             this.name = name;
             this.supportedFunc = supportedFunc;
         }
@@ -71,24 +71,28 @@ public class SodiumGameOptions {
             return this.name;
         }
 
-        public boolean isSupported() {
-            return this.supportedFunc.getAsBoolean();
+        public boolean isSupported(boolean disableBlacklist) {
+            return this.supportedFunc.isSupported(disableBlacklist);
         }
 
-        public static ChunkRendererBackendOption[] getAvailableOptions() {
-            return streamAvailableOptions()
+        public static ChunkRendererBackendOption[] getAvailableOptions(boolean disableBlacklist) {
+            return streamAvailableOptions(disableBlacklist)
                     .toArray(ChunkRendererBackendOption[]::new);
         }
 
-        public static Stream<ChunkRendererBackendOption> streamAvailableOptions() {
+        public static Stream<ChunkRendererBackendOption> streamAvailableOptions(boolean disableBlacklist) {
             return Arrays.stream(ChunkRendererBackendOption.values())
-                    .filter(ChunkRendererBackendOption::isSupported);
+                    .filter((o) -> o.isSupported(disableBlacklist));
         }
 
         private static ChunkRendererBackendOption pickBestBackend() {
-            return streamAvailableOptions()
+            return streamAvailableOptions(false)
                     .findFirst()
                     .orElseThrow(IllegalStateException::new);
+        }
+
+        private interface SupportCheck {
+            boolean isSupported(boolean disableBlacklist);
         }
     }
 
@@ -158,8 +162,8 @@ public class SodiumGameOptions {
     }
 
     private void sanitize() {
-        if (this.performance.chunkRendererBackend == null) {
-            this.performance.chunkRendererBackend = ChunkRendererBackendOption.BEST;
+        if (this.advanced.chunkRendererBackend == null) {
+            this.advanced.chunkRendererBackend = ChunkRendererBackendOption.BEST;
         }
     }
 

@@ -36,7 +36,7 @@ public class GL30ChunkRenderBackend extends ChunkRenderBackendOneshot<VAOGraphic
         return new VAOGraphicsState(memoryTracker, container);
     }
 
-    public static boolean isSupported() {
+    public static boolean isSupported(boolean disableBlacklist) {
         return GlFunctions.isVertexArraySupported();
     }
 

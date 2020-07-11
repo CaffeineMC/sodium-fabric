@@ -141,7 +141,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     public void updateChunks(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
         this.frustum = frustum;
 
-        this.useEntityCulling = SodiumClientMod.options().performance.useAdvancedEntityCulling;
+        this.useEntityCulling = SodiumClientMod.options().advanced.useAdvancedEntityCulling;
 
         if (this.client.options.viewDistance != this.renderDistance) {
             this.reload();
@@ -236,13 +236,13 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         final GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> vertexFormat;
 
-        if (opts.performance.useCompactVertexFormat) {
+        if (opts.advanced.useCompactVertexFormat) {
             vertexFormat = SodiumVertexFormats.CHUNK_MESH_COMPACT;
         } else {
             vertexFormat = SodiumVertexFormats.CHUNK_MESH_FULL;
         }
 
-        this.chunkRenderBackend = createChunkRenderBackend(opts.performance.chunkRendererBackend, vertexFormat);
+        this.chunkRenderBackend = createChunkRenderBackend(opts.advanced.chunkRendererBackend, vertexFormat);
         this.chunkRenderBackend.createShaders();
 
         this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.renderPassManager, this.world, this.renderDistance);
@@ -251,17 +251,19 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     private static ChunkRenderBackend<?> createChunkRenderBackend(SodiumGameOptions.ChunkRendererBackendOption opt,
                                                            GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> vertexFormat) {
+        boolean disableBlacklist = SodiumClientMod.options().advanced.disableDriverBlacklist;
+
         switch (opt) {
             case GL43:
-                if (GL43ChunkRenderBackend.isSupported()) {
+                if (GL43ChunkRenderBackend.isSupported(disableBlacklist)) {
                     return new GL43ChunkRenderBackend(vertexFormat);
                 }
             case GL30:
-                if (GL30ChunkRenderBackend.isSupported()) {
+                if (GL30ChunkRenderBackend.isSupported(disableBlacklist)) {
                     return new GL30ChunkRenderBackend(vertexFormat);
                 }
             case GL20:
-                if (GL20ChunkRenderBackend.isSupported()) {
+                if (GL20ChunkRenderBackend.isSupported(disableBlacklist)) {
                     return new GL20ChunkRenderBackend(vertexFormat);
                 }
             default:
