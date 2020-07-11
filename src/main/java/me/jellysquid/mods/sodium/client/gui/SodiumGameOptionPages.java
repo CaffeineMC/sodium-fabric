@@ -322,7 +322,7 @@ public class SodiumGameOptionPages {
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Disable Driver Blacklist")
-                        .setTooltip("If enabled, Sodium will ignore the built-in blacklist of known broken drivers and enable options which are known to be broken " +
+                        .setTooltip("If selected, Sodium will ignore the built-in driver blacklist and enable options which are known to be broken " +
                                 "with your system configuration. This might cause serious problems and should not be used unless you really do know better. The settings " +
                                 "screen must be saved, closed, and re-opened after changing this option in order to reveal previously hidden options.")
                         .setControl(TickBoxControl::new)
