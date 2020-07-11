@@ -42,7 +42,7 @@ public abstract class MixinSprite implements SpriteExtended {
     public void tickAnimation() {
         this.frameTicks++;
 
-        boolean onDemand = SodiumClientMod.options().performance.animateOnlyVisibleTextures;
+        boolean onDemand = SodiumClientMod.options().advanced.animateOnlyVisibleTextures;
 
         if (!onDemand || this.forceNextUpdate) {
             this.uploadTexture();

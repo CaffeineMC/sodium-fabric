@@ -13,6 +13,7 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
+import me.jellysquid.mods.sodium.client.gl.util.GlVendorUtil;
 import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
@@ -307,7 +308,16 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         return LCBGraphicsState.class;
     }
 
-    public static boolean isSupported() {
+    public static boolean isSupported(boolean disableBlacklist) {
+        if (!disableBlacklist) {
+            // Blacklist proprietary AMD drivers. See: http://ati.cchtml.com/show_bug.cgi?id=1273
+            // The open-source Mesa drivers identify using the vendor string "X.org", so this should still allow those
+            // drivers to be used.
+            if (GlVendorUtil.matches("ATI Technologies Inc.")) {
+                return false;
+            }
+        }
+
         return GlFunctions.isVertexArraySupported() &&
                 GlFunctions.isBufferCopySupported() &&
                 GlFunctions.isIndirectMultiDrawSupported() &&

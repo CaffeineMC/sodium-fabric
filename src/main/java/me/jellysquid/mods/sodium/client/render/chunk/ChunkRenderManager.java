@@ -245,7 +245,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
         this.lastFrameUpdated = frame;
         this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
-        this.useAggressiveCulling = SodiumClientMod.options().performance.useChunkFaceCulling;
+        this.useAggressiveCulling = SodiumClientMod.options().advanced.useChunkFaceCulling;
 
         this.resetGraph();
 
@@ -294,7 +294,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
         this.useFogCulling = false;
 
-        if (SodiumClientMod.options().performance.useFogOcclusion) {
+        if (SodiumClientMod.options().advanced.useFogOcclusion) {
             float dist = GlFogHelper.getFogCutoff() + FOG_PLANE_OFFSET;
 
             if (dist != 0.0f) {

@@ -36,7 +36,7 @@ public class MixinParticleManager {
     @Inject(method = "renderParticles", at = @At("HEAD"))
     private void preRenderParticles(MatrixStack matrixStack, VertexConsumerProvider.Immediate immediate, LightmapTextureManager lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
         Frustum frustum = SodiumWorldRenderer.getInstance().getFrustum();
-        boolean useCulling = SodiumClientMod.options().performance.useParticleCulling;
+        boolean useCulling = SodiumClientMod.options().advanced.useParticleCulling;
 
         // Setup the frustum state before rendering particles
         if (useCulling && frustum != null) {
