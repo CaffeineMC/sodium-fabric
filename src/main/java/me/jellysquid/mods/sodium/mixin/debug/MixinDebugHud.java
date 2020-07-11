@@ -1,9 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.debug;
 
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
 import net.minecraft.client.gui.hud.DebugHud;
+import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -36,6 +38,10 @@ public abstract class MixinDebugHud {
 
         strings.add("");
         strings.addAll(getChunkRendererDebugStrings());
+
+        if (SodiumClientMod.options().advanced.disableDriverBlacklist) {
+            strings.add(Formatting.RED + "(!!) Driver blacklist ignored");
+        }
     }
 
     private static List<String> getChunkRendererDebugStrings() {
