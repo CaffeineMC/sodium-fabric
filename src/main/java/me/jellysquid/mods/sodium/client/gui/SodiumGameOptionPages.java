@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStor
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.options.AttackIndicator;
 import net.minecraft.client.options.GraphicsMode;
 import net.minecraft.client.options.Option;
@@ -48,7 +49,16 @@ public class SodiumGameOptionPages {
                         .setName("Clouds")
                         .setTooltip("Controls whether or not clouds will be visible.")
                         .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.quality.enableClouds = value, (opts) -> opts.quality.enableClouds)
+                        .setBinding((opts, value) -> {
+                            opts.quality.enableClouds = value;
+
+                            if (MinecraftClient.isFabulousGraphicsOrBetter()) {
+                                Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
+                                if (framebuffer != null) {
+                                    framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
+                                }
+                            }
+                        }, (opts) -> opts.quality.enableClouds)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .build());
