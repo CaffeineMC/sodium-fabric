@@ -48,7 +48,6 @@ public class SodiumGameOptions {
         public boolean enableClouds = true;
 
         public LightingQuality smoothLighting = LightingQuality.HIGH;
-        public int biomeBlendDistance = 3;
     }
 
     public enum ChunkRendererBackendOption implements TextProvider {
