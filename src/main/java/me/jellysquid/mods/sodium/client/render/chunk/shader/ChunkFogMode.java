@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.google.common.collect.ImmutableList;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
+import me.jellysquid.mods.sodium.client.gl.util.GlFogHelper;
 import org.lwjgl.opengl.GL11;
 
 import java.util.List;
@@ -32,7 +33,7 @@ public enum ChunkFogMode {
      * Retrieves the current fog mode from the fixed-function pipeline.
      */
     public static ChunkFogMode getActiveMode() {
-        if (!GL11.glGetBoolean(GL11.GL_FOG)) {
+        if (!GlFogHelper.isFogEnabled()) {
             return ChunkFogMode.NONE;
         }
 

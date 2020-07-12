@@ -45,6 +45,7 @@ public class SodiumGameOptions {
         public GraphicsQuality weatherQuality = GraphicsQuality.DEFAULT;
 
         public boolean enableVignette = true;
+        public boolean enableFog = true;
         public boolean enableClouds = true;
 
         public LightingQuality smoothLighting = LightingQuality.HIGH;

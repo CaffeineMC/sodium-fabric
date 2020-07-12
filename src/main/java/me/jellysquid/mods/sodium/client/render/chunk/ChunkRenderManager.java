@@ -294,7 +294,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
         this.useFogCulling = false;
 
-        if (SodiumClientMod.options().advanced.useFogOcclusion) {
+        if (GlFogHelper.isFogEnabled() && SodiumClientMod.options().advanced.useFogOcclusion) {
             float dist = GlFogHelper.getFogCutoff() + FOG_PLANE_OFFSET;
 
             if (dist != 0.0f) {

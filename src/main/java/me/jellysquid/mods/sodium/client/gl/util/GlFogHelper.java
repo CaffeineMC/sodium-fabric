@@ -33,4 +33,12 @@ public class GlFogHelper {
                 return 0.0f;
         }
     }
+
+    public static boolean isFogEnabled() {
+        return GL11.glGetBoolean(GL11.GL_FOG);
+    }
+
+    public static boolean isFogLinear() {
+        return GL11.glGetInteger(GL11.GL_FOG_MODE) == GL11.GL_LINEAR;
+    }
 }

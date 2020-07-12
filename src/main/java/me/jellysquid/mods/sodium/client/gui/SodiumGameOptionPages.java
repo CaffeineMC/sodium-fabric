@@ -61,6 +61,14 @@ public class SodiumGameOptionPages {
                         }, (opts) -> opts.quality.enableClouds)
                         .setImpact(OptionImpact.LOW)
                         .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Fog")
+                        .setTooltip("If enabled, a fog effect will be used for terrain in the distance. Disabling this option will not change " +
+                                "fog effects used underwater or in the Nether.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.quality.enableFog = value, opts -> opts.quality.enableFog)
+                        .setImpact(OptionImpact.LOW)
+                        .build())
                 .build());
 
         groups.add(OptionGroup.createBuilder()
