@@ -197,7 +197,7 @@ public class SodiumGameOptionPages {
                         .setTooltip("Controls how far away entities can render from the player. Higher values increase the render distance at the expense " +
                                 "of frame rates.")
                         .setControl(option -> new SliderControl(option, 50, 500, 25, ControlValueFormatter.percentage()))
-                        .setBinding((opts, value) -> opts.entityDistanceScaling = Math.round(value / 100.0F), opts -> Math.round(opts.entityDistanceScaling * 100.0F))
+                        .setBinding((opts, value) -> opts.entityDistanceScaling = value / 100.0F, opts -> Math.round(opts.entityDistanceScaling * 100.0F))
                         .setImpact(OptionImpact.MEDIUM)
                         .build()
                 )
