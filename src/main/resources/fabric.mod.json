@@ -30,6 +30,7 @@
     "fabricloader": ">=0.8.0"
   },
   "breaks": {
-    "optifabric": "*"
+    "optifabric": "*",
+    "canvas": "*"
   }
 }
