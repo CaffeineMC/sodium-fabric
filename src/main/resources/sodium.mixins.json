@@ -42,8 +42,7 @@
     "pipeline.MixinVertexConsumer",
     "pipeline.MixinWorldRenderer",
     "render_layers.MixinRenderLayers",
-    "textures.MixinEntityRenderDispatcher",
-    "textures.MixinInGameOverlayRenderer",
-    "textures.MixinSprite"
+    "textures.MixinSprite",
+    "textures.MixinSpriteIdentifier"
   ]
 }
