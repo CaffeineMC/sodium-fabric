@@ -1,3 +1,11 @@
 {
-
+  "control_value_formatter.gui_scale_auto": "Auto",
+  "control_value_formatter.fps_limit_unlimited": "Unlimited",
+  "control_value_formatter.moody": "Moody",
+  "control_value_formatter.bright": "Bright",
+  "option_impact.low": "Low",
+  "option_impact.medium": "Medium",
+  "option_impact.high": "High",
+  "option_impact.extreme": "Extreme",
+  "option_impact.varies": "Varies"
 }

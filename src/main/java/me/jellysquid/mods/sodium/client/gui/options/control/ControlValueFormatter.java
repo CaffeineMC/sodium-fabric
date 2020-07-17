@@ -1,20 +1,22 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
+import net.minecraft.client.resource.language.I18n;
+
 public interface ControlValueFormatter {
     static ControlValueFormatter guiScale() {
-        return (v) -> (v == 0) ? "Auto" : v + "x";
+        return (v) -> (v == 0) ? I18n.translate("control_value_formatter.gui_scale_auto") : v + "x";
     }
 
     static ControlValueFormatter fpsLimit() {
-        return (v) -> (v == 260) ? "Unlimited" : v + " FPS";
+        return (v) -> (v == 260) ? I18n.translate("control_value_formatter.fps_limit_unlimited") : v + " FPS";
     }
 
     static ControlValueFormatter brightness() {
         return (v) -> {
             if (v == 0) {
-                return "Moody";
+                return I18n.translate("control_value_formatter.moody");
             } else if (v == 100) {
-                return "Bright";
+                return I18n.translate("control_value_formatter.bright");
             } else {
                 return v + "%";
             }
