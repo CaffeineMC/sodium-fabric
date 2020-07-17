@@ -36,8 +36,8 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
 
     private int getVertexColor(BlockColorProvider colorizer, BlockRenderView world, BlockState state, BlockPos origin,
                                ModelQuadView quad, int vertexIdx) {
-        final int x = (int) (origin.getX() + quad.getX(vertexIdx));
-        final int z = (int) (origin.getZ() + quad.getZ(vertexIdx));
+        final int x = origin.getX() + (int) quad.getX(vertexIdx);
+        final int z = origin.getZ() + (int) quad.getZ(vertexIdx);
 
         final int color = this.getBlockColor(colorizer, world, state, origin, x, z, quad.getColorIndex());
 
@@ -51,22 +51,25 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
 
     private int getInterpolatedVertexColor(BlockColorProvider colorizer, BlockRenderView world, BlockState state,
                                            BlockPos origin, ModelQuadView quad, int vertexIdx) {
-        final float x = origin.getX() + quad.getX(vertexIdx);
-        final float z = origin.getZ() + quad.getZ(vertexIdx);
+        final float x = quad.getX(vertexIdx);
+        final float z = quad.getZ(vertexIdx);
 
-        // Integer component of position vector
         final int intX = (int) x;
         final int intZ = (int) z;
+
+        // Integer component of position vector
+        final int originX = origin.getX() + intX;
+        final int originZ = origin.getZ() + intZ;
 
         // Fraction component of position vector
         final float fracX = x - intX;
         final float fracZ = z - intZ;
 
         // Retrieve the color values for each neighbor
-        final int c1 = this.getBlockColor(colorizer, world, state, origin, intX, intZ, quad.getColorIndex());
-        final int c2 = this.getBlockColor(colorizer, world, state, origin, intX, intZ + 1, quad.getColorIndex());
-        final int c3 = this.getBlockColor(colorizer, world, state, origin, intX + 1, intZ, quad.getColorIndex());
-        final int c4 = this.getBlockColor(colorizer, world, state, origin, intX + 1, intZ + 1, quad.getColorIndex());
+        final int c1 = this.getBlockColor(colorizer, world, state, origin, originX, originZ, quad.getColorIndex());
+        final int c2 = this.getBlockColor(colorizer, world, state, origin, originX, originZ + 1, quad.getColorIndex());
+        final int c3 = this.getBlockColor(colorizer, world, state, origin, originX + 1, originZ, quad.getColorIndex());
+        final int c4 = this.getBlockColor(colorizer, world, state, origin, originX + 1, originZ + 1, quad.getColorIndex());
 
         final float fr, fg, fb;
 
