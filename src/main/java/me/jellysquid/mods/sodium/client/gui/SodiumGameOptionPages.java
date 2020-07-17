@@ -17,6 +17,7 @@ import net.minecraft.client.options.AttackIndicator;
 import net.minecraft.client.options.GraphicsMode;
 import net.minecraft.client.options.Option;
 import net.minecraft.client.options.ParticlesOption;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.Window;
 
 import java.util.ArrayList;
@@ -31,23 +32,22 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName("View Distance")
-                        .setTooltip("The view distance controls how far away terrain will be rendered. Lower distances mean that less terrain will be " +
-                                "rendered, improving frame rates.")
+                        .setName(I18n.translate("options.names.view_distance"))
+                        .setTooltip(I18n.translate("options.tooltips.view_distance"))
                         .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.quantity("Chunks")))
                         .setBinding((options, value) -> options.viewDistance = value, options -> options.viewDistance)
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName("Brightness")
-                        .setTooltip("Controls the brightness (gamma) of the game.")
+                        .setName(I18n.translate("options.names.brightness"))
+                        .setTooltip(I18n.translate("options.tooltips.brightness"))
                         .setControl(opt -> new SliderControl(opt, 0, 100, 1, ControlValueFormatter.brightness()))
                         .setBinding((opts, value) -> opts.gamma = value * 0.01D, (opts) -> (int) (opts.gamma / 0.01D))
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Clouds")
-                        .setTooltip("Controls whether or not clouds will be visible.")
+                        .setName(I18n.translate("options.names.clouds"))
+                        .setTooltip(I18n.translate("options.tooltips.clouds"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> {
                             opts.quality.enableClouds = value;
@@ -62,9 +62,8 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Fog")
-                        .setTooltip("If enabled, a fog effect will be used for terrain in the distance. Disabling this option will not change " +
-                                "fog effects used underwater or in the Nether.")
+                        .setName(I18n.translate("options.names.fog"))
+                        .setTooltip(I18n.translate("options.tooltips.fog"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.quality.enableFog = value, opts -> opts.quality.enableFog)
                         .setImpact(OptionImpact.LOW)
@@ -73,9 +72,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName("GUI Scale")
-                        .setTooltip("Sets the maximum scale factor to be used for the user interface. If 'auto' is used, then the largest scale factor " +
-                                "will always be used.")
+                        .setName(I18n.translate("options.names.gui_scale"))
+                        .setTooltip(I18n.translate("options.tooltips.gui_scale"))
                         .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.guiScale()))
                         .setBinding((opts, value) -> {
                             opts.guiScale = value;
@@ -85,8 +83,8 @@ public class SodiumGameOptionPages {
                         }, opts -> opts.guiScale)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
-                        .setName("Fullscreen")
-                        .setTooltip("If enabled, the game will display in full-screen (if supported).")
+                        .setName(I18n.translate("options.names.fullscreen"))
+                        .setTooltip(I18n.translate("options.tooltips.fullscreen"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> {
                             opts.fullscreen = value;
@@ -103,18 +101,15 @@ public class SodiumGameOptionPages {
                         }, (opts) -> opts.fullscreen)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
-                        .setName("V-Sync")
-                        .setTooltip("If enabled, the game's frame rate will be synchronized to the monitor's refresh rate, making for a generally smoother experience " +
-                                "at the expense of overall input latency. This setting might reduce performance if your system is too slow.")
+                        .setName(I18n.translate("options.names.v_sync"))
+                        .setTooltip(I18n.translate("options.tooltips.v_sync"))
                         .setControl(TickBoxControl::new)
                         .setBinding(new VanillaBooleanOptionBinding(Option.VSYNC))
                         .setImpact(OptionImpact.VARIES)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName("FPS Limit")
-                        .setTooltip("Limits the maximum number of frames per second. In effect, this will throttle the game and can be useful when you want to conserve " +
-                                "battery life or multi-task between other applications. If V-Sync is enabled, this option will be ignored unless it is lower than your " +
-                                "display's refresh rate.")
+                        .setName(I18n.translate("options.names.fps_limit"))
+                        .setTooltip(I18n.translate("options.tooltips.fps_limit"))
                         .setControl(option -> new SliderControl(option, 5, 260, 5, ControlValueFormatter.fpsLimit()))
                         .setBinding((opts, value) -> {
                             opts.maxFps = value;
@@ -125,14 +120,14 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
-                        .setName("View Bobbing")
-                        .setTooltip("If enabled, the player's view will sway and bob when moving around. Players who suffer from motion sickness can benefit from disabling this.")
+                        .setName(I18n.translate("options.names.view_bobbing"))
+                        .setTooltip(I18n.translate("options.tooltips.view_bobbing"))
                         .setControl(TickBoxControl::new)
                         .setBinding(new VanillaBooleanOptionBinding(Option.VIEW_BOBBING))
                         .build())
                 .add(OptionImpl.createBuilder(AttackIndicator.class, vanillaOpts)
-                        .setName("Attack Indicator")
-                        .setTooltip("Controls where the Attack Indicator is displayed on screen.")
+                        .setName(I18n.translate("options.names.attack_indicator"))
+                        .setTooltip(I18n.translate("options.tooltips.attack_indicator"))
                         .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.class, new String[] { "Off", "Crosshair", "Hotbar" }))
                         .setBinding((opts, value) -> opts.attackIndicator = value, (opts) -> opts.attackIndicator)
                         .build())
@@ -146,9 +141,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(GraphicsMode.class, vanillaOpts)
-                        .setName("Graphics Quality")
-                        .setTooltip("The default graphics quality controls some legacy options and is necessary for mod compatibility. If the options below are left to " +
-                                "\"Default\", they will use this setting.")
+                        .setName(I18n.translate("options.names.graphics_quality"))
+                        .setTooltip(I18n.translate("options.tooltips.graphics_quality"))
                         .setControl(option -> new CyclingControl<>(option, GraphicsMode.class, new String[] { "Fast", "Fancy", "Fabulous" }))
                         .setBinding(
                                 (opts, value) -> opts.graphicsMode = value,
@@ -160,66 +154,60 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
-                        .setName("Clouds Quality")
-                        .setTooltip("Controls the quality of rendered clouds in the sky.")
+                        .setName(I18n.translate("options.names.clouds_quality"))
+                        .setTooltip(I18n.translate("options.tooltips.clouds_quality"))
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.class))
                         .setBinding((opts, value) -> opts.quality.cloudQuality = value, opts -> opts.quality.cloudQuality)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
-                        .setName("Weather Quality")
-                        .setTooltip("Controls the quality of rain and snow effects.")
+                        .setName(I18n.translate("options.names.weather_quality"))
+                        .setTooltip(I18n.translate("options.tooltips.weather_quality"))
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.class))
                         .setBinding((opts, value) -> opts.quality.weatherQuality = value, opts -> opts.quality.weatherQuality)
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
                 .add(OptionImpl.createBuilder(ParticlesOption.class, vanillaOpts)
-                        .setName("Particle Quality")
-                        .setTooltip("Controls the maximum number of particles which can be present on screen at any one time.")
+                        .setName(I18n.translate("options.names.particle_quality"))
+                        .setTooltip(I18n.translate("options.tooltips.particle_quality"))
                         .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new String[] { "High", "Medium", "Low" }))
                         .setBinding((opts, value) -> opts.particles = value, (opts) -> opts.particles)
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)
-                        .setName("Smooth Lighting")
-                        .setTooltip("Controls the quality of smooth lighting effects.\n" +
-                                "\nOff - No smooth lighting" +
-                                "\nLow - Smooth block lighting only" +
-                                "\nHigh (new!) - Smooth block and entity lighting")
+                        .setName(I18n.translate("options.names.smooth_lighting"))
+                        .setTooltip(I18n.translate("options.tooltips.smooth_lighting"))
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.LightingQuality.class))
                         .setBinding((opts, value) -> opts.quality.smoothLighting = value, opts -> opts.quality.smoothLighting)
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName("Biome Blend")
-                        .setTooltip("Controls the range which biomes will be sampled for block colorization. " +
-                                "Higher values greatly increase the amount of time it takes to build chunks for diminishing improvements in quality.")
+                        .setName(I18n.translate("options.names.biome_blend"))
+                        .setTooltip(I18n.translate("options.tooltips.biome_blend"))
                         .setControl(option -> new SliderControl(option, 0, 7, 1, ControlValueFormatter.quantityOrDisabled("block(s)", "None")))
                         .setBinding((opts, value) -> opts.biomeBlendRadius = value, opts -> opts.biomeBlendRadius)
                         .setImpact(OptionImpact.LOW)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName("Entity Distance")
-                        .setTooltip("Controls how far away entities can render from the player. Higher values increase the render distance at the expense " +
-                                "of frame rates.")
+                        .setName(I18n.translate("options.names.entity_distance"))
+                        .setTooltip(I18n.translate("options.tooltips.entity_distance"))
                         .setControl(option -> new SliderControl(option, 50, 500, 25, ControlValueFormatter.percentage()))
                         .setBinding((opts, value) -> opts.entityDistanceScaling = value / 100.0F, opts -> Math.round(opts.entityDistanceScaling * 100.0F))
                         .setImpact(OptionImpact.MEDIUM)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
-                        .setName("Entity Shadows")
-                        .setTooltip("If enabled, basic shadows will be rendered beneath mobs and other entities.")
+                        .setName(I18n.translate("options.names.entity_shadows"))
+                        .setTooltip(I18n.translate("options.tooltips.entity_shadows"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.entityShadows = value, opts -> opts.entityShadows)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Vignette")
-                        .setTooltip("If enabled, a vignette effect will be rendered on the player's view. This is very unlikely to make a difference " +
-                                "to frame rates unless you are fill-rate limited.")
+                        .setName(I18n.translate("options.names.vignette"))
+                        .setTooltip(I18n.translate("options.tooltips.vignette"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.quality.enableVignette = value, opts -> opts.quality.enableVignette)
                         .setImpact(OptionImpact.LOW)
@@ -229,9 +217,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName("Mipmap Levels")
-                        .setTooltip("Controls the number of mipmaps which will be used for block model textures. Higher values provide better rendering of blocks " +
-                                "in the distance, but may adversely affect performance with many animated textures.")
+                        .setName(I18n.translate("options.names.mipmap_levels"))
+                        .setTooltip(I18n.translate("options.tooltips.mipmap_levels"))
                         .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.multiplier()))
                         .setBinding((opts, value) -> opts.mipmapLevels = value, opts -> opts.mipmapLevels)
                         .setImpact(OptionImpact.MEDIUM)
@@ -250,10 +237,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(SodiumGameOptions.ChunkRendererBackendOption.class, sodiumOpts)
-                        .setName("Chunk Renderer")
-                        .setTooltip("Modern versions of OpenGL provide features which can be used to greatly reduce driver overhead when rendering chunks. " +
-                                "You should use the latest feature set allowed by Sodium for optimal performance. If you're experiencing chunk rendering issues " +
-                                "or driver crashes, try using the older (and possibly more stable) feature sets.")
+                        .setName(I18n.translate("options.names.chunk_renderer"))
+                        .setTooltip(I18n.translate("options.tooltips.chunk_renderer"))
                         .setControl((opt) -> new CyclingControl<>(opt, SodiumGameOptions.ChunkRendererBackendOption.class,
                                 SodiumGameOptions.ChunkRendererBackendOption.getAvailableOptions(disableBlacklist)))
                         .setBinding((opts, value) -> opts.advanced.chunkRendererBackend = value, opts -> opts.advanced.chunkRendererBackend)
@@ -263,9 +248,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Chunk Face Culling")
-                        .setTooltip("If enabled, an additional culling pass will be performed on the CPU to determine which planes of a chunk mesh are visible. This " +
-                                "can eliminate a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU.")
+                        .setName(I18n.translate("options.names.use_chunk_face_culling"))
+                        .setTooltip(I18n.translate("options.tooltips.use_chunk_face_culling"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.advanced.useChunkFaceCulling = value, opts -> opts.advanced.useChunkFaceCulling)
@@ -273,10 +257,8 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Compact Vertex Format")
-                        .setTooltip("If enabled, a more compact vertex format will be used for chunk meshes which limits the precision of vertex attributes. This format " +
-                                "will reduce graphics memory usage and bandwidth requirements by around 40%, but could cause z-fighting/flickering texture issues in " +
-                                "some edge cases.")
+                        .setName(I18n.translate("options.names.use_compact_vertex_format"))
+                        .setTooltip(I18n.translate("options.tooltips.use_compact_vertex_format"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.advanced.useCompactVertexFormat = value, opts -> opts.advanced.useCompactVertexFormat)
@@ -284,10 +266,8 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Fog Occlusion")
-                        .setTooltip("If enabled, chunks which are determined to be fully hidden by fog effects will be skipped during rendering. This " +
-                                "will generally provide a modest improvement to the number of chunks rendered each frame, especially " +
-                                "where fog effects are heavier (i.e. while underwater.)")
+                        .setName(I18n.translate("options.names.use_fog_occlusion"))
+                        .setTooltip(I18n.translate("options.tooltips.use_fog_occlusion"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.advanced.useFogOcclusion = value, opts -> opts.advanced.useFogOcclusion)
                         .setImpact(OptionImpact.MEDIUM)
@@ -295,27 +275,24 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Entity Culling")
-                        .setTooltip("If enabled, a secondary culling pass will be performed before attempting to render an entity. This additional pass " +
-                                "takes into account the current set of visible chunks and removes entities which are not in any visible chunks.")
+                        .setName(I18n.translate("options.names.use_entity_culling"))
+                        .setTooltip(I18n.translate("options.tooltips.use_entity_culling"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.advanced.useAdvancedEntityCulling = value, opts -> opts.advanced.useAdvancedEntityCulling)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Particle Culling")
-                        .setTooltip("If enabled, only particles which are determined to be visible will be rendered. This can provide a significant improvement " +
-                                "to frame rates when many particles are nearby.")
+                        .setName(I18n.translate("options.names.use_particle_culling"))
+                        .setTooltip(I18n.translate("options.tooltips.use_particle_culling"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.advanced.useParticleCulling = value, opts -> opts.advanced.useParticleCulling)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Animate Only Visible Textures")
-                        .setTooltip("If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame " +
-                                "rates on some hardware. If you experience issues with some textures not being animated, disable this option.")
+                        .setName(I18n.translate("options.names.animate_only_visible_textures"))
+                        .setTooltip(I18n.translate("options.tooltips.animate_only_visible_textures"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.advanced.animateOnlyVisibleTextures = value, opts -> opts.advanced.animateOnlyVisibleTextures)
@@ -325,10 +302,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Memory Intrinsics")
-                        .setTooltip("If enabled, special intrinsics will be used to speed up the copying of client memory in certain vertex-limited scenarios, such " +
-                                "as particle and text rendering. This option only exists for debugging purposes and should be left enabled unless you know what " +
-                                "you are doing.")
+                        .setName(I18n.translate("options.names.use_memory_intrinsics"))
+                        .setTooltip(I18n.translate("options.tooltips.use_memory_intrinsics"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setEnabled(UnsafeUtil.isSupported())
@@ -339,10 +314,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Disable Driver Blacklist")
-                        .setTooltip("If selected, Sodium will ignore the built-in driver blacklist and enable options which are known to be broken " +
-                                "with your system configuration. This might cause serious problems and should not be used unless you really do know better. The settings " +
-                                "screen must be saved, closed, and re-opened after changing this option in order to reveal previously hidden options.")
+                        .setName(I18n.translate("options.names.disable_driver_blacklist"))
+                        .setTooltip(I18n.translate("options.tooltips.disable_driver_blacklist"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.advanced.disableDriverBlacklist = value, opts -> opts.advanced.disableDriverBlacklist)
                         .build()
