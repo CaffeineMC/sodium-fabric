@@ -7,8 +7,7 @@ import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 /**
  * Represents the ModMenu integration.
  */
-public class SodiumModMenu implements ModMenuApi
-{
+public class SodiumModMenu implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
         return SodiumOptionsGUI::new;
