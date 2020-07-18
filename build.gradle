@@ -34,6 +34,9 @@ dependencies {
     // Fabric Resource Loader for translations
     modCompile "net.fabricmc.fabric-api:fabric-resource-loader-v0:${project.fabric_resource_loader_version}"
     include "net.fabricmc.fabric-api:fabric-resource-loader-v0:${project.fabric_resource_loader_version}"
+
+    // ModMenu integration
+    modImplementation "io.github.prospector:modmenu:${project.modmenu_version}"
 }
 
 processResources {
