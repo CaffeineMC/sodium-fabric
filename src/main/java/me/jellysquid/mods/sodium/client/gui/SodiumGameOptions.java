@@ -98,9 +98,9 @@ public class SodiumGameOptions {
     }
 
     public enum GraphicsQuality implements TextProvider {
-        DEFAULT(I18n.translate("generator.default")),
-        FANCY(I18n.translate("options.clouds.fancy")),
-        FAST(I18n.translate("options.clouds.fast"));
+        DEFAULT("generator.default"),
+        FANCY("options.clouds.fancy"),
+        FAST("options.clouds.fast");
 
         private final String name;
 
@@ -110,7 +110,7 @@ public class SodiumGameOptions {
 
         @Override
         public String getLocalizedName() {
-            return this.name;
+            return I18n.translate(this.name);
         }
 
         public boolean isFancy(GraphicsMode graphicsMode) {
