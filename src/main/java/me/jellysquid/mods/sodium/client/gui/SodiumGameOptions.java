@@ -9,6 +9,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRend
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 import net.minecraft.client.options.GraphicsMode;
+import net.minecraft.client.resource.language.I18n;
 
 import java.io.File;
 import java.io.FileReader;
@@ -97,9 +98,9 @@ public class SodiumGameOptions {
     }
 
     public enum GraphicsQuality implements TextProvider {
-        DEFAULT("Default"),
-        FANCY("Fancy"),
-        FAST("Fast");
+        DEFAULT(I18n.translate("generator.default")),
+        FANCY(I18n.translate("options.clouds.fancy")),
+        FAST(I18n.translate("options.clouds.fast"));
 
         private final String name;
 

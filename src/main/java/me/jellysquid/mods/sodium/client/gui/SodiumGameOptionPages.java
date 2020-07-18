@@ -101,7 +101,7 @@ public class SodiumGameOptionPages {
                         }, (opts) -> opts.fullscreen)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
-                        .setName(I18n.translate("sodium.options.v_sync.name"))
+                        .setName(I18n.translate("options.vsync"))
                         .setTooltip(I18n.translate("sodium.options.v_sync.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setBinding(new VanillaBooleanOptionBinding(Option.VSYNC))
@@ -120,20 +120,20 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
-                        .setName(I18n.translate("sodium.options.view_bobbing.name"))
+                        .setName(I18n.translate("options.viewBobbing"))
                         .setTooltip(I18n.translate("sodium.options.view_bobbing.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setBinding(new VanillaBooleanOptionBinding(Option.VIEW_BOBBING))
                         .build())
                 .add(OptionImpl.createBuilder(AttackIndicator.class, vanillaOpts)
-                        .setName(I18n.translate("sodium.options.attack_indicator.name"))
+                        .setName(I18n.translate("options.attackIndicator"))
                         .setTooltip(I18n.translate("sodium.options.attack_indicator.tooltip"))
                         .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.class, new String[] { "Off", "Crosshair", "Hotbar" }))
                         .setBinding((opts, value) -> opts.attackIndicator = value, (opts) -> opts.attackIndicator)
                         .build())
                 .build());
 
-        return new OptionPage(I18n.translate("sodium.options.pages.general"), ImmutableList.copyOf(groups));
+        return new OptionPage(I18n.translate("stat.generalButton"), ImmutableList.copyOf(groups));
     }
 
     public static OptionPage quality() {
@@ -141,9 +141,9 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(GraphicsMode.class, vanillaOpts)
-                        .setName(I18n.translate("sodium.options.graphics_quality.name"))
+                        .setName(I18n.translate("options.graphics"))
                         .setTooltip(I18n.translate("sodium.options.graphics_quality.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, GraphicsMode.class, new String[] { "Fast", "Fancy", "Fabulous" }))
+                        .setControl(option -> new CyclingControl<>(option, GraphicsMode.class, new String[] { I18n.translate("options.graphics.fast"), I18n.translate("options.graphics.fancy"), I18n.translate("options.graphics.fabulous") }))
                         .setBinding(
                                 (opts, value) -> opts.graphicsMode = value,
                                 opts -> opts.graphicsMode)
@@ -199,7 +199,7 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
-                        .setName(I18n.translate("sodium.options.entity_shadows.name"))
+                        .setName(I18n.translate("options.entityShadows"))
                         .setTooltip(I18n.translate("sodium.options.entity_shadows.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.entityShadows = value, opts -> opts.entityShadows)
