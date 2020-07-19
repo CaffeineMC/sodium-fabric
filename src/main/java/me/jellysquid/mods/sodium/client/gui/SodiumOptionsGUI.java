@@ -272,6 +272,15 @@ public class SodiumOptionsGUI extends Screen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount){
+        this.getActiveControls().forEach(controlElement -> {
+            controlElement.mouseScrolled(mouseX, mouseY, amount);
+        });
+        return super.mouseScrolled(mouseX, mouseY, amount);
+    }
+
     @Override
     public boolean shouldCloseOnEsc() {
         return !this.hasPendingChanges;
