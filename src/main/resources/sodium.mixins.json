@@ -27,6 +27,7 @@
     "features.debug.MixinDebugHud",
     "features.entity.fast_render.MixinCuboid",
     "features.entity.fast_render.MixinModelPart",
+    "features.entity.shadow_clipping.MixinEntityRenderDispatcher",
     "features.entity.smooth_lighting.MixinEntityRenderer",
     "features.gui.MixinDebugHud",
     "features.gui.font.MixinGlyphRenderer",
