@@ -65,14 +65,15 @@ public class ChunkRenderBounds {
                 return new ChunkRenderBounds(origin);
             }
 
+            // Expand the bounding box by 8 blocks (half a chunk) in order to deal with diagonal surfaces
             return new ChunkRenderBounds(
-                    Math.max(this.x1, origin.getMinX()) - 0.5f,
-                    Math.max(this.y1, origin.getMinY()) - 0.5f,
-                    Math.max(this.z1, origin.getMinZ()) - 0.5f,
+                    Math.max(this.x1, origin.getMinX()) - 8.0f,
+                    Math.max(this.y1, origin.getMinY()) - 8.0f,
+                    Math.max(this.z1, origin.getMinZ()) - 8.0f,
 
-                    Math.min(this.x2 + 1, origin.getMaxX()) + 0.5f,
-                    Math.min(this.y2 + 1, origin.getMaxY()) + 0.5f,
-                    Math.min(this.z2 + 1, origin.getMaxZ()) + 0.5f
+                    Math.min(this.x2 + 1, origin.getMaxX()) + 8.0f,
+                    Math.min(this.y2 + 1, origin.getMaxY()) + 8.0f,
+                    Math.min(this.z2 + 1, origin.getMaxZ()) + 8.0f
             );
         }
     }
