@@ -140,7 +140,7 @@ public class SliderControl implements Control<Integer> {
         }
 
         private void setValueFromMouseScroll(double amount){
-            if(this.option.getValue() + this.interval * (int)amount <= max && this.option.getValue() + this.interval * (int)amount >= min){
+            if(this.option.getValue() + this.interval * (int)amount <= this.max && this.option.getValue() + this.interval * (int)amount >= this.min){
                 this.option.setValue(this.option.getValue() + this.interval * (int)amount);
                 this.thumbPosition = getThumbPositionForValue(this.option.getValue());
             }
