@@ -1,6 +1,9 @@
 package me.jellysquid.mods.sodium.client.gui;
 
-import me.jellysquid.mods.sodium.client.gui.options.*;
+import me.jellysquid.mods.sodium.client.gui.options.Option;
+import me.jellysquid.mods.sodium.client.gui.options.OptionFlag;
+import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
+import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
 import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
@@ -13,6 +16,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.VideoOptionsScreen;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.StringRenderable;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
@@ -190,20 +194,19 @@ public class SodiumOptionsGUI extends Screen {
         int boxPadding = 3;
 
         int boxWidth = 200;
+        int textWidth = boxWidth - (textPadding * 2);
 
         int boxY = dim.getOriginY();
         int boxX = dim.getLimitX() + boxPadding;
 
         Option<?> option = element.getOption();
-        List<StringRenderable> tooltip = this.textRenderer.wrapLines(option.getTooltip(), boxWidth - (textPadding * 2));
 
-        OptionImpact impact = option.getImpact();
+        StringRenderable title = new LiteralText(option.getName()).formatted(Formatting.GRAY);
 
-        if (impact != null) {
-            tooltip.add(new TranslatableText("sodium.options.performance_impact_string", impact.toDisplayString()).formatted(Formatting.GRAY));
-        }
+        List<StringRenderable> text = this.textRenderer.wrapLines(title, textWidth);
+        text.addAll(this.textRenderer.wrapLines(option.getTooltip(), textWidth));
 
-        int boxHeight = (tooltip.size() * 12) + boxPadding;
+        int boxHeight = (text.size() * 12) + boxPadding;
         int boxYLimit = boxY + boxHeight;
         int boxYCutoff = this.height - 40;
 
@@ -214,8 +217,8 @@ public class SodiumOptionsGUI extends Screen {
 
         this.fillGradient(matrixStack, boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xE0000000, 0xE0000000);
 
-        for (int i = 0; i < tooltip.size(); i++) {
-            StringRenderable str = tooltip.get(i);
+        for (int i = 0; i < text.size(); i++) {
+            StringRenderable str = text.get(i);
 
             if (str.getString().isEmpty()) {
                 continue;

@@ -11,8 +11,6 @@ public interface Option<T> {
 
     Text getTooltip();
 
-    OptionImpact getImpact();
-
     Control<T> getControl();
 
     T getValue();
