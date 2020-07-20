@@ -5,6 +5,7 @@
 ![GitHub issues](https://img.shields.io/github/issues/jellysquid3/sodium-fabric.svg)
 ![GitHub tag](https://img.shields.io/github/tag/jellysquid3/sodium-fabric.svg)
 [![Discord chat](https://img.shields.io/badge/chat%20on-discord-7289DA)](https://jellysquid.me/discord)
+[![CurseForge downloads](http://cf.way2muchnoise.eu/full_394468_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/sodium)
 
 Sodium is a free and open-source optimization mod for the Minecraft client that improves frame rates, reduces
 micro-stutter, and fixes graphical issues in Minecraft. 
@@ -16,9 +17,9 @@ or prevent other mods from rendering correctly. Please be aware of these issues 
 
 ### Downloads
 
-You can find downloads for Sodium through the
-[GitHub releases page](https://github.com/jellysquid3/sodium-fabric/releases). Once Sodium matures and leaves the stage
-of alpha software, builds will be published on CurseForge. 
+You can find downloads for Lithium on either the [official CurseForge page](https://www.curseforge.com/minecraft/mc-mods/sodium)
+or through the [GitHub releases page](https://github.com/jellysquid3/sodium-fabric/releases). Usually, builds will be
+made available on GitHub slightly sooner than other locations.
 
 ### Community
 
@@ -41,25 +42,6 @@ platforms. If you'd prefer to not use a package manager, you can always grab the
 On Windows, the Oracle JDK/JRE builds should be avoided where possible due to their poor quality. Always prefer using
 the open-source builds from AdoptOpenJDK when possible.
 
-#### A note on newer Java versions
-
-For the best possible experience with Sodium installed, you should prefer to use a Java 14 runtime for your game client
-with the [Z Garbage Collector (ZGC)](https://wiki.openjdk.java.net/display/zgc/Main) enabled. This is purely optional,
-but will generally help to improve frame times by reducing garbage collection pause times. However, please be sure
-you read this entire section before upgrading your Java runtime.
-
-If you build the mod with JDK 11 or newer, you *must* upgrade your game client's runtime to at least the version you are
-building with. If you try to use an older runtime while building with a newer version,
-[your game may crash or not render anything at all](https://github.com/jellysquid3/sodium-fabric/issues/16).
-Additionally, if you are using the Java 11 runtime or newer for your client, you should install
-[Voyager mod for Fabric](https://github.com/modmuss50/Voyager) to patch a
-[known world generation bug](https://bugs.mojang.com/browse/MC-149777) which can cause rare crashes.
-
-The official Minecraft launcher (and most other third-party launchers) will often use Java 8 runtime in order to work
-around [bugs in the Intel HD 2xxx/3xxx graphics drivers on Windows 10](https://github.com/LWJGL/lwjgl/issues/119). If
-you are not affected by these issues, you can usually upgrade the runtime by modifying your game profile's settings in
-your launcher of choice.
-
 #### Compiling
 
 Navigate to the directory you've cloned this repository and launch a build with Gradle using `gradlew build` (Windows)
@@ -68,6 +50,19 @@ or the path to it.
 
 The initial setup may take a few minutes. After Gradle has finished building everything, you can find the resulting
 artifacts in `build/libs`.
+
+### Tuning for optimal performance
+
+_This section is entirely optional and is only aimed at users who are interested in squeezing out every drop from their
+game. Sodium will work without issue in the default configuration of almost all launchers._
+
+Generally speaking, newer versions of Java will provide better performance not only when playing Minecraft, but when
+using Sodium as well. The default configuration your game launcher provides will usually be some old version of Java 8
+that has been selected to maximize hardware compatibility instead of performance.
+
+For most users, these compatibility issues are not relevant, and it should be relatively easy to upgrade the game's Java
+runtime and apply the required patches. For more information on upgrading and tuning the Java runtime, see the
+guide [here](https://gist.github.com/jellysquid3/8a7b21e57f47f5711eb5697e282e502e).
 
 ### License
 
