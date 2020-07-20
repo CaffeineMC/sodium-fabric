@@ -61,7 +61,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> importantRebuildQueue = new ObjectArrayFIFOQueue<>();
     private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> rebuildQueue = new ObjectArrayFIFOQueue<>();
 
-    RenderContext<T> renderContext = new RenderContext<>();
+    public RenderContext<T> renderContext = new RenderContext<>();
 
     private final SodiumWorldRenderer renderer;
     private final ClientWorld world;
