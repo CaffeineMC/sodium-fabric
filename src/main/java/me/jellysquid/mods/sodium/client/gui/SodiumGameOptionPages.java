@@ -37,7 +37,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(I18n.translate("options.renderDistance"))
                         .setTooltip(I18n.translate("sodium.options.view_distance.tooltip"))
-                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.quantity("Chunks")))
+                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.quantity(I18n.translate("sodium.options.view_distance.unit"))))
                         .setBinding((options, value) -> options.viewDistance = value, options -> options.viewDistance)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
@@ -127,7 +127,10 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(AttackIndicator.class, vanillaOpts)
                         .setName(I18n.translate("options.attackIndicator"))
                         .setTooltip(I18n.translate("sodium.options.attack_indicator.tooltip"))
-                        .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.class, new String[] { "Off", "Crosshair", "Hotbar" }))
+                        .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.class, new String[] {
+                                I18n.translate("sodium.options.attack_indicator.off"),
+                                I18n.translate("sodium.options.attack_indicator.crosshair"),
+                                I18n.translate("sodium.options.attack_indicator.hotbar") }))
                         .setBinding((opts, value) -> opts.attackIndicator = value, (opts) -> opts.attackIndicator)
                         .build())
                 .build());
@@ -166,7 +169,10 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(ParticlesOption.class, vanillaOpts)
                         .setName(I18n.translate("sodium.options.particle_quality.name"))
                         .setTooltip(I18n.translate("sodium.options.particle_quality.tooltip"))
-                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new String[] { "High", "Medium", "Low" }))
+                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new String[] {
+                                I18n.translate( "sodium.options.particle_quality.high"),
+                                I18n.translate( "sodium.options.particle_quality.medium"),
+                                I18n.translate( "sodium.options.particle_quality.low") }))
                         .setBinding((opts, value) -> opts.particles = value, (opts) -> opts.particles)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)
@@ -179,7 +185,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(I18n.translate("options.biomeBlendRadius"))
                         .setTooltip(I18n.translate("sodium.options.biome_blend.tooltip"))
-                        .setControl(option -> new SliderControl(option, 0, 7, 1, ControlValueFormatter.quantityOrDisabled("block(s)", "None")))
+                        .setControl(option -> new SliderControl(option, 0, 7, 1, ControlValueFormatter.quantityOrDisabled(I18n.translate("sodium.options.biome_blend.unit"), "None")))
                         .setBinding((opts, value) -> opts.biomeBlendRadius = value, opts -> opts.biomeBlendRadius)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())

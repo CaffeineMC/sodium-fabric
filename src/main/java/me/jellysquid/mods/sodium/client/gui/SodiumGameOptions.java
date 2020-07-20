@@ -119,9 +119,9 @@ public class SodiumGameOptions {
     }
 
     public enum LightingQuality implements TextProvider {
-        HIGH("High"),
-        LOW("Low"),
-        OFF("Off");
+        HIGH(I18n.translate("sodium.options.smooth_lighting.high")),
+        LOW(I18n.translate("sodium.options.smooth_lighting.low")),
+        OFF(I18n.translate("sodium.options.smooth_lighting.off"));
 
         private final String name;
 
