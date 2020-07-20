@@ -27,6 +27,17 @@ If you'd like to get help with the mod, check out the latest developments, or be
 the Discord community might be for you! You can join the official server for my mods by clicking
 [here](https://jellysquid.me/discord).
 
+### Translations
+
+Translations to other languages are managed on [our OneSky site](https://jellysquid.oneskyapp.com/). If you're
+interested in improving language support for Sodium, you should also [join the Discord server](https://jellysquid.me/discord)
+to chat with other contributors. Each submitted translation requires either a number of approval votes from the community
+or approval from a reviewer in order to be included in the mod. 
+
+In the future, these translations will be automatically downloaded and included in the mod at compile time. For the time
+being you will need to manually export the translation files from OneSky and add them to the
+`src/main/resources/assets/sodium/lang` directory in order to see them in-game.
+
 ### Building from source
 
 If you're hacking on the code or would like to compile a custom build of Sodium from the latest sources, you'll want
