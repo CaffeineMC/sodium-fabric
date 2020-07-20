@@ -94,7 +94,7 @@ public class SodiumVertexFormats {
      * @return The resulting de-normalized unsigned short
      */
     private static short denormalizeFloatAsShort(float value) {
-        return (short) (value * 65536.0f);
+        return (short) (value * 65535.0f);
     }
 
     /**
