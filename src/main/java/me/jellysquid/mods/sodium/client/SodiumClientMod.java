@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -12,9 +13,14 @@ public class SodiumClientMod implements ClientModInitializer {
     private static SodiumGameOptions CONFIG;
     private static Logger LOGGER;
 
+    private static boolean immersivePortalsPresent = false;
+
     @Override
     public void onInitializeClient() {
-
+        immersivePortalsPresent = FabricLoader.getInstance().isModLoaded("immersive_portals");
+        if (immersivePortalsPresent) {
+            LOGGER.info("Detected Immersive Portals Mod");
+        }
     }
 
     public static SodiumGameOptions options() {
@@ -42,5 +48,9 @@ public class SodiumClientMod implements ClientModInitializer {
 
     public static void onConfigChanged(SodiumGameOptions options) {
         UnsafeUtil.setEnabled(options.advanced.useMemoryIntrinsics);
+    }
+
+    public static boolean isIPPresent() {
+        return immersivePortalsPresent;
     }
 }
