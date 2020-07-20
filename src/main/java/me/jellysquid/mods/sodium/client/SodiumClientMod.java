@@ -19,7 +19,7 @@ public class SodiumClientMod implements ClientModInitializer {
     public void onInitializeClient() {
         immersivePortalsPresent = FabricLoader.getInstance().isModLoaded("immersive_portals");
         if (immersivePortalsPresent) {
-            LOGGER.info("Detected Immersive Portals Mod");
+            logger().info("Detected Immersive Portals Mod");
         }
     }
 
