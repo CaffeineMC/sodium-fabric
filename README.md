@@ -17,7 +17,7 @@ or prevent other mods from rendering correctly. Please be aware of these issues 
 
 ### Downloads
 
-You can find downloads for Lithium on either the [official CurseForge page](https://www.curseforge.com/minecraft/mc-mods/sodium)
+You can find downloads for Sodium on either the [official CurseForge page](https://www.curseforge.com/minecraft/mc-mods/sodium)
 or through the [GitHub releases page](https://github.com/jellysquid3/sodium-fabric/releases). Usually, builds will be
 made available on GitHub slightly sooner than other locations.
 
