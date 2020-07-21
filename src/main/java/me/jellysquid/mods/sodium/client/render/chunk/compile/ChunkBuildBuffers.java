@@ -7,12 +7,10 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.sink.ModelQuadSinkDelegate;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockLayer;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.GlAllocationUtils;
-import net.minecraft.client.util.math.Vector3d;
-import net.minecraft.util.math.BlockPos;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -27,98 +25,75 @@ import java.util.stream.Collectors;
  */
 public class ChunkBuildBuffers {
     private final ChunkBuildBufferDelegate[] delegates;
-    private final ChunkMeshBuilder[][] buildersByLayer;
+    private final ChunkMeshBuilder[][] buildersByPass;
     private final List<ChunkMeshBuilder> builders;
     private final GlVertexFormat<?> format;
 
-    private final BlockRenderPassManager renderPassManager;
-
-    public ChunkBuildBuffers(GlVertexFormat<?> format, BlockRenderPassManager renderPassManager) {
+    public ChunkBuildBuffers(GlVertexFormat<?> format) {
         this.format = format;
-        this.renderPassManager = renderPassManager;
 
-        this.delegates = new ChunkBuildBufferDelegate[BlockRenderPass.COUNT];
-        this.buildersByLayer = new ChunkMeshBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
+        this.delegates = new ChunkBuildBufferDelegate[BlockLayer.COUNT];
+        this.buildersByPass = new ChunkMeshBuilder[BlockLayer.COUNT][ModelQuadFacing.COUNT];
 
-        for (RenderLayer layer : RenderLayer.getBlockLayers()) {
-            int passId = this.renderPassManager.getRenderPassId(layer);
-
+        for (BlockLayer layer : BlockLayer.VALUES) {
             for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
-                this.buildersByLayer[passId][facing.ordinal()] =
-                        new ChunkMeshBuilder(format, layer.getExpectedBufferSize() / ModelQuadFacing.COUNT);
+                this.buildersByPass[layer.ordinal()][facing.ordinal()] =
+                        new ChunkMeshBuilder(format, layer, layer.getExpectedSize() / ModelQuadFacing.COUNT);
             }
 
-            this.delegates[passId] = new ChunkBuildBufferDelegate(this.buildersByLayer[passId]);
+            this.delegates[layer.ordinal()] = new ChunkBuildBufferDelegate(this.buildersByPass[layer.ordinal()]);
         }
 
-        this.builders = Arrays.stream(this.buildersByLayer)
+        this.builders = Arrays.stream(this.buildersByPass)
                 .flatMap(Arrays::stream)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Return the {@link ChunkMeshBuilder} for the given {@link RenderLayer} as mapped by the
-     * {@link BlockRenderPassManager} for this render context.
-     */
     public ChunkBuildBufferDelegate get(RenderLayer layer) {
-        return this.delegates[this.renderPassManager.getRenderPassId(layer)];
+        return this.delegates[BlockLayer.fromRenderLayer(layer)];
     }
 
     /**
      * Creates immutable baked chunk meshes from all non-empty scratch buffers and resets the state of all mesh
      * builders. This is used after all blocks have been rendered to pass the finished meshes over to the graphics card.
      */
-    public ChunkMeshData createMesh(Vector3d camera, BlockPos pos, BlockRenderPass pass) {
-        ChunkMeshBuilder[] builders = this.buildersByLayer[pass.ordinal()];
-
+    public ChunkMeshData createMesh(BlockRenderPass pass) {
         ChunkMeshData meshData = new ChunkMeshData();
-        int bufferLen = 0;
+        int meshSize = 0;
 
-        for (int facingId = 0; facingId < builders.length; facingId++) {
-            ChunkMeshBuilder builder = builders[facingId];
+        for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+            int facingSize = 0;
 
-            if (builder == null) {
-                continue;
+            for (BlockLayer layer : pass.getLayers()) {
+                ChunkMeshBuilder builder = this.buildersByPass[layer.ordinal()][facing.ordinal()];
+                builder.finish();
+
+                facingSize += builder.getSize();
             }
 
-            builder.finish();
-
-            if (builder.isEmpty()) {
-                continue;
-            }
-
-            ModelQuadFacing facing = ModelQuadFacing.VALUES[facingId];
-
-            if (pass.isTranslucent()) {
-                builder.sortQuads((float) camera.x - (float) pos.getX(),
-                        (float) camera.y - (float) pos.getY(),
-                        (float) camera.z - (float) pos.getZ());
-            }
-
-            int start = bufferLen;
-            int size = builder.getSize();
-
-            meshData.setModelSlice(facing, new BufferSlice(start, size));
-
-            bufferLen += size;
+            meshData.setModelSlice(facing, new BufferSlice(meshSize, facingSize));
+            meshSize += facingSize;
         }
 
-        if (bufferLen <= 0) {
+        if (meshSize <= 0) {
             return null;
         }
 
-        ByteBuffer buffer = GlAllocationUtils.allocateByteBuffer(bufferLen);
+        ByteBuffer buffer = GlAllocationUtils.allocateByteBuffer(meshSize);
 
         for (Map.Entry<ModelQuadFacing, BufferSlice> entry : meshData.getSlices()) {
-            BufferSlice slice = entry.getValue();
-            buffer.position(slice.start);
+            ModelQuadFacing key = entry.getKey();
 
-            ChunkMeshBuilder builder = this.buildersByLayer[pass.ordinal()][entry.getKey().ordinal()];
-            builder.copyInto(buffer);
+            for (BlockLayer layer : pass.getLayers()) {
+                ChunkMeshBuilder builder = this.buildersByPass[layer.ordinal()][key.ordinal()];
+
+                if (!builder.isEmpty()) {
+                    builder.copyInto(buffer);
+                }
+            }
         }
 
         buffer.flip();
-
         meshData.setVertexData(new VertexData(buffer, this.format));
 
         return meshData;

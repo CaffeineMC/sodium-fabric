@@ -46,5 +46,8 @@
     "features.texture_tracking.MixinSprite",
     "features.texture_tracking.MixinSpriteIdentifier",
     "features.world_ticking.MixinClientWorld"
+  ],
+  "mixins": [
+    "features.chunk_rendering.MixinLightmapTextureManager"
   ]
 }

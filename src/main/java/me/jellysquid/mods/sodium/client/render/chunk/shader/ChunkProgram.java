@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
+import com.google.common.collect.ImmutableList;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.texture.ChunkProgramTextureComponent;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL11;
@@ -9,7 +11,7 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.FloatBuffer;
-import java.util.function.Function;
+import java.util.List;
 
 /**
  * A forward-rendering shader program for chunks.
@@ -21,30 +23,33 @@ public abstract class ChunkProgram extends GlProgram {
     // Uniform variable binding indexes
     private final int uModelViewProjectionMatrix;
     private final int uModelScale;
-    private final int uBlockTex;
-    private final int uLightTex;
 
-    // The fog shader component used by this program in order to setup the appropriate GL state
-    private final ChunkShaderFogComponent fogShader;
+    public final ChunkProgramTextureComponent texture;
+    public final ChunkShaderFogComponent fog;
 
-    protected ChunkProgram(Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction) {
+    private final List<ShaderComponent> components;
+
+    protected ChunkProgram(Identifier name, int handle, ChunkProgramComponentBuilder components) {
         super(name, handle);
 
         this.uModelViewProjectionMatrix = this.getUniformLocation("u_ModelViewProjectionMatrix");
-
-        this.uBlockTex = this.getUniformLocation("u_BlockTex");
-        this.uLightTex = this.getUniformLocation("u_LightTex");
         this.uModelScale = this.getUniformLocation("u_ModelScale");
 
-        this.fogShader = fogShaderFunction.apply(this);
+        this.texture = components.texture.create(this);
+        this.fog = components.fog.create(this);
+
+        this.components = ImmutableList.of(this.texture, this.fog);
     }
 
-    public void setup(MatrixStack matrixStack) {
-        GL20.glUniform1i(this.uBlockTex, 0);
-        GL20.glUniform1i(this.uLightTex, 2);
-        GL20.glUniform3f(this.uModelScale, MODEL_SIZE, MODEL_SIZE, MODEL_SIZE);
+    @Override
+    public void bind(MatrixStack matrixStack) {
+        super.bind(matrixStack);
 
-        this.fogShader.setup();
+        for (ShaderComponent component : this.components) {
+             component.bind();
+        }
+
+        GL20.glUniform3f(this.uModelScale, MODEL_SIZE, MODEL_SIZE, MODEL_SIZE);
 
         MatrixStack.Entry matrices = matrixStack.peek();
 
@@ -65,6 +70,24 @@ public abstract class ChunkProgram extends GlProgram {
             GL11.glPopMatrix();
 
             GL20.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false, bufModelViewProjection);
+        }
+    }
+
+    @Override
+    public void unbind() {
+        super.unbind();
+
+        for (ShaderComponent component : this.components) {
+            component.unbind();
+        }
+    }
+
+    @Override
+    public void delete() {
+        super.delete();
+
+        for (ShaderComponent component : this.components) {
+            component.delete();
         }
     }
 }

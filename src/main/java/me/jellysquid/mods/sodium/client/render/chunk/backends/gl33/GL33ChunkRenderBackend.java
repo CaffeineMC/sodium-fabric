@@ -1,37 +1,38 @@
-package me.jellysquid.mods.sodium.client.render.chunk.backends.gl20;
+package me.jellysquid.mods.sodium.client.render.chunk.backends.gl33;
 
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
+import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
 import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.oneshot.ChunkProgramOneshot;
 import me.jellysquid.mods.sodium.client.render.chunk.oneshot.ChunkRenderBackendOneshot;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.impl.SingleTextureRenderPipeline;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.impl.MultiTextureRenderPipeline;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkProgramComponentBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.texture.ChunkProgramSingleTexture;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.texture.ChunkProgramMultiTexture;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
-import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL20;
 
 /**
- * A simple chunk rendering backend which mirrors that of vanilla's own pretty closely.
+ * Shader-based render backend for chunks which uses VAOs to avoid the overhead in setting up vertex attribute pointers
+ * before every draw call. This approach has significantly less CPU overhead as we only need to cross the native code
+ * barrier once in order to setup all the necessary vertex attribute states and buffer bindings. Additionally, it might
+ * allow the driver to skip validation logic that would otherwise be performed.
  */
-public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<GL20GraphicsState> {
-    private final BlockRenderPassManager renderPassManager = SingleTextureRenderPipeline.create();
+public class GL33ChunkRenderBackend extends ChunkRenderBackendOneshot<GL33GraphicsState> {
+    private final BlockRenderPassManager renderPassManager = MultiTextureRenderPipeline.create();
 
-    public GL20ChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
+    public GL33ChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
         super(format);
     }
 
     @Override
     protected void modifyProgram(GlProgram.Builder builder, ChunkProgramComponentBuilder components,
                                  GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
-        components.texture = ChunkProgramSingleTexture::new;
+        components.texture = ChunkProgramMultiTexture::new;
     }
 
     @Override
@@ -41,30 +42,19 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<GL20Graphi
 
     @Override
     protected void addShaderConstants(ShaderConstants.Builder builder) {
-
-    }
-
-    @Override
-    public void beginRender(MatrixStack matrixStack, BlockRenderPass pass) {
-        super.beginRender(matrixStack, pass);
-
-        this.vertexFormat.enableVertexAttributes();
-
-        boolean mipped = pass.getId() == SingleTextureRenderPipeline.SOLID_MIPPED_PASS;
-        this.activeProgram.texture.setMipmapping(mipped);
+        builder.define("USE_MULTITEX");
     }
 
     @Override
     public void endRender(MatrixStack matrixStack) {
-        this.vertexFormat.disableVertexAttributes();
-        GL20.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        GlFunctions.VERTEX_ARRAY.glBindVertexArray(0);
 
         super.endRender(matrixStack);
     }
 
     @Override
-    public Class<GL20GraphicsState> getGraphicsStateType() {
-        return GL20GraphicsState.class;
+    public Class<GL33GraphicsState> getGraphicsStateType() {
+        return GL33GraphicsState.class;
     }
 
     @Override
@@ -73,16 +63,16 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<GL20Graphi
     }
 
     @Override
-    protected GL20GraphicsState createGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<GL20GraphicsState> container) {
-        return new GL20GraphicsState(memoryTracker, container);
+    protected GL33GraphicsState createGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<GL33GraphicsState> container) {
+        return new GL33GraphicsState(memoryTracker, container);
     }
 
     public static boolean isSupported(boolean disableBlacklist) {
-        return true;
+        return GlFunctions.isVertexArraySupported() && GlFunctions.isSamplerSupported();
     }
 
     @Override
     public String getRendererName() {
-        return "Oneshot (GL 2.0)";
+        return "Oneshot (GL 3.3)";
     }
 }

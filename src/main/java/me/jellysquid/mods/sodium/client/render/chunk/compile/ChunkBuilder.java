@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
@@ -52,7 +51,6 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
     private World world;
     private Vector3d cameraPosition;
     private BiomeCacheManager biomeCacheManager;
-    private BlockRenderPassManager renderPassManager;
 
     private final int limitThreads;
     private final GlVertexFormat<?> format;
@@ -89,7 +87,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         MinecraftClient client = MinecraftClient.getInstance();
 
         for (int i = 0; i < this.limitThreads; i++) {
-            ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.format, this.renderPassManager);
+            ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.format);
             ChunkRenderContext pipeline = new ChunkRenderContext(client);
 
             WorkerRunnable worker = new WorkerRunnable(buffers, pipeline);
@@ -158,7 +156,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
             return false;
         }
 
-        this.backend.upload(new DequeDrain<>(this.uploadQueue));
+        this.backend.uploadChunks(new DequeDrain<>(this.uploadQueue));
 
         return true;
     }
@@ -205,9 +203,8 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
      * a world teleportation event), the worker threads will first be stopped and all pending tasks will be discarded
      * before being started again.
      * @param world The world instance
-     * @param renderPassManager The render pass manager used for the world
      */
-    public void init(ClientWorld world, BlockRenderPassManager renderPassManager) {
+    public void init(ClientWorld world) {
         if (world == null) {
             throw new NullPointerException("World is null");
         }
@@ -215,7 +212,6 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         this.stopWorkers();
 
         this.world = world;
-        this.renderPassManager = renderPassManager;
         this.biomeCacheManager = new BiomeCacheManager(world.getDimension().getBiomeAccessType(), ((ClientWorldExtended) world).getBiomeSeed());
 
         this.startWorkers();
@@ -313,7 +309,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         if (slice == null) {
             return new ChunkRenderEmptyBuildTask<>(render);
         } else {
-            return new ChunkRenderRebuildTask<>(this, render, slice, render.getRenderOrigin());
+            return new ChunkRenderRebuildTask<>(this, this.backend, render, slice);
         }
     }
 

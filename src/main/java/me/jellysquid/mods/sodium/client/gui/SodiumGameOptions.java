@@ -6,7 +6,7 @@ import com.google.gson.GsonBuilder;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.gl33.GL33ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 import net.minecraft.client.options.GraphicsMode;
 import net.minecraft.client.resource.language.I18n;
@@ -54,7 +54,7 @@ public class SodiumGameOptions {
 
     public enum ChunkRendererBackendOption implements TextProvider {
         GL43("Multidraw (GL 4.3)", GL43ChunkRenderBackend::isSupported),
-        GL30("Oneshot (GL 3.0)", GL30ChunkRenderBackend::isSupported),
+        GL33("Oneshot (GL 3.3)", GL33ChunkRenderBackend::isSupported),
         GL20("Oneshot (GL 2.0)", GL20ChunkRenderBackend::isSupported);
 
         public static final ChunkRendererBackendOption BEST = pickBestBackend();

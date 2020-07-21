@@ -17,8 +17,16 @@ import java.nio.FloatBuffer;
  * but as the name implies, this only works on graphics cards produced by NVIDIA. The shader implementation however does
  * not depend on any vendor-specific extensions and is written using very simple GLSL code.
  */
-public abstract class ChunkShaderFogComponent {
-    public abstract void setup();
+public abstract class ChunkShaderFogComponent implements ShaderComponent {
+    @Override
+    public void unbind() {
+        // NO-OP
+    }
+
+    @Override
+    public void delete() {
+        // NO-OP
+    }
 
     public static class None extends ChunkShaderFogComponent {
         public None(ChunkProgram program) {
@@ -26,7 +34,7 @@ public abstract class ChunkShaderFogComponent {
         }
 
         @Override
-        public void setup() {
+        public void bind() {
 
         }
     }
@@ -41,7 +49,7 @@ public abstract class ChunkShaderFogComponent {
         }
 
         @Override
-        public void setup() {
+        public void bind() {
             ChunkShaderFogComponent.setupColorUniform(this.uFogColor);
 
             GL20.glUniform1f(this.uFogDensity, GlFogHelper.getFogDensity());
@@ -60,7 +68,7 @@ public abstract class ChunkShaderFogComponent {
         }
 
         @Override
-        public void setup() {
+        public void bind() {
             ChunkShaderFogComponent.setupColorUniform(this.uFogColor);
 
             float end = GlFogHelper.getFogEnd();
@@ -83,4 +91,7 @@ public abstract class ChunkShaderFogComponent {
         }
     }
 
+    public interface Factory {
+        ChunkShaderFogComponent create(ChunkProgram program);
+    }
 }

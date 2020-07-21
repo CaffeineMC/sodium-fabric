@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
@@ -24,7 +25,7 @@ public class ChunkRenderData {
     private List<BlockEntity> globalBlockEntities;
     private List<BlockEntity> blockEntities;
 
-    private EnumMap<BlockRenderPass, ChunkMeshData> meshes;
+    private Map<BlockRenderPass, ChunkMeshData> meshes;
 
     private ChunkOcclusionData occlusionData;
     private ChunkRenderBounds bounds;
@@ -94,16 +95,10 @@ public class ChunkRenderData {
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
-        private final EnumMap<BlockRenderPass, ChunkMeshData> meshes = new EnumMap<>(BlockRenderPass.class);
+        private final Map<BlockRenderPass, ChunkMeshData> meshes = new Reference2ReferenceArrayMap<>();
 
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds;
-
-        public Builder() {
-            for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-                this.setMesh(pass, ChunkMeshData.EMPTY);
-            }
-        }
 
         public void setBounds(ChunkRenderBounds bounds) {
             this.bounds = bounds;

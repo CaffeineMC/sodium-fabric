@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.gl.shader;
 
 import me.jellysquid.mods.sodium.client.gl.GlObject;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttribute;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,7 +26,7 @@ public abstract class GlProgram extends GlObject {
         return new Builder(identifier);
     }
 
-    public void bind() {
+    public void bind(MatrixStack matrixStack) {
         GL20.glUseProgram(this.handle());
     }
 

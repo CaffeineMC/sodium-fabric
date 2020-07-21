@@ -13,11 +13,11 @@ import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.gl33.GL33ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.WorldRenderPhase;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListenerManager;
@@ -58,7 +58,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     private Frustum frustum;
     private ChunkRenderManager<?> chunkRenderManager;
-    private BlockRenderPassManager renderPassManager;
     private ChunkRenderBackend<?> chunkRenderBackend;
 
     /**
@@ -196,12 +195,18 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.viewDistance / 8.0D, 1.0D, 2.5D));
     }
 
+
+    public void drawChunkLayers(WorldRenderPhase phase, MatrixStack matrixStack, double x, double y, double z) {
+        for (BlockRenderPass pass : this.chunkRenderBackend.getRenderPassManager().getPassesForPhase(phase)) {
+            this.drawChunkLayer(pass, matrixStack, x, y, z);
+        }
+    }
+
     /**
      * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
-    public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
-        BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
-        pass.startDrawing();
+    public void drawChunkLayer(BlockRenderPass pass, MatrixStack matrixStack, double x, double y, double z) {
+        pass.beginRender();
 
         // We don't have a great way to check if underwater fog is being used, so assume that terrain will only ever
         // use linear fog. This will not disable fog in the Nether.
@@ -209,9 +214,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             RenderSystem.disableFog();
         }
 
-        this.chunkRenderManager.renderLayer(matrixStack, pass, x, y, z);
+        this.chunkRenderManager.renderChunks(matrixStack, pass, x, y, z);
 
-        pass.endDrawing();
+        pass.endRender();
 
         RenderSystem.clearCurrentColor();
     }
@@ -239,8 +244,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         SodiumGameOptions opts = SodiumClientMod.options();
 
-        this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
-
         final GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> vertexFormat;
 
         if (opts.advanced.useCompactVertexFormat) {
@@ -252,7 +255,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.chunkRenderBackend = createChunkRenderBackend(opts.advanced.chunkRendererBackend, vertexFormat);
         this.chunkRenderBackend.createShaders();
 
-        this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.renderPassManager, this.world, this.renderDistance);
+        this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.world, this.renderDistance);
         this.chunkRenderManager.restoreChunks(this.loadedChunkPositions);
     }
 
@@ -265,9 +268,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
                 if (GL43ChunkRenderBackend.isSupported(disableBlacklist)) {
                     return new GL43ChunkRenderBackend(vertexFormat);
                 }
-            case GL30:
-                if (GL30ChunkRenderBackend.isSupported(disableBlacklist)) {
-                    return new GL30ChunkRenderBackend(vertexFormat);
+            case GL33:
+                if (GL33ChunkRenderBackend.isSupported(disableBlacklist)) {
+                    return new GL33ChunkRenderBackend(vertexFormat);
                 }
             case GL20:
                 if (GL20ChunkRenderBackend.isSupported(disableBlacklist)) {
