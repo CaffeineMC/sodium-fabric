@@ -23,6 +23,7 @@
     "features.buffer_builder.intrinsics.MixinSpriteTexturedVertexConsumer",
     "features.chunk_rendering.MixinChunkBuilder",
     "features.chunk_rendering.MixinClientWorld",
+    "features.chunk_rendering.MixinLightmapTextureManager",
     "features.chunk_rendering.MixinWorldRenderer",
     "features.debug.MixinDebugHud",
     "features.entity.fast_render.MixinCuboid",
@@ -46,8 +47,5 @@
     "features.texture_tracking.MixinSprite",
     "features.texture_tracking.MixinSpriteIdentifier",
     "features.world_ticking.MixinClientWorld"
-  ],
-  "mixins": [
-    "features.chunk_rendering.MixinLightmapTextureManager"
   ]
 }
