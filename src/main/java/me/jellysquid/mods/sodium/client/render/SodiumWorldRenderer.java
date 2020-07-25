@@ -239,7 +239,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.chunkRenderBackend = createChunkRenderBackend(opts.advanced.chunkRendererBackend, vertexFormat);
         this.chunkRenderBackend.createShaders();
 
-        this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.world, this.renderDistance);
+        this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.chunkRenderBackend.getRenderPassManager(), this.world, this.renderDistance);
         this.chunkRenderManager.restoreChunks(this.loadedChunkPositions);
     }
 
