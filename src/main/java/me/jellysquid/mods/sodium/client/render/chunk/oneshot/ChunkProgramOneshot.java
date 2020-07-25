@@ -1,13 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.chunk.oneshot;
 
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkProgram;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderFogComponent;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkProgramComponentBuilder;
 import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
-import java.util.function.Function;
 
 public class ChunkProgramOneshot extends ChunkProgram {
     // Uniform variable index for model offset
@@ -16,8 +15,8 @@ public class ChunkProgramOneshot extends ChunkProgram {
     // Scratch buffer
     private final FloatBuffer uModelOffsetBuffer;
 
-    public ChunkProgramOneshot(Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction) {
-        super(name, handle, fogShaderFunction);
+    public ChunkProgramOneshot(Identifier name, int handle, ChunkProgramComponentBuilder components) {
+        super(name, handle, components);
 
         this.dModelOffset = this.getUniformLocation("d_ModelOffset");
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(4);

@@ -10,11 +10,11 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.oneshot.ChunkOneshotGraphicsState;
 import org.lwjgl.opengl.GL15;
 
-public class VBOGraphicsState extends ChunkOneshotGraphicsState {
+public class GL20GraphicsState extends ChunkOneshotGraphicsState {
     private final GlBuffer vertexBuffer;
     private GlVertexFormat<?> vertexFormat;
 
-    public VBOGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<?> container) {
+    public GL20GraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<?> container) {
         super(memoryTracker, container);
 
         this.vertexBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);

@@ -1,5 +1,6 @@
 #version 110
-attribute vec3 a_Pos; // The position of the vertex
+
+attribute vec4 a_Pos; // The position of the vertex, with the w-component being the mipmap blend factor
 attribute vec4 a_Color; // The color of the vertex
 attribute vec2 a_TexCoord; // The block texture coordinate of the vertex
 attribute vec2 a_LightCoord; // The light map texture coordinate of the vertex
@@ -7,6 +8,10 @@ attribute vec2 a_LightCoord; // The light map texture coordinate of the vertex
 varying vec4 v_Color;
 varying vec2 v_TexCoord;
 varying vec2 v_LightCoord;
+
+#ifdef USE_MULTITEX
+varying float v_MipFactor;
+#endif
 
 #ifdef USE_FOG
 varying float v_FragDistance;
@@ -27,7 +32,7 @@ void main() {
     // Translates the vertex position around the position of the camera
     // This can be used to calculate the distance of the vertex from the camera without needing to
     // transform it into model-view space with a matrix, which is much slower.
-    vec3 pos = (a_Pos * u_ModelScale) + d_ModelOffset.xyz;
+    vec3 pos = (a_Pos.xyz * u_ModelScale) + d_ModelOffset.xyz;
 
 #ifdef USE_FOG
     v_FragDistance = length(pos);
@@ -40,5 +45,9 @@ void main() {
     v_Color = a_Color;
     v_TexCoord = a_TexCoord;
     v_LightCoord = a_LightCoord;
+
+#ifdef USE_MULTITEX
+    v_MipFactor = a_Pos.w;
+#endif
 }
 

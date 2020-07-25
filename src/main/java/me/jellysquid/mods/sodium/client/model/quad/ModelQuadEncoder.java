@@ -12,6 +12,7 @@ public interface ModelQuadEncoder {
      * @param quad The quad data to write
      * @param buffer The buffer to write the encoded vertex data into
      * @param position The starting byte position from which the vertex data should be written into the buffer
+     * @param mipped True if the quad is mipped
      */
-    void write(ModelQuadView quad, ByteBuffer buffer, int position);
+    void write(ModelQuadView quad, ByteBuffer buffer, int position, boolean mipped);
 }
