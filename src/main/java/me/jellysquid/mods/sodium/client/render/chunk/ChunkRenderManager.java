@@ -61,7 +61,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> importantRebuildQueue = new ObjectArrayFIFOQueue<>();
     private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> rebuildQueue = new ObjectArrayFIFOQueue<>();
 
-    public RenderContext<T> renderContext = new RenderContext<>();
+    public RenderContext<T> renderContext;
 
     private final SodiumWorldRenderer renderer;
     private final ClientWorld world;
@@ -84,6 +84,12 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         public final ChunkRenderList<T1>[] chunkRenderLists = new ChunkRenderList[BlockRenderPass.COUNT];
         public final ObjectList<ChunkRenderContainer<T1>> tickableChunks = new ObjectArrayList<>();
         public final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
+
+        public RenderContext(){
+            for (int i = 0; i < this.chunkRenderLists.length; i++) {
+                this.chunkRenderLists[i] = new ChunkRenderList<>();
+            }
+        }
     }
 
     public ChunkRenderManager(SodiumWorldRenderer renderer, ChunkRenderBackend<T> backend, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
@@ -97,9 +103,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
         this.dirty = true;
 
-        for (int i = 0; i < this.renderContext.chunkRenderLists.length; i++) {
-            this.renderContext.chunkRenderLists[i] = new ChunkRenderList<>();
-        }
+        renderContext = new RenderContext<>();
     }
 
     public void updateGraph(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
