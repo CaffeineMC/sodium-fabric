@@ -9,19 +9,19 @@ import java.nio.ByteBuffer;
 public enum GlIndirectMultiDrawFunctions {
     CORE {
         @Override
-        public void glMultiDrawArraysIndirect(int mode, ByteBuffer indirect, int primcount, int stride) {
+        public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {
             GL43.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
         }
     },
     ARB {
         @Override
-        public void glMultiDrawArraysIndirect(int mode, ByteBuffer indirect, int primcount, int stride) {
+        public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {
             ARBMultiDrawIndirect.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
         }
     },
     UNSUPPORTED {
         @Override
-        public void glMultiDrawArraysIndirect(int mode, ByteBuffer indirect, int primcount, int stride) {
+        public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {
             throw new UnsupportedOperationException();
         }
     };
@@ -36,5 +36,5 @@ public enum GlIndirectMultiDrawFunctions {
         }
     }
 
-    public abstract void glMultiDrawArraysIndirect(int mode, ByteBuffer indirect, int primcount, int stride);
+    public abstract void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride);
 }

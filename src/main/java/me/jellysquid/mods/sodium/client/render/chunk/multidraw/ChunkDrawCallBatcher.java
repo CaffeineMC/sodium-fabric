@@ -7,6 +7,9 @@ import sun.misc.Unsafe;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL40;
+
 /**
  * Provides a fixed-size buffer which can be used to batch chunk section draw calls.
  */
@@ -15,14 +18,28 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
 
     protected final int capacity;
 
+    protected final int handle;
+
     protected ChunkDrawCallBatcher(int capacity) {
         super(capacity * STRUCT_SIZE);
 
         this.capacity = capacity;
+        this.handle = GL15.glGenBuffers();
     }
 
     public static ChunkDrawCallBatcher create(int capacity) {
         return UnsafeUtil.isAvailable() ? new UnsafeChunkDrawCallBatcher(capacity) : new NioChunkDrawCallBatcher(capacity);
+    }
+
+    public void upload() {
+        GL15.glBindBuffer(GL40.GL_DRAW_INDIRECT_BUFFER, this.handle);
+        GL15.glBufferData(GL40.GL_DRAW_INDIRECT_BUFFER, this.buffer, GL15.GL_STREAM_DRAW);
+    }
+
+    @Override
+    public void delete() {
+        super.delete();
+        GL15.glDeleteBuffers(this.handle);
     }
 
     public abstract void addIndirectDrawCall(int first, int count, int baseInstance, int instanceCount);
