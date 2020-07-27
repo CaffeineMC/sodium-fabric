@@ -17,27 +17,31 @@ public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> 
     }
 
     @Override
-    protected ChunkProgramMultiDraw createShaderProgram(Identifier name, int handle, ChunkFogMode fogMode) {
-        return new ChunkProgramMultiDraw(name, handle, fogMode.getFactory());
+    protected ChunkProgramMultiDraw createShaderProgram(Identifier name, int handle, ChunkFogMode fogMode, boolean useCulling) {
+        return new ChunkProgramMultiDraw(name, handle, fogMode.getFactory(), useCulling);
     }
 
     @Override
-    protected GlShader createVertexShader(ChunkFogMode fogMode) {
+    protected GlShader createVertexShader(ChunkFogMode fogMode, boolean useCulling) {
         return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"),
-                this.createShaderConstants(fogMode));
+                this.createShaderConstants(fogMode, useCulling));
     }
 
     @Override
-    protected GlShader createFragmentShader(ChunkFogMode fogMode) {
+    protected GlShader createFragmentShader(ChunkFogMode fogMode, boolean useCulling) {
         return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"),
-                this.createShaderConstants(fogMode));
+                this.createShaderConstants(fogMode, useCulling));
     }
 
-    private ShaderConstants createShaderConstants(ChunkFogMode fogMode) {
+    private ShaderConstants createShaderConstants(ChunkFogMode fogMode, boolean useCulling) {
         ShaderConstants.Builder constants = ShaderConstants.builder();
         constants.define("USE_MULTIDRAW");
 
         fogMode.addConstants(constants);
+
+        if (useCulling) {
+            constants.define("USE_CULLING");
+        }
 
         return constants.build();
     }
