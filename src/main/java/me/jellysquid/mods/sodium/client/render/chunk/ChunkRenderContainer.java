@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import me.jellysquid.mods.sodium.client.SodiumHooks;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
@@ -7,8 +8,11 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import me.jellysquid.mods.sodium.mixin.mojmath.MixinFrustum;
+import net.minecraft.client.render.Frustum;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
@@ -39,6 +43,8 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private final ChunkRenderContainer<T>[] adjacent;
     private boolean tickable;
 
+    private final Box boundingBox;
+
     public ChunkRenderContainer(ChunkRenderBackend<T> backend, SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
         this.worldRenderer = worldRenderer;
 
@@ -51,6 +57,11 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
         //noinspection unchecked
         this.graphicsStates = (T[]) Array.newInstance(backend.getGraphicsStateType(), BlockRenderPass.COUNT);
+
+        this.boundingBox = new Box(
+                this.getOriginX(), this.getOriginY(), this.getOriginZ(),
+                this.getOriginX() + 16.0, this.getOriginY() + 16.0, this.getOriginZ() + 16.0
+        );
     }
 
     /**
@@ -213,16 +224,12 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     }
 
     /**
-     * Tests if the given chunk render is visible within the provided frustum.
+     * Tests if the given chunk render is outside of the provided frustum.
      * @param frustum The frustum to test against
-     * @return True if visible, otherwise false
+     * @return True if invisible, otherwise false
      */
     public boolean isOutsideFrustum(FrustumExtended frustum) {
-        float x = this.getOriginX();
-        float y = this.getOriginY();
-        float z = this.getOriginZ();
-
-        return !frustum.fastAabbTest(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
+        return !((Frustum) (Object) frustum).isVisible(boundingBox);
     }
 
     /**
