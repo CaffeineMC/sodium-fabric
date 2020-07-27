@@ -8,6 +8,10 @@ varying vec4 v_Color;
 varying vec2 v_TexCoord;
 varying vec2 v_LightCoord;
 
+#ifdef USE_CULLING
+varying vec3 v_WorldPos; // The position relative to the camera
+#endif
+
 #ifdef USE_FOG
 varying float v_FragDistance;
 #endif
@@ -40,5 +44,9 @@ void main() {
     v_Color = a_Color;
     v_TexCoord = a_TexCoord;
     v_LightCoord = a_LightCoord;
+
+#ifdef USE_CULLING
+    v_WorldPos = pos;
+#endif
 }
 
