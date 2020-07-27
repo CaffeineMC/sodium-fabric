@@ -13,6 +13,10 @@ varying vec2 v_LightCoord;
 varying float v_MipFactor;
 #endif
 
+#ifdef USE_CULLING
+varying vec3 v_WorldPos; // The position relative to the camera
+#endif
+
 #ifdef USE_FOG
 varying float v_FragDistance;
 #endif
@@ -48,6 +52,10 @@ void main() {
 
 #ifdef USE_MULTITEX
     v_MipFactor = a_Pos.w;
+#endif
+
+#ifdef USE_CULLING
+    v_WorldPos = pos;
 #endif
 }
 
