@@ -10,11 +10,11 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
-import net.minecraft.client.util.Rect2i;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.StringRenderable;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.MathHelper;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
@@ -33,9 +33,10 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     private final FlatButtonWidget applyButton;
     private final FlatButtonWidget undoButton;
     private final FlatButtonWidget closeButton;
-    private boolean hasPendingChanges, isAllWidgetsRendered = false;
-    private int scrollY, scrollYBound;
-    private Rect2i scrollBarBounds;
+    private boolean hasPendingChanges, areAllComponentsVisible, isDraggingScrollBar;
+    private int scrollY, scrollYMax;
+    private Dim2i scrollBarBounds;
+    private Dim2i scrollBarThumbBounds;
     private ControlElement<?> hoveredElement;
 
     public TabControlScrollPaneWidget(Dim2i dim, List<OptionPage> pages, TextRenderer textRenderer, FlatButtonWidget applyButton, FlatButtonWidget undoButton, FlatButtonWidget closeButton){
@@ -55,7 +56,7 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
         this.updateControls();
-        if(!this.isAllWidgetsRendered){
+        if(!this.areAllComponentsVisible){
             this.renderScrollBar();
         }
         applyScissor(this.dim.getOriginX(), this.dim.getOriginY(), this.dim.getWidth(), this.dim.getHeight(), () -> {
@@ -69,15 +70,10 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     }
 
     public void renderScrollBar(){
-        int scrollBarX = this.scrollBarBounds.getX();
-        int scrollBarY = this.scrollBarBounds.getY();
-        int scrollBarWidth = this.scrollBarBounds.getWidth();
-        int scrollBarHeight = this.scrollBarBounds.getHeight();
-        this.drawRect(scrollBarX, scrollBarY, scrollBarX + scrollBarWidth, scrollBarY + scrollBarHeight, 0xE0000000);
-
-        //Thumb
-        this.drawRect(scrollBarX + 1, scrollBarY + 1 - scrollY, scrollBarX + scrollBarWidth - 1,
-                scrollBarY + scrollBarHeight + this.scrollYBound - this.scrollY - 1, 0xffffffff);
+        this.drawRect(this.scrollBarBounds.getOriginX(), this.scrollBarBounds.getOriginY(), this.scrollBarBounds.getLimitX(),
+                this.scrollBarBounds.getLimitY(), 0xE0000000);
+        this.drawRect(this.scrollBarThumbBounds.getOriginX(), this.scrollBarThumbBounds.getOriginY(),
+                this.scrollBarThumbBounds.getLimitX(), this.scrollBarThumbBounds.getLimitY(), 0xE0FFFFFF);
     }
 
     public void setPage(OptionPage page) {
@@ -93,13 +89,16 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
 
         this.buildGUIPages();
         this.buildGUIOptions();
-        this.scrollBarBounds = new Rect2i(this.dim.getLimitX() - 6, this.dim.getOriginY(), 6, this.dim.getHeight());
 
         for (Element element : this.children) {
             if (element instanceof Drawable) {
                 this.drawable.add((Drawable) element);
             }
         }
+
+        this.scrollBarBounds = new Dim2i(this.dim.getLimitX() - 6, this.dim.getOriginY(), 6, this.dim.getHeight());
+        this.scrollBarThumbBounds = new Dim2i(this.scrollBarBounds.getOriginX() + 1, this.scrollBarBounds.getOriginY()
+                + 1 - scrollY, 4, this.scrollBarBounds.getHeight() + this.scrollYMax - 2);
     }
 
     public void buildGUIPages(){
@@ -134,8 +133,9 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
             // Add padding beneath each option group
             y += 4;
         }
-        this.isAllWidgetsRendered = y - 4 <= this.dim.getHeight();
-        this.scrollYBound = this.dim.getHeight() - (y - 4);
+        y -= 4;// Remove padding at the end of last group
+        this.areAllComponentsVisible = y <= this.dim.getHeight();
+        this.scrollYMax = this.dim.getHeight() - y;
     }
 
     private void updateControls() {
@@ -229,20 +229,41 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     }
 
     private void setScrollYFromMouse(double d) {
-        this.setScrollY((d - (double) (this.scrollBarBounds.getY())) / (double) (this.scrollBarBounds.getHeight()));
+        this.setScrollY((d - (double) (this.scrollBarBounds.getOriginY())) / (double) (this.scrollBarBounds.getHeight()));
         this.buildGUI();
     }
 
     private void setScrollY(double d) {
-        d = Math.round(this.scrollYBound * d);
+        d = MathHelper.clamp(Math.round(this.scrollYMax * d), this.scrollYMax, 0f);
         this.scrollY = (int) d;
+    }
+
+    /*
+    Avoids user to scroll out of scroll bound
+     */
+    private boolean scrollBarMouseScrolled(double amount){
+        int scrollMultiplier = 4;
+        if(!this.areAllComponentsVisible){
+            if(this.scrollY + amount * scrollMultiplier <= 0 && this.scrollY + amount * scrollMultiplier >= this.scrollYMax){
+                this.scrollY += amount * scrollMultiplier;
+            }else if(this.scrollY + amount * scrollMultiplier < 0){
+                this.scrollY = this.scrollYMax;
+            }else if(this.scrollY + amount * scrollMultiplier > this.scrollYMax){
+                this.scrollY = 0;
+            }
+            this.buildGUI();
+            return true;
+        }
+        return false;
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button){
-        if (!this.isAllWidgetsRendered && button == 0 && this.scrollBarBounds.contains((int) mouseX, (int) mouseY)) {
+        if (!this.areAllComponentsVisible && button == 0 && this.scrollBarBounds.containsCursor((int) mouseX, (int) mouseY)) {
             this.setScrollYFromMouse(mouseY);
-
+            if(!isDraggingScrollBar){
+                isDraggingScrollBar = true;
+            }
             return true;
         }
         if(this.dim.containsCursor(mouseX, mouseY)){
@@ -257,8 +278,18 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     }
 
     @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if(button == 0){
+            if (isDraggingScrollBar){
+                isDraggingScrollBar = false;
+            }
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (!this.isAllWidgetsRendered && button == 0 && this.scrollBarBounds.contains((int) mouseX, (int) mouseY)) {
+        if (!this.areAllComponentsVisible && button == 0 && this.scrollBarBounds.containsCursor(this.scrollBarBounds.getOriginX(), (int) mouseY)) {
             this.setScrollYFromMouse(mouseY);
 
             return true;
@@ -283,9 +314,8 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
                     return true;
                 }
             }
-            if(!this.isAllWidgetsRendered && this.scrollY + amount * 2 <= 0 && this.scrollY + amount * 2 >= this.scrollYBound){
-                this.scrollY += amount * 2;
-                this.buildGUI();
+            if(this.scrollBarMouseScrolled(amount)){
+                return true;
             }
         }
         return super.mouseScrolled(mouseX, mouseY, amount);
