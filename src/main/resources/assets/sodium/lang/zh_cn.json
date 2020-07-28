@@ -31,7 +31,7 @@
   "sodium.options.entity_distance.tooltip": "控制实体的渲染距离。较高的值将降低帧率。",
   "sodium.options.entity_shadows.tooltip": "若启用，怪物及其他实体下将渲染基础阴影。",
   "sodium.options.vignette.name": "晕影",
-  "sodium.options.vignette.tooltip": "若启用，玩家视角将渲染晕影效果。除非您限制了帧率，则此选项基本上不会对帧率造成影响。",
+  "sodium.options.vignette.tooltip": "若启用，玩家视角将渲染晕影效果。除非您限制了帧率，否则此选项基本上不会对帧率造成影响。",
   "sodium.options.mipmap_levels.tooltip": "控制用于方块模型材质的 Mipmap 数量。较高的值将改善远处方块的渲染质量，但若动画材质过多则可能影响性能。",
   "sodium.options.chunk_renderer.name": "区块渲染",
   "sodium.options.chunk_renderer.tooltip": "现代版本的 OpenGL 提供了减少驱动程序区块渲染开销的功能特性。您应使用「钠」所允许的最新特性来达到最佳性能。若您遇到区块渲染或驱动程序崩溃问题，请尝试使用旧版特性 (可能更为稳定) 。",
