@@ -39,7 +39,8 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     private Dim2i scrollBarThumbBounds;
     private ControlElement<?> hoveredElement;
 
-    public TabControlScrollPaneWidget(Dim2i dim, List<OptionPage> pages, TextRenderer textRenderer, FlatButtonWidget applyButton, FlatButtonWidget undoButton, FlatButtonWidget closeButton){
+    public TabControlScrollPaneWidget(Dim2i dim, List<OptionPage> pages, TextRenderer textRenderer, FlatButtonWidget applyButton,
+                                      FlatButtonWidget undoButton, FlatButtonWidget closeButton){
         this.dim = dim;
         this.pages = pages;
         if(this.pages.isEmpty()){
@@ -284,18 +285,26 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
                 isDraggingScrollBar = false;
             }
         }
+        if(this.dim.containsCursor(mouseX, mouseY)){
+            for (Element element : this.children) {
+                if(element.mouseReleased(mouseX, mouseY, button)){
+                    return true;
+                }
+            }
+        }
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (!this.areAllComponentsVisible && button == 0 && this.scrollBarBounds.containsCursor(this.scrollBarBounds.getOriginX(), (int) mouseY)) {
+        if (!this.areAllComponentsVisible && button == 0 && this.scrollBarBounds.containsCursor(this.scrollBarBounds.getOriginX(), (int) mouseY)
+                && isDraggingScrollBar) {
             this.setScrollYFromMouse(mouseY);
 
             return true;
         }
 
-        if(this.dim.containsCursor(mouseX, mouseY)){
+        if(this.dim.containsCursor(mouseX, mouseY) && !isDraggingScrollBar){
             for (Element element : this.children) {
                 if(element.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)){
                     return true;

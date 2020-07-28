@@ -136,6 +136,16 @@ public class SodiumOptionsGUI extends Screen {
     }
 
     @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button){
+        for (Element element : this.children) {
+            if(element.mouseReleased(mouseX, mouseY, button)){
+                return true;
+            }
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
             MinecraftClient.getInstance().openScreen(new VideoOptionsScreen(this.prevScreen, MinecraftClient.getInstance().options));
