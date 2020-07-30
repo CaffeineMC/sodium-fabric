@@ -69,10 +69,6 @@ void main() {
         sampleBlockTex.a = 0.0;
     }
 
-
-    // Block texture sample
-    vec4 sampleBlockTex = texture2D(u_BlockTex, v_TexCoord);
-
     // Light map texture sample
     vec4 sampleLightTex = texture2D(u_LightTex, v_LightCoord);
 
