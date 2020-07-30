@@ -22,7 +22,7 @@ import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListenerManager;
 import me.jellysquid.mods.sodium.common.util.ListUtil;
-import me.jellysquid.mods.sodium.client.IWorldRenderer;
+import me.jellysquid.mods.sodium.client.WorldRendererAccess;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -64,7 +64,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
      * @return The current instance of this type
      */
     public static SodiumWorldRenderer getInstance() {
-        return ((IWorldRenderer) MinecraftClient.getInstance().worldRenderer).getSodiumWorldRenderer();
+        return ((WorldRendererAccess) MinecraftClient.getInstance().worldRenderer).getSodiumWorldRenderer();
     }
 
     public SodiumWorldRenderer(MinecraftClient client) {

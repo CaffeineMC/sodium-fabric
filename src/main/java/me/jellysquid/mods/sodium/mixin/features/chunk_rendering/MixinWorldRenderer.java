@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import me.jellysquid.mods.sodium.client.IWorldRenderer;
+import me.jellysquid.mods.sodium.client.WorldRendererAccess;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.WorldRenderPhase;
 import net.minecraft.client.MinecraftClient;
@@ -23,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.SortedSet;
 
 @Mixin(WorldRenderer.class)
-public abstract class MixinWorldRenderer implements IWorldRenderer {
+public abstract class MixinWorldRenderer implements WorldRendererAccess {
     @Shadow
     @Final
     private BufferBuilderStorage bufferBuilders;
