@@ -17,7 +17,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterator;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -94,7 +93,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     }
 
     @SuppressWarnings("unchecked")
-    public ChunkRenderManager(SodiumWorldRenderer renderer, ChunkRenderBackend<T> backend, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
+    public ChunkRenderManager(SodiumWorldRenderer renderer, ChunkRenderBackend<T> backend, ClientWorld world, int renderDistance) {
         this.backend = backend;
         this.renderer = renderer;
         this.world = world;
@@ -186,11 +185,12 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         boolean added = false;
         T[] states = render.getGraphicsStates();
 
+        RenderContext<T> ctx = this.renderContext;
         for (int i = 0; i < states.length; i++) {
             T state = states[i];
 
             if (state != null) {
-                ChunkRenderList<T> list = this.renderContext.chunkRenderLists[i];
+                ChunkRenderList<T> list = ctx.chunkRenderLists[i];
                 list.add(state, visibleFaces);
 
                 added = true;
@@ -199,7 +199,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
         if (added) {
             if (render.isTickable()) {
-                this.renderContext.tickableChunks.add(render);
+                ctx.tickableChunks.add(render);
             }
 
             this.visibleChunkCount++;
