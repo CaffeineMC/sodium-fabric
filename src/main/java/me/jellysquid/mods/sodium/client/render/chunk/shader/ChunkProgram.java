@@ -26,6 +26,7 @@ public abstract class ChunkProgram extends GlProgram {
 
     public final ChunkProgramTextureComponent texture;
     public final ChunkShaderFogComponent fog;
+    public final ChunkShaderCullingComponent cull;
 
     private final List<ShaderComponent> components;
 
@@ -37,8 +38,13 @@ public abstract class ChunkProgram extends GlProgram {
 
         this.texture = components.texture.create(this);
         this.fog = components.fog.create(this);
-
-        this.components = ImmutableList.of(this.texture, this.fog);
+        if (components.cull != null) {
+            this.cull = components.cull.create(this);
+            this.components = ImmutableList.of(this.texture, this.fog, this.cull);
+        } else {
+            this.cull = null;
+            this.components = ImmutableList.of(this.texture, this.fog);
+        }
     }
 
     @Override

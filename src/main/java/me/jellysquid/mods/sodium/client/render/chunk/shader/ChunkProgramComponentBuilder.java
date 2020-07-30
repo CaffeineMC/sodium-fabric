@@ -5,4 +5,5 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.texture.ChunkProgram
 public class ChunkProgramComponentBuilder {
     public ShaderComponent.Factory<ChunkProgramTextureComponent, ChunkProgram> texture;
     public ShaderComponent.Factory<ChunkShaderFogComponent, ChunkProgram> fog;
+    public ShaderComponent.Factory<ChunkShaderCullingComponent, ChunkProgram> cull;
 }

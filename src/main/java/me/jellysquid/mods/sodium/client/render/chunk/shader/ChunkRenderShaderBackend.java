@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
+import me.jellysquid.mods.sodium.client.SodiumHooks;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.shader.*;
@@ -15,6 +16,8 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P e
         implements ChunkRenderBackend<T> {
     private final EnumMap<ChunkFogMode, P> programs = new EnumMap<>(ChunkFogMode.class);
 
+    private final EnumMap<ChunkFogMode, P> programsWithCulling = new EnumMap<>(ChunkFogMode.class);
+
     protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
 
     protected P activeProgram;
@@ -25,17 +28,26 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P e
 
     @Override
     public final void createShaders() {
-        this.programs.put(ChunkFogMode.NONE, this.createShader(ChunkFogMode.NONE, this.vertexFormat));
-        this.programs.put(ChunkFogMode.LINEAR, this.createShader(ChunkFogMode.LINEAR, this.vertexFormat));
-        this.programs.put(ChunkFogMode.EXP2, this.createShader(ChunkFogMode.EXP2, this.vertexFormat));
+        this.programs.put(ChunkFogMode.NONE, this.createShader(ChunkFogMode.NONE, this.vertexFormat, false));
+        this.programs.put(ChunkFogMode.LINEAR, this.createShader(ChunkFogMode.LINEAR, this.vertexFormat, false));
+        this.programs.put(ChunkFogMode.EXP2, this.createShader(ChunkFogMode.EXP2, this.vertexFormat, false));
+
+        this.programsWithCulling.put(ChunkFogMode.NONE, this.createShader(ChunkFogMode.NONE, this.vertexFormat, true));
+        this.programsWithCulling.put(ChunkFogMode.LINEAR, this.createShader(ChunkFogMode.LINEAR, this.vertexFormat, true));
+        this.programsWithCulling.put(ChunkFogMode.EXP2, this.createShader(ChunkFogMode.EXP2, this.vertexFormat, true));
+
     }
 
-    private P createShader(ChunkFogMode fogMode, GlVertexFormat<ChunkMeshAttribute> format) {
-        GlShader vertShader = this.createVertexShader(fogMode);
-        GlShader fragShader = this.createFragmentShader(fogMode);
+    private P createShader(ChunkFogMode fogMode, GlVertexFormat<ChunkMeshAttribute> format, boolean useCulling) {
+        GlShader vertShader = this.createVertexShader(fogMode, useCulling);
+        GlShader fragShader = this.createFragmentShader(fogMode, useCulling);
 
         ChunkProgramComponentBuilder components = new ChunkProgramComponentBuilder();
         components.fog = fogMode.getFactory();
+
+        if (useCulling) {
+            components.cull = ChunkShaderCullingComponent::new;
+        }
 
         try {
             GlProgram.Builder builder = GlProgram.builder(new Identifier("sodium", "chunk_shader"));
@@ -59,19 +71,23 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P e
     protected abstract void modifyProgram(GlProgram.Builder builder, ChunkProgramComponentBuilder components,
                                           GlVertexFormat<ChunkMeshAttribute> format);
 
-    private GlShader createVertexShader(ChunkFogMode fogMode) {
+    private GlShader createVertexShader(ChunkFogMode fogMode, boolean useCulling) {
         return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_glsl110.v.glsl"),
-                this.createShaderConstants(fogMode));
+                this.createShaderConstants(fogMode, useCulling));
     }
 
-    private GlShader createFragmentShader(ChunkFogMode fogMode) {
+    private GlShader createFragmentShader(ChunkFogMode fogMode, boolean useCulling) {
         return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_glsl110.f.glsl"),
-                this.createShaderConstants(fogMode));
+                this.createShaderConstants(fogMode, useCulling));
     }
 
-    private ShaderConstants createShaderConstants(ChunkFogMode fogMode) {
+    private ShaderConstants createShaderConstants(ChunkFogMode fogMode, boolean useCulling) {
         ShaderConstants.Builder builder = ShaderConstants.builder();
         fogMode.addConstants(builder);
+
+        if (useCulling) {
+            builder.define("USE_CULLING");
+        }
 
         this.addShaderConstants(builder);
 
@@ -83,7 +99,11 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P e
     protected abstract P createShaderProgram(Identifier name, int handle, ChunkProgramComponentBuilder components);
 
     protected void beginRender(MatrixStack matrixStack, BlockRenderPass pass) {
-        this.activeProgram = this.programs.get(ChunkFogMode.getActiveMode());
+        if (SodiumHooks.shouldEnableCulling.getAsBoolean()) {
+            this.activeProgram = this.programsWithCulling.get(ChunkFogMode.getActiveMode());
+        } else {
+            this.activeProgram = this.programs.get(ChunkFogMode.getActiveMode());
+        }
         this.activeProgram.bind(matrixStack);
     }
 
