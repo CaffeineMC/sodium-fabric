@@ -19,7 +19,7 @@ import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.options.AttackIndicator;
 import net.minecraft.client.options.GraphicsMode;
 import net.minecraft.client.options.Option;
-import net.minecraft.client.options.ParticlesOption;
+import net.minecraft.client.options.ParticlesMode;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.Window;
 
@@ -163,10 +163,10 @@ public class SodiumGameOptionPages {
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.class))
                         .setBinding((opts, value) -> opts.quality.weatherQuality = value, opts -> opts.quality.weatherQuality)
                         .build())
-                .add(OptionImpl.createBuilder(ParticlesOption.class, vanillaOpts)
+                .add(OptionImpl.createBuilder(ParticlesMode.class, vanillaOpts)
                         .setName(I18n.translate("sodium.options.particle_quality.name"))
                         .setTooltip(I18n.translate("sodium.options.particle_quality.tooltip"))
-                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new String[] { "High", "Medium", "Low" }))
+                        .setControl(opt -> new CyclingControl<>(opt, ParticlesMode.class, new String[] { "High", "Medium", "Low" }))
                         .setBinding((opts, value) -> opts.particles = value, (opts) -> opts.particles)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)

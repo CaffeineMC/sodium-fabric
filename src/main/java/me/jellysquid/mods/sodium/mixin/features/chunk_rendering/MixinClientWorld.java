@@ -27,11 +27,10 @@ public abstract class MixinClientWorld implements ClientWorldExtended {
      * Captures the biome generation seed so that our own caches can make use of it.
      */
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void init(ClientPlayNetworkHandler netHandler, ClientWorld.Properties properties, RegistryKey<World> worldKey,
-                      RegistryKey<DimensionType> dimensionKey, DimensionType dimensionType, int loadDistance,
-                      Supplier<Profiler> profiler, WorldRenderer renderer, boolean debugWorld, long seed,
-                      CallbackInfo ci) {
-        this.biomeSeed = seed;
+    private void init(ClientPlayNetworkHandler clientPlayNetworkHandler, ClientWorld.Properties properties,
+            RegistryKey<World> registryKey, DimensionType dimensionType, int i, Supplier<Profiler> supplier,
+            WorldRenderer worldRenderer, boolean bl, long l, CallbackInfo ci) {
+        this.biomeSeed = l;
     }
 
     /**

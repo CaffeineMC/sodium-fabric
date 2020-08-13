@@ -263,7 +263,7 @@ public class FixedLongHashTable<V> implements Hash {
     }
 
     private class FastEntryIterator implements ObjectIterator<Long2ObjectMap.Entry<V>> {
-        private final FixedLongHashTable<V>.MapEntry entry = new FixedLongHashTable<V>.MapEntry();
+        private final FixedLongHashTable<V>.MapEntry entry = new MapEntry();
         private int pos = FixedLongHashTable.this.capacity;
 
         private int c = FixedLongHashTable.this.size;
