@@ -19,6 +19,8 @@
   "sodium.options.fps_limit.tooltip": "Limits the maximum number of frames per second. In effect, this will throttle the game and can be useful when you want to conserve battery life or multi-task between other applications. If V-Sync is enabled, this option will be ignored unless it is lower than your display's refresh rate.",
   "sodium.options.view_bobbing.tooltip": "If enabled, the player's view will sway and bob when moving around. Players who suffer from motion sickness can benefit from disabling this.",
   "sodium.options.attack_indicator.tooltip": "Controls where the Attack Indicator is displayed on screen.",
+  "sodium.options.attack_indicator.crosshair": "Crosshair",
+  "sodium.options.attack_indicator.hotbar": "Hotbar",
   "sodium.options.graphics_quality.tooltip": "The default graphics quality controls some legacy options and is necessary for mod compatibility. If the options below are left to \"Default\", they will use this setting.",
   "sodium.options.clouds_quality.name": "Clouds Quality",
   "sodium.options.clouds_quality.tooltip": "Controls the quality of rendered clouds in the sky.",
@@ -52,7 +54,7 @@
   "sodium.options.disable_driver_blacklist.name": "Disable Driver Blacklist",
   "sodium.options.disable_driver_blacklist.tooltip": "If selected, Sodium will ignore the built-in driver blacklist and enable options which are known to be broken with your system configuration. This might cause serious problems and should not be used unless you really do know better. The settings screen must be saved, closed, and re-opened after changing this option in order to reveal previously hidden options.",
   "sodium.options.performance_impact_string": "Performance Impact: %s",
-  "sodium.options.buttons.undo": "Undo",
+  "sodium.options.buttons.undo": "Discard",
   "sodium.options.buttons.apply": "Apply",
   "sodium.options.buttons.close": "Close"
 }

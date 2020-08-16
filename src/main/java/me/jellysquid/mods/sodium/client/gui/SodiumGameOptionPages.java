@@ -127,7 +127,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(AttackIndicator.class, vanillaOpts)
                         .setName(I18n.translate("options.attackIndicator"))
                         .setTooltip(I18n.translate("sodium.options.attack_indicator.tooltip"))
-                        .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.class, new String[] { "Off", "Crosshair", "Hotbar" }))
+                        .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.class, new String[] { I18n.translate("options.off"), I18n.translate("sodium.options.attack_indicator.crosshair"), I18n.translate("sodium.options.attack_indicator.hotbar") }))
                         .setBinding((opts, value) -> opts.attackIndicator = value, (opts) -> opts.attackIndicator)
                         .build())
                 .build());
@@ -166,7 +166,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(ParticlesOption.class, vanillaOpts)
                         .setName(I18n.translate("sodium.options.particle_quality.name"))
                         .setTooltip(I18n.translate("sodium.options.particle_quality.tooltip"))
-                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new String[] { "High", "Medium", "Low" }))
+                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new String[] { I18n.translate("options.graphics.fabulous"), I18n.translate("options.graphics.fancy"), I18n.translate("options.graphics.fast") }))
                         .setBinding((opts, value) -> opts.particles = value, (opts) -> opts.particles)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)
