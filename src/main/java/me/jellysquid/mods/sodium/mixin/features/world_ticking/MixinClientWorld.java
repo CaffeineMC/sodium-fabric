@@ -3,6 +3,8 @@ package me.jellysquid.mods.sodium.mixin.features.world_ticking;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.particle.ParticleEffect;
@@ -29,10 +31,8 @@ public abstract class MixinClientWorld extends World {
     @Shadow
     protected abstract void addParticle(BlockPos pos, BlockState state, ParticleEffect parameters, boolean bl);
 
-    protected MixinClientWorld(MutableWorldProperties mutableWorldProperties, RegistryKey<World> registryKey,
-                               RegistryKey<DimensionType> registryKey2, DimensionType dimensionType,
-                               Supplier<Profiler> profiler, boolean bl, boolean bl2, long l) {
-        super(mutableWorldProperties, registryKey, registryKey2, dimensionType, profiler, bl, bl2, l);
+    protected MixinClientWorld(ClientPlayNetworkHandler clientPlayNetworkHandler, ClientWorld.Properties properties, RegistryKey<World> registryKey, DimensionType dimensionType, int i, Supplier<Profiler> supplier, WorldRenderer worldRenderer, boolean bl, long l) {
+        super(properties, registryKey, dimensionType, supplier, true, bl, l);
     }
 
     @Redirect(method = "doRandomBlockDisplayTicks", at = @At(value = "NEW", target = "java/util/Random"))
@@ -88,7 +88,7 @@ public abstract class MixinClientWorld extends World {
                 .orElse(null);
 
         if (config != null && config.shouldAddParticle(random)) {
-            this.addParticle(config.getParticleType(),
+            this.addParticle(config.getParticle(),
                     pos.getX() + random.nextDouble(),
                     pos.getY() + random.nextDouble(),
                     pos.getZ() + random.nextDouble(),
