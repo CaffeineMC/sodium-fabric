@@ -176,7 +176,8 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             ChunkDrawCallBatcher batch = region.getDrawBatcher();
             batch.end();
 
-            GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(GL11.GL_QUADS, batch.getBuffer(), batch.getCount(), 0 /* tightly packed */);
+            batch.upload();
+            GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(GL11.GL_QUADS, 0, batch.getCount(), 0 /* tightly packed */);
 
             prevVao = vao;
         }
