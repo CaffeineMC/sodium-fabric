@@ -24,8 +24,10 @@ public abstract class MixinClientWorld implements ClientWorldExtended {
     private long biomeSeed;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void init(ClientPlayNetworkHandler clientPlayNetworkHandler, ClientWorld.Properties properties, RegistryKey<World> registryKey, RegistryKey<DimensionType> registryKey2, DimensionType dimensionType, int i, Supplier<Profiler> supplier, WorldRenderer worldRenderer, boolean bl, long seed, CallbackInfo ci) {
-        this.biomeSeed = seed;
+    private void init(ClientPlayNetworkHandler clientPlayNetworkHandler, ClientWorld.Properties properties, RegistryKey<World> registryKey,
+                      DimensionType dimensionType, int loadDistance, Supplier<Profiler> profiler, WorldRenderer renderer,
+                      boolean debugWorld, long seed, CallbackInfo ci) {
+            this.biomeSeed = seed;
     }
 
     @Dynamic
