@@ -275,25 +275,25 @@ public class MixinMatrix4f implements Matrix4fExtended {
     }
 
     private void writeToBufferUnsafe(FloatBuffer buf) {
-        long addr = MemoryUtil.memAddress(buf);
+        final long address = MemoryUtil.memAddress(buf);
 
         Unsafe unsafe = UnsafeUtil.instance();
-        unsafe.putFloat(addr + 0, this.a00);
-        unsafe.putFloat(addr + 4, this.a10);
-        unsafe.putFloat(addr + 8, this.a20);
-        unsafe.putFloat(addr + 12, this.a30);
-        unsafe.putFloat(addr + 16, this.a01);
-        unsafe.putFloat(addr + 20, this.a11);
-        unsafe.putFloat(addr + 24, this.a21);
-        unsafe.putFloat(addr + 28, this.a31);
-        unsafe.putFloat(addr + 32, this.a02);
-        unsafe.putFloat(addr + 36, this.a12);
-        unsafe.putFloat(addr + 40, this.a22);
-        unsafe.putFloat(addr + 44, this.a32);
-        unsafe.putFloat(addr + 48, this.a03);
-        unsafe.putFloat(addr + 52, this.a13);
-        unsafe.putFloat(addr + 56, this.a23);
-        unsafe.putFloat(addr + 60, this.a33);
+        unsafe.putFloat(address, this.a00);
+        unsafe.putFloat(address + 4, this.a10);
+        unsafe.putFloat(address + 8, this.a20);
+        unsafe.putFloat(address + 12, this.a30);
+        unsafe.putFloat(address + 16, this.a01);
+        unsafe.putFloat(address + 20, this.a11);
+        unsafe.putFloat(address + 24, this.a21);
+        unsafe.putFloat(address + 28, this.a31);
+        unsafe.putFloat(address + 32, this.a02);
+        unsafe.putFloat(address + 36, this.a12);
+        unsafe.putFloat(address + 40, this.a22);
+        unsafe.putFloat(address + 44, this.a32);
+        unsafe.putFloat(address + 48, this.a03);
+        unsafe.putFloat(address + 52, this.a13);
+        unsafe.putFloat(address + 56, this.a23);
+        unsafe.putFloat(address + 60, this.a33);
     }
 
     private void writeToBufferSafe(FloatBuffer buf) {
