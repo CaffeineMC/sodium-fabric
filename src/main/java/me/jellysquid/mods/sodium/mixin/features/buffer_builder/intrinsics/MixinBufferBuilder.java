@@ -104,7 +104,6 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
         i += 4;
 
         buffer.putInt(i, light);
-        i += 4;
     }
 
     private void vertexParticleUnsafe(float x, float y, float z, float u, float v, int color, int light) {
@@ -130,7 +129,6 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
         i += 4;
 
         unsafe.putInt(i, light);
-        i += 4;
     }
 
     @Override
@@ -357,7 +355,6 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
         i += 4;
 
         buffer.putInt(i, light);
-        i += 4;
     }
 
     private void vertexGlyphUnsafe(float x, float y, float z, int color, float u, float v, int light) {
@@ -383,6 +380,5 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
         i += 4;
 
         unsafe.putInt(i, light);
-        i += 4;
     }
 }
