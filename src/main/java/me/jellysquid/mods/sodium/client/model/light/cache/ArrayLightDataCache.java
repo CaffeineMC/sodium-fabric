@@ -24,9 +24,9 @@ public class ArrayLightDataCache extends LightDataAccess {
         this.ySize = ySize;
         this.zSize = zSize;
 
-        int len = xSize * ySize * zSize;
+        final int size = xSize * ySize * zSize;
 
-        this.light = new long[len];
+        this.light = new long[size];
     }
 
     public void init(BlockRenderView world, int x, int y, int z) {
@@ -39,21 +39,16 @@ public class ArrayLightDataCache extends LightDataAccess {
     }
 
     private int index(int x, int y, int z) {
-        // TODO: simplify
         return (z - this.zOffset) * this.xSize * this.ySize + (y - this.yOffset) * this.zSize + x - this.xOffset;
     }
 
     @Override
     public long get(int x, int y, int z) {
-        int l = this.index(x, y, z);
+        final int index = this.index(x, y, z);
+        final long word = this.light[index];
+        final boolean wordIsZero = word == 0L;
 
-        long word = this.light[l];
-
-        if (word != 0) {
-            return word;
-        }
-
-        return this.light[l] = this.compute(x, y, z);
+        return wordIsZero ? (this.light[index] = this.compute(x, y, z)) : word;
     }
 
 }
