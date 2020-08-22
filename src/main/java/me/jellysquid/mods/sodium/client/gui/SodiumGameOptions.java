@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gui;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
@@ -146,9 +147,25 @@ public class SodiumGameOptions {
 
         if (file.exists()) {
             try (FileReader reader = new FileReader(file)) {
-                config = gson.fromJson(reader, SodiumGameOptions.class);
+                try {
+                    config = gson.fromJson(reader, SodiumGameOptions.class);
+                } catch(JsonSyntaxException ex) {
+                    final File backupFile = new File("config/sodium-options.json.bak");
+                    if(backupFile.exists()) {
+                        if(!backupFile.delete()) {
+                            throw new RuntimeException("Unable to delete backup file");
+                        }
+                    }
+                    final FileWriter writer = new FileWriter(backupFile);
+                    // Create backup of corrupted configuration file
+                    int b;
+                    while ((b = reader.read()) != -1) {
+                        writer.write(b);
+                    }
+                    config = new SodiumGameOptions();
+                }
             } catch (IOException e) {
-                throw new RuntimeException("Could not parse config", e);
+                throw new RuntimeException("File system access denied", e);
             }
 
             config.sanitize();
@@ -169,7 +186,11 @@ public class SodiumGameOptions {
     }
 
     public void writeChanges() {
-        File dir = this.file.getParentFile();
+        this.writeChanges(this.file);
+    }
+
+    public void writeChanges(File file) {
+        File dir = file.getParentFile();
 
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
@@ -179,7 +200,7 @@ public class SodiumGameOptions {
             throw new RuntimeException("The parent file is not a directory");
         }
 
-        try (FileWriter writer = new FileWriter(this.file)) {
+        try (FileWriter writer = new FileWriter(file)) {
             gson.toJson(this, writer);
         } catch (IOException e) {
             throw new RuntimeException("Could not save configuration file", e);
