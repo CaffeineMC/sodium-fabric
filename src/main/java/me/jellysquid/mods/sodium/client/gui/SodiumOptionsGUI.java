@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui;
 
+import com.sun.org.apache.xpath.internal.operations.Or;
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.options.OptionFlag;
 import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
@@ -14,6 +15,9 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.VideoOptionsScreen;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.OrderedText;
+import net.minecraft.text.StringVisitable;
 import net.minecraft.text.TranslatableText;
 import org.lwjgl.glfw.GLFW;
 
