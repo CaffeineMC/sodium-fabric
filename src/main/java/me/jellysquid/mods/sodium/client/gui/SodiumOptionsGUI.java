@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.gui;
 
-import com.sun.org.apache.xpath.internal.operations.Or;
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.options.OptionFlag;
 import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
@@ -15,9 +14,6 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.VideoOptionsScreen;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.OrderedText;
-import net.minecraft.text.StringVisitable;
 import net.minecraft.text.TranslatableText;
 import org.lwjgl.glfw.GLFW;
 
@@ -64,7 +60,7 @@ public class SodiumOptionsGUI extends Screen {
         FlatButtonWidget closeButton = new FlatButtonWidget(new Dim2i(this.width - 73, this.height - 30, 65, 20),
                 I18n.translate("sodium.options.buttons.close"), this::onClose);
 
-        this.settingsTabControlScrollPane = new TabControlScrollPaneWidget(new Dim2i(4, 4, this.width-8,
+        this.settingsTabControlScrollPane = new TabControlScrollPaneWidget(new Dim2i(4, 4, this.width - 8,
                 this.height - 8 - 32), pages, this.textRenderer, applyButton, undoButton, closeButton);
 
 
@@ -127,26 +123,6 @@ public class SodiumOptionsGUI extends Screen {
     private void undoChanges() {
         this.getAllOptions()
                 .forEach(Option::reset);
-    }
-
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount){
-        for (Element element : this.children) {
-            if(element.mouseScrolled(mouseX, mouseY, amount)){
-                return true;
-            }
-        }
-        return super.mouseScrolled(mouseX, mouseY, amount);
-    }
-
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button){
-        for (Element element : this.children) {
-            if(element.mouseReleased(mouseX, mouseY, button)){
-                return true;
-            }
-        }
-        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

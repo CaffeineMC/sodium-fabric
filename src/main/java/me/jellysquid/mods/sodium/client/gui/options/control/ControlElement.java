@@ -48,6 +48,11 @@ public class ControlElement<T> extends AbstractWidget {
         this.drawString(matrixStack, label, this.dim.getOriginX() + 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
     }
 
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return this.dim.containsCursor(mouseX, mouseY);
+    }
+
     public Option<T> getOption() {
         return this.option;
     }

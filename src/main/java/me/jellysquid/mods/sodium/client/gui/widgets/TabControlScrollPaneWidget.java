@@ -41,10 +41,10 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     private ControlElement<?> hoveredElement;
 
     public TabControlScrollPaneWidget(Dim2i dim, List<OptionPage> pages, TextRenderer textRenderer, FlatButtonWidget applyButton,
-                                      FlatButtonWidget undoButton, FlatButtonWidget closeButton){
+                                      FlatButtonWidget undoButton, FlatButtonWidget closeButton) {
         this.dim = dim;
         this.pages = pages;
-        if(this.pages.isEmpty()){
+        if (this.pages.isEmpty()) {
             throw new IllegalStateException("No pages are available?!");
         }
         this.setPage(pages.get(0));
@@ -58,7 +58,7 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
         this.updateControls();
-        if(!this.areAllComponentsVisible){
+        if (!this.areAllComponentsVisible) {
             this.renderScrollBar();
         }
         applyScissor(this.dim.getOriginX(), this.dim.getOriginY(), this.dim.getWidth(), this.dim.getHeight(), () -> {
@@ -71,7 +71,7 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
         }
     }
 
-    public void renderScrollBar(){
+    public void renderScrollBar() {
         this.drawRect(this.scrollBarBounds.getOriginX(), this.scrollBarBounds.getOriginY(), this.scrollBarBounds.getLimitX(),
                 this.scrollBarBounds.getLimitY(), 0xE0000000);
         this.drawRect(this.scrollBarThumbBounds.getOriginX(), this.scrollBarThumbBounds.getOriginY(),
@@ -84,7 +84,7 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
         this.buildGUI();
     }
 
-    public void buildGUI(){
+    public void buildGUI() {
         this.controls.clear();
         this.children.clear();
         this.drawable.clear();
@@ -103,19 +103,19 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
                 + 1 - scrollY, 4, this.scrollBarBounds.getHeight() + this.scrollYMax - 2);
     }
 
-    public void buildGUIPages(){
+    public void buildGUIPages() {
         int y = 0;
         for (OptionPage page : this.pages) {
             FlatButtonWidget button = new FlatButtonWidget(new Dim2i(this.dim.getOriginX(), this.dim.getOriginY() +
                     y, this.dim.getWidth() / 3 - 4, 16), page.getName(), () -> this.setPage(page));
             button.setSelected(this.selectedPage == page);
 
-            y+=16;
+            y += 16;
             this.children.add(button);
         }
     }
 
-    public void buildGUIOptions(){
+    public void buildGUIOptions() {
         int y = 0;
 
         for (OptionGroup group : this.selectedPage.getGroups()) {
@@ -175,12 +175,12 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
         return this.controls.stream();
     }
 
-    public boolean hasPendingChanges(){
+    public boolean hasPendingChanges() {
         return this.hasPendingChanges;
     }
 
-    public void applyScissor(int x, int y, int width, int height, Runnable action){
-        int scale = (int)MinecraftClient.getInstance().getWindow().getScaleFactor();
+    public void applyScissor(int x, int y, int width, int height, Runnable action) {
+        int scale = (int) MinecraftClient.getInstance().getWindow().getScaleFactor();
         GL11.glScissor(x * scale, MinecraftClient.getInstance().getWindow().getHeight() - (y + height) * scale,
                 width * scale, height * scale);
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
@@ -243,14 +243,14 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     /*
     Avoids user to scroll out of scroll bound
      */
-    private boolean scrollBarMouseScrolled(double amount){
+    private boolean scrollBarMouseScrolled(double amount) {
         int scrollMultiplier = 4;
-        if(!this.areAllComponentsVisible){
-            if(this.scrollY + amount * scrollMultiplier <= 0 && this.scrollY + amount * scrollMultiplier >= this.scrollYMax){
+        if (!this.areAllComponentsVisible) {
+            if (this.scrollY + amount * scrollMultiplier <= 0 && this.scrollY + amount * scrollMultiplier >= this.scrollYMax) {
                 this.scrollY += amount * scrollMultiplier;
-            }else if(this.scrollY + amount * scrollMultiplier < 0){
+            } else if (this.scrollY + amount * scrollMultiplier < 0) {
                 this.scrollY = this.scrollYMax;
-            }else if(this.scrollY + amount * scrollMultiplier > this.scrollYMax){
+            } else if (this.scrollY + amount * scrollMultiplier > this.scrollYMax) {
                 this.scrollY = 0;
             }
             this.buildGUI();
@@ -260,19 +260,17 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button){
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!this.areAllComponentsVisible && button == 0 && this.scrollBarBounds.containsCursor((int) mouseX, (int) mouseY)) {
             this.setScrollYFromMouse(mouseY);
-            if(!isDraggingScrollBar){
+            if (!isDraggingScrollBar) {
                 isDraggingScrollBar = true;
             }
             return true;
         }
-        if(this.dim.containsCursor(mouseX, mouseY)){
+        if (this.dim.containsCursor(mouseX, mouseY)) {
             for (Element element : this.children) {
-                if(element.mouseClicked(mouseX, mouseY, button)){
-                    return true;
-                }
+                if (element.mouseClicked(mouseX, mouseY, button)) return true;
             }
         }
 
@@ -281,16 +279,14 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if(button == 0){
-            if (isDraggingScrollBar){
+        if (button == 0) {
+            if (isDraggingScrollBar) {
                 isDraggingScrollBar = false;
             }
         }
-        if(this.dim.containsCursor(mouseX, mouseY)){
+        if (this.dim.containsCursor(mouseX, mouseY)) {
             for (Element element : this.children) {
-                if(element.mouseReleased(mouseX, mouseY, button)){
-                    return true;
-                }
+                if (element.mouseReleased(mouseX, mouseY, button)) return true;
             }
         }
         return super.mouseReleased(mouseX, mouseY, button);
@@ -298,18 +294,17 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (!this.areAllComponentsVisible && button == 0 && this.scrollBarBounds.containsCursor(this.scrollBarBounds.getOriginX(), (int) mouseY)
-                && isDraggingScrollBar) {
+        if (!this.areAllComponentsVisible && button == 0 &&
+                this.scrollBarBounds.containsCursor(this.scrollBarBounds.getOriginX(), (int) mouseY) &&
+                isDraggingScrollBar) {
             this.setScrollYFromMouse(mouseY);
 
             return true;
         }
 
-        if(this.dim.containsCursor(mouseX, mouseY) && !isDraggingScrollBar){
+        if (this.dim.containsCursor(mouseX, mouseY) && !isDraggingScrollBar) {
             for (Element element : this.children) {
-                if(element.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)){
-                    return true;
-                }
+                if (element.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
             }
         }
 
@@ -317,17 +312,18 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount){
-        if(this.dim.containsCursor(mouseX, mouseY)){
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+        if (this.dim.containsCursor(mouseX, mouseY)) {
             for (Element element : this.children) {
-                if(element.mouseScrolled(mouseX, mouseY, amount)){
-                    return true;
-                }
+                if (element.mouseScrolled(mouseX, mouseY, amount)) return true;
             }
-            if(this.scrollBarMouseScrolled(amount)){
-                return true;
-            }
+            if (this.scrollBarMouseScrolled(amount)) return true;
         }
         return super.mouseScrolled(mouseX, mouseY, amount);
+    }
+
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return this.dim.containsCursor(mouseX, mouseY);
     }
 }
