@@ -39,6 +39,7 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     private Dim2i scrollBarBounds;
     private Dim2i scrollBarThumbBounds;
     private ControlElement<?> hoveredElement;
+    private ControlElement<?> focusedElement;
 
     public TabControlScrollPaneWidget(Dim2i dim, List<OptionPage> pages, TextRenderer textRenderer, FlatButtonWidget applyButton,
                                       FlatButtonWidget undoButton, FlatButtonWidget closeButton) {
@@ -63,11 +64,15 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
         }
         applyScissor(this.dim.getOriginX(), this.dim.getOriginY(), this.dim.getWidth(), this.dim.getHeight(), () -> {
             for (Drawable drawable : this.drawable) {
+                if (drawable == this.focusedElement) continue;
                 drawable.render(matrixStack, mouseX, mouseY, delta);
             }
         });
         if (this.hoveredElement != null) {
             this.renderOptionTooltip(matrixStack, this.hoveredElement);
+        }
+        if (this.focusedElement != null) {
+            this.focusedElement.render(matrixStack, mouseX, mouseY, delta);
         }
     }
 
@@ -85,6 +90,7 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     }
 
     public void buildGUI() {
+        this.focusedElement = null;
         this.controls.clear();
         this.children.clear();
         this.drawable.clear();
@@ -270,7 +276,27 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
         }
         if (this.dim.containsCursor(mouseX, mouseY)) {
             for (Element element : this.children) {
-                if (element.mouseClicked(mouseX, mouseY, button)) return true;
+                if (element instanceof ControlElement) {
+                    if (this.focusedElement == null) {
+                        this.focusedElement = (ControlElement<?>) element;
+                        this.focusedElement.setFocused(true);
+                        if (element.mouseClicked(mouseX, mouseY, button)) return true;
+                    } else {
+                        if (this.focusedElement.isMouseOver(mouseX, mouseY)) {
+                            if (this.focusedElement.mouseClicked(mouseX, mouseY, button)) {
+                                this.focusedElement.setFocused(false);
+                                return true;
+                            }
+                        } else {
+                            this.focusedElement.setFocused(false);
+                            this.focusedElement = (ControlElement<?>) element;
+                            this.focusedElement.setFocused(true);
+                            if (element.mouseClicked(mouseX, mouseY, button)) return true;
+                        }
+                    }
+                } else if (element.mouseClicked(mouseX, mouseY, button)) {
+                    return true;
+                }
             }
         }
 
@@ -286,7 +312,8 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
         }
         if (this.dim.containsCursor(mouseX, mouseY)) {
             for (Element element : this.children) {
-                if (element.mouseReleased(mouseX, mouseY, button)) return true;
+                if (element instanceof ControlElement ? ((ControlElement<?>) element).isFocused() && element.mouseReleased(mouseX, mouseY, button) : element.mouseReleased(mouseX, mouseY, button))
+                    return true;
             }
         }
         return super.mouseReleased(mouseX, mouseY, button);
@@ -304,7 +331,8 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
 
         if (this.dim.containsCursor(mouseX, mouseY) && !isDraggingScrollBar) {
             for (Element element : this.children) {
-                if (element.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
+                if (element instanceof ControlElement ? ((ControlElement<?>) element).isFocused() && element.mouseDragged(mouseX, mouseY, button, deltaX, deltaY) : element.mouseDragged(mouseX, mouseY, button, deltaX, deltaY))
+                    return true;
             }
         }
 
@@ -315,7 +343,8 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (this.dim.containsCursor(mouseX, mouseY)) {
             for (Element element : this.children) {
-                if (element.mouseScrolled(mouseX, mouseY, amount)) return true;
+                if (element instanceof ControlElement ? ((ControlElement<?>) element).isFocused() && element.mouseScrolled(mouseX, mouseY, amount) : element.mouseScrolled(mouseX, mouseY, amount))
+                    return true;
             }
             if (this.scrollBarMouseScrolled(amount)) return true;
         }

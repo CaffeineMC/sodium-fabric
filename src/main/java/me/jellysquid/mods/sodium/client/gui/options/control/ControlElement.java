@@ -13,6 +13,10 @@ public class ControlElement<T> extends AbstractWidget {
 
     protected boolean hovered;
 
+    protected boolean focused;
+
+    protected ControlElement<?> elementFocused;
+
     public ControlElement(Option<T> option, Dim2i dim) {
         this.option = option;
         this.dim = dim;
@@ -20,6 +24,10 @@ public class ControlElement<T> extends AbstractWidget {
 
     public boolean isHovered() {
         return this.hovered;
+    }
+
+    public boolean isFocused(){
+        return this.focused;
     }
 
     @Override
@@ -46,6 +54,10 @@ public class ControlElement<T> extends AbstractWidget {
 
         this.drawRect(this.dim.getOriginX(), this.dim.getOriginY(), this.dim.getLimitX(), this.dim.getLimitY(), this.hovered ? 0xE0000000 : 0x90000000);
         this.drawString(matrixStack, label, this.dim.getOriginX() + 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
+    }
+
+    public void setFocused(boolean focused){
+        this.focused = focused;
     }
 
     @Override
