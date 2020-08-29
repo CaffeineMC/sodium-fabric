@@ -283,10 +283,7 @@ public class TabControlScrollPaneWidget extends AbstractWidget implements Drawab
                         if (element.mouseClicked(mouseX, mouseY, button)) return true;
                     } else {
                         if (this.focusedElement.isMouseOver(mouseX, mouseY)) {
-                            if (this.focusedElement.mouseClicked(mouseX, mouseY, button)) {
-                                this.focusedElement.setFocused(false);
-                                return true;
-                            }
+                            if (this.focusedElement.mouseClicked(mouseX, mouseY, button)) return true;
                         } else {
                             this.focusedElement.setFocused(false);
                             this.focusedElement = (ControlElement<?>) element;
