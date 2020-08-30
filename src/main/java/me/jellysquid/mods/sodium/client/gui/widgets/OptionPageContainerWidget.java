@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class TabControlScrollPaneWidget extends FocusControlElement {
+public class OptionPageContainerWidget extends FocusControlElement {
 
     private final Dim2i dim;
     private final List<OptionPage> pages;
@@ -40,8 +40,8 @@ public class TabControlScrollPaneWidget extends FocusControlElement {
     private Dim2i scrollBarThumbBounds;
     private ControlElement<?> hoveredElement;
 
-    public TabControlScrollPaneWidget(Dim2i dim, List<OptionPage> pages, TextRenderer textRenderer, FlatButtonWidget applyButton,
-                                      FlatButtonWidget undoButton, FlatButtonWidget closeButton) {
+    public OptionPageContainerWidget(Dim2i dim, List<OptionPage> pages, TextRenderer textRenderer, FlatButtonWidget applyButton,
+                                     FlatButtonWidget undoButton, FlatButtonWidget closeButton) {
         this.dim = dim;
         this.pages = pages;
         if (this.pages.isEmpty()) {
@@ -306,7 +306,6 @@ public class TabControlScrollPaneWidget extends FocusControlElement {
         if (this.dim.containsCursor(mouseX, mouseY) && !isDraggingScrollBar) {
             super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
         }
-
         return false;
     }
 
@@ -314,7 +313,7 @@ public class TabControlScrollPaneWidget extends FocusControlElement {
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (this.dim.containsCursor(mouseX, mouseY)) {
             super.mouseScrolled(mouseX, mouseY, amount);
-            if (this.scrollBarMouseScrolled(amount)) return true;
+            return this.scrollBarMouseScrolled(amount);
         }
         return false;
     }

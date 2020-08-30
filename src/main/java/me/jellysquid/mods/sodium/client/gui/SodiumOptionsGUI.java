@@ -5,7 +5,7 @@ import me.jellysquid.mods.sodium.client.gui.options.OptionFlag;
 import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
-import me.jellysquid.mods.sodium.client.gui.widgets.TabControlScrollPaneWidget;
+import me.jellysquid.mods.sodium.client.gui.widgets.OptionPageContainerWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Drawable;
@@ -30,7 +30,7 @@ public class SodiumOptionsGUI extends Screen {
 
     private final Screen prevScreen;
 
-    private TabControlScrollPaneWidget settingsTabControlScrollPane;
+    private OptionPageContainerWidget settingsTabControlScrollPane;
 
     public SodiumOptionsGUI(Screen prevScreen) {
         super(new TranslatableText("Sodium Options"));
@@ -60,7 +60,7 @@ public class SodiumOptionsGUI extends Screen {
         FlatButtonWidget closeButton = new FlatButtonWidget(new Dim2i(this.width - 73, this.height - 30, 65, 20),
                 I18n.translate("sodium.options.buttons.close"), this::onClose);
 
-        this.settingsTabControlScrollPane = new TabControlScrollPaneWidget(new Dim2i(4, 4, this.width - 8,
+        this.settingsTabControlScrollPane = new OptionPageContainerWidget(new Dim2i(4, 4, this.width - 8,
                 this.height - 8 - 32), pages, this.textRenderer, applyButton, undoButton, closeButton);
 
 
