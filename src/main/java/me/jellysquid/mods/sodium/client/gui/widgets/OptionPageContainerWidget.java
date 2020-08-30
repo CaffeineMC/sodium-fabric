@@ -60,7 +60,7 @@ public class OptionPageContainerWidget extends FocusControlElement {
         if (!this.areAllComponentsVisible) {
             this.renderScrollBar();
         }
-        applyScissor(this.dim.getOriginX(), this.dim.getOriginY(), this.dim.getWidth(), this.dim.getHeight(), () -> {
+        this.applyScissor(this.dim.getOriginX(), this.dim.getOriginY(), this.dim.getWidth(), this.dim.getHeight(), () -> {
             for (Drawable drawable : this.drawable) {
                 if (drawable == this.focusedElement) continue;
                 drawable.render(matrixStack, mouseX, mouseY, delta);
@@ -267,8 +267,8 @@ public class OptionPageContainerWidget extends FocusControlElement {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!this.areAllComponentsVisible && button == 0 && this.scrollBarBounds.containsCursor((int) mouseX, (int) mouseY)) {
             this.setScrollYFromMouse(mouseY);
-            if (!isDraggingScrollBar) {
-                isDraggingScrollBar = true;
+            if (!this.isDraggingScrollBar) {
+                this.isDraggingScrollBar = true;
             }
             return true;
         }
@@ -282,8 +282,8 @@ public class OptionPageContainerWidget extends FocusControlElement {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            if (isDraggingScrollBar) {
-                isDraggingScrollBar = false;
+            if (this.isDraggingScrollBar) {
+                this.isDraggingScrollBar = false;
             }
         }
         if (this.dim.containsCursor(mouseX, mouseY)) {
@@ -296,13 +296,13 @@ public class OptionPageContainerWidget extends FocusControlElement {
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (!this.areAllComponentsVisible && button == 0 &&
                 this.scrollBarBounds.containsCursor(this.scrollBarBounds.getOriginX(), (int) mouseY) &&
-                isDraggingScrollBar) {
+                this.isDraggingScrollBar) {
             this.setScrollYFromMouse(mouseY);
 
             return true;
         }
 
-        if (this.dim.containsCursor(mouseX, mouseY) && !isDraggingScrollBar) {
+        if (this.dim.containsCursor(mouseX, mouseY) && !this.isDraggingScrollBar) {
             return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
         }
         return false;

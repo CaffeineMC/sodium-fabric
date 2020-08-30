@@ -88,8 +88,8 @@ public class DropdownBoxControl<T extends Enum<T>> implements Control<T> {
             String name = this.names[value.ordinal()];
             if (this.isExtended) {
                 int y = 0;
-                boolean renderUp = this.dim.getLimitY() + (this.dim.getHeight() * names.length) > MinecraftClient.getInstance().getWindow().getScaledHeight();
-                for (String n : names) {
+                boolean renderUp = this.dim.getLimitY() + (this.dim.getHeight() * this.names.length) > MinecraftClient.getInstance().getWindow().getScaledHeight();
+                for (String n : this.names) {
                     Dim2i item = new Dim2i(this.dim.getLimitX() - 120, this.dim.getLimitY() + (renderUp ? y - this.dim.getHeight() * 2 : y), 120, this.dim.getHeight());
                     this.options.add(item);
                     String text = item.containsCursor(mouseX, mouseY) ? ">" + n : n;
@@ -111,7 +111,7 @@ public class DropdownBoxControl<T extends Enum<T>> implements Control<T> {
                 }
             } else {
                 this.hovered = this.dim.containsCursor(mouseX, mouseY);
-                options.clear();
+                this.options.clear();
             }
             int strWidth = this.getStringWidth(name);
             this.drawString(matrixStack, name, this.dim.getLimitX() - strWidth - 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
