@@ -29,7 +29,7 @@ public class SliderControl implements Control<Integer> {
 
     @Override
     public ControlElement<Integer> createElement(Dim2i dim) {
-        return new Button(this.option, dim, this.min, this.max, this.interval, this.mode);
+        return new SliderControlElement(this.option, dim, this.min, this.max, this.interval, this.mode);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class SliderControl implements Control<Integer> {
         return 130;
     }
 
-    private static class Button extends ControlElement<Integer> {
+    private static class SliderControlElement extends ControlElement<Integer> {
         private static final int THUMB_WIDTH = 2, TRACK_HEIGHT = 1;
 
         private final Rect2i sliderBounds;
@@ -55,7 +55,7 @@ public class SliderControl implements Control<Integer> {
 
         private double thumbPosition;
 
-        public Button(Option<Integer> option, Dim2i dim, int min, int max, int interval, ControlValueFormatter formatter) {
+        public SliderControlElement(Option<Integer> option, Dim2i dim, int min, int max, int interval, ControlValueFormatter formatter) {
             super(option, dim);
 
             this.min = min;

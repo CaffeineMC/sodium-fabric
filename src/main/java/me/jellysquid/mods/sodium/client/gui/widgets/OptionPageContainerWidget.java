@@ -274,7 +274,7 @@ public class OptionPageContainerWidget extends FocusControlElement {
             return true;
         }
         if (this.dim.containsCursor(mouseX, mouseY)) {
-            super.mouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(mouseX, mouseY, button);
         }
 
         return false;
@@ -288,7 +288,7 @@ public class OptionPageContainerWidget extends FocusControlElement {
             }
         }
         if (this.dim.containsCursor(mouseX, mouseY)) {
-            super.mouseReleased(mouseX, mouseY, button);
+            return super.mouseReleased(mouseX, mouseY, button);
         }
         return false;
     }
@@ -304,7 +304,7 @@ public class OptionPageContainerWidget extends FocusControlElement {
         }
 
         if (this.dim.containsCursor(mouseX, mouseY) && !isDraggingScrollBar) {
-            super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+            return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
         }
         return false;
     }
@@ -312,7 +312,7 @@ public class OptionPageContainerWidget extends FocusControlElement {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (this.dim.containsCursor(mouseX, mouseY)) {
-            super.mouseScrolled(mouseX, mouseY, amount);
+            if (super.mouseScrolled(mouseX, mouseY, amount)) return true;
             return this.scrollBarMouseScrolled(amount);
         }
         return false;

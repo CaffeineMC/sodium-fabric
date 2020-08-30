@@ -108,7 +108,6 @@ public class DropdownBoxControl<T extends Enum<T>> implements Control<T> {
 
                 if (!this.isMouseOver(mouseX, mouseY)) {
                     this.isExtended = false;
-                    setFocused(false);
                 }
             } else {
                 this.hovered = this.dim.containsCursor(mouseX, mouseY);
@@ -122,7 +121,6 @@ public class DropdownBoxControl<T extends Enum<T>> implements Control<T> {
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
                 this.isExtended = !this.isExtended;
-                this.setFocused(this.isExtended);
                 return true;
             }
             for (int i = 0; i < this.options.size(); i++) {
@@ -130,7 +128,6 @@ public class DropdownBoxControl<T extends Enum<T>> implements Control<T> {
                 if (current.containsCursor(mouseX, mouseY)) {
                     this.option.setValue(this.allowedValues[i]);
                     this.isExtended = false;
-                    this.setFocused(false);
                     this.playClickSound();
                     return true;
                 }
