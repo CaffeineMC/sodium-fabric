@@ -95,10 +95,12 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
-                this.currentIndex = (this.currentIndex + 1) % this.allowedValues.length;
+            if (this.option.isAvailable() && this.dim.containsCursor(mouseX, mouseY)) {
+                this.currentIndex = button == 0 ? (this.currentIndex + 1) % this.allowedValues.length :
+                        button == 1 ? this.currentIndex != 0 ? (this.currentIndex - 1) % this.allowedValues.length :
+                                this.allowedValues.length - 1 : this.currentIndex;
                 this.option.setValue(this.allowedValues[this.currentIndex]);
-                this.playClickSound();
+                if (button == 0 || button == 1) this.playClickSound();
 
                 return true;
             }

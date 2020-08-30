@@ -304,6 +304,18 @@ public class SodiumGameOptionPages {
 
                 )
                 .build());
+
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Experimental GUI")
+                        .setTooltip("When enable you will need to open this menu")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.advanced.useExperimentalGUI = value, opts -> opts.advanced.useExperimentalGUI)
+                        .build()
+
+                )
+                .build());
+
         return new OptionPage(I18n.translate("sodium.options.pages.advanced"), ImmutableList.copyOf(groups));
     }
 }

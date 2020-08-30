@@ -89,6 +89,4 @@ public class TickBoxControl implements Control<Boolean> {
             });
         }
     }
-
-
 }

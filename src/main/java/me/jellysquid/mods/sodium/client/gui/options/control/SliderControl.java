@@ -29,7 +29,7 @@ public class SliderControl implements Control<Integer> {
 
     @Override
     public ControlElement<Integer> createElement(Dim2i dim) {
-        return new Button(this.option, dim, this.min, this.max, this.interval, this.mode);
+        return new SliderControlElement(this.option, dim, this.min, this.max, this.interval, this.mode);
     }
 
     @Override
@@ -42,22 +42,24 @@ public class SliderControl implements Control<Integer> {
         return 130;
     }
 
-    private static class Button extends ControlElement<Integer> {
+    private static class SliderControlElement extends ControlElement<Integer> {
         private static final int THUMB_WIDTH = 2, TRACK_HEIGHT = 1;
 
         private final Rect2i sliderBounds;
         private final ControlValueFormatter formatter;
 
         private final int min;
+        private final int max;
         private final int range;
         private final int interval;
 
         private double thumbPosition;
 
-        public Button(Option<Integer> option, Dim2i dim, int min, int max, int interval, ControlValueFormatter formatter) {
+        public SliderControlElement(Option<Integer> option, Dim2i dim, int min, int max, int interval, ControlValueFormatter formatter) {
             super(option, dim);
 
             this.min = min;
+            this.max = max;
             this.range = max - min;
             this.interval = interval;
             this.thumbPosition = this.getThumbPositionForValue(option.getValue());
@@ -137,6 +139,13 @@ public class SliderControl implements Control<Integer> {
             this.setValue((d - (double) (this.sliderBounds.getX() + 4)) / (double) (this.sliderBounds.getWidth() - 8));
         }
 
+        private void setValueFromMouseScroll(double amount) {
+            if (this.option.getValue() + this.interval * (int) amount <= max && this.option.getValue() + this.interval * (int) amount >= min) {
+                this.option.setValue(this.option.getValue() + this.interval * (int) amount);
+                this.thumbPosition = getThumbPositionForValue(this.option.getValue());
+            }
+        }
+
         private void setValue(double d) {
             this.thumbPosition = MathHelper.clamp(d, 0.0D, 1.0D);
 
@@ -149,7 +158,7 @@ public class SliderControl implements Control<Integer> {
 
         @Override
         public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-            if (this.option.isAvailable() && button == 0) {
+            if (this.option.isAvailable() && button == 0 && this.sliderBounds.contains((int) mouseX, (int) mouseY)) {
                 this.setValueFromMouse(mouseX);
 
                 return true;
@@ -157,6 +166,16 @@ public class SliderControl implements Control<Integer> {
 
             return false;
         }
-    }
 
+        @Override
+        public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+            if (this.option.isAvailable() && this.sliderBounds.contains((int) mouseX, (int) mouseY)) {
+                this.setValueFromMouseScroll(amount);
+
+                return true;
+            }
+
+            return false;
+        }
+    }
 }
