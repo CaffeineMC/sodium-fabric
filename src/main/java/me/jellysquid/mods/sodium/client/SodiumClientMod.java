@@ -17,7 +17,6 @@ import java.util.List;
 public class SodiumClientMod implements ClientModInitializer {
     private static SodiumGameOptions CONFIG;
     private static Logger LOGGER;
-    private static ImmutableList<OptionPage> optionPages;
 
     @Override
     public void onInitializeClient() {
@@ -33,16 +32,13 @@ public class SodiumClientMod implements ClientModInitializer {
     }
 
     public static ImmutableList<OptionPage> getOptionPages(){
-        if (optionPages == null){
-            List<OptionPage> factories = new ArrayList<>();
-            FabricLoader.getInstance().getEntrypointContainers("sodium", SodiumGameOptionApi.class).forEach(entrypoint -> {
-                SodiumGameOptionApi api = entrypoint.getEntrypoint();
-                factories.add(api.getOptionPage());
-                factories.addAll(api.getProvidedOptionPages());
-            });
-            optionPages = new ImmutableList.Builder<OptionPage>().addAll(factories).build();
-        }
-        return optionPages;
+        List<OptionPage> factories = new ArrayList<>();
+        FabricLoader.getInstance().getEntrypointContainers("sodium", SodiumGameOptionApi.class).forEach(entrypoint -> {
+            SodiumGameOptionApi api = entrypoint.getEntrypoint();
+            factories.add(api.getOptionPage());
+            factories.addAll(api.getProvidedOptionPages());
+        });
+        return new ImmutableList.Builder<OptionPage>().addAll(factories).build();
     }
 
     public static Logger logger() {
