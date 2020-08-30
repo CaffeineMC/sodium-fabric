@@ -32,14 +32,14 @@ public class OptionImpl<S, T> implements Option<T> {
 
     private OptionImpl(OptionStorage<S> storage,
                        String name,
-                       String tooltip,
+                       Text tooltip,
                        OptionBinding<S, T> binding,
                        Function<OptionImpl<S, T>, Control<T>> control,
                        EnumSet<OptionFlag> flags,
                        boolean enabled) {
         this.storage = storage;
         this.name = name;
-        this.tooltip = new LiteralText(tooltip);
+        this.tooltip = tooltip;
         this.binding = binding;
         this.flags = flags;
         this.control = control.apply(this);
@@ -112,7 +112,7 @@ public class OptionImpl<S, T> implements Option<T> {
     public static class Builder<S, T> {
         private final OptionStorage<S> storage;
         private String name;
-        private String tooltip;
+        private Text tooltip;
         private OptionBinding<S, T> binding;
         private Function<OptionImpl<S, T>, Control<T>> control;
         private OptionImpact impact;
@@ -131,7 +131,7 @@ public class OptionImpl<S, T> implements Option<T> {
             return this;
         }
 
-        public Builder<S, T> setTooltip(String tooltip) {
+        public Builder<S, T> setTooltip(Text tooltip) {
             Validate.notNull(tooltip, "Argument must not be null");
 
             this.tooltip = tooltip;
