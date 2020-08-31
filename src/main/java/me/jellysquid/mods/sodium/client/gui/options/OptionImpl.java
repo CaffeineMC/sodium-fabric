@@ -22,7 +22,7 @@ public class OptionImpl<S, T> implements Option<T> {
 
     private final EnumSet<OptionFlag> flags;
 
-    private final String name;
+    private final Text name;
     private final Text tooltip;
 
     private T value;
@@ -31,7 +31,7 @@ public class OptionImpl<S, T> implements Option<T> {
     private final boolean enabled;
 
     private OptionImpl(OptionStorage<S> storage,
-                       String name,
+                       Text name,
                        Text tooltip,
                        OptionBinding<S, T> binding,
                        Function<OptionImpl<S, T>, Control<T>> control,
@@ -49,7 +49,7 @@ public class OptionImpl<S, T> implements Option<T> {
     }
 
     @Override
-    public String getName() {
+    public Text getName() {
         return this.name;
     }
 
@@ -111,7 +111,7 @@ public class OptionImpl<S, T> implements Option<T> {
 
     public static class Builder<S, T> {
         private final OptionStorage<S> storage;
-        private String name;
+        private Text name;
         private Text tooltip;
         private OptionBinding<S, T> binding;
         private Function<OptionImpl<S, T>, Control<T>> control;
@@ -123,7 +123,7 @@ public class OptionImpl<S, T> implements Option<T> {
             this.storage = storage;
         }
 
-        public Builder<S, T> setName(String name) {
+        public Builder<S, T> setName(Text name) {
             Validate.notNull(name, "Argument must not be null");
 
             this.name = name;

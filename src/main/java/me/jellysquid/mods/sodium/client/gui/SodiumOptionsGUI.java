@@ -19,6 +19,7 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.StringRenderable;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import org.lwjgl.glfw.GLFW;
@@ -147,11 +148,13 @@ public class SodiumOptionsGUI extends Screen {
         this.updateControls();
 
         for (Drawable drawable : this.drawable) {
+            if (drawable == this.hoveredElement) continue;
             drawable.render(matrixStack, mouseX, mouseY, delta);
         }
 
         if (this.hoveredElement != null) {
             this.renderOptionTooltip(matrixStack, this.hoveredElement);
+            this.hoveredElement.render(matrixStack, mouseX, mouseY, delta);
         }
     }
 
@@ -203,7 +206,8 @@ public class SodiumOptionsGUI extends Screen {
 
         Option<?> option = element.getOption();
 
-        StringRenderable title = new LiteralText(option.getName()).formatted(Formatting.GRAY);
+        Text name = option.getName();
+        StringRenderable title = new LiteralText(name.getString()).setStyle(name.getStyle()).formatted(Formatting.GRAY);
 
         List<StringRenderable> text = this.textRenderer.wrapLines(title, textWidth);
         text.addAll(this.textRenderer.wrapLines(option.getTooltip(), textWidth));

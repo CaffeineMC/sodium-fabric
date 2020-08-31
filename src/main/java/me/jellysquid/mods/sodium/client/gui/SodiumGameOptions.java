@@ -9,7 +9,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRend
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl33.GL33ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 import net.minecraft.client.options.GraphicsMode;
-import net.minecraft.client.resource.language.I18n;
+import net.minecraft.text.TranslatableText;
 
 import java.io.File;
 import java.io.FileReader;
@@ -111,7 +111,7 @@ public class SodiumGameOptions {
 
         @Override
         public String getLocalizedName() {
-            return I18n.translate(this.name);
+            return new TranslatableText(this.name).getString();
         }
 
         public boolean isFancy(GraphicsMode graphicsMode) {
@@ -120,9 +120,9 @@ public class SodiumGameOptions {
     }
 
     public enum LightingQuality implements TextProvider {
-        HIGH("High"),
-        LOW("Low"),
-        OFF("Off");
+        HIGH("options.ao.max"),
+        LOW("options.ao.min"),
+        OFF("options.ao.off");
 
         private final String name;
 
@@ -132,7 +132,7 @@ public class SodiumGameOptions {
 
         @Override
         public String getLocalizedName() {
-            return this.name;
+            return new TranslatableText(this.name).getString();
         }
     }
 

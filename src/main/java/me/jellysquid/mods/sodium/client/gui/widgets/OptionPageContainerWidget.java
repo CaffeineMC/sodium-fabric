@@ -14,6 +14,7 @@ import net.minecraft.client.gui.Element;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.StringRenderable;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.opengl.GL11;
@@ -207,7 +208,8 @@ public class OptionPageContainerWidget extends FocusControlElement {
 
         Option<?> option = element.getOption();
 
-        StringRenderable title = new LiteralText(option.getName()).formatted(Formatting.GRAY);
+        Text name = option.getName();
+        StringRenderable title = new LiteralText(name.getString()).setStyle(name.getStyle()).formatted(Formatting.GRAY);
 
         List<StringRenderable> text = this.textRenderer.wrapLines(title, textWidth);
         text.addAll(this.textRenderer.wrapLines(option.getTooltip(), textWidth));

@@ -4,6 +4,8 @@ import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.widgets.AbstractWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public class ControlElement<T> extends AbstractWidget {
@@ -24,8 +26,9 @@ public class ControlElement<T> extends AbstractWidget {
 
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
-        String name = this.option.getName();
-        String label;
+        Text text = this.option.getName();
+        String name = text.getString();
+        Text label;
 
         if (this.hovered && this.font.getWidth(name) > (this.dim.getWidth() - this.option.getControl().getMaxWidth())) {
             name = name.substring(0, Math.min(name.length(), 10)) + "...";
@@ -33,12 +36,12 @@ public class ControlElement<T> extends AbstractWidget {
 
         if (this.option.isAvailable()) {
             if (this.option.hasChanged()) {
-                label = Formatting.ITALIC + name + " *";
+                label = new LiteralText(name).append(" *").setStyle(text.getStyle()).formatted(Formatting.ITALIC);
             } else {
-                label = Formatting.WHITE + name;
+                label = new LiteralText(name).setStyle(text.getStyle()).formatted(Formatting.WHITE);
             }
         } else {
-            label = String.valueOf(Formatting.GRAY) + Formatting.STRIKETHROUGH + name;
+            label = new LiteralText(name).setStyle(text.getStyle()).formatted(Formatting.GRAY, Formatting.STRIKETHROUGH);
         }
 
         this.hovered = this.dim.containsCursor(mouseX, mouseY);
