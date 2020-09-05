@@ -56,7 +56,9 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
     @Override
     public void unload(int x, int z) {
         // If this request unloads a chunk, notify the listener
-        if (this.chunks.remove(createChunkKey(x, z)) != null) {
+        WorldChunk unloadedChunk = this.chunks.remove(createChunkKey(x, z));
+        if (unloadedChunk != null) {
+            this.world.unloadBlockEntities(unloadedChunk);
             this.onChunkUnloaded(x, z);
         }
     }
