@@ -1,3 +1,5 @@
+Psst... Sodium for Minecraft 1.16.2 is being worked on, there's just some other architectural improvements and new optimizations in the pipeline. There's no ETA, but hold tight!  
+
 ![Project icon](https://git-assets.jellysquid.me/hotlink-ok/sodium/icon-rounded-128px.png)
 
 # Sodium (for Fabric)
