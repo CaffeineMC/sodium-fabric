@@ -126,7 +126,8 @@ public class DropdownBoxControl<T extends Enum<T>> implements Control<T> {
             for (int i = 0; i < this.options.size(); i++) {
                 Dim2i current = this.options.get(i);
                 if (current.containsCursor(mouseX, mouseY)) {
-                    this.option.setValue(this.allowedValues[i]);
+                    this.option.setValue(this.options.size() == this.allowedValues.length ? this.allowedValues[i] :
+                            this.allowedValues[i - (this.options.size() - this.allowedValues.length)]);
                     this.isExtended = false;
                     this.playClickSound();
                     return true;
