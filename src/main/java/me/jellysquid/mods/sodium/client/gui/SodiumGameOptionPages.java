@@ -228,7 +228,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(SodiumGameOptions.ChunkRendererBackendOption.class, sodiumOpts)
                         .setName(new TranslatableText("sodium.options.chunk_renderer.name"))
                         .setTooltip(new TranslatableText("sodium.options.chunk_renderer.tooltip"))
-                        .setControl((opt) -> new DropdownBoxControl<>(opt, SodiumGameOptions.ChunkRendererBackendOption.class,
+                        .setControl((opt) -> new CyclingControl<>(opt, SodiumGameOptions.ChunkRendererBackendOption.class,
                                 SodiumGameOptions.ChunkRendererBackendOption.getAvailableOptions(disableBlacklist)))
                         .setBinding((opts, value) -> opts.advanced.chunkRendererBackend = value, opts -> opts.advanced.chunkRendererBackend)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
