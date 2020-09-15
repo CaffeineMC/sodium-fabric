@@ -56,11 +56,11 @@ public class SodiumExperimentalOptionsGUI extends Screen {
         this.drawable.clear();
 
         FlatButtonWidget undoButton = new FlatButtonWidget(new Dim2i(this.width - 211, this.height - 30, 65, 20),
-                I18n.translate("sodium.options.buttons.undo"), this::undoChanges);
+                new TranslatableText("sodium.options.buttons.undo"), this::undoChanges);
         FlatButtonWidget applyButton = new FlatButtonWidget(new Dim2i(this.width - 142, this.height - 30, 65, 20),
-                I18n.translate("sodium.options.buttons.apply"), this::applyChanges);
+                new TranslatableText("sodium.options.buttons.apply"), this::applyChanges);
         FlatButtonWidget closeButton = new FlatButtonWidget(new Dim2i(this.width - 73, this.height - 30, 65, 20),
-                I18n.translate("sodium.options.buttons.close"), this::onClose);
+                new TranslatableText("sodium.options.buttons.close"), this::onClose);
 
         this.settingsTabControlScrollPane = new OptionPageContainerWidget(new Dim2i(4, 4, this.width - 8,
                 this.height - 8 - 32), pages, this.textRenderer, applyButton, undoButton, closeButton);

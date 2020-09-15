@@ -86,11 +86,11 @@ public class SodiumOptionsGUI extends Screen {
         this.rebuildGUIOptions();
 
         this.undoButton = new FlatButtonWidget(new Dim2i(this.width - 211, this.height - 30, 65, 20),
-                I18n.translate("sodium.options.buttons.undo"), this::undoChanges);
+                new TranslatableText("sodium.options.buttons.undo"), this::undoChanges);
         this.applyButton = new FlatButtonWidget(new Dim2i(this.width - 142, this.height - 30, 65, 20),
-                I18n.translate("sodium.options.buttons.apply"), this::applyChanges);
+                new TranslatableText("sodium.options.buttons.apply"), this::applyChanges);
         this.closeButton = new FlatButtonWidget(new Dim2i(this.width - 73, this.height - 30, 65, 20),
-                I18n.translate("sodium.options.buttons.close"), this::onClose);
+                new TranslatableText("sodium.options.buttons.close"), this::onClose);
 
         this.children.add(this.undoButton);
         this.children.add(this.applyButton);
