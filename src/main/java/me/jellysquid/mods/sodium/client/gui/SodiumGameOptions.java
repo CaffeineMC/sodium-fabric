@@ -9,6 +9,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRend
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl33.GL33ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 import net.minecraft.client.options.GraphicsMode;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 import java.io.File;
@@ -69,8 +71,8 @@ public class SodiumGameOptions {
         }
 
         @Override
-        public String getLocalizedName() {
-            return this.name;
+        public Text getLocalizedName() {
+            return new LiteralText(this.name);
         }
 
         public boolean isSupported(boolean disableBlacklist) {
@@ -110,8 +112,8 @@ public class SodiumGameOptions {
         }
 
         @Override
-        public String getLocalizedName() {
-            return new TranslatableText(this.name).getString();
+        public Text getLocalizedName() {
+            return new TranslatableText(this.name);
         }
 
         public boolean isFancy(GraphicsMode graphicsMode) {
@@ -131,8 +133,8 @@ public class SodiumGameOptions {
         }
 
         @Override
-        public String getLocalizedName() {
-            return new TranslatableText(this.name).getString();
+        public Text getLocalizedName() {
+            return new TranslatableText(this.name);
         }
     }
 

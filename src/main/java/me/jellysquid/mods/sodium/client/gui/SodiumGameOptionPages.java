@@ -127,7 +127,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(AttackIndicator.class, vanillaOpts)
                         .setName(new TranslatableText("options.attackIndicator"))
                         .setTooltip(new TranslatableText("sodium.options.attack_indicator.tooltip"))
-                        .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.class, new String[] { I18n.translate("options.off"), I18n.translate("options.attack.crosshair"), I18n.translate("options.attack.hotbar") }))
+                        .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.class, new TranslatableText[] { new TranslatableText("options.off"), new TranslatableText("options.attack.crosshair"), new TranslatableText("options.attack.hotbar") }))
                         .setBinding((opts, value) -> opts.attackIndicator = value, (opts) -> opts.attackIndicator)
                         .build())
                 .build());
@@ -142,7 +142,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(GraphicsMode.class, vanillaOpts)
                         .setName(new TranslatableText("options.graphics"))
                         .setTooltip(new TranslatableText("sodium.options.graphics_quality.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, GraphicsMode.class, new String[] { I18n.translate("options.graphics.fast"), I18n.translate("options.graphics.fancy"), I18n.translate("options.graphics.fabulous") }))
+                        .setControl(option -> new CyclingControl<>(option, GraphicsMode.class, new TranslatableText[] { new TranslatableText("options.graphics.fast"), new TranslatableText("options.graphics.fancy"), new TranslatableText("options.graphics.fabulous") }))
                         .setBinding(
                                 (opts, value) -> opts.graphicsMode = value,
                                 opts -> opts.graphicsMode)
@@ -166,13 +166,13 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(ParticlesOption.class, vanillaOpts)
                         .setName(new TranslatableText("sodium.options.particle_quality.name"))
                         .setTooltip(new TranslatableText("sodium.options.particle_quality.tooltip"))
-                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new String[] { I18n.translate("options.particles.all"), I18n.translate("options.particles.decreased"), I18n.translate("options.particles.minimal") }))
+                        .setControl(opt -> new CyclingControl<>(opt, ParticlesOption.class, new TranslatableText[] { new TranslatableText("options.particles.all"), new TranslatableText("options.particles.decreased"), new TranslatableText("options.particles.minimal") }))
                         .setBinding((opts, value) -> opts.particles = value, (opts) -> opts.particles)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)
                         .setName(new TranslatableText("options.ao"))
                         .setTooltip(new TranslatableText("sodium.options.smooth_lighting.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.LightingQuality.class, new String[] { I18n.translate("options.ao.max"), I18n.translate("options.ao.min"), I18n.translate("options.ao.off") }))
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.LightingQuality.class))
                         .setBinding((opts, value) -> opts.quality.smoothLighting = value, opts -> opts.quality.smoothLighting)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())

@@ -5,6 +5,9 @@ import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import org.apache.commons.lang3.Validate;
 
 import java.util.ArrayList;
@@ -13,13 +16,13 @@ import java.util.List;
 public class DropdownBoxControl<T extends Enum<T>> implements Control<T> {
     private final Option<T> option;
     private final T[] allowedValues;
-    private final String[] names;
+    private final Text[] names;
 
     public DropdownBoxControl(Option<T> option, Class<T> enumType) {
         this(option, enumType, enumType.getEnumConstants());
     }
 
-    public DropdownBoxControl(Option<T> option, Class<T> enumType, String[] names) {
+    public DropdownBoxControl(Option<T> option, Class<T> enumType, Text[] names) {
         T[] universe = enumType.getEnumConstants();
 
         Validate.isTrue(universe.length == names.length, "Mismatch between universe length and names array length");
@@ -35,16 +38,16 @@ public class DropdownBoxControl<T extends Enum<T>> implements Control<T> {
 
         this.option = option;
         this.allowedValues = allowedValues;
-        this.names = new String[universe.length];
+        this.names = new Text[universe.length];
 
         for (int i = 0; i < this.names.length; i++) {
-            String name;
+            Text name;
             T value = universe[i];
 
             if (value instanceof TextProvider) {
                 name = ((TextProvider) value).getLocalizedName();
             } else {
-                name = value.name();
+                name = new LiteralText(value.name());
             }
 
             this.names[i] = name;
@@ -68,11 +71,11 @@ public class DropdownBoxControl<T extends Enum<T>> implements Control<T> {
 
     private static class DropdownBoxControlElement<T extends Enum<T>> extends ControlElement<T> {
         private final T[] allowedValues;
-        private final String[] names;
+        private final Text[] names;
         private boolean isExtended;
         private final List<Dim2i> options = new ArrayList<>();
 
-        public DropdownBoxControlElement(Option<T> option, Dim2i dim, T[] allowedValues, String[] names) {
+        public DropdownBoxControlElement(Option<T> option, Dim2i dim, T[] allowedValues, Text[] names) {
             super(option, dim);
 
             this.allowedValues = allowedValues;
@@ -85,14 +88,14 @@ public class DropdownBoxControl<T extends Enum<T>> implements Control<T> {
             super.render(matrixStack, mouseX, mouseY, delta);
 
             Enum<T> value = this.option.getValue();
-            String name = this.names[value.ordinal()];
+            Text name = this.names[value.ordinal()];
             if (this.isExtended) {
                 int y = 0;
                 boolean renderUp = this.dim.getLimitY() + (this.dim.getHeight() * this.names.length) > MinecraftClient.getInstance().getWindow().getScaledHeight();
-                for (String n : this.names) {
+                for (Text n : this.names) {
                     Dim2i item = new Dim2i(this.dim.getLimitX() - 120, this.dim.getLimitY() + (renderUp ? y - this.dim.getHeight() * 2 : y), 120, this.dim.getHeight());
                     this.options.add(item);
-                    String text = item.containsCursor(mouseX, mouseY) ? ">" + n : n;
+                    Text text = item.containsCursor(mouseX, mouseY) ? new LiteralText(n.getString()).formatted(Formatting.ITALIC) : n;
                     int stringColor = name.equals(n) ? 0xFF55FFFF : 0xFFFFFFFF;
                     int backgroundColor = item.containsCursor(mouseX, mouseY) || name.equals(n) ? 0xE0000000 : 0x90000000;
                     this.drawRect(item.getOriginX(), item.getOriginY(), item.getLimitX(), item.getLimitY(), backgroundColor);
