@@ -305,17 +305,6 @@ public class SodiumGameOptionPages {
                 )
                 .build());
 
-        groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(new LiteralText("Use Experimental GUI"))
-                        .setTooltip(new LiteralText("When enabled you will need to reopen this menu").formatted(Formatting.AQUA))
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.advanced.useExperimentalGUI = value, opts -> opts.advanced.useExperimentalGUI)
-                        .build()
-
-                )
-                .build());
-
         return new OptionPage(new TranslatableText("sodium.options.pages.advanced"), ImmutableList.copyOf(groups));
     }
 }
