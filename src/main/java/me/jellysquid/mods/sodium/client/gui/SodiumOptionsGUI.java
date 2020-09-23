@@ -148,13 +148,11 @@ public class SodiumOptionsGUI extends Screen {
         this.updateControls();
 
         for (Drawable drawable : this.drawable) {
-            if (drawable == this.hoveredElement) continue;
             drawable.render(matrixStack, mouseX, mouseY, delta);
         }
 
         if (this.hoveredElement != null) {
             this.renderOptionTooltip(matrixStack, this.hoveredElement);
-            this.hoveredElement.render(matrixStack, mouseX, mouseY, delta);
         }
     }
 
