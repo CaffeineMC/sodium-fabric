@@ -379,9 +379,9 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     }
 
     private ChunkRenderContainer<T> createChunkRender(long pos) {
-        int x = ChunkSectionPos.getX(pos);
-        int y = ChunkSectionPos.getY(pos);
-        int z = ChunkSectionPos.getZ(pos);
+        int x = ChunkSectionPos.unpackX(pos);
+        int y = ChunkSectionPos.unpackY(pos);
+        int z = ChunkSectionPos.unpackZ(pos);
 
         ChunkRenderContainer<T> render = new ChunkRenderContainer<>(this.backend, this.renderer, x, y, z);
 
