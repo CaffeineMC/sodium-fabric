@@ -24,7 +24,7 @@ uniform vec4 d_ModelOffset;
 #endif
 
 #ifdef USE_CLIPPING
-uniform vec4 u_CullingEquation;
+uniform vec4 u_ClippingEquation;
 #endif
 
 void main() {
@@ -46,7 +46,7 @@ void main() {
     v_LightCoord = a_LightCoord;
 
 #ifdef USE_CLIPPING
-    gl_ClipDistance[0] = dot(pos.xyz, u_CullingEquation.xyz) + u_CullingEquation.w;
+    gl_ClipDistance[0] = dot(pos.xyz, u_ClippingEquation.xyz) + u_ClippingEquation.w;
 #endif
 }
 
