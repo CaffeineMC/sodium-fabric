@@ -23,6 +23,10 @@ attribute vec4 d_ModelOffset;
 uniform vec4 d_ModelOffset;
 #endif
 
+#ifdef USE_CLIPPING
+uniform vec4 u_CullingEquation;
+#endif
+
 void main() {
     // Translates the vertex position around the position of the camera
     // This can be used to calculate the distance of the vertex from the camera without needing to
@@ -40,5 +44,9 @@ void main() {
     v_Color = a_Color;
     v_TexCoord = a_TexCoord;
     v_LightCoord = a_LightCoord;
+
+#ifdef USE_CLIPPING
+    gl_ClipDistance[0] = dot(pos.xyz, u_CullingEquation.xyz) + u_CullingEquation.w;
+#endif
 }
 
