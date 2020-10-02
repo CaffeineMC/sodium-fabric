@@ -22,9 +22,7 @@ import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsState> extends ChunkRenderShaderBackend<T, ChunkProgramOneshot> {
     private final GlMultiDrawBatch batch = new GlMultiDrawBatch(ModelQuadFacing.COUNT);
@@ -41,22 +39,12 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
 
     @Override
     protected GlShader createVertexShader(ChunkFogMode fogMode, boolean useCulling) {
-        List<String> defines = new ArrayList<>();
-        defines.addAll(fogMode.getDefines());
-        if (useCulling) {
-            defines.add("USE_CULLING");
-        }
-        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"), defines);
+        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"), fogMode.getDefines());
     }
 
     @Override
     protected GlShader createFragmentShader(ChunkFogMode fogMode, boolean useCulling) {
-        List<String> defines = new ArrayList<>();
-        defines.addAll(fogMode.getDefines());
-        if (useCulling) {
-            defines.add("USE_CULLING");
-        }
-        return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"), defines);
+        return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"), fogMode.getDefines());
     }
 
     @Override
