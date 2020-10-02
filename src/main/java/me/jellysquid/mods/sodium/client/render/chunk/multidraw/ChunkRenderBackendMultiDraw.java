@@ -24,7 +24,10 @@ public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> 
 
     @Override
     protected GlShader createVertexShader(ChunkFogMode fogMode) {
-        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"),
+        Identifier identifier = SodiumHooks.useClipping() ?
+                new Identifier("sodium", "chunk_clip_gl30.v.glsl") :
+                new Identifier("sodium", "chunk_gl20.v.glsl");
+        return ShaderLoader.loadShader(ShaderType.VERTEX, identifier,
                 this.createShaderConstants(fogMode));
     }
 
@@ -39,10 +42,6 @@ public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> 
         constants.define("USE_MULTIDRAW");
 
         fogMode.addConstants(constants);
-
-        if (SodiumHooks.useClipping()) {
-            constants.define("USE_CLIPPING");
-        }
 
         return constants.build();
     }

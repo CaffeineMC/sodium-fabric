@@ -41,13 +41,10 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
 
     @Override
     protected GlShader createVertexShader(ChunkFogMode fogMode) {
-        List<String> defines = fogMode.getDefines();
-
-        if (SodiumHooks.useClipping()) {
-            defines.add("USE_CLIPPING");
-        }
-
-        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"), defines);
+        Identifier identifier = SodiumHooks.useClipping() ?
+                new Identifier("sodium", "chunk_clip_gl30.v.glsl") :
+                new Identifier("sodium", "chunk_gl20.v.glsl");
+        return ShaderLoader.loadShader(ShaderType.VERTEX, identifier, fogMode.getDefines());
     }
 
     @Override

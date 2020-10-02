@@ -1,4 +1,4 @@
-#version 110
+#version 130
 attribute vec3 a_Pos; // The position of the vertex
 attribute vec4 a_Color; // The color of the vertex
 attribute vec2 a_TexCoord; // The block texture coordinate of the vertex
@@ -23,6 +23,8 @@ attribute vec4 d_ModelOffset;
 uniform vec4 d_ModelOffset;
 #endif
 
+uniform vec4 u_ClippingEquation;
+
 void main() {
     // Translates the vertex position around the position of the camera
     // This can be used to calculate the distance of the vertex from the camera without needing to
@@ -40,5 +42,7 @@ void main() {
     v_Color = a_Color;
     v_TexCoord = a_TexCoord;
     v_LightCoord = a_LightCoord;
+
+    gl_ClipDistance[0] = dot(pos.xyz, u_ClippingEquation.xyz) + u_ClippingEquation.w;
 }
 
