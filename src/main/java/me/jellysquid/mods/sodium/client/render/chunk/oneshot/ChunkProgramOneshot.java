@@ -16,8 +16,8 @@ public class ChunkProgramOneshot extends ChunkProgram {
     // Scratch buffer
     private final FloatBuffer uModelOffsetBuffer;
 
-    public ChunkProgramOneshot(Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction, boolean useCulling) {
-        super(name, handle, fogShaderFunction, useCulling);
+    public ChunkProgramOneshot(Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction) {
+        super(name, handle, fogShaderFunction);
 
         this.dModelOffset = this.getUniformLocation("d_ModelOffset");
         this.uModelOffsetBuffer = MemoryUtil.memAllocFloat(4);

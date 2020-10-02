@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
-import me.jellysquid.mods.sodium.client.SodiumHooks;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
@@ -19,19 +18,16 @@ public abstract class ChunkProgram extends GlProgram {
     // The model size of a chunk (16^3)
     protected static final float MODEL_SIZE = 32.0f;
 
-    private final boolean useCulling;
-
     // Uniform variable binding indexes
     private final int uModelViewProjectionMatrix;
     private final int uModelScale;
     private final int uBlockTex;
     private final int uLightTex;
-    private int uCullingEquation = -1;
 
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
 
-    protected ChunkProgram(Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction, boolean useCulling) {
+    protected ChunkProgram(Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction) {
         super(name, handle);
 
         this.uModelViewProjectionMatrix = this.getUniformLocation("u_ModelViewProjectionMatrix");
@@ -39,12 +35,6 @@ public abstract class ChunkProgram extends GlProgram {
         this.uBlockTex = this.getUniformLocation("u_BlockTex");
         this.uLightTex = this.getUniformLocation("u_LightTex");
         this.uModelScale = this.getUniformLocation("u_ModelScale");
-
-        if (useCulling) {
-            uCullingEquation = this.getUniformLocation("u_CullingEquation");
-        }
-
-        this.useCulling = useCulling;
 
         this.fogShader = fogShaderFunction.apply(this);
     }
@@ -75,11 +65,6 @@ public abstract class ChunkProgram extends GlProgram {
             GL11.glPopMatrix();
 
             GL20.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false, bufModelViewProjection);
-        }
-
-        if (useCulling) {
-            float[] cullingEquation = SodiumHooks.getCullingEquation.get();
-            GL20.glUniform4f(this.uCullingEquation, cullingEquation[0], cullingEquation[1], cullingEquation[2], cullingEquation[3]);
         }
     }
 }

@@ -33,17 +33,17 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
     }
 
     @Override
-    protected ChunkProgramOneshot createShaderProgram(Identifier name, int handle, ChunkFogMode fogMode, boolean useCulling) {
-        return new ChunkProgramOneshot(name, handle, fogMode.getFactory(), useCulling);
+    protected ChunkProgramOneshot createShaderProgram(Identifier name, int handle, ChunkFogMode fogMode) {
+        return new ChunkProgramOneshot(name, handle, fogMode.getFactory());
     }
 
     @Override
-    protected GlShader createVertexShader(ChunkFogMode fogMode, boolean useCulling) {
+    protected GlShader createVertexShader(ChunkFogMode fogMode) {
         return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"), fogMode.getDefines());
     }
 
     @Override
-    protected GlShader createFragmentShader(ChunkFogMode fogMode, boolean useCulling) {
+    protected GlShader createFragmentShader(ChunkFogMode fogMode) {
         return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"), fogMode.getDefines());
     }
 
