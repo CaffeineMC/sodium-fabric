@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.oneshot;
 
+import me.jellysquid.mods.sodium.client.SodiumHooks;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
@@ -23,6 +24,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
 import java.util.Iterator;
+import java.util.List;
 
 public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsState> extends ChunkRenderShaderBackend<T, ChunkProgramOneshot> {
     private final GlMultiDrawBatch batch = new GlMultiDrawBatch(ModelQuadFacing.COUNT);
@@ -39,7 +41,13 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
 
     @Override
     protected GlShader createVertexShader(ChunkFogMode fogMode) {
-        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"), fogMode.getDefines());
+        List<String> defines = fogMode.getDefines();
+
+        if (SodiumHooks.useClipping()) {
+            defines.add("USE_CLIPPING");
+        }
+
+        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"), defines);
     }
 
     @Override

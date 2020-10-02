@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
+import me.jellysquid.mods.sodium.client.SodiumHooks;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
@@ -24,6 +25,8 @@ public abstract class ChunkProgram extends GlProgram {
     private final int uBlockTex;
     private final int uLightTex;
 
+    private int uClippingEquation = -1;
+
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
 
@@ -37,6 +40,10 @@ public abstract class ChunkProgram extends GlProgram {
         this.uModelScale = this.getUniformLocation("u_ModelScale");
 
         this.fogShader = fogShaderFunction.apply(this);
+
+        if (SodiumHooks.useClipping()) {
+            uClippingEquation = this.getUniformLocation("u_ClippingEquation");
+        }
     }
 
     public void setup(MatrixStack matrixStack) {
@@ -65,6 +72,11 @@ public abstract class ChunkProgram extends GlProgram {
             GL11.glPopMatrix();
 
             GL20.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false, bufModelViewProjection);
+        }
+
+        if (SodiumHooks.shouldEnableClipping.getAsBoolean()) {
+            float[] clippingEquation = SodiumHooks.getClippingEquation.get();
+            GL20.glUniform4f(this.uClippingEquation, clippingEquation[0], clippingEquation[1], clippingEquation[2], clippingEquation[3]);
         }
     }
 }

@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.multidraw;
 
+import me.jellysquid.mods.sodium.client.SodiumHooks;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
@@ -38,6 +39,10 @@ public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> 
         constants.define("USE_MULTIDRAW");
 
         fogMode.addConstants(constants);
+
+        if (SodiumHooks.useClipping()) {
+            constants.define("USE_CLIPPING");
+        }
 
         return constants.build();
     }
