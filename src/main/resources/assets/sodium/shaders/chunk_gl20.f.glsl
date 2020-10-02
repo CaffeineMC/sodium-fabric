@@ -22,11 +22,6 @@ float getFogFactor() {
 }
 #endif
 
-#ifdef USE_CULLING
-varying vec3 v_WorldPos; // The position relative to the camera
-uniform vec4 u_CullingEquation;
-#endif
-
 #ifdef USE_FOG_LINEAR
 uniform float u_FogLength; // FogStart - FogEnd
 uniform float u_FogEnd;
@@ -38,12 +33,6 @@ float getFogFactor() {
 #endif
 
 void main() {
-#ifdef USE_CULLING
-    if (dot(u_CullingEquation.xyz, v_WorldPos) + u_CullingEquation.w < 0.0) {
-        discard;
-    }
-#endif
-
     // Block texture sample
     vec4 sampleBlockTex = texture2D(u_BlockTex, v_TexCoord);
 
