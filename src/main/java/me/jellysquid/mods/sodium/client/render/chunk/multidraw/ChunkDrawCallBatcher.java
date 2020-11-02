@@ -11,12 +11,13 @@ import java.nio.ByteBuffer;
  * Provides a fixed-size buffer which can be used to batch chunk section draw calls.
  */
 public abstract class ChunkDrawCallBatcher extends StructBuffer {
-    private static final int STRUCT_SIZE = 16;
-
     protected final int capacity;
 
+    private boolean isBuilding;
+    protected int count;
+
     protected ChunkDrawCallBatcher(int capacity) {
-        super(capacity * STRUCT_SIZE);
+        super(capacity, 16);
 
         this.capacity = capacity;
     }
@@ -25,7 +26,29 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
         return UnsafeUtil.isAvailable() ? new UnsafeChunkDrawCallBatcher(capacity) : new NioChunkDrawCallBatcher(capacity);
     }
 
+    public void begin() {
+        this.buffer.clear();
+        this.count = 0;
+
+        this.isBuilding = true;
+    }
+
+    public void end() {
+        this.buffer.position(this.count * this.stride);
+        this.buffer.flip();
+
+        this.isBuilding = false;
+    }
+
+    public boolean isBuilding() {
+        return this.isBuilding;
+    }
+
     public abstract void addIndirectDrawCall(int first, int count, int baseInstance, int instanceCount);
+
+    public int getCount() {
+        return this.count;
+    }
 
     public static class UnsafeChunkDrawCallBatcher extends ChunkDrawCallBatcher {
         private static final Unsafe UNSAFE = UnsafeUtil.instanceNullable();
@@ -57,7 +80,7 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
             UNSAFE.putInt(this.writePointer +  8, first);         // Vertex Start
             UNSAFE.putInt(this.writePointer + 12, baseInstance);  // Base Instance
 
-            this.writePointer += STRUCT_SIZE;
+            this.writePointer += this.stride;
         }
     }
 
@@ -83,7 +106,7 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
             buf.putInt(this.writeOffset +  8, first);             // Vertex Start
             buf.putInt(this.writeOffset + 12, baseInstance);      // Base Instance
 
-            this.writeOffset += STRUCT_SIZE;
+            this.writeOffset += this.stride;
             this.count++;
         }
     }

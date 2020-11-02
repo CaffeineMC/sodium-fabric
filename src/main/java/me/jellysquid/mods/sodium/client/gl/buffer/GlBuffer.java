@@ -8,7 +8,6 @@ import org.lwjgl.opengl.GL31;
 import java.nio.ByteBuffer;
 
 public abstract class GlBuffer extends GlObject {
-    protected int vertexCount = 0;
     protected int size;
 
     protected GlBuffer() {
@@ -28,8 +27,6 @@ public abstract class GlBuffer extends GlObject {
     public abstract void allocate(int target, int size);
 
     public void upload(int target, VertexData data) {
-        this.vertexCount = data.buffer.remaining() / data.format.getStride();
-
         this.upload(target, data.buffer);
     }
 
