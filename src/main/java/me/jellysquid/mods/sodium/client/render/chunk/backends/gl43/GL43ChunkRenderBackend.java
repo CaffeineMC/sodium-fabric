@@ -301,6 +301,8 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
         this.bufferManager.delete();
         this.uploadBuffer.delete();
+        this.uniformBuffer.delete();
+        this.uniformBufferBuilder.delete();
     }
 
     @Override

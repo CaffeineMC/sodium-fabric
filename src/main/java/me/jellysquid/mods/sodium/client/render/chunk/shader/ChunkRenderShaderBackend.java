@@ -65,6 +65,7 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P e
     @Override
     public void end(MatrixStack matrixStack) {
         this.activeProgram.unbind();
+        this.activeProgram = null;
     }
 
     @Override
