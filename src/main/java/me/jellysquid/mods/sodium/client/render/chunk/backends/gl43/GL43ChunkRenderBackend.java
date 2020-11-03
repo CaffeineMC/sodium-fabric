@@ -36,7 +36,6 @@ import org.lwjgl.opengl.GL40;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -368,12 +367,12 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     private static boolean isOldIntelGpu() {
         // We only care about Windows where there is still a significant number of users with unsupported drivers
         // The open-source drivers on Linux are still supported and are not known to have driver bugs with multi-draw
-        if (Util.getOperatingSystem() == Util.OperatingSystem.WINDOWS) {
+        if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
             return false;
         }
 
-        String renderer = Objects.requireNonNull(GL11.glGetString(GL11.GL_RENDERER));
-        String version = Objects.requireNonNull(GL11.glGetString(GL11.GL_VERSION));
+        String renderer = "Intel(R) HD Graphics 4600";
+        String version = "4.3.0 - Build 20.19.15.5058";
 
         // Check to see if the GPU's name matches any known Intel GPU names
         if (!renderer.matches("^Intel\\(R\\) (U?HD|Iris( Pro)?) Graphics (\\d+)?$")) {
@@ -389,12 +388,12 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             return false;
         }
 
-        // The sixth group (index 5) is the major build number
-        String majorBuildString = matcher.group(5);
+        // The fourth group is the major build number
+        String majorBuildString = matcher.group(4);
         int majorBuildNumber = Integer.parseInt(majorBuildString);
 
         // Anything with a major build of >=100 is Gen8 or newer
-        return majorBuildNumber >= 100;
+        return majorBuildNumber < 100;
     }
 
     @Override
