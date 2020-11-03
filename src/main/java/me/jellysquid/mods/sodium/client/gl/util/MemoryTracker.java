@@ -1,38 +1,38 @@
 package me.jellysquid.mods.sodium.client.gl.util;
 
 public class MemoryTracker {
-    private int allocated, used;
+    private long allocated, used;
 
-    public void onMemoryAllocate(int mem) {
+    public void onMemoryAllocate(long mem) {
         this.allocated += mem;
     }
 
-    public void onMemoryRelease(int mem) {
+    public void onMemoryRelease(long mem) {
         this.allocated -= mem;
     }
 
-    public void onMemoryUse(int mem) {
+    public void onMemoryUse(long mem) {
         this.used += mem;
     }
 
-    public void onMemoryFree(int mem) {
+    public void onMemoryFree(long mem) {
         this.used -= mem;
     }
 
-    public int getUsedMemory() {
+    public long getUsedMemory() {
         return this.used;
     }
 
-    public int getAllocatedMemory() {
+    public long getAllocatedMemory() {
         return this.allocated;
     }
 
-    public void onMemoryAllocateAndUse(int mem) {
+    public void onMemoryAllocateAndUse(long mem) {
         this.onMemoryAllocate(mem);
         this.onMemoryUse(mem);
     }
 
-    public void onMemoryFreeAndRelease(int mem) {
+    public void onMemoryFreeAndRelease(long mem) {
         this.onMemoryFree(mem);
         this.onMemoryRelease(mem);
     }

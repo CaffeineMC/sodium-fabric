@@ -52,8 +52,9 @@ public abstract class MixinDebugHud {
         strings.add("Chunk Renderer: " + backend.getRendererName());
 
         if (memoryTracker != null) {
-            int allocated = memoryTracker.getAllocatedMemory();
-            int used = memoryTracker.getUsedMemory();
+            // Allocated/Used in kilobytes (1024 bytes)
+            long allocated = memoryTracker.getAllocatedMemory();
+            long used = memoryTracker.getUsedMemory();
 
             int ratio = (int) Math.floor(((double) used / (double) allocated) * 100.0D);
 
