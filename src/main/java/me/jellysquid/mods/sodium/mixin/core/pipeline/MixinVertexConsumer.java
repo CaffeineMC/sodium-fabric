@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
 import me.jellysquid.mods.sodium.client.model.consumer.GlyphVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.consumer.LineVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.consumer.ParticleVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.consumer.QuadVertexConsumer;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
@@ -11,7 +12,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(VertexConsumer.class)
-public interface MixinVertexConsumer extends ParticleVertexConsumer, QuadVertexConsumer, GlyphVertexConsumer {
+public interface MixinVertexConsumer
+        extends ParticleVertexConsumer, QuadVertexConsumer, GlyphVertexConsumer, LineVertexConsumer {
     @Shadow
     VertexConsumer vertex(double x, double y, double z);
 
@@ -59,6 +61,13 @@ public interface MixinVertexConsumer extends ParticleVertexConsumer, QuadVertexC
         this.color(ColorABGR.unpackRed(color), ColorABGR.unpackGreen(color), ColorABGR.unpackBlue(color), ColorABGR.unpackAlpha(color));
         this.texture(u, v);
         this.light(light);
+        this.next();
+    }
+
+    @Override
+    default void vertexLine(Matrix4f matrix, float x, float y, float z, int color) {
+        this.vertex(x, y, z);
+        this.color(ColorABGR.unpackRed(color), ColorABGR.unpackGreen(color), ColorABGR.unpackBlue(color), ColorABGR.unpackAlpha(color));
         this.next();
     }
 }
