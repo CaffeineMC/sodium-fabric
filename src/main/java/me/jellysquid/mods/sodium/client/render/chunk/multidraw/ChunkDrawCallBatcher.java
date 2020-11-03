@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.multidraw;
 
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
+import net.minecraft.util.math.MathHelper;
 import org.lwjgl.system.MemoryUtil;
 import sun.misc.Unsafe;
 
@@ -13,11 +14,13 @@ import java.nio.ByteBuffer;
 public abstract class ChunkDrawCallBatcher extends StructBuffer {
     protected final int capacity;
 
-    private boolean isBuilding;
+    protected boolean isBuilding;
     protected int count;
 
+    protected int arrayLength;
+
     protected ChunkDrawCallBatcher(int capacity) {
-        super(capacity, 16);
+        super(MathHelper.smallestEncompassingPowerOfTwo(capacity), 16);
 
         this.capacity = capacity;
     }
@@ -27,17 +30,18 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
     }
 
     public void begin() {
-        this.buffer.clear();
-        this.count = 0;
-
         this.isBuilding = true;
+        this.count = 0;
+        this.arrayLength = 0;
+
+        this.buffer.clear();
     }
 
     public void end() {
-        this.buffer.position(this.count * this.stride);
-        this.buffer.flip();
-
         this.isBuilding = false;
+
+        this.arrayLength = this.count * this.stride;
+        this.buffer.limit(this.arrayLength);
     }
 
     public boolean isBuilding() {
@@ -110,4 +114,9 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
             this.count++;
         }
     }
+
+    public int getArrayLength() {
+        return this.arrayLength;
+    }
+
 }
