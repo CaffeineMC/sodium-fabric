@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.debug;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
 import net.minecraft.client.gui.hud.DebugHud;
@@ -46,21 +45,9 @@ public abstract class MixinDebugHud {
 
     private static List<String> getChunkRendererDebugStrings() {
         ChunkRenderBackend<?> backend = SodiumWorldRenderer.getInstance().getChunkRenderer();
-        MemoryTracker memoryTracker = backend.getMemoryTracker();
 
         List<String> strings = new ArrayList<>(4);
         strings.add("Chunk Renderer: " + backend.getRendererName());
-
-        if (memoryTracker != null) {
-            // Allocated/Used in kilobytes (1024 bytes)
-            long allocated = memoryTracker.getAllocatedMemory();
-            long used = memoryTracker.getUsedMemory();
-
-            int ratio = (int) Math.floor(((double) used / (double) allocated) * 100.0D);
-
-            strings.add("VRAM: " + toMiB(used) + "/" + toMiB(allocated) + "MB (" + ratio + "%)");
-        }
-
         strings.addAll(backend.getDebugStrings());
 
         return strings;

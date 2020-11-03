@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.backends.gl43;
 
-import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
@@ -34,6 +33,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL40;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -403,12 +403,17 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     }
 
     @Override
-    public MemoryTracker getMemoryTracker() {
-        return this.memoryTracker;
-    }
-
-    @Override
     public List<String> getDebugStrings() {
-        return Lists.newArrayList("Allocated Regions: " + this.bufferManager.getAllocatedRegionCount());
+        // Allocated/Used in bytes
+        long allocated = this.memoryTracker.getAllocatedMemory();
+        long used = this.memoryTracker.getUsedMemory();
+
+        int ratio = (int) Math.floor(((double) used / (double) allocated) * 100.0D);
+
+        List<String> list = new ArrayList<>();
+        list.add(String.format("VRAM Pool: %d/%d MB (%d%%)", MemoryTracker.toMiB(used), MemoryTracker.toMiB(allocated), ratio));
+        list.add(String.format("Allocated Buffers: %s", this.bufferManager.getAllocatedRegionCount()));
+
+        return list;
     }
 }

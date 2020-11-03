@@ -36,4 +36,8 @@ public class MemoryTracker {
         this.onMemoryFree(mem);
         this.onMemoryRelease(mem);
     }
+
+    public static long toMiB(long bytes) {
+        return bytes / 1024L / 1024L;
+    }
 }
