@@ -36,6 +36,7 @@ import org.lwjgl.opengl.GL40;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -371,8 +372,8 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             return false;
         }
 
-        String renderer = "Intel(R) HD Graphics 4600";
-        String version = "4.3.0 - Build 20.19.15.5058";
+        String renderer = Objects.requireNonNull(GL11.glGetString(GL11.GL_RENDERER));
+        String version = Objects.requireNonNull(GL11.glGetString(GL11.GL_VERSION));
 
         // Check to see if the GPU's name matches any known Intel GPU names
         if (!renderer.matches("^Intel\\(R\\) (U?HD|Iris( Pro)?) Graphics (\\d+)?$")) {
