@@ -22,10 +22,13 @@ import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsState> extends ChunkRenderShaderBackend<T, ChunkProgramOneshot> {
     private final GlMultiDrawBatch batch = new GlMultiDrawBatch(ModelQuadFacing.COUNT);
+
     private final MemoryTracker memoryTracker = new MemoryTracker();
 
     public ChunkRenderBackendOneshot(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
@@ -137,7 +140,10 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
     }
 
     @Override
-    public MemoryTracker getMemoryTracker() {
-        return this.memoryTracker;
+    public List<String> getDebugStrings() {
+        List<String> list = new ArrayList<>();
+        list.add(String.format("VRAM Usage: %s MB", MemoryTracker.toMiB(this.memoryTracker.getUsedMemory())));
+
+        return list;
     }
 }

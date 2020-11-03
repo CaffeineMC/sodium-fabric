@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
-import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterator;
 import net.minecraft.client.util.math.MatrixStack;
@@ -47,10 +46,6 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
     GlVertexFormat<ChunkMeshAttribute> getVertexFormat();
 
     Class<T> getGraphicsStateType();
-
-    default MemoryTracker getMemoryTracker() {
-        return null;
-    }
 
     default String getRendererName() {
         return this.getClass().getSimpleName();
