@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
 import me.jellysquid.mods.sodium.client.model.consumer.GlyphVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.consumer.LineVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.consumer.ParticleVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.consumer.QuadVertexConsumer;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
@@ -29,7 +30,7 @@ import java.nio.ByteBuffer;
 @SuppressWarnings({ "SameParameterValue", "SuspiciousNameCombination" })
 @Mixin(BufferBuilder.class)
 public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
-        implements ParticleVertexConsumer, QuadVertexConsumer, GlyphVertexConsumer {
+        implements ParticleVertexConsumer, QuadVertexConsumer, GlyphVertexConsumer, LineVertexConsumer {
     @Shadow
     private VertexFormat format;
 
@@ -383,6 +384,75 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer
         i += 4;
 
         unsafe.putInt(i, light);
+        i += 4;
+    }
+
+    @Override
+    public void vertexLine(Matrix4f matrix, float x, float y, float z, int color) {
+        Matrix4fExtended matrixExt = MatrixUtil.getExtendedMatrix(matrix);
+
+        float x2 = matrixExt.transformVecX(x, y, z);
+        float y2 = matrixExt.transformVecY(x, y, z);
+        float z2 = matrixExt.transformVecZ(x, y, z);
+
+        if (this.format != VertexFormats.POSITION_COLOR) {
+            this.vertexLineFallback(x2, y2, z2, color);
+
+            return;
+        }
+
+        int size = this.format.getVertexSize();
+
+        this.grow(size);
+
+        if (UnsafeUtil.isAvailable()) {
+            this.vertexLineUnsafe(x2, y2, z2, color);
+        } else {
+            this.vertexLineSafe(x2, y2, z2, color);
+        }
+
+        this.elementOffset += size;
+        this.vertexCount++;
+    }
+
+    private void vertexLineFallback(float x, float y, float z, int color) {
+        this.vertex(x, y, z);
+        this.color(ColorABGR.unpackRed(color), ColorABGR.unpackGreen(color), ColorABGR.unpackBlue(color),
+                ColorABGR.unpackAlpha(color));
+        this.next();
+    }
+
+    private void vertexLineSafe(float x, float y, float z, int color) {
+        int i = this.elementOffset;
+
+        ByteBuffer buffer = this.buffer;
+        buffer.putFloat(i, x);
+        i += 4;
+
+        buffer.putFloat(i, y);
+        i += 4;
+
+        buffer.putFloat(i, z);
+        i += 4;
+
+        buffer.putInt(i, color);
+        i += 4;
+    }
+
+    private void vertexLineUnsafe(float x, float y, float z, int color) {
+        long i = MemoryUtil.memAddress(this.buffer, this.elementOffset);
+
+        Unsafe unsafe = UnsafeUtil.instance();
+        unsafe.putFloat(i, x);
+        i += 4;
+
+        unsafe.putFloat(i, y);
+        i += 4;
+
+        unsafe.putFloat(i, z);
+        i += 4;
+
+        unsafe.putInt(i, color);
         i += 4;
     }
 }
