@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.backends.gl43;
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferRegion;
@@ -13,7 +14,6 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
-import me.jellysquid.mods.sodium.client.gl.util.GlVendorUtil;
 import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
@@ -28,6 +28,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkRenderBacken
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegionManager;
+import net.minecraft.util.Util;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -35,6 +36,9 @@ import org.lwjgl.opengl.GL40;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Shader-based chunk renderer which makes use of a custom memory allocator on top of large buffer objects to allow
@@ -180,12 +184,10 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
             ChunkDrawCallBatcher batch = region.getDrawBatcher();
 
-            int commandCount = batch.getCount();
-
-            GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(GL11.GL_QUADS, commandStart << 4, commandCount, 0 /* tightly packed */);
+            GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(GL11.GL_QUADS, commandStart, batch.getCount(), 0 /* tightly packed */);
 
             prevVao = vao;
-            commandStart += commandCount;
+            commandStart += batch.getArrayLength();
         }
 
         this.pendingBatches.clear();
@@ -205,7 +207,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             ChunkDrawCallBatcher batcher = region.getDrawBatcher();
             batcher.end();
 
-            this.commandBufferBuilder.pushCommandBuffer(batcher.getBuffer());
+            this.commandBufferBuilder.pushCommandBuffer(batcher);
         }
 
         this.commandBufferBuilder.end();
@@ -342,11 +344,13 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
     public static boolean isSupported(boolean disableBlacklist) {
         if (!disableBlacklist) {
-            // Blacklist proprietary AMD drivers. See: http://ati.cchtml.com/show_bug.cgi?id=1273
-            // The open-source Mesa drivers identify using the vendor string "X.org", so this should still allow those
-            // drivers to be used.
-            if (GlVendorUtil.matches("ATI Technologies Inc.")) {
-                return false;
+            try {
+                if (isOldIntelGpu()) {
+                    return false;
+                }
+            } catch (Exception e) {
+                SodiumClientMod.logger().warn("An unexpected exception was thrown while trying to parse " +
+                        "the current OpenGL renderer's strings", e);
             }
         }
 
@@ -354,6 +358,43 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
                 GlFunctions.isBufferCopySupported() &&
                 GlFunctions.isIndirectMultiDrawSupported() &&
                 GlFunctions.isInstancedArraySupported();
+    }
+
+    /**
+     * Determines whether or not the current OpenGL renderer is an old integrated Intel GPU (prior to Skylake/Gen8) on
+     * Windows. These drivers on Windows are unsupported and known to create significant trouble with the multi-draw
+     * renderer.
+     */
+    private static boolean isOldIntelGpu() {
+        // We only care about Windows where there is still a significant number of users with unsupported drivers
+        // The open-source drivers on Linux are still supported and are not known to have driver bugs with multi-draw
+        if (Util.getOperatingSystem() == Util.OperatingSystem.WINDOWS) {
+            return false;
+        }
+
+        String renderer = Objects.requireNonNull(GL11.glGetString(GL11.GL_RENDERER));
+        String version = Objects.requireNonNull(GL11.glGetString(GL11.GL_VERSION));
+
+        // Check to see if the GPU's name matches any known Intel GPU names
+        if (!renderer.matches("^Intel\\(R\\) (U?HD|Iris( Pro)?) Graphics (\\d+)?$")) {
+            return false;
+        }
+
+        // https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
+        Matcher matcher = Pattern.compile("(\\d.\\d.\\d) - Build (\\d+).(\\d+).(\\d+).(\\d+)")
+                .matcher(version);
+
+        // If the version pattern doesn't match, assume we're dealing with something special
+        if (!matcher.matches()) {
+            return false;
+        }
+
+        // The sixth group (index 5) is the major build number
+        String majorBuildString = matcher.group(5);
+        int majorBuildNumber = Integer.parseInt(majorBuildString);
+
+        // Anything with a major build of >=100 is Gen8 or newer
+        return majorBuildNumber >= 100;
     }
 
     @Override

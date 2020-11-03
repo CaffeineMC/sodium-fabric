@@ -27,7 +27,7 @@ public enum GlIndirectMultiDrawFunctions {
     public static GlIndirectMultiDrawFunctions load(GLCapabilities capabilities) {
         if (capabilities.OpenGL43) {
             return CORE;
-        } else if (capabilities.GL_ARB_multi_draw_indirect) {
+        } else if (capabilities.GL_ARB_multi_draw_indirect && capabilities.GL_ARB_draw_indirect) {
             return ARB;
         } else {
             return UNSUPPORTED;
