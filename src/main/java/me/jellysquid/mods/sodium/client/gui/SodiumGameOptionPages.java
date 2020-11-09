@@ -68,7 +68,9 @@ public class SodiumGameOptionPages {
                         .setName("GUI Scale")
                         .setTooltip("Sets the maximum scale factor to be used for the user interface. If 'auto' is used, then the largest scale factor " +
                                 "will always be used.")
-                        .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.guiScale()))
+                        .setControl(option -> new SliderControl(option, 0, MinecraftClient.getInstance().getWindow().
+                                calculateScaleFactor(0, MinecraftClient.getInstance().forcesUnicodeFont()), 1,
+                                ControlValueFormatter.guiScale()))
                         .setBinding((opts, value) -> {
                             opts.guiScale = value;
 
