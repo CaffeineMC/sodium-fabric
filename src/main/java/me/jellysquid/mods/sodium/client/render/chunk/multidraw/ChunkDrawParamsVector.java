@@ -11,12 +11,11 @@ import java.nio.ByteBuffer;
  * parameters.
  */
 public abstract class ChunkDrawParamsVector extends StructBuffer {
-    private static final int VEC4_SIZE = 16;
-
     protected int capacity;
+    protected int count;
 
     protected ChunkDrawParamsVector(int capacity) {
-        super(capacity * VEC4_SIZE);
+        super(capacity, 16);
 
         this.capacity = capacity;
     }
@@ -27,9 +26,13 @@ public abstract class ChunkDrawParamsVector extends StructBuffer {
 
     public abstract void pushChunkDrawParams(float x, float y, float z);
 
+    public void reset() {
+        this.count = 0;
+    }
+
     protected void growBuffer() {
         this.capacity = this.capacity * 2;
-        this.buffer = MemoryUtil.memRealloc(this.buffer, this.capacity * VEC4_SIZE);
+        this.buffer = MemoryUtil.memRealloc(this.buffer, this.capacity * this.stride);
     }
 
     public static class UnsafeChunkDrawCallVector extends ChunkDrawParamsVector {
@@ -55,7 +58,7 @@ public abstract class ChunkDrawParamsVector extends StructBuffer {
             UNSAFE.putFloat(this.writePointer + 4, y);
             UNSAFE.putFloat(this.writePointer + 8, z);
 
-            this.writePointer += VEC4_SIZE;
+            this.writePointer += this.stride;
         }
 
         @Override
@@ -69,8 +72,8 @@ public abstract class ChunkDrawParamsVector extends StructBuffer {
         }
 
         @Override
-        public void begin() {
-            super.begin();
+        public void reset() {
+            super.reset();
 
             this.writePointer = this.basePointer;
         }
@@ -94,12 +97,12 @@ public abstract class ChunkDrawParamsVector extends StructBuffer {
             buf.putFloat(this.writeOffset + 4, y);
             buf.putFloat(this.writeOffset + 8, z);
 
-            this.writeOffset += VEC4_SIZE;
+            this.writeOffset += this.stride;
         }
 
         @Override
-        public void begin() {
-            super.begin();
+        public void reset() {
+            super.reset();
 
             this.writeOffset = 0;
         }

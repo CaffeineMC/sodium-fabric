@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.backends.gl43;
 
-import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferRegion;
@@ -13,7 +13,6 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.VertexData;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
-import me.jellysquid.mods.sodium.client.gl.util.GlVendorUtil;
 import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
@@ -28,12 +27,18 @@ import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkRenderBacken
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegionManager;
+import net.minecraft.util.Util;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL40;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Shader-based chunk renderer which makes use of a custom memory allocator on top of large buffer objects to allow
@@ -75,13 +80,16 @@ import java.util.List;
 public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraphicsState> {
     private final ChunkRegionManager<LCBGraphicsState> bufferManager;
 
-    private final ObjectArrayFIFOQueue<ChunkRegion<LCBGraphicsState>> pendingBatches = new ObjectArrayFIFOQueue<>();
+    private final ObjectArrayList<ChunkRegion<LCBGraphicsState>> pendingBatches = new ObjectArrayList<>();
     private final ObjectArrayFIFOQueue<ChunkRegion<LCBGraphicsState>> pendingUploads = new ObjectArrayFIFOQueue<>();
 
     private final GlMutableBuffer uploadBuffer;
     private final GlMutableBuffer uniformBuffer;
+    private final GlMutableBuffer commandBuffer;
 
     private final ChunkDrawParamsVector uniformBufferBuilder;
+    private final IndirectCommandBufferVector commandBufferBuilder;
+
     private final MemoryTracker memoryTracker = new MemoryTracker();
 
     public GL43ChunkRenderBackend(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
@@ -90,8 +98,10 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         this.bufferManager = new ChunkRegionManager<>(this.memoryTracker);
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
         this.uniformBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
+        this.commandBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
 
         this.uniformBufferBuilder = ChunkDrawParamsVector.create(2048);
+        this.commandBufferBuilder = IndirectCommandBufferVector.create(2048);
     }
 
     @Override
@@ -151,16 +161,15 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     @Override
     public void render(ChunkRenderListIterator<LCBGraphicsState> renders, ChunkCameraContext camera) {
         this.bufferManager.cleanup();
+
         this.setupDrawBatches(renders, camera);
+        this.setupCommandBuffers();
 
         GlVertexArray prevVao = null;
 
-        this.uniformBuffer.bind(GL15.GL_ARRAY_BUFFER);
-        this.uniformBuffer.upload(GL15.GL_ARRAY_BUFFER, this.uniformBufferBuilder.getBuffer());
+        int commandStart = 0;
 
-        while (!this.pendingBatches.isEmpty()) {
-            ChunkRegion<?> region = this.pendingBatches.dequeue();
-
+        for (ChunkRegion<?> region : this.pendingBatches) {
             GlVertexArray vao = region.getVertexArray();
             vao.bind();
 
@@ -174,18 +183,37 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             }
 
             ChunkDrawCallBatcher batch = region.getDrawBatcher();
-            batch.end();
 
-            GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(GL11.GL_QUADS, batch.getBuffer(), batch.getCount(), 0 /* tightly packed */);
+            GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(GL11.GL_QUADS, commandStart, batch.getCount(), 0 /* tightly packed */);
 
             prevVao = vao;
+            commandStart += batch.getArrayLength();
         }
+
+        this.pendingBatches.clear();
 
         if (prevVao != null) {
             prevVao.unbind();
         }
 
         this.uniformBuffer.unbind(GL15.GL_ARRAY_BUFFER);
+        this.commandBuffer.unbind(GL40.GL_DRAW_INDIRECT_BUFFER);
+    }
+
+    private void setupCommandBuffers() {
+        this.commandBufferBuilder.begin();
+
+        for (ChunkRegion<?> region : this.pendingBatches) {
+            ChunkDrawCallBatcher batcher = region.getDrawBatcher();
+            batcher.end();
+
+            this.commandBufferBuilder.pushCommandBuffer(batcher);
+        }
+
+        this.commandBufferBuilder.end();
+
+        this.commandBuffer.bind(GL40.GL_DRAW_INDIRECT_BUFFER);
+        this.commandBuffer.upload(GL40.GL_DRAW_INDIRECT_BUFFER, this.commandBufferBuilder.getBuffer());
     }
 
     private void setupArrayBufferState(GlBufferArena arena) {
@@ -243,7 +271,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     }
 
     private void setupDrawBatches(ChunkRenderListIterator<LCBGraphicsState> it, ChunkCameraContext camera) {
-        this.uniformBufferBuilder.begin();
+        this.uniformBufferBuilder.reset();
 
         int drawCount = 0;
 
@@ -264,7 +292,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             if (!batch.isBuilding()) {
                 batch.begin();
 
-                this.pendingBatches.enqueue(region);
+                this.pendingBatches.add(region);
             }
 
             int mask = 0b1;
@@ -282,7 +310,8 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             it.advance();
         }
 
-        this.uniformBufferBuilder.end();
+        this.uniformBuffer.bind(GL15.GL_ARRAY_BUFFER);
+        this.uniformBuffer.upload(GL15.GL_ARRAY_BUFFER, this.uniformBufferBuilder.getBuffer());
     }
 
     private static int getUploadQueuePayloadSize(List<ChunkBuildResult<LCBGraphicsState>> queue) {
@@ -301,6 +330,11 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
         this.bufferManager.delete();
         this.uploadBuffer.delete();
+        this.uniformBuffer.delete();
+        this.commandBuffer.delete();
+
+        this.uniformBufferBuilder.delete();
+        this.commandBufferBuilder.delete();
     }
 
     @Override
@@ -310,11 +344,13 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
     public static boolean isSupported(boolean disableBlacklist) {
         if (!disableBlacklist) {
-            // Blacklist proprietary AMD drivers. See: http://ati.cchtml.com/show_bug.cgi?id=1273
-            // The open-source Mesa drivers identify using the vendor string "X.org", so this should still allow those
-            // drivers to be used.
-            if (GlVendorUtil.matches("ATI Technologies Inc.")) {
-                return false;
+            try {
+                if (isOldIntelGpu()) {
+                    return false;
+                }
+            } catch (Exception e) {
+                SodiumClientMod.logger().warn("An unexpected exception was thrown while trying to parse " +
+                        "the current OpenGL renderer's strings", e);
             }
         }
 
@@ -324,18 +360,60 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
                 GlFunctions.isInstancedArraySupported();
     }
 
+    /**
+     * Determines whether or not the current OpenGL renderer is an old integrated Intel GPU (prior to Skylake/Gen8) on
+     * Windows. These drivers on Windows are unsupported and known to create significant trouble with the multi-draw
+     * renderer.
+     */
+    private static boolean isOldIntelGpu() {
+        // We only care about Windows where there is still a significant number of users with unsupported drivers
+        // The open-source drivers on Linux are still supported and are not known to have driver bugs with multi-draw
+        if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
+            return false;
+        }
+
+        String renderer = Objects.requireNonNull(GL11.glGetString(GL11.GL_RENDERER));
+        String version = Objects.requireNonNull(GL11.glGetString(GL11.GL_VERSION));
+
+        // Check to see if the GPU's name matches any known Intel GPU names
+        if (!renderer.matches("^Intel\\(R\\) (U?HD|Iris( Pro)?) Graphics (\\d+)?$")) {
+            return false;
+        }
+
+        // https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
+        Matcher matcher = Pattern.compile("(\\d.\\d.\\d) - Build (\\d+).(\\d+).(\\d+).(\\d+)")
+                .matcher(version);
+
+        // If the version pattern doesn't match, assume we're dealing with something special
+        if (!matcher.matches()) {
+            return false;
+        }
+
+        // The fourth group is the major build number
+        String majorBuildString = matcher.group(4);
+        int majorBuildNumber = Integer.parseInt(majorBuildString);
+
+        // Anything with a major build of >=100 is Gen8 or newer
+        return majorBuildNumber < 100;
+    }
+
     @Override
     public String getRendererName() {
         return "Multidraw (GL 4.3)";
     }
 
     @Override
-    public MemoryTracker getMemoryTracker() {
-        return this.memoryTracker;
-    }
-
-    @Override
     public List<String> getDebugStrings() {
-        return Lists.newArrayList("Allocated Regions: " + this.bufferManager.getAllocatedRegionCount());
+        // Allocated/Used in bytes
+        long allocated = this.memoryTracker.getAllocatedMemory();
+        long used = this.memoryTracker.getUsedMemory();
+
+        int ratio = (int) Math.floor(((double) used / (double) allocated) * 100.0D);
+
+        List<String> list = new ArrayList<>();
+        list.add(String.format("VRAM Pool: %d/%d MB (%d%%)", MemoryTracker.toMiB(used), MemoryTracker.toMiB(allocated), ratio));
+        list.add(String.format("Allocated Buffers: %s", this.bufferManager.getAllocatedRegionCount()));
+
+        return list;
     }
 }

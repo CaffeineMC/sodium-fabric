@@ -6,31 +6,12 @@ import java.nio.ByteBuffer;
 
 public abstract class StructBuffer {
     protected ByteBuffer buffer;
-    protected int count;
 
-    private boolean isBuilding;
+    protected final int stride;
 
-    protected StructBuffer(int bytes) {
-        this.buffer = MemoryUtil.memAlloc(bytes);
-    }
-
-    public int getCount() {
-        return this.count;
-    }
-
-    public void begin() {
-        this.buffer.clear();
-        this.count = 0;
-
-        this.isBuilding = true;
-    }
-
-    public void end() {
-        this.isBuilding = false;
-    }
-
-    public boolean isBuilding() {
-        return this.isBuilding;
+    protected StructBuffer(int bytes, int stride) {
+        this.buffer = MemoryUtil.memAlloc(bytes * stride);
+        this.stride = stride;
     }
 
     public ByteBuffer getBuffer() {
