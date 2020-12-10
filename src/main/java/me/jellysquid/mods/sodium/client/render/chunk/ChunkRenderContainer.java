@@ -8,7 +8,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import me.jellysquid.mods.sodium.mixin.mojmath.MixinFrustum;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
