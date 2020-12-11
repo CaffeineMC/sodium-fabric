@@ -7,15 +7,11 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public class SodiumHooks {
-    public static boolean useClipping() {
-        return true;
-//        return FabricLoader.getInstance().isModLoaded("imm_ptl_core");
-    }
+    public static BooleanSupplier useClipping = () -> false;
 
-    public static BooleanSupplier shouldEnableClipping = () -> true;
+    public static BooleanSupplier shouldEnableClipping = () -> false;
 
     public static Supplier<float[]> getClippingEquation = () -> {
-        GL11.glEnable(GL11.GL_CLIP_PLANE0);
-        return new float[]{1,0,0,0};
+        return null;
     };
 }

@@ -41,7 +41,7 @@ public abstract class ChunkProgram extends GlProgram {
 
         this.fogShader = fogShaderFunction.apply(this);
 
-        if (SodiumHooks.useClipping()) {
+        if (SodiumHooks.useClipping.getAsBoolean()) {
             uClippingEquation = this.getUniformLocation("u_ClippingEquation");
         }
     }
