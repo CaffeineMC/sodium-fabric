@@ -9,6 +9,7 @@ import me.jellysquid.mods.sodium.common.util.pool.ReusableObject;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
@@ -19,9 +20,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.biome.source.BiomeArray;
-import net.minecraft.world.chunk.ChunkNibbleArray;
-import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.chunk.*;
 import net.minecraft.world.chunk.light.ChunkLightingView;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.ColorResolver;
@@ -37,38 +36,53 @@ import java.util.Map;
  * World slices are not safe to use from multiple threads at once, but the data they contain is safe from modification
  * by the main client thread.
  *
- * You should use object pooling with this type to avoid huge allocations as instances of this class contain many large
- * arrays.
+ * Object pooling should be used to avoid huge allocations as this class contains many large arrays.
  */
 public class WorldSlice extends ReusableObject implements BlockRenderView, BiomeAccess.Storage {
-    // The number of outward blocks from the origin chunk to slice
-    public static final int NEIGHBOR_BLOCK_RADIUS = 1;
-
-    // The number of outward chunks from the origin chunk to slice
-    public static final int NEIGHBOR_CHUNK_RADIUS = MathHelper.roundUpToMultiple(NEIGHBOR_BLOCK_RADIUS, 16) >> 4;
-
-    // The length of the chunk section array on each axis
-    public static final int SECTION_LENGTH = 1 + (NEIGHBOR_CHUNK_RADIUS * 2);
-
-    // The number of blocks
-    public static final int BLOCK_LENGTH = 16 + (NEIGHBOR_BLOCK_RADIUS * 2);
-
-    // The number of blocks contained by a world slice
-    public static final int BLOCK_COUNT = BLOCK_LENGTH * BLOCK_LENGTH * BLOCK_LENGTH;
-
-    // The number of chunk sections contained by a world slice
-    public static final int SECTION_COUNT = SECTION_LENGTH * SECTION_LENGTH * SECTION_LENGTH;
-
-    // The number of chunks contained by a world slice
-    public static final int CHUNK_COUNT = SECTION_LENGTH * SECTION_LENGTH;
-
     private static final ChunkSection EMPTY_SECTION = new ChunkSection(0);
 
-    // The data arrays for this slice
-    // These are allocated once and then re-used when the slice is released back to an object pool
-    private final BlockState[] blockStates;
+    // The number of blocks on each axis in a section.
+    private static final int SECTION_BLOCK_LENGTH = 16;
+
+    // The number of blocks in a section.
+    private static final int SECTION_BLOCK_COUNT = SECTION_BLOCK_LENGTH * SECTION_BLOCK_LENGTH * SECTION_BLOCK_LENGTH;
+
+    // The radius of blocks around the origin chunk that should be copied.
+    private static final int NEIGHBOR_BLOCK_RADIUS = 1;
+
+    // The radius of chunks around the origin chunk that should be copied.
+    private static final int NEIGHBOR_CHUNK_RADIUS = MathHelper.roundUpToMultiple(NEIGHBOR_BLOCK_RADIUS, 16) >> 4;
+
+    // The number of blocks on each axis of this slice.
+    private static final int BLOCK_LENGTH = SECTION_BLOCK_LENGTH + (NEIGHBOR_BLOCK_RADIUS * 2);
+
+    // The number of sections on each axis of this slice.
+    private static final int SECTION_LENGTH = 1 + (NEIGHBOR_CHUNK_RADIUS * 2);
+
+    // The size of the lookup tables used for mapping values to coordinate int pairs. The lookup table size is always
+    // a power of two so that multiplications can be replaced with simple bit shifts in hot code paths.
+    private static final int TABLE_LENGTH = MathHelper.smallestEncompassingPowerOfTwo(SECTION_LENGTH);
+
+    // The number of bits needed for each X/Y/Z component in a lookup table.
+    private static final int TABLE_BITS = Integer.bitCount(TABLE_LENGTH - 1);
+
+    // The array size for the chunk lookup table.
+    private static final int CHUNK_TABLE_ARRAY_SIZE = TABLE_LENGTH * TABLE_LENGTH;
+
+    // The array size for the section lookup table.
+    private static final int SECTION_TABLE_ARRAY_SIZE = TABLE_LENGTH * TABLE_LENGTH * TABLE_LENGTH;
+
+    // Local Section->BlockState table. Read-only.
+    private final BlockState[][] blockStatesArrays;
+
+    // A pointer to the BlockState array for the origin section.
+    private final BlockState[] originBlockStates;
+
+    // Local Section->Light table. Read-only.
     private final ChunkNibbleArray[] blockLightArrays;
     private final ChunkNibbleArray[] skyLightArrays;
+
+    // Local Section->Biome table.
     private final BiomeCache[] biomeCaches;
     private final BiomeArray[] biomeArrays;
 
@@ -83,19 +97,23 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     // for vertex color blending
     private BiomeColorCache prevColorCache;
 
-    // The world this slice has copied data from, not thread-safe
+    // The world this slice has copied data from
     private World world;
 
-    // Pointers to the chunks this slice encompasses, not thread-safe
+    // Pointers to the chunks this slice encompasses
     private WorldChunk[] chunks;
 
     private BiomeCacheManager biomeCacheManager;
 
-    // The starting point from which this slice captures chunks
-    private int chunkOffsetX, chunkOffsetY, chunkOffsetZ;
-
     // The starting point from which this slice captures blocks
-    private int blockOffsetX, blockOffsetY, blockOffsetZ;
+    private int baseX, baseY, baseZ;
+
+    // The min/max bounds of the blocks copied by this slice
+    private int minX, minY, minZ;
+    private int maxX, maxY, maxZ;
+
+    // The chunk origin of this slice
+    private ChunkSectionPos origin;
 
     public static WorldChunk[] createChunkSlice(World world, ChunkSectionPos pos) {
         WorldChunk chunk = world.getChunk(pos.getX(), pos.getZ());
@@ -114,7 +132,7 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
         int maxChunkX = pos.getX() + NEIGHBOR_CHUNK_RADIUS;
         int maxChunkZ = pos.getZ() + NEIGHBOR_CHUNK_RADIUS;
 
-        WorldChunk[] chunks = new WorldChunk[SECTION_LENGTH * SECTION_LENGTH];
+        WorldChunk[] chunks = new WorldChunk[CHUNK_TABLE_ARRAY_SIZE];
 
         // Create an array of references to the world chunks in this slice
         for (int x = minChunkX; x <= maxChunkX; x++) {
@@ -127,122 +145,164 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     }
 
     public WorldSlice() {
-        this.blockStates = new BlockState[BLOCK_COUNT];
-        this.blockLightArrays = new ChunkNibbleArray[SECTION_COUNT];
-        this.skyLightArrays = new ChunkNibbleArray[SECTION_COUNT];
-        this.biomeCaches = new BiomeCache[CHUNK_COUNT];
-        this.biomeArrays = new BiomeArray[CHUNK_COUNT];
-    }
+        this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][];
 
-    public void init(ChunkBuilder<?> builder, World world, ChunkSectionPos chunkPos, WorldChunk[] chunks) {
-        final int minX = chunkPos.getMinX() - NEIGHBOR_BLOCK_RADIUS;
-        final int minY = chunkPos.getMinY() - NEIGHBOR_BLOCK_RADIUS;
-        final int minZ = chunkPos.getMinZ() - NEIGHBOR_BLOCK_RADIUS;
-
-        final int maxX = chunkPos.getMaxX() + NEIGHBOR_BLOCK_RADIUS + 1;
-        final int maxY = chunkPos.getMaxY() + NEIGHBOR_BLOCK_RADIUS + 1;
-        final int maxZ = chunkPos.getMaxZ() + NEIGHBOR_BLOCK_RADIUS + 1;
-
-        final int minChunkX = minX >> 4;
-        final int maxChunkX = maxX >> 4;
-
-        final int minChunkY = minY >> 4;
-        final int maxChunkY = maxY >> 4;
-
-        final int minChunkZ = minZ >> 4;
-        final int maxChunkZ = maxZ >> 4;
-
-        this.world = world;
-        this.chunks = chunks;
-
-        this.blockOffsetX = minX;
-        this.blockOffsetY = minY;
-        this.blockOffsetZ = minZ;
-
-        this.chunkOffsetX = chunkPos.getX() - NEIGHBOR_CHUNK_RADIUS;
-        this.chunkOffsetY = chunkPos.getY() - NEIGHBOR_CHUNK_RADIUS;
-        this.chunkOffsetZ = chunkPos.getZ() - NEIGHBOR_CHUNK_RADIUS;
-
-        // Hoist the lighting providers so that they can be directly accessed
-        ChunkLightingView blockLightProvider = this.world.getLightingProvider().get(LightType.BLOCK);
-        ChunkLightingView skyLightProvider = this.world.getLightingProvider().get(LightType.SKY);
-
-        // Iterate over all sliced chunks
-        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
-            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                // Find the local position of the chunk in the sliced chunk array
-                int chunkXLocal = chunkX - this.chunkOffsetX;
-                int chunkZLocal = chunkZ - this.chunkOffsetZ;
-
-                // The local index for this chunk in the slice's data arrays
-                int chunkIdx = getLocalChunkIndex(chunkXLocal, chunkZLocal);
-
-                WorldChunk chunk = chunks[chunkIdx];
-
-                this.biomeArrays[chunkIdx] = chunk.getBiomeArray();
-
-                int minBlockX = Math.max(minX, chunkX << 4);
-                int maxBlockX = Math.min(maxX, (chunkX + 1) << 4);
-
-                int minBlockZ = Math.max(minZ, chunkZ << 4);
-                int maxBlockZ = Math.min(maxZ, (chunkZ + 1) << 4);
-
-                for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-                    int chunkYLocal = chunkY - this.chunkOffsetY;
-
-                    ChunkSectionPos sectionPos = ChunkSectionPos.from(chunkX, chunkY, chunkZ);
-                    int sectionIdx = getLocalSectionIndex(chunkXLocal, chunkYLocal, chunkZLocal);
-
-                    this.blockLightArrays[sectionIdx] = blockLightProvider.getLightSection(sectionPos);
-                    this.skyLightArrays[sectionIdx] = skyLightProvider.getLightSection(sectionPos);
-
-                    ChunkSection section = null;
-
-                    // Fetch the chunk section for this position if it's within bounds
-                    if (chunkY >= 0 && chunkY < 16) {
-                        section = chunk.getSectionArray()[chunkY];
-                    }
-
-                    // If no chunk section has been fetched, use an empty one which will return air blocks in the copy below
-                    if (section == null) {
-                        section = EMPTY_SECTION;
-                    }
-
-                    int minBlockY = Math.max(minY, chunkY << 4);
-                    int maxBlockY = Math.min(maxY, (chunkY + 1) << 4);
-
-                    // Iterate over all block states in the overlapping section between this world slice and chunk section
-                    for (int y = minBlockY; y < maxBlockY; y++) {
-                        for (int z = minBlockZ; z < maxBlockZ; z++) {
-                            for (int x = minBlockX; x < maxBlockX; x++) {
-                                this.blockStates[this.getBlockIndex(x, y, z)] = section.getBlockState(x & 15, y & 15, z & 15);
-                            }
-                        }
-                    }
+        for (int x = 0; x < SECTION_LENGTH; x++) {
+            for (int y = 0; y < SECTION_LENGTH; y++) {
+                for (int z = 0; z < SECTION_LENGTH; z++) {
+                    this.blockStatesArrays[getLocalSectionIndex(x, y, z)] = new BlockState[SECTION_BLOCK_COUNT];
                 }
             }
         }
 
+        this.blockLightArrays = new ChunkNibbleArray[SECTION_TABLE_ARRAY_SIZE];
+        this.skyLightArrays = new ChunkNibbleArray[SECTION_TABLE_ARRAY_SIZE];
+
+        this.biomeCaches = new BiomeCache[CHUNK_TABLE_ARRAY_SIZE];
+        this.biomeArrays = new BiomeArray[CHUNK_TABLE_ARRAY_SIZE];
+
+        this.originBlockStates = this.blockStatesArrays[getLocalSectionIndex((SECTION_LENGTH / 2), (SECTION_LENGTH / 2), (SECTION_LENGTH / 2))];
+    }
+
+    public void init(ChunkBuilder<?> builder, World world, ChunkSectionPos origin, WorldChunk[] chunks) {
+        this.world = world;
+        this.chunks = chunks;
+        this.origin = origin;
+
+        this.minX = origin.getMinX() - NEIGHBOR_BLOCK_RADIUS;
+        this.minY = origin.getMinY() - NEIGHBOR_BLOCK_RADIUS;
+        this.minZ = origin.getMinZ() - NEIGHBOR_BLOCK_RADIUS;
+
+        this.maxX = origin.getMaxX() + NEIGHBOR_BLOCK_RADIUS;
+        this.maxY = origin.getMaxY() + NEIGHBOR_BLOCK_RADIUS;
+        this.maxZ = origin.getMaxZ() + NEIGHBOR_BLOCK_RADIUS;
+
+        final int minChunkX = this.minX >> 4;
+        final int minChunkY = this.minY >> 4;
+        final int minChunkZ = this.minZ >> 4;
+
+        final int maxChunkX = this.maxX >> 4;
+        final int maxChunkY = this.maxY >> 4;
+        final int maxChunkZ = this.maxZ >> 4;
+
+        this.baseX = minChunkX << 4;
+        this.baseY = minChunkY << 4;
+        this.baseZ = minChunkZ << 4;
+
+        // Iterate over all sliced chunks
+        for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
+                // The local index for this chunk in the slice's data arrays
+                int chunkIdx = getLocalChunkIndex(chunkX - minChunkX, chunkZ - minChunkZ);
+
+                Chunk chunk = this.chunks[chunkIdx];
+
+                for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+                    ChunkSectionPos pos = ChunkSectionPos.from(chunkX, chunkY, chunkZ);
+
+                    // Find the local position of the chunk in the sliced chunk array
+                    int sectionIdx = getLocalSectionIndex(chunkX - minChunkX, chunkY - minChunkY, chunkZ - minChunkZ);
+
+                    this.populateLightArrays(sectionIdx, pos);
+                    this.populateBlockArrays(sectionIdx, pos, chunk);
+                }
+
+                this.biomeArrays[chunkIdx] = chunk.getBiomeArray();
+            }
+        }
+
         this.biomeCacheManager = builder.getBiomeCacheManager();
-        this.biomeCacheManager.populateArrays(chunkPos.getX(), chunkPos.getY(), chunkPos.getZ(), this.biomeCaches);
+        this.biomeCacheManager.populateArrays(origin.getX(), origin.getY(), origin.getZ(), this.biomeCaches);
+    }
+
+    private void populateLightArrays(int sectionIdx, ChunkSectionPos pos) {
+        if (World.isHeightInvalid(pos.getY())) {
+            return;
+        }
+
+        ChunkLightingView blockLightProvider = this.world.getLightingProvider().get(LightType.BLOCK);
+        ChunkLightingView skyLightProvider = this.world.getLightingProvider().get(LightType.SKY);
+        
+        this.blockLightArrays[sectionIdx] = blockLightProvider.getLightSection(pos);
+        this.skyLightArrays[sectionIdx] = skyLightProvider.getLightSection(pos);
+    }
+
+    private void populateBlockArrays(int sectionIdx, ChunkSectionPos pos, Chunk chunk) {
+        ChunkSection section = getChunkSection(chunk, pos);
+
+        if (section == null || section.isEmpty()) {
+            section = EMPTY_SECTION;
+        }
+
+        PalettedContainer<BlockState> container = section.getContainer();
+
+        PackedIntegerArray intArray = container.data;
+        Palette<BlockState> palette = container.palette;
+
+        BlockState[] dst = this.blockStatesArrays[sectionIdx];
+
+        int minBlockX = Math.max(this.minX, pos.getMinX());
+        int maxBlockX = Math.min(this.maxX, pos.getMaxX());
+
+        int minBlockY = Math.max(this.minY, pos.getMinY());
+        int maxBlockY = Math.min(this.maxY, pos.getMaxY());
+
+        int minBlockZ = Math.max(this.minZ, pos.getMinZ());
+        int maxBlockZ = Math.min(this.maxZ, pos.getMaxZ());
+
+        int prevPaletteId = -1;
+        BlockState prevPaletteState = null;
+
+        for (int y = minBlockY; y <= maxBlockY; y++) {
+            for (int z = minBlockZ; z <= maxBlockZ; z++) {
+                for (int x = minBlockX; x <= maxBlockX; x++) {
+                    int blockIdx = getLocalBlockIndex(x & 15, y & 15, z & 15);
+                    int paletteId = intArray.get(blockIdx);
+
+                    BlockState state;
+
+                    if (prevPaletteId == paletteId) {
+                        state = prevPaletteState;
+                    } else {
+                        state = palette.getByIndex(paletteId);
+
+                        prevPaletteState = state;
+                        prevPaletteId = paletteId;
+                    }
+
+                    dst[blockIdx] = state;
+                }
+            }
+        }
     }
 
     @Override
     public BlockState getBlockState(BlockPos pos) {
-        return this.blockStates[this.getBlockIndex(pos.getX(), pos.getY(), pos.getZ())];
+        return this.getBlockState(pos.getX(), pos.getY(), pos.getZ());
     }
 
     public BlockState getBlockState(int x, int y, int z) {
-        return this.blockStates[this.getBlockIndex(x, y, z)];
+        int relX = x - this.baseX;
+        int relY = y - this.baseY;
+        int relZ = z - this.baseZ;
+
+        return this.blockStatesArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
+                [getLocalBlockIndex(relX & 15, relY & 15, relZ & 15)];
+    }
+
+    public BlockState getOriginBlockState(int x, int y, int z) {
+        return this.originBlockStates[getLocalBlockIndex(x, y, z)];
     }
 
     @Override
     public FluidState getFluidState(BlockPos pos) {
-        return this.getBlockState(pos).getFluidState();
+        return this.getBlockState(pos)
+                .getFluidState();
     }
 
     public FluidState getFluidState(int x, int y, int z) {
-        return this.getBlockState(x, y, z).getFluidState();
+        return this.getBlockState(x, y, z)
+                .getFluidState();
     }
 
     @Override
@@ -261,7 +321,11 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     }
 
     public BlockEntity getBlockEntity(BlockPos pos, WorldChunk.CreationType type) {
-        return this.chunks[this.getChunkIndexForBlock(pos)].getBlockEntity(pos, type);
+        int relX = pos.getX() - this.baseX;
+        int relZ = pos.getZ() - this.baseZ;
+
+        return this.chunks[getLocalChunkIndex(relX >> 4, relZ >> 4)]
+                .getBlockEntity(pos, type);
     }
 
     @Override
@@ -307,14 +371,14 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     }
 
     private int getLightLevel(ChunkNibbleArray[] arrays, BlockPos pos) {
-        int x = pos.getX();
-        int y = pos.getY();
-        int z = pos.getZ();
+        int relX = pos.getX() - this.baseX;
+        int relY = pos.getY() - this.baseY;
+        int relZ = pos.getZ() - this.baseZ;
 
-        ChunkNibbleArray array = arrays[this.getSectionIndexForBlock(x, y, z)];
+        ChunkNibbleArray array = arrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)];
 
         if (array != null) {
-            return array.get(x & 15, y & 15, z & 15);
+            return array.get(relX & 15, relY & 15, relZ & 15);
         }
 
         return 0;
@@ -323,7 +387,12 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     // TODO: Is this safe? The biome data arrays should be immutable once loaded into the client
     @Override
     public Biome getBiomeForNoiseGen(int x, int y, int z) {
-        BiomeArray array = this.biomeArrays[this.getBiomeIndexForBlock(x, z)];
+        int x2 = (x >> 2) - (this.baseX >> 4);
+        int z2 = (z >> 2) - (this.baseZ >> 4);
+
+        // Coordinates are in biome space!
+        // [VanillaCopy] WorldView#getBiomeForNoiseGen(int, int, int)
+        BiomeArray array = this.biomeArrays[getLocalChunkIndex(x2, z2)];
 
         if (array != null ) {
             return array.getBiomeForNoiseGen(x, y, z);
@@ -336,78 +405,23 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
      * Gets or computes the biome at the given global coordinates.
      */
     public Biome getCachedBiome(int x, int z) {
-        return this.biomeCaches[this.getChunkIndexForBlock(x, z)].getBiome(this, x, z);
+        int relX = x - this.baseX;
+        int relZ = z - this.baseZ;
+
+        return this.biomeCaches[getLocalChunkIndex(relX >> 4, relZ >> 4)]
+                .getBiome(this, x, z);
     }
 
-    /**
-     * Returns the index of a block in global coordinate space for this slice.
-     */
-    private int getBlockIndex(int x, int y, int z) {
-        int x2 = x - this.blockOffsetX;
-        int y2 = y - this.blockOffsetY;
-        int z2 = z - this.blockOffsetZ;
-
-        return (y2 * BLOCK_LENGTH * BLOCK_LENGTH) + (z2 * BLOCK_LENGTH) + x2;
-    }
-
-    /**
-     * {@link WorldSlice#getChunkIndexForBlock(int, int)}
-     */
-    private int getChunkIndexForBlock(BlockPos pos) {
-        return this.getChunkIndexForBlock(pos.getX(), pos.getZ());
-    }
-
-    /**
-     * Returns the index of a chunk in global coordinate space for this slice.
-     */
-    private int getChunkIndexForBlock(int x, int z) {
-        int x2 = (x >> 4) - this.chunkOffsetX;
-        int z2 = (z >> 4) - this.chunkOffsetZ;
-
-        return getLocalChunkIndex(x2, z2);
-    }
-
-    /**
-     * Returns the index of a biome in the global coordinate space for this slice.
-     */
-    private int getBiomeIndexForBlock(int x, int z) {
-        // Coordinates are in biome space!
-        // [VanillaCopy] WorldView#getBiomeForNoiseGen(int, int, int)
-        int x2 = (x >> 2) - this.chunkOffsetX;
-        int z2 = (z >> 2) - this.chunkOffsetZ;
-
-        return getLocalChunkIndex(x2, z2);
-    }
-
-    /**
-     * Returns the index of a chunk section in global coordinate space for this slice.
-     */
-    private int getSectionIndexForBlock(int x, int y, int z) {
-        int x2 = (x >> 4) - this.chunkOffsetX;
-        int y2 = (y >> 4) - this.chunkOffsetY;
-        int z2 = (z >> 4) - this.chunkOffsetZ;
-
-        return getLocalSectionIndex(x2, y2, z2);
-    }
-
-    /**
-     * Returns the index of a chunk in local coordinate space to this slice.
-     */
-    public static int getLocalChunkIndex(int x, int z) {
-        return (z * SECTION_LENGTH) + x;
-    }
-
-    /**
-     * Returns the index of a chunk section in local coordinate space to this slice.
-     */
-    public static int getLocalSectionIndex(int x, int y, int z) {
-        return (y * SECTION_LENGTH * SECTION_LENGTH) + (z * SECTION_LENGTH) + x;
+    public ChunkSectionPos getOrigin() {
+        return this.origin;
     }
 
     @Override
     public void reset() {
         for (BiomeCache cache : this.biomeCaches) {
-            this.biomeCacheManager.release(cache);
+            if (cache != null) {
+                this.biomeCacheManager.release(cache);
+            }
         }
 
         Arrays.fill(this.biomeCaches, null);
@@ -424,15 +438,26 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
         this.prevColorResolver = null;
     }
 
-    public int getBlockOffsetX() {
-        return this.blockOffsetX;
+    // [VanillaCopy] PalettedContainer#toIndex
+    public static int getLocalBlockIndex(int x, int y, int z) {
+        return y << 8 | z << 4 | x;
     }
 
-    public int getBlockOffsetY() {
-        return this.blockOffsetY;
+    public static int getLocalSectionIndex(int x, int y, int z) {
+        return y << TABLE_BITS << TABLE_BITS | z << TABLE_BITS | x;
     }
 
-    public int getBlockOffsetZ() {
-        return this.blockOffsetZ;
+    public static int getLocalChunkIndex(int x, int z) {
+        return z << TABLE_BITS | x;
+    }
+
+    private static ChunkSection getChunkSection(Chunk chunk, ChunkSectionPos pos) {
+        ChunkSection section = null;
+
+        if (!World.isHeightInvalid(pos.getY())) {
+            section = chunk.getSectionArray()[pos.getY()];
+        }
+
+        return section;
     }
 }
