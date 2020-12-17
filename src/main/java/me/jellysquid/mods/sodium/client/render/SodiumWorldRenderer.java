@@ -17,6 +17,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRend
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.pipeline.context.GlobalRenderContext;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListenerManager;
@@ -88,27 +89,47 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     }
 
     public void setWorld(ClientWorld world) {
+        // Check that the world is actually changing
+        if (this.world == world) {
+            return;
+        }
+
+        // If we have a world is already loaded, unload the renderer
+        if (this.world != null) {
+            this.unloadWorld();
+        }
+
+        // If we're loading a new world, load the renderer
+        if (world != null) {
+            this.loadWorld(world);
+        }
+    }
+
+    private void loadWorld(ClientWorld world) {
         this.world = world;
+
+        GlobalRenderContext.createRenderContext(this.world);
+
+        this.initRenderer();
+
+        ((ChunkStatusListenerManager) world.getChunkManager()).setListener(this);
+    }
+
+    private void unloadWorld() {
+        GlobalRenderContext.destroyRenderContext(this.world);
+
+        if (this.chunkRenderManager != null) {
+            this.chunkRenderManager.destroy();
+            this.chunkRenderManager = null;
+        }
+
+        if (this.chunkRenderBackend != null) {
+            this.chunkRenderBackend.delete();
+            this.chunkRenderBackend = null;
+        }
+
         this.loadedChunkPositions.clear();
         this.globalBlockEntities.clear();
-
-        if (world == null) {
-            if (this.chunkRenderManager != null) {
-                this.chunkRenderManager.destroy();
-                this.chunkRenderManager = null;
-            }
-
-            if (this.chunkRenderBackend != null) {
-                this.chunkRenderBackend.delete();
-                this.chunkRenderBackend = null;
-            }
-
-            this.loadedChunkPositions.clear();
-        } else {
-            this.initRenderer();
-
-            ((ChunkStatusListenerManager) world.getChunkManager()).setListener(this);
-        }
     }
 
     /**

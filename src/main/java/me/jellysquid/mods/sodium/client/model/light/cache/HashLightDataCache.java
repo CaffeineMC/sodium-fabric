@@ -31,7 +31,7 @@ public class HashLightDataCache extends LightDataAccess {
         return word;
     }
 
-    public void clear() {
+    public void clearCache() {
         this.map.clear();
     }
 }
