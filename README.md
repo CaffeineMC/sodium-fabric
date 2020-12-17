@@ -4,7 +4,7 @@
 
 # Sodium (for Fabric)
 ![GitHub license](https://img.shields.io/github/license/jellysquid3/sodium-fabric.svg)
-![GitHub issues](https://img.shields.io/github/issues/jellysquid3/sodium-fabric.svg)
+ ![GitHub issues](https://img.shields.io/github/issues/jellysquid3/sodium-fabric.svg)
 ![GitHub tag](https://img.shields.io/github/tag/jellysquid3/sodium-fabric.svg)
 [![Discord chat](https://img.shields.io/badge/chat%20on-discord-7289DA)](https://jellysquid.me/discord)
 [![CurseForge downloads](http://cf.way2muchnoise.eu/full_394468_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/sodium)
