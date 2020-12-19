@@ -117,6 +117,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     private void unloadWorld() {
         GlobalRenderContext.destroyRenderContext(this.world);
+        this.world = null;
 
         if (this.chunkRenderManager != null) {
             this.chunkRenderManager.destroy();
