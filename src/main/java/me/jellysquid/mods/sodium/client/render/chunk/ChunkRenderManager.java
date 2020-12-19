@@ -183,12 +183,13 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
         boolean added = false;
         T[] states = render.getGraphicsStates();
+        RenderContext<T> context = this.renderContext;
 
         for (int i = 0; i < states.length; i++) {
             T state = states[i];
 
             if (state != null) {
-                ChunkRenderList<T> list = this.renderContext.chunkRenderLists[i];
+                ChunkRenderList<T> list = context.chunkRenderLists[i];
                 list.add(state, visibleFaces);
 
                 added = true;
@@ -197,7 +198,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
         if (added) {
             if (render.isTickable()) {
-                this.renderContext.tickableChunks.add(render);
+                context.tickableChunks.add(render);
             }
 
             this.visibleChunkCount++;
