@@ -22,6 +22,6 @@ public class MixinWorldRenderer {
     private void reset(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera,
                        GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f,
                        CallbackInfo ci) {
-        GlobalRenderContext.reset();
+        GlobalRenderContext.resetCaches();
     }
 }

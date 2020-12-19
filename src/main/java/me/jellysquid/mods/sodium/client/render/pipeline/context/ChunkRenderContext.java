@@ -7,13 +7,13 @@ import me.jellysquid.mods.sodium.client.model.quad.sink.ModelQuadSinkDelegate;
 import me.jellysquid.mods.sodium.client.render.pipeline.BlockRenderer;
 import me.jellysquid.mods.sodium.client.render.pipeline.FluidRenderer;
 import me.jellysquid.mods.sodium.client.render.pipeline.RenderContextCommon;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.BlockModels;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.BlockRenderView;
 
 public class ChunkRenderContext {
@@ -25,7 +25,7 @@ public class ChunkRenderContext {
     private final BlockModels models;
 
     public ChunkRenderContext(MinecraftClient client) {
-        this.lightDataCache = new ArrayLightDataCache(WorldSlice.BLOCK_LENGTH);
+        this.lightDataCache = new ArrayLightDataCache();
 
         LightPipelineProvider lightPipelineProvider = new LightPipelineProvider(this.lightDataCache);
         BiomeColorBlender biomeColorBlender = RenderContextCommon.createBiomeColorBlender();
@@ -47,7 +47,7 @@ public class ChunkRenderContext {
         return this.fluidRenderer.render(world, fluidState, pos, consumer);
     }
 
-    public void init(BlockRenderView world, int x, int y, int z) {
-        this.lightDataCache.init(world, x, y, z);
+    public void init(BlockRenderView world, ChunkSectionPos pos) {
+        this.lightDataCache.init(world, pos);
     }
 }
