@@ -3,6 +3,8 @@ package me.jellysquid.mods.sodium.client.world;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.util.collections.FixedLongHashTable;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
@@ -137,6 +139,8 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
     @Override
     public void updateLoadDistance(int loadDistance) {
+        SodiumGameOptions options = SodiumClientMod.options();
+
         this.radius = getChunkMapRadius(loadDistance);
 
         FixedLongHashTable<WorldChunk> copy = new FixedLongHashTable<>(getChunkMapSize(this.radius), Hash.FAST_LOAD_FACTOR);
@@ -154,7 +158,9 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
                 int z = ChunkPos.getPackedZ(pos);
 
                 // Remove any chunks which are outside the load radius
-                if (Math.abs(x - this.centerX) <= this.radius && Math.abs(z - this.centerZ) <= this.radius) {
+                if (options.advanced.useCircularChunkLoadRadius ?
+                        (((x - this.centerX) * (x - this.centerX)) + ((z - this.centerZ) * (z - this.centerZ)) <= this.radius * this.radius)
+                        : (Math.abs(x - this.centerX) <= this.radius && Math.abs(z - this.centerZ) <= this.radius)) {
                     copy.put(pos, entry.getValue());
                 }
             }

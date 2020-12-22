@@ -38,6 +38,7 @@ public class SodiumGameOptions {
         public boolean useChunkFaceCulling = true;
         public boolean useMemoryIntrinsics = true;
         public boolean disableDriverBlacklist = false;
+        public boolean useCircularChunkLoadRadius = false;
     }
 
     public static class QualitySettings {
@@ -46,6 +47,7 @@ public class SodiumGameOptions {
 
         public boolean enableVignette = true;
         public boolean enableClouds = true;
+        public boolean enableFog = true;
 
         public LightingQuality smoothLighting = LightingQuality.HIGH;
     }

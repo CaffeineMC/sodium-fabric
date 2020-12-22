@@ -251,6 +251,14 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.advanced.chunkRendererBackend = value, opts -> opts.advanced.chunkRendererBackend)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Circular Chunk Load Radius")
+                        .setTooltip("If enabled, only the chunks inside the render distance radius will be loaded. If disabled, the render distance will load chunks inside the square render distance. This setting loads only 78.5% of the chunks compared with the default setting.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.LOW)
+                        .setBinding((opts, value) -> opts.advanced.useCircularChunkLoadRadius = value, opts -> opts.advanced.useCircularChunkLoadRadius)
+                        .build()
+                )
                 .build());
 
         groups.add(OptionGroup.createBuilder()
