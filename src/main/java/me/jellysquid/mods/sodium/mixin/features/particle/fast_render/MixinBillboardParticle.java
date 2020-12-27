@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.features.particle.fast_render;
 
-import me.jellysquid.mods.sodium.client.model.consumer.ParticleVertexConsumer;
+import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexSinks;
+import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.client.model.vertex.formats.particle.ParticleVertexSink;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
@@ -69,17 +71,20 @@ public abstract class MixinBillboardParticle extends Particle {
 
         int color = ColorABGR.pack(this.colorRed, this.colorGreen, this.colorBlue, this.colorAlpha);
 
-        ParticleVertexConsumer vertices = (ParticleVertexConsumer) vertexConsumer;
+        ParticleVertexSink drain = VertexDrain.of(vertexConsumer)
+                .createSink(DefaultVertexSinks.PARTICLES);
 
-        addVertex(vertices, quaternion,-1.0F, -1.0F, x, y, z, maxU, maxV, color, light, size);
-        addVertex(vertices, quaternion,-1.0F, 1.0F, x, y, z, maxU, minV, color, light, size);
-        addVertex(vertices, quaternion,1.0F, 1.0F, x, y, z, minU, minV, color, light, size);
-        addVertex(vertices, quaternion,1.0F, -1.0F, x, y, z, minU, maxV, color, light, size);
+        addVertex(drain, quaternion,-1.0F, -1.0F, x, y, z, maxU, maxV, color, light, size);
+        addVertex(drain, quaternion,-1.0F, 1.0F, x, y, z, maxU, minV, color, light, size);
+        addVertex(drain, quaternion,1.0F, 1.0F, x, y, z, minU, minV, color, light, size);
+        addVertex(drain, quaternion,1.0F, -1.0F, x, y, z, minU, maxV, color, light, size);
+
+        drain.flush();
     }
 
     @SuppressWarnings("UnnecessaryLocalVariable")
-    private static void addVertex(ParticleVertexConsumer vertices, Quaternion rotation,
-                           float x, float y, float posX, float posY, float posZ, float u, float v, int color, int light, float size) {
+    private static void addVertex(ParticleVertexSink drain, Quaternion rotation,
+                                  float x, float y, float posX, float posY, float posZ, float u, float v, int color, int light, float size) {
         // Quaternion q0 = new Quaternion(rotation);
         float q0x = rotation.getX();
         float q0y = rotation.getY();
@@ -111,6 +116,6 @@ public abstract class MixinBillboardParticle extends Particle {
         float fy = (q3y * size) + posY;
         float fz = (q3z * size) + posZ;
 
-        vertices.vertexParticle(fx, fy, fz, u, v, color, light);
+        drain.writeParticle(fx, fy, fz, u, v, color, light);
     }
 }
