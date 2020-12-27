@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
-import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexSinks;
+import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
@@ -36,7 +36,7 @@ public class MixinModelPart {
         Matrix3fExtended normalExt = MatrixUtil.getExtendedMatrix(matrices.getNormal());
         Matrix4fExtended modelExt = MatrixUtil.getExtendedMatrix(matrices.getModel());
 
-        QuadVertexSink drain = VertexDrain.of(vertexConsumer).createSink(DefaultVertexSinks.QUADS);
+        QuadVertexSink drain = VertexDrain.of(vertexConsumer).createSink(DefaultVertexTypes.QUADS);
         drain.ensureCapacity(this.cuboids.size() * 6 * 4);
 
         int color = ColorABGR.pack(red, green, blue, alpha);

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
-import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexSinks;
+import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.line.LineVertexSink;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -69,7 +69,7 @@ public class MixinWorldRenderer {
         float v8z = matrixExt.transformVecZ(x2f, y2f, z2f);
 
         LineVertexSink lines = VertexDrain.of(vertexConsumer)
-                .createSink(DefaultVertexSinks.LINES);
+                .createSink(DefaultVertexTypes.LINES);
         lines.ensureCapacity(24);
 
         lines.vertexLine(v1x, v1y, v1z, red, yAxisGreen, zAxisBlue, alpha);
