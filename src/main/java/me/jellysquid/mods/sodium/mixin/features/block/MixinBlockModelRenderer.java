@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.block;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.sink.FallbackQuadSink;
-import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexSinks;
+import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
 import me.jellysquid.mods.sodium.client.render.pipeline.BlockRenderer;
@@ -52,7 +52,7 @@ public class MixinBlockModelRenderer {
     @Overwrite
     public void render(MatrixStack.Entry entry, VertexConsumer vertexConsumer, BlockState blockState, BakedModel bakedModel, float red, float green, float blue, int light, int overlay) {
         QuadVertexSink drain = VertexDrain.of(vertexConsumer)
-                .createSink(DefaultVertexSinks.QUADS);
+                .createSink(DefaultVertexTypes.QUADS);
         XoRoShiRoRandom random = this.random;
 
         // Clamp color ranges

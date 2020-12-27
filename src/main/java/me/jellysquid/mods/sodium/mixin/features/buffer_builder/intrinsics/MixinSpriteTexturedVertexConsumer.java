@@ -1,8 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
+import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexSinkFactory;
+import me.jellysquid.mods.sodium.client.model.vertex.VertexType;
 import me.jellysquid.mods.sodium.client.model.vertex.transformers.SpriteTexturedVertexTransformer;
 import net.minecraft.client.render.SpriteTexturedVertexConsumer;
 import net.minecraft.client.render.VertexConsumer;
@@ -21,11 +22,20 @@ public abstract class MixinSpriteTexturedVertexConsumer implements VertexDrain {
     @Final
     private VertexConsumer parent;
 
+    @SuppressWarnings("unchecked")
     @Override
-    public <T extends VertexSink> T createSink(VertexSinkFactory<T> factory) {
-        T sink = VertexDrain.of(this.parent)
-                .createSink(factory);
+    public <T extends VertexSink> T createSink(VertexType<T> type) {
+        if (type == DefaultVertexTypes.QUADS) {
+            return (T) new SpriteTexturedVertexTransformer.Quad(VertexDrain.of(this.parent)
+                    .createSink(DefaultVertexTypes.QUADS), this.sprite);
+        } else if (type == DefaultVertexTypes.PARTICLES) {
+            return (T) new SpriteTexturedVertexTransformer.Particle(VertexDrain.of(this.parent)
+                    .createSink(DefaultVertexTypes.PARTICLES), this.sprite);
+        } else if (type == DefaultVertexTypes.GLYPHS) {
+            return (T) new SpriteTexturedVertexTransformer.Glyph(VertexDrain.of(this.parent)
+                    .createSink(DefaultVertexTypes.GLYPHS), this.sprite);
+        }
 
-        return factory.createTransformingSink(sink, new SpriteTexturedVertexTransformer(this.sprite));
+        return type.createFallbackWriter((VertexConsumer) this);
     }
 }

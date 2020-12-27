@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexSinks;
+import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -43,7 +43,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
         int norm = MatrixUtil.computeNormal(normalMatrix, quad.getFace());
 
         QuadVertexSink drain = VertexDrain.of(this)
-                .createSink(DefaultVertexSinks.QUADS);
+                .createSink(DefaultVertexTypes.QUADS);
         drain.ensureCapacity(4);
 
         for (int i = 0; i < 4; i++) {
