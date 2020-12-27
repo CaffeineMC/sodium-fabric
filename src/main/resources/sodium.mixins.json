@@ -13,6 +13,7 @@
     "core.model.MixinBlockColors",
     "core.model.MixinItemColors",
     "core.pipeline.MixinBakedQuad",
+    "core.pipeline.MixinBufferBuilder",
     "core.pipeline.MixinVertexConsumer",
     "features.block.MixinBlockModelRenderer",
     "features.block.MixinBufferBuilder",
@@ -43,7 +44,6 @@
     "features.particle.cull.MixinParticleManager",
     "features.particle.fast_render.MixinBillboardParticle",
     "features.render_layer.MixinRenderLayers",
-    "features.render_layer.MixinTexturedRenderLayers",
     "features.texture_tracking.MixinSprite",
     "features.texture_tracking.MixinSpriteIdentifier",
     "features.world_ticking.MixinClientWorld"
