@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.vertex.buffer;
 
+import me.jellysquid.mods.sodium.client.model.vertex.type.BufferVertexType;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
-import net.minecraft.client.render.VertexFormat;
 import org.lwjgl.system.MemoryUtil;
 import sun.misc.Unsafe;
 
@@ -20,8 +20,8 @@ public abstract class VertexBufferWriterUnsafe extends VertexBufferWriter {
      */
     protected long writePointer;
 
-    protected VertexBufferWriterUnsafe(VertexBufferView backingBuffer, VertexFormat vertexFormat) {
-        super(backingBuffer, vertexFormat);
+    protected VertexBufferWriterUnsafe(VertexBufferView backingBuffer, BufferVertexType<?> vertexType) {
+        super(backingBuffer, vertexType);
     }
 
     @Override

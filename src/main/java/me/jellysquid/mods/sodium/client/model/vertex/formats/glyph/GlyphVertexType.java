@@ -1,15 +1,15 @@
 package me.jellysquid.mods.sodium.client.model.vertex.formats.glyph;
 
-import me.jellysquid.mods.sodium.client.model.vertex.VertexType;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexTypeBlittable;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.glyph.writer.GlyphVertexBufferWriterNio;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.glyph.writer.GlyphVertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.glyph.writer.GlyphVertexWriterFallback;
+import me.jellysquid.mods.sodium.client.model.vertex.type.BlittableVertexType;
+import me.jellysquid.mods.sodium.client.model.vertex.type.VanillaVertexType;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
 
-public class GlyphVertexType implements VertexType<GlyphVertexSink>, VertexTypeBlittable<GlyphVertexSink> {
+public class GlyphVertexType implements VanillaVertexType<GlyphVertexSink>, BlittableVertexType<GlyphVertexSink> {
     @Override
     public GlyphVertexSink createBufferWriter(VertexBufferView buffer, boolean direct) {
         return direct ? new GlyphVertexBufferWriterUnsafe(buffer) : new GlyphVertexBufferWriterNio(buffer);
@@ -21,12 +21,12 @@ public class GlyphVertexType implements VertexType<GlyphVertexSink>, VertexTypeB
     }
 
     @Override
-    public VertexFormat getBufferVertexFormat() {
+    public VertexFormat getVertexFormat() {
         return GlyphVertexSink.VERTEX_FORMAT;
     }
 
     @Override
-    public VertexTypeBlittable<GlyphVertexSink> asBlittable() {
+    public BlittableVertexType<GlyphVertexSink> asBlittable() {
         return this;
     }
 }

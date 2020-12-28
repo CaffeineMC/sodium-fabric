@@ -8,10 +8,11 @@ import me.jellysquid.mods.sodium.client.model.vertex.formats.particle.ParticleVe
 import me.jellysquid.mods.sodium.client.model.vertex.formats.particle.ParticleVertexType;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexType;
+import me.jellysquid.mods.sodium.client.model.vertex.type.VanillaVertexType;
 
-public class DefaultVertexTypes {
-    public static final VertexType<QuadVertexSink> QUADS = new QuadVertexType();
-    public static final VertexType<LineVertexSink> LINES = new LineVertexType();
-    public static final VertexType<GlyphVertexSink> GLYPHS = new GlyphVertexType();
-    public static final VertexType<ParticleVertexSink> PARTICLES = new ParticleVertexType();
+public class VanillaVertexTypes {
+    public static final VanillaVertexType<QuadVertexSink> QUADS = new QuadVertexType();
+    public static final VanillaVertexType<LineVertexSink> LINES = new LineVertexType();
+    public static final VanillaVertexType<GlyphVertexSink> GLYPHS = new GlyphVertexType();
+    public static final VanillaVertexType<ParticleVertexSink> PARTICLES = new ParticleVertexType();
 }

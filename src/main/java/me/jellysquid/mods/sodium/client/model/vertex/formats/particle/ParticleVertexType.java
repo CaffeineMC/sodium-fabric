@@ -1,15 +1,15 @@
 package me.jellysquid.mods.sodium.client.model.vertex.formats.particle;
 
-import me.jellysquid.mods.sodium.client.model.vertex.VertexType;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexTypeBlittable;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.particle.writer.ParticleVertexBufferWriterNio;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.particle.writer.ParticleVertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.particle.writer.ParticleVertexWriterFallback;
+import me.jellysquid.mods.sodium.client.model.vertex.type.BlittableVertexType;
+import me.jellysquid.mods.sodium.client.model.vertex.type.VanillaVertexType;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
 
-public class ParticleVertexType implements VertexType<ParticleVertexSink>, VertexTypeBlittable<ParticleVertexSink> {
+public class ParticleVertexType implements VanillaVertexType<ParticleVertexSink>, BlittableVertexType<ParticleVertexSink> {
     @Override
     public ParticleVertexSink createBufferWriter(VertexBufferView buffer, boolean direct) {
         return direct ? new ParticleVertexBufferWriterUnsafe(buffer) : new ParticleVertexBufferWriterNio(buffer);
@@ -21,12 +21,12 @@ public class ParticleVertexType implements VertexType<ParticleVertexSink>, Verte
     }
 
     @Override
-    public VertexTypeBlittable<ParticleVertexSink> asBlittable() {
+    public BlittableVertexType<ParticleVertexSink> asBlittable() {
         return this;
     }
 
     @Override
-    public VertexFormat getBufferVertexFormat() {
+    public VertexFormat getVertexFormat() {
         return ParticleVertexSink.VERTEX_FORMAT;
     }
 }

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.vertex.buffer;
 
-import net.minecraft.client.render.VertexFormat;
+import me.jellysquid.mods.sodium.client.gl.attribute.BufferVertexFormat;
 
 import java.nio.ByteBuffer;
 
@@ -31,14 +31,13 @@ public interface VertexBufferView {
     /**
      * Flushes the given number of vertices to this buffer. This ensures that all constraints are still valid, and if
      * so, advances the vertex counter and writer pointer to the end of the data that was written by the caller.
-     *
-     * @param vertexCount The number of vertices to flush
+     *  @param vertexCount The number of vertices to flush
      * @param format The format of each vertex
      */
-    void flush(int vertexCount, VertexFormat format);
+    void flush(int vertexCount, BufferVertexFormat format);
 
     /**
      * @return The current vertex format of the buffer
      */
-    VertexFormat getVertexFormat();
+    BufferVertexFormat getVertexFormat();
 }

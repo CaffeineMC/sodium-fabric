@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.item;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.model.vertex.DefaultVertexTypes;
+import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
@@ -68,7 +68,7 @@ public class MixinItemRenderer {
         ItemColorProvider colorProvider = null;
 
         QuadVertexSink drain = VertexDrain.of(vertexConsumer)
-                .createSink(DefaultVertexTypes.QUADS);
+                .createSink(VanillaVertexTypes.QUADS);
         drain.ensureCapacity(quads.size() * 4);
 
         for (BakedQuad bakedQuad : quads) {
