@@ -25,11 +25,16 @@ minecraft {
     accessWidener = file("src/main/resources/sodium.accesswidener")
 }
 
+repositories {
+    mavenLocal()
+}
+
 dependencies {
     //to change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
+    modCompile "net.coderbot.iris:Iris:0.1.0"
 }
 
 processResources {
