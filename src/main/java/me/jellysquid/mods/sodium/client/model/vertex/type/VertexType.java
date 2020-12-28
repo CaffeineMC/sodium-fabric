@@ -1,5 +1,6 @@
-package me.jellysquid.mods.sodium.client.model.vertex;
+package me.jellysquid.mods.sodium.client.model.vertex.type;
 
+import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
 import net.minecraft.client.render.VertexConsumer;
 
 /**
@@ -17,10 +18,10 @@ public interface VertexType<T extends VertexSink> {
     T createFallbackWriter(VertexConsumer consumer);
 
     /**
-     * If this vertex type supports {@link VertexTypeBlittable}, then this method returns this vertex type as a
+     * If this vertex type supports {@link BufferVertexType}, then this method returns this vertex type as a
      * blittable type, performing a safe cast.
      */
-    default VertexTypeBlittable<T> asBlittable() {
+    default BlittableVertexType<T> asBlittable() {
         return null;
     }
 }

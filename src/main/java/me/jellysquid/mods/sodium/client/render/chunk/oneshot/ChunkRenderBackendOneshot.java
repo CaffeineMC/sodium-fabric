@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.oneshot;
 
-import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
@@ -9,6 +7,7 @@ import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
 import me.jellysquid.mods.sodium.client.gl.util.GlMultiDrawBatch;
 import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
@@ -31,8 +30,8 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
 
     private final MemoryTracker memoryTracker = new MemoryTracker();
 
-    public ChunkRenderBackendOneshot(GlVertexFormat<SodiumVertexFormats.ChunkMeshAttribute> format) {
-        super(format);
+    public ChunkRenderBackendOneshot(ChunkVertexType vertexType) {
+        super(vertexType);
     }
 
     @Override

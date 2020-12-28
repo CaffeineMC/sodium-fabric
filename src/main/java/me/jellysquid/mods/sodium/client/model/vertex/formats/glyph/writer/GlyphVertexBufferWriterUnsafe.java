@@ -1,12 +1,13 @@
 package me.jellysquid.mods.sodium.client.model.vertex.formats.glyph.writer;
 
+import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.glyph.GlyphVertexSink;
 
 public class GlyphVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe implements GlyphVertexSink {
     public GlyphVertexBufferWriterUnsafe(VertexBufferView backingBuffer) {
-        super(backingBuffer, GlyphVertexSink.VERTEX_FORMAT);
+        super(backingBuffer, VanillaVertexTypes.GLYPHS);
     }
 
     @SuppressWarnings("SuspiciousNameCombination")

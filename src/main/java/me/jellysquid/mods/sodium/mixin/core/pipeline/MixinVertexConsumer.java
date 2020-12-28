@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexType;
+import me.jellysquid.mods.sodium.client.model.vertex.type.VertexType;
 import net.minecraft.client.render.VertexConsumer;
 import org.spongepowered.asm.mixin.Mixin;
 

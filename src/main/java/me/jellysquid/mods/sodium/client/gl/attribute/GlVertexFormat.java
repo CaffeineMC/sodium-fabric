@@ -10,7 +10,7 @@ import java.util.EnumMap;
  *
  * @param <T> The enumeration over the vertex attributes
  */
-public class GlVertexFormat<T extends Enum<T>> {
+public class GlVertexFormat<T extends Enum<T>> implements BufferVertexFormat {
     private final Class<T> attributeEnum;
     private final EnumMap<T, GlVertexAttribute> attributesKeyed;
     private final GlVertexAttribute[] attributesArray;

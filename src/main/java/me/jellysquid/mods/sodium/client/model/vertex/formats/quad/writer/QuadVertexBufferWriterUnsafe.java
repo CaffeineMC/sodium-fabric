@@ -1,12 +1,13 @@
 package me.jellysquid.mods.sodium.client.model.vertex.formats.quad.writer;
 
+import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
 
 public class QuadVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe implements QuadVertexSink {
     public QuadVertexBufferWriterUnsafe(VertexBufferView backingBuffer) {
-        super(backingBuffer, QuadVertexSink.VERTEX_FORMAT);
+        super(backingBuffer, VanillaVertexTypes.QUADS);
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
