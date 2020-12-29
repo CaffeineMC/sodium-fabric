@@ -3,6 +3,9 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public class ChunkRenderBounds {
+    public static final ChunkRenderBounds ALWAYS_FALSE = new ChunkRenderBounds(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY,
+            Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
+
     public final float x1, y1, z1;
     public final float x2, y2, z2;
 
