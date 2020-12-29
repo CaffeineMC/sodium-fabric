@@ -8,6 +8,7 @@ import org.lwjgl.opengl.GL21;
 
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Matrix4f;
 
 import java.nio.FloatBuffer;
 import java.util.function.Function;
@@ -15,6 +16,7 @@ import java.util.function.Function;
 public class ChunkProgramMultiDraw extends ChunkProgram {
     private final int dModelOffset;
     private final int modelViewMatrixOffset;
+    private final int normalMatrixOffset;
     private final ProgramUniforms irisProgramUniforms;
 
     public ChunkProgramMultiDraw(Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction, ProgramUniforms irisProgramUniforms) {
@@ -22,6 +24,7 @@ public class ChunkProgramMultiDraw extends ChunkProgram {
 
         this.dModelOffset = this.getAttributeLocation("d_ModelOffset");
         this.modelViewMatrixOffset = this.getUniformLocation("u_ModelViewMatrix");
+        this.normalMatrixOffset = this.getUniformLocation("u_NormalMatrix");
         this.irisProgramUniforms = irisProgramUniforms;
     }
 
@@ -40,15 +43,25 @@ public class ChunkProgramMultiDraw extends ChunkProgram {
     }
 
     @Override
-    public void setup(MatrixStack modelView) {
-        super.setup(modelView);
+    public void setup(MatrixStack matrixStack) {
+        super.setup(matrixStack);
 
         irisProgramUniforms.update();
 
+        Matrix4f modelViewMatrix = matrixStack.peek().getModel();
+        Matrix4f normalMatrix = matrixStack.peek().getModel();
+        normalMatrix.invert();
+        normalMatrix.transpose();
+
+        uniformMatrix(modelViewMatrixOffset, modelViewMatrix);
+        uniformMatrix(normalMatrixOffset, normalMatrix);
+    }
+
+    private void uniformMatrix(int location, Matrix4f matrix) {
         FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
-        modelView.peek().getModel().writeToBuffer(buffer);
+        matrix.writeToBuffer(buffer);
         buffer.rewind();
 
-        GL21.glUniformMatrix4fv(modelViewMatrixOffset, false, buffer);
+        GL21.glUniformMatrix4fv(location, false, buffer);
     }
 }
