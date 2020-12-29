@@ -48,14 +48,14 @@ public class ChunkRenderBounds {
                 return new ChunkRenderBounds(origin);
             }
 
-            int x1 = origin.getMinX() + left(this.x);
-            int x2 = origin.getMinX() + right(this.x);
+            int x1 = origin.getMinX() + leftBound(this.x);
+            int x2 = origin.getMinX() + rightBound(this.x);
 
-            int y1 = origin.getMinY() + left(this.y);
-            int y2 = origin.getMinY() + right(this.y);
+            int y1 = origin.getMinY() + leftBound(this.y);
+            int y2 = origin.getMinY() + rightBound(this.y);
 
-            int z1 = origin.getMinZ() + left(this.z);
-            int z2 = origin.getMinZ() + right(this.z);
+            int z1 = origin.getMinZ() + leftBound(this.z);
+            int z2 = origin.getMinZ() + rightBound(this.z);
 
             // Expand the bounding box by 8 blocks (half a chunk) in order to deal with diagonal surfaces
             return new ChunkRenderBounds(
@@ -63,20 +63,20 @@ public class ChunkRenderBounds {
                     Math.max(y1, origin.getMinY()) - 8.0f,
                     Math.max(z1, origin.getMinZ()) - 8.0f,
 
-                    Math.min(x2 + 1, origin.getMaxX()) + 8.0f,
-                    Math.min(y2 + 1, origin.getMaxY()) + 8.0f,
-                    Math.min(z2 + 1, origin.getMaxZ()) + 8.0f
+                    Math.min(x2, origin.getMaxX()) + 8.0f,
+                    Math.min(y2, origin.getMaxY()) + 8.0f,
+                    Math.min(z2, origin.getMaxZ()) + 8.0f
             );
         }
 
         // Return the left-bound of the bit-masked axis
-        private static int left(int i) {
+        private static int leftBound(int i) {
             return Integer.numberOfTrailingZeros(i);
         }
 
         // Return the right-bound of the bit-masked axis
-        private static int right(int i) {
-            return Integer.numberOfTrailingZeros(i << 16);
+        private static int rightBound(int i) {
+            return 32 - Integer.numberOfLeadingZeros(i);
         }
     }
 }
