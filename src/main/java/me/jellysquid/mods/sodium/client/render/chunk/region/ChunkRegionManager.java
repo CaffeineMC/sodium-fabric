@@ -3,12 +3,11 @@ package me.jellysquid.mods.sodium.client.render.chunk.region;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
-public class ChunkRegionManager<T extends ChunkGraphicsState> {
+public class ChunkRegionManager {
     public static final int BUFFER_WIDTH = 8;
     public static final int BUFFER_HEIGHT = 4;
     public static final int BUFFER_LENGTH = 8;
@@ -25,24 +24,25 @@ public class ChunkRegionManager<T extends ChunkGraphicsState> {
         Validate.isTrue(MathUtil.isPowerOfTwo(BUFFER_HEIGHT));
     }
 
-    private final Long2ReferenceOpenHashMap<ChunkRegion<T>> regions = new Long2ReferenceOpenHashMap<>();
+    private final Long2ReferenceOpenHashMap<ChunkRegion> regions = new Long2ReferenceOpenHashMap<>();
+
     private final MemoryTracker memoryTracker;
 
     public ChunkRegionManager(MemoryTracker memoryTracker) {
         this.memoryTracker = memoryTracker;
     }
 
-    public ChunkRegion<T> getRegion(int x, int y, int z) {
+    public ChunkRegion getRegion(int x, int y, int z) {
         return this.regions.get(getRegionKey(x, y, z));
     }
 
-    public ChunkRegion<T> getOrCreateRegion(int x, int y, int z) {
+    public ChunkRegion getOrCreateRegion(int x, int y, int z) {
         long key = getRegionKey(x, y, z);
 
-        ChunkRegion<T> region = this.regions.get(key);
+        ChunkRegion region = this.regions.get(key);
 
         if (region == null) {
-            this.regions.put(key, region = new ChunkRegion<>(this.memoryTracker, BUFFER_SIZE));
+            this.regions.put(key, region = new ChunkRegion(this.memoryTracker, BUFFER_SIZE));
         }
 
         return region;
@@ -53,7 +53,7 @@ public class ChunkRegionManager<T extends ChunkGraphicsState> {
     }
 
     public void delete() {
-        for (ChunkRegion<T> region : this.regions.values()) {
+        for (ChunkRegion region : this.regions.values()) {
             region.deleteResources();
         }
 
@@ -61,8 +61,8 @@ public class ChunkRegionManager<T extends ChunkGraphicsState> {
     }
 
     public void cleanup() {
-        for (ObjectIterator<ChunkRegion<T>> iterator = this.regions.values().iterator(); iterator.hasNext(); ) {
-            ChunkRegion<T> region = iterator.next();
+        for (ObjectIterator<ChunkRegion> iterator = this.regions.values().iterator(); iterator.hasNext(); ) {
+            ChunkRegion region = iterator.next();
 
             if (region.isArenaEmpty()) {
                 region.deleteResources();

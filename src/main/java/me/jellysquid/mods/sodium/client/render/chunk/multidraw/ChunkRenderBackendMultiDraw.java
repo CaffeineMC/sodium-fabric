@@ -11,8 +11,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkRenderShaderBac
 import net.minecraft.util.Identifier;
 
 public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> extends ChunkRenderShaderBackend<T, ChunkProgramMultiDraw> {
-    public ChunkRenderBackendMultiDraw(ChunkVertexType format) {
-        super(format);
+    public ChunkRenderBackendMultiDraw(Class<T> graphicsType, ChunkVertexType format) {
+        super(graphicsType, format);
     }
 
     @Override

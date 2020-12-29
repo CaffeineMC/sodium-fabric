@@ -5,24 +5,25 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
+import me.jellysquid.mods.sodium.common.util.collections.TrackedArrayItem;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 
-import java.lang.reflect.Array;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * The render state object for a chunk section. This contains all the graphics state for each render pass along with
  * data about the render in the chunk visibility graph.
  */
-public class ChunkRenderContainer<T extends ChunkGraphicsState> {
+public class ChunkRenderContainer implements TrackedArrayItem {
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
+    private final int id;
 
-    private final T[] graphicsStates;
-    private final ChunkRenderColumn<T> column;
+    private final ChunkRenderBackend backend;
+    private final ChunkGraphicsStateArray graphicsStates;
+    private final ChunkRenderColumn column;
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<Void> rebuildTask = null;
@@ -31,18 +32,19 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private boolean needsImportantRebuild;
 
     private boolean tickable;
-    private int id;
 
-    public ChunkRenderContainer(ChunkRenderBackend<T> backend, SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, ChunkRenderColumn<T> column) {
+    public ChunkRenderContainer(ChunkRenderBackend backend, SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, ChunkRenderColumn column, int id) {
+        this.backend = backend;
         this.worldRenderer = worldRenderer;
 
         this.chunkX = chunkX;
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
 
-        //noinspection unchecked
-        this.graphicsStates = (T[]) Array.newInstance(backend.getGraphicsStateType(), BlockRenderPass.COUNT);
+        this.graphicsStates = new ChunkGraphicsStateArray(BlockRenderPass.COUNT);
         this.column = column;
+
+        this.id = id;
     }
 
     /**
@@ -89,16 +91,11 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     }
 
     private void deleteGraphicsState() {
-        T[] states = this.graphicsStates;
-
-        for (int i = 0; i < states.length; i++) {
-            T state = states[i];
-
-            if (state != null) {
-                state.delete();
-                states[i] = null;
-            }
+        for (int i = 0; i < this.graphicsStates.getSize(); i++) {
+            this.backend.deleteGraphicsState(this.graphicsStates.getValue(i));
         }
+
+        this.graphicsStates.clear();
     }
 
     public void setData(ChunkRenderData info) {
@@ -138,19 +135,6 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
      */
     public ChunkSectionPos getChunkPos() {
         return ChunkSectionPos.from(this.chunkX, this.chunkY, this.chunkZ);
-    }
-
-    /**
-     * Tests if the given chunk render is visible within the provided frustum.
-     * @param frustum The frustum to test against
-     * @return True if visible, otherwise false
-     */
-    public boolean isOutsideFrustum(FrustumExtended frustum) {
-        float x = this.getOriginX();
-        float y = this.getOriginY();
-        float z = this.getOriginZ();
-
-        return !frustum.fastAabbTest(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
     }
 
     /**
@@ -199,10 +183,10 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     /**
      * @return The squared distance from the center of this chunk in the world to the given position
      */
-    public double getSquaredDistance(double x, double y, double z) {
-        double xDist = x - this.getCenterX();
-        double yDist = y - this.getCenterY();
-        double zDist = z - this.getCenterZ();
+    public double getSquaredDistance(float x, float y, float z) {
+        float xDist = x - this.getCenterX();
+        float yDist = y - this.getCenterY();
+        float zDist = z - this.getCenterZ();
 
         return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
@@ -210,42 +194,38 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     /**
      * @return The x-coordinate of the center position of this chunk render
      */
-    private double getCenterX() {
-        return this.getOriginX() + 8.0D;
+    private float getCenterX() {
+        return this.getOriginX() + 8.0F;
     }
 
     /**
      * @return The y-coordinate of the center position of this chunk render
      */
-    private double getCenterY() {
-        return this.getOriginY() + 8.0D;
+    private float getCenterY() {
+        return this.getOriginY() + 8.0F;
     }
 
     /**
      * @return The z-coordinate of the center position of this chunk render
      */
-    private double getCenterZ() {
-        return this.getOriginZ() + 8.0D;
+    private float getCenterZ() {
+        return this.getOriginZ() + 8.0F;
     }
 
     public BlockPos getRenderOrigin() {
         return new BlockPos(this.getRenderX(), this.getRenderY(), this.getRenderZ());
     }
 
-    public T[] getGraphicsStates() {
+    public ChunkGraphicsStateArray getGraphicsStates() {
         return this.graphicsStates;
-    }
-
-    public void setGraphicsState(BlockRenderPass pass, T state) {
-        this.graphicsStates[pass.ordinal()] = state;
     }
 
     /**
      * @return The squared distance from the center of this chunk in the world to the given position
      */
-    public double getSquaredDistanceXZ(double x, double z) {
-        double xDist = x - this.getCenterX();
-        double zDist = z - this.getCenterZ();
+    public double getSquaredDistanceXZ(float x, float z) {
+        float xDist = x - this.getCenterX();
+        float zDist = z - this.getCenterZ();
 
         return (xDist * xDist) + (zDist * zDist);
     }
@@ -266,10 +246,6 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         return this.data.getBounds();
     }
 
-    public T getGraphicsState(BlockRenderPass pass) {
-        return this.graphicsStates[pass.ordinal()];
-    }
-
     public boolean isTickable() {
         return this.tickable;
     }
@@ -282,10 +258,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         return this.column.areNeighborsPresent();
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
+    @Override
     public int getId() {
         return this.id;
     }

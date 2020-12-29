@@ -44,7 +44,7 @@ public abstract class MixinDebugHud {
     }
 
     private static List<String> getChunkRendererDebugStrings() {
-        ChunkRenderBackend<?> backend = SodiumWorldRenderer.getInstance().getChunkRenderer();
+        ChunkRenderBackend backend = SodiumWorldRenderer.getInstance().getChunkRenderer();
 
         List<String> strings = new ArrayList<>(4);
         strings.add("Chunk Renderer: " + backend.getRendererName());

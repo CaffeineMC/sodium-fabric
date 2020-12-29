@@ -12,17 +12,15 @@ import java.nio.ByteBuffer;
  * Provides a fixed-size buffer which can be used to batch chunk section draw calls.
  */
 public abstract class ChunkDrawCallBatcher extends StructBuffer {
-    protected final int capacity;
+    private static final int STRIDE = 16;
 
     protected boolean isBuilding;
-    protected int count;
 
     protected int arrayLength;
+    protected int count;
 
     protected ChunkDrawCallBatcher(int capacity) {
-        super(MathHelper.smallestEncompassingPowerOfTwo(capacity), 16);
-
-        this.capacity = capacity;
+        super(MathHelper.smallestEncompassingPowerOfTwo(capacity), STRIDE);
     }
 
     public static ChunkDrawCallBatcher create(int capacity) {
@@ -40,7 +38,7 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
     public void end() {
         this.isBuilding = false;
 
-        this.arrayLength = this.count * this.stride;
+        this.arrayLength = this.count * STRIDE;
         this.buffer.limit(this.arrayLength);
     }
 
@@ -58,12 +56,15 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
         private static final Unsafe UNSAFE = UnsafeUtil.instanceNullable();
 
         private final long basePointer;
+
         private long writePointer;
+        private long writeEnd;
 
         public UnsafeChunkDrawCallBatcher(int capacity) {
             super(capacity);
 
             this.basePointer = MemoryUtil.memAddress(this.buffer);
+            this.writeEnd = this.basePointer + this.buffer.capacity();
         }
 
         @Override
@@ -74,17 +75,26 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
         }
 
         @Override
+        public void end() {
+            this.count = (int) (this.writePointer - this.basePointer) / STRIDE;
+
+            super.end();
+        }
+
+        @Override
         public void addIndirectDrawCall(int first, int count, int baseInstance, int instanceCount) {
-            if (this.count++ >= this.capacity) {
+            long l = this.writePointer;
+
+            if (l >= this.writeEnd) {
                 throw new BufferUnderflowException();
             }
 
-            UNSAFE.putInt(this.writePointer     , count);         // Vertex Count
-            UNSAFE.putInt(this.writePointer +  4, instanceCount); // Instance Count
-            UNSAFE.putInt(this.writePointer +  8, first);         // Vertex Start
-            UNSAFE.putInt(this.writePointer + 12, baseInstance);  // Base Instance
+            UNSAFE.putInt(l     , count);         // Vertex Count
+            UNSAFE.putInt(l +  4, instanceCount); // Instance Count
+            UNSAFE.putInt(l +  8, first);         // Vertex Start
+            UNSAFE.putInt(l + 12, baseInstance);  // Base Instance
 
-            this.writePointer += this.stride;
+            this.writePointer += STRIDE;
         }
     }
 
@@ -103,6 +113,13 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
         }
 
         @Override
+        public void end() {
+            this.count = this.writeOffset / STRIDE;
+
+            super.end();
+        }
+
+        @Override
         public void addIndirectDrawCall(int first, int count, int baseInstance, int instanceCount) {
             ByteBuffer buf = this.buffer;
             buf.putInt(this.writeOffset     , count);             // Vertex Count
@@ -110,8 +127,7 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
             buf.putInt(this.writeOffset +  8, first);             // Vertex Start
             buf.putInt(this.writeOffset + 12, baseInstance);      // Base Instance
 
-            this.writeOffset += this.stride;
-            this.count++;
+            this.writeOffset += STRIDE;
         }
     }
 

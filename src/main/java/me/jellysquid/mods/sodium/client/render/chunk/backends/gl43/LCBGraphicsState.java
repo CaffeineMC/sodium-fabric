@@ -12,13 +12,14 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
 import java.util.Map;
 
 public class LCBGraphicsState extends ChunkGraphicsState {
-    private final ChunkRegion<LCBGraphicsState> region;
+    private final ChunkRegion region;
 
     private final GlBufferRegion segment;
     private final long[] parts;
 
-    public LCBGraphicsState(ChunkRenderContainer<?> container, ChunkRegion<LCBGraphicsState> region, GlBufferRegion segment, ChunkMeshData meshData, GlVertexFormat<?> vertexFormat) {
-        super(container);
+    public LCBGraphicsState(ChunkRenderContainer container, ChunkRegion region,
+                            GlBufferRegion segment, ChunkMeshData meshData, GlVertexFormat<?> vertexFormat, int id) {
+        super(container, id);
 
         this.region = region;
         this.segment = segment;
@@ -41,7 +42,7 @@ public class LCBGraphicsState extends ChunkGraphicsState {
         this.segment.delete();
     }
 
-    public ChunkRegion<LCBGraphicsState> getRegion() {
+    public ChunkRegion getRegion() {
         return this.region;
     }
 

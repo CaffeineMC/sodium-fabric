@@ -7,8 +7,8 @@ import java.util.Arrays;
 /**
  * A simple extension over {@link ObjectArrayList} which provides iterator methods in either FIFO or LIFO ordering.
  */
-public class ChunkRenderList<T> {
-    private T[] stateArray;
+public class ChunkRenderList {
+    private int[] stateArray;
     private int[] cullArray;
     private int size, capacity;
 
@@ -16,12 +16,11 @@ public class ChunkRenderList<T> {
         this(1024);
     }
 
-    @SuppressWarnings("unchecked")
     public ChunkRenderList(int capacity) {
         this.size = 0;
         this.capacity = capacity;
 
-        this.stateArray = (T[]) new Object[capacity];
+        this.stateArray = new int[capacity];
         this.cullArray = new int[capacity];
     }
 
@@ -32,7 +31,7 @@ public class ChunkRenderList<T> {
         this.cullArray = Arrays.copyOf(this.cullArray, this.capacity);
     }
 
-    public void add(T state, int cull) {
+    public void add(int state, int cull) {
         int idx = this.size++;
 
         if (idx >= this.capacity) {
@@ -49,7 +48,7 @@ public class ChunkRenderList<T> {
         }
 
         for (int i = 0; i < this.size; i++) {
-            this.stateArray[i] = null;
+            this.stateArray[i] = -1;
         }
 
         for (int i = 0; i < this.size; i++) {
@@ -62,13 +61,13 @@ public class ChunkRenderList<T> {
     /**
      * @return An iterator which returns elements in FIFO order or LIFO order if {@param backwards} is set
      */
-    public ChunkRenderListIterator<T> iterator(boolean backwards) {
+    public ChunkRenderListIterator iterator(boolean backwards) {
         if (backwards) {
-            return new ChunkRenderListIterator<T>() {
+            return new ChunkRenderListIterator() {
                 private int pos = ChunkRenderList.this.size - 1;
 
                 @Override
-                public T getGraphicsState() {
+                public int getGraphicsStateId() {
                     return ChunkRenderList.this.stateArray[this.pos];
                 }
 
@@ -88,13 +87,13 @@ public class ChunkRenderList<T> {
                 }
             };
         } else {
-            return new ChunkRenderListIterator<T>() {
+            return new ChunkRenderListIterator() {
                 private final int lim = ChunkRenderList.this.size;
 
                 private int pos = 0;
 
                 @Override
-                public T getGraphicsState() {
+                public int getGraphicsStateId() {
                     return ChunkRenderList.this.stateArray[this.pos];
                 }
 

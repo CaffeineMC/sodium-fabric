@@ -11,13 +11,10 @@ import java.nio.ByteBuffer;
  * parameters.
  */
 public abstract class ChunkDrawParamsVector extends StructBuffer {
-    protected int capacity;
-    protected int count;
+    private static final int STRIDE = 16;
 
     protected ChunkDrawParamsVector(int capacity) {
-        super(capacity, 16);
-
-        this.capacity = capacity;
+        super(capacity, STRIDE);
     }
 
     public static ChunkDrawParamsVector create(int capacity) {
@@ -26,69 +23,74 @@ public abstract class ChunkDrawParamsVector extends StructBuffer {
 
     public abstract void pushChunkDrawParams(float x, float y, float z);
 
-    public void reset() {
-        this.count = 0;
-    }
+    public abstract void reset();
 
     protected void growBuffer() {
-        this.capacity = this.capacity * 2;
-        this.buffer = MemoryUtil.memRealloc(this.buffer, this.capacity * this.stride);
+        this.buffer = MemoryUtil.memRealloc(this.buffer, this.buffer.capacity() * 2);
     }
 
     public static class UnsafeChunkDrawCallVector extends ChunkDrawParamsVector {
         private static final Unsafe UNSAFE = UnsafeUtil.instanceNullable();
 
-        private long basePointer;
+        private long writeBase;
         private long writePointer;
+        private long writeEnd;
 
         public UnsafeChunkDrawCallVector(int capacity) {
             super(capacity);
 
-            this.basePointer = MemoryUtil.memAddress(this.buffer);
+            this.updatePointers(0);
         }
 
         @Override
         @SuppressWarnings("SuspiciousNameCombination")
         public void pushChunkDrawParams(float x, float y, float z) {
-            if (this.count++ >= this.capacity) {
+            if (this.writePointer >= this.writeEnd) {
                 this.growBuffer();
             }
 
-            UNSAFE.putFloat(this.writePointer    , x);
-            UNSAFE.putFloat(this.writePointer + 4, y);
-            UNSAFE.putFloat(this.writePointer + 8, z);
+            long l = this.writePointer;
 
-            this.writePointer += this.stride;
+            UNSAFE.putFloat(l    , x);
+            UNSAFE.putFloat(l + 4, y);
+            UNSAFE.putFloat(l + 8, z);
+
+            this.writePointer += STRIDE;
         }
 
         @Override
         protected void growBuffer() {
             super.growBuffer();
 
-            long offset = this.writePointer - this.basePointer;
-
-            this.basePointer = MemoryUtil.memAddress(this.buffer);
-            this.writePointer = this.basePointer + offset;
+            this.updatePointers(this.writePointer - this.writeBase);
         }
 
         @Override
         public void reset() {
-            super.reset();
+            this.writePointer = this.writeBase;
+        }
 
-            this.writePointer = this.basePointer;
+        private void updatePointers(long offset) {
+            this.writeBase = MemoryUtil.memAddress(this.buffer);
+            this.writeEnd = this.writePointer + this.buffer.capacity();
+
+            this.writePointer = this.writeBase + offset;
         }
     }
 
     public static class NioChunkDrawCallVector extends ChunkDrawParamsVector {
         private int writeOffset;
+        private int capacity;
 
         public NioChunkDrawCallVector(int capacity) {
             super(capacity);
+
+            this.onBufferChanged();
         }
 
         @Override
         public void pushChunkDrawParams(float x, float y, float z) {
-            if (this.count++ >= this.capacity) {
+            if (this.writeOffset >= this.capacity) {
                 this.growBuffer();
             }
 
@@ -97,14 +99,16 @@ public abstract class ChunkDrawParamsVector extends StructBuffer {
             buf.putFloat(this.writeOffset + 4, y);
             buf.putFloat(this.writeOffset + 8, z);
 
-            this.writeOffset += this.stride;
+            this.writeOffset += STRIDE;
         }
 
         @Override
         public void reset() {
-            super.reset();
-
             this.writeOffset = 0;
+        }
+
+        private void onBufferChanged() {
+            this.capacity = this.buffer.capacity();
         }
     }
 }

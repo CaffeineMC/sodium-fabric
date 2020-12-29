@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
@@ -33,14 +32,14 @@ import net.minecraft.world.chunk.WorldChunk;
  * This task takes a slice of the world from the thread it is created on. Since these slices require rather large
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
-public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkRenderBuildTask<T> {
-    private final ChunkRenderContainer<T> render;
-    private final ChunkBuilder<T> chunkBuilder;
+public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
+    private final ChunkRenderContainer render;
+    private final ChunkBuilder chunkBuilder;
     private final Vector3d camera;
     private final WorldSlice slice;
     private final BlockPos offset;
 
-    public ChunkRenderRebuildTask(ChunkBuilder<T> chunkBuilder, ChunkRenderContainer<T> render, WorldSlice slice, BlockPos offset) {
+    public ChunkRenderRebuildTask(ChunkBuilder chunkBuilder, ChunkRenderContainer render, WorldSlice slice, BlockPos offset) {
         this.chunkBuilder = chunkBuilder;
         this.render = render;
         this.camera = chunkBuilder.getCameraPosition();
@@ -49,7 +48,7 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
     }
 
     @Override
-    public ChunkBuildResult<T> performBuild(ChunkRenderContext pipeline, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
+    public ChunkBuildResult performBuild(ChunkRenderContext pipeline, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
         ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
@@ -137,7 +136,7 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
 
-        return new ChunkBuildResult<>(this.render, renderData.build());
+        return new ChunkBuildResult(this.render, renderData.build());
     }
 
     @Override
