@@ -3,6 +3,8 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterator;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+
 import net.minecraft.client.util.math.MatrixStack;
 
 import java.util.Collections;
@@ -30,7 +32,7 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
 
     void createShaders();
 
-    void begin(MatrixStack matrixStack);
+    void begin(MatrixStack matrixStack, BlockRenderPass pass);
 
     void end(MatrixStack matrixStack);
 

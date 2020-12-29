@@ -5,6 +5,8 @@ import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.oneshot.ChunkRenderBackendOneshot;
 import net.minecraft.client.util.math.MatrixStack;
+
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 
@@ -17,8 +19,8 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
     }
 
     @Override
-    public void begin(MatrixStack matrixStack) {
-        super.begin(matrixStack);
+    public void begin(MatrixStack matrixStack, BlockRenderPass pass) {
+        super.begin(matrixStack, pass);
 
         this.vertexFormat.enableVertexAttributes();
     }

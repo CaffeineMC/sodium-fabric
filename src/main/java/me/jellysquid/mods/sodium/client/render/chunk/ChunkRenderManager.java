@@ -398,7 +398,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         ChunkRenderList<T> chunkRenderList = this.chunkRenderLists[pass.ordinal()];
         ChunkRenderListIterator<T> iterator = chunkRenderList.iterator(pass.isTranslucent());
 
-        this.backend.begin(matrixStack);
+        this.backend.begin(matrixStack, pass);
         this.backend.render(iterator, new ChunkCameraContext(x, y, z));
         this.backend.end(matrixStack);
     }
