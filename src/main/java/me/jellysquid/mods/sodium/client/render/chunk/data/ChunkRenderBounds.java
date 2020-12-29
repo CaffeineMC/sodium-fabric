@@ -30,54 +30,53 @@ public class ChunkRenderBounds {
     }
 
     public static class Builder {
-        private int x1 = Integer.MAX_VALUE, y1 = Integer.MAX_VALUE, z1 = Integer.MAX_VALUE;
-        private int x2 = Integer.MIN_VALUE, y2 = Integer.MIN_VALUE, z2 = Integer.MIN_VALUE;
-
-        private boolean empty = true;
+        // Bit-mask of the blocks set on each axis
+        private int x = 0, y = 0, z = 0;
 
         public void addBlock(int x, int y, int z) {
-            if (x < this.x1) {
-                this.x1 = x;
-            }
-
-            if (x > this.x2) {
-                this.x2 = x;
-            }
-
-            if (y < this.y1) {
-                this.y1 = y;
-            }
-
-            if (y > this.y2) {
-                this.y2 = y;
-            }
-
-            if (z < this.z1) {
-                this.z1 = z;
-            }
-
-            if (z > this.z2) {
-                this.z2 = z;
-            }
-
-            this.empty = false;
+            // Accumulate bits on each axis for the given block position. This avoids needing to
+            // branch multiple times trying to determine if the bounds need to grow. The min/max
+            // value of each axis can later be extracted by counting the trailing/leading zeroes.
+            this.x |= 1 << x;
+            this.y |= 1 << y;
+            this.z |= 1 << z;
         }
 
         public ChunkRenderBounds build(ChunkSectionPos origin) {
-            if (this.empty) {
+            // If no bits were set on any axis, return the default bounds
+            if ((this.x | this.y | this.z) == 0) {
                 return new ChunkRenderBounds(origin);
             }
 
+            int x1 = origin.getMinX() + left(this.x);
+            int x2 = origin.getMinX() + right(this.x);
+
+            int y1 = origin.getMinY() + left(this.y);
+            int y2 = origin.getMinY() + right(this.y);
+
+            int z1 = origin.getMinZ() + left(this.z);
+            int z2 = origin.getMinZ() + right(this.z);
+
             // Expand the bounding box by 8 blocks (half a chunk) in order to deal with diagonal surfaces
             return new ChunkRenderBounds(
-                    Math.max(this.x1, origin.getMinX()) - 8.0f,
-                    Math.max(this.y1, origin.getMinY()) - 8.0f,
-                    Math.max(this.z1, origin.getMinZ()) - 8.0f,
+                    Math.max(x1, origin.getMinX()) - 8.0f,
+                    Math.max(y1, origin.getMinY()) - 8.0f,
+                    Math.max(z1, origin.getMinZ()) - 8.0f,
 
-                    Math.min(this.x2 + 1, origin.getMaxX()) + 8.0f,
-                    Math.min(this.y2 + 1, origin.getMaxY()) + 8.0f,
-                    Math.min(this.z2 + 1, origin.getMaxZ()) + 8.0f
+                    Math.min(x2 + 1, origin.getMaxX()) + 8.0f,
+                    Math.min(y2 + 1, origin.getMaxY()) + 8.0f,
+                    Math.min(z2 + 1, origin.getMaxZ()) + 8.0f
             );
+        }
+
+        // Return the left-bound of the bit-masked axis
+        private static int left(int i) {
+            return Integer.numberOfTrailingZeros(i);
+        }
+
+        // Return the right-bound of the bit-masked axis
+        private static int right(int i) {
+            return Integer.numberOfTrailingZeros(i << 16);
         }
     }
 }
