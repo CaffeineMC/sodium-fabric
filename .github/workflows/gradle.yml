@@ -14,8 +14,8 @@ jobs:
         java-version: 14
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Build with Gradle
-      run: ./gradlew build
+    - name: Build with Gradle (Using genSources)
+      run: ./gradlew genSources
     - name: Upload build artifacts
       uses: actions/upload-artifact@v1
       with:
