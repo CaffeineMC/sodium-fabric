@@ -29,7 +29,7 @@
   "depends": {
     "fabricloader": ">=0.8.0"
   },
-  "conflicts": {
+  "breaks": {
     "optifabric": "*",
     "canvas": "*"
   }
