@@ -29,11 +29,8 @@
   "depends": {
     "fabricloader": ">=0.8.0"
   },
-  "breaks": {
+  "conflicts": {
     "optifabric": "*",
     "canvas": "*"
-  },
-  "conflicts": {
-    "thallium": "*"
   }
 }
