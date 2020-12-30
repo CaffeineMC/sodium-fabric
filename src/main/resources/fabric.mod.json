@@ -32,5 +32,8 @@
   "breaks": {
     "optifabric": "*",
     "canvas": "*"
+  },
+  "conflicts": {
+    "thallium": "*"
   }
 }
