@@ -36,7 +36,7 @@ public class ChunkProgramMultiDraw extends ChunkProgram {
 
         setupAttribute(programHandle, "mc_Entity", blockId, -1.0F, -1.0F, -1.0F);
         setupAttribute(programHandle, "mc_midTexCoord", 0.0F, 0.0F, 0.0F, 0.0F);
-        setupAttribute(programHandle, "at_tangent", 1.0F, 0.0F, 0.0F, 0.0F);
+        setupAttribute(programHandle, "at_tangent", 1.0F, 0.0F, 0.0F, 1.0F);
     }
 
     private static void setupAttribute(int programHandle, String name, float v0, float v1, float v2, float v3) {
