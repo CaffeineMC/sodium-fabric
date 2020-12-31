@@ -50,13 +50,17 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P e
         GlShader fragShader = this.createFragmentShader(fogMode, pass);
 
         try {
-            return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
+            return GlProgram.builder(new Identifier("sodium", "chunk_shader_for_" + pass.toString().toLowerCase()))
                     .attachShader(vertShader)
                     .attachShader(fragShader)
                     .bindAttribute("a_Pos", format.getAttribute(ChunkMeshAttribute.POSITION))
                     .bindAttribute("a_Color", format.getAttribute(ChunkMeshAttribute.COLOR))
                     .bindAttribute("a_TexCoord", format.getAttribute(ChunkMeshAttribute.TEXTURE))
                     .bindAttribute("a_LightCoord", format.getAttribute(ChunkMeshAttribute.LIGHT))
+                    .bindAttribute("mc_Entity", 4)
+                    .bindAttribute("mc_midTexCoord", 5)
+                    .bindAttribute("at_tangent", 6)
+                    .bindAttribute("d_ModelOffset", 7)
                     .build((program, name) -> this.createShaderProgram(program, name, fogMode, pass));
         } finally {
             vertShader.delete();

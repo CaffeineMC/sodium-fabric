@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkProgram;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderFogComponent;
 import net.coderbot.iris.gl.program.ProgramUniforms;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL21;
 
 import net.minecraft.client.util.math.MatrixStack;
@@ -28,6 +29,24 @@ public class ChunkProgramMultiDraw extends ChunkProgram {
         this.irisProgramUniforms = irisProgramUniforms;
     }
 
+    private static void setupAttributes(int programHandle) {
+        // TODO: Properly add these attributes into the vertex format
+
+        float blockId = -1.0F;
+
+        setupAttribute(programHandle, "mc_Entity", blockId, -1.0F, -1.0F, -1.0F);
+        setupAttribute(programHandle, "mc_midTexCoord", 0.0F, 0.0F, 0.0F, 0.0F);
+        setupAttribute(programHandle, "at_tangent", 1.0F, 0.0F, 0.0F, 0.0F);
+    }
+
+    private static void setupAttribute(int programHandle, String name, float v0, float v1, float v2, float v3) {
+        int location = GL20.glGetAttribLocation(programHandle, name);
+
+        if (location != -1) {
+            GL20.glVertexAttrib4f(location, v0, v1, v2, v3);
+        }
+    }
+
     public int getModelOffsetAttributeLocation() {
         return this.dModelOffset;
     }
@@ -45,6 +64,8 @@ public class ChunkProgramMultiDraw extends ChunkProgram {
     @Override
     public void setup(MatrixStack matrixStack) {
         super.setup(matrixStack);
+
+        setupAttributes(this.handle());
 
         irisProgramUniforms.update();
 

@@ -47,7 +47,7 @@ public abstract class GlProgram extends GlObject {
         int index = GL20.glGetUniformLocation(this.handle(), name);
 
         if (index < 0) {
-            throw new NullPointerException("No uniform exists with name: " + name);
+            throw new NullPointerException("No uniform exists with name: " + name + " (got index " + index + ")");
         }
 
         return index;
@@ -63,7 +63,7 @@ public abstract class GlProgram extends GlObject {
         int index = GL20.glGetAttribLocation(this.handle(), name);
 
         if (index < 0) {
-            throw new NullPointerException("No attribute exists with name: " + name);
+            throw new NullPointerException("No attribute exists with name " + name + " in program " + getName() + " (got index " + index + ")");
         }
 
         return index;
@@ -119,6 +119,12 @@ public abstract class GlProgram extends GlObject {
 
         public Builder bindAttribute(String name, GlVertexAttribute attribute) {
             GL20.glBindAttribLocation(this.program, attribute.getIndex(), name);
+
+            return this;
+        }
+
+        public Builder bindAttribute(String name, int index) {
+            GL20.glBindAttribLocation(this.program, index, name);
 
             return this;
         }
