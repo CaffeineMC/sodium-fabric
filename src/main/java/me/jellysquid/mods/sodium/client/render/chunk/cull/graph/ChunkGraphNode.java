@@ -3,8 +3,11 @@ package me.jellysquid.mods.sodium.client.render.chunk.cull.graph;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import me.jellysquid.mods.sodium.mixin.core.frustum.MixinFrustum;
+import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 
 public class ChunkGraphNode {
@@ -20,6 +23,8 @@ public class ChunkGraphNode {
     private long visibilityData;
     private byte cullingState;
 
+    private final Box boundingBox;
+
     public ChunkGraphNode(int chunkX, int chunkY, int chunkZ, int id) {
         this.chunkX = chunkX;
         this.chunkY = chunkY;
@@ -27,6 +32,11 @@ public class ChunkGraphNode {
         this.id = id;
 
         this.visibilityData = DEFAULT_VISIBILITY_DATA;
+
+        this.boundingBox = new Box(
+                getOriginX(), getOriginY(), getOriginZ(),
+                getOriginX() + 16, getOriginY() + 16, getOriginZ() + 16
+        );
     }
 
     public ChunkGraphNode getConnectedNode(Direction dir) {
@@ -100,11 +110,9 @@ public class ChunkGraphNode {
     }
 
     public boolean isCulledByFrustum(FrustumExtended frustum) {
-        float x = this.getOriginX();
-        float y = this.getOriginY();
-        float z = this.getOriginZ();
+        Frustum mcFrustum = (Frustum) frustum;
 
-        return !frustum.fastAabbTest(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
+        return !mcFrustum.isVisible(boundingBox);
     }
 
     /**
