@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.oneshot;
 
 import me.jellysquid.mods.sodium.client.SodiumHooks;
-import me.jellysquid.mods.sodium.client.gl.SodiumVertexFormats;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;

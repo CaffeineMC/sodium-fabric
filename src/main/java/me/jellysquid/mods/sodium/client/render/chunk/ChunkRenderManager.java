@@ -110,7 +110,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
         this.dirty = true;
 
-        renderContext = new RenderContext<>();
+        this.renderContext = new RenderContext<>();
 
         this.culler = new ChunkGraphCuller(world, renderDistance);
         this.useChunkFaceCulling = SodiumClientMod.options().advanced.useChunkFaceCulling;
@@ -123,7 +123,6 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         this.iterateChunks(camera, frustum, frame, spectator);
 
         this.dirty = false;
-        renderContext = new RenderContext<>();
     }
 
     private void setup(Camera camera) {
@@ -248,7 +247,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         Collection<BlockEntity> blockEntities = render.getData().getBlockEntities();
 
         if (!blockEntities.isEmpty()) {
-            this.visibleBlockEntities.addAll(blockEntities);
+            this.renderContext.visibleBlockEntities.addAll(blockEntities);
         }
     }
 
@@ -272,7 +271,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
             list.reset();
         }
 
-        this.tickableChunks.clear();
+        this.renderContext.tickableChunks.clear();
 
         this.visibleChunkCount = 0;
     }
