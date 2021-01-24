@@ -13,6 +13,12 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
         super(backingBuffer, DefaultModelVertexFormats.MODEL_VERTEX_XHFP);
     }
 
+    private static final int STRIDE = 48;
+
+    int vertexCount = 0;
+    float uSum;
+    float vSum;
+
     @Override
     public void writeQuad(float x, float y, float z, int color, float u, float v, int light) {
         this.writeQuad(x, y, z, color, u, v, light, (short) -1);
@@ -20,6 +26,9 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
 
     @Override
     public void writeQuad(float x, float y, float z, int color, float u, float v, int light, short blockId) {
+        uSum += u;
+        vSum += v;
+
         this.writeQuadInternal(
             ModelVertexUtil.denormalizeFloatAsShort(x),
             ModelVertexUtil.denormalizeFloatAsShort(y),
@@ -35,7 +44,8 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
     private void writeQuadInternal(short x, short y, short z, int color, short u, short v, int light, short blockId) {
         int i = this.writeOffset;
 
-        int midTexCoord = 0;
+        vertexCount++;
+        // NB: uSum and vSum must already be incremented outside of this function.
 
         ByteBuffer buffer = this.byteBuffer;
         buffer.putShort(i, x);
@@ -45,8 +55,7 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
         buffer.putShort(i + 12, u);
         buffer.putShort(i + 14, v);
         buffer.putInt(i + 16, light);
-        // midTexCoord
-        buffer.putInt(i + 20, midTexCoord);
+        // NB: We don't set midTexCoord here, it will be filled in later.
         // tangent
         buffer.put(i + 24, (byte) 255);
         buffer.put(i + 25, (byte) 0);
@@ -63,6 +72,21 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
         buffer.putFloat(i + 36, (short) 0);
         buffer.putFloat(i + 40, (short) 0);
         buffer.putFloat(i + 44, (short) 0);
+
+        if (vertexCount == 4) {
+            short midU = ModelVertexUtil.denormalizeFloatAsShort(uSum * 0.25f);
+            short midV = ModelVertexUtil.denormalizeFloatAsShort(vSum * 0.25f);
+            int midTexCoord = (midV << 16) | midU;
+
+            buffer.putInt(i + 20, midTexCoord);
+            buffer.putInt(i + 20 - STRIDE, midTexCoord);
+            buffer.putInt(i + 20 - STRIDE * 2, midTexCoord);
+            buffer.putInt(i + 20 - STRIDE * 3, midTexCoord);
+
+            vertexCount = 0;
+            uSum = 0;
+            vSum = 0;
+        }
 
 
         /*
