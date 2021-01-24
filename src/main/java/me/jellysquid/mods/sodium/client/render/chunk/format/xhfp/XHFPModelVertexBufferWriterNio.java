@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterNi
 import me.jellysquid.mods.sodium.client.render.chunk.format.DefaultModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexUtil;
+import me.jellysquid.mods.sodium.client.util.Norm3b;
 
 public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implements ModelVertexSink {
     public XHFPModelVertexBufferWriterNio(VertexBufferView backingBuffer) {
@@ -55,18 +56,12 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
         buffer.putShort(i + 12, u);
         buffer.putShort(i + 14, v);
         buffer.putInt(i + 16, light);
-        // NB: We don't set midTexCoord here, it will be filled in later.
+        // NB: We don't set midTexCoord and normal here, they will be filled in later.
         // tangent
         buffer.put(i + 24, (byte) 255);
         buffer.put(i + 25, (byte) 0);
         buffer.put(i + 26, (byte) 0);
         buffer.put(i + 27, (byte) 255);
-        // normal
-        buffer.put(i + 28, (byte) 0);
-        buffer.put(i + 29, (byte) 255);
-        buffer.put(i + 30, (byte) 0);
-        // padding
-        buffer.put(i + 31, (byte) 0);
         // block ID
         buffer.putFloat(i + 32, blockId);
         buffer.putFloat(i + 36, (short) 0);
@@ -86,6 +81,66 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
             vertexCount = 0;
             uSum = 0;
             vSum = 0;
+
+            // normal computation
+            // Implementation based on the algorithm found here:
+            // https://github.com/IrisShaders/ShaderDoc/blob/master/vertex-format-extensions.md#surface-normal-vector
+
+            // Capture all of the relevant vertex positions
+            float x0 = normalizeShortAsFloat(buffer.getShort(i - STRIDE * 3));
+            float y0 = normalizeShortAsFloat(buffer.getShort(i + 2 - STRIDE * 3));
+            float z0 = normalizeShortAsFloat(buffer.getShort(i + 4 - STRIDE * 3));
+
+            float x1 = normalizeShortAsFloat(buffer.getShort(i - STRIDE * 2));
+            float y1 = normalizeShortAsFloat(buffer.getShort(i + 2 - STRIDE * 2));
+            float z1 = normalizeShortAsFloat(buffer.getShort(i + 4 - STRIDE * 2));
+
+            float x2 = normalizeShortAsFloat(buffer.getShort(i - STRIDE));
+            float y2 = normalizeShortAsFloat(buffer.getShort(i + 2 - STRIDE));
+            float z2 = normalizeShortAsFloat(buffer.getShort(i + 4 - STRIDE));
+
+            float x3 = normalizeShortAsFloat(x);
+            float y3 = normalizeShortAsFloat(y);
+            float z3 = normalizeShortAsFloat(z);
+
+            // (v2 - v0)
+            float cx0 = x2 - x0;
+            float cy0 = y2 - y0;
+            float cz0 = z2 - z0;
+
+            // (v3 - v1)
+            float cx1 = x3 - x1;
+            float cy1 = y3 - y1;
+            float cz1 = z3 - z1;
+
+            // (v2 - v0) × (v3 - v1)
+            // Compute the determinant of the following matrix to get the cross product
+            //  i   j   k
+            // cx0 cy0 cz0
+            // cx1 cy1 cz1
+
+            float nx = cy0 * cz1 - cz0 * cy1;
+            float ny = -(cx0 * cz1 - cz0 * cx1);
+            float nz = cx0 * cy1 - cy0 * cx1;
+
+            // squared length of the un-normalized normal vector
+            float nlengthSquared = nx * nx + ny * ny + nz * nz;
+
+            // get the actual length using square root, then get the inverse
+            float ncoeff = rsqrt(nlengthSquared);
+
+            // Normalize the normal vector
+            nx *= ncoeff;
+            ny *= ncoeff;
+            nz *= ncoeff;
+
+            // Pack the normal vector into a 32-bit integer
+            int normal = Norm3b.pack(nx, ny, nz);
+
+            buffer.putInt(i + 28, normal);
+            buffer.putInt(i + 28 - STRIDE, normal);
+            buffer.putInt(i + 28 - STRIDE * 2, normal);
+            buffer.putInt(i + 28 - STRIDE * 3, normal);
         }
 
 
@@ -97,5 +152,19 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
          */
 
         this.advance();
+    }
+
+    private static float normalizeShortAsFloat(short value) {
+        return value * (1.0f / 65535.0f);
+    }
+
+    private static float rsqrt(float value) {
+        if (value == 0.0f) {
+            // You heard it here first, folks: 1 divided by 0 equals 1
+            // In actuality, this is a workaround for normalizing a zero length vector (leaving it as zero length)
+            return 1.0f;
+        } else {
+            return (float) (1.0 / Math.sqrt(value));
+        }
     }
 }
