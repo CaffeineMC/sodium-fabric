@@ -59,7 +59,7 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
         // padding
         buffer.put(i + 31, (byte) 0);
         // block ID
-        buffer.putFloat(i + 32, (short) 10018);
+        buffer.putFloat(i + 32, blockId);
         buffer.putFloat(i + 36, (short) 0);
         buffer.putFloat(i + 40, (short) 0);
         buffer.putFloat(i + 44, (short) 0);
