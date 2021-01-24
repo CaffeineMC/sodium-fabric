@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
@@ -23,6 +25,7 @@ public abstract class ChunkProgram extends GlProgram {
     private final int uModelScale;
     private final int uBlockTex;
     private final int uLightTex;
+    private final int uNoiseTex;
 
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
@@ -34,6 +37,7 @@ public abstract class ChunkProgram extends GlProgram {
 
         this.uBlockTex = this.getUniformLocation("u_BlockTex");
         this.uLightTex = this.getUniformLocation("u_LightTex");
+        this.uNoiseTex = this.getUniformLocation("noisetex");
         this.uModelScale = this.getUniformLocation("u_ModelScale");
 
         this.fogShader = fogShaderFunction.apply(this);
@@ -42,7 +46,13 @@ public abstract class ChunkProgram extends GlProgram {
     public void setup(MatrixStack matrixStack) {
         GL20.glUniform1i(this.uBlockTex, 0);
         GL20.glUniform1i(this.uLightTex, 2);
+        GL20.glUniform1i(this.uNoiseTex, 15);
         GL20.glUniform3f(this.uModelScale, MODEL_SIZE, MODEL_SIZE, MODEL_SIZE);
+
+        // TODO: set up noise texture!!!
+
+        RenderSystem.enableAlphaTest();
+        RenderSystem.alphaFunc(GL11.GL_GREATER, 0.1f);
 
         this.fogShader.setup();
 

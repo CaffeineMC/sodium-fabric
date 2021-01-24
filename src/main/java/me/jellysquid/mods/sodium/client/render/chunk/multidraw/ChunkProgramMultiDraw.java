@@ -29,7 +29,7 @@ public class ChunkProgramMultiDraw extends ChunkProgram {
         this.irisProgramUniforms = irisProgramUniforms;
     }
 
-    private static void setupAttributes(int programHandle) {
+    /*private static void setupAttributes(int programHandle) {
         // TODO: Properly add these attributes into the vertex format
 
         float blockId = -1.0F;
@@ -45,7 +45,7 @@ public class ChunkProgramMultiDraw extends ChunkProgram {
         if (location != -1) {
             GL20.glVertexAttrib4f(location, v0, v1, v2, v3);
         }
-    }
+    }*/
 
     public int getModelOffsetAttributeLocation() {
         return this.dModelOffset;
@@ -65,7 +65,7 @@ public class ChunkProgramMultiDraw extends ChunkProgram {
     public void setup(MatrixStack matrixStack) {
         super.setup(matrixStack);
 
-        setupAttributes(this.handle());
+        //setupAttributes(this.handle());
 
         irisProgramUniforms.update();
 

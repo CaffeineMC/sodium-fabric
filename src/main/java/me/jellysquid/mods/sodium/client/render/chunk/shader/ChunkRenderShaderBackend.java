@@ -57,10 +57,12 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P e
                     .bindAttribute("a_Color", format.getAttribute(ChunkMeshAttribute.COLOR))
                     .bindAttribute("a_TexCoord", format.getAttribute(ChunkMeshAttribute.TEXTURE))
                     .bindAttribute("a_LightCoord", format.getAttribute(ChunkMeshAttribute.LIGHT))
-                    .bindAttribute("mc_Entity", 4)
-                    .bindAttribute("mc_midTexCoord", 5)
-                    .bindAttribute("at_tangent", 6)
-                    .bindAttribute("d_ModelOffset", 7)
+                    .bindAttribute("mc_Entity", format.getAttribute(ChunkMeshAttribute.BLOCK_ID))
+                    .bindAttribute("mc_midTexCoord", format.getAttribute(ChunkMeshAttribute.MID_TEX_COORD))
+                    .bindAttribute("at_tangent", format.getAttribute(ChunkMeshAttribute.TANGENT))
+                    .bindAttribute("a_Normal", format.getAttribute(ChunkMeshAttribute.NORMAL))
+                    // TODO: This is hardcoded, we can't assume that index 8 will be okay
+                    .bindAttribute("d_ModelOffset", 8)
                     .build((program, name) -> this.createShaderProgram(program, name, fogMode, pass));
         } finally {
             vertShader.delete();

@@ -259,11 +259,14 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         final ChunkVertexType vertexFormat;
 
-        if (opts.advanced.useCompactVertexFormat) {
+        /*if (opts.advanced.useCompactVertexFormat) {
             vertexFormat = DefaultModelVertexFormats.MODEL_VERTEX_HFP;
         } else {
             vertexFormat = DefaultModelVertexFormats.MODEL_VERTEX_SFP;
-        }
+        }*/
+
+        // override it all
+        vertexFormat = DefaultModelVertexFormats.MODEL_VERTEX_XHFP;
 
         this.chunkRenderBackend = createChunkRenderBackend(opts.advanced.chunkRendererBackend, vertexFormat);
         this.chunkRenderBackend.createShaders();

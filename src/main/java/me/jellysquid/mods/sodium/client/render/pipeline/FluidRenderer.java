@@ -15,6 +15,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import net.coderbot.iris.Iris;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -28,10 +30,12 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.tag.FluidTags;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockRenderView;
@@ -105,12 +109,22 @@ public class FluidRenderer {
         return true;
     }
 
+    private int prints = 0;
+
     public boolean render(BlockRenderView world, FluidState fluidState, BlockPos pos, ChunkModelBuffers buffers) {
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();
 
         Fluid fluid = fluidState.getFluid();
+        BlockState state = fluidState.getBlockState();
+        Identifier id = Registry.BLOCK.getId(state.getBlock());
+        short blockId = (short) (int) Iris.getCurrentPack().getIdMap().getBlockProperties().getOrDefault(id, -1);
+
+        if (prints < 10) {
+            System.out.println("block id: " + blockId + " from " + id);
+            prints++;
+        }
 
         boolean sfUp = this.isFluidExposed(world, posX, posY + 1, posZ, fluid);
         boolean sfDown = this.isFluidExposed(world, posX, posY - 1, posZ, fluid) &&
@@ -203,7 +217,7 @@ public class FluidRenderer {
             this.setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
 
             this.calculateQuadColors(quad, world, pos, lighter, Direction.UP, 1.0F, !lava);
-            this.flushQuad(buffers, quad, Direction.UP, false);
+            this.flushQuad(buffers, quad, Direction.UP, false, blockId);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
                 this.setVertex(quad, 3, 0.0f, h1, 0.0f, u1, v1);
@@ -211,7 +225,7 @@ public class FluidRenderer {
                 this.setVertex(quad, 1, 1.0F, h3, 1.0F, u3, v3);
                 this.setVertex(quad, 0, 1.0F, h4, 0.0f, u4, v4);
 
-                this.flushQuad(buffers, quad, Direction.DOWN, true);
+                this.flushQuad(buffers, quad, Direction.DOWN, true, blockId);
             }
 
             rendered = true;
@@ -232,7 +246,7 @@ public class FluidRenderer {
             this.setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.calculateQuadColors(quad, world, pos, lighter, Direction.DOWN, 1.0F, !lava);
-            this.flushQuad(buffers, quad, Direction.DOWN, false);
+            this.flushQuad(buffers, quad, Direction.DOWN, false, blockId);
 
             rendered = true;
         }
@@ -332,7 +346,7 @@ public class FluidRenderer {
                 float br = dir.getAxis() == Direction.Axis.Z ? 0.8F : 0.6F;
 
                 this.calculateQuadColors(quad, world, pos, lighter, dir, br, !lava);
-                this.flushQuad(buffers, quad, dir, false);
+                this.flushQuad(buffers, quad, dir, false, blockId);
 
                 if (sprite != this.waterOverlaySprite) {
                     this.setVertex(quad, 0, x1, c1, z1, u1, v1);
@@ -340,7 +354,7 @@ public class FluidRenderer {
                     this.setVertex(quad, 2, x2, yOffset, z2, u2, v3);
                     this.setVertex(quad, 3, x2, c2, z2, u2, v2);
 
-                    this.flushQuad(buffers, quad, dir, true);
+                    this.flushQuad(buffers, quad, dir, true, blockId);
                 }
 
                 rendered = true;
@@ -365,7 +379,7 @@ public class FluidRenderer {
         }
     }
 
-    private void flushQuad(ChunkModelBuffers buffers, ModelQuadView quad, Direction dir, boolean flip) {
+    private void flushQuad(ChunkModelBuffers buffers, ModelQuadView quad, Direction dir, boolean flip, short blockId) {
         int vertexIdx, lightOrder;
 
         if (flip) {
@@ -391,7 +405,7 @@ public class FluidRenderer {
 
             int light = this.quadLightData.lm[vertexIdx];
 
-            sink.writeQuad(x, y, z, color, u, v, light);
+            sink.writeQuad(x, y, z, color, u, v, light, blockId);
 
             vertexIdx += lightOrder;
         }
