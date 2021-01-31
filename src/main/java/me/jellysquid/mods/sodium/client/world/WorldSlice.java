@@ -450,7 +450,7 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     private static ChunkSection getChunkSection(Chunk chunk, ChunkSectionPos pos) {
         ChunkSection section = null;
 
-        if (!World.isHeightInvalid(ChunkSectionPos.getBlockCoord(pos.getY()))) {
+        if (!World.isOutOfBuildLimitVertically(ChunkSectionPos.getBlockCoord(pos.getY()))) {
             section = chunk.getSectionArray()[pos.getY()];
         }
 
