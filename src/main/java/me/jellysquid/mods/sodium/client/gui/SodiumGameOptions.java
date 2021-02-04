@@ -69,7 +69,7 @@ public class SodiumGameOptions {
         }
 
         @Override
-        public Text getLocalizableText() {
+        public Text getText() {
             return new LiteralText(this.name);
         }
 
@@ -110,7 +110,7 @@ public class SodiumGameOptions {
         }
 
         @Override
-        public Text getLocalizableText() {
+        public Text getText() {
             return new TranslatableText(this.name);
         }
 
@@ -131,7 +131,7 @@ public class SodiumGameOptions {
         }
 
         @Override
-        public Text getLocalizableText() {
+        public Text getText() {
             return new TranslatableText(this.name);
         }
     }
