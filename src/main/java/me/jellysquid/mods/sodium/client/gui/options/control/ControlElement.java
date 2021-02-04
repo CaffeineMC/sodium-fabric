@@ -24,7 +24,7 @@ public class ControlElement<T> extends AbstractWidget {
 
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
-        String name = this.option.getName();
+        String name = this.option.getName().getString();
         String label;
 
         if (this.hovered && this.font.getWidth(name) > (this.dim.getWidth() - this.option.getControl().getMaxWidth())) {

@@ -1,13 +1,15 @@
 package me.jellysquid.mods.sodium.client.gui.options;
 
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 
 public enum OptionImpact {
-    LOW(Formatting.GREEN, "Low"),
-    MEDIUM(Formatting.YELLOW, "Medium"),
-    HIGH(Formatting.GOLD, "High"),
-    EXTREME(Formatting.RED, "Extreme"),
-    VARIES(Formatting.WHITE, "Varies");
+    LOW(Formatting.GREEN, "sodium.option_impact.low"),
+    MEDIUM(Formatting.YELLOW, "sodium.option_impact.medium"),
+    HIGH(Formatting.GOLD, "sodium.option_impact.high"),
+    EXTREME(Formatting.RED, "sodium.option_impact.extreme"),
+    VARIES(Formatting.WHITE, "sodium.option_impact.varies");
 
     private final Formatting color;
     private final String text;
@@ -17,7 +19,7 @@ public enum OptionImpact {
         this.text = text;
     }
 
-    public String toDisplayString() {
-        return this.color + this.text;
+    public Text getText() {
+        return new TranslatableText(this.text).formatted(this.color);
     }
 }

@@ -9,6 +9,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRend
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 import net.minecraft.client.options.GraphicsMode;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 import java.io.File;
 import java.io.FileReader;
@@ -66,8 +69,8 @@ public class SodiumGameOptions {
         }
 
         @Override
-        public String getLocalizedName() {
-            return this.name;
+        public Text getLocalizableText() {
+            return new LiteralText(this.name);
         }
 
         public boolean isSupported(boolean disableBlacklist) {
@@ -96,9 +99,9 @@ public class SodiumGameOptions {
     }
 
     public enum GraphicsQuality implements TextProvider {
-        DEFAULT("Default"),
-        FANCY("Fancy"),
-        FAST("Fast");
+        DEFAULT("generator.default"),
+        FANCY("options.clouds.fancy"),
+        FAST("options.clouds.fast");
 
         private final String name;
 
@@ -107,8 +110,8 @@ public class SodiumGameOptions {
         }
 
         @Override
-        public String getLocalizedName() {
-            return this.name;
+        public Text getLocalizableText() {
+            return new TranslatableText(this.name);
         }
 
         public boolean isFancy(GraphicsMode graphicsMode) {
@@ -117,9 +120,9 @@ public class SodiumGameOptions {
     }
 
     public enum LightingQuality implements TextProvider {
-        HIGH("High"),
-        LOW("Low"),
-        OFF("Off");
+        HIGH("options.ao.max"),
+        LOW("options.ao.min"),
+        OFF("options.ao.off");
 
         private final String name;
 
@@ -128,8 +131,8 @@ public class SodiumGameOptions {
         }
 
         @Override
-        public String getLocalizedName() {
-            return this.name;
+        public Text getLocalizableText() {
+            return new TranslatableText(this.name);
         }
     }
 
