@@ -75,6 +75,16 @@ task sourcesJar(type: Jar, dependsOn: classes) {
     from sourceSets.main.allSource
 }
 
+javadoc {
+    options {
+        encoding = "UTF-8"
+        charSet = "UTF-8"
+        addStringOption("Xdoclint:none", "-quiet")
+    }
+    classpath = sourceSets.main.compileClasspath
+    include("me/jellysquid/mods/sodium/**")
+}
+
 jar {
     from "LICENSE.txt"
 }
