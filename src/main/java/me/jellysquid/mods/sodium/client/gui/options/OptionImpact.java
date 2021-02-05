@@ -11,16 +11,14 @@ public enum OptionImpact implements TextProvider {
     EXTREME(Formatting.RED, "sodium.option_impact.extreme"),
     VARIES(Formatting.WHITE, "sodium.option_impact.varies");
 
-    private final Formatting color;
-    private final String text;
+    private final Text text;
 
-    OptionImpact(Formatting color, String text) {
-        this.color = color;
-        this.text = text;
+    OptionImpact(Formatting color, String name) {
+        this.text = new TranslatableText(name).formatted(color);
     }
 
     @Override
     public Text getText() {
-        return new TranslatableText(this.text).formatted(this.color);
+        return this.text;
     }
 }

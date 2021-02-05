@@ -60,17 +60,17 @@ public class SodiumGameOptions {
 
         public static final ChunkRendererBackendOption BEST = pickBestBackend();
 
-        private final String name;
+        private final Text text;
         private final SupportCheck supportedFunc;
 
         ChunkRendererBackendOption(String name, SupportCheck supportedFunc) {
-            this.name = name;
+            this.text = new LiteralText(name);
             this.supportedFunc = supportedFunc;
         }
 
         @Override
         public Text getText() {
-            return new LiteralText(this.name);
+            return this.text;
         }
 
         public boolean isSupported(boolean disableBlacklist) {
@@ -103,15 +103,15 @@ public class SodiumGameOptions {
         FANCY("options.clouds.fancy"),
         FAST("options.clouds.fast");
 
-        private final String name;
+        private final Text text;
 
         GraphicsQuality(String name) {
-            this.name = name;
+            this.text = new TranslatableText(name);
         }
 
         @Override
         public Text getText() {
-            return new TranslatableText(this.name);
+            return this.text;
         }
 
         public boolean isFancy(GraphicsMode graphicsMode) {
@@ -124,15 +124,15 @@ public class SodiumGameOptions {
         LOW("options.ao.min"),
         OFF("options.ao.off");
 
-        private final String name;
+        private final Text text;
 
-        LightingQuality(String name) {
-            this.name = name;
+        LightingQuality(String text) {
+            this.text = new TranslatableText(text);
         }
 
         @Override
         public Text getText() {
-            return new TranslatableText(this.name);
+            return this.text;
         }
     }
 
