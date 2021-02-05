@@ -36,7 +36,7 @@
   "sodium.options.use_chunk_face_culling.name": "Use Chunk Face Culling",
   "sodium.options.use_chunk_face_culling.tooltip": "If enabled, an additional culling pass will be performed on the CPU to determine which planes of a chunk mesh are visible. This can eliminate a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU.",
   "sodium.options.use_compact_vertex_format.name": "Use Compact Vertex Format",
-  "sodium.options.use_compace_vertex_format.tooltip": "If enabled, a more compact vertex format will be used for chunk meshes which limits the precision of vertex attributes. This format will reduce graphics memory usage and bandwidth requirements by around 40%, but could cause z-fighting/flickering texture issues in some edge cases.",
+  "sodium.options.use_compact_vertex_format.tooltip": "If enabled, a more compact vertex format will be used for chunk meshes which limits the precision of vertex attributes. This format will reduce graphics memory usage and bandwidth requirements by around 40%, but could cause z-fighting/flickering texture issues in some edge cases.",
   "sodium.options.use_fog_occlusion.name": "Use Fog Occlusion",
   "sodium.options.use_fog_occlusion.tooltip": "If enabled, chunks which are determined to be fully hidden by fog effects will be skipped during rendering. This will generally provide a modest improvement to the number of chunks rendered each frame, especially where fog effects are heavier (i.e. while underwater.)",
   "sodium.options.use_entity_culling.name": "Use Entity Culling",

@@ -32,8 +32,8 @@ dependencies {
     modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Fabric Resource Loader for translations
-    modCompile "net.fabricmc.fabric-api:fabric-resource-loader-v0:${project.fabric_resource_loader_version}"
-    include "net.fabricmc.fabric-api:fabric-resource-loader-v0:${project.fabric_resource_loader_version}"
+    modCompile fabricApi.module("fabric-resource-loader-v0", project.fabric_api_version)
+    include fabricApi.module("fabric-resource-loader-v0", project.fabric_api_version)
 }
 
 processResources {
