@@ -130,6 +130,11 @@ public abstract class MixinWorldRenderer {
         this.renderer.reload();
     }
 
+    @Inject(method = "onResized", at = @At("RETURN"))
+    private void onResized(int w, int h, CallbackInfo ci) {
+        this.renderer.onResized(w, h);
+    }
+
     @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/WorldRenderer;noCullingBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
     private void onRenderTileEntities(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
         this.renderer.renderTileEntities(matrices, this.bufferBuilders, this.blockBreakingProgressions, camera, tickDelta);

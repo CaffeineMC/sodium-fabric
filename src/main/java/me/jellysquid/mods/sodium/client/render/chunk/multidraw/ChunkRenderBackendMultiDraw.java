@@ -23,18 +23,27 @@ public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> 
     @Override
     protected GlShader createVertexShader(ChunkFogMode fogMode) {
         return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"),
-                this.createShaderConstants(fogMode));
+                this.createShaderConstants(fogMode, false));
     }
 
     @Override
     protected GlShader createFragmentShader(ChunkFogMode fogMode) {
         return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"),
-                this.createShaderConstants(fogMode));
+                this.createShaderConstants(fogMode, false));
     }
 
-    private ShaderConstants createShaderConstants(ChunkFogMode fogMode) {
+    @Override
+    protected GlShader createTranslucencyFragmentShader(ChunkFogMode fogMode) {
+        return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"),
+                this.createShaderConstants(fogMode, true));
+    }
+
+    private ShaderConstants createShaderConstants(ChunkFogMode fogMode, boolean translucency) {
         ShaderConstants.Builder constants = ShaderConstants.builder();
         constants.define("USE_MULTIDRAW");
+        if (translucency) {
+            constants.define("USE_TRANSLUCENCY");
+        }
 
         fogMode.addConstants(constants);
 

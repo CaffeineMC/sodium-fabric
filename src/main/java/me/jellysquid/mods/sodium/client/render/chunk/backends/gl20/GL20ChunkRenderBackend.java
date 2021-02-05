@@ -17,9 +17,8 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
     }
 
     @Override
-    public void begin(MatrixStack matrixStack) {
-        super.begin(matrixStack);
-
+    public void begin(MatrixStack matrixStack, boolean translucent) {
+        super.begin(matrixStack, translucent);
         this.vertexFormat.enableVertexAttributes();
     }
 

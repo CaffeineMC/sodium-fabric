@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.oneshot;
 
 import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
@@ -41,12 +42,28 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
 
     @Override
     protected GlShader createVertexShader(ChunkFogMode fogMode) {
-        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"), fogMode.getDefines());
+        return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"), this.createShaderConstants(fogMode, false));
     }
 
     @Override
     protected GlShader createFragmentShader(ChunkFogMode fogMode) {
-        return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"), fogMode.getDefines());
+        return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"), this.createShaderConstants(fogMode, false));
+    }
+
+    @Override
+    protected GlShader createTranslucencyFragmentShader(ChunkFogMode fogMode) {
+        return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"), this.createShaderConstants(fogMode, true));
+    }
+
+    private ShaderConstants createShaderConstants(ChunkFogMode fogMode, boolean translucency) {
+        ShaderConstants.Builder constants = ShaderConstants.builder();
+        if (translucency) {
+            constants.define("USE_TRANSLUCENCY");
+        }
+
+        fogMode.addConstants(constants);
+
+        return constants.build();
     }
 
     @Override

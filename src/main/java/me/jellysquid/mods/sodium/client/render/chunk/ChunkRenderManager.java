@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -9,6 +11,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.TranslucencyFramebuffer;
 import me.jellysquid.mods.sodium.client.gl.util.GlFogHelper;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
@@ -28,6 +31,8 @@ import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import me.jellysquid.mods.sodium.common.util.IdTable;
 import me.jellysquid.mods.sodium.common.util.collections.FutureDequeDrain;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -35,6 +40,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.chunk.ChunkSection;
+import org.lwjgl.opengl.GL20;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -389,9 +395,51 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         ChunkRenderList<T> chunkRenderList = this.chunkRenderLists[pass.ordinal()];
         ChunkRenderListIterator<T> iterator = chunkRenderList.iterator(pass.isTranslucent());
 
-        this.backend.begin(matrixStack);
-        this.backend.render(iterator, new ChunkCameraContext(x, y, z));
-        this.backend.end(matrixStack);
+        if (pass.isTranslucent()) {
+            Framebuffer mfb = this.renderer.getMainFramebuffer();
+            mfb.endWrite();
+
+            TranslucencyFramebuffer fb = this.renderer.translucentFramebuffer;
+            fb.clear(MinecraftClient.IS_SYSTEM_MAC);
+            fb.copyDepthFrom(mfb);
+
+            fb.beginWrite(false);
+            RenderSystem.depthFunc(GL20.GL_ALWAYS);
+            this.backend.begin(matrixStack, pass.isTranslucent());
+
+            GlStateManager.activeTexture(GL20.GL_TEXTURE5);
+            GlStateManager.bindTexture (mfb.getDepthAttachment());
+
+            this.backend.render(iterator, new ChunkCameraContext(x, y, z));
+
+            this.backend.end(matrixStack);
+            RenderSystem.depthFunc(GL20.GL_GREATER);
+            fb.endWrite();
+
+            mfb.copyDepthFrom(fb);
+            mfb.beginWrite(false);
+            this.compositeOIT(fb);
+        } else {
+            this.backend.begin(matrixStack, pass.isTranslucent());
+            this.backend.render(iterator, new ChunkCameraContext(x, y, z));
+            this.backend.end(matrixStack);
+        }
+    }
+
+    public void compositeOIT(TranslucencyFramebuffer fb) {
+        GlStateManager.disableDepthTest();
+        this.renderer.translucencyProgram.bind();
+        this.renderer.translucencyProgram.setup();
+
+        GlStateManager.activeTexture(GL20.GL_TEXTURE3);
+        GlStateManager.bindTexture(fb.getAccumAttachment());
+        GlStateManager.activeTexture(GL20.GL_TEXTURE4);
+        GlStateManager.bindTexture(fb.getRevealAttachment());
+
+        GL20.glDrawArrays(GL20.GL_TRIANGLES, 0, 3);
+
+        this.renderer.translucencyProgram.unbind();
+        GlStateManager.enableDepthTest();
     }
 
     public void tickVisibleRenders() {

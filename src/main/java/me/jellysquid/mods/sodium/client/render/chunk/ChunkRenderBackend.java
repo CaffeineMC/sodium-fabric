@@ -30,7 +30,7 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
 
     void createShaders();
 
-    void begin(MatrixStack matrixStack);
+    void begin(MatrixStack matrixStack, boolean translucent);
 
     void end(MatrixStack matrixStack);
 

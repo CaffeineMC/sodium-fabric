@@ -6,6 +6,11 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.TranslucencyFramebuffer;
+import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
@@ -17,6 +22,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.DefaultModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.TranslucencyProgram;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.GlobalRenderContext;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
@@ -24,6 +30,7 @@ import me.jellysquid.mods.sodium.client.world.ChunkStatusListenerManager;
 import me.jellysquid.mods.sodium.common.util.ListUtil;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
@@ -31,6 +38,7 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.*;
 import net.minecraft.util.profiler.Profiler;
 
@@ -42,6 +50,9 @@ import java.util.SortedSet;
  */
 public class SodiumWorldRenderer implements ChunkStatusListener {
     private static SodiumWorldRenderer instance;
+
+    public final TranslucencyFramebuffer translucentFramebuffer;
+    public final TranslucencyProgram translucencyProgram;
 
     private final MinecraftClient client;
 
@@ -86,6 +97,19 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     private SodiumWorldRenderer(MinecraftClient client) {
         this.client = client;
+
+        Framebuffer fb = this.client.getFramebuffer();
+        this.translucentFramebuffer = new TranslucencyFramebuffer(fb.viewportWidth, fb.viewportHeight, true, MinecraftClient.IS_SYSTEM_MAC);
+
+        ShaderConstants empty = ShaderConstants.builder().build();
+        this.translucencyProgram = GlProgram.builder(new Identifier("sodium", "translucency_compositor"))
+                .attachShader(ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "fullscreen_gl20.v.glsl"), empty))
+                .attachShader(ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "translucency_composite_gl20.f.glsl"), empty))
+                .build((program, name) -> new TranslucencyProgram(program, name));
+    }
+
+    public Framebuffer getMainFramebuffer() {
+        return this.client.getFramebuffer();
     }
 
     public void setWorld(ClientWorld world) {
@@ -238,6 +262,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         }
 
         this.initRenderer();
+    }
+
+    public void onResized(int w, int h) {
+        this.translucentFramebuffer.resize(w, h, MinecraftClient.IS_SYSTEM_MAC);
     }
 
     private void initRenderer() {

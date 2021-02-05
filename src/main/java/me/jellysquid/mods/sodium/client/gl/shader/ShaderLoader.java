@@ -6,7 +6,6 @@ import org.apache.commons.io.IOUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 public class ShaderLoader {
     /**
@@ -21,14 +20,6 @@ public class ShaderLoader {
      */
     public static GlShader loadShader(ShaderType type, Identifier name, ShaderConstants constants) {
         return new GlShader(type, name, getShaderSource(getShaderPath(name)), constants);
-    }
-
-    /**
-     * Use {@link ShaderLoader#loadShader(ShaderType, Identifier, ShaderConstants)} instead. This will be removed.
-     */
-    @Deprecated
-    public static GlShader loadShader(ShaderType type, Identifier name, List<String> constants) {
-        return new GlShader(type, name, getShaderSource(getShaderPath(name)), ShaderConstants.fromStringList(constants));
     }
 
     private static String getShaderPath(Identifier name) {
