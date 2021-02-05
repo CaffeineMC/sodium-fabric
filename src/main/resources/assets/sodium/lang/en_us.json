@@ -49,7 +49,7 @@
   "sodium.options.use_memory_intrinsics.tooltip": "If enabled, special intrinsics will be used to speed up the copying of client memory in certain vertex-limited scenarios, such as particle and text rendering. This option only exists for debugging purposes and should be left enabled unless you know what you are doing.",
   "sodium.options.disable_driver_blacklist.name": "Disable Driver Blacklist",
   "sodium.options.disable_driver_blacklist.tooltip": "If selected, Sodium will ignore the built-in driver blacklist and enable options which are known to be broken with your system configuration. This might cause serious problems and should not be used unless you really do know better. The settings screen must be saved, closed, and re-opened after changing this option in order to reveal previously hidden options.",
-  "sodium.options.performance_impact_string": "%sPerformance Impact: %s",
+  "sodium.options.performance_impact_string": "Performance Impact: %s",
   "sodium.options.buttons.undo": "Undo",
   "sodium.options.buttons.apply": "Apply",
   "sodium.options.buttons.close": "Close"
