@@ -105,14 +105,14 @@ public class BlockRenderer {
                 colorizer = this.blockColors.getColorProvider(state);
             }
 
-            this.renderQuad(world, state, pos, sink, offset, colorizer, quad, light);
+            this.renderQuad(world, state, pos, sink, offset, buffers, colorizer, quad, light);
         }
 
         sink.flush();
     }
 
     private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelVertexSink sink, Vec3d offset,
-                            BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light) {
+                            ChunkModelBuffers buffers, BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
 
         ModelQuadOrientation order = ModelQuadOrientation.orient(light.br);
@@ -138,6 +138,8 @@ public class BlockRenderer {
             int lm = light.lm[srcIndex];
 
             sink.writeQuad(x, y, z, color, u, v, lm);
+
+            buffers.getRenderData().addSprite(src.getSprite());
         }
     }
 

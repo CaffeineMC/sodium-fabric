@@ -393,6 +393,8 @@ public class FluidRenderer {
 
             sink.writeQuad(x, y, z, color, u, v, light);
 
+            buffers.getRenderData().addSprite(quad.getSprite());
+
             vertexIdx += lightOrder;
         }
 
