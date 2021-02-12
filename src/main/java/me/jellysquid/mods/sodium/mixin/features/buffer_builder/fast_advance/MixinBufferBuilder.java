@@ -1,16 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.fast_advance;
 
 import com.google.common.collect.ImmutableList;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.FixedColorVertexConsumer;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormatElement;
+import net.minecraft.client.render.*;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(BufferBuilder.class)
-public abstract class MixinBufferBuilder extends FixedColorVertexConsumer  {
+public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements BufferVertexConsumer {
     @Shadow
     private VertexFormat format;
 
@@ -27,6 +24,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer  {
      * @author JellySquid
      * @reason Remove modulo operations and recursion
      */
+    @Override
     @Overwrite
     public void nextElement() {
         ImmutableList<VertexFormatElement> elements = this.format.getElements();
@@ -43,7 +41,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer  {
         } while (this.currentElement.getType() == VertexFormatElement.Type.PADDING);
 
         if (this.colorFixed && this.currentElement.getType() == VertexFormatElement.Type.COLOR) {
-            this.color(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha);
+            BufferVertexConsumer.super.color(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha);
         }
     }
 }
