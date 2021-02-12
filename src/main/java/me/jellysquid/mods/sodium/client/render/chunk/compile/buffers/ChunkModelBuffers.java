@@ -6,6 +6,4 @@ import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 
 public interface ChunkModelBuffers {
     ModelVertexSink getSink(ModelQuadFacing facing);
-
-    ChunkRenderData.Builder getRenderData();
 }

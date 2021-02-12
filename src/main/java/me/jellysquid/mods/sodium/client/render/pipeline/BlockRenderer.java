@@ -9,6 +9,7 @@ import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuffers;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelVertexTransformer;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -106,14 +107,14 @@ public class BlockRenderer {
                 colorizer = this.blockColors.getColorProvider(state);
             }
 
-            this.renderQuad(world, state, pos, sink, offset, buffers, colorizer, quad, light);
+            this.renderQuad(world, state, pos, sink, offset, colorizer, quad, light);
         }
 
         sink.flush();
     }
 
     private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelVertexSink sink, Vec3d offset,
-                            ChunkModelBuffers buffers, BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light) {
+                            BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
 
         ModelQuadOrientation order = ModelQuadOrientation.orient(light.br);
@@ -138,12 +139,12 @@ public class BlockRenderer {
 
             int lm = light.lm[srcIndex];
 
-            sink.writeQuad(x, y, z, color, u, v, lm);
-
             Sprite sprite = src.getSprite();
 
-            if (sprite != null) {
-                buffers.getRenderData().addSprite(sprite);
+            if (sink instanceof ChunkModelVertexTransformer) {
+                ((ChunkModelVertexTransformer) sink).writeQuad(x, y, z, color, u, v, lm, sprite);
+            } else {
+                sink.writeQuad(x, y, z, color, u, v, lm);
             }
         }
     }
