@@ -20,6 +20,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -139,7 +140,11 @@ public class BlockRenderer {
 
             sink.writeQuad(x, y, z, color, u, v, lm);
 
-            buffers.getRenderData().addSprite(src.getSprite());
+            Sprite sprite = src.getSprite();
+
+            if (sprite != null) {
+                buffers.getRenderData().addSprite(sprite);
+            }
         }
     }
 
