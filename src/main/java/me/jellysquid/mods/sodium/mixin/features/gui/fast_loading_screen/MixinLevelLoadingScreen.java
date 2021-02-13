@@ -52,7 +52,7 @@ public class MixinLevelLoadingScreen {
             STATUS_TO_COLOR.object2IntEntrySet()
                     .forEach(entry -> {
                         final int value = entry.getIntValue();
-                        int r = value & 0xFF;
+                        int r = (value >> 16) & 0xFF;
                         int g = (value >> 8) & 0xFF;
                         int b = (value >> 16) & 0xFF;
                         STATUS_TO_COLOR_FAST.put(entry.getKey(), ColorABGR.pack(r, g, b, 0xFF));
