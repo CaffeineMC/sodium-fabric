@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.gui.fast_loading_screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.util.color.Color4;
 import net.minecraft.client.gui.WorldGenerationProgressTracker;
 import net.minecraft.client.gui.screen.LevelLoadingScreen;
@@ -63,6 +64,16 @@ public class MixinLevelLoadingScreen {
 
         int centerSize = tracker.getCenterSize();
         int size = tracker.getSize();
+
+        if (buffer instanceof VertexBufferView) {
+            // calculate how many tiles we're going to draw
+            int totalTiles = size * size;
+            if (mapPadding != 0)
+                totalTiles += 4;
+
+            // expand the buffer now so we don't need to grow it mid-operation
+            ((VertexBufferView) buffer).ensureBufferCapacity(VertexFormats.POSITION_COLOR.getVertexSize() * totalTiles);
+        }
 
         int tileSize = mapScale + mapPadding;
 
