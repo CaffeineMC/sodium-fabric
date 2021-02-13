@@ -50,13 +50,7 @@ public class MixinLevelLoadingScreen {
             STATUS_TO_COLOR_FAST = new Reference2IntOpenHashMap<>(STATUS_TO_COLOR.size());
             STATUS_TO_COLOR_FAST.put(null, NULL_STATUS_COLOR);
             STATUS_TO_COLOR.object2IntEntrySet()
-                    .forEach(entry -> {
-                        final int value = entry.getIntValue();
-                        int r = (value >> 16) & 0xFF;
-                        int g = (value >> 8) & 0xFF;
-                        int b = (value >> 16) & 0xFF;
-                        STATUS_TO_COLOR_FAST.put(entry.getKey(), ColorABGR.pack(r, g, b, 0xFF));
-                    });
+                    .forEach(entry -> STATUS_TO_COLOR_FAST.put(entry.getKey(), ColorARGB.toABGR(entry.getIntValue(), 0xFF)));
         }
 
         Matrix4f matrix = matrixStack.peek().getModel();
