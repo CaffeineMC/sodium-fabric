@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.features.gui;
+package me.jellysquid.mods.sodium.mixin.features.gui.fast_loading_screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
