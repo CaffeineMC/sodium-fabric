@@ -67,9 +67,9 @@ public class MixinLevelLoadingScreen {
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
         
-        BufferBuilder buffer = Tessellator.getInstance().getBuffer();
+        BufferBuilder buffer = tessellator.getBuffer();
         buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
-        
+
         ScreenQuadVertexSink sink = VertexDrain.of(buffer).createSink(VanillaVertexTypes.SCREEN_QUADS);
 
         int centerSize = tracker.getCenterSize();
@@ -80,7 +80,7 @@ public class MixinLevelLoadingScreen {
         if (mapPadding != 0)
             totalTiles += 4;
         // ensure we have enough space to write all tiles
-        sink.ensureCapacity(totalTiles);
+        sink.ensureCapacity(totalTiles * 4); // * 4 since it's per vertex, not quad
 
         int tileSize = mapScale + mapPadding;
 
