@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.client.model.vertex.formats.screen_quad.writer;
 
 import me.jellysquid.mods.sodium.client.model.vertex.fallback.VertexWriterFallback;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.screen_quad.ScreenQuadVertexSink;
+import me.jellysquid.mods.sodium.client.model.vertex.formats.screen_quad.BasicScreenQuadVertexSink;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.render.VertexConsumer;
 
-public class ScreenQuadVertexWriterFallback extends VertexWriterFallback implements ScreenQuadVertexSink {
-    public ScreenQuadVertexWriterFallback(VertexConsumer consumer) {
+public class BasicScreenQuadVertexWriterFallback extends VertexWriterFallback implements BasicScreenQuadVertexSink {
+    public BasicScreenQuadVertexWriterFallback(VertexConsumer consumer) {
         super(consumer);
     }
 

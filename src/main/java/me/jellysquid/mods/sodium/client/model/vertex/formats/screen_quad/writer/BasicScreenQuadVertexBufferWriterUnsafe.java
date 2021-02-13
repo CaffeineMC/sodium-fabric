@@ -3,11 +3,11 @@ package me.jellysquid.mods.sodium.client.model.vertex.formats.screen_quad.writer
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterUnsafe;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.screen_quad.ScreenQuadVertexSink;
+import me.jellysquid.mods.sodium.client.model.vertex.formats.screen_quad.BasicScreenQuadVertexSink;
 
-public class ScreenQuadVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe implements ScreenQuadVertexSink {
-    public ScreenQuadVertexBufferWriterUnsafe(VertexBufferView backingBuffer) {
-        super(backingBuffer, VanillaVertexTypes.SCREEN_QUADS);
+public class BasicScreenQuadVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe implements BasicScreenQuadVertexSink {
+    public BasicScreenQuadVertexBufferWriterUnsafe(VertexBufferView backingBuffer) {
+        super(backingBuffer, VanillaVertexTypes.BASIC_SCREEN_QUADS);
     }
 
     @SuppressWarnings("SuspiciousNameCombination")

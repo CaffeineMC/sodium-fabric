@@ -5,7 +5,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.screen_quad.ScreenQuadVertexSink;
+import me.jellysquid.mods.sodium.client.model.vertex.formats.screen_quad.BasicScreenQuadVertexSink;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import net.minecraft.client.gui.WorldGenerationProgressTracker;
@@ -64,17 +64,10 @@ public class MixinLevelLoadingScreen {
         BufferBuilder buffer = tessellator.getBuffer();
         buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
 
-        ScreenQuadVertexSink sink = VertexDrain.of(buffer).createSink(VanillaVertexTypes.SCREEN_QUADS);
+        BasicScreenQuadVertexSink sink = VertexDrain.of(buffer).createSink(VanillaVertexTypes.BASIC_SCREEN_QUADS);
 
         int centerSize = tracker.getCenterSize();
         int size = tracker.getSize();
-
-        // calculate how many tiles we're going to draw
-        int totalTiles = size * size;
-        if (mapPadding != 0)
-            totalTiles += 4;
-        // ensure we have enough space to write all tiles
-        sink.ensureCapacity(totalTiles * 4); // * 4 since it's per vertex, not quad
 
         int tileSize = mapScale + mapPadding;
 
@@ -82,6 +75,7 @@ public class MixinLevelLoadingScreen {
             int mapRenderCenterSize = centerSize * tileSize - mapPadding;
             int radius = mapRenderCenterSize / 2 + 1;
 
+            sink.ensureCapacity(4 * 4);
             addRect(matrix, sink, mapX - radius, mapY - radius, mapX - radius + 1, mapY + radius, DEFAULT_STATUS_COLOR);
             addRect(matrix, sink, mapX + radius - 1, mapY - radius, mapX + radius, mapY + radius, DEFAULT_STATUS_COLOR);
             addRect(matrix, sink, mapX - radius, mapY - radius, mapX + radius, mapY - radius + 1, DEFAULT_STATUS_COLOR);
@@ -95,6 +89,7 @@ public class MixinLevelLoadingScreen {
         ChunkStatus prevStatus = null;
         int prevColor = NULL_STATUS_COLOR;
 
+        sink.ensureCapacity(size * size * 4);
         for (int x = 0; x < size; ++x) {
             int tileX = mapStartX + x * tileSize;
 
@@ -124,7 +119,7 @@ public class MixinLevelLoadingScreen {
         RenderSystem.disableBlend();
     }
 
-    private static void addRect(Matrix4f matrix, ScreenQuadVertexSink sink, int x1, int y1, int x2, int y2, int color) {
+    private static void addRect(Matrix4f matrix, BasicScreenQuadVertexSink sink, int x1, int y1, int x2, int y2, int color) {
         sink.writeQuad(matrix, x1, y2, 0, color);
         sink.writeQuad(matrix, x2, y2, 0, color);
         sink.writeQuad(matrix, x2, y1, 0, color);
