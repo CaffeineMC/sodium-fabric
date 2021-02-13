@@ -20,6 +20,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -105,14 +106,14 @@ public class BlockRenderer {
                 colorizer = this.blockColors.getColorProvider(state);
             }
 
-            this.renderQuad(world, state, pos, sink, offset, colorizer, quad, light);
+            this.renderQuad(world, state, pos, sink, offset, buffers, colorizer, quad, light);
         }
 
         sink.flush();
     }
 
     private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelVertexSink sink, Vec3d offset,
-                            BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light) {
+                            ChunkModelBuffers buffers, BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
 
         ModelQuadOrientation order = ModelQuadOrientation.orient(light.br);
@@ -138,6 +139,12 @@ public class BlockRenderer {
             int lm = light.lm[srcIndex];
 
             sink.writeQuad(x, y, z, color, u, v, lm);
+        }
+
+        Sprite sprite = src.getSprite();
+
+        if (sprite != null) {
+            buffers.getRenderData().addSprite(sprite);
         }
     }
 
