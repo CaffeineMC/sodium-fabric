@@ -109,8 +109,6 @@ public class FluidRenderer {
         return true;
     }
 
-    private int prints = 0;
-
     public boolean render(BlockRenderView world, FluidState fluidState, BlockPos pos, ChunkModelBuffers buffers) {
         int posX = pos.getX();
         int posY = pos.getY();
@@ -120,11 +118,6 @@ public class FluidRenderer {
         BlockState state = fluidState.getBlockState();
         Identifier id = Registry.BLOCK.getId(state.getBlock());
         short blockId = (short) (int) Iris.getCurrentPack().getIdMap().getBlockProperties().getOrDefault(id, -1);
-
-        if (prints < 10) {
-            System.out.println("block id: " + blockId + " from " + id);
-            prints++;
-        }
 
         boolean sfUp = this.isFluidExposed(world, posX, posY + 1, posZ, fluid);
         boolean sfDown = this.isFluidExposed(world, posX, posY - 1, posZ, fluid) &&
