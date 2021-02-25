@@ -9,6 +9,7 @@ import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuffers;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -20,6 +21,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -93,6 +95,8 @@ public class BlockRenderer {
         ModelVertexSink sink = buffers.getSink(facing);
         sink.ensureCapacity(quads.size() * 4);
 
+        ChunkRenderData.Builder renderData = buffers.getRenderData();
+
         // This is a very hot allocation, iterate over it manually
         // noinspection ForLoopReplaceableByForEach
         for (int i = 0, quadsSize = quads.size(); i < quadsSize; i++) {
@@ -105,14 +109,14 @@ public class BlockRenderer {
                 colorizer = this.blockColors.getColorProvider(state);
             }
 
-            this.renderQuad(world, state, pos, sink, offset, colorizer, quad, light);
+            this.renderQuad(world, state, pos, sink, offset, colorizer, quad, light, renderData);
         }
 
         sink.flush();
     }
 
     private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelVertexSink sink, Vec3d offset,
-                            BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light) {
+                            BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light, ChunkRenderData.Builder renderData) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
 
         ModelQuadOrientation order = ModelQuadOrientation.orient(light.br);
@@ -138,6 +142,12 @@ public class BlockRenderer {
             int lm = light.lm[srcIndex];
 
             sink.writeQuad(x, y, z, color, u, v, lm);
+        }
+
+        Sprite sprite = src.getSprite();
+
+        if (sprite != null) {
+            renderData.addSprite(sprite);
         }
     }
 
