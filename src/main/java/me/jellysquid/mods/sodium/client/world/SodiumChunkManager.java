@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import me.jellysquid.mods.sodium.client.util.collections.FixedLongHashTable;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.CompoundTag;
@@ -60,6 +61,9 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
         if (unloadedChunk != null) {
             this.world.unloadBlockEntities(unloadedChunk);
             this.onChunkUnloaded(x, z);
+
+            // Invoke Fabric API's ClientChunkEvents
+            ClientChunkEvents.CHUNK_UNLOAD.invoker().onChunkUnload(this.world, unloadedChunk);
         }
     }
 
@@ -125,6 +129,9 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
 
         // Perform post-load actions and notify the chunk listener that a chunk was just loaded
         this.onChunkLoaded(x, z, chunk);
+
+        // Invoke Fabric API's ClientChunkEvents
+        ClientChunkEvents.CHUNK_LOAD.invoker().onChunkLoad(this.world, chunk);
 
         return chunk;
     }
