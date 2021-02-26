@@ -375,7 +375,7 @@ public class FluidRenderer {
         }
     }
 
-    private void flushQuad(ChunkModelBuffers buffers, ModelQuadView quad, ModelQuadFacing dir, boolean flip, short blockId) {
+    private void flushQuad(ChunkModelBuffers buffers, ModelQuadView quad, ModelQuadFacing facing, boolean flip, short blockId) {
         int vertexIdx, lightOrder;
 
         if (flip) {
