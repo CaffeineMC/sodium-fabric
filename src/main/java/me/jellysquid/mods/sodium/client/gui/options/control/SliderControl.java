@@ -95,7 +95,7 @@ public class SliderControl implements Control<Integer> {
             int sliderWidth = this.sliderBounds.getWidth();
             int sliderHeight = this.sliderBounds.getHeight();
 
-            int thumbOffset = (int) Math.floor((double) (this.getIntValue() - this.min) / this.range * sliderWidth);
+            int thumbOffset = MathHelper.clamp((int) Math.floor((double) (this.getIntValue() - this.min) / this.range * sliderWidth), 0, sliderWidth);
 
             int thumbX = sliderX + thumbOffset - THUMB_WIDTH;
             int trackY = sliderY + (sliderHeight / 2) - TRACK_HEIGHT;
