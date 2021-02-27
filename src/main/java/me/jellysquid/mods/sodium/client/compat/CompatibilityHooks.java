@@ -32,9 +32,14 @@ public final class CompatibilityHooks {
 
     static {
         final FabricLoader loader = FabricLoader.getInstance();
+        FABRIC_RENDERING = createFabricRenderingHooks(loader);
+        FABRIC_LIFECYCLE_EVENTS = createFabricLifecycleEventsHooks(loader);
+    }
+
+    private static FabricRenderingHooks createFabricRenderingHooks(FabricLoader loader) {
         if (loader.isModLoaded("fabric-rendering-v1")) {
             LOGGER.info("Sodium has detected that Fabric Rendering v1 is installed. Activating compatibility hooks...");
-            FABRIC_RENDERING = new FabricRenderingHooks() {
+            return new FabricRenderingHooks() {
                 class WorldRenderContextImpl implements WorldRenderContext {
                     public WorldRenderer worldRenderer;
                     public MatrixStack matrixStack;
@@ -259,7 +264,7 @@ public final class CompatibilityHooks {
             };
         } else {
             LOGGER.info("Sodium has detected that Fabric Rendering v1 is NOT installed.");
-            FABRIC_RENDERING = new FabricRenderingHooks() {
+            return new FabricRenderingHooks() {
                 @Override
                 public void prepareContext(WorldRenderer worldRenderer, MatrixStack matrixStack, float tickDelta, long limitTime, boolean blockOutlines, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f projectionMatrix, ClientWorld world, Profiler profiler, boolean advancedTranslucency, VertexConsumerProvider consumers) { }
 
@@ -303,9 +308,12 @@ public final class CompatibilityHooks {
                 public void invokeInvalidateRenderStateEvent() { }
             };
         }
+    }
+
+    private static FabricLifecycleEventsHooks createFabricLifecycleEventsHooks(FabricLoader loader) {
         if (loader.isModLoaded("fabric-lifecycle-events-v1")) {
             LOGGER.info("Sodium has detected that Fabric Lifecycle Events v1 is installed. Activating compatibility hooks...");
-            FABRIC_LIFECYCLE_EVENTS = new FabricLifecycleEventsHooks() {
+            return new FabricLifecycleEventsHooks() {
                 @Override
                 public void invokeOnClientChunkLoad(ClientWorld world, WorldChunk chunk) {
                     ClientChunkEvents.CHUNK_LOAD.invoker().onChunkLoad(world, chunk);
@@ -318,7 +326,7 @@ public final class CompatibilityHooks {
             };
         } else {
             LOGGER.info("Sodium has detected that Fabric Lifecycle Events v1 is NOT installed.");
-            FABRIC_LIFECYCLE_EVENTS = new FabricLifecycleEventsHooks() {
+            return new FabricLifecycleEventsHooks() {
                 @Override
                 public void invokeOnClientChunkLoad(ClientWorld world, WorldChunk chunk) { }
 
