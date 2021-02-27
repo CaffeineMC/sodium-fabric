@@ -10,7 +10,7 @@ import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.profiler.Profiler;
 import org.jetbrains.annotations.NotNull;
 
-public interface FabricHookInvoker {
+public interface FabricRenderingHooks {
     void rendering_prepareContext(WorldRenderer worldRenderer, MatrixStack matrixStack, float tickDelta, long limitTime,
                                   boolean blockOutlines, Camera camera, GameRenderer gameRenderer,
                                   LightmapTextureManager lightmapTextureManager, Matrix4f projectionMatrix,

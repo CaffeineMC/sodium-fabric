@@ -31,7 +31,9 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
 
+    // for compatibility hooks
     modImplementation fabricApi.module("fabric-rendering-v1", project.fabric_api_version)
+    modImplementation fabricApi.module("fabric-lifecycle-events-v1", project.fabric_api_version)
 }
 
 processResources {

@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.world;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import me.jellysquid.mods.sodium.client.compat.CompatibilityHooks;
 import me.jellysquid.mods.sodium.client.util.collections.FixedLongHashTable;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
@@ -59,7 +60,7 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
         WorldChunk unloadedChunk = this.chunks.remove(createChunkKey(x, z));
         if (unloadedChunk != null) {
             this.world.unloadBlockEntities(unloadedChunk);
-            this.onChunkUnloaded(x, z);
+            this.onChunkUnloaded(x, z, unloadedChunk);
         }
     }
 
@@ -199,13 +200,19 @@ public class SodiumChunkManager extends ClientChunkManager implements ChunkStatu
         if (this.listener != null) {
             this.listener.onChunkAdded(x, z);
         }
+
+        // Invoke the lifecycle event (if it's installed)
+        CompatibilityHooks.FABRIC_LIFECYCLE_EVENTS.invokeOnClientChunkLoad(world, chunk);
     }
 
-    private void onChunkUnloaded(int x, int z) {
+    private void onChunkUnloaded(int x, int z, WorldChunk unloadedChunk) {
         // Notify the chunk listener
         if (this.listener != null) {
             this.listener.onChunkRemoved(x, z);
         }
+
+        // Invoke the lifecycle event (if it's installed)
+        CompatibilityHooks.FABRIC_LIFECYCLE_EVENTS.invokeOnClientChunkUnload(this.world, unloadedChunk);
     }
 
     private static long createChunkKey(int x, int z) {
