@@ -1,9 +1,10 @@
 package me.jellysquid.mods.sodium.client.compat;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.compat.impl.fabric.rendering.BlockOutlineContextImpl;
+import me.jellysquid.mods.sodium.client.compat.impl.fabric.rendering.WorldRenderContextImpl;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.InvalidateRenderStateCallback;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.BlockState;
@@ -17,7 +18,6 @@ import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility class that initializes and holds all compatibility-related hook interfaces.
@@ -40,135 +40,6 @@ public final class CompatibilityHooks {
         if (loader.isModLoaded("fabric-rendering-v1")) {
             LOGGER.info("Sodium has detected that Fabric Rendering v1 is installed. Activating compatibility hooks...");
             return new FabricRenderingHooks() {
-                class WorldRenderContextImpl implements WorldRenderContext {
-                    public WorldRenderer worldRenderer;
-                    public MatrixStack matrixStack;
-                    public float tickDelta;
-                    public long limitTime;
-                    public boolean blockOutlines;
-                    public Camera camera;
-                    public GameRenderer gameRenderer;
-                    public LightmapTextureManager lightmapTextureManager;
-                    public Matrix4f projectionMatrix;
-                    public ClientWorld world;
-                    public Profiler profiler;
-                    public boolean advancedTranslucency;
-                    public VertexConsumerProvider consumers;
-                    public Frustum frustum;
-
-                    @Override
-                    public WorldRenderer worldRenderer() {
-                        return worldRenderer;
-                    }
-
-                    @Override
-                    public MatrixStack matrixStack() {
-                        return matrixStack;
-                    }
-
-                    @Override
-                    public float tickDelta() {
-                        return tickDelta;
-                    }
-
-                    @Override
-                    public long limitTime() {
-                        return limitTime;
-                    }
-
-                    @Override
-                    public boolean blockOutlines() {
-                        return blockOutlines;
-                    }
-
-                    @Override
-                    public Camera camera() {
-                        return camera;
-                    }
-
-                    @Override
-                    public GameRenderer gameRenderer() {
-                        return gameRenderer;
-                    }
-
-                    @Override
-                    public LightmapTextureManager lightmapTextureManager() {
-                        return lightmapTextureManager;
-                    }
-
-                    @Override
-                    public Matrix4f projectionMatrix() {
-                        return projectionMatrix;
-                    }
-
-                    @Override
-                    public ClientWorld world() {
-                        return world;
-                    }
-
-                    @Override
-                    public Profiler profiler() {
-                        return profiler;
-                    }
-
-                    @Override
-                    public boolean advancedTranslucency() {
-                        return advancedTranslucency;
-                    }
-
-                    @Override
-                    public @Nullable VertexConsumerProvider consumers() {
-                        return consumers;
-                    }
-
-                    @Override
-                    public @Nullable Frustum frustum() {
-                        return frustum;
-                    }
-                }
-
-                class BlockOutlineContextImpl implements WorldRenderContext.BlockOutlineContext {
-                    public VertexConsumer vertexConsumer;
-                    public Entity entity;
-                    public double cameraX, cameraY, cameraZ;
-                    public BlockPos blockPos;
-                    public BlockState blockState;
-
-                    @Override
-                    public VertexConsumer vertexConsumer() {
-                        return vertexConsumer;
-                    }
-
-                    @Override
-                    public Entity entity() {
-                        return entity;
-                    }
-
-                    @Override
-                    public double cameraX() {
-                        return cameraX;
-                    }
-
-                    @Override
-                    public double cameraY() {
-                        return cameraY;
-                    }
-
-                    @Override
-                    public double cameraZ() {
-                        return cameraZ;
-                    }
-
-                    @Override
-                    public BlockPos blockPos() {
-                        return blockPos;
-                    }
-
-                    @Override
-                    public BlockState blockState() {
-                        return blockState;
-                    }
-                }
 
                 private final WorldRenderContextImpl ctx = new WorldRenderContextImpl();
                 private final BlockOutlineContextImpl blockOutlineCtx = new BlockOutlineContextImpl();
@@ -335,4 +206,5 @@ public final class CompatibilityHooks {
             };
         }
     }
+
 }
