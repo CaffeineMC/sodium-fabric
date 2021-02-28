@@ -64,6 +64,7 @@ public final class CompatibilityHooks {
                     ctx.profiler = profiler;
                     ctx.advancedTranslucency = advancedTranslucency;
                     ctx.consumers = consumers;
+                    ctx.frustum = null;
                 }
 
                 @Override
