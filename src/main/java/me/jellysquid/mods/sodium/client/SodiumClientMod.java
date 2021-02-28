@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client;
 
+import me.jellysquid.mods.sodium.client.compat.CompatibilityHooks;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.fabricmc.api.ClientModInitializer;
@@ -14,7 +15,7 @@ public class SodiumClientMod implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-
+        CompatibilityHooks.initialize();
     }
 
     public static SodiumGameOptions options() {

@@ -25,6 +25,10 @@ import org.apache.logging.log4j.Logger;
 public final class CompatibilityHooks {
     private CompatibilityHooks() { }
 
+    public static void initialize() {
+        // This method exists purely to run the static block on startup.
+    }
+
     private static final Logger LOGGER = SodiumClientMod.logger();
 
     public static final FabricRenderingHooks FABRIC_RENDERING;
@@ -32,15 +36,16 @@ public final class CompatibilityHooks {
 
     static {
         final FabricLoader loader = FabricLoader.getInstance();
+        LOGGER.info("Sodium is now looking for mods to enable compatibility hooks for...");
         FABRIC_RENDERING = createFabricRenderingHooks(loader);
         FABRIC_LIFECYCLE_EVENTS = createFabricLifecycleEventsHooks(loader);
+        LOGGER.info("Compatibility hooks done! Enjoy your improved performance!");
     }
 
     private static FabricRenderingHooks createFabricRenderingHooks(FabricLoader loader) {
         if (loader.isModLoaded("fabric-rendering-v1")) {
             LOGGER.info("Sodium has detected that Fabric Rendering v1 is installed. Activating compatibility hooks...");
             return new FabricRenderingHooks() {
-
                 private final WorldRenderContextImpl ctx = new WorldRenderContextImpl();
                 private final BlockOutlineContextImpl blockOutlineCtx = new BlockOutlineContextImpl();
 
@@ -92,6 +97,11 @@ public final class CompatibilityHooks {
                 }
 
                 @Override
+                public boolean shouldRenderBlockOutline() {
+                    return ctx.blockOutlines;
+                }
+
+                @Override
                 public void prepareBlockOutlineContext(VertexConsumer vertexConsumer, Entity entity, double cameraX, double cameraY, double cameraZ, BlockPos blockPos, BlockState blockState) {
                     blockOutlineCtx.vertexConsumer = vertexConsumer;
                     blockOutlineCtx.entity = entity;
@@ -104,8 +114,7 @@ public final class CompatibilityHooks {
 
                 @Override
                 public void invokeBlockOutlineEvent() {
-                    if (ctx.blockOutlines)
-                        WorldRenderEvents.BLOCK_OUTLINE.invoker().onBlockOutline(ctx, blockOutlineCtx);
+                    WorldRenderEvents.BLOCK_OUTLINE.invoker().onBlockOutline(ctx, blockOutlineCtx);
                 }
 
                 @Override
@@ -156,6 +165,9 @@ public final class CompatibilityHooks {
 
                 @Override
                 public void invokeBeforeBlockOutlineEvent() { }
+
+                @Override
+                public boolean shouldRenderBlockOutline() { return true; }
 
                 @Override
                 public void prepareBlockOutlineContext(VertexConsumer vertexConsumer, Entity entity, double cameraX, double cameraY, double cameraZ, BlockPos blockPos, BlockState blockState) { }

@@ -21,6 +21,7 @@ public interface FabricRenderingHooks {
     void invokeBeforeEntitiesEvent();
     void invokeAfterEntitiesEvent();
     void invokeBeforeBlockOutlineEvent();
+    boolean shouldRenderBlockOutline();
     void prepareBlockOutlineContext(VertexConsumer vertexConsumer, Entity entity,
                                     double cameraX, double cameraY, double cameraZ,
                                     BlockPos blockPos, BlockState blockState);
