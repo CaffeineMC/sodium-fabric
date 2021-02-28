@@ -134,7 +134,7 @@ public class SliderControl implements Control<Integer> {
         }
 
         private void setValueFromMouse(double d) {
-            this.setValue((d - (double) (this.sliderBounds.getX() + 4)) / (double) (this.sliderBounds.getWidth() - 8));
+            this.setValue((d - (double) this.sliderBounds.getX()) / (double) this.sliderBounds.getWidth());
         }
 
         private void setValue(double d) {
