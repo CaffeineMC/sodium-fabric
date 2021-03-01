@@ -29,7 +29,7 @@ public abstract class MixinPaintingEntityRenderer extends EntityRenderer<Paintin
     }
 
     @Inject(method = "render", at = @At(value = "HEAD"))
-    public void preRender(PaintingEntity paintingEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, CallbackInfo ci){
+    public void preRender(PaintingEntity paintingEntity, float f, float g, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int i, CallbackInfo ci) {
         this.entity = paintingEntity;
         this.tickDelta = g;
     }
@@ -39,10 +39,10 @@ public abstract class MixinPaintingEntityRenderer extends EntityRenderer<Paintin
      * @reason Redirect Lightmap coord with Sodium's EntityLighter.
      */
     @Redirect(method = "method_4074", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/WorldRenderer;getLightmapCoordinates(Lnet/minecraft/world/BlockRenderView;Lnet/minecraft/util/math/BlockPos;)I"))
-    public int redirectLightmapCoord(BlockRenderView world, BlockPos pos){
+    public int redirectLightmapCoord(BlockRenderView world, BlockPos pos) {
         if (SodiumClientMod.options().quality.smoothLighting == SodiumGameOptions.LightingQuality.HIGH) {
             return EntityLighter.getBlendedLight(this, this.entity, tickDelta);
-        }else{
+        } else {
             return WorldRenderer.getLightmapCoordinates(world, pos);
         }
     }
