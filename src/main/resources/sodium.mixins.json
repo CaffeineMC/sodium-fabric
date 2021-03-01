@@ -30,6 +30,7 @@
     "features.entity.fast_render.MixinCuboid",
     "features.entity.fast_render.MixinModelPart",
     "features.entity.smooth_lighting.MixinEntityRenderer",
+    "features.entity.smooth_lighting.MixinPaintingEntityRenderer",
     "features.gui.MixinDebugHud",
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
     "features.gui.font.MixinGlyphRenderer",
