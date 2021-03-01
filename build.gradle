@@ -20,6 +20,14 @@ if (build_id != null) {
     version += "+build.${build_id}"
 }
 
+java {
+    toolchain {
+        // Gradle will download the JDK for compiling/running if one isn't found
+        // This should prevent anyone from using an outdated JDK
+        languageVersion.set(JavaLanguageVersion.of(15))
+    }
+}
+
 minecraft {
     refmapName = "mixins.sodium.refmap.json"
     accessWidener = file("src/main/resources/sodium.accesswidener")
