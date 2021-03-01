@@ -6,8 +6,12 @@ public class ModelVertexUtil {
      * @param value The normalized float
      * @return The resulting de-normalized unsigned short
      */
-    public static short denormalizeFloatAsShort(float value) {
-        return (short) (value * 65535.0f);
+    public static short denormalizeVertexPositionFloatAsShort(float value) {
+        return (short) (value * 65536.0f + 0.5f);
+    }
+
+    public static short denormalizeVertexTextureFloatAsShort(float value) {
+        return (short) (value * 32768.0f + 0.5f);
     }
 
     /**
