@@ -8,6 +8,7 @@ import org.lwjgl.opengl.GL15;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 @Mixin(BufferRenderer.class)
@@ -20,7 +21,7 @@ public class MixinBufferRenderer {
      */
     @Overwrite
     private static void draw(ByteBuffer buffer, int mode, VertexFormat vertexFormat, int count) {
-        buffer.clear();
+        ((Buffer) buffer).clear(); // Cast to Buffer to prevent exceptions running on Java 8 when sodium is compiled with Java 9+
 
         if (count <= 0) {
             return;

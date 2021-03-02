@@ -5,6 +5,7 @@ import net.minecraft.util.math.MathHelper;
 import org.lwjgl.system.MemoryUtil;
 import sun.misc.Unsafe;
 
+import java.nio.Buffer;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
@@ -34,14 +35,14 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
         this.count = 0;
         this.arrayLength = 0;
 
-        this.buffer.clear();
+        ((Buffer) this.buffer).clear(); // Cast to Buffer to prevent exceptions running on Java 8 when sodium is compiled with Java 9+
     }
 
     public void end() {
         this.isBuilding = false;
 
         this.arrayLength = this.count * this.stride;
-        this.buffer.limit(this.arrayLength);
+        ((Buffer) this.buffer).limit(this.arrayLength); // Cast to Buffer to prevent exceptions running on Java 8 when sodium is compiled with Java 9+
     }
 
     public boolean isBuilding() {

@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.Arrays;
@@ -33,7 +34,7 @@ public class MixinBufferBuilder {
      */
     @Overwrite
     public void sortQuads(float cameraX, float cameraY, float cameraZ) {
-        this.buffer.clear();
+        ((Buffer) this.buffer).clear(); // Cast to Buffer to prevent exceptions running on Java 8 when sodium is compiled with Java 9+
         FloatBuffer floatBuffer = this.buffer.asFloatBuffer();
 
         int vertexStride = this.format.getVertexSize();

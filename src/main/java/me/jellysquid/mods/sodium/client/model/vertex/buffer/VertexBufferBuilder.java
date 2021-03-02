@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.model.vertex.buffer;
 import me.jellysquid.mods.sodium.client.gl.attribute.BufferVertexFormat;
 import net.minecraft.client.util.GlAllocationUtils;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 public class VertexBufferBuilder implements VertexBufferView {
@@ -27,7 +28,7 @@ public class VertexBufferBuilder implements VertexBufferView {
         // Allocate a new buffer and copy the old buffer's contents into it
         ByteBuffer buffer = GlAllocationUtils.allocateByteBuffer(cap);
         buffer.put(this.buffer);
-        buffer.position(0);
+        ((Buffer) buffer).position(0); // Cast to Buffer to prevent exceptions running on Java 8 when sodium is compiled with Java 9+
 
         // Update the buffer and capacity now
         this.buffer = buffer;
@@ -82,8 +83,8 @@ public class VertexBufferBuilder implements VertexBufferView {
      */
     public void copyInto(ByteBuffer dst) {
         // Mark the slice of memory that needs to be copied
-        this.buffer.position(0);
-        this.buffer.limit(this.writerOffset);
+        ((Buffer) this.buffer).position(0); // Cast to Buffer to prevent exceptions running on Java 8 when sodium is compiled with Java 9+;
+        ((Buffer) this.buffer).limit(this.writerOffset); // Cast to Buffer to prevent exceptions running on Java 8 when sodium is compiled with Java 9+
 
         // Allocate a new buffer which is just large enough to contain the slice of vertex data
         // The buffer is then flipped after the operation so the callee sees a range of bytes from (0,len] which can
@@ -91,7 +92,7 @@ public class VertexBufferBuilder implements VertexBufferView {
         dst.put(this.buffer.slice());
 
         // Reset the position and limit set earlier of the backing scratch buffer
-        this.buffer.clear();
+        ((Buffer) this.buffer).clear(); // Cast to Buffer to prevent exceptions running on Java 8 when sodium is compiled with Java 9+
         this.writerOffset = 0;
     }
 }

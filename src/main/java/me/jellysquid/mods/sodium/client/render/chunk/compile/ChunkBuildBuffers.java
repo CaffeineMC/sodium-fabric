@@ -17,6 +17,7 @@ import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.GlAllocationUtils;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -106,13 +107,13 @@ public class ChunkBuildBuffers {
 
         for (Map.Entry<ModelQuadFacing, BufferSlice> entry : meshData.getSlices()) {
             BufferSlice slice = entry.getValue();
-            buffer.position(slice.start);
+            ((Buffer) buffer).position(slice.start); // Cast to Buffer to prevent exceptions running on Java 8 when sodium is compiled with Java 9+
 
             VertexBufferBuilder builder = this.buffersByLayer[pass.ordinal()][entry.getKey().ordinal()];
             builder.copyInto(buffer);
         }
 
-        buffer.flip();
+        ((Buffer) buffer).flip(); // Cast to Buffer to prevent exceptions running on Java 8 when sodium is compiled with Java 9+
 
         meshData.setVertexData(new VertexData(buffer, this.vertexType.getCustomVertexFormat()));
 
