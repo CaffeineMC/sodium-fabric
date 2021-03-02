@@ -305,6 +305,16 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Fast Random")
+                        .setTooltip("If enabled, a fast random function will be used for block rendering. This can affect the rotation of " +
+                                "randomly rotated textures when compared to vanilla.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.LOW)
+                        .setBinding((opts, value) -> opts.advanced.useFastRandom = value, opts -> opts.advanced.useFastRandom)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Animate Only Visible Textures")
                         .setTooltip("If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame " +
                                 "rates on some hardware. If you experience issues with some textures not being animated, disable this option.")

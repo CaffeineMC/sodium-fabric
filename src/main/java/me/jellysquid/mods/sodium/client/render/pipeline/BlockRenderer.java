@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -31,7 +32,7 @@ import java.util.List;
 import java.util.Random;
 
 public class BlockRenderer {
-    private final Random random = new XoRoShiRoRandom();
+    private final Random random = SodiumClientMod.options().advanced.useFastRandom ? new XoRoShiRoRandom() : new Random();
 
     private final BlockColorsExtended blockColors;
     private final BlockOcclusionCache occlusionCache;

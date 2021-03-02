@@ -38,6 +38,7 @@ public class SodiumGameOptions {
         public boolean useChunkFaceCulling = true;
         public boolean useMemoryIntrinsics = true;
         public boolean disableDriverBlacklist = false;
+        public boolean useFastRandom = true;
     }
 
     public static class QualitySettings {
