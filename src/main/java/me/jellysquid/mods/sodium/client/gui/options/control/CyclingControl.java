@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
+import me.jellysquid.mods.sodium.common.util.Resettable;
 import net.minecraft.client.util.math.MatrixStack;
 import org.apache.commons.lang3.Validate;
 
@@ -62,7 +63,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
         return 70;
     }
 
-    private static class CyclingControlElement<T extends Enum<T>> extends ControlElement<T> {
+    private static class CyclingControlElement<T extends Enum<T>> extends ControlElement<T> implements Resettable {
         private final T[] allowedValues;
         private final String[] names;
         private int currentIndex;
@@ -104,6 +105,11 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
             }
 
             return false;
+        }
+
+        @Override
+        public void reset() {
+            this.currentIndex = this.option.getValue().ordinal();
         }
     }
 }
