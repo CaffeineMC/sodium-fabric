@@ -12,10 +12,15 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 8
+    - name: Fetch iris
+      uses: actions/checkout@v2
+      with:
+        repository: 'IrisShaders/Iris'
+        ref: 'sodium-compatibility'
+        path: 'iris'
+    - name: Iris publishToMavenLocal
+      run: cd ./iris && ./gradlew publishToMavenLocal && cd ..
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
     - name: Build artifacts
       run: ./gradlew build
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v1
-      with:
-        name: build-artifacts
-        path: build/libs
