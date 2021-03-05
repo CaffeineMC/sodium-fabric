@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
-import me.jellysquid.mods.sodium.common.util.Resettable;
 import net.minecraft.client.util.math.MatrixStack;
 import org.apache.commons.lang3.Validate;
 
@@ -63,7 +62,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
         return 70;
     }
 
-    private static class CyclingControlElement<T extends Enum<T>> extends ControlElement<T> implements Resettable {
+    private static class CyclingControlElement<T extends Enum<T>> extends ControlElement<T> {
         private final T[] allowedValues;
         private final String[] names;
         private int currentIndex;
@@ -97,7 +96,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
-                this.currentIndex = (this.currentIndex + 1) % this.allowedValues.length;
+                this.currentIndex = (this.option.getValue().ordinal() + 1) % this.allowedValues.length;
                 this.option.setValue(this.allowedValues[this.currentIndex]);
                 this.playClickSound();
 
@@ -105,11 +104,6 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
             }
 
             return false;
-        }
-
-        @Override
-        public void reset() {
-            this.currentIndex = this.option.getValue().ordinal();
         }
     }
 }
