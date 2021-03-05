@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
-import me.jellysquid.mods.sodium.common.util.Resettable;
 import net.minecraft.client.util.Rect2i;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
@@ -43,7 +42,7 @@ public class SliderControl implements Control<Integer> {
         return 130;
     }
 
-    private static class Button extends ControlElement<Integer> implements Resettable {
+    private static class Button extends ControlElement<Integer> {
         private static final int THUMB_WIDTH = 2, TRACK_HEIGHT = 1;
 
         private final Rect2i sliderBounds;
@@ -95,6 +94,8 @@ public class SliderControl implements Control<Integer> {
             int sliderY = this.sliderBounds.getY();
             int sliderWidth = this.sliderBounds.getWidth();
             int sliderHeight = this.sliderBounds.getHeight();
+
+            this.thumbPosition = this.getThumbPositionForValue(option.getValue());
 
             int thumbOffset = MathHelper.clamp((int) Math.floor((double) (this.getIntValue() - this.min) / this.range * sliderWidth), 0, sliderWidth);
 
@@ -157,11 +158,6 @@ public class SliderControl implements Control<Integer> {
             }
 
             return false;
-        }
-
-        @Override
-        public void reset() {
-            this.thumbPosition = this.getThumbPositionForValue(option.getValue());
         }
     }
 

@@ -6,7 +6,6 @@ import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
-import me.jellysquid.mods.sodium.common.util.Resettable;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
@@ -252,13 +251,6 @@ public class SodiumOptionsGUI extends Screen {
     private void undoChanges() {
         this.getAllOptions()
                 .forEach(Option::reset);
-
-        this.getActiveControls()
-                .forEach(controlElement -> {
-                    if (controlElement instanceof Resettable) {
-                        ((Resettable) controlElement).reset();
-                    }
-                });
     }
 
     @Override
