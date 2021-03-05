@@ -16,15 +16,6 @@ import java.util.function.Function;
  * A forward-rendering shader program for chunks.
  */
 public abstract class ChunkProgram extends GlProgram {
-    // The model size of a chunk (16^3)
-    protected static final float MODEL_SIZE = 32.0f;
-
-    protected static final float TEXTURE_SIZE = 1.0f;
-
-    protected static final float CVF_MODEL_SIZE = (32.0f / 65536.0f);
-
-    protected static final float CVF_TEXTURE_SIZE = (1.0f / 32768.0f);
-
     // Uniform variable binding indexes
     private final int uModelViewProjectionMatrix;
     private final int uModelScale;
@@ -48,17 +39,12 @@ public abstract class ChunkProgram extends GlProgram {
         this.fogShader = fogShaderFunction.apply(this);
     }
 
-    public void setup(MatrixStack matrixStack) {
+    public void setup(MatrixStack matrixStack, float modelScale, float textureScale) {
         GL20.glUniform1i(this.uBlockTex, 0);
         GL20.glUniform1i(this.uLightTex, 2);
 
-        if (SodiumClientMod.options().advanced.useCompactVertexFormat) {
-            GL20.glUniform3f(this.uModelScale, CVF_MODEL_SIZE, CVF_MODEL_SIZE, CVF_MODEL_SIZE);
-            GL20.glUniform2f(this.uTextureScale, CVF_TEXTURE_SIZE, CVF_TEXTURE_SIZE);
-        } else {
-            GL20.glUniform3f(this.uModelScale, MODEL_SIZE, MODEL_SIZE, MODEL_SIZE);
-            GL20.glUniform2f(this.uTextureScale, TEXTURE_SIZE, TEXTURE_SIZE);
-        }
+        GL20.glUniform3f(this.uModelScale, modelScale, modelScale, modelScale);
+        GL20.glUniform2f(this.uTextureScale, textureScale, textureScale);
 
         this.fogShader.setup();
 

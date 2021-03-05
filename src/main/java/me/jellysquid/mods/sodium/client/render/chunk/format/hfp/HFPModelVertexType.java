@@ -23,6 +23,9 @@ public class HFPModelVertexType implements ChunkVertexType {
             .addElement(ChunkMeshAttribute.LIGHT, 16, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, true)
             .build();
 
+    public static final float MODEL_SCALE = (32.0f / 65536.0f);
+    public static final float TEXTURE_SCALE = (1.0f / 32768.0f);
+
     @Override
     public ModelVertexSink createFallbackWriter(VertexConsumer consumer) {
         throw new UnsupportedOperationException();
@@ -41,5 +44,15 @@ public class HFPModelVertexType implements ChunkVertexType {
     @Override
     public GlVertexFormat<ChunkMeshAttribute> getCustomVertexFormat() {
         return VERTEX_FORMAT;
+    }
+
+    @Override
+    public float getModelScale() {
+        return MODEL_SCALE;
+    }
+
+    @Override
+    public float getTextureScale() {
+        return TEXTURE_SCALE;
     }
 }
