@@ -8,6 +8,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -175,23 +180,37 @@ public class SodiumConfig {
      * Loads the configuration file from the specified location. If it does not exist, a new configuration file will be
      * created. The file on disk will then be updated to include any new options.
      */
-    public static SodiumConfig load(File file) {
-        if (!file.exists()) {
+    public static SodiumConfig load(Path path) {
+        if (!Files.exists(path)) {
             try {
-                writeDefaultConfig(file);
+                writeDefaultConfig(path);
             } catch (IOException e) {
-                LOGGER.warn("Could not write default configuration file", e);
+                LOGGER.warn("Could not write default configuration file to \"" + path + "\"!", e);
+                LocalDateTime now = LocalDateTime.now();
+                String backupName = path.getFileName().toString();
+                backupName = backupName.substring(0, backupName.lastIndexOf('.') - 1);
+                backupName += "-" + now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + ".json";
+                Path backupPath = path.resolveSibling(backupName);
+                LOGGER.info("Backing up config to \"{}\"...", backupPath.toString());
+                try {
+                    Files.move(path, backupPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException be) {
+                    LOGGER.error("Failed to back up config!", be);
+                }
+                LOGGER.info("Loading default values");
             }
 
             return new SodiumConfig();
         }
 
+        LOGGER.info("Could not find configuration file, loading default values");
+
         Properties props = new Properties();
 
-        try (FileInputStream fin = new FileInputStream(file)){
+        try (InputStream fin = Files.newInputStream(path)){
             props.load(fin);
         } catch (IOException e) {
-            throw new RuntimeException("Could not load config file", e);
+            LOGGER.error("Could not load config file from \"" + path + "\"!", e);
         }
 
         SodiumConfig config = new SodiumConfig();
@@ -201,18 +220,23 @@ public class SodiumConfig {
         return config;
     }
 
-    private static void writeDefaultConfig(File file) throws IOException {
-        File dir = file.getParentFile();
+    private static void writeDefaultConfig(Path path) throws IOException {
+        Path dir = path.getParent();
 
-        if (!dir.exists()) {
-            if (!dir.mkdirs()) {
-                throw new IOException("Could not create parent directories");
+        if (!Files.exists(dir)) {
+            try {
+                Files.createDirectories(dir);
+            } catch (IOException e) {
+                LOGGER.error("Could not create parent directories for \"" + dir + "\"!", e);
+                return;
             }
-        } else if (!dir.isDirectory()) {
-            throw new IOException("The parent file is not a directory");
+        } else if (!Files.isDirectory(dir)) {
+            LOGGER.error("Parent directory \"{}\" is, in fact, not a directory!", dir);
         }
 
-        try (Writer writer = new FileWriter(file)) {
+        try (OutputStream os = Files.newOutputStream(path);
+             OutputStreamWriter osw = new OutputStreamWriter(os);
+             BufferedWriter writer = new BufferedWriter(osw)) {
             writer.write("# This is the configuration file for Sodium.\n");
             writer.write("#\n");
             writer.write("# You can find information on editing this file and all the available options here:\n");

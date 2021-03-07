@@ -9,20 +9,26 @@ import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRend
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 import net.minecraft.client.options.GraphicsMode;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
 public class SodiumGameOptions {
+    private static final Logger LOGGER = LogManager.getLogger("Sodium|GameOptions");
+
     public final QualitySettings quality = new QualitySettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
 
-    private File file;
+    private Path path;
 
     public void notifyListeners() {
         SodiumClientMod.onConfigChanged(this);
@@ -139,22 +145,38 @@ public class SodiumGameOptions {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
 
-    public static SodiumGameOptions load(File file) {
+    public static SodiumGameOptions load(Path path) {
         SodiumGameOptions config;
 
-        if (file.exists()) {
-            try (FileReader reader = new FileReader(file)) {
+        if (Files.exists(path)) {
+            try (InputStream is = Files.newInputStream(path);
+                 InputStreamReader isr = new InputStreamReader(is);
+                 BufferedReader reader = new BufferedReader(isr)) {
                 config = gson.fromJson(reader, SodiumGameOptions.class);
-            } catch (IOException e) {
-                throw new RuntimeException("Could not parse config", e);
+            } catch (Exception e) {
+                LOGGER.error("Failed to parse options file!", e);
+                LocalDateTime now = LocalDateTime.now();
+                String backupName = path.getFileName().toString();
+                backupName = backupName.substring(0, backupName.lastIndexOf('.') - 1);
+                backupName += "-" + now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + ".json";
+                Path backupPath = path.resolveSibling(backupName);
+                LOGGER.info("Backing up config to \"{}\"...", backupPath.toString());
+                try {
+                    Files.move(path, backupPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException be) {
+                    LOGGER.error("Failed to back up config!", be);
+                }
+                LOGGER.info("Loading default values");
+                config = new SodiumGameOptions();
             }
 
             config.sanitize();
         } else {
+            LOGGER.info("Could not find options file, loading default values");
             config = new SodiumGameOptions();
         }
 
-        config.file = file;
+        config.path = path;
         config.writeChanges();
 
         return config;
@@ -167,20 +189,25 @@ public class SodiumGameOptions {
     }
 
     public void writeChanges() {
-        File dir = this.file.getParentFile();
+        Path dir = path.getParent();
 
-        if (!dir.exists()) {
-            if (!dir.mkdirs()) {
-                throw new RuntimeException("Could not create parent directories");
+        if (!Files.exists(dir)) {
+            try {
+                Files.createDirectories(dir);
+            } catch (IOException e) {
+                LOGGER.error("Could not create parent directories for \"" + dir + "\"!", e);
+                return;
             }
-        } else if (!dir.isDirectory()) {
-            throw new RuntimeException("The parent file is not a directory");
+        } else if (!Files.isDirectory(dir)) {
+            LOGGER.error("Parent directory \"{}\" is, in fact, not a directory!", dir);
         }
 
-        try (FileWriter writer = new FileWriter(this.file)) {
+        try (OutputStream os = Files.newOutputStream(path);
+             OutputStreamWriter osw = new OutputStreamWriter(os);
+             BufferedWriter writer = new BufferedWriter(osw)) {
             gson.toJson(this, writer);
         } catch (IOException e) {
-            throw new RuntimeException("Could not save configuration file", e);
+            LOGGER.error("Could not save config file to \"" + path + "\"!", e);
         }
     }
 }

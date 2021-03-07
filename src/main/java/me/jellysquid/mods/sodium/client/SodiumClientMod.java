@@ -3,10 +3,9 @@ package me.jellysquid.mods.sodium.client;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.File;
 
 public class SodiumClientMod implements ClientModInitializer {
     private static SodiumGameOptions CONFIG;
@@ -34,7 +33,7 @@ public class SodiumClientMod implements ClientModInitializer {
     }
 
     private static SodiumGameOptions loadConfig() {
-        SodiumGameOptions config = SodiumGameOptions.load(new File("config/sodium-options.json"));
+        SodiumGameOptions config = SodiumGameOptions.load(FabricLoader.getInstance().getConfigDir().resolve("sodium-options.json").normalize());
         onConfigChanged(config);
 
         return config;
