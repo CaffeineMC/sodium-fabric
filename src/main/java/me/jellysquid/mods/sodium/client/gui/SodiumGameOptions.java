@@ -188,7 +188,7 @@ public class SodiumGameOptions {
     }
 
     public void writeChanges() {
-        Path dir = path.getParent();
+        Path dir = this.path.getParent();
 
         if (!Files.exists(dir)) {
             try {
@@ -201,12 +201,12 @@ public class SodiumGameOptions {
             LOGGER.error("Parent directory \"{}\" is, in fact, not a directory!", dir);
         }
 
-        try (OutputStream os = Files.newOutputStream(path);
+        try (OutputStream os = Files.newOutputStream(this.path);
              OutputStreamWriter osw = new OutputStreamWriter(os);
              BufferedWriter writer = new BufferedWriter(osw)) {
             gson.toJson(this, writer);
         } catch (IOException e) {
-            LOGGER.error("Could not save config file to \"" + path + "\"!", e);
+            LOGGER.error("Could not save config file to \"" + this.path + "\"!", e);
         }
     }
 }
