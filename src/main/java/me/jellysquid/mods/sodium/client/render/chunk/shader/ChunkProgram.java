@@ -57,7 +57,9 @@ public abstract class ChunkProgram extends GlProgram {
         GL20.glUniform1i(this.uLightTex, 2);
         GL20.glUniform1i(this.uNoiseTex, 15);
 
-        if (SodiumClientMod.options().advanced.useCompactVertexFormat) {
+        // Iris: We're always using the compact vertex format
+        // TODO: Implement vertex format extensions for the non-compact vertex format
+        if (SodiumClientMod.options().advanced.useCompactVertexFormat || true) {
             GL20.glUniform3f(this.uModelScale, CVF_MODEL_SIZE, CVF_MODEL_SIZE, CVF_MODEL_SIZE);
             GL20.glUniform2f(this.uTextureScale, CVF_TEXTURE_SIZE, CVF_TEXTURE_SIZE);
         } else {

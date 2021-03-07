@@ -18,9 +18,9 @@ import net.minecraft.client.render.VertexConsumer;
  */
 public class XHFPModelVertexType implements ChunkVertexType {
     public static final GlVertexFormat<ChunkMeshAttribute> VERTEX_FORMAT = GlVertexAttribute.builder(ChunkMeshAttribute.class, 48)
-            .addElement(ChunkMeshAttribute.POSITION, 0, GlVertexAttributeFormat.UNSIGNED_SHORT, 3, true)
+            .addElement(ChunkMeshAttribute.POSITION, 0, GlVertexAttributeFormat.UNSIGNED_SHORT, 3, false)
             .addElement(ChunkMeshAttribute.COLOR, 8, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true)
-            .addElement(ChunkMeshAttribute.TEXTURE, 12, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, true)
+            .addElement(ChunkMeshAttribute.TEXTURE, 12, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false)
             .addElement(ChunkMeshAttribute.LIGHT, 16, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, true)
             .addElement(ChunkMeshAttribute.MID_TEX_COORD, 20, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, true)
             .addElement(ChunkMeshAttribute.TANGENT, 24, GlVertexAttributeFormat.BYTE, 4, true)

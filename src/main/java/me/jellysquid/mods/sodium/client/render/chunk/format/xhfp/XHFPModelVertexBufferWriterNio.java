@@ -36,12 +36,12 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
         vSum += v;
 
         this.writeQuadInternal(
-            ModelVertexUtil.denormalizeFloatAsShort(x),
-            ModelVertexUtil.denormalizeFloatAsShort(y),
-            ModelVertexUtil.denormalizeFloatAsShort(z),
+            ModelVertexUtil.denormalizeVertexPositionFloatAsShort(x),
+            ModelVertexUtil.denormalizeVertexPositionFloatAsShort(y),
+            ModelVertexUtil.denormalizeVertexPositionFloatAsShort(z),
             color,
-            ModelVertexUtil.denormalizeFloatAsShort(u),
-            ModelVertexUtil.denormalizeFloatAsShort(v),
+            ModelVertexUtil.denormalizeVertexTextureFloatAsShort(u),
+            ModelVertexUtil.denormalizeVertexTextureFloatAsShort(v),
             ModelVertexUtil.encodeLightMapTexCoord(light),
             blockId
         );
@@ -69,8 +69,8 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
         buffer.putFloat(i + 44, (short) 0);
 
         if (vertexCount == 4) {
-            short midU = ModelVertexUtil.denormalizeFloatAsShort(uSum * 0.25f);
-            short midV = ModelVertexUtil.denormalizeFloatAsShort(vSum * 0.25f);
+            short midU = ModelVertexUtil.denormalizeVertexTextureFloatAsShort(uSum * 0.25f);
+            short midV = ModelVertexUtil.denormalizeVertexTextureFloatAsShort(vSum * 0.25f);
             int midTexCoord = (midV << 16) | midU;
 
             buffer.putInt(i + 20, midTexCoord);
@@ -97,17 +97,17 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
             buffer.putInt(i + 28 - STRIDE * 3, packedNormal);
 
             // Capture all of the relevant vertex positions
-            float x0 = normalizeShortAsFloat(buffer.getShort(i - STRIDE * 3));
-            float y0 = normalizeShortAsFloat(buffer.getShort(i + 2 - STRIDE * 3));
-            float z0 = normalizeShortAsFloat(buffer.getShort(i + 4 - STRIDE * 3));
+            float x0 = normalizeVertexPositionShortAsFloat(buffer.getShort(i - STRIDE * 3));
+            float y0 = normalizeVertexPositionShortAsFloat(buffer.getShort(i + 2 - STRIDE * 3));
+            float z0 = normalizeVertexPositionShortAsFloat(buffer.getShort(i + 4 - STRIDE * 3));
 
-            float x1 = normalizeShortAsFloat(buffer.getShort(i - STRIDE * 2));
-            float y1 = normalizeShortAsFloat(buffer.getShort(i + 2 - STRIDE * 2));
-            float z1 = normalizeShortAsFloat(buffer.getShort(i + 4 - STRIDE * 2));
+            float x1 = normalizeVertexPositionShortAsFloat(buffer.getShort(i - STRIDE * 2));
+            float y1 = normalizeVertexPositionShortAsFloat(buffer.getShort(i + 2 - STRIDE * 2));
+            float z1 = normalizeVertexPositionShortAsFloat(buffer.getShort(i + 4 - STRIDE * 2));
 
-            float x2 = normalizeShortAsFloat(buffer.getShort(i - STRIDE));
-            float y2 = normalizeShortAsFloat(buffer.getShort(i + 2 - STRIDE));
-            float z2 = normalizeShortAsFloat(buffer.getShort(i + 4 - STRIDE));
+            float x2 = normalizeVertexPositionShortAsFloat(buffer.getShort(i - STRIDE));
+            float y2 = normalizeVertexPositionShortAsFloat(buffer.getShort(i + 2 - STRIDE));
+            float z2 = normalizeVertexPositionShortAsFloat(buffer.getShort(i + 4 - STRIDE));
 
             float edge1x = x1 - x0;
             float edge1y = y1 - y0;
@@ -117,14 +117,14 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
             float edge2y = y2 - y0;
             float edge2z = z2 - z0;
 
-            float u0 = normalizeShortAsFloat(buffer.getShort(i + 12 - STRIDE * 3));
-            float v0 = normalizeShortAsFloat(buffer.getShort(i + 14 - STRIDE * 3));
+            float u0 = normalizeVertexTextureShortAsFloat(buffer.getShort(i + 12 - STRIDE * 3));
+            float v0 = normalizeVertexTextureShortAsFloat(buffer.getShort(i + 14 - STRIDE * 3));
 
-            float u1 = normalizeShortAsFloat(buffer.getShort(i + 12 - STRIDE * 2));
-            float v1 = normalizeShortAsFloat(buffer.getShort(i + 14 - STRIDE * 2));
+            float u1 = normalizeVertexTextureShortAsFloat(buffer.getShort(i + 12 - STRIDE * 2));
+            float v1 = normalizeVertexTextureShortAsFloat(buffer.getShort(i + 14 - STRIDE * 2));
 
-            float u2 = normalizeShortAsFloat(buffer.getShort(i + 12 - STRIDE));
-            float v2 = normalizeShortAsFloat(buffer.getShort(i + 14 - STRIDE));
+            float u2 = normalizeVertexTextureShortAsFloat(buffer.getShort(i + 12 - STRIDE));
+            float v2 = normalizeVertexTextureShortAsFloat(buffer.getShort(i + 14 - STRIDE));
 
             float deltaU1 = u1 - u0;
             float deltaV1 = v1 - v0;
@@ -187,8 +187,14 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
         this.advance();
     }
 
-    private static float normalizeShortAsFloat(short value) {
+    // TODO: Verify that this works with the new changes to the CVF
+    private static float normalizeVertexPositionShortAsFloat(short value) {
         return (value & 0xFFFF) * (1.0f / 65535.0f);
+    }
+
+    // TODO: Verify that this is correct
+    private static float normalizeVertexTextureShortAsFloat(short value) {
+        return (value & 0xFFFF) * (1.0f / 32768.0f);
     }
 
     private static float rsqrt(float value) {
