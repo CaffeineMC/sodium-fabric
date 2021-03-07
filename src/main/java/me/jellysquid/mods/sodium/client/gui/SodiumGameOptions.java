@@ -9,7 +9,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRend
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 import net.minecraft.client.options.GraphicsMode;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
@@ -23,7 +22,7 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 public class SodiumGameOptions {
-    private static final Logger LOGGER = LogManager.getLogger("Sodium|GameOptions");
+    private static final Logger LOGGER = SodiumClientMod.logger();
 
     public final QualitySettings quality = new QualitySettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
