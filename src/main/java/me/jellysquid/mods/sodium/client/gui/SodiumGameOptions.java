@@ -147,6 +147,7 @@ public class SodiumGameOptions {
     public static SodiumGameOptions load(Path path) {
         SodiumGameOptions config;
 
+        boolean write = false;
         if (Files.exists(path)) {
             try (InputStream is = Files.newInputStream(path);
                  InputStreamReader isr = new InputStreamReader(is);
@@ -167,16 +168,20 @@ public class SodiumGameOptions {
                 }
                 LOGGER.info("Loading default values");
                 config = new SodiumGameOptions();
+                write = true;
             }
 
             config.sanitize();
         } else {
             LOGGER.info("Could not find options file, loading default values");
             config = new SodiumGameOptions();
+            write = true;
         }
 
         config.path = path;
-        config.writeChanges();
+        if (write) {
+            config.writeChanges();
+        }
 
         return config;
     }
