@@ -227,11 +227,10 @@ public class SodiumConfig {
             try {
                 Files.createDirectories(dir);
             } catch (IOException e) {
-                LOGGER.error("Could not create parent directories for \"" + dir + "\"!", e);
-                return;
+                throw new IOException("Could not create parent directories for \"" + dir + "\"!", e);
             }
         } else if (!Files.isDirectory(dir)) {
-            LOGGER.error("Parent directory \"{}\" is, in fact, not a directory!", dir);
+            throw new IOException("Parent directory \"" + dir + "\" is, in fact, not a directory!");
         }
 
         try (OutputStream os = Files.newOutputStream(path);

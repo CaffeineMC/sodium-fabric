@@ -199,6 +199,7 @@ public class SodiumGameOptions {
             }
         } else if (!Files.isDirectory(dir)) {
             LOGGER.error("Parent directory \"{}\" is, in fact, not a directory!", dir);
+            return;
         }
 
         try (OutputStream os = Files.newOutputStream(this.path);
