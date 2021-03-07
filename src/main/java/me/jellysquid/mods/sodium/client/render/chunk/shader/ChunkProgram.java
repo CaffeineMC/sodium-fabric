@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
@@ -20,9 +21,16 @@ public abstract class ChunkProgram extends GlProgram {
     // The model size of a chunk (16^3)
     protected static final float MODEL_SIZE = 32.0f;
 
+    protected static final float TEXTURE_SIZE = 1.0f;
+
+    protected static final float CVF_MODEL_SIZE = (32.0f / 65536.0f);
+
+    protected static final float CVF_TEXTURE_SIZE = (1.0f / 32768.0f);
+
     // Uniform variable binding indexes
     private final int uModelViewProjectionMatrix;
     private final int uModelScale;
+    private final int uTextureScale;
     private final int uBlockTex;
     private final int uLightTex;
     private final int uNoiseTex;
@@ -39,6 +47,7 @@ public abstract class ChunkProgram extends GlProgram {
         this.uLightTex = this.getUniformLocation("u_LightTex");
         this.uNoiseTex = this.getUniformLocation("noisetex");
         this.uModelScale = this.getUniformLocation("u_ModelScale");
+        this.uTextureScale = this.getUniformLocation("u_TextureScale");
 
         this.fogShader = fogShaderFunction.apply(this);
     }
@@ -47,7 +56,14 @@ public abstract class ChunkProgram extends GlProgram {
         GL20.glUniform1i(this.uBlockTex, 0);
         GL20.glUniform1i(this.uLightTex, 2);
         GL20.glUniform1i(this.uNoiseTex, 15);
-        GL20.glUniform3f(this.uModelScale, MODEL_SIZE, MODEL_SIZE, MODEL_SIZE);
+
+        if (SodiumClientMod.options().advanced.useCompactVertexFormat) {
+            GL20.glUniform3f(this.uModelScale, CVF_MODEL_SIZE, CVF_MODEL_SIZE, CVF_MODEL_SIZE);
+            GL20.glUniform2f(this.uTextureScale, CVF_TEXTURE_SIZE, CVF_TEXTURE_SIZE);
+        } else {
+            GL20.glUniform3f(this.uModelScale, MODEL_SIZE, MODEL_SIZE, MODEL_SIZE);
+            GL20.glUniform2f(this.uTextureScale, TEXTURE_SIZE, TEXTURE_SIZE);
+        }
 
         // TODO: set up noise texture!!!
 

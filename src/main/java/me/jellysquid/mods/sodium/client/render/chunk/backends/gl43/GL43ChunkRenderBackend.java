@@ -344,7 +344,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     public static boolean isSupported(boolean disableBlacklist) {
         if (!disableBlacklist) {
             try {
-                if (isOldIntelGpu()) {
+                if (isIntelGpu()) {
                     return false;
                 }
             } catch (Exception e) {
@@ -360,40 +360,20 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     }
 
     /**
-     * Determines whether or not the current OpenGL renderer is an old integrated Intel GPU (prior to Skylake/Gen8) on
-     * Windows. These drivers on Windows are unsupported and known to create significant trouble with the multi-draw
-     * renderer.
+     * Determines whether or not the current OpenGL renderer is an integrated Intel GPU on Windows.
+     * These drivers on Windows are known to create significant trouble with the multi-draw renderer.
      */
-    private static boolean isOldIntelGpu() {
-        // We only care about Windows where there is still a significant number of users with unsupported drivers
-        // The open-source drivers on Linux are still supported and are not known to have driver bugs with multi-draw
+    private static boolean isIntelGpu() {
+        // We only care about Windows
+        // The open-source drivers on Linux are not known to have driver bugs with multi-draw
         if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
             return false;
         }
 
-        String renderer = Objects.requireNonNull(GL11.glGetString(GL11.GL_RENDERER));
-        String version = Objects.requireNonNull(GL11.glGetString(GL11.GL_VERSION));
+        String vendor = Objects.requireNonNull(GL11.glGetString(GL11.GL_VENDOR));
 
-        // Check to see if the GPU's name matches any known Intel GPU names
-        if (!renderer.matches("^Intel\\(R\\) (U?HD|Iris( Pro)?) Graphics (\\d+)?$")) {
-            return false;
-        }
-
-        // https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
-        Matcher matcher = Pattern.compile("(\\d.\\d.\\d) - Build (\\d+).(\\d+).(\\d+).(\\d+)")
-                .matcher(version);
-
-        // If the version pattern doesn't match, assume we're dealing with something special
-        if (!matcher.matches()) {
-            return false;
-        }
-
-        // The fourth group is the major build number
-        String majorBuildString = matcher.group(4);
-        int majorBuildNumber = Integer.parseInt(majorBuildString);
-
-        // Anything with a major build of >=100 is Gen8 or newer
-        return majorBuildNumber < 100;
+        // Check to see if the GPU vendor is Intel
+        return vendor.equals("Intel");
     }
 
     @Override
