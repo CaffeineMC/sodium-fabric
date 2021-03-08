@@ -144,8 +144,6 @@ public class SodiumGameOptions {
     public static SodiumGameOptions load(Path path) {
         SodiumGameOptions config;
 
-        boolean write = false;
-        RuntimeException failE = null;
         if (Files.exists(path)) {
             try (InputStream is = Files.newInputStream(path);
                  InputStreamReader isr = new InputStreamReader(is);
@@ -154,7 +152,7 @@ public class SodiumGameOptions {
             } catch (Exception e) {
                 LOGGER.error("Failed to parse options file! Loading default values", e);
                 config = new SodiumGameOptions();
-                write = true;
+                config.path = path;
 
                 boolean backupSuccess = true;
                 Path backupPath = PathUtil.resolveTimestampedSibling(path, "BACKUP");
@@ -166,26 +164,22 @@ public class SodiumGameOptions {
                     backupSuccess = false;
                 }
 
-                String failEMsg = "Failed to parse options file! It has been replaced with the default values";
+                // write default values to file
+                config.writeChanges();
+
+                String eMsg = "Failed to parse options file! It has been replaced with the default values";
                 if (backupSuccess)
-                    failEMsg += ", with the original backed up at \"" + backupPath + "\"";
-                failE = new RuntimeException(failEMsg, e);
+                    eMsg += ", with the original backed up at \"" + backupPath + "\"";
+                throw new RuntimeException(eMsg, e);
             }
 
+            config.path = path;
             config.sanitize();
         } else {
             LOGGER.info("Could not find options file, loading default values");
             config = new SodiumGameOptions();
-            write = true;
-        }
-
-        config.path = path;
-        if (write) {
+            config.path = path;
             config.writeChanges();
-        }
-
-        if (failE != null) {
-            throw failE;
         }
 
         return config;
@@ -227,7 +221,8 @@ public class SodiumGameOptions {
             Files.delete(this.path);
         } catch (NoSuchFileException ignored) {
         } catch (IOException e) {
-            LOGGER.error("Failed to delete current config file \"" + this.path + "\" to replace it with new config file!", e);
+            LOGGER.error("Failed to delete current config file \"" + this.path +
+                    "\" to replace it with new config file\"" + tempPath + "\"!", e);
             return;
         }
 
