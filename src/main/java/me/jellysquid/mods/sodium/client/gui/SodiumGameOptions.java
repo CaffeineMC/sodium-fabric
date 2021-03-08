@@ -14,7 +14,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.lang.reflect.Modifier;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
@@ -216,25 +218,8 @@ public class SodiumGameOptions {
             return;
         }
 
-        // need to delete file first, since we can't rely on ATOMIC_MOVE replacing existing files
         try {
-            Files.delete(this.path);
-        } catch (NoSuchFileException ignored) {
-        } catch (IOException e) {
-            LOGGER.error("Failed to delete current config file \"" + this.path +
-                    "\" to replace it with new config file\"" + tempPath + "\"!", e);
-            return;
-        }
-
-        try {
-            Files.move(tempPath, this.path, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException e) {
-            LOGGER.warn("Atomic move is not supported, trying without it", e);
-            try {
-                Files.move(tempPath, this.path);
-            } catch (IOException e2) {
-                LOGGER.error("Failed to move config file \"" + tempPath + "\" into place at \"" + this.path + "!", e2);
-            }
+            Files.move(tempPath, this.path, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             LOGGER.error("Failed to move config file \"" + tempPath + "\" into place at \"" + this.path + "!", e);
         }
