@@ -28,7 +28,7 @@ public class SodiumConfig {
     private SodiumConfig() {
         // Defines the default rules which can be configured by the user or other mods.
         // You must manually add a rule for any new mixins not covered by an existing package rule.
-        this.addMixinRule("core", true); // TODO: Don't actually allow the user to disable this
+        this.addForcedMixinRule("core");
 
         this.addMixinRule("features.block", true);
         this.addMixinRule("features.buffer_builder", true);
@@ -65,6 +65,19 @@ public class SodiumConfig {
         String name = getMixinRuleName(mixin);
 
         if (this.options.putIfAbsent(name, new Option(name, enabled, false)) != null) {
+            throw new IllegalStateException("Mixin rule already defined: " + mixin);
+        }
+    }
+
+    /**
+     * Defines a Mixin rule which is always enabled and <em>cannot</em> be configured by users and other mods.
+     * @throws IllegalStateException If a rule with that name already exists
+     * @param mixin The name of the mixin package which will be controlled by this rule
+     */
+    private void addForcedMixinRule(String mixin) {
+        String name = getMixinRuleName(mixin);
+
+        if (this.options.putIfAbsent(name, new ForcedOption(name)) != null) {
             throw new IllegalStateException("Mixin rule already defined: " + mixin);
         }
     }
