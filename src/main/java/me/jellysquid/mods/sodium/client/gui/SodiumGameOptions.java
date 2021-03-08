@@ -8,16 +8,13 @@ import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
+import me.jellysquid.mods.sodium.common.util.PathUtil;
 import net.minecraft.client.options.GraphicsMode;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.lang.reflect.Modifier;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.nio.file.*;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
@@ -155,11 +152,7 @@ public class SodiumGameOptions {
                 config = gson.fromJson(reader, SodiumGameOptions.class);
             } catch (Exception e) {
                 LOGGER.error("Failed to parse options file!", e);
-                LocalDateTime now = LocalDateTime.now();
-                String backupName = path.getFileName().toString();
-                backupName = backupName.substring(0, backupName.lastIndexOf('.') - 1);
-                backupName += "-" + now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + ".json";
-                Path backupPath = path.resolveSibling(backupName);
+                Path backupPath = PathUtil.resolveTimestampedSibling(path, "BACKUP");
                 LOGGER.info("Backing up config to \"{}\"...", backupPath.toString());
                 try {
                     Files.move(path, backupPath, StandardCopyOption.REPLACE_EXISTING);
@@ -207,12 +200,36 @@ public class SodiumGameOptions {
             return;
         }
 
-        try (OutputStream os = Files.newOutputStream(this.path);
+        Path tempPath = PathUtil.resolveTimestampedSibling(this.path, "TEMP");
+        try (OutputStream os = Files.newOutputStream(tempPath);
              OutputStreamWriter osw = new OutputStreamWriter(os);
              BufferedWriter writer = new BufferedWriter(osw)) {
             gson.toJson(this, writer);
         } catch (IOException e) {
-            LOGGER.error("Could not save config file to \"" + this.path + "\"!", e);
+            LOGGER.error("Could not save config file to \"" + tempPath + "\"!", e);
+            return;
+        }
+
+        // need to delete file first, since we can't rely on ATOMIC_MOVE replacing existing files
+        try {
+            Files.delete(this.path);
+        } catch (NoSuchFileException ignored) {
+        } catch (IOException e) {
+            LOGGER.error("Failed to delete current config file \"" + this.path + "\" to replace it with new config file!", e);
+            return;
+        }
+
+        try {
+            Files.move(tempPath, this.path, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            LOGGER.warn("Atomic move is not supported, trying without it", e);
+            try {
+                Files.move(tempPath, this.path);
+            } catch (IOException e2) {
+                LOGGER.error("Failed to move config file \"" + tempPath + "\" into place at \"" + this.path + "!", e2);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to move config file \"" + tempPath + "\" into place at \"" + this.path + "!", e);
         }
     }
 }

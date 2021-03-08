@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.common.config;
 
+import me.jellysquid.mods.sodium.common.util.PathUtil;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.CustomValue;
@@ -182,35 +183,30 @@ public class SodiumConfig {
      */
     public static SodiumConfig load(Path path) {
         if (!Files.exists(path)) {
+            LOGGER.info("Could not find configuration file, loading default values");
+
             try {
                 writeDefaultConfig(path);
             } catch (IOException e) {
                 LOGGER.warn("Could not write default configuration file to \"" + path + "\"!", e);
-                LocalDateTime now = LocalDateTime.now();
-                String backupName = path.getFileName().toString();
-                backupName = backupName.substring(0, backupName.lastIndexOf('.') - 1);
-                backupName += "-" + now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + ".json";
-                Path backupPath = path.resolveSibling(backupName);
-                LOGGER.info("Backing up config to \"{}\"...", backupPath.toString());
-                try {
-                    Files.move(path, backupPath, StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException be) {
-                    LOGGER.error("Failed to back up config!", be);
-                }
-                LOGGER.info("Loading default values");
             }
 
             return new SodiumConfig();
         }
-
-        LOGGER.info("Could not find configuration file, loading default values");
 
         Properties props = new Properties();
 
         try (InputStream fin = Files.newInputStream(path)){
             props.load(fin);
         } catch (IOException e) {
-            LOGGER.error("Could not load config file from \"" + path + "\"!", e);
+            LOGGER.error("Could not load config file from \"" + path + "\"! Loading default values", e);
+            Path backupPath = PathUtil.resolveTimestampedSibling(path, "BACKUP");
+            LOGGER.info("Backing up config to \"{}\"...", backupPath.toString());
+            try {
+                Files.move(path, backupPath, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException be) {
+                LOGGER.error("Failed to back up config!", be);
+            }
         }
 
         SodiumConfig config = new SodiumConfig();
