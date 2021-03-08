@@ -9,9 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -198,12 +196,19 @@ public class SodiumConfig {
             props.load(fin);
         } catch (IOException e) {
             LOGGER.error("Could not load config file from \"" + path + "\"! Loading default values", e);
+
             Path backupPath = PathUtil.resolveTimestampedSibling(path, "BACKUP");
             LOGGER.info("Backing up config to \"{}\"...", backupPath.toString());
             try {
                 Files.move(path, backupPath, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException be) {
-                LOGGER.error("Failed to back up config!", be);
+                LOGGER.error("Failed to back up config to \"" + backupPath + "\"!", be);
+            }
+
+            try {
+                writeDefaultConfig(path);
+            } catch (IOException e2) {
+                LOGGER.error("Could not write default configuration file to \"" + path + "\"!", e2);
             }
         }
 
