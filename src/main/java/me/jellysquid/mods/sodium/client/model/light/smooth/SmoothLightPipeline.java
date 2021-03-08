@@ -5,6 +5,8 @@ import me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess;
 import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
+import net.coderbot.iris.pipeline.DirectionalShadingHelper;
+
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -79,6 +81,10 @@ public class SmoothLightPipeline implements LightPipeline {
             this.applyAlignedFullFace(neighborInfo, pos, face, out, flags);
         } else {
             this.applyComplex(neighborInfo, quad, pos, face, out, flags);
+        }
+
+        if (DirectionalShadingHelper.shouldDisableDirectionalShading) {
+            return;
         }
 
         this.applySidedBrightness(out, face, shade);
