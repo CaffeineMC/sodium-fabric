@@ -145,23 +145,31 @@ public class SodiumGameOptions {
         SodiumGameOptions config;
 
         boolean write = false;
+        RuntimeException failE = null;
         if (Files.exists(path)) {
             try (InputStream is = Files.newInputStream(path);
                  InputStreamReader isr = new InputStreamReader(is);
                  BufferedReader reader = new BufferedReader(isr)) {
                 config = gson.fromJson(reader, SodiumGameOptions.class);
             } catch (Exception e) {
-                LOGGER.error("Failed to parse options file!", e);
+                LOGGER.error("Failed to parse options file! Loading default values", e);
+                config = new SodiumGameOptions();
+                write = true;
+
+                boolean backupSuccess = true;
                 Path backupPath = PathUtil.resolveTimestampedSibling(path, "BACKUP");
                 LOGGER.info("Backing up config to \"{}\"...", backupPath.toString());
                 try {
                     Files.move(path, backupPath, StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException be) {
                     LOGGER.error("Failed to back up config!", be);
+                    backupSuccess = false;
                 }
-                LOGGER.info("Loading default values");
-                config = new SodiumGameOptions();
-                write = true;
+
+                String failEMsg = "Failed to parse options file! It has been replaced with the default values";
+                if (backupSuccess)
+                    failEMsg += ", with the original backed up at \"" + backupPath + "\"";
+                failE = new RuntimeException(failEMsg, e);
             }
 
             config.sanitize();
@@ -174,6 +182,10 @@ public class SodiumGameOptions {
         config.path = path;
         if (write) {
             config.writeChanges();
+        }
+
+        if (failE != null) {
+            throw failE;
         }
 
         return config;
