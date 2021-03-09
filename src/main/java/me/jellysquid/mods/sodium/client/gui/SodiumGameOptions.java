@@ -221,7 +221,7 @@ public class SodiumGameOptions {
         try {
             Files.move(tempPath, this.path, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            LOGGER.error("Failed to move config file \"" + tempPath + "\" into place at \"" + this.path + "!", e);
+            LOGGER.error("Failed to move config file \"" + tempPath + "\" into place at \"" + this.path + "\"!", e);
         }
     }
 }
