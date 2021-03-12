@@ -15,8 +15,6 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
       - name: Upload assets to CurseForge
         run: ./gradlew build
         env:
