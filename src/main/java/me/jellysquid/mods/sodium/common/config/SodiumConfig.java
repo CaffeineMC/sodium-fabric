@@ -218,10 +218,20 @@ public class SodiumConfig {
                 LOGGER.error("Failed to back up config to \"" + backupPath + "\"!", be);
             }
 
+            boolean tempSuccess = true;
+            Path tempPath = PathUtil.resolveTimestampedSibling(path, "TEMP");
             try {
-                writeDefaultConfig(path);
-            } catch (IOException e2) {
-                LOGGER.error("Could not write default configuration file to \"" + path + "\"!", e2);
+                writeDefaultConfig(tempPath);
+            } catch (IOException te) {
+                LOGGER.error("Could not write default configuration file to \"" + path + "\"!", te);
+                tempSuccess = false;
+            }
+            if (tempSuccess) {
+                try {
+                    Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException te) {
+                    LOGGER.error("Failed to move config file \"" + tempPath + "\" into place at \"" + path + "\"!", te);
+                }
             }
         }
 
