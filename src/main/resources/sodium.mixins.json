@@ -30,7 +30,9 @@
     "features.entity.fast_render.MixinCuboid",
     "features.entity.fast_render.MixinModelPart",
     "features.entity.smooth_lighting.MixinEntityRenderer",
+    "features.entity.smooth_lighting.MixinPaintingEntityRenderer",
     "features.gui.MixinDebugHud",
+    "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
     "features.gui.font.MixinGlyphRenderer",
     "features.item.MixinItemRenderer",
     "features.matrix_stack.MixinMatrixStack",
@@ -45,7 +47,7 @@
     "features.particle.fast_render.MixinBillboardParticle",
     "features.render_layer.MixinRenderLayers",
     "features.texture_tracking.MixinSprite",
-    "features.texture_tracking.MixinSpriteIdentifier",
+    "features.texture_tracking.MixinSpriteAtlasTexture",
     "features.world_ticking.MixinClientWorld"
   ]
 }

@@ -9,6 +9,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.BakedChunkM
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelVertexTransformer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelOffset;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
@@ -52,7 +53,7 @@ public class ChunkBuildBuffers {
         }
     }
 
-    public void init() {
+    public void init(ChunkRenderData.Builder renderData) {
         for (int i = 0; i < this.buffersByLayer.length; i++) {
             ChunkModelVertexTransformer[] writers = new ChunkModelVertexTransformer[ModelQuadFacing.COUNT];
 
@@ -60,7 +61,7 @@ public class ChunkBuildBuffers {
                 writers[facing.ordinal()] = new ChunkModelVertexTransformer(this.vertexType.createBufferWriter(this.buffersByLayer[i][facing.ordinal()], UnsafeUtil.isAvailable()), this.offset);
             }
 
-            this.delegates[i] = new BakedChunkModelBuffers(writers);
+            this.delegates[i] = new BakedChunkModelBuffers(writers, renderData);
         }
     }
 
