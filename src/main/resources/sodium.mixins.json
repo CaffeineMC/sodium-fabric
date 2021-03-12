@@ -6,6 +6,9 @@
   "injectors": {
     "defaultRequire": 1
   },
+  "overwrites": {
+    "conformVisibility": true
+  },
   "client": [
     "core.frustum.MixinFrustum",
     "core.matrix.MixinMatrix3f",
