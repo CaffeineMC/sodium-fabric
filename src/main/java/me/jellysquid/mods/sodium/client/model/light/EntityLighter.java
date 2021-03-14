@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.light;
 
+import me.jellysquid.mods.sodium.client.render.entity.EntityExtended;
 import me.jellysquid.mods.sodium.client.render.entity.EntityLightSampler;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -23,8 +24,8 @@ public class EntityLighter {
         // Bounding boxes with no volume cause issues, ensure they're non-zero
         // Notably, armor stands in "Marker" mode decide this is a cute thing to do
         // https://github.com/jellysquid3/sodium-fabric/issues/60
-        double width = Math.max(entity.getWidth(), MIN_BOX_SIZE);
-        double height = Math.max(entity.getHeight(), MIN_BOX_SIZE);
+        double width = Math.max(((EntityExtended) entity).getLitWidth(), MIN_BOX_SIZE);
+        double height = Math.max(((EntityExtended) entity).getLitHeight(), MIN_BOX_SIZE);
 
         double x2 = x1 + width;
         double y2 = y1 + height;
