@@ -363,6 +363,11 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
                 GlFunctions.isInstancedArraySupported();
     }
 
+    // https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
+    private static final Pattern INTEL_BUILD_MATCHER = Pattern.compile("(\\d.\\d.\\d) - Build (\\d+).(\\d+).(\\d+).(\\d+)");
+
+    private static final String INTEL_VENDOR_NAME = "Intel";
+
     /**
      * Determines whether or not the current OpenGL renderer is an integrated Intel GPU on Windows.
      * These drivers on Windows are known to fail when using command buffers.
@@ -375,7 +380,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         }
 
         // Check to see if the GPU vendor is Intel
-        return Objects.equals(GL11.glGetString(GL11.GL_VENDOR), "Intel");
+        return Objects.equals(GL11.glGetString(GL11.GL_VENDOR), INTEL_VENDOR_NAME);
     }
 
     /**
@@ -388,29 +393,23 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             return false;
         }
 
-        String renderer = Objects.requireNonNull(GL11.glGetString(GL11.GL_RENDERER));
-        String version = Objects.requireNonNull(GL11.glGetString(GL11.GL_VERSION));
+        String version = GL11.glGetString(GL11.GL_VERSION);
 
-        // Check to see if the GPU's name matches any known Intel GPU names
-        if (!renderer.matches("^Intel\\(R\\) (U?HD|Iris( Pro)?) Graphics (\\d+)?$")) {
+        // The returned version string may be null in the case of an error
+        if (version == null) {
             return false;
         }
 
-        // https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
-        Matcher matcher = Pattern.compile("(\\d.\\d.\\d) - Build (\\d+).(\\d+).(\\d+).(\\d+)")
-                .matcher(version);
+        Matcher matcher = INTEL_BUILD_MATCHER.matcher(version);
 
         // If the version pattern doesn't match, assume we're dealing with something special
         if (!matcher.matches()) {
             return false;
         }
 
+        // Anything with a major build of >=100 is GPU Gen8 or newer
         // The fourth group is the major build number
-        String majorBuildString = matcher.group(4);
-        int majorBuildNumber = Integer.parseInt(majorBuildString);
-
-        // Anything with a major build of >=100 is Gen8 or newer
-        return majorBuildNumber < 100;
+        return Integer.parseInt(matcher.group(4)) < 100;
     }
 
     @Override
