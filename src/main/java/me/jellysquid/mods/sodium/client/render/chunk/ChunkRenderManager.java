@@ -227,6 +227,10 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     public ChunkRenderContainer getRender(int x, int y, int z) {
+        if (y < 0 || y >= 16) {
+            return null;
+        }
+
         ChunkRenderColumn column = this.columns.get(ChunkPos.toLong(x, z));
 
         if (column == null) {
@@ -471,10 +475,6 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
-        if (y < 0 || y >= 16) {
-            return;
-        }
-
         ChunkRenderContainer render = this.getRender(x, y, z);
 
         if (render != null) {
