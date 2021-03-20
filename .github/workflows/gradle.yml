@@ -12,7 +12,7 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 8
-    - name: Build with Gradle
+    - name: Build artifacts
       run: ./gradlew build
     - name: Upload build artifacts
       uses: actions/upload-artifact@v1
