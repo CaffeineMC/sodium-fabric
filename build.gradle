@@ -82,3 +82,20 @@ def getVersionMetadata() {
     // No tracking information could be found about the build
     return "unknown"
 }
+
+// Fails the build if JDK 1.8 is not being used
+tasks.register('enforceJdkVersion') {
+    doLast {
+        def jdkVersion = JavaVersion.current()
+
+        if (jdkVersion != JavaVersion.VERSION_1_8) {
+            throw new IllegalStateException("This project must be built with JDK 1.8 (Java 8), but JDK ${jdkVersion} was found...")
+        }
+    }
+}
+
+// Users who know what they are doing can specify -PskipJdkVersionCheck on the command
+// line to bypass this check
+if (!project.hasProperty('skipJdkVersionCheck')) {
+    compileJava.dependsOn(enforceJdkVersion)
+}
