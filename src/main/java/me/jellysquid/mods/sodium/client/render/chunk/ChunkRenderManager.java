@@ -471,10 +471,6 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
-        if (y < 0 || y >= 16) {
-            return;
-        }
-
         ChunkRenderContainer render = this.getRender(x, y, z);
 
         if (render != null) {
