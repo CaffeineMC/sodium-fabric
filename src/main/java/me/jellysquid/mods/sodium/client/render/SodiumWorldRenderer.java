@@ -56,9 +56,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
     private Frustum frustum;
-    private ChunkRenderManager<?> chunkRenderManager;
+    private ChunkRenderManager chunkRenderManager;
     private BlockRenderPassManager renderPassManager;
-    private ChunkRenderBackend<?> chunkRenderBackend;
+    private ChunkRenderBackend chunkRenderBackend;
 
     /**
      * @throws IllegalStateException If the renderer has not yet been created
@@ -199,7 +199,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         profiler.pop();
 
-        Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.viewDistance / 8.0D, 1.0D, 2.5D));
+        Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.viewDistance / 8.0D, 1.0D, 2.5D) * (double) this.client.options.entityDistanceScaling);
     }
 
     /**
@@ -252,12 +252,12 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.chunkRenderBackend = createChunkRenderBackend(opts.advanced.chunkRendererBackend, vertexFormat);
         this.chunkRenderBackend.createShaders();
 
-        this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.renderPassManager, this.world, this.renderDistance);
+        this.chunkRenderManager = new ChunkRenderManager(this, this.chunkRenderBackend, this.renderPassManager, this.world, this.renderDistance);
         this.chunkRenderManager.restoreChunks(this.loadedChunkPositions);
     }
 
-    private static ChunkRenderBackend<?> createChunkRenderBackend(SodiumGameOptions.ChunkRendererBackendOption opt,
-                                                                  ChunkVertexType vertexFormat) {
+    private static ChunkRenderBackend createChunkRenderBackend(SodiumGameOptions.ChunkRendererBackendOption opt,
+                                                               ChunkVertexType vertexFormat) {
         boolean disableBlacklist = SodiumClientMod.options().advanced.disableDriverBlacklist;
 
         switch (opt) {
@@ -419,7 +419,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.chunkRenderManager.scheduleRebuild(x, y, z, important);
     }
 
-    public ChunkRenderBackend<?> getChunkRenderer() {
+    public ChunkRenderBackend getChunkRenderer() {
         return this.chunkRenderBackend;
     }
 

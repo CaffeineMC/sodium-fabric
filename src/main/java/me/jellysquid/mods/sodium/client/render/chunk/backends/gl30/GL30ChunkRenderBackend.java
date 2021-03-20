@@ -15,7 +15,7 @@ import net.minecraft.client.util.math.MatrixStack;
  */
 public class GL30ChunkRenderBackend extends ChunkRenderBackendOneshot<VAOGraphicsState> {
     public GL30ChunkRenderBackend(ChunkVertexType vertexType) {
-        super(vertexType);
+        super(VAOGraphicsState.class, vertexType);
     }
 
     @Override
@@ -26,13 +26,8 @@ public class GL30ChunkRenderBackend extends ChunkRenderBackendOneshot<VAOGraphic
     }
 
     @Override
-    public Class<VAOGraphicsState> getGraphicsStateType() {
-        return VAOGraphicsState.class;
-    }
-
-    @Override
-    protected VAOGraphicsState createGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<VAOGraphicsState> container) {
-        return new VAOGraphicsState(memoryTracker, container);
+    protected VAOGraphicsState createGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer container, int id) {
+        return new VAOGraphicsState(memoryTracker, container, id);
     }
 
     public static boolean isSupported(boolean disableBlacklist) {

@@ -6,8 +6,9 @@ public class ChunkRenderBounds {
     public static final ChunkRenderBounds ALWAYS_FALSE = new ChunkRenderBounds(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY,
             Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
 
-    public final float x1, y1, z1;
-    public final float x2, y2, z2;
+    public final float x1, x2;
+    public final float y1, y2;
+    public final float z1, z2;
 
     public ChunkRenderBounds(float x1, float y1, float z1, float x2, float y2, float z2) {
         this.x1 = x1;
@@ -57,15 +58,14 @@ public class ChunkRenderBounds {
             int z1 = origin.getMinZ() + leftBound(this.z);
             int z2 = origin.getMinZ() + rightBound(this.z);
 
-            // Expand the bounding box by 8 blocks (half a chunk) in order to deal with diagonal surfaces
             return new ChunkRenderBounds(
-                    Math.max(x1, origin.getMinX()) - 8.0f,
-                    Math.max(y1, origin.getMinY()) - 8.0f,
-                    Math.max(z1, origin.getMinZ()) - 8.0f,
+                    Math.max(x1, origin.getMinX()) - 0.5f,
+                    Math.max(y1, origin.getMinY()) - 0.5f,
+                    Math.max(z1, origin.getMinZ()) - 0.5f,
 
-                    Math.min(x2, origin.getMaxX()) + 8.0f,
-                    Math.min(y2, origin.getMaxY()) + 8.0f,
-                    Math.min(z2, origin.getMaxZ()) + 8.0f
+                    Math.min(x2, origin.getMaxX()) + 0.5f,
+                    Math.min(y2, origin.getMaxY()) + 0.5f,
+                    Math.min(z2, origin.getMaxZ()) + 0.5f
             );
         }
 

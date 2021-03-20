@@ -1,14 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk.cull.graph;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import net.minecraft.util.math.Direction;
-
 import java.util.Arrays;
 
 public class ChunkGraphIterationQueue {
-    private int[] positions;
     private ChunkGraphNode[] nodes;
-    private Direction[] directions;
+    private byte[] directions;
+    private byte[] cullingState;
 
     private int pos;
     private int capacity;
@@ -18,39 +15,47 @@ public class ChunkGraphIterationQueue {
     }
 
     public ChunkGraphIterationQueue(int capacity) {
-        this.positions = new int[capacity];
         this.nodes = new ChunkGraphNode[capacity];
-        this.directions = new Direction[capacity];
+        this.directions = new byte[capacity];
+        this.cullingState = new byte[capacity];
 
         this.capacity = capacity;
     }
 
-    public void add(ChunkGraphNode node, Direction direction) {
+    public void add(ChunkGraphNode node, int direction) {
+        this.add(node, direction, 0);
+    }
+
+    public void add(ChunkGraphNode node, int direction, int cullingState) {
         int i = this.pos++;
 
         if (i == this.capacity) {
             this.resize();
         }
 
-        this.positions[i] = node.getId();
         this.nodes[i] = node;
-        this.directions[i] = direction;
+        this.directions[i] = (byte) direction;
+        this.cullingState[i] = (byte) (cullingState | (1 << direction));
     }
 
     private void resize() {
         this.capacity *= 2;
 
-        this.positions = Arrays.copyOf(this.positions, this.capacity);
         this.nodes = Arrays.copyOf(this.nodes, this.capacity);
         this.directions = Arrays.copyOf(this.directions, this.capacity);
+        this.cullingState = Arrays.copyOf(this.cullingState, this.capacity);
     }
 
     public ChunkGraphNode getNode(int i) {
         return this.nodes[i];
     }
 
-    public Direction getDirection(int i) {
+    public int getDirection(int i) {
         return this.directions[i];
+    }
+
+    public int getCullingState(int i) {
+        return this.cullingState[i];
     }
 
     public void clear() {
@@ -59,9 +64,5 @@ public class ChunkGraphIterationQueue {
 
     public int size() {
         return this.pos;
-    }
-
-    public IntArrayList getOrderedIdList() {
-        return IntArrayList.wrap(this.positions, this.pos);
     }
 }

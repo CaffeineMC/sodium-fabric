@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
@@ -7,21 +8,31 @@ import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
+import me.jellysquid.mods.sodium.common.util.collections.IntPool;
+import me.jellysquid.mods.sodium.common.util.collections.TrackedArray;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 
 import java.util.EnumMap;
 
 public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P extends ChunkProgram>
-        implements ChunkRenderBackend<T> {
+        implements ChunkRenderBackend {
     private final EnumMap<ChunkFogMode, P> programs = new EnumMap<>(ChunkFogMode.class);
 
     protected final ChunkVertexType vertexType;
     protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
 
+    protected final TrackedArray<T> stateStorage;
+    protected final IntPool stateIds;
+
+    protected final ObjectArrayFIFOQueue<T> pendingUnloads = new ObjectArrayFIFOQueue<>();
+
     protected P activeProgram;
 
-    public ChunkRenderShaderBackend(ChunkVertexType vertexType) {
+    public ChunkRenderShaderBackend(Class<T> graphicsType, ChunkVertexType vertexType) {
+        this.stateStorage = new TrackedArray<>(graphicsType, 4096);
+        this.stateIds = new IntPool();
+
         this.vertexType = vertexType;
         this.vertexFormat = vertexType.getCustomVertexFormat();
     }
@@ -60,9 +71,11 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P e
 
     @Override
     public void begin(MatrixStack matrixStack) {
+        this.unloadPending();
+
         this.activeProgram = this.programs.get(ChunkFogMode.getActiveMode());
         this.activeProgram.bind();
-        this.activeProgram.setup(matrixStack);
+        this.activeProgram.setup(matrixStack, this.vertexType.getModelScale(), this.vertexType.getTextureScale());
     }
 
     @Override
@@ -76,10 +89,26 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState, P e
         for (P shader : this.programs.values()) {
             shader.delete();
         }
+
+        this.unloadPending();
     }
 
     @Override
     public ChunkVertexType getVertexType() {
         return this.vertexType;
+    }
+
+    private void unloadPending() {
+        while (!this.pendingUnloads.isEmpty()) {
+            T state = this.pendingUnloads.dequeue();
+            state.delete();
+
+            this.stateIds.deallocateId(state.getId());
+        }
+    }
+
+    @Override
+    public void deleteGraphicsState(int id) {
+        this.pendingUnloads.enqueue(this.stateStorage.remove(id));
     }
 }

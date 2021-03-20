@@ -24,7 +24,7 @@ public class GlShader extends GlObject {
         src = processShader(src, constants);
 
         int handle = GL20.glCreateShader(type.id);
-        GL20.glShaderSource(handle, src);
+        ShaderWorkarounds.safeShaderSource(handle, src);
         GL20.glCompileShader(handle);
 
         String log = GL20.glGetShaderInfoLog(handle);
