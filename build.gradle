@@ -67,7 +67,7 @@ def getVersionMetadata() {
         return "build.${build_id}"
     }
 
-    if (grgit == null) {
+    if (grgit != null) {
         def head = grgit.head()
         def id = head.abbreviatedId
 
