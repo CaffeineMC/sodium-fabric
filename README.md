@@ -1,9 +1,9 @@
 ![Project icon](https://git-assets.jellysquid.me/hotlink-ok/sodium/icon-rounded-128px.png)
 
 # Sodium (for Fabric)
-![GitHub license](https://img.shields.io/github/license/jellysquid3/sodium-fabric.svg)
-![GitHub issues](https://img.shields.io/github/issues/jellysquid3/sodium-fabric.svg)
-![GitHub tag](https://img.shields.io/github/tag/jellysquid3/sodium-fabric.svg)
+![GitHub license](https://img.shields.io/github/license/CaffeineMC/sodium-fabric.svg)
+![GitHub issues](https://img.shields.io/github/issues/CaffeineMC/sodium-fabric.svg)
+![GitHub tag](https://img.shields.io/github/tag/CaffeineMC/sodium-fabric.svg)
 
 Sodium is a free and open-source optimization mod for the Minecraft client that improves frame rates, reduces
 micro-stutter, and fixes graphical issues in Minecraft. 
@@ -13,52 +13,67 @@ graphical issues or crashes while using it. Additionally, the
 [Fabric Rendering API](https://fabricmc.net/wiki/documentation:rendering) is not yet supported, which may cause crashes
 and other issues with a number of mods.
 
+---
+
 ## Installation
 
-### Stable releases
+### Manual installation (recommended)
 
-#### Manual Installation (recommended)
+You will need Fabric Loader 0.10.x or newer installed in your game in order to load Sodium. If you haven't installed
+Fabric mods before, you can find a variety of community guides for doing so [here](https://fabricmc.net/wiki/install).
 
-The latest releases of Sodium are published to our [official Modrinth page](https://modrinth.com/mod/sodium) and [GitHub releases page](https://github.com/jellysquid3/sodium-fabric/releases). Usually, builds will be
-made available on GitHub slightly sooner than other locations.
+#### Stable releases
 
-You will need Fabric Loader 0.10.x or newer installed in your game in order to load Sodium. If you haven't installed Fabric
-mods before, you can find a variety of community guides for doing so [here](https://fabricmc.net/wiki/install).
+![GitHub release](https://img.shields.io/github/release/CaffeineMC/sodium-fabric.svg)
 
-#### CurseForge
+The latest releases of Sodium are published to our [Modrinth](https://modrinth.com/mods/sodium) and
+[GitHub release](https://github.com/CaffeineMC/sodium-fabric/releases) pages. Releases are considered by our team to be
+**suitable for general use**, but they are not guaranteed to be free of bugs and other issues.
 
-If you are using the new CurseForge client, you can continue to find downloads through our
-[official CurseForge page](https://www.curseforge.com/minecraft/mc-mods/sodium). Please note
-that the CurseForge launcher does not natively support Fabric modding, so you will also need to install
-[Jumploader](https://www.curseforge.com/minecraft/mc-mods/jumploader) in order to create a Fabric environment. As such,
-we generally do not recommend this option, and are looking to phase out support for it in the near future. 
+Usually, releases will be made available on GitHub slightly sooner than other locations.
 
+#### Bleeding-edge builds (unstable)
 
-### Bleeding-edge builds
+[![GitHub build status](https://img.shields.io/github/workflow/status/CaffeineMC/sodium-fabric/gradle-ci/1.16.x/dev)](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml)
 
-If you are a player who is looking to get your hands on the latest **bleeding-edge builds for testing**, consider
-taking a look at the builds produced through our [GitHub Actions workflow](actions/workflows/gradle.yml). This
-workflow automatically runs every time a change is pushed to the repository, and as such, they will reflect the latest
-state of development.
+If you are a player who is looking to get your hands on the latest **bleeding-edge changes for testing**, consider
+taking a look at the automated builds produced through our [GitHub Actions workflow](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml?query=event%3Apush).
+This workflow automatically runs every time a change is pushed to the repository, and as such, the builds it produces
+will generally reflect the latest snapshot of development.
 
 Bleeding edge builds will often include unfinished code that hasn't been extensively tested. That code may introduce
 incomplete features, bugs, crashes, and all other kinds of weird issues. You **should not use these bleeding edge builds**
 unless you know what you are doing and are comfortable with software debugging. If you report issues using these builds,
 we will expect that this is the case. Caveat emptor.
 
+### CurseForge
+
+[![CurseForge downloads](http://cf.way2muchnoise.eu/full_394468_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/sodium)
+
+If you are using the CurseForge client, you can continue to find downloads through our
+[CurseForge page](https://www.curseforge.com/minecraft/mc-mods/sodium). Unless you are using the CurseForge
+client, you should prefer the downloads linked on our Modrinth or GitHub release pages above.
+
+The CurseForge client does not natively support Fabric modding, so you will need to install
+[Jumploader](https://www.curseforge.com/minecraft/mc-mods/jumploader) in order to set up your Fabric environment. Due to
+the extra complexity and startup overhead this workaround adds, we generally do not recommend using this method unless
+you have an existing setup with it.
+
+---
+
 ### Reporting Issues
 
-You can report bugs and crashes by opening an issue on our [issue tracker](https://github.com/jellysquid3/sodium-fabric/issues).
-Before opening a new issue, please check using the search tool that your issue has not already been created, and that if
-there is a suitable template for the issue you are opening, that it is filled out entirely. Issues which are duplicates
-or do not contain the necessary information to triage and debug may be closed. 
+You can report bugs and crashes by opening an issue on our [issue tracker](https://github.com/CaffeineMC/sodium-fabric/issues).
+Before opening a new issue, use the search tool to make sure that your issue has not already been reported and ensure
+that you have completely filled out the issue template. Issues which are duplicates or do not contain the necessary
+information to triage and debug may be closed. 
 
-Please note that while the issue tracker is open to feature and mod compatibility requests, development
-is primarily focused on improving hardware compatibility and performance, along with finishing any unimplemented features
-necessary for parity with the vanilla renderer.
+Please note that while the issue tracker is open to feature requests, development is primarily focused on
+improving hardware compatibility, performance, and finishing any unimplemented features necessary for parity with
+the vanilla renderer.
 
 ### Community
-[![Discord chat](https://img.shields.io/badge/chat%20on-discord-7289DA)](https://jellysquid.me/discord)
+[![Discord chat](https://img.shields.io/badge/chat%20on-discord-7289DA?logo=discord&logoColor=white)](https://jellysquid.me/discord)
 
 We have an [official Discord community](https://jellysquid.me/discord) for all of our projects. By joining, you can:
 - Get installation help and technical support with all of our mods 
@@ -66,7 +81,13 @@ We have an [official Discord community](https://jellysquid.me/discord) for all o
 - Get involved and collaborate with the rest of our team
 - ... and just hang out with the rest of our community.
 
+---
+
 ### Building from sources
+
+Support is not provided for setting up build environments or compiling the mod. We ask that
+users who are looking to get their hands dirty with the code have a basic understanding of compiling Java/Gradle
+projects. The basic overview is provided here for those familiar.
 
 #### Requirements
 
@@ -84,27 +105,24 @@ customize this behavior on a system-wide level, please see [Gradle's Toolchain u
 
 #### Building with Gradle
 
-Sodium uses a typical Gradle project structure and can be built by simply running the default `build` task.
+Sodium uses a typical Gradle project structure and can be built by simply running the default `build` task. After Gradle
+finishes building the project, you can find the build artifacts (typical mod binaries, and their sources) in
+`build/libs`.
 
-**Tip:** If this is a one-off build, and you would prefer the Gradle daemon does not stick around in memory afterwards 
-(often consuming upwards of 1 GiB), then you can use the [`--no-daemon` argument](https://docs.gradle.org/current/userguide/gradle_daemon.html#sec:disabling_the_daemon)
-to ensure that the daemon is torn down after the build is complete. However, subsequent Gradle builds will
+**Tip:** If this is a one-off build, and you would prefer the Gradle daemon does not stick around in memory afterwards,
+try adding the [`--no-daemon` flag](https://docs.gradle.org/current/userguide/gradle_daemon.html#sec:disabling_the_daemon)
+to ensure that the daemon is torn down after the build is complete. However, subsequent builds of the project will
 [start more slowly](https://docs.gradle.org/current/userguide/gradle_daemon.html#sec:why_the_daemon) if the Gradle
-daemon is not sitting warm and loaded in memory.
+daemon is not available to be re-used.
 
-After Gradle finishes building the project, the resulting build artifacts (your usual mod binaries, and
-their sources) can be found in `build/libs`.
 
-Build artifacts classified with `dev` are outputs containing the sources and compiled classes
+Build artifacts ending in `dev` are outputs containing the sources and compiled classes
 before they are remapped into stable intermediary names. If you are working in a developer environment and would
 like to add the mod to your game, you should prefer to use the `modRuntime` or `modCompile` configurations provided by
 Loom instead of these outputs.
 
-Please note that support is not provided for setting up build environments or compiling the mod. We ask that
-users who are looking to get their hands dirty with the code have a basic understanding of compiling Java/Gradle
-projects.
-
+---
 ### License
 
 Sodium is licensed under GNU LGPLv3, a free and open-source license. For more information, please see the
-[license file](https://github.com/jellysquid3/sodium-fabric/blob/1.16.x/dev/LICENSE.txt).
+[license file](https://github.com/CaffeineMC/sodium-fabric/blob/1.16.x/dev/LICENSE.txt).
