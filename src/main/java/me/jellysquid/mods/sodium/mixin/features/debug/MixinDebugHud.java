@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.features.debug;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,6 +35,9 @@ public abstract class MixinDebugHud {
                 break;
             }
         }
+
+        strings.add("");
+        strings.add("Sodium Version: " + SodiumClientMod.version());
 
         strings.add("");
         strings.addAll(getChunkRendererDebugStrings());
