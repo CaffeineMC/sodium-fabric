@@ -71,7 +71,10 @@ public class ChunkRenderManager implements ChunkStatusListener {
     private final TrackedArray<ChunkRenderContainer> renders = new TrackedArray<>(ChunkRenderContainer.class, 16384);
     private final IntPool renderIds = new IntPool();
 
-    public RenderContext<T> renderContext;
+    private final ObjectArrayFIFOQueue<ChunkRenderContainer> importantRebuildQueue = new ObjectArrayFIFOQueue<>();
+    private final ObjectArrayFIFOQueue<ChunkRenderContainer> rebuildQueue = new ObjectArrayFIFOQueue<>();
+
+    public RenderContext renderContext;
 
     private final SodiumWorldRenderer renderer;
     private final ClientWorld world;
@@ -84,19 +87,16 @@ public class ChunkRenderManager implements ChunkStatusListener {
 
     private int visibleChunkCount;
 
-    public static class RenderContext<T1 extends ChunkGraphicsState> {
-        public final ObjectArrayFIFOQueue<ChunkRenderContainer<T1>> iterationQueue = new ObjectArrayFIFOQueue<>();
+    public static class RenderContext {
+        public final ObjectArrayFIFOQueue<ChunkRenderContainer> iterationQueue = new ObjectArrayFIFOQueue<>();
         @SuppressWarnings("unchecked")
-        public final ChunkRenderList<T1>[] chunkRenderLists = new ChunkRenderList[BlockRenderPass.COUNT];
-        public final ObjectList<ChunkRenderContainer<T1>> tickableChunks = new ObjectArrayList<>();
+        public final ChunkRenderList[] chunkRenderLists = new ChunkRenderList[BlockRenderPass.COUNT];
+        public final ObjectList<ChunkRenderContainer> tickableChunks = new ObjectArrayList<>();
         public final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
-
-        private final ObjectArrayFIFOQueue<ChunkRenderContainer> importantRebuildQueue = new ObjectArrayFIFOQueue<>();
-        private final ObjectArrayFIFOQueue<ChunkRenderContainer> rebuildQueue = new ObjectArrayFIFOQueue<>();
 
         public RenderContext(){
             for (int i = 0; i < this.chunkRenderLists.length; i++) {
-                this.chunkRenderLists[i] = new ChunkRenderList<>();
+                this.chunkRenderLists[i] = new ChunkRenderList();
             }
         }
     }
@@ -114,7 +114,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
 
         this.dirty = true;
 
-        this.renderContext = new RenderContext<>();
+        this.renderContext = new RenderContext();
 
         this.culler = new ChunkGraphCuller(world, renderDistance);
         this.useChunkFaceCulling = SodiumClientMod.options().advanced.useChunkFaceCulling;
@@ -221,12 +221,12 @@ public class ChunkRenderManager implements ChunkStatusListener {
         ChunkGraphicsStateArray states = render.getGraphicsStates();
 
         for (int i = 0; i < states.getSize(); i++) {
-            this.chunkRenderLists[states.getKey(i)]
+            this.renderContext.chunkRenderLists[states.getKey(i)]
                     .add(states.getValue(i), visibleFaces);
         }
 
         if (render.isTickable()) {
-            this.tickableChunks.add(render);
+            this.renderContext.tickableChunks.add(render);
         }
 
         this.visibleChunkCount++;
@@ -256,7 +256,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
 
         this.renderContext.visibleBlockEntities.clear();
 
-        for (ChunkRenderList list : this.chunkRenderLists) {
+        for (ChunkRenderList list : this.renderContext.chunkRenderLists) {
             list.reset();
         }
 
@@ -381,7 +381,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     public void renderLayer(MatrixStack matrixStack, BlockRenderPass pass, double x, double y, double z) {
-        ChunkRenderList chunkRenderList = this.chunkRenderLists[pass.ordinal()];
+        ChunkRenderList chunkRenderList = this.renderContext.chunkRenderLists[pass.ordinal()];
         ChunkRenderListIterator iterator = chunkRenderList.iterator(pass.isTranslucent());
 
         this.backend.begin(matrixStack);
@@ -390,7 +390,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     public void tickVisibleRenders() {
-        for (ChunkRenderContainer render : this.tickableChunks) {
+        for (ChunkRenderContainer render : this.renderContext.tickableChunks) {
             render.tick();
         }
     }

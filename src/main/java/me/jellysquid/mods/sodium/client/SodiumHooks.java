@@ -18,5 +18,5 @@ public class SodiumHooks {
         return null;
     };
 
-    public static Predicate<ChunkRenderContainer<?>> shouldCull = c -> false;
+    public static Predicate<ChunkRenderContainer> shouldCull = c -> false;
 }

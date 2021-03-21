@@ -79,6 +79,8 @@ public abstract class ChunkProgram extends GlProgram {
         if (SodiumHooks.shouldEnableClipping.getAsBoolean()) {
             float[] clippingEquation = SodiumHooks.getClippingEquation.get();
             GL20.glUniform4f(this.uClippingEquation, clippingEquation[0], clippingEquation[1], clippingEquation[2], clippingEquation[3]);
+        } else{
+            GL20.glUniform4f(this.uClippingEquation, 0, 0, 0, 1);
         }
     }
 }

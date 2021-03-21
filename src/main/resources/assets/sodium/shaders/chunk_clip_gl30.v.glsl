@@ -14,6 +14,7 @@ varying float v_FragDistance;
 
 uniform mat4 u_ModelViewProjectionMatrix;
 uniform vec3 u_ModelScale;
+uniform vec2 u_TextureScale;
 
 // The model translation for this draw call.
 // If multi-draw is enabled, then the model offset will come from an attribute buffer.
@@ -31,16 +32,16 @@ void main() {
     // transform it into model-view space with a matrix, which is much slower.
     vec3 pos = (a_Pos * u_ModelScale) + d_ModelOffset.xyz;
 
-#ifdef USE_FOG
+    #ifdef USE_FOG
     v_FragDistance = length(pos);
-#endif
+    #endif
 
     // Transform the vertex position into model-view-projection space
     gl_Position = u_ModelViewProjectionMatrix * vec4(pos, 1.0);
 
     // Pass the color and texture coordinates to the fragment shader
     v_Color = a_Color;
-    v_TexCoord = a_TexCoord;
+    v_TexCoord = a_TexCoord * u_TextureScale;
     v_LightCoord = a_LightCoord;
 
     gl_ClipDistance[0] = dot(pos.xyz, u_ClippingEquation.xyz) + u_ClippingEquation.w;

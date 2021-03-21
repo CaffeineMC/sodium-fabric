@@ -423,12 +423,12 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         return this.chunkRenderBackend;
     }
 
-    public ChunkRenderManager.RenderContext<?> createNewRenderContext() {
-        return new ChunkRenderManager.RenderContext<>();
+    public ChunkRenderManager.RenderContext createNewRenderContext() {
+        return new ChunkRenderManager.RenderContext();
     }
 
-    public ChunkRenderManager.RenderContext<?> switchRenderContext(ChunkRenderManager.RenderContext<?> context) {
-        ChunkRenderManager.RenderContext<?> old = chunkRenderManager.renderContext;
+    public ChunkRenderManager.RenderContext switchRenderContext(ChunkRenderManager.RenderContext context) {
+        ChunkRenderManager.RenderContext old = chunkRenderManager.renderContext;
         chunkRenderManager.renderContext = (ChunkRenderManager.RenderContext) context;
         return old;
     }
