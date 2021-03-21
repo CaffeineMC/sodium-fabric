@@ -76,7 +76,7 @@ We have an [official Discord community](https://jellysquid.me/discord) for all o
 [SDKMAN](https://sdkman.io)), Gradle will automatically download a suitable toolchain from the [AdoptOpenJDK project](https://adoptopenjdk.net/)
 and use it to compile the project. For more information on what package managers are supported and how you can
 customize this behavior on a system-wide level, please see [Gradle's Toolchain user guide](https://docs.gradle.org/current/userguide/toolchains.html).
-- Gradle 6.x (optional)
+- Gradle 6.7 or newer (optional)
   - The [Gradle wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html#sec:using_wrapper) is provided in
     this repository can be used instead of installing a suitable version of Gradle yourself. However, if you are building
     many projects, you may prefer to install it yourself through a suitable package manager as to save disk space and to
