@@ -36,9 +36,8 @@ public abstract class MixinDebugHud {
         }
 
         strings.add("");
-        strings.add("Sodium Version: " + SodiumClientMod.version());
-
-        strings.add("");
+        strings.add("Sodium Version:");
+        strings.add(SodiumClientMod.version());
         strings.addAll(getChunkRendererDebugStrings());
 
         if (SodiumClientMod.options().advanced.disableDriverBlacklist) {

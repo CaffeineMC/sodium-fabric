@@ -26,8 +26,9 @@ public class SodiumClientMod implements ClientModInitializer {
             ModContainer ourContainer = FabricLoader.getInstance().getModContainer("sodium")
                     .orElseThrow(() -> new IllegalStateException("Mod with ID \"sodium\" couldn't be found... but that's us!"));
             VERSION = ourContainer.getMetadata().getVersion().getFriendlyString();
-            if ("${version}".equals(VERSION))
-                VERSION = Formatting.RED + "(!!) Devel";
+            if ("${version}".equals(VERSION)) {
+                VERSION = Formatting.RED + "(!!) Dev Environment";
+            }
         }
 
         return VERSION;
