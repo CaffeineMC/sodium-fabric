@@ -37,7 +37,7 @@ we generally do not recommend this option, and are looking to phase out support 
 ### Bleeding-edge builds
 
 If you are a player who is looking to get your hands on the latest **bleeding-edge builds for testing**, consider
-taking a look at the builds produced through our [GitHub Actions workflow](actions/workflows/gradle.yml). This
+taking a look at the builds produced through our [GitHub Actions workflow](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml). This
 workflow automatically runs every time a change is pushed to the repository, and as such, they will reflect the latest
 state of development.
 
