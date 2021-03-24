@@ -69,10 +69,9 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
         buffer.putFloat(i + 44, (short) 0);
 
         if (vertexCount == 4) {
-            // Yes, this looks odd. We don't apply the special texture scale to mc_midTexCoord in the shader, therefore
-            // we must not apply the scale here either.
-            short midU = ModelVertexUtil.denormalizeVertexPositionFloatAsShort(uSum * 0.25f);
-            short midV = ModelVertexUtil.denormalizeVertexPositionFloatAsShort(vSum * 0.25f);
+            // TODO: Consider applying similar vertex coordinate transformations as the normal HFP texture coordinates
+            short midU = (short)(65536.0F * (uSum * 0.25f));
+            short midV = (short)(65536.0F * (vSum * 0.25f));
             int midTexCoord = (midV << 16) | midU;
 
             buffer.putInt(i + 20, midTexCoord);
