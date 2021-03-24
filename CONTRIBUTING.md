@@ -2,7 +2,7 @@
 
 When opening issues, please be sure to include the following information as applicable.
 
-- The exact version of the mod you are running, such as `0.1.0-fabric`, and the version of Fabric/Forge you are using.
+- The exact version of the mod you are running, such as `0.1.0-fabric`, and the version of Fabric you are using.
 - If your issue is a crash, attach the latest client or server log and the complete crash report as a file. You can
 attach these as a file (preferred) or host them on a service such as [GitHub Gist](https://gist.github.com/) or [Hastebin](https://hastebin.com/).
 - If your issue is a bug or otherwise unexpected behavior, explain what you expected to happen.
