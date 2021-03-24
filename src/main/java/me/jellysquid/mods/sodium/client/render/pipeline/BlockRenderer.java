@@ -17,6 +17,7 @@ import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.coderbot.iris.Iris;
+import net.coderbot.iris.shaderpack.IdMap;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -46,6 +47,7 @@ public class BlockRenderer {
     private final LightPipelineProvider lighters;
 
     private final boolean useAmbientOcclusion;
+    private final IdMap idMap;
 
     public BlockRenderer(MinecraftClient client, LightPipelineProvider lighters, BiomeColorBlender biomeColorBlender) {
         this.blockColors = (BlockColorsExtended) client.getBlockColors();
@@ -55,6 +57,7 @@ public class BlockRenderer {
 
         this.occlusionCache = new BlockOcclusionCache();
         this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
+        this.idMap = Iris.getCurrentPack().getIdMap();
     }
 
     public boolean renderModel(BlockRenderView world, BlockState state, BlockPos pos, BakedModel model, ChunkModelBuffers buffers, boolean cull, long seed) {
@@ -101,9 +104,9 @@ public class BlockRenderer {
         return rendered;
     }
 
-    private static short resolveBlockId(BlockState state) {
+    private short resolveBlockId(BlockState state) {
         Identifier id = Registry.BLOCK.getId(state.getBlock());
-        return (short) (int) Iris.getCurrentPack().getIdMap().getBlockProperties().getOrDefault(id, -1);
+        return (short) (int) idMap.getBlockProperties().getOrDefault(id, -1);
     }
 
     private void renderQuadList(BlockRenderView world, BlockState state, BlockPos pos, LightPipeline lighter, Vec3d offset,

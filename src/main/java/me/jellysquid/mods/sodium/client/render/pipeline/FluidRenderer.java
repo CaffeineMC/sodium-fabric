@@ -16,6 +16,7 @@ import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.coderbot.iris.Iris;
+import net.coderbot.iris.shaderpack.IdMap;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -60,6 +61,8 @@ public class FluidRenderer {
     private final QuadLightData quadLightData = new QuadLightData();
     private final int[] quadColors = new int[4];
 
+    private final IdMap idMap;
+
     public FluidRenderer(MinecraftClient client, LightPipelineProvider lighters, BiomeColorBlender biomeColorBlender) {
         BlockModels models = client.getBakedModelManager().getBlockModels();
 
@@ -79,6 +82,8 @@ public class FluidRenderer {
 
         this.lighters = lighters;
         this.biomeColorBlender = biomeColorBlender;
+
+        this.idMap = Iris.getCurrentPack().getIdMap();
     }
 
     private boolean isFluidExposed(BlockRenderView world, int x, int y, int z, Fluid fluid) {
@@ -117,7 +122,7 @@ public class FluidRenderer {
         Fluid fluid = fluidState.getFluid();
         BlockState state = fluidState.getBlockState();
         Identifier id = Registry.BLOCK.getId(state.getBlock());
-        short blockId = (short) (int) Iris.getCurrentPack().getIdMap().getBlockProperties().getOrDefault(id, -1);
+        short blockId = (short) (int) idMap.getBlockProperties().getOrDefault(id, -1);
 
         boolean sfUp = this.isFluidExposed(world, posX, posY + 1, posZ, fluid);
         boolean sfDown = this.isFluidExposed(world, posX, posY - 1, posZ, fluid) &&
