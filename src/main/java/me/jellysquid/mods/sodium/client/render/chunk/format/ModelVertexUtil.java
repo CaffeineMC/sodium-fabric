@@ -2,16 +2,24 @@ package me.jellysquid.mods.sodium.client.render.chunk.format;
 
 public class ModelVertexUtil {
     /**
-     * Converts a floating point in normalized range to a de-normalized unsigned short.
-     * @param value The normalized float
+     * Converts a floating point vertex position in range 0..32 to a de-normalized unsigned short.
+     * @param value The float in range 0..32
      * @return The resulting de-normalized unsigned short
      */
     public static short denormalizeVertexPositionFloatAsShort(float value) {
-        return (short) (value * 65536.0f + 0.5f);
+        // Since we're skipping the scaling formerly done in ChunkModelVertexTransformer to preserve precision, this
+        // method actually takes input unnormalized within the range 0..32, and expands that to 0..65536.
+        // TODO: Restructure things to be less arbitrary here
+        return (short) (value * 2048.0f);
     }
 
+    /**
+     * Converts a normalized floating point texture coordinate to a de-normalized unsigned short.
+     * @param value The normalized float
+     * @return The resulting de-normalized unsigned short
+     */
     public static short denormalizeVertexTextureFloatAsShort(float value) {
-        return (short) (value * 32768.0f + 0.5f);
+        return (short) (value * 32768.0f);
     }
 
     /**

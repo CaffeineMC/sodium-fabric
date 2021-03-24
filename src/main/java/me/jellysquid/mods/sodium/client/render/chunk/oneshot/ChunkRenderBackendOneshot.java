@@ -10,6 +10,7 @@ import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsStateArray;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
@@ -35,8 +36,8 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
 
     private final MemoryTracker memoryTracker = new MemoryTracker();
 
-    public ChunkRenderBackendOneshot(ChunkVertexType vertexType) {
-        super(vertexType);
+    public ChunkRenderBackendOneshot(Class<T> graphicsType, ChunkVertexType vertexType) {
+        super(graphicsType, vertexType);
     }
 
     @Override
@@ -67,32 +68,32 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
     }
 
     @Override
-    public void upload(Iterator<ChunkBuildResult<T>> queue) {
+    public void upload(Iterator<ChunkBuildResult> queue) {
         while (queue.hasNext()) {
-            ChunkBuildResult<T> result = queue.next();
+            ChunkBuildResult result = queue.next();
 
-            ChunkRenderContainer<T> render = result.render;
+            ChunkRenderContainer render = result.render;
             ChunkRenderData data = result.data;
 
+            ChunkGraphicsStateArray states = render.getGraphicsStates();
+
             for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-                T state = render.getGraphicsState(pass);
+                int stateId = states.remove(pass);
+
+                if (stateId != -1) {
+                    this.deleteGraphicsState(stateId);
+                }
+
                 ChunkMeshData mesh = data.getMesh(pass);
 
                 if (mesh.hasVertexData()) {
-                    if (state == null) {
-                        state = this.createGraphicsState(this.memoryTracker, render);
-                    }
-
+                    T state = this.createGraphicsState(this.memoryTracker, render, this.stateIds.allocateId());
                     state.upload(mesh);
-                } else {
-                    if (state != null) {
-                        state.delete();
-                    }
 
-                    state = null;
+                    this.stateStorage.add(state);
+
+                    states.set(pass, state.getId());
                 }
-
-                render.setGraphicsState(pass, state);
             }
 
             render.setData(data);
@@ -100,9 +101,10 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
     }
 
     @Override
-    public void render(ChunkRenderListIterator<T> it, ChunkCameraContext camera) {
+    public void render(ChunkRenderListIterator it, ChunkCameraContext camera) {
         while (it.hasNext()) {
-            T state = it.getGraphicsState();
+            T state = this.stateStorage.get(it.getGraphicsStateId());
+
             int visibleFaces = it.getVisibleFaces();
 
             this.buildBatch(state, visibleFaces);
@@ -146,7 +148,7 @@ public abstract class ChunkRenderBackendOneshot<T extends ChunkOneshotGraphicsSt
         GL20.glMultiDrawArrays(GL11.GL_QUADS, this.batch.getIndicesBuffer(), this.batch.getLengthBuffer());
     }
 
-    protected abstract T createGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<T> container);
+    protected abstract T createGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer container, int id);
 
     @Override
     public void delete() {

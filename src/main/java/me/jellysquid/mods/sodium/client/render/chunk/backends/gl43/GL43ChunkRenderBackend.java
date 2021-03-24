@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.render.chunk.backends.gl43;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferRegion;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
@@ -26,6 +25,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.multidraw.ChunkRenderBacken
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegionManager;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
@@ -77,59 +77,61 @@ import java.util.regex.Pattern;
  * reduced up to a factor of ~32x.
  */
 public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraphicsState> {
-    private final ChunkRegionManager<LCBGraphicsState> bufferManager;
+    private final ChunkRegionManager bufferManager;
 
-    private final ObjectArrayList<ChunkRegion<LCBGraphicsState>> pendingBatches = new ObjectArrayList<>();
-    private final ObjectArrayFIFOQueue<ChunkRegion<LCBGraphicsState>> pendingUploads = new ObjectArrayFIFOQueue<>();
+    private final ObjectArrayList<ChunkRegion> pendingBatches = new ObjectArrayList<>();
+    private final ObjectArrayFIFOQueue<ChunkRegion> pendingUploads = new ObjectArrayFIFOQueue<>();
 
     private final GlMutableBuffer uploadBuffer;
     private final GlMutableBuffer uniformBuffer;
     private final GlMutableBuffer commandBuffer;
 
     private final ChunkDrawParamsVector uniformBufferBuilder;
-    private final IndirectCommandBufferVector commandBufferBuilder;
+    private final IndirectCommandBufferVector commandClientBufferBuilder;
 
     private final MemoryTracker memoryTracker = new MemoryTracker();
 
     public GL43ChunkRenderBackend(ChunkVertexType vertexType) {
-        super(vertexType);
+        super(LCBGraphicsState.class, vertexType);
 
-        this.bufferManager = new ChunkRegionManager<>(this.memoryTracker);
+        this.bufferManager = new ChunkRegionManager(this.memoryTracker);
         this.uploadBuffer = new GlMutableBuffer(GL15.GL_STREAM_COPY);
-        this.uniformBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
-        this.commandBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
 
+        this.uniformBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
         this.uniformBufferBuilder = ChunkDrawParamsVector.create(2048);
-        this.commandBufferBuilder = IndirectCommandBufferVector.create(2048);
+
+        this.commandBuffer = isWindowsIntelDriver() ? null : new GlMutableBuffer(GL15.GL_STATIC_DRAW);
+        this.commandClientBufferBuilder = IndirectCommandBufferVector.create(2048);
     }
 
     @Override
-    public void upload(Iterator<ChunkBuildResult<LCBGraphicsState>> queue) {
+    public void upload(Iterator<ChunkBuildResult> queue) {
         this.setupUploadBatches(queue);
 
         GlMutableBuffer uploadBuffer = this.uploadBuffer;
         uploadBuffer.bind(GL15.GL_ARRAY_BUFFER);
 
         while (!this.pendingUploads.isEmpty()) {
-            ChunkRegion<LCBGraphicsState> region = this.pendingUploads.dequeue();
+            ChunkRegion region = this.pendingUploads.dequeue();
 
             GlBufferArena arena = region.getBufferArena();
             arena.bind();
 
-            ObjectArrayList<ChunkBuildResult<LCBGraphicsState>> uploadQueue = region.getUploadQueue();
+            ObjectArrayList<ChunkBuildResult> uploadQueue = region.getUploadQueue();
             arena.ensureCapacity(getUploadQueuePayloadSize(uploadQueue));
 
-            for (ChunkBuildResult<LCBGraphicsState> result : uploadQueue) {
-                ChunkRenderContainer<LCBGraphicsState> render = result.render;
+            for (ChunkBuildResult result : uploadQueue) {
+                ChunkRenderContainer render = result.render;
                 ChunkRenderData data = result.data;
 
                 for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-                    LCBGraphicsState graphics = render.getGraphicsState(pass);
+                    int graphicsId = render.getGraphicsStates().get(pass);
 
                     // De-allocate the existing buffer arena for this render
                     // This will allow it to be cheaply re-allocated just below
-                    if (graphics != null) {
-                        graphics.delete();
+                    if (graphicsId != -1) {
+                        this.stateStorage.remove(graphicsId).delete();
+                        this.stateIds.deallocateId(graphicsId);
                     }
 
                     ChunkMeshData meshData = data.getMesh(pass);
@@ -140,9 +142,12 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
                         GlBufferRegion segment = arena.upload(GL15.GL_ARRAY_BUFFER, 0, upload.buffer.capacity());
 
-                        render.setGraphicsState(pass, new LCBGraphicsState(render, region, segment, meshData, this.vertexFormat));
+                        LCBGraphicsState state = new LCBGraphicsState(render, region, segment, meshData, this.vertexFormat, this.stateIds.allocateId());
+                        this.stateStorage.add(state);
+
+                        render.getGraphicsStates().set(pass, state.getId());
                     } else {
-                        render.setGraphicsState(pass, null);
+                        render.getGraphicsStates().remove(pass);
                     }
                 }
 
@@ -158,17 +163,22 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
     }
 
     @Override
-    public void render(ChunkRenderListIterator<LCBGraphicsState> renders, ChunkCameraContext camera) {
+    public void render(ChunkRenderListIterator renders, ChunkCameraContext camera) {
         this.bufferManager.cleanup();
 
         this.setupDrawBatches(renders, camera);
-        this.setupCommandBuffers();
+        this.buildCommandBuffer();
+
+        if (this.commandBuffer != null) {
+            this.commandBuffer.bind(GL40.GL_DRAW_INDIRECT_BUFFER);
+            this.commandBuffer.upload(GL40.GL_DRAW_INDIRECT_BUFFER, this.commandClientBufferBuilder.getBuffer());
+        }
 
         GlVertexArray prevVao = null;
 
-        int commandStart = 0;
+        long commandStart = this.commandBuffer == null ? this.commandClientBufferBuilder.getBufferAddress() : 0L;
 
-        for (ChunkRegion<?> region : this.pendingBatches) {
+        for (ChunkRegion region : this.pendingBatches) {
             GlVertexArray vao = region.getVertexArray();
             vao.bind();
 
@@ -184,9 +194,9 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
             ChunkDrawCallBatcher batch = region.getDrawBatcher();
 
             GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(GL11.GL_QUADS, commandStart, batch.getCount(), 0 /* tightly packed */);
+            commandStart += batch.getArrayLength();
 
             prevVao = vao;
-            commandStart += batch.getArrayLength();
         }
 
         this.pendingBatches.clear();
@@ -196,23 +206,23 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         }
 
         this.uniformBuffer.unbind(GL15.GL_ARRAY_BUFFER);
-        this.commandBuffer.unbind(GL40.GL_DRAW_INDIRECT_BUFFER);
+
+        if (this.commandBuffer != null) {
+            this.commandBuffer.unbind(GL40.GL_DRAW_INDIRECT_BUFFER);
+        }
     }
 
-    private void setupCommandBuffers() {
-        this.commandBufferBuilder.begin();
+    private void buildCommandBuffer() {
+        this.commandClientBufferBuilder.begin();
 
-        for (ChunkRegion<?> region : this.pendingBatches) {
+        for (ChunkRegion region : this.pendingBatches) {
             ChunkDrawCallBatcher batcher = region.getDrawBatcher();
             batcher.end();
 
-            this.commandBufferBuilder.pushCommandBuffer(batcher);
+            this.commandClientBufferBuilder.pushCommandBuffer(batcher);
         }
 
-        this.commandBufferBuilder.end();
-
-        this.commandBuffer.bind(GL40.GL_DRAW_INDIRECT_BUFFER);
-        this.commandBuffer.upload(GL40.GL_DRAW_INDIRECT_BUFFER, this.commandBufferBuilder.getBuffer());
+        this.commandClientBufferBuilder.end();
     }
 
     private void setupArrayBufferState(GlBufferArena arena) {
@@ -243,12 +253,12 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         GL20.glEnableVertexAttribArray(index);
     }
 
-    private void setupUploadBatches(Iterator<ChunkBuildResult<LCBGraphicsState>> renders) {
+    private void setupUploadBatches(Iterator<ChunkBuildResult> renders) {
         while (renders.hasNext()) {
-            ChunkBuildResult<LCBGraphicsState> result = renders.next();
-            ChunkRenderContainer<LCBGraphicsState> render = result.render;
+            ChunkBuildResult result = renders.next();
+            ChunkRenderContainer render = result.render;
 
-            ChunkRegion<LCBGraphicsState> region = this.bufferManager.getRegion(render.getChunkX(), render.getChunkY(), render.getChunkZ());
+            ChunkRegion region = this.bufferManager.getRegion(render.getChunkX(), render.getChunkY(), render.getChunkZ());
 
             if (region == null) {
                 if (result.data.getMeshSize() <= 0) {
@@ -259,7 +269,7 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
                 region = this.bufferManager.getOrCreateRegion(render.getChunkX(), render.getChunkY(), render.getChunkZ());
             }
 
-            ObjectArrayList<ChunkBuildResult<LCBGraphicsState>> uploadQueue = region.getUploadQueue();
+            ObjectArrayList<ChunkBuildResult> uploadQueue = region.getUploadQueue();
 
             if (uploadQueue.isEmpty()) {
                 this.pendingUploads.enqueue(region);
@@ -269,23 +279,25 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         }
     }
 
-    private void setupDrawBatches(ChunkRenderListIterator<LCBGraphicsState> it, ChunkCameraContext camera) {
+    private void setupDrawBatches(ChunkRenderListIterator it, ChunkCameraContext camera) {
         this.uniformBufferBuilder.reset();
 
         int drawCount = 0;
 
         while (it.hasNext()) {
-            LCBGraphicsState state = it.getGraphicsState();
+            LCBGraphicsState state = this.stateStorage.get(it.getGraphicsStateId());
+
             int visible = it.getVisibleFaces();
 
             int index = drawCount++;
+
             float x = camera.getChunkModelOffset(state.getX(), camera.blockOriginX, camera.originX);
             float y = camera.getChunkModelOffset(state.getY(), camera.blockOriginY, camera.originY);
             float z = camera.getChunkModelOffset(state.getZ(), camera.blockOriginZ, camera.originZ);
 
             this.uniformBufferBuilder.pushChunkDrawParams(x, y, z);
 
-            ChunkRegion<LCBGraphicsState> region = state.getRegion();
+            ChunkRegion region = state.getRegion();
             ChunkDrawCallBatcher batch = region.getDrawBatcher();
 
             if (!batch.isBuilding()) {
@@ -313,10 +325,10 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         this.uniformBuffer.upload(GL15.GL_ARRAY_BUFFER, this.uniformBufferBuilder.getBuffer());
     }
 
-    private static int getUploadQueuePayloadSize(List<ChunkBuildResult<LCBGraphicsState>> queue) {
+    private static int getUploadQueuePayloadSize(List<ChunkBuildResult> queue) {
         int size = 0;
 
-        for (ChunkBuildResult<LCBGraphicsState> result : queue) {
+        for (ChunkBuildResult result : queue) {
             size += result.data.getMeshSize();
         }
 
@@ -329,28 +341,20 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
 
         this.bufferManager.delete();
         this.uploadBuffer.delete();
+
+        if (this.commandBuffer != null) {
+            this.commandBuffer.delete();
+        }
+
+        this.commandClientBufferBuilder.delete();
+
         this.uniformBuffer.delete();
-        this.commandBuffer.delete();
-
         this.uniformBufferBuilder.delete();
-        this.commandBufferBuilder.delete();
     }
 
-    @Override
-    public Class<LCBGraphicsState> getGraphicsStateType() {
-        return LCBGraphicsState.class;
-    }
-
-    public static boolean isSupported(boolean disableBlacklist) {
-        if (!disableBlacklist) {
-            try {
-                if (isIntelGpu()) {
-                    return false;
-                }
-            } catch (Exception e) {
-                SodiumClientMod.logger().warn("An unexpected exception was thrown while trying to parse " +
-                        "the current OpenGL renderer's strings", e);
-            }
+    public static boolean isSupported(boolean disableDriverBlacklist) {
+        if (!disableDriverBlacklist && isKnownBrokenIntelDriver()) {
+            return false;
         }
 
         return GlFunctions.isVertexArraySupported() &&
@@ -359,21 +363,53 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
                 GlFunctions.isInstancedArraySupported();
     }
 
+    // https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
+    private static final Pattern INTEL_BUILD_MATCHER = Pattern.compile("(\\d.\\d.\\d) - Build (\\d+).(\\d+).(\\d+).(\\d+)");
+
+    private static final String INTEL_VENDOR_NAME = "Intel";
+
     /**
      * Determines whether or not the current OpenGL renderer is an integrated Intel GPU on Windows.
-     * These drivers on Windows are known to create significant trouble with the multi-draw renderer.
+     * These drivers on Windows are known to fail when using command buffers.
      */
-    private static boolean isIntelGpu() {
+    private static boolean isWindowsIntelDriver() {
         // We only care about Windows
-        // The open-source drivers on Linux are not known to have driver bugs with multi-draw
+        // The open-source drivers on Linux are not known to have driver bugs with indirect command buffers
         if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
             return false;
         }
 
-        String vendor = Objects.requireNonNull(GL11.glGetString(GL11.GL_VENDOR));
-
         // Check to see if the GPU vendor is Intel
-        return vendor.equals("Intel");
+        return Objects.equals(GL11.glGetString(GL11.GL_VENDOR), INTEL_VENDOR_NAME);
+    }
+
+    /**
+     * Determines whether or not the current OpenGL renderer is an old integrated Intel GPU (prior to Skylake/Gen8) on
+     * Windows. These drivers on Windows are unsupported and known to create significant trouble with the multi-draw
+     * renderer.
+     */
+    private static boolean isKnownBrokenIntelDriver() {
+        if (!isWindowsIntelDriver()) {
+            return false;
+        }
+
+        String version = GL11.glGetString(GL11.GL_VERSION);
+
+        // The returned version string may be null in the case of an error
+        if (version == null) {
+            return false;
+        }
+
+        Matcher matcher = INTEL_BUILD_MATCHER.matcher(version);
+
+        // If the version pattern doesn't match, assume we're dealing with something special
+        if (!matcher.matches()) {
+            return false;
+        }
+
+        // Anything with a major build of >=100 is GPU Gen8 or newer
+        // The fourth group is the major build number
+        return Integer.parseInt(matcher.group(4)) < 100;
     }
 
     @Override
@@ -390,9 +426,18 @@ public class GL43ChunkRenderBackend extends ChunkRenderBackendMultiDraw<LCBGraph
         int ratio = (int) Math.floor(((double) used / (double) allocated) * 100.0D);
 
         List<String> list = new ArrayList<>();
-        list.add(String.format("VRAM Pool: %d/%d MB (%d%%)", MemoryTracker.toMiB(used), MemoryTracker.toMiB(allocated), ratio));
-        list.add(String.format("Allocated Buffers: %s", this.bufferManager.getAllocatedRegionCount()));
+        list.add(String.format("VRAM Pool: %d/%d MiB %s(%d%%)%s", MemoryTracker.toMiB(used), MemoryTracker.toMiB(allocated),
+                ratio >= 95 ? Formatting.RED : Formatting.RESET, ratio, Formatting.RESET));
+        list.add(String.format("VRAM Regions: %s", this.bufferManager.getAllocatedRegionCount()));
+        list.add(String.format("Submission Mode: %s", this.commandBuffer != null ?
+                Formatting.AQUA + "Buffer" : Formatting.LIGHT_PURPLE + "Client Memory"));
 
         return list;
+    }
+
+    @Override
+    public void deleteGraphicsState(int id) {
+        this.stateStorage.remove(id)
+                .delete();
     }
 }

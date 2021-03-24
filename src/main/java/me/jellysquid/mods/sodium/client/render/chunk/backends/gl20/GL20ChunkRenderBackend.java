@@ -15,7 +15,7 @@ import org.lwjgl.opengl.GL20;
  */
 public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphicsState> {
     public GL20ChunkRenderBackend(ChunkVertexType format) {
-        super(format);
+        super(VBOGraphicsState.class, format);
     }
 
     @Override
@@ -34,13 +34,8 @@ public class GL20ChunkRenderBackend extends ChunkRenderBackendOneshot<VBOGraphic
     }
 
     @Override
-    public Class<VBOGraphicsState> getGraphicsStateType() {
-        return VBOGraphicsState.class;
-    }
-
-    @Override
-    protected VBOGraphicsState createGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<VBOGraphicsState> container) {
-        return new VBOGraphicsState(memoryTracker, container);
+    protected VBOGraphicsState createGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer container, int id) {
+        return new VBOGraphicsState(memoryTracker, container, id);
     }
 
     public static boolean isSupported(boolean disableBlacklist) {

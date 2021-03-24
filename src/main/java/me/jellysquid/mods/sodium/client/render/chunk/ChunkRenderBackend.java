@@ -14,21 +14,20 @@ import java.util.List;
 /**
  * The chunk render backend takes care of managing the graphics resource state of chunk render containers. This includes
  * the handling of uploading their data to the graphics card and rendering responsibilities.
- * @param <T> The type of graphics state to be used in chunk render containers
  */
-public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
+public interface ChunkRenderBackend {
     /**
      * Drains the iterator of items and processes each build task's result serially. After this method returns, all
      * drained results should be processed.
      */
-    void upload(Iterator<ChunkBuildResult<T>> queue);
+    void upload(Iterator<ChunkBuildResult> queue);
 
     /**
      * Renders the given chunk render list to the active framebuffer.
      * @param renders An iterator over the list of chunks to be rendered
      * @param camera The camera context containing chunk offsets for the current render
      */
-    void render(ChunkRenderListIterator<T> renders, ChunkCameraContext camera);
+    void render(ChunkRenderListIterator renders, ChunkCameraContext camera);
 
     void createShaders();
 
@@ -46,8 +45,6 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
      */
     ChunkVertexType getVertexType();
 
-    Class<T> getGraphicsStateType();
-
     default String getRendererName() {
         return this.getClass().getSimpleName();
     }
@@ -55,4 +52,6 @@ public interface ChunkRenderBackend<T extends ChunkGraphicsState> {
     default List<String> getDebugStrings() {
         return Collections.emptyList();
     }
+
+    void deleteGraphicsState(int i);
 }

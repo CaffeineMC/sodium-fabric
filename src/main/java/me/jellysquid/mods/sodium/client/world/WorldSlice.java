@@ -164,7 +164,7 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
         this.originBlockStates = this.blockStatesArrays[getLocalSectionIndex((SECTION_LENGTH / 2), (SECTION_LENGTH / 2), (SECTION_LENGTH / 2))];
     }
 
-    public void init(ChunkBuilder<?> builder, World world, ChunkSectionPos origin, WorldChunk[] chunks) {
+    public void init(ChunkBuilder builder, World world, ChunkSectionPos origin, WorldChunk[] chunks) {
         this.world = world;
         this.chunks = chunks;
         this.origin = origin;

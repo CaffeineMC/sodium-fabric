@@ -1,24 +1,11 @@
 plugins {
-    id 'fabric-loom' version '0.5.28'
+    id 'fabric-loom' version '0.6-SNAPSHOT'
+    id 'org.ajoberstar.grgit' version '4.1.0'
 }
-
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
 
 archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}"
-version = project.mod_version
+version = "${project.mod_version}+${getVersionMetadata()}"
 group = project.maven_group
-
-def build_release = System.getenv("BUILD_RELEASE") == "true"
-def build_id = System.getenv("BUILD_ID")
-
-if (!build_release) {
-    version += "-SNAPSHOT"
-}
-
-if (build_id != null) {
-    version += "+build.${build_id}"
-}
 
 minecraft {
     refmapName = "mixins.sodium.refmap.json"
@@ -37,20 +24,6 @@ dependencies {
     modCompile "net.coderbot.iris:iris:0.3.0-sodium_compatibility"
 }
 
-processResources {
-    inputs.property "version", project.version
-
-    from(sourceSets.main.resources.srcDirs) {
-        include "fabric.mod.json"
-
-        expand "version": project.version
-    }
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude "fabric.mod.json"
-    }
-}
-
 if (project.use_third_party_mods) {
     repositories {
         maven { url = "https://jitpack.io" }
@@ -65,6 +38,14 @@ if (project.use_third_party_mods) {
     }
 }
 
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
 // ensure that the encoding is set to UTF-8, no matter what the system default is
 // this fixes some edge cases with special characters not displaying correctly
 // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
@@ -72,14 +53,38 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
-// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-// if it is present.
-// If you remove this task, sources will not be generated.
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = "sources"
-    from sourceSets.main.allSource
+java {
+    withSourcesJar()
+
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
 }
 
 jar {
     from "LICENSE.txt"
+}
+
+def getVersionMetadata() {
+    def build_id = System.getenv("GITHUB_RUN_NUMBER")
+
+    // CI builds only
+    if (build_id != null) {
+        return "build.${build_id}"
+    }
+
+    if (grgit != null) {
+        def head = grgit.head()
+        def id = head.abbreviatedId
+
+        // Flag the build if the build tree is not clean
+        if (!grgit.status().clean) {
+            id += "-dirty"
+        }
+
+        return "rev.${id}"
+    }
+
+    // No tracking information could be found about the build
+    return "unknown"
 }

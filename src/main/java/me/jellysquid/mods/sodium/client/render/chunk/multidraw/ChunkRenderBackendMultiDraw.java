@@ -18,8 +18,8 @@ import net.minecraft.util.Identifier;
 public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> extends ChunkRenderShaderBackend<T, ChunkProgramMultiDraw> {
     private final SodiumTerrainPipeline pipeline = SodiumTerrainPipeline.create();
 
-    public ChunkRenderBackendMultiDraw(ChunkVertexType format) {
-        super(format);
+    public ChunkRenderBackendMultiDraw(Class<T> graphicsType, ChunkVertexType format) {
+        super(graphicsType, format);
     }
 
     @Override
