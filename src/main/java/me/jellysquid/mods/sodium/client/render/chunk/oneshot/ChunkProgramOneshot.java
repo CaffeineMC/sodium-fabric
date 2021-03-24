@@ -64,8 +64,8 @@ public class ChunkProgramOneshot extends ChunkProgram {
     }
 
     @Override
-    public void setup(MatrixStack matrixStack) {
-        super.setup(matrixStack);
+    public void setup(MatrixStack matrixStack, float modelScale, float textureScale) {
+        super.setup(matrixStack, modelScale, textureScale);
 
         irisProgramUniforms.update();
 
