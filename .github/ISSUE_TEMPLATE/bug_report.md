@@ -43,7 +43,7 @@ everything above this dashed line (including the line itself.)
 
 ### Reproduction Steps
 
-> Provide information on how to reproduce this game crash. You can either fill this section in like the example below
+> Provide information on how to reproduce this bug. You can either fill this section in like the example below
 > or do something else -- just make sure your instructions are minimal and clear, as other people will need to be able
 > to replicate your issue.
 > 
