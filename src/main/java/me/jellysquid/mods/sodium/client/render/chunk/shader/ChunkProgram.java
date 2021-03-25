@@ -51,9 +51,6 @@ public abstract class ChunkProgram extends GlProgram {
 
         // TODO: set up noise texture!!!
 
-        RenderSystem.enableAlphaTest();
-        RenderSystem.alphaFunc(GL11.GL_GREATER, 0.1f);
-
         this.fogShader.setup();
 
         MatrixStack.Entry matrices = matrixStack.peek();
