@@ -72,7 +72,7 @@ public abstract class ChunkDrawParamsVector extends StructBuffer {
 
         private void updatePointers(long offset) {
             this.writeBase = MemoryUtil.memAddress(this.buffer);
-            this.writeEnd = this.writePointer + this.buffer.capacity();
+            this.writeEnd = this.writeBase + this.buffer.capacity();
 
             this.writePointer = this.writeBase + offset;
         }
