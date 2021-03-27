@@ -103,6 +103,13 @@ public abstract class ChunkDrawParamsVector extends StructBuffer {
         }
 
         @Override
+        protected void growBuffer() {
+            super.growBuffer();
+
+            this.onBufferChanged();
+        }
+
+        @Override
         public void reset() {
             this.writeOffset = 0;
         }
