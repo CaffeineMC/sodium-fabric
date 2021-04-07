@@ -64,7 +64,7 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
         this.enabled = enabled;
     }
 
-    public void setVisible(boolean visibel) {
-        this.visible = visibel;
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 }
