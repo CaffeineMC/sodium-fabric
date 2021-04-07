@@ -46,7 +46,7 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!this.enabled) {
+        if (!this.enabled || !this.visible) {
             return false;
         }
 
