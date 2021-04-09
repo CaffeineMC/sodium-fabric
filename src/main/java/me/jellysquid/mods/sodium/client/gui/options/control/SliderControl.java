@@ -97,10 +97,10 @@ public class SliderControl implements Control<Integer> {
 
             this.thumbPosition = this.getThumbPositionForValue(option.getValue());
 
-            int thumbOffset = MathHelper.clamp((int) Math.floor((double) (this.getIntValue() - this.min) / this.range * sliderWidth), 0, sliderWidth);
+            double thumbOffset = MathHelper.clamp((double) (this.getIntValue() - this.min) / this.range * sliderWidth, 0, sliderWidth);
 
-            int thumbX = sliderX + thumbOffset - THUMB_WIDTH;
-            int trackY = sliderY + (sliderHeight / 2) - TRACK_HEIGHT;
+            double thumbX = sliderX + thumbOffset - THUMB_WIDTH;
+            double trackY = sliderY + (sliderHeight / 2) - ((double) TRACK_HEIGHT / 2);
 
             this.drawRect(thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
             this.drawRect(sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
