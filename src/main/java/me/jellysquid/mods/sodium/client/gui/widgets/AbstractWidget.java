@@ -24,7 +24,7 @@ public abstract class AbstractWidget implements Drawable, Element {
         this.font.draw(matrixStack, str, x, y, color);
     }
 
-    protected void drawRect(int x1, int y1, int x2, int y2, int color) {
+    protected void drawRect(double x1, double y1, double x2, double y2, int color) {
         float a = (float) (color >> 24 & 255) / 255.0F;
         float r = (float) (color >> 16 & 255) / 255.0F;
         float g = (float) (color >> 8 & 255) / 255.0F;
@@ -50,7 +50,7 @@ public abstract class AbstractWidget implements Drawable, Element {
         RenderSystem.disableBlend();
     }
 
-    protected static void addQuad(VertexConsumer consumer, int x1, int y1, int x2, int y2, float a, float r, float g, float b) {
+    protected static void addQuad(VertexConsumer consumer, double x1, double y1, double x2, double y2, float a, float r, float g, float b) {
         consumer.vertex(x2, y1, 0.0D).color(r, g, b, a).next();
         consumer.vertex(x1, y1, 0.0D).color(r, g, b, a).next();
         consumer.vertex(x1, y2, 0.0D).color(r, g, b, a).next();
