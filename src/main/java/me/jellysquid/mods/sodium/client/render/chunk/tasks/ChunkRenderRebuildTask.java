@@ -84,24 +84,30 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                     if (blockState.getRenderType() == BlockRenderType.MODEL) {
                         buffers.setRenderOffset(x - offset.getX(), y - offset.getY(), z - offset.getZ());
+                        buffers.setMaterialId(blockState);
 
                         RenderLayer layer = RenderLayers.getBlockLayer(blockState);
 
                         if (pipeline.renderBlock(this.slice, blockState, pos.set(x, y, z), buffers.get(layer), true)) {
                             bounds.addBlock(relX, relY, relZ);
                         }
+
+                        buffers.resetMaterialId();
                     }
 
                     FluidState fluidState = blockState.getFluidState();
 
                     if (!fluidState.isEmpty()) {
                         buffers.setRenderOffset(x - offset.getX(), y - offset.getY(), z - offset.getZ());
+                        buffers.setMaterialId(fluidState.getBlockState());
 
                         RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
 
                         if (pipeline.renderFluid(this.slice, fluidState, pos.set(x, y, z), buffers.get(layer))) {
                             bounds.addBlock(relX, relY, relZ);
                         }
+
+                        buffers.resetMaterialId();
                     }
 
                     if (block.hasBlockEntity()) {

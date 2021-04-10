@@ -24,11 +24,6 @@ public class HFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe i
         );
     }
 
-    @Override
-    public void writeQuad(float x, float y, float z, int color, float u, float v, int light, short blockId) {
-        writeQuad(x, y, z, color, u, v, light);
-    }
-
     @SuppressWarnings("SuspiciousNameCombination")
     private void writeQuadInternal(short x, short y, short z, int color, short u, short v, int light) {
         long i = this.writePointer;

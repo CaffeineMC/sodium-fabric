@@ -26,11 +26,6 @@ public class HFPModelVertexBufferWriterNio extends VertexBufferWriterNio impleme
         );
     }
 
-    @Override
-    public void writeQuad(float x, float y, float z, int color, float u, float v, int light, short blockId) {
-        writeQuad(x, y, z, color, u, v, light);
-    }
-
     private void writeQuadInternal(short x, short y, short z, int color, short u, short v, int light) {
         int i = this.writeOffset;
 

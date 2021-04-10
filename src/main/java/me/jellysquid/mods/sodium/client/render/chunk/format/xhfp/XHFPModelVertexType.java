@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.type.BlittableVertexType;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
+import me.jellysquid.mods.sodium.client.render.chunk.format.MaterialIdHolder;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.chunk.format.hfp.HFPModelVertexBufferWriterNio;
 import me.jellysquid.mods.sodium.client.render.chunk.format.hfp.HFPModelVertexBufferWriterUnsafe;
@@ -39,9 +40,14 @@ public class XHFPModelVertexType implements ChunkVertexType {
 
     @Override
     public ModelVertexSink createBufferWriter(VertexBufferView buffer, boolean direct) {
+        return createBufferWriter(buffer, direct, new MaterialIdHolder());
+    }
+
+    @Override
+    public ModelVertexSink createBufferWriter(VertexBufferView buffer, boolean direct, MaterialIdHolder idHolder) {
         //return direct ? new HFPModelVertexBufferWriterUnsafe(buffer) : new HFPModelVertexBufferWriterNio(buffer);
 
-        return new XHFPModelVertexBufferWriterNio(buffer);
+        return new XHFPModelVertexBufferWriterNio(buffer, idHolder);
     }
 
     @Override

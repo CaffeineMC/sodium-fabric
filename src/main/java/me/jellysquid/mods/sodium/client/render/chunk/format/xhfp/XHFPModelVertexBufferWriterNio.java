@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterNio;
+import me.jellysquid.mods.sodium.client.render.chunk.format.MaterialIdHolder;
 import me.jellysquid.mods.sodium.client.render.chunk.format.DefaultModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexUtil;
@@ -12,8 +13,12 @@ import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.client.util.math.Vector3f;
 
 public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implements ModelVertexSink {
-    public XHFPModelVertexBufferWriterNio(VertexBufferView backingBuffer) {
+    private MaterialIdHolder idHolder;
+
+    public XHFPModelVertexBufferWriterNio(VertexBufferView backingBuffer, MaterialIdHolder idHolder) {
         super(backingBuffer, DefaultModelVertexFormats.MODEL_VERTEX_XHFP);
+
+        this.idHolder = idHolder;
     }
 
     private static final int STRIDE = 48;
@@ -27,27 +32,24 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
 
     @Override
     public void writeQuad(float x, float y, float z, int color, float u, float v, int light) {
-        this.writeQuad(x, y, z, color, u, v, light, (short) -1);
-    }
-
-    @Override
-    public void writeQuad(float x, float y, float z, int color, float u, float v, int light, short blockId) {
         uSum += u;
         vSum += v;
 
+        short materialId = idHolder.id;
+
         this.writeQuadInternal(
-            ModelVertexUtil.denormalizeVertexPositionFloatAsShort(x),
-            ModelVertexUtil.denormalizeVertexPositionFloatAsShort(y),
-            ModelVertexUtil.denormalizeVertexPositionFloatAsShort(z),
-            color,
-            ModelVertexUtil.denormalizeVertexTextureFloatAsShort(u),
-            ModelVertexUtil.denormalizeVertexTextureFloatAsShort(v),
-            ModelVertexUtil.encodeLightMapTexCoord(light),
-            blockId
+                ModelVertexUtil.denormalizeVertexPositionFloatAsShort(x),
+                ModelVertexUtil.denormalizeVertexPositionFloatAsShort(y),
+                ModelVertexUtil.denormalizeVertexPositionFloatAsShort(z),
+                color,
+                ModelVertexUtil.denormalizeVertexTextureFloatAsShort(u),
+                ModelVertexUtil.denormalizeVertexTextureFloatAsShort(v),
+                ModelVertexUtil.encodeLightMapTexCoord(light),
+                materialId
         );
     }
 
-    private void writeQuadInternal(short x, short y, short z, int color, short u, short v, int light, short blockId) {
+    private void writeQuadInternal(short x, short y, short z, int color, short u, short v, int light, short materialId) {
         int i = this.writeOffset;
 
         vertexCount++;
@@ -63,7 +65,7 @@ public class XHFPModelVertexBufferWriterNio extends VertexBufferWriterNio implem
         buffer.putInt(i + 16, light);
         // NB: We don't set midTexCoord, normal, and tangent here, they will be filled in later.
         // block ID
-        buffer.putFloat(i + 32, blockId);
+        buffer.putFloat(i + 32, materialId);
         buffer.putFloat(i + 36, (short) 0);
         buffer.putFloat(i + 40, (short) 0);
         buffer.putFloat(i + 44, (short) 0);

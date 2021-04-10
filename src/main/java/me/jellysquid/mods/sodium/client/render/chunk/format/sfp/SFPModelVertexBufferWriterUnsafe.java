@@ -26,11 +26,6 @@ public class SFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe i
         this.advance();
     }
 
-    @Override
-    public void writeQuad(float x, float y, float z, int color, float u, float v, int light, short blockId) {
-        writeQuad(x, y, z, color, u, v, light);
-    }
-
     /**
      * This moves some work out the shader code and simplifies things a bit. In vanilla, the game encodes light map
      * texture coordinates as two un-normalized unsigned shorts in the range 0..255. Using the fixed-function pipeline,
