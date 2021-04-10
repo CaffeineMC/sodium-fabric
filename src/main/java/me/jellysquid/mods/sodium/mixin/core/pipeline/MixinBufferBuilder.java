@@ -43,6 +43,9 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
 
     @Override
     public boolean ensureBufferCapacity(int bytes) {
+        // Ensure that there is always space for 1 more vertex; see BufferBuilder.next()
+        bytes += format.getVertexSize();
+
         if (this.elementOffset + bytes <= this.buffer.capacity()) {
             return false;
         }
