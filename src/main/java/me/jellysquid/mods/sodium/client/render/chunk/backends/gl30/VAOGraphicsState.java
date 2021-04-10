@@ -15,8 +15,8 @@ public class VAOGraphicsState extends ChunkOneshotGraphicsState {
     private final GlVertexArray vertexArray;
     private final GlBuffer vertexBuffer;
 
-    public VAOGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer container, int id) {
-        super(memoryTracker, container, id);
+    public VAOGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<?> container) {
+        super(memoryTracker, container);
 
         this.vertexBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
         this.vertexArray = new GlVertexArray();
