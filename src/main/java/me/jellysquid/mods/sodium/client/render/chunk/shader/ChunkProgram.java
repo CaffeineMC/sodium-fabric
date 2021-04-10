@@ -4,6 +4,9 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
+
+import net.coderbot.iris.texunits.TextureUnit;
+import net.coderbot.iris.uniforms.SamplerUniforms;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -42,9 +45,9 @@ public abstract class ChunkProgram extends GlProgram {
     }
 
     public void setup(MatrixStack matrixStack, float modelScale, float textureScale) {
-        GL20.glUniform1i(this.uBlockTex, 0);
-        GL20.glUniform1i(this.uLightTex, 2);
-        GL20.glUniform1i(this.uNoiseTex, 15);
+        GL20.glUniform1i(this.uBlockTex, TextureUnit.TERRAIN.getSamplerId());
+        GL20.glUniform1i(this.uLightTex, TextureUnit.LIGHTMAP.getSamplerId());
+        GL20.glUniform1i(this.uNoiseTex, SamplerUniforms.NOISE_TEX);
 
         GL20.glUniform3f(this.uModelScale, modelScale, modelScale, modelScale);
         GL20.glUniform2f(this.uTextureScale, textureScale, textureScale);
