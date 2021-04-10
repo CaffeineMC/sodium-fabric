@@ -1,12 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
-
 import net.coderbot.iris.texunits.TextureUnit;
-import net.coderbot.iris.uniforms.SamplerUniforms;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -25,7 +22,6 @@ public abstract class ChunkProgram extends GlProgram {
     private final int uTextureScale;
     private final int uBlockTex;
     private final int uLightTex;
-    private final int uNoiseTex;
 
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
@@ -37,7 +33,6 @@ public abstract class ChunkProgram extends GlProgram {
 
         this.uBlockTex = this.getUniformLocation("u_BlockTex");
         this.uLightTex = this.getUniformLocation("u_LightTex");
-        this.uNoiseTex = this.getUniformLocation("noisetex");
         this.uModelScale = this.getUniformLocation("u_ModelScale");
         this.uTextureScale = this.getUniformLocation("u_TextureScale");
 
@@ -47,12 +42,9 @@ public abstract class ChunkProgram extends GlProgram {
     public void setup(MatrixStack matrixStack, float modelScale, float textureScale) {
         GL20.glUniform1i(this.uBlockTex, TextureUnit.TERRAIN.getSamplerId());
         GL20.glUniform1i(this.uLightTex, TextureUnit.LIGHTMAP.getSamplerId());
-        GL20.glUniform1i(this.uNoiseTex, SamplerUniforms.NOISE_TEX);
 
         GL20.glUniform3f(this.uModelScale, modelScale, modelScale, modelScale);
         GL20.glUniform2f(this.uTextureScale, textureScale, textureScale);
-
-        // TODO: set up noise texture!!!
 
         this.fogShader.setup();
 

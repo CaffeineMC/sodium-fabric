@@ -15,7 +15,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -112,7 +111,6 @@ public class FluidRenderer {
         int posZ = pos.getZ();
 
         Fluid fluid = fluidState.getFluid();
-        BlockState state = fluidState.getBlockState();
 
         boolean sfUp = this.isFluidExposed(world, posX, posY + 1, posZ, fluid);
         boolean sfDown = this.isFluidExposed(world, posX, posY - 1, posZ, fluid) &&

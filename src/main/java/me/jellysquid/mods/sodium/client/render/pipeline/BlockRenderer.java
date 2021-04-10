@@ -16,7 +16,6 @@ import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.block.BlockColorProvider;
@@ -117,8 +116,7 @@ public class BlockRenderer {
     }
 
     private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelVertexSink sink, Vec3d offset,
-                            BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light,
-                            ChunkRenderData.Builder renderData) {
+                            BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light, ChunkRenderData.Builder renderData) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
 
         ModelQuadOrientation order = ModelQuadOrientation.orient(light.br);
