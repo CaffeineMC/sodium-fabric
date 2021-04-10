@@ -342,11 +342,19 @@ public class ChunkBuilder {
                     continue;
                 }
 
-                // Perform the build task with this worker's local resources and obtain the result
-                ChunkBuildResult result = job.task.performBuild(this.pipeline, this.bufferCache, job);
+                ChunkBuildResult result;
 
-                // After the result has been obtained, it's safe to release any resources attached to the task
-                job.task.releaseResources();
+                try {
+                    // Perform the build task with this worker's local resources and obtain the result
+                    result = job.task.performBuild(this.pipeline, this.bufferCache, job);
+                } catch (Exception e) {
+                    // Propagate any exception from chunk building
+                    job.future.completeExceptionally(e);
+                    continue;
+                } finally {
+                    // After the task has executed, it's safe to release any resources attached to the task
+                    job.task.releaseResources();
+                }
 
                 // The result can be null if the task is cancelled
                 if (result != null) {
