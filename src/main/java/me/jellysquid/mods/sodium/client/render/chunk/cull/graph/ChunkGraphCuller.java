@@ -4,12 +4,11 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.chunk.cull.ChunkCuller;
-import me.jellysquid.mods.sodium.client.render.chunk.cull.DirectionInt;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
-import me.jellysquid.mods.sodium.common.util.collections.TrackedArray;
+import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
@@ -21,12 +20,9 @@ import java.util.Comparator;
 import java.util.List;
 
 public class ChunkGraphCuller implements ChunkCuller {
-    private final Long2ObjectMap<ChunkGraphNode> nodesByPosition = new Long2ObjectOpenHashMap<>();
-    private final TrackedArray<ChunkGraphNode> nodes = new TrackedArray<>(ChunkGraphNode.class, 4096);
+    private final Long2ObjectMap<ChunkGraphNode> nodes = new Long2ObjectOpenHashMap<>();
 
-    private final ChunkGraphIterationQueue iterationQueue = new ChunkGraphIterationQueue();
-    private final IntArrayList visible = new IntArrayList();
-
+    private final ChunkGraphIterationQueue visible = new ChunkGraphIterationQueue();
     private final World world;
     private final int renderDistance;
 
@@ -44,13 +40,34 @@ public class ChunkGraphCuller implements ChunkCuller {
     public IntArrayList computeVisible(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
         this.initSearch(camera, frustum, frame, spectator);
 
-        ChunkGraphIterationQueue queue = this.iterationQueue;
+        ChunkGraphIterationQueue queue = this.visible;
 
         for (int i = 0; i < queue.size(); i++) {
-            this.process(queue.getNode(i), queue.getDirection(i), queue.getCullingState(i));
+            ChunkGraphNode node = queue.getNode(i);
+            Direction flow = queue.getDirection(i);
+
+            for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
+                if (this.isCulled(node, flow, dir)) {
+                    continue;
+                }
+
+                ChunkGraphNode adj = node.getConnectedNode(dir);
+
+                if (adj != null) {
+                    this.bfsEnqueue(node, adj, dir.getOpposite());
+                }
+            }
         }
 
-        return this.visible;
+        return this.visible.getOrderedIdList();
+    }
+
+    private boolean isCulled(ChunkGraphNode node, Direction from, Direction to) {
+        if (node.canCull(to)) {
+            return true;
+        }
+
+        return this.useOcclusionCulling && from != null && !node.isVisibleThrough(from, to);
     }
 
     private void initSearch(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
@@ -58,7 +75,6 @@ public class ChunkGraphCuller implements ChunkCuller {
         this.frustum = frustum;
         this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
 
-        this.iterationQueue.clear();
         this.visible.clear();
 
         BlockPos origin = camera.getBlockPos();
@@ -70,13 +86,14 @@ public class ChunkGraphCuller implements ChunkCuller {
         ChunkGraphNode rootNode = this.getNode(chunkX, chunkY, chunkZ);
 
         if (rootNode != null) {
+            rootNode.resetCullingState();
             rootNode.setLastVisibleFrame(frame);
 
             if (spectator && this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin)) {
                 this.useOcclusionCulling = false;
             }
 
-            this.enqueue(rootNode);
+            this.visible.add(rootNode, null);
         } else {
             chunkY = MathHelper.clamp(origin.getY() >> 4, 0, 15);
 
@@ -90,6 +107,7 @@ public class ChunkGraphCuller implements ChunkCuller {
                         continue;
                     }
 
+                    node.resetCullingState();
                     node.setLastVisibleFrame(frame);
 
                     bestNodes.add(node);
@@ -99,64 +117,33 @@ public class ChunkGraphCuller implements ChunkCuller {
             bestNodes.sort(Comparator.comparingDouble(node -> node.getSquaredDistance(origin)));
 
             for (ChunkGraphNode node : bestNodes) {
-                this.enqueue(node);
+                this.visible.add(node, null);
             }
         }
     }
 
-    private void process(ChunkGraphNode node, int flow, int cullingState) {
-        long visibilityData;
 
-        if (this.useOcclusionCulling && flow != DirectionInt.NULL) {
-            visibilityData = node.getVisibilityData() >>> (flow * DirectionInt.COUNT);
-        } else {
-            visibilityData = Integer.MAX_VALUE;
+    private void bfsEnqueue(ChunkGraphNode parent, ChunkGraphNode node, Direction flow) {
+        if (node.getLastVisibleFrame() == this.activeFrame) {
+            return;
         }
 
-        long vis = ~cullingState & visibilityData;
-        long mask = 1L;
-
-        for (int dir = 0; dir < DirectionInt.COUNT; dir++) {
-            if ((vis & mask) != 0L) {
-                ChunkGraphNode adj = node.getConnectedNode(dir);
-
-                if (adj != null && adj.getLastVisibleFrame() != this.activeFrame) {
-                    adj.setLastVisibleFrame(this.activeFrame);
-
-                    if (!adj.isCulledByFrustum(this.frustum)) {
-                        this.enqueue(adj, dir, cullingState);
-                    }
-                }
-            }
-
-            mask <<= 1;
+        if (node.isCulledByFrustum(this.frustum)) {
+            return;
         }
-    }
 
-    private void enqueue(ChunkGraphNode node) {
-        this.markVisible(node);
+        node.setLastVisibleFrame(this.activeFrame);
+        node.setCullingState(parent.getCullingState(), flow);
 
-        this.iterationQueue.add(node, DirectionInt.NULL);
-    }
-
-    private void enqueue(ChunkGraphNode node, int flow, int cullingState) {
-        this.markVisible(node);
-
-        this.iterationQueue.add(node, DirectionInt.getOpposite(flow), cullingState);
-    }
-
-    private void markVisible(ChunkGraphNode node) {
-        if (!node.isEmpty()) {
-            this.visible.add(node.getId());
-        }
+        this.visible.add(node, flow);
     }
 
     private void connectNeighborNodes(ChunkGraphNode node) {
-        for (int dir : DirectionInt.all()) {
-            ChunkGraphNode adj = this.findAdjacentNode(node, DirectionInt.toEnum(dir));
+        for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
+            ChunkGraphNode adj = this.findAdjacentNode(node, dir);
 
             if (adj != null) {
-                adj.setAdjacentNode(DirectionInt.getOpposite(dir), node);
+                adj.setAdjacentNode(dir.getOpposite(), node);
             }
 
             node.setAdjacentNode(dir, adj);
@@ -164,11 +151,11 @@ public class ChunkGraphCuller implements ChunkCuller {
     }
 
     private void disconnectNeighborNodes(ChunkGraphNode node) {
-        for (int dir : DirectionInt.all()) {
+        for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
             ChunkGraphNode adj = node.getConnectedNode(dir);
 
             if (adj != null) {
-                adj.setAdjacentNode(DirectionInt.getOpposite(dir), null);
+                adj.setAdjacentNode(dir.getOpposite(), null);
             }
 
             node.setAdjacentNode(dir, null);
@@ -180,40 +167,47 @@ public class ChunkGraphCuller implements ChunkCuller {
     }
 
     private ChunkGraphNode getNode(int x, int y, int z) {
-        return this.nodesByPosition.get(ChunkSectionPos.asLong(x, y, z));
+        return this.nodes.get(ChunkSectionPos.asLong(x, y, z));
     }
 
     @Override
-    public void onSectionStateChanged(int sectionId, ChunkRenderData renderData) {
-        ChunkGraphNode node = this.nodes.get(sectionId);
-        node.updateRenderData(renderData);
+    public void onSectionStateChanged(int x, int y, int z, ChunkOcclusionData occlusionData) {
+        ChunkGraphNode node = this.getNode(x, y, z);
+
+        if (node != null) {
+            node.setOcclusionData(occlusionData);
+        }
     }
 
     @Override
-    public void onSectionLoaded(int x, int y, int z, int sectionId) {
-        ChunkGraphNode node = new ChunkGraphNode(x, y, z, sectionId);
+    public void onSectionLoaded(int x, int y, int z, int id) {
+        ChunkGraphNode node = new ChunkGraphNode(x, y, z, id);
         ChunkGraphNode prev;
 
-        if ((prev = this.nodesByPosition.put(node.getPosition(), node)) != null) {
+        if ((prev = this.nodes.put(ChunkSectionPos.asLong(x, y, z), node)) != null) {
             this.disconnectNeighborNodes(prev);
         }
-
-        this.nodes.add(node);
 
         this.connectNeighborNodes(node);
     }
 
     @Override
-    public void onSectionUnloaded(int sectionId) {
-        ChunkGraphNode node = this.nodes.remove(sectionId);
+    public void onSectionUnloaded(int x, int y, int z) {
+        ChunkGraphNode node = this.nodes.remove(ChunkSectionPos.asLong(x, y, z));
 
-        this.nodesByPosition.remove(node.getPosition());
-
-        this.disconnectNeighborNodes(node);
+        if (node != null) {
+            this.disconnectNeighborNodes(node);
+        }
     }
 
     @Override
-    public boolean isSectionVisible(int sectionId) {
-        return this.nodes.get(sectionId).getLastVisibleFrame() == this.activeFrame;
+    public boolean isSectionVisible(int x, int y, int z) {
+        ChunkGraphNode render = this.getNode(x, y, z);
+
+        if (render == null) {
+            return false;
+        }
+
+        return render.getLastVisibleFrame() == this.activeFrame;
     }
 }

@@ -1,16 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import me.jellysquid.mods.sodium.common.util.collections.TrackedArrayItem;
-
-public abstract class ChunkGraphicsState implements TrackedArrayItem {
-    private final int id;
+public abstract class ChunkGraphicsState {
     private final int x, y, z;
 
-    protected ChunkGraphicsState(ChunkRenderContainer container, int id) {
+    protected ChunkGraphicsState(ChunkRenderContainer<?> container) {
         this.x = container.getRenderX();
         this.y = container.getRenderY();
         this.z = container.getRenderZ();
-        this.id = id;
     }
 
     public abstract void delete();
@@ -25,10 +21,5 @@ public abstract class ChunkGraphicsState implements TrackedArrayItem {
 
     public int getZ() {
         return this.z;
-    }
-
-    @Override
-    public int getId() {
-        return this.id;
     }
 }

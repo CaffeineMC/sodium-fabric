@@ -1,44 +1,36 @@
 package me.jellysquid.mods.sodium.client.render.chunk.cull.graph;
 
-import me.jellysquid.mods.sodium.client.render.chunk.cull.DirectionInt;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import me.jellysquid.mods.sodium.common.util.collections.TrackedArrayItem;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
-public class ChunkGraphNode implements TrackedArrayItem {
+public class ChunkGraphNode {
     private static final long DEFAULT_VISIBILITY_DATA = calculateVisibilityData(ChunkRenderData.EMPTY.getOcclusionData());
 
-    private ChunkGraphNode adjacentUp;
-    private ChunkGraphNode adjacentDown;
-    private ChunkGraphNode adjacentNorth;
-    private ChunkGraphNode adjacentSouth;
-    private ChunkGraphNode adjacentWest;
-    private ChunkGraphNode adjacentEast;
+    private final ChunkGraphNode[] nodes = new ChunkGraphNode[DirectionUtil.ALL_DIRECTIONS.length];
 
     private final int id;
     private final int chunkX, chunkY, chunkZ;
 
-    private int lastVisibleFrame;
+    private int lastVisibleFrame = -1;
 
     private long visibilityData;
-    private boolean empty;
+    private byte cullingState;
 
     public ChunkGraphNode(int chunkX, int chunkY, int chunkZ, int id) {
         this.chunkX = chunkX;
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
-
         this.id = id;
 
         this.visibilityData = DEFAULT_VISIBILITY_DATA;
-        this.lastVisibleFrame = -1;
+    }
 
-        this.empty = false;
+    public ChunkGraphNode getConnectedNode(Direction dir) {
+        return this.nodes[dir.ordinal()];
     }
 
     public void setLastVisibleFrame(int frame) {
@@ -61,9 +53,12 @@ public class ChunkGraphNode implements TrackedArrayItem {
         return this.chunkZ;
     }
 
-    public void updateRenderData(ChunkRenderData data) {
-        this.visibilityData = calculateVisibilityData(data.getOcclusionData());
-        this.empty = data != ChunkRenderData.ABSENT && data.isEmpty();
+    public void setAdjacentNode(Direction dir, ChunkGraphNode node) {
+        this.nodes[dir.ordinal()] = node;
+    }
+
+    public void setOcclusionData(ChunkOcclusionData occlusionData) {
+        this.visibilityData = calculateVisibilityData(occlusionData);
     }
 
     private static long calculateVisibilityData(ChunkOcclusionData occlusionData) {
@@ -72,7 +67,7 @@ public class ChunkGraphNode implements TrackedArrayItem {
         for (Direction from : DirectionUtil.ALL_DIRECTIONS) {
             for (Direction to : DirectionUtil.ALL_DIRECTIONS) {
                 if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
-                    visibilityData |= 1L << ((from.ordinal() * DirectionInt.COUNT) + to.ordinal());
+                    visibilityData |= (1L << ((from.ordinal() << 3) + to.ordinal()));
                 }
             }
         }
@@ -80,7 +75,26 @@ public class ChunkGraphNode implements TrackedArrayItem {
         return visibilityData;
     }
 
-    @Override
+    public boolean isVisibleThrough(Direction from, Direction to) {
+        return ((this.visibilityData & (1L << ((from.ordinal() << 3) + to.ordinal()))) != 0L);
+    }
+
+    public void setCullingState(byte parent, Direction dir) {
+        this.cullingState = (byte) (parent | (1 << dir.ordinal()));
+    }
+
+    public boolean canCull(Direction dir) {
+        return (this.cullingState & 1 << dir.ordinal()) != 0;
+    }
+
+    public byte getCullingState() {
+        return this.cullingState;
+    }
+
+    public void resetCullingState() {
+        this.cullingState = 0;
+    }
+
     public int getId() {
         return this.id;
     }
@@ -123,68 +137,34 @@ public class ChunkGraphNode implements TrackedArrayItem {
     }
 
     /**
+     * @return The x-coordinate of the center position of this chunk render
+     */
+    private double getCenterX() {
+        return this.getOriginX() + 8.0D;
+    }
+
+    /**
+     * @return The y-coordinate of the center position of this chunk render
+     */
+    private double getCenterY() {
+        return this.getOriginY() + 8.0D;
+    }
+
+    /**
+     * @return The z-coordinate of the center position of this chunk render
+     */
+    private double getCenterZ() {
+        return this.getOriginZ() + 8.0D;
+    }
+
+    /**
      * @return The squared distance from the center of this chunk in the world to the given position
      */
     public double getSquaredDistance(double x, double y, double z) {
-        double xDist = x - (this.getOriginX() + 8.0D);
-        double yDist = y - (this.getOriginY() + 8.0D);
-        double zDist = z - (this.getOriginZ() + 8.0D);
+        double xDist = x - this.getCenterX();
+        double yDist = y - this.getCenterY();
+        double zDist = z - this.getCenterZ();
 
         return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
-
-    public long getVisibilityData() {
-        return this.visibilityData;
-    }
-
-    public long getPosition() {
-        return ChunkSectionPos.asLong(this.chunkX, this.chunkY, this.chunkZ);
-    }
-
-    public boolean isEmpty() {
-        return this.empty;
-    }
-
-    public ChunkGraphNode getConnectedNode(int dir) {
-        switch (dir) {
-            case DirectionInt.DOWN:
-                return this.adjacentDown;
-            case DirectionInt.UP:
-                return this.adjacentUp;
-            case DirectionInt.NORTH:
-                return this.adjacentNorth;
-            case DirectionInt.SOUTH:
-                return this.adjacentSouth;
-            case DirectionInt.WEST:
-                return this.adjacentWest;
-            case DirectionInt.EAST:
-                return this.adjacentEast;
-            default:
-                return null;
-        }
-    }
-
-    public void setAdjacentNode(int dir, ChunkGraphNode node) {
-        switch (dir) {
-            case DirectionInt.DOWN:
-                this.adjacentDown = node;
-                break;
-            case DirectionInt.UP:
-                this.adjacentUp = node;
-                break;
-            case DirectionInt.NORTH:
-                this.adjacentNorth = node;
-                break;
-            case DirectionInt.SOUTH:
-                this.adjacentSouth = node;
-                break;
-            case DirectionInt.WEST:
-                this.adjacentWest = node;
-                break;
-            case DirectionInt.EAST:
-                this.adjacentEast = node;
-                break;
-        }
-    }
-
 }

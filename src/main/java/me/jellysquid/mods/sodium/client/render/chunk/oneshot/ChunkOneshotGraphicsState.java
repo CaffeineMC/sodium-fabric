@@ -15,8 +15,8 @@ public abstract class ChunkOneshotGraphicsState extends ChunkGraphicsState {
     protected final MemoryTracker memoryTracker;
     private final long[] parts;
 
-    protected ChunkOneshotGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer container, int id) {
-        super(container, id);
+    protected ChunkOneshotGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<?> container) {
+        super(container);
 
         this.memoryTracker = memoryTracker;
         this.parts = new long[ModelQuadFacing.COUNT];
