@@ -478,8 +478,14 @@ public class ChunkRenderManager implements ChunkStatusListener {
             // Nearby chunks are always rendered immediately
             important = important || this.isChunkPrioritized(render);
 
-            // Only enqueue chunks for updates during the next frame if it is visible and wasn't already dirty
-            if (render.scheduleRebuild(important) && this.culler.isSectionVisible(render.getId())) {
+            // Only enqueue chunks for updates if they aren't already enqueued for an update
+            //
+            // We should avoid rebuilding chunks that aren't visible by using data from the occlusion culler, however
+            // that is not currently feasible because occlusion culling data is only ever updated when chunks are
+            // rebuilt. Computation of occlusion data needs to be isolated from chunk rebuilds for that to be feasible.
+            //
+            // TODO: Avoid rebuilding chunks that aren't visible to the player
+            if (render.scheduleRebuild(important)) {
                 (render.needsImportantRebuild() ? this.importantRebuildQueue : this.rebuildQueue)
                         .enqueue(render);
             }
