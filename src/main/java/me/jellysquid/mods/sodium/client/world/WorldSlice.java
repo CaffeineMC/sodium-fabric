@@ -261,6 +261,9 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
                         state = prevPaletteState;
                     } else {
                         state = palette.getByIndex(paletteId);
+                        if (state == null) {
+                            state = container.defaultValue;
+                        }
 
                         prevPaletteState = state;
                         prevPaletteId = paletteId;
