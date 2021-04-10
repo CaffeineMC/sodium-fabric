@@ -5,10 +5,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.multidraw.StructBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 public class IndirectCommandBufferVector extends StructBuffer {
-    private static final int STRIDE = 16;
-
     protected IndirectCommandBufferVector(int capacity) {
-        super(capacity, STRIDE);
+        super(capacity, 16);
     }
 
     public static IndirectCommandBufferVector create(int capacity) {

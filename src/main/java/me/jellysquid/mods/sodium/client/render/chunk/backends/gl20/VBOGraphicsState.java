@@ -14,8 +14,8 @@ public class VBOGraphicsState extends ChunkOneshotGraphicsState {
     private final GlBuffer vertexBuffer;
     private GlVertexFormat<?> vertexFormat;
 
-    public VBOGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer container, int id) {
-        super(memoryTracker, container, id);
+    public VBOGraphicsState(MemoryTracker memoryTracker, ChunkRenderContainer<?> container) {
+        super(memoryTracker, container);
 
         this.vertexBuffer = new GlMutableBuffer(GL15.GL_STATIC_DRAW);
     }
