@@ -8,8 +8,8 @@
     "JellySquid"
   ],
   "contact": {
-    "homepage": "https://jellysquid.me",
-    "sources": "https://github.com/jellysquid3/sodium"
+    "sources": "https://github.com/CaffeineMC/sodium-fabric",
+    "issues": "https://github.com/CaffeineMC/sodium-fabric/issues"
   },
   "license": "LGPL-3.0-only",
   "icon": "assets/sodium/icon.png",

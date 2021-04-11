@@ -25,9 +25,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManag
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import me.jellysquid.mods.sodium.common.util.IdTable;
 import me.jellysquid.mods.sodium.common.util.collections.FutureDequeDrain;
-import me.jellysquid.mods.sodium.common.util.collections.IntPool;
-import me.jellysquid.mods.sodium.common.util.collections.TrackedArray;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.util.math.MatrixStack;
@@ -42,17 +41,17 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.concurrent.CompletableFuture;
 
-public class ChunkRenderManager implements ChunkStatusListener {
+public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkStatusListener {
     /**
      * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
      */
-    private static final float NEARBY_CHUNK_DISTANCE = (float) Math.pow(48, 2.0);
+    private static final double NEARBY_CHUNK_DISTANCE = Math.pow(48, 2.0);
 
     /**
      * The minimum distance the culling plane can be from the player's camera. This helps to prevent mathematical
      * errors that occur when the fog distance is less than 8 blocks in width, such as when using a blindness potion.
      */
-    private static final float FOG_PLANE_MIN_DISTANCE = (float) Math.pow(8.0, 2.0);
+    private static final float FOG_PLANE_MIN_DISTANCE = (float) Math.pow(8.0f, 2.0);
 
     /**
      * The distance past the fog's far plane at which to begin culling. Distance calculations use the center of each
@@ -62,19 +61,18 @@ public class ChunkRenderManager implements ChunkStatusListener {
      */
     private static final float FOG_PLANE_OFFSET = 12.0f;
 
-    private final ChunkBuilder builder;
-    private final ChunkRenderBackend backend;
+    private final ChunkBuilder<T> builder;
+    private final ChunkRenderBackend<T> backend;
 
-    private final Long2ObjectOpenHashMap<ChunkRenderColumn> columns = new Long2ObjectOpenHashMap<>();
+    private final Long2ObjectOpenHashMap<ChunkRenderColumn<T>> columns = new Long2ObjectOpenHashMap<>();
+    private final IdTable<ChunkRenderContainer<T>> renders = new IdTable<>(16384);
 
-    private final TrackedArray<ChunkRenderContainer> renders = new TrackedArray<>(ChunkRenderContainer.class, 16384);
-    private final IntPool renderIds = new IntPool();
+    private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> importantRebuildQueue = new ObjectArrayFIFOQueue<>();
+    private final ObjectArrayFIFOQueue<ChunkRenderContainer<T>> rebuildQueue = new ObjectArrayFIFOQueue<>();
 
-    private final ObjectArrayFIFOQueue<ChunkRenderContainer> importantRebuildQueue = new ObjectArrayFIFOQueue<>();
-    private final ObjectArrayFIFOQueue<ChunkRenderContainer> rebuildQueue = new ObjectArrayFIFOQueue<>();
-
-    private final ChunkRenderList[] chunkRenderLists = new ChunkRenderList[BlockRenderPass.COUNT];
-    private final ObjectList<ChunkRenderContainer> tickableChunks = new ObjectArrayList<>();
+    @SuppressWarnings("unchecked")
+    private final ChunkRenderList<T>[] chunkRenderLists = new ChunkRenderList[BlockRenderPass.COUNT];
+    private final ObjectList<ChunkRenderContainer<T>> tickableChunks = new ObjectArrayList<>();
 
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
@@ -92,18 +90,18 @@ public class ChunkRenderManager implements ChunkStatusListener {
     private boolean useFogCulling;
     private double fogRenderCutoff;
 
-    public ChunkRenderManager(SodiumWorldRenderer renderer, ChunkRenderBackend backend, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
+    public ChunkRenderManager(SodiumWorldRenderer renderer, ChunkRenderBackend<T> backend, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
         this.backend = backend;
         this.renderer = renderer;
         this.world = world;
 
-        this.builder = new ChunkBuilder(backend.getVertexType(), this.backend);
+        this.builder = new ChunkBuilder<>(backend.getVertexType(), this.backend);
         this.builder.init(world, renderPassManager);
 
         this.dirty = true;
 
         for (int i = 0; i < this.chunkRenderLists.length; i++) {
-            this.chunkRenderLists[i] = new ChunkRenderList();
+            this.chunkRenderLists[i] = new ChunkRenderList<>();
         }
 
         this.culler = new ChunkGraphCuller(world, renderDistance);
@@ -144,14 +142,13 @@ public class ChunkRenderManager implements ChunkStatusListener {
         IntIterator it = list.iterator();
 
         while (it.hasNext()) {
-            int sectionId = it.nextInt();
-            ChunkRenderContainer render = this.renders.get(sectionId);
+            ChunkRenderContainer<T> render = this.renders.get(it.nextInt());
 
             this.addChunk(render);
         }
     }
 
-    private void addChunk(ChunkRenderContainer render) {
+    private void addChunk(ChunkRenderContainer<T> render) {
         if (render.needsRebuild() && render.canRebuild()) {
             if (render.needsImportantRebuild()) {
                 this.importantRebuildQueue.enqueue(render);
@@ -170,56 +167,75 @@ public class ChunkRenderManager implements ChunkStatusListener {
         }
     }
 
-    private void addChunkToRenderLists(ChunkRenderContainer render) {
-        int visibleFaces = render.getFacesWithData();
-
-        if (this.useChunkFaceCulling) {
-            ChunkRenderBounds bounds = render.getBounds();
-
-            if (this.cameraX < bounds.x1) {
-                visibleFaces &= ~ChunkFaceFlags.EAST;
-            }
-
-            if (this.cameraX > bounds.x2) {
-                visibleFaces &= ~ChunkFaceFlags.WEST;
-            }
-
-            if (this.cameraY < bounds.y1) {
-                visibleFaces &= ~ChunkFaceFlags.UP;
-            }
-
-            if (this.cameraY > bounds.y2) {
-                visibleFaces &= ~ChunkFaceFlags.DOWN;
-            }
-
-            if (this.cameraZ < bounds.z1) {
-                visibleFaces &= ~ChunkFaceFlags.SOUTH;
-            }
-
-            if (this.cameraZ > bounds.z2) {
-                visibleFaces &= ~ChunkFaceFlags.NORTH;
-            }
-        }
+    private void addChunkToRenderLists(ChunkRenderContainer<T> render) {
+        int visibleFaces = this.computeVisibleFaces(render) & render.getFacesWithData();
 
         if (visibleFaces == 0) {
             return;
         }
 
-        ChunkGraphicsStateArray states = render.getGraphicsStates();
+        boolean added = false;
+        T[] states = render.getGraphicsStates();
 
-        for (int i = 0; i < states.getSize(); i++) {
-            this.chunkRenderLists[states.getKey(i)]
-                    .add(states.getValue(i), visibleFaces);
+        for (int i = 0; i < states.length; i++) {
+            T state = states[i];
+
+            if (state != null) {
+                ChunkRenderList<T> list = this.chunkRenderLists[i];
+                list.add(state, visibleFaces);
+
+                added = true;
+            }
         }
 
-        if (render.isTickable()) {
-            this.tickableChunks.add(render);
-        }
+        if (added) {
+            if (render.isTickable()) {
+                this.tickableChunks.add(render);
+            }
 
-        this.visibleChunkCount++;
+            this.visibleChunkCount++;
+        }
     }
 
-    private void addEntitiesToRenderLists(ChunkRenderContainer render) {
+    private int computeVisibleFaces(ChunkRenderContainer<T> render) {
+        // If chunk face culling is disabled, render all faces
+        if (!this.useChunkFaceCulling) {
+            return ChunkFaceFlags.ALL;
+        }
+
+        ChunkRenderBounds bounds = render.getBounds();
+
+        // Always render groups of vertices not belonging to any given face
+        int visibleFaces = ChunkFaceFlags.UNASSIGNED;
+
+        if (this.cameraY > bounds.y1) {
+            visibleFaces |= ChunkFaceFlags.UP;
+        }
+
+        if (this.cameraY < bounds.y2) {
+            visibleFaces |= ChunkFaceFlags.DOWN;
+        }
+
+        if (this.cameraX > bounds.x1) {
+            visibleFaces |= ChunkFaceFlags.EAST;
+        }
+
+        if (this.cameraX < bounds.x2) {
+            visibleFaces |= ChunkFaceFlags.WEST;
+        }
+
+        if (this.cameraZ > bounds.z1) {
+            visibleFaces |= ChunkFaceFlags.SOUTH;
+        }
+
+        if (this.cameraZ < bounds.z2) {
+            visibleFaces |= ChunkFaceFlags.NORTH;
+        }
+
+        return visibleFaces;
+    }
+
+    private void addEntitiesToRenderLists(ChunkRenderContainer<T> render) {
         Collection<BlockEntity> blockEntities = render.getData().getBlockEntities();
 
         if (!blockEntities.isEmpty()) {
@@ -227,8 +243,8 @@ public class ChunkRenderManager implements ChunkStatusListener {
         }
     }
 
-    public ChunkRenderContainer getRender(int x, int y, int z) {
-        ChunkRenderColumn column = this.columns.get(ChunkPos.toLong(x, z));
+    public ChunkRenderContainer<T> getRender(int x, int y, int z) {
+        ChunkRenderColumn<T> column = this.columns.get(ChunkPos.toLong(x, z));
 
         if (column == null) {
             return null;
@@ -243,7 +259,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
 
         this.visibleBlockEntities.clear();
 
-        for (ChunkRenderList list : this.chunkRenderLists) {
+        for (ChunkRenderList<T> list : this.chunkRenderLists) {
             list.reset();
         }
 
@@ -269,8 +285,8 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     private void loadChunk(int x, int z) {
-        ChunkRenderColumn column = new ChunkRenderColumn(x, z);
-        ChunkRenderColumn prev;
+        ChunkRenderColumn<T> column = new ChunkRenderColumn<>(x, z);
+        ChunkRenderColumn<T> prev;
 
         if ((prev = this.columns.put(ChunkPos.toLong(x, z), column)) != null) {
             this.unloadSections(prev);
@@ -283,7 +299,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     private void unloadChunk(int x, int z) {
-        ChunkRenderColumn column = this.columns.remove(ChunkPos.toLong(x, z));
+        ChunkRenderColumn<T> column = this.columns.remove(ChunkPos.toLong(x, z));
 
         if (column == null) {
             return;
@@ -295,36 +311,38 @@ public class ChunkRenderManager implements ChunkStatusListener {
         this.dirty = true;
     }
 
-    private void loadSections(ChunkRenderColumn column) {
+    private void loadSections(ChunkRenderColumn<T> column) {
         int x = column.getX();
         int z = column.getZ();
 
         for (int y = 0; y < 16; y++) {
-            ChunkRenderContainer render = this.createChunkRender(column, x, y, z);
+            ChunkRenderContainer<T> render = this.createChunkRender(column, x, y, z);
             column.setRender(y, render);
 
             this.culler.onSectionLoaded(x, y, z, render.getId());
         }
     }
 
-    private void unloadSections(ChunkRenderColumn column) {
+    private void unloadSections(ChunkRenderColumn<T> column) {
+        int x = column.getX();
+        int z = column.getZ();
+
         for (int y = 0; y < 16; y++) {
-            ChunkRenderContainer render = column.getRender(y);
+            ChunkRenderContainer<T> render = column.getRender(y);
 
             if (render != null) {
                 render.delete();
 
-                this.renders.remove(render);
-                this.renderIds.deallocateId(render.getId());
-
-                this.culler.onSectionUnloaded(render.getId());
+                this.renders.remove(render.getId());
             }
+
+            this.culler.onSectionUnloaded(x, y, z);
         }
     }
 
-    private void connectNeighborColumns(ChunkRenderColumn column) {
+    private void connectNeighborColumns(ChunkRenderColumn<T> column) {
         for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
-            ChunkRenderColumn adj = this.getAdjacentColumn(column, dir);
+            ChunkRenderColumn<T> adj = this.getAdjacentColumn(column, dir);
 
             if (adj != null) {
                 adj.setAdjacentColumn(dir.getOpposite(), column);
@@ -334,9 +352,9 @@ public class ChunkRenderManager implements ChunkStatusListener {
         }
     }
 
-    private void disconnectNeighborColumns(ChunkRenderColumn column) {
+    private void disconnectNeighborColumns(ChunkRenderColumn<T> column) {
         for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
-            ChunkRenderColumn adj = column.getAdjacentColumn(dir);
+            ChunkRenderColumn<T> adj = column.getAdjacentColumn(dir);
 
             if (adj != null) {
                 adj.setAdjacentColumn(dir.getOpposite(), null);
@@ -346,17 +364,16 @@ public class ChunkRenderManager implements ChunkStatusListener {
         }
     }
 
-    private ChunkRenderColumn getAdjacentColumn(ChunkRenderColumn column, Direction dir) {
+    private ChunkRenderColumn<T> getAdjacentColumn(ChunkRenderColumn<T> column, Direction dir) {
         return this.getColumn(column.getX() + dir.getOffsetX(), column.getZ() + dir.getOffsetZ());
     }
 
-    private ChunkRenderColumn getColumn(int x, int z) {
+    private ChunkRenderColumn<T> getColumn(int x, int z) {
         return this.columns.get(ChunkPos.toLong(x, z));
     }
 
-    private ChunkRenderContainer createChunkRender(ChunkRenderColumn column, int x, int y, int z) {
-        ChunkRenderContainer render = new ChunkRenderContainer(this.backend, this.renderer, x, y, z, column, this.renderIds.allocateId());
-        this.renders.add(render);
+    private ChunkRenderContainer<T> createChunkRender(ChunkRenderColumn<T> column, int x, int y, int z) {
+        ChunkRenderContainer<T> render = new ChunkRenderContainer<>(this.backend, this.renderer, x, y, z, column);
 
         if (ChunkSection.isEmpty(this.world.getChunk(x, z).getSectionArray()[y])) {
             render.setData(ChunkRenderData.EMPTY);
@@ -364,12 +381,14 @@ public class ChunkRenderManager implements ChunkStatusListener {
             render.scheduleRebuild(false);
         }
 
+        render.setId(this.renders.add(render));
+
         return render;
     }
 
     public void renderLayer(MatrixStack matrixStack, BlockRenderPass pass, double x, double y, double z) {
-        ChunkRenderList chunkRenderList = this.chunkRenderLists[pass.ordinal()];
-        ChunkRenderListIterator iterator = chunkRenderList.iterator(pass.isTranslucent());
+        ChunkRenderList<T> chunkRenderList = this.chunkRenderLists[pass.ordinal()];
+        ChunkRenderListIterator<T> iterator = chunkRenderList.iterator(pass.isTranslucent());
 
         this.backend.begin(matrixStack, pass);
         this.backend.render(iterator, new ChunkCameraContext(x, y, z));
@@ -377,29 +396,23 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     public void tickVisibleRenders() {
-        for (ChunkRenderContainer render : this.tickableChunks) {
+        for (ChunkRenderContainer<T> render : this.tickableChunks) {
             render.tick();
         }
     }
 
     public boolean isChunkVisible(int x, int y, int z) {
-        ChunkRenderContainer render = this.getRender(x, y, z);
-
-        if (render == null) {
-            return false;
-        }
-
-        return this.culler.isSectionVisible(render.getId());
+        return this.culler.isSectionVisible(x, y, z);
     }
 
     public void updateChunks() {
-        Deque<CompletableFuture<ChunkBuildResult>> futures = new ArrayDeque<>();
+        Deque<CompletableFuture<ChunkBuildResult<T>>> futures = new ArrayDeque<>();
 
         int budget = this.builder.getSchedulingBudget();
         int submitted = 0;
 
         while (!this.importantRebuildQueue.isEmpty()) {
-            ChunkRenderContainer render = this.importantRebuildQueue.dequeue();
+            ChunkRenderContainer<T> render = this.importantRebuildQueue.dequeue();
 
             // Do not allow distant chunks to block rendering
             if (!this.isChunkPrioritized(render)) {
@@ -413,7 +426,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
         }
 
         while (submitted < budget && !this.rebuildQueue.isEmpty()) {
-            ChunkRenderContainer render = this.rebuildQueue.dequeue();
+            ChunkRenderContainer<T> render = this.rebuildQueue.dequeue();
 
             this.builder.deferRebuild(render);
             submitted++;
@@ -458,7 +471,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
     public void destroy() {
         this.reset();
 
-        for (ChunkRenderColumn column : this.columns.values()) {
+        for (ChunkRenderColumn<T> column : this.columns.values()) {
             this.unloadSections(column);
         }
 
@@ -472,7 +485,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
-        ChunkRenderContainer render = this.getRender(x, y, z);
+        ChunkRenderContainer<T> render = this.getRender(x, y, z);
 
         if (render != null) {
             // Nearby chunks are always rendered immediately
@@ -494,7 +507,7 @@ public class ChunkRenderManager implements ChunkStatusListener {
         }
     }
 
-    public boolean isChunkPrioritized(ChunkRenderContainer render) {
+    public boolean isChunkPrioritized(ChunkRenderContainer<T> render) {
         return render.getSquaredDistance(this.cameraX, this.cameraY, this.cameraZ) <= NEARBY_CHUNK_DISTANCE;
     }
 
@@ -503,10 +516,6 @@ public class ChunkRenderManager implements ChunkStatusListener {
     }
 
     public void onChunkRenderUpdates(int x, int y, int z, ChunkRenderData data) {
-        ChunkRenderContainer render = this.getRender(x, y, z);
-
-        if (render != null) {
-            this.culler.onSectionStateChanged(render.getId(), data);
-        }
+        this.culler.onSectionStateChanged(x, y, z, data.getOcclusionData());
     }
 }

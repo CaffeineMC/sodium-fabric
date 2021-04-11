@@ -21,8 +21,8 @@ public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> 
     @Nullable
     private final SodiumTerrainPipeline pipeline = SodiumTerrainPipeline.create().orElse(null);
 
-    public ChunkRenderBackendMultiDraw(Class<T> graphicsType, ChunkVertexType format) {
-        super(graphicsType, format);
+    public ChunkRenderBackendMultiDraw(ChunkVertexType format) {
+        super(format);
     }
 
     @Override

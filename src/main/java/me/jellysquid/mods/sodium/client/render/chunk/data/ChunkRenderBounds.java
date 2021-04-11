@@ -6,9 +6,8 @@ public class ChunkRenderBounds {
     public static final ChunkRenderBounds ALWAYS_FALSE = new ChunkRenderBounds(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY,
             Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
 
-    public final float x1, x2;
-    public final float y1, y2;
-    public final float z1, z2;
+    public final float x1, y1, z1;
+    public final float x2, y2, z2;
 
     public ChunkRenderBounds(float x1, float y1, float z1, float x2, float y2, float z2) {
         this.x1 = x1;

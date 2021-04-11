@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderContext;
@@ -14,8 +15,10 @@ import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
  *
  * After the task completes, it returns a "build result" which contains any computed data that needs to be handled
  * on the main thread.
+ *
+ * @param <T> The graphics state of the chunk render
  */
-public abstract class ChunkRenderBuildTask {
+public abstract class ChunkRenderBuildTask<T extends ChunkGraphicsState> {
     /**
      * Executes the given build task asynchronously from the calling thread. The implementation should be careful not
      * to access or modify global mutable state.
@@ -26,8 +29,8 @@ public abstract class ChunkRenderBuildTask {
      * @return The build result of this task, containing any data which needs to be uploaded on the main-thread, or null
      *         if the task was cancelled.
      */
-    public abstract ChunkBuildResult performBuild(ChunkRenderContext pipeline, ChunkBuildBuffers buffers,
-                                                  CancellationSource cancellationSource);
+    public abstract ChunkBuildResult<T> performBuild(ChunkRenderContext pipeline, ChunkBuildBuffers buffers,
+                                                     CancellationSource cancellationSource);
 
     /**
      * Called on the main render thread when the task's execution returns. The implementation should release any

@@ -11,10 +11,13 @@ import java.nio.ByteBuffer;
  * parameters.
  */
 public abstract class ChunkDrawParamsVector extends StructBuffer {
-    private static final int STRIDE = 16;
+    protected int capacity;
+    protected int count;
 
     protected ChunkDrawParamsVector(int capacity) {
-        super(capacity, STRIDE);
+        super(capacity, 16);
+
+        this.capacity = capacity;
     }
 
     public static ChunkDrawParamsVector create(int capacity) {
@@ -23,74 +26,69 @@ public abstract class ChunkDrawParamsVector extends StructBuffer {
 
     public abstract void pushChunkDrawParams(float x, float y, float z);
 
-    public abstract void reset();
+    public void reset() {
+        this.count = 0;
+    }
 
     protected void growBuffer() {
-        this.buffer = MemoryUtil.memRealloc(this.buffer, this.buffer.capacity() * 2);
+        this.capacity = this.capacity * 2;
+        this.buffer = MemoryUtil.memRealloc(this.buffer, this.capacity * this.stride);
     }
 
     public static class UnsafeChunkDrawCallVector extends ChunkDrawParamsVector {
         private static final Unsafe UNSAFE = UnsafeUtil.instanceNullable();
 
-        private long writeBase;
+        private long basePointer;
         private long writePointer;
-        private long writeEnd;
 
         public UnsafeChunkDrawCallVector(int capacity) {
             super(capacity);
 
-            this.updatePointers(0);
+            this.basePointer = MemoryUtil.memAddress(this.buffer);
         }
 
         @Override
         @SuppressWarnings("SuspiciousNameCombination")
         public void pushChunkDrawParams(float x, float y, float z) {
-            if (this.writePointer >= this.writeEnd) {
+            if (this.count++ >= this.capacity) {
                 this.growBuffer();
             }
 
-            long l = this.writePointer;
+            UNSAFE.putFloat(this.writePointer    , x);
+            UNSAFE.putFloat(this.writePointer + 4, y);
+            UNSAFE.putFloat(this.writePointer + 8, z);
 
-            UNSAFE.putFloat(l    , x);
-            UNSAFE.putFloat(l + 4, y);
-            UNSAFE.putFloat(l + 8, z);
-
-            this.writePointer += STRIDE;
+            this.writePointer += this.stride;
         }
 
         @Override
         protected void growBuffer() {
             super.growBuffer();
 
-            this.updatePointers(this.writePointer - this.writeBase);
+            long offset = this.writePointer - this.basePointer;
+
+            this.basePointer = MemoryUtil.memAddress(this.buffer);
+            this.writePointer = this.basePointer + offset;
         }
 
         @Override
         public void reset() {
-            this.writePointer = this.writeBase;
-        }
+            super.reset();
 
-        private void updatePointers(long offset) {
-            this.writeBase = MemoryUtil.memAddress(this.buffer);
-            this.writeEnd = this.writeBase + this.buffer.capacity();
-
-            this.writePointer = this.writeBase + offset;
+            this.writePointer = this.basePointer;
         }
     }
 
     public static class NioChunkDrawCallVector extends ChunkDrawParamsVector {
         private int writeOffset;
-        private int capacity;
 
         public NioChunkDrawCallVector(int capacity) {
             super(capacity);
-
-            this.onBufferChanged();
         }
 
         @Override
         public void pushChunkDrawParams(float x, float y, float z) {
-            if (this.writeOffset >= this.capacity) {
+            if (this.count++ >= this.capacity) {
                 this.growBuffer();
             }
 
@@ -99,23 +97,14 @@ public abstract class ChunkDrawParamsVector extends StructBuffer {
             buf.putFloat(this.writeOffset + 4, y);
             buf.putFloat(this.writeOffset + 8, z);
 
-            this.writeOffset += STRIDE;
-        }
-
-        @Override
-        protected void growBuffer() {
-            super.growBuffer();
-
-            this.onBufferChanged();
+            this.writeOffset += this.stride;
         }
 
         @Override
         public void reset() {
-            this.writeOffset = 0;
-        }
+            super.reset();
 
-        private void onBufferChanged() {
-            this.capacity = this.buffer.capacity();
+            this.writeOffset = 0;
         }
     }
 }
