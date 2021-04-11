@@ -47,7 +47,7 @@ public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> 
         }
 
         return ShaderLoader.loadShader(ShaderType.VERTEX, new Identifier("sodium", "chunk_gl20.v.glsl"),
-            this.createShaderConstants(fogMode));
+                this.createShaderConstants(fogMode));
     }
 
     @Override
@@ -61,7 +61,7 @@ public abstract class ChunkRenderBackendMultiDraw<T extends ChunkGraphicsState> 
         }
 
         return ShaderLoader.loadShader(ShaderType.FRAGMENT, new Identifier("sodium", "chunk_gl20.f.glsl"),
-            this.createShaderConstants(fogMode));
+                this.createShaderConstants(fogMode));
     }
 
     private ShaderConstants createShaderConstants(ChunkFogMode fogMode) {
