@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.region;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import me.jellysquid.mods.sodium.client.gl.util.MemoryTracker;
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -26,10 +26,10 @@ public class ChunkRegionManager<T extends ChunkGraphicsState> {
     }
 
     private final Long2ReferenceOpenHashMap<ChunkRegion<T>> regions = new Long2ReferenceOpenHashMap<>();
-    private final MemoryTracker memoryTracker;
+    private final RenderDevice device;
 
-    public ChunkRegionManager(MemoryTracker memoryTracker) {
-        this.memoryTracker = memoryTracker;
+    public ChunkRegionManager(RenderDevice device) {
+        this.device = device;
     }
 
     public ChunkRegion<T> getRegion(int x, int y, int z) {
@@ -42,7 +42,7 @@ public class ChunkRegionManager<T extends ChunkGraphicsState> {
         ChunkRegion<T> region = this.regions.get(key);
 
         if (region == null) {
-            this.regions.put(key, region = new ChunkRegion<>(this.memoryTracker, BUFFER_SIZE));
+            this.regions.put(key, region = new ChunkRegion<>(this.device, BUFFER_SIZE));
         }
 
         return region;

@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.shader;
 
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import net.minecraft.util.Identifier;
 import org.apache.commons.io.IOUtils;
 
@@ -14,21 +15,23 @@ public class ShaderLoader {
      * path of `/assets/{namespace}/shaders/{path}`. User defines can be used to declare variables in the shader source
      * after the version header, allowing for conditional compilation with macro code.
      *
+     *
+     * @param device
      * @param type The type of shader to create
      * @param name The identifier used to locate the shader source file
      * @param constants A list of constants for shader specialization
      * @return An OpenGL shader object compiled with the given user defines
      */
-    public static GlShader loadShader(ShaderType type, Identifier name, ShaderConstants constants) {
-        return new GlShader(type, name, getShaderSource(getShaderPath(name)), constants);
+    public static GlShader loadShader(RenderDevice device, ShaderType type, Identifier name, ShaderConstants constants) {
+        return new GlShader(device, type, name, getShaderSource(getShaderPath(name)), constants);
     }
 
     /**
-     * Use {@link ShaderLoader#loadShader(ShaderType, Identifier, ShaderConstants)} instead. This will be removed.
+     * Use {@link ShaderLoader#loadShader(RenderDevice, ShaderType, Identifier, ShaderConstants)} instead. This will be removed.
      */
     @Deprecated
-    public static GlShader loadShader(ShaderType type, Identifier name, List<String> constants) {
-        return new GlShader(type, name, getShaderSource(getShaderPath(name)), ShaderConstants.fromStringList(constants));
+    public static GlShader loadShader(RenderDevice device, ShaderType type, Identifier name, List<String> constants) {
+        return new GlShader(device, type, name, getShaderSource(getShaderPath(name)), ShaderConstants.fromStringList(constants));
     }
 
     private static String getShaderPath(Identifier name) {

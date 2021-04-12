@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
@@ -158,7 +159,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
             return false;
         }
 
-        this.backend.upload(new DequeDrain<>(this.uploadQueue));
+        this.backend.upload(RenderDevice.INSTANCE.createCommandList(), new DequeDrain<>(this.uploadQueue));
 
         return true;
     }
