@@ -1,4 +1,4 @@
-name: Publish Release
+name: release-artifacts
 
 on:
   release:
@@ -15,12 +15,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 8
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      - name: Upload assets to CurseForge
+      - name: Build artifacts
         run: ./gradlew build
-        env:
-          BUILD_RELEASE: ${{ github.event.prerelease == false }}
       - name: Upload assets to GitHub
         uses: AButler/upload-release-assets@v2.0
         with:

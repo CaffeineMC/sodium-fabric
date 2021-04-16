@@ -83,7 +83,7 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
                     int y = baseY + relY;
                     int z = baseZ + relZ;
 
-                    if (block.getRenderType(blockState) == BlockRenderType.MODEL) {
+                    if (blockState.getRenderType() == BlockRenderType.MODEL) {
                         buffers.setRenderOffset(x - offset.getX(), y - offset.getY(), z - offset.getZ());
 
                         RenderLayer layer = RenderLayers.getBlockLayer(blockState);
@@ -93,7 +93,7 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
                         }
                     }
 
-                    FluidState fluidState = block.getFluidState(blockState);
+                    FluidState fluidState = blockState.getFluidState();
 
                     if (!fluidState.isEmpty()) {
                         buffers.setRenderOffset(x - offset.getX(), y - offset.getY(), z - offset.getZ());
