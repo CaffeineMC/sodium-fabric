@@ -7,8 +7,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPo
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL20C;
+import org.lwjgl.opengl.GL20C;
 
 /**
  * An OpenGL shader program.
@@ -30,11 +30,11 @@ public abstract class GlProgram extends GlObject {
     }
 
     public void bind() {
-        GL20.glUseProgram(this.handle());
+        GL20C.glUseProgram(this.handle());
     }
 
     public void unbind() {
-        GL20.glUseProgram(0);
+        GL20C.glUseProgram(0);
     }
 
     public Identifier getName() {
@@ -48,7 +48,7 @@ public abstract class GlProgram extends GlObject {
      * @throws NullPointerException If no uniform exists with the given name
      */
     public int getUniformLocation(String name) {
-        int index = GL20.glGetUniformLocation(this.handle(), name);
+        int index = GL20C.glGetUniformLocation(this.handle(), name);
 
         if (index < 0) {
             throw new NullPointerException("No uniform exists with name: " + name);
@@ -58,7 +58,7 @@ public abstract class GlProgram extends GlObject {
     }
 
     public void delete() {
-        GL20.glDeleteProgram(this.handle());
+        GL20C.glDeleteProgram(this.handle());
 
         this.invalidateHandle();
     }
@@ -69,11 +69,11 @@ public abstract class GlProgram extends GlObject {
 
         public Builder(Identifier name) {
             this.name = name;
-            this.program = GL20.glCreateProgram();
+            this.program = GL20C.glCreateProgram();
         }
 
         public Builder attachShader(GlShader shader) {
-            GL20.glAttachShader(this.program, shader.handle());
+            GL20C.glAttachShader(this.program, shader.handle());
 
             return this;
         }
@@ -88,17 +88,17 @@ public abstract class GlProgram extends GlObject {
          * @return An instantiated shader container as provided by the factory
          */
         public <P extends GlProgram> P build(ProgramFactory<P> factory) {
-            GL20.glLinkProgram(this.program);
+            GL20C.glLinkProgram(this.program);
 
-            String log = GL20.glGetProgramInfoLog(this.program);
+            String log = GL20C.glGetProgramInfoLog(this.program);
 
             if (!log.isEmpty()) {
                 LOGGER.warn("Program link log for " + this.name + ": " + log);
             }
 
-            int result = GL20.glGetProgrami(this.program, GL20.GL_LINK_STATUS);
+            int result = GL20C.glGetProgrami(this.program, GL20C.GL_LINK_STATUS);
 
-            if (result != GL11.GL_TRUE) {
+            if (result != GL20C.GL_TRUE) {
                 throw new RuntimeException("Shader program linking failed, see log for details");
             }
 
@@ -106,7 +106,7 @@ public abstract class GlProgram extends GlObject {
         }
 
         public Builder bindAttribute(String name, ShaderBindingPoint binding) {
-            GL20.glBindAttribLocation(this.program, binding.getGenericAttributeIndex(), name);
+            GL20C.glBindAttribLocation(this.program, binding.getGenericAttributeIndex(), name);
 
             return this;
         }

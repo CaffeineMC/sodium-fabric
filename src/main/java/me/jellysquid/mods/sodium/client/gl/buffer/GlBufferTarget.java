@@ -1,15 +1,14 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
-import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL31;
-import org.lwjgl.opengl.GL41;
-import org.lwjgl.opengl.GL42;
+import org.lwjgl.opengl.GL20C;
+import org.lwjgl.opengl.GL31C;
+import org.lwjgl.opengl.GL40C;
 
 public enum GlBufferTarget {
-    ARRAY_BUFFER(GL15.GL_ARRAY_BUFFER, GL15.GL_ARRAY_BUFFER_BINDING),
-    COPY_READ_BUFFER(GL31.GL_COPY_READ_BUFFER, GL31.GL_COPY_READ_BUFFER),
-    COPY_WRITE_BUFFER(GL31.GL_COPY_WRITE_BUFFER, GL31.GL_COPY_WRITE_BUFFER),
-    DRAW_INDIRECT_BUFFER(GL41.GL_DRAW_INDIRECT_BUFFER, GL41.GL_DRAW_INDIRECT_BUFFER_BINDING);
+    ARRAY_BUFFER(GL20C.GL_ARRAY_BUFFER, GL20C.GL_ARRAY_BUFFER_BINDING),
+    COPY_READ_BUFFER(GL31C.GL_COPY_READ_BUFFER, GL31C.GL_COPY_READ_BUFFER),
+    COPY_WRITE_BUFFER(GL31C.GL_COPY_WRITE_BUFFER, GL31C.GL_COPY_WRITE_BUFFER),
+    DRAW_INDIRECT_BUFFER(GL40C.GL_DRAW_INDIRECT_BUFFER, GL40C.GL_DRAW_INDIRECT_BUFFER_BINDING);
 
     public static final GlBufferTarget[] VALUES = GlBufferTarget.values();
     public static final int COUNT = VALUES.length;

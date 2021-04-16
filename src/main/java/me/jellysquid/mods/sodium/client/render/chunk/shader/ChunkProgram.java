@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
+import me.jellysquid.mods.sodium.client.gl.compat.LegacyMatrixStackHelper;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL20C;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.FloatBuffer;
@@ -40,33 +40,19 @@ public class ChunkProgram extends GlProgram {
     }
 
     public void setup(MatrixStack matrixStack, float modelScale, float textureScale) {
-        GL20.glUniform1i(this.uBlockTex, 0);
-        GL20.glUniform1i(this.uLightTex, 2);
+        GL20C.glUniform1i(this.uBlockTex, 0);
+        GL20C.glUniform1i(this.uLightTex, 2);
 
-        GL20.glUniform3f(this.uModelScale, modelScale, modelScale, modelScale);
-        GL20.glUniform2f(this.uTextureScale, textureScale, textureScale);
+        GL20C.glUniform3f(this.uModelScale, modelScale, modelScale, modelScale);
+        GL20C.glUniform2f(this.uTextureScale, textureScale, textureScale);
 
         this.fogShader.setup();
 
         MatrixStack.Entry matrices = matrixStack.peek();
 
-        // Since vanilla doesn't expose the projection matrix anywhere, we need to grab it from the OpenGL state
-        // This isn't super fast, but should be sufficient enough to remain compatible with any state modifying code
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            FloatBuffer bufProjection = stack.mallocFloat(16);
-            FloatBuffer bufModelView = stack.mallocFloat(16);
-            FloatBuffer bufModelViewProjection = stack.mallocFloat(16);
-
-            GL15.glGetFloatv(GL15.GL_PROJECTION_MATRIX, bufProjection);
-            matrices.getModel().writeToBuffer(bufModelView);
-
-            GL11.glPushMatrix();
-            GL11.glLoadMatrixf(bufProjection);
-            GL11.glMultMatrixf(bufModelView);
-            GL15.glGetFloatv(GL15.GL_MODELVIEW_MATRIX, bufModelViewProjection);
-            GL11.glPopMatrix();
-
-            GL20.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false, bufModelViewProjection);
+        try (MemoryStack memoryStack = MemoryStack.stackPush()) {
+            FloatBuffer buf = LegacyMatrixStackHelper.getModelViewProjectionMatrix(matrices, memoryStack);
+            GL20C.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false, buf);
         }
     }
 }
