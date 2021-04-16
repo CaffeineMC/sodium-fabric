@@ -11,7 +11,8 @@ import org.lwjgl.system.MemoryStack;
 import java.nio.FloatBuffer;
 
 /**
- * Deprecated functions used for extracting current matrix state from OpenGL. These are not supported in OpenGL Core.
+ * Deprecated functions used for extracting the current fog parameters from OpenGL state, only relevant for the
+ * fixed-function pipeline. These are not supported in OpenGL Core.
  */
 @Deprecated
 public class LegacyFogHelper {
