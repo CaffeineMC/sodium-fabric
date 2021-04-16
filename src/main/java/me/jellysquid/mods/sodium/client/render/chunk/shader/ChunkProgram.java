@@ -1,15 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
-import me.jellysquid.mods.sodium.client.gl.compat.LegacyMatrixStackHelper;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
+import me.jellysquid.mods.sodium.client.render.GameRendererContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.system.MemoryStack;
 
-import java.nio.FloatBuffer;
 import java.util.function.Function;
 
 /**
@@ -48,11 +46,9 @@ public class ChunkProgram extends GlProgram {
 
         this.fogShader.setup();
 
-        MatrixStack.Entry matrices = matrixStack.peek();
-
         try (MemoryStack memoryStack = MemoryStack.stackPush()) {
-            FloatBuffer buf = LegacyMatrixStackHelper.getModelViewProjectionMatrix(matrices, memoryStack);
-            GL20C.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false, buf);
+            GL20C.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false,
+                    GameRendererContext.getModelViewProjectionMatrix(matrixStack.peek(), memoryStack));
         }
     }
 }
