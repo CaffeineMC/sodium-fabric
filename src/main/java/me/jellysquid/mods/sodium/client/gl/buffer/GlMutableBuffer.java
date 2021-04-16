@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20C;
 
 import java.nio.ByteBuffer;
 

@@ -4,8 +4,8 @@ import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTarget;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL20C;
+import org.lwjgl.opengl.GL30C;
 
 import java.util.Arrays;
 
@@ -30,7 +30,7 @@ public class GlStateTracker {
         int prevBuffer = this.bufferState[target.ordinal()];
         
         if (prevBuffer == UNASSIGNED_HANDLE) {
-            this.bufferRestoreState[target.ordinal()] = GL15.glGetInteger(target.getBindingParameter());
+            this.bufferRestoreState[target.ordinal()] = GL20C.glGetInteger(target.getBindingParameter());
         }
 
         this.bufferState[target.ordinal()] = buffer;
@@ -46,7 +46,7 @@ public class GlStateTracker {
         int prevArray = this.vertexArrayState;
 
         if (prevArray == UNASSIGNED_HANDLE) {
-            this.vertexArrayRestoreState = GL15.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
+            this.vertexArrayRestoreState = GL20C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
         }
 
         this.vertexArrayState = array;
@@ -58,13 +58,13 @@ public class GlStateTracker {
         for (int i = 0; i < GlBufferTarget.COUNT; i++) {
             if (this.bufferState[i] != this.bufferRestoreState[i] &&
                     this.bufferRestoreState[i] != UNASSIGNED_HANDLE) {
-                GL15.glBindBuffer(GlBufferTarget.VALUES[i].getTargetParameter(), this.bufferRestoreState[i]);
+                GL20C.glBindBuffer(GlBufferTarget.VALUES[i].getTargetParameter(), this.bufferRestoreState[i]);
             }
         }
 
         if (this.vertexArrayState != this.vertexArrayRestoreState &&
                 this.vertexArrayRestoreState != UNASSIGNED_HANDLE) {
-            GL30.glBindVertexArray(this.vertexArrayRestoreState);
+            GL30C.glBindVertexArray(this.vertexArrayRestoreState);
         }
     }
 

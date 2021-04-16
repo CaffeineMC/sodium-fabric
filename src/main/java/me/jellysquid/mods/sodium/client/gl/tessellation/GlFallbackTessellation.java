@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.gl.tessellation;
 
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL20C;
 
 public class GlFallbackTessellation extends GlAbstractTessellation {
     public GlFallbackTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings) {
@@ -23,7 +23,7 @@ public class GlFallbackTessellation extends GlAbstractTessellation {
     public void unbind(CommandList commandList) {
         for (TessellationBinding binding : this.bindings) {
             for (GlVertexAttributeBinding attrib : binding.getAttributeBindings()) {
-                GL20.glDisableVertexAttribArray(attrib.getIndex());
+                GL20C.glDisableVertexAttribArray(attrib.getIndex());
             }
         }
     }

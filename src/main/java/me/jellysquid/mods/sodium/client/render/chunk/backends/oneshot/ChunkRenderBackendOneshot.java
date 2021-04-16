@@ -21,7 +21,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkRenderShaderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import net.minecraft.util.Identifier;
-import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL20C;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.FloatBuffer;
@@ -95,7 +95,7 @@ public class ChunkRenderBackendOneshot extends ChunkRenderShaderBackend<ChunkOne
             fb.put(1, modelY);
             fb.put(2, modelZ);
 
-            GL20.glVertexAttrib4fv(ChunkShaderBindingPoints.MODEL_OFFSET.getGenericAttributeIndex(), fb);
+            GL20C.glVertexAttrib4fv(ChunkShaderBindingPoints.MODEL_OFFSET.getGenericAttributeIndex(), fb);
         }
     }
 

@@ -64,7 +64,7 @@ public class GLRenderDevice implements RenderDevice {
         @Override
         public void bindVertexArray(GlVertexArray array) {
             if (this.stateTracker.makeVertexArrayActive(array)) {
-                GL30.glBindVertexArray(array.handle());
+                GlFunctions.VERTEX_ARRAY.glBindVertexArray(array.handle());
             }
         }
 
@@ -72,7 +72,7 @@ public class GLRenderDevice implements RenderDevice {
         public void uploadData(GlMutableBuffer glBuffer, ByteBuffer byteBuffer) {
             this.bindBuffer(GlBufferTarget.ARRAY_BUFFER, glBuffer);
 
-            GL15.glBufferData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), byteBuffer, glBuffer.getUsageHint().getId());
+            GL20C.glBufferData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), byteBuffer, glBuffer.getUsageHint().getId());
 
             glBuffer.setSize(byteBuffer.limit());
         }
@@ -86,27 +86,27 @@ public class GLRenderDevice implements RenderDevice {
             this.bindBuffer(GlBufferTarget.COPY_READ_BUFFER, src);
             this.bindBuffer(GlBufferTarget.COPY_WRITE_BUFFER, dst);
 
-            GlFunctions.BUFFER_COPY.glCopyBufferSubData(GL31.GL_COPY_READ_BUFFER, GL31.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, bytes);
+            GlFunctions.BUFFER_COPY.glCopyBufferSubData(GL31C.GL_COPY_READ_BUFFER, GL31C.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, bytes);
         }
 
         @Override
         public void bindBuffer(GlBufferTarget target, GlBuffer buffer) {
             if (this.stateTracker.makeBufferActive(target, buffer)) {
-                GL15.glBindBuffer(target.getTargetParameter(), buffer.handle());
+                GL20C.glBindBuffer(target.getTargetParameter(), buffer.handle());
             }
         }
 
         @Override
         public void unbindBuffer(GlBufferTarget target) {
             if (this.stateTracker.makeBufferActive(target, null)) {
-                GL15.glBindBuffer(target.getTargetParameter(), GlBuffer.NULL_BUFFER_ID);
+                GL20C.glBindBuffer(target.getTargetParameter(), GlBuffer.NULL_BUFFER_ID);
             }
         }
 
         @Override
         public void unbindVertexArray() {
             if (this.stateTracker.makeVertexArrayActive(null)) {
-                GL30.glBindVertexArray(GlVertexArray.NULL_ARRAY_ID);
+                GlFunctions.VERTEX_ARRAY.glBindVertexArray(GlVertexArray.NULL_ARRAY_ID);
             }
         }
 
@@ -119,7 +119,7 @@ public class GLRenderDevice implements RenderDevice {
         public void allocateBuffer(GlBufferTarget target, GlMutableBuffer buffer, long bufferSize) {
             this.bindBuffer(target, buffer);
 
-            GL15.glBufferData(target.getTargetParameter(), bufferSize, buffer.getUsageHint().getId());
+            GL20C.glBufferData(target.getTargetParameter(), bufferSize, buffer.getUsageHint().getId());
             buffer.setSize(bufferSize);
         }
 
@@ -128,7 +128,7 @@ public class GLRenderDevice implements RenderDevice {
             int handle = buffer.handle();
             buffer.invalidateHandle();
 
-            GL15.glDeleteBuffers(handle);
+            GL20C.glDeleteBuffers(handle);
         }
 
         @Override
@@ -188,13 +188,13 @@ public class GLRenderDevice implements RenderDevice {
         @Override
         public void multiDrawArrays(IntBuffer first, IntBuffer count) {
             GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
-            GL20.glMultiDrawArrays(primitiveType.getId(), first, count);
+            GL20C.glMultiDrawArrays(primitiveType.getId(), first, count);
         }
 
         @Override
         public void multiDrawArraysIndirect(long pointer, int count, int stride) {
             GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
-            GL43.glMultiDrawArraysIndirect(primitiveType.getId(), pointer, count, stride);
+            GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(primitiveType.getId(), pointer, count, stride);
         }
 
         @Override
