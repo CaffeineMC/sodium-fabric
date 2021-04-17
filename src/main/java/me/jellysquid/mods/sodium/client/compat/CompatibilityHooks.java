@@ -32,13 +32,11 @@ public final class CompatibilityHooks {
     private static final Logger LOGGER = SodiumClientMod.logger();
 
     public static final FabricRenderingHooks FABRIC_RENDERING;
-    public static final FabricLifecycleEventsHooks FABRIC_LIFECYCLE_EVENTS;
 
     static {
         final FabricLoader loader = FabricLoader.getInstance();
         LOGGER.info("Sodium is now looking for mods to enable compatibility hooks for...");
         FABRIC_RENDERING = createFabricRenderingHooks(loader);
-        FABRIC_LIFECYCLE_EVENTS = createFabricLifecycleEventsHooks(loader);
         LOGGER.info("Compatibility hooks done! Enjoy your improved performance!");
     }
 
@@ -193,31 +191,4 @@ public final class CompatibilityHooks {
             };
         }
     }
-
-    private static FabricLifecycleEventsHooks createFabricLifecycleEventsHooks(FabricLoader loader) {
-        if (loader.isModLoaded("fabric-lifecycle-events-v1")) {
-            LOGGER.info("Sodium has detected that Fabric Lifecycle Events v1 is installed. Activating compatibility hooks...");
-            return new FabricLifecycleEventsHooks() {
-                @Override
-                public void invokeOnClientChunkLoad(ClientWorld world, WorldChunk chunk) {
-                    ClientChunkEvents.CHUNK_LOAD.invoker().onChunkLoad(world, chunk);
-                }
-
-                @Override
-                public void invokeOnClientChunkUnload(ClientWorld world, WorldChunk chunk) {
-                    ClientChunkEvents.CHUNK_UNLOAD.invoker().onChunkUnload(world, chunk);
-                }
-            };
-        } else {
-            LOGGER.info("Sodium has detected that Fabric Lifecycle Events v1 is NOT installed.");
-            return new FabricLifecycleEventsHooks() {
-                @Override
-                public void invokeOnClientChunkLoad(ClientWorld world, WorldChunk chunk) { }
-
-                @Override
-                public void invokeOnClientChunkUnload(ClientWorld world, WorldChunk chunk) { }
-            };
-        }
-    }
-
 }
