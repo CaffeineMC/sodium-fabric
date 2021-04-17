@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
 import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
-import me.jellysquid.mods.sodium.client.world.SodiumChunkManager;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.world.ClientChunkManager;
@@ -29,16 +28,6 @@ public abstract class MixinClientWorld implements ClientWorldExtended {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(ClientPlayNetworkHandler clientPlayNetworkHandler, ClientWorld.Properties properties, RegistryKey<World> registryKey, DimensionType dimensionType, int i, Supplier<Profiler> supplier, WorldRenderer worldRenderer, boolean bl, long seed, CallbackInfo ci) {
         this.biomeSeed = seed;
-    }
-
-    /**
-     * Replace the client world chunk manager with our own implementation that is both faster and contains additional
-     * features needed to pull off event-based rendering.
-     */
-    @Dynamic
-    @Redirect(method = "<init>", at = @At(value = "NEW", target = "net/minecraft/client/world/ClientChunkManager"))
-    private static ClientChunkManager redirectCreateChunkManager(ClientWorld world, int renderDistance) {
-        return new SodiumChunkManager(world, renderDistance);
     }
 
     @Override
