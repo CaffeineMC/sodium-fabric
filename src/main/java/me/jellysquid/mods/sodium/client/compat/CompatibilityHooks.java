@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.compat;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.compat.impl.fabric.rendering.BlockOutlineContextImpl;
 import me.jellysquid.mods.sodium.client.compat.impl.fabric.rendering.WorldRenderContextImpl;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.InvalidateRenderStateCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -16,7 +15,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.profiler.Profiler;
-import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.Logger;
 
 /**
