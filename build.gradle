@@ -21,7 +21,7 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.coderbot.iris:iris:0.3.0-sodium_compatibility"
+    modImplementation "net.coderbot.iris:iris:0.3.0"
 }
 
 if (project.use_third_party_mods) {
