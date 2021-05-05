@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: 'IrisShaders/Iris'
-        ref: 'sodium-compatibility'
+        ref: 'trunk'
         path: 'iris'
     - name: Iris publishToMavenLocal
       run: cd ./iris && ./gradlew publishToMavenLocal && cd ..

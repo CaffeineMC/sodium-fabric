@@ -12,7 +12,7 @@ platforms. If you'd prefer to not use a package manager, you can always grab the
 On Windows, the Oracle JDK/JRE builds should be avoided where possible due to their poor quality. Always prefer using
 the open-source builds from AdoptOpenJDK when possible.
 
-**You need to have a compiled build of the Iris sodium-compatibility branch in your mavenLocal repository. You will be unable to compile this fork otherwise!** Use the `publishToMavenLocal` Gradle task in the Iris repository (checked out to the sodium-compatibility branch) to accomplish this.
+**You need to have a compiled build of Iris in your mavenLocal repository. You will be unable to compile this fork otherwise!** Use the `publishToMavenLocal` Gradle task in the Iris repository to accomplish this.
 
 ### License
 
