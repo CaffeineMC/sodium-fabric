@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.6-SNAPSHOT'
+    id 'fabric-loom' version '0.7-SNAPSHOT'
     id 'org.ajoberstar.grgit' version '4.1.0'
 }
 
