@@ -10,11 +10,12 @@ import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRend
 import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
 import net.minecraft.client.options.GraphicsMode;
 
-import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
@@ -22,7 +23,7 @@ public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
 
-    private File file;
+    private Path configPath;
 
     public void notifyListeners() {
         SodiumClientMod.onConfigChanged(this);
@@ -133,18 +134,18 @@ public class SodiumGameOptions {
         }
     }
 
-    private static final Gson gson = new GsonBuilder()
+    private static final Gson GSON = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
 
-    public static SodiumGameOptions load(File file) {
+    public static SodiumGameOptions load(Path path) {
         SodiumGameOptions config;
 
-        if (file.exists()) {
-            try (FileReader reader = new FileReader(file)) {
-                config = gson.fromJson(reader, SodiumGameOptions.class);
+        if (Files.exists(path)) {
+            try (FileReader reader = new FileReader(path.toFile())) {
+                config = GSON.fromJson(reader, SodiumGameOptions.class);
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse config", e);
             }
@@ -154,8 +155,13 @@ public class SodiumGameOptions {
             config = new SodiumGameOptions();
         }
 
-        config.file = file;
-        config.writeChanges();
+        config.configPath = path;
+
+        try {
+            config.writeChanges();
+        } catch (IOException e) {
+            throw new RuntimeException("Couldn't update config file", e);
+        }
 
         return config;
     }
@@ -166,21 +172,16 @@ public class SodiumGameOptions {
         }
     }
 
-    public void writeChanges() {
-        File dir = this.file.getParentFile();
+    public void writeChanges() throws IOException {
+        Path dir = this.configPath.getParent();
 
-        if (!dir.exists()) {
-            if (!dir.mkdirs()) {
-                throw new RuntimeException("Could not create parent directories");
-            }
-        } else if (!dir.isDirectory()) {
-            throw new RuntimeException("The parent file is not a directory");
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+        } else if (!Files.isDirectory(dir)) {
+            throw new IOException("Not a directory: " + dir);
         }
 
-        try (FileWriter writer = new FileWriter(this.file)) {
-            gson.toJson(this, writer);
-        } catch (IOException e) {
-            throw new RuntimeException("Could not save configuration file", e);
-        }
+        Files.write(this.configPath, GSON.toJson(this)
+                .getBytes(StandardCharsets.UTF_8));
     }
 }
