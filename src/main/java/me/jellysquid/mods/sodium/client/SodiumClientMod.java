@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.nio.file.Paths;
 
 public class SodiumClientMod implements ClientModInitializer {
     private static SodiumGameOptions CONFIG;
@@ -34,7 +35,7 @@ public class SodiumClientMod implements ClientModInitializer {
     }
 
     private static SodiumGameOptions loadConfig() {
-        SodiumGameOptions config = SodiumGameOptions.load(new File("config/sodium-options.json"));
+        SodiumGameOptions config = SodiumGameOptions.load(Paths.get("config", "sodium-options.json"));
         onConfigChanged(config);
 
         return config;
