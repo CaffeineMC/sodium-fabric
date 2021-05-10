@@ -392,6 +392,11 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             }
         }
 
+        // Ensure entities with the glowing effect are not culled, since they are always visible to the player.
+        if (entity.isGlowing()) {
+            return true;
+        }
+
         return false;
     }
 
