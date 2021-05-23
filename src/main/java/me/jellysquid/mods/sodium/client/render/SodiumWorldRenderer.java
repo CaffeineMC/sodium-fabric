@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.util.GlFogHelper;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
@@ -50,6 +51,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     private double lastCameraX, lastCameraY, lastCameraZ;
     private double lastCameraPitch, lastCameraYaw;
+    private float lastFogDistance;
 
     private boolean useEntityCulling;
 
@@ -185,9 +187,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
+        float fogDistance = GlFogHelper.getFogCutoff();
 
         boolean dirty = cameraPos.x != this.lastCameraX || cameraPos.y != this.lastCameraY || cameraPos.z != this.lastCameraZ ||
-                pitch != this.lastCameraPitch || yaw != this.lastCameraYaw;
+                pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
 
         if (dirty) {
             this.chunkRenderManager.markDirty();
@@ -198,6 +201,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.lastCameraZ = cameraPos.z;
         this.lastCameraPitch = pitch;
         this.lastCameraYaw = yaw;
+        this.lastFogDistance = fogDistance;
 
         profiler.swap("chunk_update");
 
