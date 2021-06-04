@@ -8,10 +8,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up JDK 8
+    - name: Set up JDK 16
       uses: actions/setup-java@v1
       with:
-        java-version: 8
+        java-version: 16
     - name: Build artifacts
       run: ./gradlew build
     - name: Upload build artifacts
