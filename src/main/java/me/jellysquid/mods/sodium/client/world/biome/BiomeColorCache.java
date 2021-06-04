@@ -20,6 +20,10 @@ public class BiomeColorCache {
     private final int dim;
     private final int minX, minZ;
 
+    private final int blendedColorsDim;
+    private final int blendedColorsMinX;
+    private final int blendedColorsMinZ;
+
     public BiomeColorCache(ColorResolver resolver, WorldSlice slice) {
         this.resolver = resolver;
         this.slice = slice;
@@ -32,18 +36,23 @@ public class BiomeColorCache {
 
         this.dim = 16 + ((this.radius + 2) * 2);
 
+        this.blendedColorsMinX = origin.getMinX() - 2;
+        this.blendedColorsMinZ = origin.getMinZ() - 2;
+
+        this.blendedColorsDim = 16 + 2 * 2;
+
         this.cache = new int[this.dim * this.dim];
-        this.blendedColors = new int[this.dim * this.dim];
+        this.blendedColors = new int[this.blendedColorsDim * this.blendedColorsDim];
 
         Arrays.fill(this.cache, -1);
         Arrays.fill(this.blendedColors, -1);
     }
 
     public int getBlendedColor(BlockPos pos) {
-        int x2 = pos.getX() - this.minX;
-        int z2 = pos.getZ() - this.minZ;
+        int x2 = pos.getX() - this.blendedColorsMinX;
+        int z2 = pos.getZ() - this.blendedColorsMinZ;
 
-        int index = (x2 * this.dim) + z2;
+        int index = (x2 * this.blendedColorsDim) + z2;
         int color = this.blendedColors[index];
 
         if (color == -1) {
