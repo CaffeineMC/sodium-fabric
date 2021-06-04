@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.util;
 
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3f;
 import net.minecraft.util.math.Vec3i;
 
 /**
@@ -28,7 +28,7 @@ public class Norm3b {
         return pack(norm.getX(), norm.getY(), norm.getZ());
     }
 
-    public static int pack(Vector3f dir) {
+    public static int pack(Vec3f dir) {
         return pack(dir.getX(), dir.getY(), dir.getZ());
     }
 

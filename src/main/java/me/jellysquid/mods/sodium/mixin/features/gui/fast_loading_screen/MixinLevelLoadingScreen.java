@@ -12,6 +12,7 @@ import net.minecraft.client.gui.WorldGenerationProgressTracker;
 import net.minecraft.client.gui.screen.LevelLoadingScreen;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Matrix4f;
@@ -62,7 +63,7 @@ public class MixinLevelLoadingScreen {
         RenderSystem.defaultBlendFunc();
         
         BufferBuilder buffer = tessellator.getBuffer();
-        buffer.begin(GL20C.GL_QUADS, VertexFormats.POSITION_COLOR);
+        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
         BasicScreenQuadVertexSink sink = VertexDrain.of(buffer).createSink(VanillaVertexTypes.BASIC_SCREEN_QUADS);
 

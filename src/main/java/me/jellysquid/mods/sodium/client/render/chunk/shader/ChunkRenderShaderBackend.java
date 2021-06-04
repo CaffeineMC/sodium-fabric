@@ -46,6 +46,7 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState>
                     .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.TEX_COORD)
                     .bindAttribute("a_LightCoord", ChunkShaderBindingPoints.LIGHT_COORD)
                     .bindAttribute("d_ModelOffset", ChunkShaderBindingPoints.MODEL_OFFSET)
+                    .bindFragData("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
                     .build((program, name) -> new ChunkProgram(device, program, name, fogMode.getFactory()));
         } finally {
             vertShader.delete();
@@ -57,6 +58,7 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState>
     public final void createShaders(RenderDevice device) {
         this.programs.put(ChunkFogMode.NONE, this.createShader(device, ChunkFogMode.NONE, this.vertexFormat));
         this.programs.put(ChunkFogMode.LINEAR, this.createShader(device, ChunkFogMode.LINEAR, this.vertexFormat));
+        this.programs.put(ChunkFogMode.SMOOTH, this.createShader(device, ChunkFogMode.SMOOTH, this.vertexFormat));
         this.programs.put(ChunkFogMode.EXP2, this.createShader(device, ChunkFogMode.EXP2, this.vertexFormat));
     }
 

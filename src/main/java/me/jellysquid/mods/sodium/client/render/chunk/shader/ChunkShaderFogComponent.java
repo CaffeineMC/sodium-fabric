@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.system.MemoryStack;
@@ -30,6 +31,7 @@ public abstract class ChunkShaderFogComponent {
         }
     }
 
+    @Deprecated
     public static class Exp2 extends ChunkShaderFogComponent {
         private final int uFogColor;
         private final int uFogDensity;
@@ -47,6 +49,7 @@ public abstract class ChunkShaderFogComponent {
         }
     }
 
+    @Deprecated
     public static class Linear extends ChunkShaderFogComponent {
         private final int uFogColor;
         private final int uFogLength;
@@ -62,10 +65,34 @@ public abstract class ChunkShaderFogComponent {
         public void setup() {
             ChunkShaderFogComponent.setupColorUniform(this.uFogColor);
 
-            float end = LegacyFogHelper.getFogEnd();
-            float start = LegacyFogHelper.getFogStart();
+            float end = RenderSystem.getShaderFogEnd();
+            float start = RenderSystem.getShaderFogStart();
 
             GL20C.glUniform1f(this.uFogLength, end - start);
+            GL20C.glUniform1f(this.uFogEnd, end);
+        }
+    }
+
+
+    public static class Smooth extends ChunkShaderFogComponent {
+        private final int uFogColor;
+        private final int uFogStart;
+        private final int uFogEnd;
+
+        public Smooth(ChunkProgram program) {
+            this.uFogColor = program.getUniformLocation("u_FogColor");
+            this.uFogStart = program.getUniformLocation("u_FogStart");
+            this.uFogEnd = program.getUniformLocation("u_FogEnd");
+        }
+
+        @Override
+        public void setup() {
+            ChunkShaderFogComponent.setupColorUniform(this.uFogColor);
+
+            float end = RenderSystem.getShaderFogEnd();
+            float start = RenderSystem.getShaderFogStart();
+
+            GL20C.glUniform1f(this.uFogStart, start);
             GL20C.glUniform1f(this.uFogEnd, end);
         }
     }
@@ -75,11 +102,10 @@ public abstract class ChunkShaderFogComponent {
      * given binding index.
      */
     private static void setupColorUniform(int index) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            FloatBuffer buf = stack.mallocFloat(4);
-            LegacyFogHelper.getFogColor(buf);
-            GL20C.glUniform4fv(index, buf);
-        }
+        GL20C.glUniform4fv(
+                index,
+                RenderSystem.getShaderFogColor()
+        );
     }
 
 }

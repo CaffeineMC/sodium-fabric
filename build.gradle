@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.6-SNAPSHOT'
+    id 'fabric-loom' version '0.8-SNAPSHOT'
     id 'org.ajoberstar.grgit' version '4.1.0'
 }
 
@@ -16,7 +16,7 @@ dependencies {
     //to change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 }
 
 if (project.use_third_party_mods) {
@@ -27,9 +27,9 @@ if (project.use_third_party_mods) {
     dependencies {
         // DataBreaker applies a number of patches to eliminate the loading of data fixers
         // This greatly reduces the amount of time needed to start the game, but is generally unsafe in production
-        modRuntime ("com.github.SuperCoder7979:databreaker:${project.databreaker_version}") {
+        /*modRuntime ("com.github.SuperCoder7979:databreaker:${project.databreaker_version}") {
             transitive = false
-        }
+        }*/
     }
 }
 
@@ -52,7 +52,7 @@ java {
     withSourcesJar()
 
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(16)
     }
 }
 

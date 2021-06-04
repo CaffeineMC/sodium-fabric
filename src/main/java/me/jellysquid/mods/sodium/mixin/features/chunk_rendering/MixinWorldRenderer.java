@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -33,7 +33,7 @@ public abstract class MixinWorldRenderer {
 
     private SodiumWorldRenderer renderer;
 
-    @Redirect(method = "reload", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;viewDistance:I", ordinal = 1))
+    @Redirect(method = "reload()V", at = @At(value = "FIELD", target = "Lnet/minecraft/client/option/GameOptions;viewDistance:I", ordinal = 1))
     private int nullifyBuiltChunkStorage(GameOptions options) {
         // Do not allow any resources to be allocated
         return 0;
@@ -83,11 +83,11 @@ public abstract class MixinWorldRenderer {
      * @author JellySquid
      */
     @Overwrite
-    private void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
+    private void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z, Matrix4f projectionMatrix) {
         RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.drawChunkLayer(renderLayer, matrixStack, x, y, z);
+            this.renderer.drawChunkLayer(renderLayer, matrixStack, x, y, z, projectionMatrix);
         } finally {
             RenderDevice.exitManagedCode();
         }

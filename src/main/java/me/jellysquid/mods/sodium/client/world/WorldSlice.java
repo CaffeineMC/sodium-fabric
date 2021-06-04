@@ -32,10 +32,10 @@ import java.util.Map;
  * Takes a slice of world state (block states, biome and light data arrays) and copies the data for use in off-thread
  * operations. This allows chunk build tasks to see a consistent snapshot of chunk data at the exact moment the task was
  * created.
- *
+ * <p>
  * World slices are not safe to use from multiple threads at once, but the data they contain is safe from modification
  * by the main client thread.
- *
+ * <p>
  * Object pooling should be used to avoid huge allocations as this class contains many large arrays.
  */
 public class WorldSlice extends ReusableObject implements BlockRenderView, BiomeAccess.Storage {
@@ -218,7 +218,7 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     private void populateLightArrays(int sectionIdx, ChunkSectionPos pos) {
         ChunkLightingView blockLightProvider = this.world.getLightingProvider().get(LightType.BLOCK);
         ChunkLightingView skyLightProvider = this.world.getLightingProvider().get(LightType.SKY);
-        
+
         this.blockLightArrays[sectionIdx] = blockLightProvider.getLightSection(pos);
         this.skyLightArrays[sectionIdx] = skyLightProvider.getLightSection(pos);
     }
@@ -393,7 +393,7 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
         // [VanillaCopy] WorldView#getBiomeForNoiseGen(int, int, int)
         BiomeArray array = this.biomeArrays[getLocalChunkIndex(x2, z2)];
 
-        if (array != null ) {
+        if (array != null) {
             return array.getBiomeForNoiseGen(x, y, z);
         }
 
@@ -453,10 +453,25 @@ public class WorldSlice extends ReusableObject implements BlockRenderView, Biome
     private static ChunkSection getChunkSection(Chunk chunk, ChunkSectionPos pos) {
         ChunkSection section = null;
 
-        if (!World.isHeightInvalid(ChunkSectionPos.getBlockCoord(pos.getY()))) {
+        // TODO: if (!World.isInvalidVertically(ChunkSectionPos.getBlockCoord(pos.getY()))) {
+        //     section = chunk.getSectionArray()[pos.getY()];
+        // }
+
+        // instead i'm now doing
+        if (pos.getY() >= 0 && pos.getY() < chunk.getSectionArray().length) {
             section = chunk.getSectionArray()[pos.getY()];
         }
 
         return section;
+    }
+
+    @Override
+    public int getHeight() {
+        return 256;
+    }
+
+    @Override
+    public int getBottomY() {
+        return 0;
     }
 }

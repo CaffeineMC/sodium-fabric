@@ -11,6 +11,7 @@ import java.util.function.Function;
 public enum ChunkFogMode {
     NONE(ChunkShaderFogComponent.None::new, ImmutableList.of()),
     LINEAR(ChunkShaderFogComponent.Linear::new, ImmutableList.of("USE_FOG", "USE_FOG_LINEAR")),
+    SMOOTH(ChunkShaderFogComponent.Smooth::new, ImmutableList.of("USE_FOG", "USE_FOG_VANILLA")),
     EXP2(ChunkShaderFogComponent.Exp2::new, ImmutableList.of("USE_FOG", "USE_FOG_EXP2"));
 
     private final Function<ChunkProgram, ChunkShaderFogComponent> factory;

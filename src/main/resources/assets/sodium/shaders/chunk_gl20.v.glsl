@@ -1,15 +1,15 @@
-#version 110
-attribute vec3 a_Pos; // The position of the vertex
-attribute vec4 a_Color; // The color of the vertex
-attribute vec2 a_TexCoord; // The block texture coordinate of the vertex
-attribute vec2 a_LightCoord; // The light map texture coordinate of the vertex
+#version 150
+in vec3 a_Pos; // The position of the vertex
+in vec4 a_Color; // The color of the vertex
+in vec2 a_TexCoord; // The block texture coordinate of the vertex
+in vec2 a_LightCoord; // The light map texture coordinate of the vertex
 
-varying vec4 v_Color;
-varying vec2 v_TexCoord;
-varying vec2 v_LightCoord;
+out vec4 v_Color;
+out vec2 v_TexCoord;
+out vec2 v_LightCoord;
 
 #ifdef USE_FOG
-varying float v_FragDistance;
+out float v_FragDistance;
 #endif
 
 uniform mat4 u_ModelViewProjectionMatrix;
@@ -17,7 +17,7 @@ uniform vec3 u_ModelScale;
 uniform vec2 u_TextureScale;
 
 // The model translation for this draw call.
-attribute vec4 d_ModelOffset;
+in vec4 d_ModelOffset;
 
 void main() {
     // Translates the vertex position around the position of the camera

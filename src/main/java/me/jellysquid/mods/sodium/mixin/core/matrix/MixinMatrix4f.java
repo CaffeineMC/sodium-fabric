@@ -262,7 +262,7 @@ public class MixinMatrix4f implements Matrix4fExtended {
      */
     @Environment(EnvType.CLIENT)
     @Overwrite
-    public void writeToBuffer(FloatBuffer buf) {
+    public void writeColumnMajor(FloatBuffer buf) {
         if (buf.remaining() < 16) {
             throw new BufferUnderflowException();
         }

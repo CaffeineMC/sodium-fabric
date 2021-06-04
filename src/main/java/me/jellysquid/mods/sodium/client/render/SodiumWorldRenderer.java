@@ -221,15 +221,15 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     /**
      * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
-    public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
+    public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z, Matrix4f projectionMatrix) {
         BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
         pass.startDrawing();
 
-        this.chunkRenderManager.renderLayer(matrixStack, pass, x, y, z);
+        this.chunkRenderManager.renderLayer(matrixStack, pass, x, y, z, projectionMatrix);
 
         pass.endDrawing();
 
-        RenderSystem.clearCurrentColor();
+        // TODO: RenderSystem.clearCurrentColor();
     }
 
     public void reload() {
@@ -310,11 +310,11 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
                 if (stage >= 0) {
                     MatrixStack.Entry entry = matrices.peek();
                     VertexConsumer transformer = new OverlayVertexConsumer(bufferBuilders.getEffectVertexConsumers().getBuffer(ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.get(stage)), entry.getModel(), entry.getNormal());
-                    consumer = (layer) -> layer.hasCrumbling() ? VertexConsumers.dual(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
+                    consumer = (layer) -> layer.hasCrumbling() ? VertexConsumers.union(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
                 }
             }
 
-            BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, tickDelta, matrices, consumer);
+            MinecraftClient.getInstance().getBlockEntityRenderDispatcher().render(blockEntity, tickDelta, matrices, consumer);
 
             matrices.pop();
         }
@@ -325,7 +325,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             matrices.push();
             matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
 
-            BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, tickDelta, matrices, immediate);
+            MinecraftClient.getInstance().getBlockEntityRenderDispatcher().render(blockEntity, tickDelta, matrices, immediate);
 
             matrices.pop();
         }

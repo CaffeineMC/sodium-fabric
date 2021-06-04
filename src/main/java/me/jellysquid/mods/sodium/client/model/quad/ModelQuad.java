@@ -130,6 +130,8 @@ public class ModelQuad implements ModelQuadViewMutable {
 
     @Override
     public void copyInto(ByteBuffer buf, int position) {
-        BufferUtil.copyIntArray(this.data, this.data.length, position, buf);
+        BufferUtil.copyIntArray(this.data, VERTEX_SIZE * 3, position, buf);
+        BufferUtil.copyIntArraySlice(this.data,  VERTEX_SIZE * 2, VERTEX_SIZE * 2, position + VERTEX_SIZE * 3, buf);
+        BufferUtil.copyIntArray(this.data, VERTEX_SIZE, position + VERTEX_SIZE * 5, buf);
     }
 }

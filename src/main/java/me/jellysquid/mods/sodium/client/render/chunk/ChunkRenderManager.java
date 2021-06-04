@@ -35,6 +35,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.chunk.ChunkSection;
 
@@ -395,7 +396,8 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         return render;
     }
 
-    public void renderLayer(MatrixStack matrixStack, BlockRenderPass pass, double x, double y, double z) {
+    public void renderLayer(MatrixStack matrixStack, BlockRenderPass pass, double x, double y, double z, Matrix4f projectionMatrix) {
+        // TODO projectionMatrix??
         ChunkRenderList<T> chunkRenderList = this.chunkRenderLists[pass.ordinal()];
         ChunkRenderListIterator<T> iterator = chunkRenderList.iterator(pass.isTranslucent());
 

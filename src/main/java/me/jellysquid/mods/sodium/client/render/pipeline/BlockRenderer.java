@@ -127,8 +127,25 @@ public class BlockRenderer {
             colors = this.biomeColorBlender.getColors(colorProvider, world, state, pos, src);
         }
 
-        for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
+        for (int dstIndex = 0; dstIndex < 3; dstIndex++) {
             int srcIndex = order.getVertexIndex(dstIndex);
+
+            float x = src.getX(srcIndex) + (float) offset.getX();
+            float y = src.getY(srcIndex) + (float) offset.getY();
+            float z = src.getZ(srcIndex) + (float) offset.getZ();
+
+            int color = ColorABGR.mul(colors != null ? colors[srcIndex] : 0xFFFFFFFF, light.br[srcIndex]);
+
+            float u = src.getTexU(srcIndex);
+            float v = src.getTexV(srcIndex);
+
+            int lm = light.lm[srcIndex];
+
+            sink.writeQuad(x, y, z, color, u, v, lm);
+        }
+
+        for (int dstIndex = 2; dstIndex < 5; dstIndex++) {
+            int srcIndex = order.getVertexIndex(dstIndex & 3);
 
             float x = src.getX(srcIndex) + (float) offset.getX();
             float y = src.getY(srcIndex) + (float) offset.getY();

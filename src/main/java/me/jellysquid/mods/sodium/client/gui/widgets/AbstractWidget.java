@@ -5,6 +5,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.render.*;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
@@ -39,7 +40,7 @@ public abstract class AbstractWidget implements Drawable, Element {
         RenderSystem.defaultBlendFunc();
 
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
-        bufferBuilder.begin(GL20C.GL_QUADS, VertexFormats.POSITION_COLOR);
+        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
         consumer.accept(bufferBuilder);
 
@@ -65,4 +66,5 @@ public abstract class AbstractWidget implements Drawable, Element {
     protected int getStringWidth(String text) {
         return this.font.getWidth(text);
     }
+
 }

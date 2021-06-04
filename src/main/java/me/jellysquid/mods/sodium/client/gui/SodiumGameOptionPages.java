@@ -1,9 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.*;
-import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
 import me.jellysquid.mods.sodium.client.gui.options.control.CyclingControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
@@ -13,10 +11,9 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.options.AttackIndicator;
-import net.minecraft.client.options.GraphicsMode;
-import net.minecraft.client.options.Option;
-import net.minecraft.client.options.ParticlesMode;
+import net.minecraft.client.option.AttackIndicator;
+import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.client.util.Window;
 
 import java.util.ArrayList;
@@ -99,7 +96,13 @@ public class SodiumGameOptionPages {
                         .setTooltip("If enabled, the game's frame rate will be synchronized to the monitor's refresh rate, making for a generally smoother experience " +
                                 "at the expense of overall input latency. This setting might reduce performance if your system is too slow.")
                         .setControl(TickBoxControl::new)
-                        .setBinding(new VanillaBooleanOptionBinding(Option.VSYNC))
+                        .setBinding((opts, value) -> {
+                            opts.enableVsync = value;
+                            if (MinecraftClient.getInstance().getWindow() != null) {
+                                MinecraftClient.getInstance().getWindow().setVsync(opts.enableVsync);
+                            }
+
+                        }, opts -> opts.enableVsync)
                         .setImpact(OptionImpact.VARIES)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
@@ -120,7 +123,7 @@ public class SodiumGameOptionPages {
                         .setName("View Bobbing")
                         .setTooltip("If enabled, the player's view will sway and bob when moving around. Players who suffer from motion sickness can benefit from disabling this.")
                         .setControl(TickBoxControl::new)
-                        .setBinding(new VanillaBooleanOptionBinding(Option.VIEW_BOBBING))
+                        .setBinding((opts, value) -> opts.bobView = value, opts -> opts.bobView)
                         .build())
                 .add(OptionImpl.createBuilder(AttackIndicator.class, vanillaOpts)
                         .setName("Attack Indicator")

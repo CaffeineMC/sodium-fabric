@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.compat;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
@@ -19,14 +20,17 @@ public class LegacyFogHelper {
     private static final float FAR_PLANE_THRESHOLD_EXP = (float) Math.log(1.0f / 0.0019f);
     private static final float FAR_PLANE_THRESHOLD_EXP2 = MathHelper.sqrt(FAR_PLANE_THRESHOLD_EXP);
 
+    @Deprecated
     public static float getFogEnd() {
-        return GL20C.glGetFloat(GL20.GL_FOG_END);
+        return RenderSystem.getShaderFogEnd();
     }
 
+    @Deprecated
     public static float getFogStart() {
-        return GL20C.glGetFloat(GL20.GL_FOG_START);
+        return RenderSystem.getShaderFogStart();
     }
 
+    @Deprecated()
     public static float getFogDensity() {
         return GL20C.glGetFloat(GL20.GL_FOG_DENSITY);
     }
@@ -35,6 +39,9 @@ public class LegacyFogHelper {
      * Retrieves the current fog mode from the fixed-function pipeline.
      */
     public static ChunkFogMode getFogMode() {
+        if(true){
+            return ChunkFogMode.SMOOTH;
+        }
         if (!GL20C.glGetBoolean(GL20.GL_FOG)) {
             return ChunkFogMode.NONE;
         }
@@ -53,6 +60,10 @@ public class LegacyFogHelper {
     }
 
     public static float getFogCutoff() {
+        if(true){
+            return RenderSystem.getShaderFogEnd();
+        }
+
         int mode = GL20C.glGetInteger(GL20.GL_FOG_MODE);
 
         switch (mode) {
@@ -65,9 +76,5 @@ public class LegacyFogHelper {
             default:
                 return 0.0f;
         }
-    }
-
-    public static void getFogColor(FloatBuffer buf) {
-        GL20C.glGetFloatv(GL20.GL_FOG_COLOR, buf);
     }
 }

@@ -1,13 +1,15 @@
 package me.jellysquid.mods.sodium.client.gui.options.binding.compat;
 
 import me.jellysquid.mods.sodium.client.gui.options.binding.OptionBinding;
-import net.minecraft.client.options.BooleanOption;
-import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.option.CyclingOption;
+import net.minecraft.client.option.GameOptions;
 
+;
+/*
 public class VanillaBooleanOptionBinding implements OptionBinding<GameOptions, Boolean> {
-    private final BooleanOption option;
+    private final CyclingOption<Boolean> option;
 
-    public VanillaBooleanOptionBinding(BooleanOption option) {
+    public VanillaBooleanOptionBinding(CyclingOption<Boolean> option) {
         this.option = option;
     }
 
@@ -21,3 +23,4 @@ public class VanillaBooleanOptionBinding implements OptionBinding<GameOptions, B
         return this.option.get(storage);
     }
 }
+*/

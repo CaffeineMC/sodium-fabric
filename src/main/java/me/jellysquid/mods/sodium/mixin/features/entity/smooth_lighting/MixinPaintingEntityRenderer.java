@@ -8,6 +8,7 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.EntityRenderer;
+import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.client.render.entity.PaintingEntityRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.decoration.painting.PaintingEntity;
@@ -24,7 +25,7 @@ public abstract class MixinPaintingEntityRenderer extends EntityRenderer<Paintin
     private PaintingEntity entity;
     private float tickDelta;
 
-    protected MixinPaintingEntityRenderer(EntityRenderDispatcher dispatcher) {
+    protected MixinPaintingEntityRenderer(EntityRendererFactory.Context dispatcher) {
         super(dispatcher);
     }
 
@@ -54,6 +55,6 @@ public abstract class MixinPaintingEntityRenderer extends EntityRenderer<Paintin
 
     @Override
     public int bridge$getSkyLight(PaintingEntity entity, BlockPos pos) {
-        return this.method_27950(entity, pos);
+        return this.getSkyLight(entity, pos);
     }
 }

@@ -65,17 +65,24 @@ public interface ModelQuadView {
      * @param position The starting byte index to write to
      */
     default void copyInto(ByteBuffer buf, int position) {
-        for (int i = 0; i < 4; i++) {
-            buf.putFloat(position, this.getX(i));
-            buf.putFloat(position + 4, this.getY(i));
-            buf.putFloat(position + 8, this.getZ(i));
-            buf.putInt(position + 12, this.getColor(i));
-            buf.putFloat(position + 16, this.getTexU(i));
-            buf.putFloat(position + 20, this.getTexV(i));
-            buf.putInt(position + 24, this.getLight(i));
+        position = this.push(buf, position, 0);
+        position = this.push(buf, position, 1);
+        position = this.push(buf, position, 2);
+        position = this.push(buf, position, 2);
+        position = this.push(buf, position, 3);
+        position = this.push(buf, position, 0);
+    }
 
-            position += 28;
-        }
+    private int push(ByteBuffer buf, int position, int i) {
+        buf.putFloat(position, this.getX(i));
+        buf.putFloat(position + 4, this.getY(i));
+        buf.putFloat(position + 8, this.getZ(i));
+        buf.putInt(position + 12, this.getColor(i));
+        buf.putFloat(position + 16, this.getTexU(i));
+        buf.putFloat(position + 20, this.getTexV(i));
+        buf.putInt(position + 24, this.getLight(i));
+
+        return position + 28;
     }
 
     /**
