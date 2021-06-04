@@ -93,7 +93,7 @@ public class BlockRenderer {
         BlockColorProvider colorizer = null;
 
         ModelVertexSink sink = buffers.getSink(facing);
-        sink.ensureCapacity(quads.size() * 4);
+        sink.ensureCapacity(quads.size() * 6);
 
         ChunkRenderData.Builder renderData = buffers.getRenderData();
 
