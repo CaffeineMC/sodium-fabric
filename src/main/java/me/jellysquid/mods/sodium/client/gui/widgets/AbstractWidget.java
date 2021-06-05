@@ -11,7 +11,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
-import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20C;
 
 import java.util.function.Consumer;
 
@@ -45,7 +45,7 @@ public abstract class AbstractWidget implements Drawable, Element {
         RenderSystem.defaultBlendFunc();
 
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
-        bufferBuilder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
+        bufferBuilder.begin(GL20C.GL_QUADS, VertexFormats.POSITION_COLOR);
 
         consumer.accept(bufferBuilder);
 
