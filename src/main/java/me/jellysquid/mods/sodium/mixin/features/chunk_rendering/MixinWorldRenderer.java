@@ -144,7 +144,7 @@ public abstract class MixinWorldRenderer {
         this.renderer.scheduleRebuildForChunk(x, y, z, important);
     }
 
-    @Inject(method = "reload", at = @At("RETURN"))
+    @Inject(method = "reload()V", at = @At("RETURN"))
     private void onReload(CallbackInfo ci) {
         RenderDevice.enterManagedCode();
 
