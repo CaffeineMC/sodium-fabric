@@ -285,13 +285,11 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
     @Override
     public void onChunkAdded(int x, int z) {
-        this.builder.onChunkStatusChanged(x, z);
         this.loadChunk(x, z);
     }
 
     @Override
     public void onChunkRemoved(int x, int z) {
-        this.builder.onChunkStatusChanged(x, z);
         this.unloadChunk(x, z);
     }
 
@@ -480,10 +478,6 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         return this.builder.isBuildQueueEmpty();
     }
 
-    public void setCameraPosition(double x, double y, double z) {
-        this.builder.setCameraPosition(x, y, z);
-    }
-
     public void destroy() {
         this.reset();
 
@@ -521,6 +515,8 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
             this.dirty = true;
         }
+
+        this.builder.onChunkDataChanged(x, y, z);
     }
 
     public boolean isChunkPrioritized(ChunkRenderContainer<T> render) {
