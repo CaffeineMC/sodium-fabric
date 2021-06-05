@@ -362,10 +362,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
      * @return True if the entity is visible, otherwise false
      */
     public boolean isEntityVisible(Entity entity) {
-        if (!this.useEntityCulling) {
-            return true;
-        }
-
         Box box = entity.getVisibilityBoundingBox();
 
         // Entities outside the valid world height will never map to a rendered chunk
@@ -392,12 +388,21 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             }
         }
 
-        // Ensure entities with outlines are not culled, since they are always visible to the player.
-        if (this.client.hasOutline(entity)) {
-            return true;
-        }
-
         return false;
+    }
+
+    /**
+     * Checks if the specified entity can be seen through other objects, such as
+     * when it is glowing, has a visible nametag, or is a highlighted spectator.
+     * 
+     * @return True if the entity is always visible, otherwise false
+     */
+    public boolean isEntityAlwaysVisible(Entity entity) {
+        return this.client.hasOutline(entity) || this.client.getEntityRenderDispatcher().getRenderer(entity).hasLabel(entity);
+    }
+
+    public boolean shouldCullEntity(Entity entity) {
+        return this.useEntityCulling && !this.isEntityVisible(entity) && !this.isEntityAlwaysVisible(entity);
     }
 
     /**

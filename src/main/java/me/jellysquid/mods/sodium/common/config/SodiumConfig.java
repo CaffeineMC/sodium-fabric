@@ -36,6 +36,7 @@ public class SodiumConfig {
         this.addMixinRule("features.chunk_rendering", true);
         this.addMixinRule("features.debug", true);
         this.addMixinRule("features.entity", true);
+        this.addMixinRule("features.entity.cull", true);
         this.addMixinRule("features.entity.fast_render", true);
         this.addMixinRule("features.entity.smooth_lighting", true);
         this.addMixinRule("features.gui", true);
