@@ -254,7 +254,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
             return null;
         }
 
-        return column.getRender(y);
+        return column.getRender(this.world.sectionCoordToIndex(y));
     }
 
     private void reset() {
@@ -285,18 +285,16 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
     @Override
     public void onChunkAdded(int x, int z) {
-        this.builder.onChunkStatusChanged(x, z);
         this.loadChunk(x, z);
     }
 
     @Override
     public void onChunkRemoved(int x, int z) {
-        this.builder.onChunkStatusChanged(x, z);
         this.unloadChunk(x, z);
     }
 
     private void loadChunk(int x, int z) {
-        ChunkRenderColumn<T> column = new ChunkRenderColumn<>(x, z);
+        ChunkRenderColumn<T> column = new ChunkRenderColumn<>(x, z, this.world.countVerticalSections());
         ChunkRenderColumn<T> prev;
 
         if ((prev = this.columns.put(ChunkPos.toLong(x, z), column)) != null) {
@@ -326,9 +324,9 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         int x = column.getX();
         int z = column.getZ();
 
-        for (int y = 0; y < 16; y++) {
+        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
             ChunkRenderContainer<T> render = this.createChunkRender(column, x, y, z);
-            column.setRender(y, render);
+            column.setRender(this.world.sectionCoordToIndex(y), render);
 
             this.culler.onSectionLoaded(x, y, z, render.getId());
         }
@@ -338,8 +336,8 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         int x = column.getX();
         int z = column.getZ();
 
-        for (int y = 0; y < 16; y++) {
-            ChunkRenderContainer<T> render = column.getRender(y);
+        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
+            ChunkRenderContainer<T> render = column.getRender(this.world.sectionCoordToIndex(y));
 
             if (render != null) {
                 this.unloadQueue.enqueue(render);
@@ -385,7 +383,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     private ChunkRenderContainer<T> createChunkRender(ChunkRenderColumn<T> column, int x, int y, int z) {
         ChunkRenderContainer<T> render = new ChunkRenderContainer<>(this.backend, this.renderer, x, y, z, column);
 
-        if (ChunkSection.isEmpty(this.world.getChunk(x, z).getSectionArray()[y])) {
+        if (ChunkSection.isEmpty(this.world.getChunk(x, z).getSectionArray()[this.world.sectionCoordToIndex(y)])) {
             render.setData(ChunkRenderData.EMPTY);
         } else {
             render.scheduleRebuild(false);
@@ -480,10 +478,6 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         return this.builder.isBuildQueueEmpty();
     }
 
-    public void setCameraPosition(double x, double y, double z) {
-        this.builder.setCameraPosition(x, y, z);
-    }
-
     public void destroy() {
         this.reset();
 
@@ -497,7 +491,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     }
 
     public int getTotalSections() {
-        return this.columns.size() * 16;
+        return this.columns.size() * this.world.countVerticalSections();
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
@@ -521,6 +515,8 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
 
             this.dirty = true;
         }
+
+        this.builder.onChunkDataChanged(x, y, z);
     }
 
     public boolean isChunkPrioritized(ChunkRenderContainer<T> render) {
