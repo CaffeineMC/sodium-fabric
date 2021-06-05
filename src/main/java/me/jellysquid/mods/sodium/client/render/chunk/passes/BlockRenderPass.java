@@ -8,7 +8,7 @@ public enum BlockRenderPass {
     CUTOUT(RenderLayer.getCutout(), false),
     CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false),
     TRANSLUCENT(RenderLayer.getTranslucent(), true),
-    TRIPWIRE(RenderLayer.getTripwire(), false);
+    TRIPWIRE(RenderLayer.getTripwire(), true);
 
     public static final BlockRenderPass[] VALUES = BlockRenderPass.values();
     public static final int COUNT = VALUES.length;

@@ -21,4 +21,8 @@ public abstract class StructBuffer {
     public void delete() {
         MemoryUtil.memFree(this.buffer);
     }
+
+    public long getBufferAddress() {
+        return MemoryUtil.memAddress(this.buffer);
+    }
 }

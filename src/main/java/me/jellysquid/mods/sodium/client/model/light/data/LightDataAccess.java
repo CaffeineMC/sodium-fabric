@@ -73,9 +73,11 @@ public abstract class LightDataAccess {
         // solve lighting issues underwater.
         boolean op = state.getFluidState() != EMPTY_FLUID_STATE || state.getOpacity(world, pos) == 0;
         boolean fo = state.isOpaqueFullCube(world, pos);
+        boolean em = state.hasEmissiveLighting(world, pos);
 
-        // OPTIMIZE: Do not calculate lightmap data if the block is full and opaque
-        int lm = fo ? 0 : WorldRenderer.getLightmapCoordinates(world, state, pos);
+        // OPTIMIZE: Do not calculate lightmap data if the block is full and opaque.
+        // FIX: Calculate lightmap data for emissive blocks (currently only magma), even though they are full and opaque.
+        int lm = (fo && !em) ? 0 : WorldRenderer.getLightmapCoordinates(world, state, pos);
 
         return packAO(ao) | packLM(lm) | packOP(op) | packFO(fo) | (1L << 60);
     }
