@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.gl.func;
 
 import org.lwjgl.opengl.ARBVertexArrayObject;
-import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GLCapabilities;
 
 /**
@@ -11,17 +11,17 @@ public enum GlVertexArrayFunctions {
     BASE {
         @Override
         public void glBindVertexArray(int id) {
-            GL30.glBindVertexArray(id);
+            GL30C.glBindVertexArray(id);
         }
 
         @Override
         public int glGenVertexArrays() {
-            return GL30.glGenVertexArrays();
+            return GL30C.glGenVertexArrays();
         }
 
         @Override
         public void glDeleteVertexArrays(int id) {
-            GL30.glDeleteVertexArrays(id);
+            GL30C.glDeleteVertexArrays(id);
         }
     },
     ARB {

@@ -32,7 +32,7 @@ public class ChunkRenderColumn<T extends ChunkGraphicsState> {
         this.renders[y] = render;
     }
 
-    public ChunkRenderContainer getRender(int y) {
+    public ChunkRenderContainer<T> getRender(int y) {
         if (y < 0 || y >= this.renders.length) {
             return null;
         }
