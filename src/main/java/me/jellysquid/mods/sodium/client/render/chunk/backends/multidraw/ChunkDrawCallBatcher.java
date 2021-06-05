@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.multidraw;
+package me.jellysquid.mods.sodium.client.render.chunk.backends.multidraw;
 
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.util.math.MathHelper;
