@@ -4,7 +4,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import me.jellysquid.mods.sodium.client.gl.util.GlFogHelper;
+import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
@@ -15,7 +15,7 @@ public class MixinWorldRenderer {
     private void preRenderSky(MatrixStack matrices, float tickDelta, CallbackInfo callbackInfo) {
         // Prevents the sky layer from rendering when the fog distance is reduced from the default.
         // This helps prevent situations where the sky is visible through chunks culled by fog occlusion.
-        if (MinecraftClient.getInstance().gameRenderer.getViewDistance() != GlFogHelper.getFogCutoff()) {
+        if (MinecraftClient.getInstance().gameRenderer.getViewDistance() != LegacyFogHelper.getFogCutoff()) {
             callbackInfo.cancel();
         }
     }
