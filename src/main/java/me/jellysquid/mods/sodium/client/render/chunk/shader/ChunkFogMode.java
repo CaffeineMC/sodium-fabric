@@ -2,7 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.google.common.collect.ImmutableList;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
-import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL20C;
 
 import java.util.List;
 import java.util.function.Function;
@@ -26,32 +27,5 @@ public enum ChunkFogMode {
 
     public List<String> getDefines() {
         return this.defines;
-    }
-
-    /**
-     * Retrieves the current fog mode from the fixed-function pipeline.
-     */
-    public static ChunkFogMode getActiveMode() {
-        if (!GL11.glGetBoolean(GL11.GL_FOG)) {
-            return ChunkFogMode.NONE;
-        }
-
-        int mode = GL11.glGetInteger(GL11.GL_FOG_MODE);
-
-        switch (mode) {
-            case GL11.GL_EXP2:
-            case GL11.GL_EXP:
-                return ChunkFogMode.EXP2;
-            case GL11.GL_LINEAR:
-                return ChunkFogMode.LINEAR;
-            default:
-                throw new UnsupportedOperationException("Unknown fog mode: " + mode);
-        }
-    }
-
-    public void addConstants(ShaderConstants.Builder constants) {
-        for (String define : this.defines) {
-            constants.define(define);
-        }
     }
 }

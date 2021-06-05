@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.gl.attribute;
 
-import org.lwjgl.opengl.GL20;
-
 import java.util.EnumMap;
 
 /**
@@ -22,6 +20,10 @@ public class GlVertexFormat<T extends Enum<T>> implements BufferVertexFormat {
         this.attributesKeyed = attributesKeyed;
         this.attributesArray = attributesKeyed.values().toArray(new GlVertexAttribute[0]);
         this.stride = stride;
+    }
+
+    public static <T extends Enum<T>> Builder<T> builder(Class<T> type, int stride) {
+        return new Builder<>(type, stride);
     }
 
     /**
@@ -55,21 +57,67 @@ public class GlVertexFormat<T extends Enum<T>> implements BufferVertexFormat {
         return this.attributesArray;
     }
 
-    public void enableVertexAttributes() {
-        for (GlVertexAttribute binding : this.getAttributesArray()) {
-            GL20.glEnableVertexAttribArray(binding.getIndex());
-        }
-    }
+    public static class Builder<T extends Enum<T>> {
+        private final EnumMap<T, GlVertexAttribute> attributes;
+        private final Class<T> type;
+        private final int stride;
 
-    public void disableVertexAttributes() {
-        for (GlVertexAttribute binding : this.getAttributesArray()) {
-            GL20.glDisableVertexAttribArray(binding.getIndex());
+        public Builder(Class<T> type, int stride) {
+            this.type = type;
+            this.attributes = new EnumMap<>(type);
+            this.stride = stride;
         }
-    }
 
-    public void bindVertexAttributes() {
-        for (GlVertexAttribute attrib : this.getAttributesArray()) {
-            GL20.glVertexAttribPointer(attrib.getIndex(), attrib.getCount(), attrib.getFormat(), attrib.isNormalized(), attrib.getStride(), attrib.getPointer());
+        public Builder<T> addElement(T type, int pointer, GlVertexAttributeFormat format, int count, boolean normalized) {
+            return this.addElement(type, new GlVertexAttribute(format, count, normalized, pointer, this.stride));
+        }
+
+        /**
+         * Adds an vertex attribute which will be bound to the given generic attribute type.
+         *
+         * @param type The generic attribute type
+         * @param attribute The attribute to bind
+         * @throws IllegalStateException If an attribute is already bound to the generic type
+         */
+        private Builder<T> addElement(T type, GlVertexAttribute attribute) {
+            if (attribute.getPointer() >= this.stride) {
+                throw new IllegalArgumentException("Element starts outside vertex format");
+            }
+
+            if (attribute.getPointer() + attribute.getSize() > this.stride) {
+                throw new IllegalArgumentException("Element extends outside vertex format");
+            }
+
+            if (this.attributes.put(type, attribute) != null) {
+                throw new IllegalStateException("Generic attribute " + type.name() + " already defined in vertex format");
+            }
+
+            return this;
+        }
+
+        /**
+         * Creates a {@link GlVertexFormat} from the current builder.
+         */
+        public GlVertexFormat<T> build() {
+            int size = 0;
+
+            for (T key : this.type.getEnumConstants()) {
+                GlVertexAttribute attribute = this.attributes.get(key);
+
+                if (attribute == null) {
+                    throw new NullPointerException("Generic attribute not assigned to enumeration " + key.name());
+                }
+
+                size = Math.max(size, attribute.getPointer() + attribute.getSize());
+            }
+
+            // The stride must be large enough to cover all attributes. This still allows for additional padding
+            // to be added to the end of the vertex to accommodate alignment restrictions.
+            if (this.stride < size) {
+                throw new IllegalArgumentException("Stride is too small");
+            }
+
+            return new GlVertexFormat<>(this.type, this.attributes, this.stride);
         }
     }
 }

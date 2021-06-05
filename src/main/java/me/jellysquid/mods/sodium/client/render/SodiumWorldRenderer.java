@@ -6,13 +6,13 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderManager;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.multidraw.MultidrawChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.backends.oneshot.ChunkRenderBackendOneshot;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.DefaultModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
@@ -248,6 +248,8 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             this.chunkRenderBackend = null;
         }
 
+        RenderDevice device = RenderDevice.INSTANCE;
+
         this.renderDistance = this.client.options.viewDistance;
 
         SodiumGameOptions opts = SodiumClientMod.options();
@@ -262,32 +264,22 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             vertexFormat = DefaultModelVertexFormats.MODEL_VERTEX_SFP;
         }
 
-        this.chunkRenderBackend = createChunkRenderBackend(opts.advanced.chunkRendererBackend, vertexFormat);
-        this.chunkRenderBackend.createShaders();
+        this.chunkRenderBackend = createChunkRenderBackend(device, opts, vertexFormat);
+        this.chunkRenderBackend.createShaders(device);
 
         this.chunkRenderManager = new ChunkRenderManager<>(this, this.chunkRenderBackend, this.renderPassManager, this.world, this.renderDistance);
         this.chunkRenderManager.restoreChunks(this.loadedChunkPositions);
     }
 
-    private static ChunkRenderBackend<?> createChunkRenderBackend(SodiumGameOptions.ChunkRendererBackendOption opt,
+    private static ChunkRenderBackend<?> createChunkRenderBackend(RenderDevice device,
+                                                                  SodiumGameOptions options,
                                                                   ChunkVertexType vertexFormat) {
         boolean disableBlacklist = SodiumClientMod.options().advanced.disableDriverBlacklist;
 
-        switch (opt) {
-            case GL43:
-                if (GL43ChunkRenderBackend.isSupported(disableBlacklist)) {
-                    return new GL43ChunkRenderBackend(vertexFormat);
-                }
-            case GL30:
-                if (GL30ChunkRenderBackend.isSupported(disableBlacklist)) {
-                    return new GL30ChunkRenderBackend(vertexFormat);
-                }
-            case GL20:
-                if (GL20ChunkRenderBackend.isSupported(disableBlacklist)) {
-                    return new GL20ChunkRenderBackend(vertexFormat);
-                }
-            default:
-                throw new IllegalArgumentException("No suitable chunk render backends exist");
+        if (options.advanced.useMultidraw && MultidrawChunkRenderBackend.isSupported(disableBlacklist)) {
+            return new MultidrawChunkRenderBackend(device, vertexFormat);
+        } else {
+            return new ChunkRenderBackendOneshot(vertexFormat);
         }
     }
 

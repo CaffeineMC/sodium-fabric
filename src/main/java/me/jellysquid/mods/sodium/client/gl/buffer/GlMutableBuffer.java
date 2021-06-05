@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
-import org.lwjgl.opengl.GL15;
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import org.lwjgl.opengl.GL20C;
 
 import java.nio.ByteBuffer;
 
@@ -9,25 +10,17 @@ import java.nio.ByteBuffer;
  * without needing to re-create the buffer itself.
  */
 public class GlMutableBuffer extends GlBuffer {
-    private final int hints;
+    private long size = 0L;
 
-    public GlMutableBuffer(int hints) {
-        this.hints = hints;
+    public GlMutableBuffer(RenderDevice owner, GlBufferUsage usage) {
+        super(owner, usage);
     }
 
-    @Override
-    public void upload(int target, ByteBuffer buf) {
-        GL15.glBufferData(target, buf, this.hints);
-        this.size = buf.capacity();
-    }
-
-    @Override
-    public void allocate(int target, int size) {
-        GL15.glBufferData(target, size, this.hints);
+    public void setSize(long size) {
         this.size = size;
     }
 
-    public void invalidate(int target) {
-        this.allocate(target, 0);
+    public long getSize() {
+        return this.size;
     }
 }

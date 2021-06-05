@@ -13,6 +13,7 @@
     "core.frustum.MixinFrustum",
     "core.matrix.MixinMatrix3f",
     "core.matrix.MixinMatrix4f",
+    "core.matrix.MixinGameRenderer",
     "core.model.MixinBlockColors",
     "core.model.MixinItemColors",
     "core.pipeline.MixinBakedQuad",

@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.gl.func;
 
 import org.lwjgl.opengl.ARBCopyBuffer;
-import org.lwjgl.opengl.GL31;
+import org.lwjgl.opengl.GL31C;
 import org.lwjgl.opengl.GLCapabilities;
 
 /**
@@ -11,7 +11,7 @@ public enum GlBufferCopyFunctions {
     CORE {
         @Override
         public void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size) {
-            GL31.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
+            GL31C.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
         }
     },
     ARB {
