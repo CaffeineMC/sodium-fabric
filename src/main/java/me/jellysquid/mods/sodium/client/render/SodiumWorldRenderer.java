@@ -380,18 +380,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         return false;
     }
 
-    /**
-     * Checks if the specified entity can be seen through other objects, such as
-     * when it is glowing, has a visible nametag, or is a highlighted spectator.
-     * 
-     * @return True if the entity is always visible, otherwise false
-     */
-    public boolean isEntityAlwaysVisible(Entity entity) {
-        return this.client.hasOutline(entity) || this.client.getEntityRenderDispatcher().getRenderer(entity).hasLabel(entity);
-    }
-
     public boolean shouldCullEntity(Entity entity) {
-        return this.useEntityCulling && !this.isEntityVisible(entity) && !this.isEntityAlwaysVisible(entity);
+        return this.useEntityCulling && !this.isEntityVisible(entity) &&
+                !(this.client.hasOutline(entity) || this.client.getEntityRenderDispatcher().getRenderer(entity).hasLabel(entity));
     }
 
     /**
