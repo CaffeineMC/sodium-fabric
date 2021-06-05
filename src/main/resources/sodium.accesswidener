@@ -1,8 +1,11 @@
 accessWidener v1 named
 
+accessible field net/minecraft/client/world/ClientWorld$BlockParticle block Lnet/minecraft/block/Block;
+accessible field net/minecraft/client/world/ClientWorld$BlockParticle particle Lnet/minecraft/particle/ParticleEffect;
+
 accessible class net/minecraft/client/model/ModelPart$Vertex
 accessible class net/minecraft/client/model/ModelPart$Quad
-accessible class net/minecraft/client/texture/Sprite$Interpolation
+accessible class net/minecraft/client/texture/Sprite$Animation
+accessible class net/minecraft/client/world/ClientWorld$BlockParticle
 
-accessible method net/minecraft/client/texture/Sprite$Interpolation apply ()V
 accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
