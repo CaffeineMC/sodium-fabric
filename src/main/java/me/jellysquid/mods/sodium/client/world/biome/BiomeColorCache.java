@@ -10,6 +10,8 @@ import net.minecraft.world.level.ColorResolver;
 import java.util.Arrays;
 
 public class BiomeColorCache {
+    private static final int BLENDED_COLORS_DIM = 16 + 2 * 2;
+
     private final ColorResolver resolver;
     private final WorldSlice slice;
 
@@ -20,7 +22,6 @@ public class BiomeColorCache {
     private final int dim;
     private final int minX, minZ;
 
-    private final int blendedColorsDim;
     private final int blendedColorsMinX;
     private final int blendedColorsMinZ;
 
@@ -39,10 +40,8 @@ public class BiomeColorCache {
         this.blendedColorsMinX = origin.getMinX() - 2;
         this.blendedColorsMinZ = origin.getMinZ() - 2;
 
-        this.blendedColorsDim = 16 + 2 * 2;
-
         this.cache = new int[this.dim * this.dim];
-        this.blendedColors = new int[this.blendedColorsDim * this.blendedColorsDim];
+        this.blendedColors = new int[BLENDED_COLORS_DIM * BLENDED_COLORS_DIM];
 
         Arrays.fill(this.cache, -1);
         Arrays.fill(this.blendedColors, -1);
@@ -52,7 +51,7 @@ public class BiomeColorCache {
         int x2 = pos.getX() - this.blendedColorsMinX;
         int z2 = pos.getZ() - this.blendedColorsMinZ;
 
-        int index = (x2 * this.blendedColorsDim) + z2;
+        int index = (x2 * BLENDED_COLORS_DIM) + z2;
         int color = this.blendedColors[index];
 
         if (color == -1) {
