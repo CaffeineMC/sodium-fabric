@@ -25,6 +25,8 @@ public class BiomeColorCache {
     private final int blendedColorsMinX;
     private final int blendedColorsMinZ;
 
+    private final int height;
+
     public BiomeColorCache(ColorResolver resolver, WorldSlice slice) {
         this.resolver = resolver;
         this.slice = slice;
@@ -35,6 +37,7 @@ public class BiomeColorCache {
         this.minX = origin.getMinX() - (this.radius + 2);
         this.minZ = origin.getMinZ() - (this.radius + 2);
 
+        this.height = origin.getMinY();
         this.dim = 16 + ((this.radius + 2) * 2);
 
         this.blendedColorsMinX = origin.getMinX() - 2;
@@ -104,6 +107,6 @@ public class BiomeColorCache {
     }
 
     private int calculateColor(int x, int z) {
-        return this.resolver.getColor(this.slice.getCachedBiome(x, z), x, z);
+        return this.resolver.getColor(this.slice.getBiome(x, this.height, z), x, z);
     }
 }

@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
@@ -8,19 +9,16 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManag
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
-import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderContext;
+import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
-import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
+import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
+import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.collections.DequeDrain;
-import me.jellysquid.mods.sodium.common.util.pool.ObjectPool;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,11 +45,9 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
-    private final ObjectPool<WorldSlice> pool;
+    private ClonedChunkSectionCache sectionCache;
 
     private World world;
-    private Vector3d cameraPosition;
-    private BiomeCacheManager biomeCacheManager;
     private BlockRenderPassManager renderPassManager;
 
     private final int limitThreads;
@@ -62,7 +58,6 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         this.vertexType = vertexType;
         this.backend = backend;
         this.limitThreads = getOptimalThreadCount();
-        this.pool = new ObjectPool<>(this.getSchedulingBudget(), WorldSlice::new);
     }
 
     /**
@@ -90,7 +85,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         for (int i = 0; i < this.limitThreads; i++) {
             ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.vertexType, this.renderPassManager);
-            ChunkRenderContext pipeline = new ChunkRenderContext(client);
+            ChunkRenderCacheLocal pipeline = new ChunkRenderCacheLocal(client, this.world);
 
             WorkerRunnable worker = new WorkerRunnable(buffers, pipeline);
 
@@ -145,8 +140,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         this.buildQueue.clear();
 
         this.world = null;
-        this.biomeCacheManager = null;
-        this.pool.reset();
+        this.sectionCache = null;
     }
 
     /**
@@ -158,7 +152,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
             return false;
         }
 
-        this.backend.upload(new DequeDrain<>(this.uploadQueue));
+        this.backend.upload(RenderDevice.INSTANCE.createCommandList(), new DequeDrain<>(this.uploadQueue));
 
         return true;
     }
@@ -177,20 +171,6 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         }
 
         return job.future;
-    }
-
-    /**
-     * Sets the current camera position of the player used for task prioritization.
-     */
-    public void setCameraPosition(double x, double y, double z) {
-        this.cameraPosition = new Vector3d(x, y, z);
-    }
-
-    /**
-     * Returns the current camera position of the player used for task prioritization.
-     */
-    public Vector3d getCameraPosition() {
-        return this.cameraPosition;
     }
 
     /**
@@ -216,7 +196,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         this.world = world;
         this.renderPassManager = renderPassManager;
-        this.biomeCacheManager = new BiomeCacheManager(world.getDimension().getBiomeAccessType(), ((ClientWorldExtended) world).getBiomeSeed());
+        this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         this.startWorkers();
     }
@@ -227,49 +207,6 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
      */
     private static int getOptimalThreadCount() {
         return Math.max(1, Runtime.getRuntime().availableProcessors());
-    }
-
-    /**
-     * Creates a {@link WorldSlice} around the given chunk section. If the chunk section is empty, null is returned.
-     * @param pos The position of the chunk section
-     * @return A world slice containing the section's context for rendering, or null if it has none
-     */
-    public WorldSlice createWorldSlice(ChunkSectionPos pos) {
-        WorldChunk[] chunks = WorldSlice.createChunkSlice(this.world, pos);
-
-        if (chunks == null) {
-            return null;
-        }
-
-        WorldSlice slice = this.pool.allocate();
-        slice.init(this, this.world, pos, chunks);
-
-        return slice;
-    }
-
-    /**
-     * Releases a world slice from a build task back to this builder's object pool.
-     * @param slice The chunk slice to release
-     */
-    public void releaseWorldSlice(WorldSlice slice) {
-        this.pool.release(slice);
-    }
-
-    /**
-     * Returns the global biome cache for this world
-     */
-    public BiomeCacheManager getBiomeCacheManager() {
-        return this.biomeCacheManager;
-    }
-
-    /**
-     * Called after a chunk's status is changed in the world (i.e. after a load or unload.) This is used to reset any
-     * caches which depend on its data and to release any pooled resources attached to it.
-     * @param x The x-position of the chunk
-     * @param z The z-position of the chunk
-     */
-    public void onChunkStatusChanged(int x, int z) {
-        this.biomeCacheManager.dropCachesForChunk(x, z);
     }
 
     /**
@@ -308,13 +245,17 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
     private ChunkRenderBuildTask<T> createRebuildTask(ChunkRenderContainer<T> render) {
         render.cancelRebuildTask();
 
-        WorldSlice slice = this.createWorldSlice(render.getChunkPos());
+        ChunkRenderContext context = WorldSlice.prepare(this.world, render.getChunkPos(), this.sectionCache);
 
-        if (slice == null) {
+        if (context == null) {
             return new ChunkRenderEmptyBuildTask<>(render);
         } else {
-            return new ChunkRenderRebuildTask<>(this, render, slice, render.getRenderOrigin());
+            return new ChunkRenderRebuildTask<>(render, context, render.getRenderOrigin());
         }
+    }
+
+    public void onChunkDataChanged(int x, int y, int z) {
+        this.sectionCache.invalidate(x, y, z);
     }
 
     private class WorkerRunnable implements Runnable {
@@ -325,11 +266,11 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         // Making this thread-local provides a small boost to performance by avoiding the overhead in synchronizing
         // caches between different CPU cores
-        private final ChunkRenderContext pipeline;
+        private final ChunkRenderCacheLocal cache;
 
-        public WorkerRunnable(ChunkBuildBuffers bufferCache, ChunkRenderContext pipeline) {
+        public WorkerRunnable(ChunkBuildBuffers bufferCache, ChunkRenderCacheLocal cache) {
             this.bufferCache = bufferCache;
-            this.pipeline = pipeline;
+            this.cache = cache;
         }
 
         @Override
@@ -347,13 +288,12 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
                 try {
                     // Perform the build task with this worker's local resources and obtain the result
-                    result = job.task.performBuild(this.pipeline, this.bufferCache, job);
+                    result = job.task.performBuild(this.cache, this.bufferCache, job);
                 } catch (Exception e) {
                     // Propagate any exception from chunk building
                     job.future.completeExceptionally(e);
                     continue;
                 } finally {
-                    // After the task has executed, it's safe to release any resources attached to the task
                     job.task.releaseResources();
                 }
 

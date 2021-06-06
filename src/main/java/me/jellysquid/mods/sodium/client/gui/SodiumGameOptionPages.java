@@ -236,19 +236,21 @@ public class SodiumGameOptionPages {
     }
 
     public static OptionPage advanced() {
-        boolean disableBlacklist = SodiumClientMod.options().advanced.disableDriverBlacklist;
-
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(SodiumGameOptions.ChunkRendererBackendOption.class, sodiumOpts)
-                        .setName("Chunk Renderer")
-                        .setTooltip("Modern versions of OpenGL provide features which can be used to greatly reduce driver overhead when rendering chunks. " +
-                                "You should use the latest feature set allowed by Sodium for optimal performance. If you're experiencing chunk rendering issues " +
-                                "or driver crashes, try using the older (and possibly more stable) feature sets.")
-                        .setControl((opt) -> new CyclingControl<>(opt, SodiumGameOptions.ChunkRendererBackendOption.class,
-                                SodiumGameOptions.ChunkRendererBackendOption.getAvailableOptions(disableBlacklist)))
-                        .setBinding((opts, value) -> opts.advanced.chunkRendererBackend = value, opts -> opts.advanced.chunkRendererBackend)
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Chunk Multi-Draw")
+                        .setTooltip("Allows for many chunks to be rendered together in larger draw call batches.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.advanced.useMultidraw = value, opts -> opts.advanced.useMultidraw)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Use Vertex Arrays")
+                        .setTooltip("Minimizes CPU overhead when switching between different kinds of render tasks.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.advanced.useVertexArrays = value, opts -> opts.advanced.useVertexArrays)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .build());
@@ -338,9 +340,9 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.advanced.disableDriverBlacklist = value, opts -> opts.advanced.disableDriverBlacklist)
                         .build()
-
                 )
                 .build());
+
         return new OptionPage("Advanced", ImmutableList.copyOf(groups));
     }
 }
