@@ -17,6 +17,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.DefaultModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.entity.EntityLabelAccessor;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheShared;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
@@ -40,7 +41,7 @@ import java.util.SortedSet;
 /**
  * Provides an extension to vanilla's {@link WorldRenderer}.
  */
-public class SodiumWorldRenderer implements ChunkStatusListener {
+public class SodiumWorldRenderer<T extends Entity> implements ChunkStatusListener {
     private static SodiumWorldRenderer instance;
 
     private final MinecraftClient client;
@@ -351,6 +352,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
      * @return True if the entity is visible, otherwise false
      */
     public boolean isEntityVisible(Entity entity) {
+        if (!this.useEntityCulling) {
+            return true;
+        }
+
         Box box = entity.getVisibilityBoundingBox();
 
         // Entities outside the valid world height will never map to a rendered chunk
@@ -380,9 +385,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         return false;
     }
 
+    @SuppressWarnings("unchecked")
     public boolean shouldCullEntity(Entity entity) {
-        return this.useEntityCulling && !this.isEntityVisible(entity) &&
-                !(this.client.hasOutline(entity) || this.client.getEntityRenderDispatcher().getRenderer(entity).hasLabel(entity));
+        return !this.isEntityVisible(entity) && !(this.client.hasOutline(entity) ||
+                ((EntityLabelAccessor<T>) this.client.getEntityRenderDispatcher().getRenderer(entity)).bridge$hasLabel((T) entity));
     }
 
     /**

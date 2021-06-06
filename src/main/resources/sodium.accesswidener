@@ -4,7 +4,5 @@ accessible class net/minecraft/client/model/ModelPart$Vertex
 accessible class net/minecraft/client/model/ModelPart$Quad
 accessible class net/minecraft/client/texture/Sprite$Interpolation
 
-accessible method net/minecraft/client/render/entity/EntityRenderer hasLabel (Lnet/minecraft/entity/Entity;)Z
-accessible method net/minecraft/client/render/entity/EntityRenderer renderLabelIfPresent (Lnet/minecraft/entity/Entity;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V
 accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
 accessible method net/minecraft/client/texture/Sprite$Interpolation apply ()V
