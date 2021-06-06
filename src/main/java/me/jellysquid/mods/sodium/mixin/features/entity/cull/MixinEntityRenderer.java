@@ -15,15 +15,15 @@ import net.minecraft.entity.Entity;
 import net.minecraft.text.Text;
 
 @Mixin(EntityRenderer.class)
-public abstract class MixinEntityRenderer<T extends Entity> implements EntityLabelAccessor<T> {
+public abstract class MixinEntityRenderer implements EntityLabelAccessor {
     @Shadow
-    protected abstract boolean hasLabel(T entity);
+    protected abstract boolean hasLabel(Entity entity);
 
     @Shadow
-    protected abstract void renderLabelIfPresent(T entity, Text text, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light);
+    protected abstract void renderLabelIfPresent(Entity entity, Text text, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light);
 
     @Inject(method = "shouldRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Frustum;isVisible(Lnet/minecraft/util/math/Box;)Z", shift = At.Shift.AFTER), cancellable = true)
-    private void preShouldRender(T entity, Frustum frustum, double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
+    private void preShouldRender(Entity entity, Frustum frustum, double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
         // If the entity isn't culled already by other means, try to perform a second pass
         if (cir.getReturnValue() && SodiumWorldRenderer.getInstance().shouldCullEntity(entity)) {
             cir.setReturnValue(false);
@@ -31,12 +31,12 @@ public abstract class MixinEntityRenderer<T extends Entity> implements EntityLab
     }
 
     @Override
-    public boolean bridge$hasLabel(T entity) {
+    public boolean bridge$hasLabel(Entity entity) {
         return this.hasLabel(entity);
     }
 
     @Override
-    public void bridge$renderLabelIfPresent(T entity, Text text, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
+    public void bridge$renderLabelIfPresent(Entity entity, Text text, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light) {
         this.renderLabelIfPresent(entity, text, matrices, vertexConsumers, light);
     }
 }

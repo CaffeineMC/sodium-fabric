@@ -17,11 +17,10 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 
 @Mixin(EntityRenderDispatcher.class)
-public abstract class MixinEntityRenderDispatcher<T extends Entity> {
+public abstract class MixinEntityRenderDispatcher {
     @Shadow
-    protected abstract int getLight(T entity, float tickDelta);
+    protected abstract int getLight(Entity entity, float tickDelta);
     
-    @SuppressWarnings("unchecked")
     @Inject(
         method = "render",
         at = @At(
@@ -31,11 +30,11 @@ public abstract class MixinEntityRenderDispatcher<T extends Entity> {
         locals = LocalCapture.CAPTURE_FAILHARD,
         cancellable = true
     )
-    private void preRenderEntity(T entity, double x, double y, double z, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo callbackInfo, EntityRenderer<T> entityRenderer) {
+    private <E extends Entity> void preRenderEntity(Entity entity, double x, double y, double z, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo callbackInfo, EntityRenderer<? super E> entityRenderer) {
         // If the entity about to be rendered has a nametag, has no outline, and
         // is also not visible, just render the entity nametag and nothing else.
-        if (((EntityLabelAccessor<T>) entityRenderer).bridge$hasLabel(entity) && !MinecraftClient.getInstance().hasOutline(entity) && !SodiumWorldRenderer.getInstance().isEntityVisible(entity)) {
-            ((EntityLabelAccessor<T>) entityRenderer).bridge$renderLabelIfPresent(entity, entity.getDisplayName(), matrices, vertexConsumers, this.getLight(entity, tickDelta));
+        if (((EntityLabelAccessor) entityRenderer).bridge$hasLabel(entity) && !MinecraftClient.getInstance().hasOutline(entity) && !SodiumWorldRenderer.getInstance().isEntityVisible(entity)) {
+            ((EntityLabelAccessor) entityRenderer).bridge$renderLabelIfPresent(entity, entity.getDisplayName(), matrices, vertexConsumers, this.getLight(entity, tickDelta));
             matrices.pop();
 
             callbackInfo.cancel();
@@ -51,7 +50,7 @@ public abstract class MixinEntityRenderDispatcher<T extends Entity> {
         ),
         cancellable = true
     )
-    private void postRenderEntity(T entity, double x, double y, double z, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo callbackInfo) {
+    private void postRenderEntity(Entity entity, double x, double y, double z, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo callbackInfo) {
         // If the entity that was rendered had an outline and was not visible,
         // cancel the rest of the entity rendering.
         if (MinecraftClient.getInstance().hasOutline(entity) && !SodiumWorldRenderer.getInstance().isEntityVisible(entity)) {

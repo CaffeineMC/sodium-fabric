@@ -41,7 +41,7 @@ import java.util.SortedSet;
 /**
  * Provides an extension to vanilla's {@link WorldRenderer}.
  */
-public class SodiumWorldRenderer<T extends Entity> implements ChunkStatusListener {
+public class SodiumWorldRenderer implements ChunkStatusListener {
     private static SodiumWorldRenderer instance;
 
     private final MinecraftClient client;
@@ -385,10 +385,9 @@ public class SodiumWorldRenderer<T extends Entity> implements ChunkStatusListene
         return false;
     }
 
-    @SuppressWarnings("unchecked")
     public boolean shouldCullEntity(Entity entity) {
         return !this.isEntityVisible(entity) && !(this.client.hasOutline(entity) ||
-                ((EntityLabelAccessor<T>) this.client.getEntityRenderDispatcher().getRenderer(entity)).bridge$hasLabel((T) entity));
+                ((EntityLabelAccessor) this.client.getEntityRenderDispatcher().getRenderer(entity)).bridge$hasLabel(entity));
     }
 
     /**
