@@ -115,7 +115,9 @@ public class ChunkRenderBackendOneshot extends ChunkRenderShaderBackend<ChunkOne
         this.batch.end();
 
 
-        RenderSystem.IndexBuffer indexBuffer = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS, 24_000);
+        RenderSystem.IndexBuffer indexBuffer = RenderSystem.getSequentialBuffer(
+                VertexFormat.DrawMode.QUADS,
+                this.batch.getLargestCount());
 
         try (DrawCommandList drawCommandList = commandList.beginTessellating(state.tessellation)) {
             drawCommandList.multiDrawElementArrays(this.batch.getIndicesBuffer(), indexBuffer, this.batch.getLengthBuffer());
