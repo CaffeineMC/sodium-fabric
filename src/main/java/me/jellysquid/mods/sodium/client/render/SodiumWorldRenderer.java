@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import me.jellysquid.mods.sodium.api.world.ISodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
@@ -44,6 +45,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private static SodiumWorldRenderer instance;
 
     private final MinecraftClient client;
+    private final ApiImpl apiImpl = new ApiImpl();
 
     private ClientWorld world;
     private int renderDistance;
@@ -426,5 +428,22 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     public ChunkRenderBackend<?> getChunkRenderer() {
         return this.chunkRenderBackend;
+    }
+
+    public ISodiumWorldRenderer getApiImpl() {
+        return this.apiImpl;
+    }
+
+    private class ApiImpl implements ISodiumWorldRenderer {
+        @Override
+        public boolean updateAllDirtyChunks() {
+            RenderDevice.enterManagedCode();
+            try {
+                SodiumWorldRenderer.this.chunkRenderManager.updateChunksNow();
+                return SodiumWorldRenderer.this.chunkRenderManager.isDirty();
+            } finally {
+                RenderDevice.exitManagedCode();
+            }
+        }
     }
 }
