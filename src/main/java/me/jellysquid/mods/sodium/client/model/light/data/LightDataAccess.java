@@ -113,7 +113,7 @@ public abstract class LightDataAccess {
 
     public static float unpackAO(long word) {
         int aoi = (int) (word >>> 32 & 0xFFFFL);
-        return aoi / 4096.0f;
+        return aoi * (1.0f / 4096.0f);
     }
 
     public BlockRenderView getWorld() {

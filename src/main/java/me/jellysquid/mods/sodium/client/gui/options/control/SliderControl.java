@@ -95,10 +95,12 @@ public class SliderControl implements Control<Integer> {
             int sliderWidth = this.sliderBounds.getWidth();
             int sliderHeight = this.sliderBounds.getHeight();
 
-            int thumbOffset = (int) Math.floor((double) (this.getIntValue() - this.min) / this.range * sliderWidth);
+            this.thumbPosition = this.getThumbPositionForValue(option.getValue());
 
-            int thumbX = sliderX + thumbOffset - THUMB_WIDTH;
-            int trackY = sliderY + (sliderHeight / 2) - TRACK_HEIGHT;
+            double thumbOffset = MathHelper.clamp((double) (this.getIntValue() - this.min) / this.range * sliderWidth, 0, sliderWidth);
+
+            double thumbX = sliderX + thumbOffset - THUMB_WIDTH;
+            double trackY = sliderY + (sliderHeight / 2) - ((double) TRACK_HEIGHT / 2);
 
             this.drawRect(thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
             this.drawRect(sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
@@ -134,7 +136,7 @@ public class SliderControl implements Control<Integer> {
         }
 
         private void setValueFromMouse(double d) {
-            this.setValue((d - (double) (this.sliderBounds.getX() + 4)) / (double) (this.sliderBounds.getWidth() - 8));
+            this.setValue((d - (double) this.sliderBounds.getX()) / (double) this.sliderBounds.getWidth());
         }
 
         private void setValue(double d) {
