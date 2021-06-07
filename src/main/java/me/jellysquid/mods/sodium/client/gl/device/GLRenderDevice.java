@@ -9,11 +9,13 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
 import me.jellysquid.mods.sodium.client.gl.state.GlStateTracker;
 import me.jellysquid.mods.sodium.client.gl.tessellation.*;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.minecraft.client.render.VertexFormat;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL31C;
 import org.lwjgl.opengl.GL32C;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -205,14 +207,17 @@ public class GLRenderDevice implements RenderDevice {
             this.multiDrawElementArrays(first, indexBuffer.getElementFormat(), count);
         }
 
+        private static final PointerBuffer SEVEN_ZEROES = MemoryUtil.memCallocPointer(ModelQuadFacing.COUNT);
+
         //@Override
         public void multiDrawElementArrays(IntBuffer first, VertexFormat.IntType intType, IntBuffer count) {
             GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
+
             GL32C.glMultiDrawElementsBaseVertex(
                     primitiveType.getId(),
                     count,
                     intType.count,
-                    PointerBuffer.allocateDirect(count.remaining()),
+                    SEVEN_ZEROES,
                     first
             );
         }
