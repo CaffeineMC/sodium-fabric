@@ -1,11 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.chunk.backends.oneshot;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.DrawCommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
 import me.jellysquid.mods.sodium.client.gl.util.GlMultiDrawBatch;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
@@ -17,10 +15,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterator;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkRenderShaderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.render.VertexFormat;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.system.MemoryStack;
 
@@ -88,7 +85,7 @@ public class ChunkRenderBackendOneshot extends ChunkRenderShaderBackend<ChunkOne
         float modelX = camera.getChunkModelOffset(state.getX(), camera.blockOriginX, camera.originX);
         float modelY = camera.getChunkModelOffset(state.getY(), camera.blockOriginY, camera.originY);
         float modelZ = camera.getChunkModelOffset(state.getZ(), camera.blockOriginZ, camera.originZ);
-        
+
         try (MemoryStack stack = MemoryStack.stackPush()) {
             FloatBuffer fb = stack.mallocFloat(4);
             fb.put(0, modelX);
@@ -109,15 +106,19 @@ public class ChunkRenderBackendOneshot extends ChunkRenderShaderBackend<ChunkOne
             }
 
             long part = state.getModelPart(i);
-            batch.addChunkRender(BufferSlice.unpackStart(part), BufferSlice.unpackLength(part));
+            // FIXME: is this the best location to add the * 6 / 4?
+            batch.addChunkRender(BufferSlice.unpackStart(part), BufferSlice.unpackLength(part) * 6 / 4);
         }
     }
 
     protected void drawBatch(CommandList commandList, ChunkOneshotGraphicsState state) {
         this.batch.end();
 
+
+        RenderSystem.IndexBuffer indexBuffer = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS, 24_000);
+
         try (DrawCommandList drawCommandList = commandList.beginTessellating(state.tessellation)) {
-            drawCommandList.multiDrawArrays(this.batch.getIndicesBuffer(), this.batch.getLengthBuffer());
+            drawCommandList.multiDrawElementArrays(this.batch.getIndicesBuffer(), indexBuffer, this.batch.getLengthBuffer());
         }
     }
 

@@ -25,8 +25,9 @@ public class GlStateTracker {
     public boolean makeBufferActive(GlBufferTarget target, GlBuffer buffer) {
         return this.makeBufferActive(target, buffer == null ? GlBuffer.NULL_BUFFER_ID : buffer.handle());
     }
-    
-    private boolean makeBufferActive(GlBufferTarget target, int buffer) {
+
+    // FIXME made public cause I'm using the vanilla index buffer
+    public boolean makeBufferActive(GlBufferTarget target, int buffer) {
         int prevBuffer = this.bufferState[target.ordinal()];
         
         if (prevBuffer == UNASSIGNED_HANDLE) {

@@ -20,7 +20,7 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
     protected int arrayLength;
 
     protected ChunkDrawCallBatcher(int capacity) {
-        super(MathHelper.smallestEncompassingPowerOfTwo(capacity), 16);
+        super(MathHelper.smallestEncompassingPowerOfTwo(capacity), 20);
 
         this.capacity = capacity;
     }
@@ -80,10 +80,11 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
                 throw new BufferUnderflowException();
             }
 
-            UNSAFE.putInt(this.writePointer     , count);         // Vertex Count
+            UNSAFE.putInt(this.writePointer     , count * 6 / 4);         // Vertex Count -> Index count
             UNSAFE.putInt(this.writePointer +  4, instanceCount); // Instance Count
-            UNSAFE.putInt(this.writePointer +  8, first);         // Vertex Start
-            UNSAFE.putInt(this.writePointer + 12, baseInstance);  // Base Instance
+            UNSAFE.putInt(this.writePointer +  8, 0);         // Index Start
+            UNSAFE.putInt(this.writePointer +  12, first);         // Base Vertex
+            UNSAFE.putInt(this.writePointer + 16, baseInstance);  // Base Instance
 
             this.writePointer += this.stride;
         }
@@ -106,10 +107,11 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
         @Override
         public void addIndirectDrawCall(int first, int count, int baseInstance, int instanceCount) {
             ByteBuffer buf = this.buffer;
-            buf.putInt(this.writeOffset     , count);             // Vertex Count
+            buf.putInt(this.writeOffset     , count * 6 / 4);             // Vertex Count -> Index Count
             buf.putInt(this.writeOffset +  4, instanceCount);     // Instance Count
             buf.putInt(this.writeOffset +  8, first);             // Vertex Start
-            buf.putInt(this.writeOffset + 12, baseInstance);      // Base Instance
+            buf.putInt(this.writeOffset + 12, 0);            // Base Vertex
+            buf.putInt(this.writeOffset + 16, baseInstance);      // Base Instance
 
             this.writeOffset += this.stride;
             this.count++;

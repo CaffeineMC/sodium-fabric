@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.device;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTarget;
@@ -8,7 +9,11 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
 import me.jellysquid.mods.sodium.client.gl.state.GlStateTracker;
 import me.jellysquid.mods.sodium.client.gl.tessellation.*;
-import org.lwjgl.opengl.*;
+import net.minecraft.client.render.VertexFormat;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.GL20C;
+import org.lwjgl.opengl.GL31C;
+import org.lwjgl.opengl.GL32C;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -192,9 +197,47 @@ public class GLRenderDevice implements RenderDevice {
         }
 
         @Override
+        public void multiDrawElementArrays(IntBuffer first, RenderSystem.IndexBuffer indexBuffer, IntBuffer count) {
+            //if(GLRenderDevice.this.stateTracker.makeBufferActive(GlBufferTarget.ELEMENT_ARRAY_BUFFER, indexBuffer.getId())){
+            GL20C.glBindBuffer(GlBufferTarget.ELEMENT_ARRAY_BUFFER.getTargetParameter(), indexBuffer.getId());
+            //}
+
+            this.multiDrawElementArrays(first, indexBuffer.getElementFormat(), count);
+        }
+
+        //@Override
+        public void multiDrawElementArrays(IntBuffer first, VertexFormat.IntType intType, IntBuffer count) {
+            GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
+            GL32C.glMultiDrawElementsBaseVertex(
+                    primitiveType.getId(),
+                    count,
+                    intType.count,
+                    PointerBuffer.allocateDirect(count.remaining()),
+                    first
+            );
+        }
+
+        @Override
         public void multiDrawArraysIndirect(long pointer, int count, int stride) {
             GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
             GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(primitiveType.getId(), pointer, count, stride);
+        }
+
+        //static private RenderSystem.IndexBuffer ZEROES = new RenderSystem.IndexBuffer(1,1,(c,i) -> c.accept(0));
+
+        @Override
+        public void multiDrawElementArraysIndirect(long pointer, RenderSystem.IndexBuffer indexBuffer, int count, int stride) {
+            //if(GLRenderDevice.this.stateTracker.makeBufferActive(GlBufferTarget.ELEMENT_ARRAY_BUFFER, indexBuffer.getId())){
+            GL20C.glBindBuffer(GlBufferTarget.ELEMENT_ARRAY_BUFFER.getTargetParameter(), indexBuffer.getId());
+            //}
+
+            this.multiDrawElementArraysIndirect(pointer, indexBuffer.getElementFormat(), count, stride);
+        }
+
+        @Override
+        public void multiDrawElementArraysIndirect(long pointer, VertexFormat.IntType intType, int count, int stride) {
+            GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
+            GlFunctions.INDIRECT_DRAW.glMultiDrawElementArraysIndirect(primitiveType.getId(), intType.count, pointer, count, stride);
         }
 
         @Override

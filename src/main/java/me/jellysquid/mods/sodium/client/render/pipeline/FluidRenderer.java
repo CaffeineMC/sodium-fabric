@@ -385,10 +385,10 @@ public class FluidRenderer {
         int start = vertexIdx;
         vertexIdx = this.pushToSink(quad, vertexIdx, lightOrder, sink, 0);
         vertexIdx = this.pushToSink(quad, vertexIdx, lightOrder, sink, 1);
-        this.pushToSink(quad, vertexIdx, lightOrder, sink, 2);
+        //this.pushToSink(quad, vertexIdx, lightOrder, sink, 2);
         vertexIdx = this.pushToSink(quad, vertexIdx, lightOrder, sink, 2);
         this.pushToSink(quad, vertexIdx, lightOrder, sink, 3);
-        this.pushToSink(quad, start, lightOrder, sink, 0);
+        //this.pushToSink(quad, start, lightOrder, sink, 0);
 
         Sprite sprite = quad.getSprite();
 

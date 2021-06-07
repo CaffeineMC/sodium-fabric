@@ -14,6 +14,7 @@ public class GlMultiDrawBatch {
     private final IntBuffer bufLen;
     private int count;
     private boolean isBuilding;
+    private int largestCount = 0;
 
     public GlMultiDrawBatch(int capacity) {
         this.bufIndices = MemoryUtil.memAllocInt(capacity);
@@ -26,6 +27,10 @@ public class GlMultiDrawBatch {
 
     public IntBuffer getLengthBuffer() {
         return this.bufLen;
+    }
+
+    public int getLargestCount() {
+        return this.largestCount;
     }
 
     public void begin() {
@@ -51,6 +56,10 @@ public class GlMultiDrawBatch {
         int i = this.count++;
         this.bufIndices.put(i, first);
         this.bufLen.put(i, count);
+
+        if(this.largestCount < count){
+            this.largestCount = count;
+        }
     }
 
     public boolean isBuilding() {
