@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterNio;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.line.LineVertexSink;
+import net.minecraft.util.math.MathHelper;
 
 import java.nio.ByteBuffer;
 
@@ -13,15 +14,28 @@ public class LineVertexBufferWriterNio extends VertexBufferWriterNio implements 
     }
 
     @Override
-    public void vertexLine(float x, float y, float z, int color) {
-        int i = this.writeOffset;
+    public void vertexLine(
+            float x, float y, float z,
+            int color,
+            float normalX, float normalY, float normalZ) {
 
-        ByteBuffer buffer = this.byteBuffer;
-        buffer.putFloat(i, x);
-        buffer.putFloat(i + 4, y);
-        buffer.putFloat(i + 8, z);
-        buffer.putInt(i + 12, color);
+        for (int r = 0; r < 2; r++) {
+            int i = this.writeOffset;
 
-        this.advance();
+            ByteBuffer buffer = this.byteBuffer;
+            buffer.putFloat(i, x);
+            buffer.putFloat(i + 4, y);
+            buffer.putFloat(i + 8, z);
+            buffer.putInt(i + 12, color);
+            buffer.put(i + 16, packByte(normalX));
+            buffer.put(i + 17, packByte(normalY));
+            buffer.put(i + 18, packByte(normalZ));
+
+            this.advance();
+        }
+    }
+
+    private static byte packByte(float f) {
+        return (byte)((int)(MathHelper.clamp(f, -1.0F, 1.0F) * 127.0F) & 255);
     }
 }
