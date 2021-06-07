@@ -1,6 +1,10 @@
+import net.fabricmc.loom.task.RemapJarTask
+import net.fabricmc.loom.task.RemapSourcesJarTask
+
 plugins {
-    id 'fabric-loom' version '0.6-SNAPSHOT'
+    id 'fabric-loom' version '0.7-SNAPSHOT'
     id 'org.ajoberstar.grgit' version '4.1.0'
+    id 'maven-publish'
 }
 
 archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}"
@@ -10,6 +14,21 @@ group = project.maven_group
 minecraft {
     refmapName = "mixins.sodium.refmap.json"
     accessWidener = file("src/main/resources/sodium.accesswidener")
+}
+
+sourceSets {
+    api {
+        java {
+            compileClasspath += main.compileClasspath
+        }
+    }
+
+    main {
+        java {
+            compileClasspath += api.output
+            runtimeClasspath += api.output
+        }
+    }
 }
 
 dependencies {
@@ -56,8 +75,53 @@ java {
     }
 }
 
-jar {
+tasks.withType(Jar) {
     from "LICENSE.txt"
+}
+
+jar {
+    from(sourceSets.api.output) {
+        exclude "fabric.mod.json" // dummy json so loom knows to remap the api jar, the real jar has a proper one
+    }
+}
+
+tasks.register("apiJar", Jar) {
+    classifier "api-dev"
+    from sourceSets.api.output
+}
+
+def remapApiJar = tasks.register("remapApiJar", RemapJarTask) {
+    classifier "api"
+    input = apiJar.archiveFile
+    addNestedDependencies = false
+}
+build.dependsOn remapApiJar
+
+tasks.register("apiSourcesJar", Jar) {
+    classifier "api-sources-dev"
+    from sourceSets.api.allSource
+}
+
+def remapApiSourcesJar = tasks.register("remapApiSourcesJar", RemapSourcesJarTask) {
+    dependsOn apiSourcesJar
+    input = apiSourcesJar.archiveFile
+    output = apiSourcesJar.destinationDirectory.file(apiSourcesJar.archiveFileName.map { it.replace("-dev", "") })
+}
+build.dependsOn remapApiSourcesJar
+
+publishing {
+    publications {
+        main (MavenPublication) {
+            artifactId "sodium"
+            artifact(remapJar)
+        }
+
+        api (MavenPublication) {
+            artifactId "sodium-api"
+            artifact source: remapApiJar, classifier: ""
+            artifact source: remapApiSourcesJar.map { it.output }, classifier: "sources"
+        }
+    }
 }
 
 def getVersionMetadata() {
