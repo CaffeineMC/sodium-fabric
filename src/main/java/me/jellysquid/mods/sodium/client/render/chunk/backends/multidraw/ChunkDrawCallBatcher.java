@@ -109,8 +109,8 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
             ByteBuffer buf = this.buffer;
             buf.putInt(this.writeOffset     , count * 6 / 4);             // Vertex Count -> Index Count
             buf.putInt(this.writeOffset +  4, instanceCount);     // Instance Count
-            buf.putInt(this.writeOffset +  8, first);             // Vertex Start
-            buf.putInt(this.writeOffset + 12, 0);            // Base Vertex
+            buf.putInt(this.writeOffset +  8, 0);             // Index Start
+            buf.putInt(this.writeOffset + 12, first);            // Base Vertex
             buf.putInt(this.writeOffset + 16, baseInstance);      // Base Instance
 
             this.writeOffset += this.stride;
