@@ -15,7 +15,7 @@ public class MixinPackedIntegerArray implements PackedIntegerArrayExtended {
 
     @Shadow
     @Final
-    private int field_24079;
+    private int elementsPerLong;
 
     @Shadow
     @Final
@@ -36,7 +36,7 @@ public class MixinPackedIntegerArray implements PackedIntegerArrayExtended {
         for (long word : this.storage) {
             long l = word;
 
-            for (int j = 0; j < this.field_24079; ++j) {
+            for (int j = 0; j < this.elementsPerLong; ++j) {
                 out[idx] = palette.get((int) (l & this.maxValue));
                 l >>= this.elementBits;
 

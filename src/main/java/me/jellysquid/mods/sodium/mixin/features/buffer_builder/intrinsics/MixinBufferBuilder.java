@@ -11,9 +11,9 @@ import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.util.math.Matrix3f;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
@@ -21,11 +21,11 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(BufferBuilder.class)
 public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
     @Shadow
-    private boolean field_21594; // is baked quad format
+    private boolean textured;
 
     @Override
     public void quad(MatrixStack.Entry matrices, BakedQuad quad, float[] brightnessTable, float r, float g, float b, int[] light, int overlay, boolean colorize) {
-        if (!this.field_21594) {
+        if (!this.textured) {
             super.quad(matrices, quad, brightnessTable, r, g, b, light, overlay, colorize);
 
             return;

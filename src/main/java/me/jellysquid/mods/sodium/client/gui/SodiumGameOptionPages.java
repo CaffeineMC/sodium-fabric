@@ -13,10 +13,10 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.options.AttackIndicator;
-import net.minecraft.client.options.GraphicsMode;
-import net.minecraft.client.options.Option;
-import net.minecraft.client.options.ParticlesMode;
+import net.minecraft.client.option.AttackIndicator;
+import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.client.option.Option;
+import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.client.util.Window;
 
 import java.util.ArrayList;

@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListenerManager;
 import net.minecraft.client.world.ClientChunkManager;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.source.BiomeArray;
@@ -14,14 +14,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 @Mixin(ClientChunkManager.class)
 public class MixinClientChunkManager implements ChunkStatusListenerManager {
     private ChunkStatusListener listener;
 
-    @Inject(method = "loadChunkFromPacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;resetChunkColor(II)V", shift = At.Shift.AFTER))
-    private void afterLoadChunkFromPacket(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
+    @Inject(method = "loadChunkFromPacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;resetChunkColor(Lnet/minecraft/util/math/ChunkPos;)V", shift = At.Shift.AFTER))
+    private void afterLoadChunkFromPacket(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound nbt, BitSet bitSet, CallbackInfoReturnable<WorldChunk> cir) {
         if (this.listener != null) {
             this.listener.onChunkAdded(x, z);
         }
@@ -44,7 +45,7 @@ public class MixinClientChunkManager implements ChunkStatusListenerManager {
         @Mutable
         @Shadow
         @Final
-        private AtomicReferenceArray<WorldChunk> chunks;
+        AtomicReferenceArray<WorldChunk> chunks;
 
         @Mutable
         @Shadow
@@ -54,7 +55,7 @@ public class MixinClientChunkManager implements ChunkStatusListenerManager {
         @Mutable
         @Shadow
         @Final
-        private int radius;
+        int radius;
 
         private int factor;
 
@@ -78,7 +79,7 @@ public class MixinClientChunkManager implements ChunkStatusListenerManager {
          * @author JellySquid
          */
         @Overwrite
-        private int getIndex(int chunkX, int chunkZ) {
+        int getIndex(int chunkX, int chunkZ) {
             return (chunkZ & this.factor) * this.diameter + (chunkX & this.factor);
         }
     }
