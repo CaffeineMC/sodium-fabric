@@ -33,11 +33,13 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkRenderShaderBac
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
 import org.lwjgl.opengl.GL20C;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -99,7 +101,7 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
         try (CommandList commands = device.createCommandList()) {
             this.uploadBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STREAM_COPY);
             this.uniformBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
-            this.commandBuffer = isWindowsIntelDriver() ? null : commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
+            this.commandBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
         }
 
         this.uniformBufferBuilder = ChunkDrawParamsVector.create(2048);
@@ -194,12 +196,10 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
         this.setupDrawBatches(commandList, renders, camera);
         this.buildCommandBuffer();
 
-        if (this.commandBuffer != null) {
-            commandList.bindBuffer(GlBufferTarget.DRAW_INDIRECT_BUFFER, this.commandBuffer);
-            commandList.uploadData(this.commandBuffer, this.commandClientBufferBuilder.getBuffer());
-        }
+        commandList.bindBuffer(GlBufferTarget.DRAW_INDIRECT_BUFFER, this.commandBuffer);
+        commandList.uploadData(this.commandBuffer, this.commandClientBufferBuilder.getBuffer());
 
-        long pointer = this.commandBuffer == null ? this.commandClientBufferBuilder.getBufferAddress() : 0L;
+        long pointer = 0L;
 
         for (ChunkRegion<?> region : this.pendingBatches) {
 
@@ -319,9 +319,7 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
             commands.deleteBuffer(this.uploadBuffer);
             commands.deleteBuffer(this.uniformBuffer);
 
-            if (this.commandBuffer != null) {
-                commands.deleteBuffer(this.commandBuffer);
-            }
+            commands.deleteBuffer(this.commandBuffer);
         }
 
         this.bufferManager.delete();
@@ -356,9 +354,7 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
      * These drivers on Windows are known to fail when using command buffers.
      */
     @Deprecated
-    private static boolean isWindowsIntelDriver() {
-        return false;
-        /*
+    public static boolean isWindowsIntelDriver() {
         // We only care about Windows
         // The open-source drivers on Linux are not known to have driver bugs with indirect command buffers
         if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
@@ -367,7 +363,6 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
 
         // Check to see if the GPU vendor is Intel
         return Objects.equals(GL20C.glGetString(GL20C.GL_VENDOR), INTEL_VENDOR_NAME);
-         */
     }
 
     /**
@@ -408,8 +403,11 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
     public List<String> getDebugStrings() {
         List<String> list = new ArrayList<>();
         list.add(String.format("Active Buffers: %s", this.bufferManager.getAllocatedRegionCount()));
+        // not needed at this moment
+        /*
         list.add(String.format("Submission Mode: %s", this.commandBuffer != null ?
                 Formatting.AQUA + "Buffer" : Formatting.LIGHT_PURPLE + "Client Memory"));
+         */
 
         return list;
     }
