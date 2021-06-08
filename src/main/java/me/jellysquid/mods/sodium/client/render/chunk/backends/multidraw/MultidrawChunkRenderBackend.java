@@ -353,7 +353,6 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
      * Determines whether or not the current OpenGL renderer is an integrated Intel GPU on Windows.
      * These drivers on Windows are known to fail when using command buffers.
      */
-    @Deprecated
     private static boolean isWindowsIntelDriver() {
         // We only care about Windows
         // The open-source drivers on Linux are not known to have driver bugs with indirect command buffers
