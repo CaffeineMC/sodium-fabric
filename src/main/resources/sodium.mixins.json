@@ -11,9 +11,9 @@
   },
   "client": [
     "core.frustum.MixinFrustum",
+    "core.matrix.MixinGameRenderer",
     "core.matrix.MixinMatrix3f",
     "core.matrix.MixinMatrix4f",
-    "core.matrix.MixinGameRenderer",
     "core.model.MixinBlockColors",
     "core.model.MixinItemColors",
     "core.pipeline.MixinBakedQuad",
@@ -23,7 +23,6 @@
     "features.block.MixinBlockModelRenderer",
     "features.block.MixinWorldRenderer",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
-    "features.buffer_builder.fast_sort.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinSpriteTexturedVertexConsumer",
     "features.buffer_builder.intrinsics.MixinWorldRenderer",
@@ -31,9 +30,9 @@
     "features.chunk_rendering.MixinClientChunkManager",
     "features.chunk_rendering.MixinClientChunkManager$MixinClientChunkMap",
     "features.chunk_rendering.MixinClientWorld",
+    "features.chunk_rendering.MixinPackedIntegerArray",
     "features.chunk_rendering.MixinPalettedContainer",
     "features.chunk_rendering.MixinWorldRenderer",
-    "features.chunk_rendering.MixinPackedIntegerArray",
     "features.debug.MixinDebugHud",
     "features.entity.fast_render.MixinCuboid",
     "features.entity.fast_render.MixinModelPart",
@@ -55,7 +54,9 @@
     "features.particle.fast_render.MixinBillboardParticle",
     "features.render_layer.MixinRenderLayers",
     "features.texture_tracking.MixinSprite",
-    "features.texture_tracking.MixinSpriteAtlasTexture",
-    "features.world_ticking.MixinClientWorld"
+    "features.texture_tracking.MixinSpriteAtlasTexture"
+  ],
+  "mixins": [
+    "features.texture_tracking.MixinSpriteAnimation"
   ]
 }

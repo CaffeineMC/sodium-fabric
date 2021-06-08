@@ -226,7 +226,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         pass.endDrawing();
 
-        RenderSystem.clearCurrentColor();
+//        RenderSystem.clearCurrentColor();
     }
 
     public void reload() {
@@ -292,6 +292,8 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         double y = cameraPos.getY();
         double z = cameraPos.getZ();
 
+        BlockEntityRenderDispatcher blockEntityRenderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
+
         for (BlockEntity blockEntity : this.chunkRenderManager.getVisibleBlockEntities()) {
             BlockPos pos = blockEntity.getPos();
 
@@ -307,11 +309,12 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
                 if (stage >= 0) {
                     MatrixStack.Entry entry = matrices.peek();
                     VertexConsumer transformer = new OverlayVertexConsumer(bufferBuilders.getEffectVertexConsumers().getBuffer(ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.get(stage)), entry.getModel(), entry.getNormal());
-                    consumer = (layer) -> layer.hasCrumbling() ? VertexConsumers.dual(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
+                    consumer = (layer) -> layer.hasCrumbling() ? VertexConsumers.union(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
                 }
             }
 
-            BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, tickDelta, matrices, consumer);
+
+            blockEntityRenderer.render(blockEntity, tickDelta, matrices, consumer);
 
             matrices.pop();
         }
@@ -322,7 +325,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             matrices.push();
             matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
 
-            BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, tickDelta, matrices, immediate);
+            blockEntityRenderer.render(blockEntity, tickDelta, matrices, immediate);
 
             matrices.pop();
         }

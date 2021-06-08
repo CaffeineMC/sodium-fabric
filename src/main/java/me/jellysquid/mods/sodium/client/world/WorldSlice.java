@@ -189,14 +189,14 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage {
 
         ChunkSectionPos pos = section.getPosition();
 
-        int minBlockX = Math.max(box.minX, pos.getMinX());
-        int maxBlockX = Math.min(box.maxX, pos.getMaxX());
+        int minBlockX = Math.max(box.getMinX(), pos.getMinX());
+        int maxBlockX = Math.min(box.getMaxX(), pos.getMaxX());
 
-        int minBlockY = Math.max(box.minY, pos.getMinY());
-        int maxBlockY = Math.min(box.maxY, pos.getMaxY());
+        int minBlockY = Math.max(box.getMinY(), pos.getMinY());
+        int maxBlockY = Math.min(box.getMaxY(), pos.getMaxY());
 
-        int minBlockZ = Math.max(box.minZ, pos.getMinZ());
-        int maxBlockZ = Math.min(box.maxZ, pos.getMaxZ());
+        int minBlockZ = Math.max(box.getMinZ(), pos.getMinZ());
+        int maxBlockZ = Math.min(box.getMaxZ(), pos.getMaxZ());
 
         for (int y = minBlockY; y <= maxBlockY; y++) {
             for (int z = minBlockZ; z <= maxBlockZ; z++) {
@@ -347,5 +347,15 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage {
 
     public static int getLocalChunkIndex(int x, int z) {
         return z << TABLE_BITS | x;
+    }
+
+    @Override
+    public int getHeight() {
+        return this.world.getHeight();
+    }
+
+    @Override
+    public int getBottomY() {
+        return this.world.getBottomY();
     }
 }

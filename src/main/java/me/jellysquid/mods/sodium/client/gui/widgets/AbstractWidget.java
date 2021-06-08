@@ -39,7 +39,7 @@ public abstract class AbstractWidget implements Drawable, Element {
         RenderSystem.defaultBlendFunc();
 
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
-        bufferBuilder.begin(GL20C.GL_QUADS, VertexFormats.POSITION_COLOR);
+        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
         consumer.accept(bufferBuilder);
 
