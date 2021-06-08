@@ -24,6 +24,9 @@ public class BiomeColorCache {
 
     private final int height;
 
+    private final int blendedColorsMinX;
+    private final int blendedColorsMinZ;
+
     public BiomeColorCache(ColorResolver resolver, WorldSlice slice) {
         this.resolver = resolver;
         this.slice = slice;
