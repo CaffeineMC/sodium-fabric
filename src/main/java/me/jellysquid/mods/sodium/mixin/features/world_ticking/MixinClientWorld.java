@@ -2,11 +2,9 @@ package me.jellysquid.mods.sodium.mixin.features.world_ticking;
 
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.profiler.Profiler;
@@ -44,7 +42,7 @@ public abstract class MixinClientWorld extends World {
      * @author JellySquid
      */
     @Overwrite
-    public void randomBlockDisplayTick(int xCenter, int yCenter, int zCenter, int radius, Random random, boolean spawnBarrierParticles, BlockPos.Mutable pos) {
+    public void randomBlockDisplayTick(int xCenter, int yCenter, int zCenter, int radius, Random random, ClientWorld.BlockParticle blockParticle, BlockPos.Mutable pos) {
         int x = xCenter + (random.nextInt(radius) - random.nextInt(radius));
         int y = yCenter + (random.nextInt(radius) - random.nextInt(radius));
         int z = zCenter + (random.nextInt(radius) - random.nextInt(radius));
@@ -54,7 +52,7 @@ public abstract class MixinClientWorld extends World {
         BlockState blockState = this.getBlockState(pos);
 
         if (!blockState.isAir()) {
-            this.performBlockDisplayTick(blockState, pos, random, spawnBarrierParticles);
+            this.performBlockDisplayTick(blockState, pos, random, blockParticle);
         }
 
         if (!blockState.isFullCube(this, pos)) {
@@ -68,16 +66,16 @@ public abstract class MixinClientWorld extends World {
         }
     }
 
-    private void performBlockDisplayTick(BlockState blockState, BlockPos pos, Random random, boolean spawnBarrierParticles) {
+    private void performBlockDisplayTick(BlockState blockState, BlockPos pos, Random random, ClientWorld.BlockParticle blockParticle) {
         blockState.getBlock().randomDisplayTick(blockState, this, pos, random);
 
-        if (spawnBarrierParticles && blockState.isOf(Blocks.BARRIER)) {
-            this.performBarrierDisplayTick(pos);
+        if (blockParticle != null && blockState.isOf(blockParticle.block)) {
+            this.performBlockParticleDisplayTick(pos, blockParticle.particle);
         }
     }
 
-    private void performBarrierDisplayTick(BlockPos pos) {
-        this.addParticle(ParticleTypes.BARRIER, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D,
+    private void performBlockParticleDisplayTick(BlockPos pos, ParticleEffect particleEffect) {
+        this.addParticle(particleEffect, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D,
                 0.0D, 0.0D, 0.0D);
     }
 

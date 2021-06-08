@@ -23,7 +23,6 @@
     "features.block.MixinBlockModelRenderer",
     "features.block.MixinWorldRenderer",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
-
     "features.buffer_builder.intrinsics.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinSpriteTexturedVertexConsumer",
     "features.buffer_builder.intrinsics.MixinWorldRenderer",
@@ -54,12 +53,12 @@
     "features.particle.cull.MixinParticleManager",
     "features.particle.fast_render.MixinBillboardParticle",
     "features.render_layer.MixinRenderLayers",
-    "features.texture_tracking.MixinSprite",
-    "features.texture_tracking.MixinSpriteAtlasTexture"
+    "features.texture_tracking.MixinSpriteAnimation",
+    "features.texture_tracking.MixinSpriteAtlasTexture",
+    "features.world_ticking.MixinClientWorld"
   ],
 
   "disabled": [
-    "features.buffer_builder.fast_sort.MixinBufferBuilder",
-    "features.world_ticking.MixinClientWorld"
+    "features.buffer_builder.fast_sort.MixinBufferBuilder"
   ]
 }
