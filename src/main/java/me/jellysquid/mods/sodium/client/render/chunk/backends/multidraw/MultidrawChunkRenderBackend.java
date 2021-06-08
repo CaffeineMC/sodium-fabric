@@ -335,9 +335,7 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
             return false;
         }
 
-        return GlFunctions.isVertexArraySupported() &&
-                GlFunctions.isBufferCopySupported() &&
-                GlFunctions.isIndirectMultiDrawSupported() &&
+        return GlFunctions.isIndirectMultiDrawSupported() &&
                 GlFunctions.isInstancedArraySupported();
     }
 

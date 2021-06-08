@@ -64,7 +64,7 @@ public class GLRenderDevice implements RenderDevice {
         @Override
         public void bindVertexArray(GlVertexArray array) {
             if (this.stateTracker.makeVertexArrayActive(array)) {
-                GlFunctions.VERTEX_ARRAY.glBindVertexArray(array.handle());
+                GL30C.glBindVertexArray(array.handle());
             }
         }
 
@@ -86,7 +86,7 @@ public class GLRenderDevice implements RenderDevice {
             this.bindBuffer(GlBufferTarget.COPY_READ_BUFFER, src);
             this.bindBuffer(GlBufferTarget.COPY_WRITE_BUFFER, dst);
 
-            GlFunctions.BUFFER_COPY.glCopyBufferSubData(GL31C.GL_COPY_READ_BUFFER, GL31C.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, bytes);
+            GL31C.glCopyBufferSubData(GL31C.GL_COPY_READ_BUFFER, GL31C.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, bytes);
         }
 
         @Override
@@ -106,7 +106,7 @@ public class GLRenderDevice implements RenderDevice {
         @Override
         public void unbindVertexArray() {
             if (this.stateTracker.makeVertexArrayActive(null)) {
-                GlFunctions.VERTEX_ARRAY.glBindVertexArray(GlVertexArray.NULL_ARRAY_ID);
+                GL30C.glBindVertexArray(GlVertexArray.NULL_ARRAY_ID);
             }
         }
 
@@ -136,7 +136,7 @@ public class GLRenderDevice implements RenderDevice {
             int handle = array.handle();
             array.invalidateHandle();
 
-            GlFunctions.VERTEX_ARRAY.glDeleteVertexArrays(handle);
+            GL30C.glDeleteVertexArrays(handle);
         }
 
         @Override
@@ -169,14 +169,10 @@ public class GLRenderDevice implements RenderDevice {
 
         @Override
         public GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings) {
-            if (GlVertexArrayTessellation.isSupported()) {
-                GlVertexArrayTessellation tessellation = new GlVertexArrayTessellation(new GlVertexArray(GLRenderDevice.this), primitiveType, bindings);
-                tessellation.init(this);
+            GlVertexArrayTessellation tessellation = new GlVertexArrayTessellation(new GlVertexArray(GLRenderDevice.this), primitiveType, bindings);
+            tessellation.init(this);
 
-                return tessellation;
-            } else {
-                return new GlFallbackTessellation(primitiveType, bindings);
-            }
+            return tessellation;
         }
     }
 

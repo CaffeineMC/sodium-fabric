@@ -13,10 +13,6 @@ public class GlVertexArrayTessellation extends GlAbstractTessellation {
         this.array = array;
     }
 
-    public static boolean isSupported() {
-        return GlFunctions.isVertexArraySupported();
-    }
-
     public void init(CommandList commandList) {
         this.bind(commandList);
         this.bindAttributes(commandList);
