@@ -354,7 +354,7 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
      * These drivers on Windows are known to fail when using command buffers.
      */
     @Deprecated
-    public static boolean isWindowsIntelDriver() {
+    private static boolean isWindowsIntelDriver() {
         // We only care about Windows
         // The open-source drivers on Linux are not known to have driver bugs with indirect command buffers
         if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
@@ -371,7 +371,8 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
      * renderer.
      */
     private static boolean isKnownBrokenIntelDriver() {
-        if (!isWindowsIntelDriver()) {
+        return isWindowsIntelDriver();
+        /*if (!isWindowsIntelDriver()) {
             return false;
         }
 
@@ -391,7 +392,7 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
 
         // Anything with a major build of >=100 is GPU Gen8 or newer
         // The fourth group is the major build number
-        return Integer.parseInt(matcher.group(4)) < 100;
+        return Integer.parseInt(matcher.group(4)) < 100;*/
     }
 
     @Override

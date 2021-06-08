@@ -41,9 +41,7 @@ public enum GlIndirectMultiDrawFunctions {
     };
 
     public static GlIndirectMultiDrawFunctions load(GLCapabilities capabilities) {
-        if (MultidrawChunkRenderBackend.isWindowsIntelDriver()) {
-            return UNSUPPORTED;
-        } else if (capabilities.OpenGL43) {
+        if (capabilities.OpenGL43) {
             return CORE;
         } else if (capabilities.GL_ARB_multi_draw_indirect && capabilities.GL_ARB_draw_indirect) {
             return ARB;
