@@ -207,7 +207,7 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
 
             // vanilla's index buffer
             // check what length should be
-            RenderSystem.IndexBuffer indexBuffer = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS, 24_000);
+            RenderSystem.IndexBuffer indexBuffer = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS, batch.getLargestCount());
 
             try (DrawCommandList drawCommandList = commandList.beginTessellating(region.getTessellation())) {
                 drawCommandList.multiDrawElementArraysIndirect(pointer, indexBuffer, batch.getCount(), 0 /* tightly packed */);

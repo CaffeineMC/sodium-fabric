@@ -18,6 +18,7 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
     protected int count;
 
     protected int arrayLength;
+    private int largestCount;
 
     protected ChunkDrawCallBatcher(int capacity) {
         super(MathHelper.smallestEncompassingPowerOfTwo(capacity), 20);
@@ -33,6 +34,7 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
         this.isBuilding = true;
         this.count = 0;
         this.arrayLength = 0;
+        this.largestCount = 0;
 
         this.buffer.limit(this.buffer.capacity());
     }
@@ -53,6 +55,16 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
 
     public int getCount() {
         return this.count;
+    }
+
+    void updateCount(int c){
+        if(c > this.largestCount){
+            this.largestCount = c;
+        }
+    }
+
+    public int getLargestCount() {
+        return this.largestCount;
     }
 
     public static class UnsafeChunkDrawCallBatcher extends ChunkDrawCallBatcher {
@@ -80,11 +92,15 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
                 throw new BufferUnderflowException();
             }
 
-            UNSAFE.putInt(this.writePointer     , count * 6 / 4);         // Vertex Count -> Index count
+            int indexCount = count * 6 / 4; // Vertex Count -> Index count
+
+            UNSAFE.putInt(this.writePointer     , indexCount);         // Index Count
             UNSAFE.putInt(this.writePointer +  4, instanceCount); // Instance Count
             UNSAFE.putInt(this.writePointer +  8, 0);         // Index Start
             UNSAFE.putInt(this.writePointer +  12, first);         // Base Vertex
             UNSAFE.putInt(this.writePointer + 16, baseInstance);  // Base Instance
+
+            this.updateCount(indexCount);
 
             this.writePointer += this.stride;
         }
@@ -107,11 +123,16 @@ public abstract class ChunkDrawCallBatcher extends StructBuffer {
         @Override
         public void addIndirectDrawCall(int first, int count, int baseInstance, int instanceCount) {
             ByteBuffer buf = this.buffer;
-            buf.putInt(this.writeOffset     , count * 6 / 4);             // Vertex Count -> Index Count
+
+            int indexCount = count * 6 / 4; // Vertex Count -> Index count
+
+            buf.putInt(this.writeOffset     , indexCount);             // Index Count
             buf.putInt(this.writeOffset +  4, instanceCount);     // Instance Count
             buf.putInt(this.writeOffset +  8, 0);             // Index Start
             buf.putInt(this.writeOffset + 12, first);            // Base Vertex
             buf.putInt(this.writeOffset + 16, baseInstance);      // Base Instance
+
+            this.updateCount(indexCount);
 
             this.writeOffset += this.stride;
             this.count++;
