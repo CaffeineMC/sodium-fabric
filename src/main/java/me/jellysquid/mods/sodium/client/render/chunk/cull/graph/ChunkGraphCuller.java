@@ -65,10 +65,9 @@ public class ChunkGraphCuller implements ChunkCuller {
 
     private boolean isWithinRenderDistance(ChunkGraphNode adj) {
         int x = Math.abs(adj.getChunkX() - this.centerChunkX);
-        int y = Math.abs(adj.getChunkY() - this.centerChunkY);
         int z = Math.abs(adj.getChunkZ() - this.centerChunkZ);
 
-        return x <= this.renderDistance && y <= this.renderDistance && z <= this.renderDistance;
+        return x <= this.renderDistance && z <= this.renderDistance;
     }
 
     private boolean isCulled(ChunkGraphNode node, Direction from, Direction to) {
