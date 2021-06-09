@@ -21,11 +21,10 @@ public class LegacyFogHelper {
      * Retrieves the current fog mode from the fixed-function pipeline.
      */
     public static ChunkFogMode getFogMode() {
-        return ChunkFogMode.NONE;
+        return ChunkFogMode.SMOOTH;
     }
 
     public static float getFogCutoff() {
-        return 128.0f;
-//        return RenderSystem.getShaderFogEnd();
+        return RenderSystem.getShaderFogEnd();
     }
 }
