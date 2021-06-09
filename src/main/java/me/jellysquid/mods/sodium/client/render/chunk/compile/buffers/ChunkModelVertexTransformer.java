@@ -17,7 +17,7 @@ public class ChunkModelVertexTransformer extends AbstractVertexTransformer<Model
     }
 
     @Override
-    public void writeQuad(float x, float y, float z, int color, float u, float v, int light) {
-        this.delegate.writeQuad(x + this.offset.x, y + this.offset.y, z + this.offset.z, color, u, v, light);
+    public void writeVertex(float x, float y, float z, int color, float u, float v, int light) {
+        this.delegate.writeVertex(x + this.offset.x, y + this.offset.y, z + this.offset.z, color, u, v, light);
     }
 }

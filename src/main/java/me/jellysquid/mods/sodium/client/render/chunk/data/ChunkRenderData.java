@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
+import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import net.minecraft.block.entity.BlockEntity;
@@ -147,7 +147,7 @@ public class ChunkRenderData {
             for (ChunkMeshData meshData : this.meshes.values()) {
                 size += meshData.getVertexDataSize();
 
-                for (Map.Entry<ModelQuadFacing, BufferSlice> entry : meshData.getSlices()) {
+                for (Map.Entry<ModelQuadFacing, ElementRange> entry : meshData.getSlices()) {
                     facesWithData |= 1 << entry.getKey().ordinal();
                 }
             }

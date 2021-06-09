@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
+import me.jellysquid.mods.sodium.client.model.PrimitiveSink;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -92,8 +93,8 @@ public class BlockRenderer {
                                 ChunkModelBuffers buffers, List<BakedQuad> quads, ModelQuadFacing facing) {
         BlockColorProvider colorizer = null;
 
-        ModelVertexSink sink = buffers.getSink(facing);
-        sink.ensureCapacity(quads.size() * 4);
+        PrimitiveSink<ModelVertexSink> sink = buffers.getBuilder(facing);
+        sink.vertices.ensureCapacity(quads.size() * 4);
 
         ChunkRenderData.Builder renderData = buffers.getRenderData();
 
@@ -112,10 +113,10 @@ public class BlockRenderer {
             this.renderQuad(world, state, pos, sink, offset, colorizer, quad, light, renderData);
         }
 
-        sink.flush();
+        sink.vertices.flush();
     }
 
-    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelVertexSink sink, Vec3d offset,
+    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, PrimitiveSink<ModelVertexSink> out, Vec3d offset,
                             BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light, ChunkRenderData.Builder renderData) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
 
@@ -127,6 +128,9 @@ public class BlockRenderer {
             colors = this.biomeColorBlender.getColors(colorProvider, world, state, pos, src);
         }
 
+        int count = out.vertices.getVertexCount();
+
+        // TODO: Re-orientate indices, not triangles
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = order.getVertexIndex(dstIndex);
 
@@ -141,8 +145,16 @@ public class BlockRenderer {
 
             int lm = light.lm[srcIndex];
 
-            sink.writeQuad(x, y, z, color, u, v, lm);
+            out.vertices.writeVertex(x, y, z, color, u, v, lm);
         }
+
+        out.indices.add(count + 0);
+        out.indices.add(count + 1);
+        out.indices.add(count + 2);
+
+        out.indices.add(count + 2);
+        out.indices.add(count + 3);
+        out.indices.add(count + 0);
 
         Sprite sprite = src.getSprite();
 

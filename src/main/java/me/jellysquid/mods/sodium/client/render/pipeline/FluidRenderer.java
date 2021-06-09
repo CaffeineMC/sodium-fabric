@@ -379,33 +379,33 @@ public class FluidRenderer {
             lightOrder = 1;
         }
 
-        ModelVertexSink sink = buffers.getSink(facing);
-        sink.ensureCapacity(4);
-
-        for (int i = 0; i < 4; i++) {
-            float x = quad.getX(i);
-            float y = quad.getY(i);
-            float z = quad.getZ(i);
-
-            int color = this.quadColors[vertexIdx];
-
-            float u = quad.getTexU(i);
-            float v = quad.getTexV(i);
-
-            int light = this.quadLightData.lm[vertexIdx];
-
-            sink.writeQuad(x, y, z, color, u, v, light);
-
-            vertexIdx += lightOrder;
-        }
-
-        Sprite sprite = quad.getSprite();
-
-        if (sprite != null) {
-            buffers.getRenderData().addSprite(sprite);
-        }
-
-        sink.flush();
+//        ModelVertexSink sink = buffers.getBuilder(facing);
+//        sink.ensureCapacity(4);
+//
+//        for (int i = 0; i < 4; i++) {
+//            float x = quad.getX(i);
+//            float y = quad.getY(i);
+//            float z = quad.getZ(i);
+//
+//            int color = this.quadColors[vertexIdx];
+//
+//            float u = quad.getTexU(i);
+//            float v = quad.getTexV(i);
+//
+//            int light = this.quadLightData.lm[vertexIdx];
+//
+//            sink.writeVertex(x, y, z, color, u, v, light);
+//
+//            vertexIdx += lightOrder;
+//        }
+//
+//        Sprite sprite = quad.getSprite();
+//
+//        if (sprite != null) {
+//            buffers.getRenderData().addSprite(sprite);
+//        }
+//
+//        sink.flush();
     }
 
     private void setVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {

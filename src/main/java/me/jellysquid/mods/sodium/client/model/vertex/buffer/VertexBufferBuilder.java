@@ -80,18 +80,16 @@ public class VertexBufferBuilder implements VertexBufferView {
     /**
      * Ends the stream of written data and makes a copy of it to be passed around.
      */
-    public void copyInto(ByteBuffer dst) {
-        // Mark the slice of memory that needs to be copied
-        this.buffer.position(0);
-        this.buffer.limit(this.writerOffset);
+    public void get(ByteBuffer dst) {
+        this.buffer.position(this.writerOffset);
+        this.buffer.flip();
 
-        // Allocate a new buffer which is just large enough to contain the slice of vertex data
-        // The buffer is then flipped after the operation so the callee sees a range of bytes from (0,len] which can
-        // then be immediately passed to native libraries or the graphics driver
-        dst.put(this.buffer.slice());
+        dst.put(this.buffer);
 
-        // Reset the position and limit set earlier of the backing scratch buffer
         this.buffer.clear();
+    }
+
+    public void reset() {
         this.writerOffset = 0;
     }
 }

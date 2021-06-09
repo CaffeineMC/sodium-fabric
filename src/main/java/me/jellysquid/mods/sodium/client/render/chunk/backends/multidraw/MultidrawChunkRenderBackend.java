@@ -15,7 +15,7 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
-import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
+import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
@@ -30,16 +30,10 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkRenderShaderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Util;
-import org.lwjgl.opengl.GL20C;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Shader-based chunk renderer which makes use of a custom memory allocator on top of large buffer objects to allow
@@ -99,7 +93,7 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
         try (CommandList commands = device.createCommandList()) {
             this.uploadBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STREAM_COPY);
             this.uniformBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
-            this.commandBuffer = isWindowsIntelDriver() ? null : commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
+            this.commandBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
         }
 
         this.uniformBufferBuilder = ChunkDrawParamsVector.create(2048);
@@ -115,11 +109,9 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
         while (!this.pendingUploads.isEmpty()) {
             ChunkRegion<MultidrawGraphicsState> region = this.pendingUploads.dequeue();
 
-            GlBufferArena arena = region.getBufferArena();
-            GlBuffer buffer = arena.getBuffer();
-
             ObjectArrayList<ChunkBuildResult<MultidrawGraphicsState>> uploadQueue = region.getUploadQueue();
-            arena.prepareBuffer(commandList, getUploadQueuePayloadSize(uploadQueue));
+            region.getVertexBufferArena()
+                    .prepareBuffer(commandList, getUploadQueuePayloadSize(uploadQueue));
 
             for (ChunkBuildResult<MultidrawGraphicsState> result : uploadQueue) {
                 ChunkRenderContainer<MultidrawGraphicsState> render = result.render;
@@ -137,13 +129,19 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
                     ChunkMeshData meshData = data.getMesh(pass);
 
                     if (meshData.hasVertexData()) {
-                        VertexData upload = meshData.takeVertexData();
+                        IndexedVertexData upload = meshData.takeVertexData();
 
-                        commandList.uploadData(this.uploadBuffer, upload.buffer);
+                        commandList.uploadData(this.uploadBuffer, upload.vertexBuffer);
 
-                        GlBufferSegment segment = arena.uploadBuffer(commandList, this.uploadBuffer, 0, upload.buffer.capacity());
+                        GlBufferSegment vertexSegment = region.getVertexBufferArena()
+                                .uploadBuffer(commandList, this.uploadBuffer, 0, upload.vertexBuffer.capacity());
 
-                        render.setGraphicsState(pass, new MultidrawGraphicsState(render, region, segment, meshData, this.vertexFormat));
+                        commandList.uploadData(this.uploadBuffer, upload.indexBuffer);
+
+                        GlBufferSegment indexSegment = region.getIndexBufferArena()
+                                .uploadBuffer(commandList, this.uploadBuffer, 0, upload.indexBuffer.capacity());
+
+                        render.setGraphicsState(pass, new MultidrawGraphicsState(render, region, vertexSegment, indexSegment, meshData));
                     } else {
                         render.setGraphicsState(pass, null);
                     }
@@ -152,15 +150,11 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
                 render.setData(data);
             }
 
-            // Check if the tessellation needs to be updated
-            // This happens whenever the backing buffer object for the arena changes, or if it hasn't already been created
-            if (region.getTessellation() == null || buffer != arena.getBuffer()) {
-                if (region.getTessellation() != null) {
-                    commandList.deleteTessellation(region.getTessellation());
-                }
-
-                region.setTessellation(this.createRegionTessellation(commandList, arena.getBuffer()));
+            if (region.getTessellation() != null) {
+                commandList.deleteTessellation(region.getTessellation());
             }
+
+            region.setTessellation(this.createRegionTessellation(commandList, region.getVertexBufferArena(), region.getIndexBufferArena()));
 
             uploadQueue.clear();
         }
@@ -168,9 +162,9 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
         commandList.invalidateBuffer(this.uploadBuffer);
     }
 
-    private GlTessellation createRegionTessellation(CommandList commandList, GlBuffer buffer) {
-        return commandList.createTessellation(GlPrimitiveType.QUADS, new TessellationBinding[] {
-                new TessellationBinding(buffer, new GlVertexAttributeBinding[] {
+    private GlTessellation createRegionTessellation(CommandList commandList, GlBufferArena vertices, GlBufferArena indices) {
+        return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
+                new TessellationBinding(vertices.getBuffer(), new GlVertexAttributeBinding[] {
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.POSITION,
                                 this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION)),
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.COLOR,
@@ -184,7 +178,7 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.MODEL_OFFSET,
                                 new GlVertexAttribute(GlVertexAttributeFormat.FLOAT, 4, false, 0, 0))
                 }, true)
-        });
+        }, indices.getBuffer());
     }
 
     @Override
@@ -194,18 +188,16 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
         this.setupDrawBatches(commandList, renders, camera);
         this.buildCommandBuffer();
 
-        if (this.commandBuffer != null) {
-            commandList.bindBuffer(GlBufferTarget.DRAW_INDIRECT_BUFFER, this.commandBuffer);
-            commandList.uploadData(this.commandBuffer, this.commandClientBufferBuilder.getBuffer());
-        }
+        commandList.bindBuffer(GlBufferTarget.DRAW_INDIRECT_BUFFER, this.commandBuffer);
+        commandList.uploadData(this.commandBuffer, this.commandClientBufferBuilder.getBuffer());
 
-        long pointer = this.commandBuffer == null ? this.commandClientBufferBuilder.getBufferAddress() : 0L;
+        long pointer = 0L;
 
         for (ChunkRegion<?> region : this.pendingBatches) {
             ChunkDrawCallBatcher batch = region.getDrawBatcher();
 
             try (DrawCommandList drawCommandList = commandList.beginTessellating(region.getTessellation())) {
-                drawCommandList.multiDrawArraysIndirect(pointer, batch.getCount(), 0 /* tightly packed */);
+                drawCommandList.multiDrawElementsIndirect(pointer, batch.getCount(), 0 /* tightly packed */);
             }
 
             pointer += batch.getArrayLength();
@@ -278,13 +270,17 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
                 this.pendingBatches.add(region);
             }
 
+            // TODO: remove very expensive divisions
+            int vertexOffset = state.getVertexSegment().getStart() / this.vertexFormat.getStride();
+            int indexOffset = state.getIndexSegment().getStart() / 4;
+
             int mask = 0b1;
 
             for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
                 if ((visible & mask) != 0) {
-                    long part = state.getModelPart(i);
+                    ElementRange part = state.getModelPart(i);
 
-                    batch.addIndirectDrawCall(BufferSlice.unpackStart(part), BufferSlice.unpackLength(part), index, 1);
+                    batch.addIndirectDrawCall(part.count, 1, indexOffset + part.offset, vertexOffset + part.baseVertex, index);
                 }
 
                 mask <<= 1;
@@ -313,10 +309,7 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
         try (CommandList commands = RenderDevice.INSTANCE.createCommandList()) {
             commands.deleteBuffer(this.uploadBuffer);
             commands.deleteBuffer(this.uniformBuffer);
-
-            if (this.commandBuffer != null) {
-                commands.deleteBuffer(this.commandBuffer);
-            }
+            commands.deleteBuffer(this.commandBuffer);
         }
 
         this.bufferManager.delete();
@@ -331,61 +324,8 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
     }
 
     public static boolean isSupported(boolean disableDriverBlacklist) {
-        if (!disableDriverBlacklist && isKnownBrokenIntelDriver()) {
-            return false;
-        }
-
         return GlFunctions.isIndirectMultiDrawSupported() &&
                 GlFunctions.isInstancedArraySupported();
-    }
-
-    // https://www.intel.com/content/www/us/en/support/articles/000005654/graphics.html
-    private static final Pattern INTEL_BUILD_MATCHER = Pattern.compile("(\\d.\\d.\\d) - Build (\\d+).(\\d+).(\\d+).(\\d+)");
-
-    private static final String INTEL_VENDOR_NAME = "Intel";
-
-    /**
-     * Determines whether or not the current OpenGL renderer is an integrated Intel GPU on Windows.
-     * These drivers on Windows are known to fail when using command buffers.
-     */
-    private static boolean isWindowsIntelDriver() {
-        // We only care about Windows
-        // The open-source drivers on Linux are not known to have driver bugs with indirect command buffers
-        if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
-            return false;
-        }
-
-        // Check to see if the GPU vendor is Intel
-        return Objects.equals(GL20C.glGetString(GL20C.GL_VENDOR), INTEL_VENDOR_NAME);
-    }
-
-    /**
-     * Determines whether or not the current OpenGL renderer is an old integrated Intel GPU (prior to Skylake/Gen8) on
-     * Windows. These drivers on Windows are unsupported and known to create significant trouble with the multi-draw
-     * renderer.
-     */
-    private static boolean isKnownBrokenIntelDriver() {
-        if (!isWindowsIntelDriver()) {
-            return false;
-        }
-
-        String version = GL20C.glGetString(GL20C.GL_VERSION);
-
-        // The returned version string may be null in the case of an error
-        if (version == null) {
-            return false;
-        }
-
-        Matcher matcher = INTEL_BUILD_MATCHER.matcher(version);
-
-        // If the version pattern doesn't match, assume we're dealing with something special
-        if (!matcher.matches()) {
-            return false;
-        }
-
-        // Anything with a major build of >=100 is GPU Gen8 or newer
-        // The fourth group is the major build number
-        return Integer.parseInt(matcher.group(4)) < 100;
     }
 
     @Override
@@ -397,8 +337,6 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
     public List<String> getDebugStrings() {
         List<String> list = new ArrayList<>();
         list.add(String.format("Active Buffers: %s", this.bufferManager.getAllocatedRegionCount()));
-        list.add(String.format("Submission Mode: %s", this.commandBuffer != null ?
-                Formatting.AQUA + "Buffer" : Formatting.LIGHT_PURPLE + "Client Memory"));
 
         return list;
     }

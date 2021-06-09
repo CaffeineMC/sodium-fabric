@@ -13,5 +13,5 @@ public interface ModelVertexSink extends VertexSink {
      * @param v The y-texture of the vertex
      * @param light The packed light-map coordinates of the vertex
      */
-    void writeQuad(float x, float y, float z, int color, float u, float v, int light);
+    void writeVertex(float x, float y, float z, int color, float u, float v, int light);
 }

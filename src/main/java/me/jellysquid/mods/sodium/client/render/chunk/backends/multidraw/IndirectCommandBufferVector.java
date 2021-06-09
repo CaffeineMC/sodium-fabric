@@ -4,7 +4,7 @@ import org.lwjgl.system.MemoryUtil;
 
 public class IndirectCommandBufferVector extends StructBuffer {
     protected IndirectCommandBufferVector(int capacity) {
-        super(capacity, 16);
+        super(capacity, 20);
     }
 
     public static IndirectCommandBufferVector create(int capacity) {

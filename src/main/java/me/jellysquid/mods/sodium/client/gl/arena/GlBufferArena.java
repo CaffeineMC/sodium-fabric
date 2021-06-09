@@ -18,33 +18,33 @@ public class GlBufferArena {
 
     private final Set<GlBufferSegment> freeRegions = new ObjectLinkedOpenHashSet<>();
 
-    private GlMutableBuffer vertexBuffer;
+    private GlMutableBuffer buffer;
 
     private int position;
     private int capacity;
     private int allocCount;
 
-    public GlBufferArena(RenderDevice device, int initialSize, int resizeIncrement) {
+    public GlBufferArena(RenderDevice device, int initialSize) {
         this.device = device;
 
         try (CommandList commands = device.createCommandList()) {
-            this.vertexBuffer = commands.createMutableBuffer(BUFFER_USAGE);
-            commands.allocateBuffer(GlBufferTarget.COPY_WRITE_BUFFER, this.vertexBuffer, initialSize);
+            commands.allocateBuffer(GlBufferTarget.COPY_WRITE_BUFFER,
+                    this.buffer = commands.createMutableBuffer(BUFFER_USAGE), initialSize);
         }
 
-        this.resizeIncrement = resizeIncrement;
+        this.resizeIncrement = initialSize;
         this.capacity = initialSize;
     }
 
     private void resize(CommandList commandList, int newCapacity) {
-        GlMutableBuffer src = this.vertexBuffer;
+        GlMutableBuffer src = this.buffer;
         GlMutableBuffer dst = commandList.createMutableBuffer(BUFFER_USAGE);
 
         commandList.allocateBuffer(GlBufferTarget.COPY_WRITE_BUFFER, dst, newCapacity);
         commandList.copyBufferSubData(src, dst, 0, 0, this.position);
         commandList.deleteBuffer(src);
 
-        this.vertexBuffer = dst;
+        this.buffer = dst;
         this.capacity = newCapacity;
     }
 
@@ -59,7 +59,7 @@ public class GlBufferArena {
 
         GlBufferSegment segment = this.alloc(byteCount);
 
-        commandList.copyBufferSubData(readBuffer, this.vertexBuffer, readOffset, segment.getStart(), byteCount);
+        commandList.copyBufferSubData(readBuffer, this.buffer, readOffset, segment.getStart(), byteCount);
 
         return segment;
     }
@@ -120,7 +120,7 @@ public class GlBufferArena {
 
     public void delete() {
         try (CommandList commands = this.device.createCommandList()) {
-            commands.deleteBuffer(this.vertexBuffer);
+            commands.deleteBuffer(this.buffer);
         }
     }
 
@@ -129,6 +129,6 @@ public class GlBufferArena {
     }
 
     public GlBuffer getBuffer() {
-        return this.vertexBuffer;
+        return this.buffer;
     }
 }
