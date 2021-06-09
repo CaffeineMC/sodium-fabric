@@ -3,10 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.backends.oneshot;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.DrawCommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
-import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
+import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.gl.util.GlMultiDrawBatch;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
@@ -17,10 +14,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterator;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkRenderShaderBackend;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
-import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.system.MemoryStack;
 
@@ -108,8 +103,8 @@ public class ChunkRenderBackendOneshot extends ChunkRenderShaderBackend<ChunkOne
                 continue;
             }
 
-            long part = state.getModelPart(i);
-            batch.addChunkRender(BufferSlice.unpackStart(part), BufferSlice.unpackLength(part));
+            ElementRange range = state.getModelPart(i);
+            batch.addChunkRender(range);
         }
     }
 
@@ -117,7 +112,7 @@ public class ChunkRenderBackendOneshot extends ChunkRenderShaderBackend<ChunkOne
         this.batch.end();
 
         try (DrawCommandList drawCommandList = commandList.beginTessellating(state.tessellation)) {
-            drawCommandList.multiDrawArrays(this.batch.getIndicesBuffer(), this.batch.getLengthBuffer());
+            drawCommandList.multiDrawElementsBaseVertex(this.batch.getIndicesBuffer(), this.batch.getCountBuffer(), this.batch.getBaseVertexBuffer());
         }
     }
 

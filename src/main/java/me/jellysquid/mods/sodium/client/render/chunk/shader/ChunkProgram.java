@@ -1,13 +1,16 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.GameRendererContext;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Matrix4f;
 import org.lwjgl.opengl.GL20C;
+import org.lwjgl.opengl.GL32C;
 import org.lwjgl.system.MemoryStack;
 
+import java.nio.FloatBuffer;
 import java.util.function.Function;
 
 /**
@@ -38,6 +41,12 @@ public class ChunkProgram extends GlProgram {
     }
 
     public void setup(MatrixStack matrixStack, float modelScale, float textureScale) {
+        RenderSystem.activeTexture(GL32C.GL_TEXTURE0);
+        RenderSystem.bindTexture(RenderSystem.getShaderTexture(0));
+
+        RenderSystem.activeTexture(GL32C.GL_TEXTURE2);
+        RenderSystem.bindTexture(RenderSystem.getShaderTexture(2));
+
         GL20C.glUniform1i(this.uBlockTex, 0);
         GL20C.glUniform1i(this.uLightTex, 2);
 
@@ -47,8 +56,13 @@ public class ChunkProgram extends GlProgram {
         this.fogShader.setup();
 
         try (MemoryStack memoryStack = MemoryStack.stackPush()) {
-            GL20C.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false,
-                    GameRendererContext.getModelViewProjectionMatrix(matrixStack.peek(), memoryStack));
+            FloatBuffer bufModelViewProjection = memoryStack.mallocFloat(16);
+
+            Matrix4f matrix = RenderSystem.getProjectionMatrix().copy();
+            matrix.multiply(matrixStack.peek().getModel());
+            matrix.writeColumnMajor(bufModelViewProjection);
+
+            GL20C.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false, bufModelViewProjection);
         }
     }
 }

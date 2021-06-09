@@ -12,7 +12,7 @@ public class HFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe i
     }
 
     @Override
-    public void writeQuad(float x, float y, float z, int color, float u, float v, int light) {
+    public void writeVertex(float x, float y, float z, int color, float u, float v, int light) {
         this.writeQuadInternal(
                 ModelVertexUtil.denormalizeVertexPositionFloatAsShort(x),
                 ModelVertexUtil.denormalizeVertexPositionFloatAsShort(y),

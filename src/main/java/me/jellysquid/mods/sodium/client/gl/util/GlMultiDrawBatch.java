@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.util;
 
-import org.lwjgl.opengl.GL20C;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.IntBuffer;
@@ -10,35 +10,40 @@ import java.nio.IntBuffer;
  * uses {@link GL20#glMultiDrawArrays(int, IntBuffer, IntBuffer)} and should be compatible on any relevant platform.
  */
 public class GlMultiDrawBatch {
-    private final IntBuffer bufIndices;
-    private final IntBuffer bufLen;
+    private final PointerBuffer bufPointer;
+    private final IntBuffer bufCount;
+    private final IntBuffer bufBaseVertex;
+
     private int count;
     private boolean isBuilding;
 
     public GlMultiDrawBatch(int capacity) {
-        this.bufIndices = MemoryUtil.memAllocInt(capacity);
-        this.bufLen = MemoryUtil.memAllocInt(capacity);
+        this.bufPointer = MemoryUtil.memAllocPointer(capacity);
+        this.bufCount = MemoryUtil.memAllocInt(capacity);
+        this.bufBaseVertex = MemoryUtil.memAllocInt(capacity);
     }
 
-    public IntBuffer getIndicesBuffer() {
-        return this.bufIndices;
+    public PointerBuffer getIndicesBuffer() {
+        return this.bufPointer;
     }
 
-    public IntBuffer getLengthBuffer() {
-        return this.bufLen;
+    public IntBuffer getCountBuffer() {
+        return this.bufCount;
     }
 
     public void begin() {
-        this.bufIndices.clear();
-        this.bufLen.clear();
-        this.count = 0;
+        this.bufPointer.clear();
+        this.bufCount.clear();
+        this.bufBaseVertex.clear();
 
+        this.count = 0;
         this.isBuilding = true;
     }
 
     public void end() {
-        this.bufIndices.limit(this.count);
-        this.bufLen.limit(this.count);
+        this.bufPointer.limit(this.count);
+        this.bufCount.limit(this.count);
+        this.bufBaseVertex.limit(this.count);
 
         this.isBuilding = false;
     }
@@ -47,10 +52,16 @@ public class GlMultiDrawBatch {
         return this.count <= 0;
     }
 
-    public void addChunkRender(int first, int count) {
+    public void addChunkRender(ElementRange range) {
+        this.addChunkRender(range.offset, range.count, range.baseVertex);
+    }
+
+    public void addChunkRender(int pointer, int count, int baseVertex) {
         int i = this.count++;
-        this.bufIndices.put(i, first);
-        this.bufLen.put(i, count);
+
+        this.bufPointer.put(i, pointer);
+        this.bufCount.put(i, count);
+        this.bufBaseVertex.put(i, baseVertex);
     }
 
     public boolean isBuilding() {
@@ -58,7 +69,12 @@ public class GlMultiDrawBatch {
     }
 
     public void delete() {
-        MemoryUtil.memFree(this.bufIndices);
-        MemoryUtil.memFree(this.bufLen);
+        MemoryUtil.memFree(this.bufPointer);
+        MemoryUtil.memFree(this.bufCount);
+        MemoryUtil.memFree(this.bufBaseVertex);
+    }
+
+    public IntBuffer getBaseVertexBuffer() {
+        return this.bufBaseVertex;
     }
 }

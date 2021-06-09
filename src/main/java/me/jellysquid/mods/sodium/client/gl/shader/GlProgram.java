@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.gl.shader;
 
 import me.jellysquid.mods.sodium.client.gl.GlObject;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttribute;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import net.minecraft.util.Identifier;
@@ -9,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL20C;
+import org.lwjgl.opengl.GL30C;
 
 /**
  * An OpenGL shader program.
@@ -107,6 +109,12 @@ public abstract class GlProgram extends GlObject {
 
         public Builder bindAttribute(String name, ShaderBindingPoint binding) {
             GL20C.glBindAttribLocation(this.program, binding.getGenericAttributeIndex(), name);
+
+            return this;
+        }
+
+        public Builder bindFragmentData(String name, ShaderBindingPoint binding) {
+            GL30C.glBindFragDataLocation(this.program, binding.getGenericAttributeIndex(), name);
 
             return this;
         }

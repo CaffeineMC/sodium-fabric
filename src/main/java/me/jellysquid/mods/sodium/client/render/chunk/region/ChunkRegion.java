@@ -11,9 +11,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.multidraw.ChunkDrawCallBatcher;
 
 public class ChunkRegion<T extends ChunkGraphicsState> {
-    private static final int EXPECTED_CHUNK_SIZE = 4 * 1024;
+    private final GlBufferArena vertexBuffers;
+    private final GlBufferArena indexBuffers;
 
-    private final GlBufferArena arena;
     private final ChunkDrawCallBatcher batch;
     private final RenderDevice device;
 
@@ -22,21 +22,26 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
     private GlTessellation tessellation;
 
     public ChunkRegion(RenderDevice device, int size) {
-        int arenaSize = EXPECTED_CHUNK_SIZE * size;
-
         this.device = device;
-        this.arena = new GlBufferArena(device, arenaSize, arenaSize);
         this.uploadQueue = new ObjectArrayList<>();
+
+        this.vertexBuffers = new GlBufferArena(device, 4096);
+        this.indexBuffers = new GlBufferArena(device, 128);
 
         this.batch = ChunkDrawCallBatcher.create(size * ModelQuadFacing.COUNT);
     }
 
-    public GlBufferArena getBufferArena() {
-        return this.arena;
+    public GlBufferArena getVertexBufferArena() {
+        return this.vertexBuffers;
+    }
+
+    public GlBufferArena getIndexBufferArena() {
+        return this.indexBuffers;
     }
 
     public boolean isArenaEmpty() {
-        return this.arena.isEmpty();
+        // TODO: move counters into ChunkRegion?
+        return this.vertexBuffers.isEmpty();
     }
 
     public void deleteResources() {
@@ -48,7 +53,9 @@ public class ChunkRegion<T extends ChunkGraphicsState> {
             this.tessellation = null;
         }
 
-        this.arena.delete();
+        this.vertexBuffers.delete();
+        this.indexBuffers.delete();
+
         this.batch.delete();
     }
 
