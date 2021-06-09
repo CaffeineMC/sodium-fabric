@@ -1,11 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
 import org.lwjgl.opengl.GL20C;
-import org.lwjgl.system.MemoryStack;
-
-import java.nio.FloatBuffer;
 
 /**
  * These shader implementations try to remain compatible with the deprecated fixed function pipeline by manually
@@ -44,22 +40,11 @@ public abstract class ChunkShaderFogComponent {
 
         @Override
         public void setup() {
-            ChunkShaderFogComponent.setupColorUniform(this.uFogColor);
+            GL20C.glUniform4fv(this.uFogColor, RenderSystem.getShaderFogColor());
 
-            float end = 0.0f;
-            float start = 128.0f;
-
-            GL20C.glUniform1f(this.uFogStart, start);
-            GL20C.glUniform1f(this.uFogEnd, end);
+            GL20C.glUniform1f(this.uFogStart, RenderSystem.getShaderFogStart());
+            GL20C.glUniform1f(this.uFogEnd, RenderSystem.getShaderFogEnd());
         }
-    }
-
-    /**
-     * Copies the fog color from the deprecated fixed function pipeline and uploads it to the uniform at the
-     * given binding index.
-     */
-    private static void setupColorUniform(int index) {
-//        GL20C.glUniform4fv(index, RenderSystem.getShaderFogColor());
     }
 
 }
