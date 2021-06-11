@@ -1,4 +1,4 @@
-![Project icon](https://git-assets.jellysquid.me/hotlink-ok/sodium/icon-rounded-128px.png)
+![Project icon](https://github.com/CaffeineMC/sodium-fabric/blob/1.16.x/next/src/main/resources/assets/sodium/icon.png)
 
 # Sodium (for Fabric)
 ![GitHub license](https://img.shields.io/github/license/CaffeineMC/sodium-fabric.svg)
