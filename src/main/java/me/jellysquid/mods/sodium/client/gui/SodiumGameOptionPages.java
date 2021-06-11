@@ -262,13 +262,13 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Chunk Face Culling")
+                        .setName("Use Block Face Culling")
                         .setTooltip("If enabled, only the sides of blocks which are facing the camera will be submitted for rendering. This can eliminate " +
                                 "a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU. Some resource " +
                                 "packs may have issues with this option, so try disabling it if you're seeing holes in blocks.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.advanced.useChunkFaceCulling = value, opts -> opts.advanced.useChunkFaceCulling)
+                        .setBinding((opts, value) -> opts.advanced.useBlockFaceCulling = value, opts -> opts.advanced.useBlockFaceCulling)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )
