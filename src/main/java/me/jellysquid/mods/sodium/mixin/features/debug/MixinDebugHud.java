@@ -4,16 +4,12 @@ import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.util.Formatting;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
@@ -35,7 +31,7 @@ public abstract class MixinDebugHud {
         strings.add("");
         strings.addAll(getChunkRendererDebugStrings());
 
-        if (SodiumClientMod.options().advanced.disableDriverBlacklist) {
+        if (SodiumClientMod.options().advanced.ignoreDriverBlacklist) {
             strings.add(Formatting.RED + "(!!) Driver blacklist ignored");
         }
 

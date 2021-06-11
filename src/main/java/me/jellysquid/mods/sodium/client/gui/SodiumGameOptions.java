@@ -29,17 +29,17 @@ public class SodiumGameOptions {
     }
 
     public static class AdvancedSettings {
-        public boolean useVertexArrays = true;
-        public boolean useMultidraw = true;
+        public boolean useVertexArrayObjects = true;
+        public boolean useChunkMultidraw = true;
 
         public boolean animateOnlyVisibleTextures = true;
-        public boolean useAdvancedEntityCulling = true;
+        public boolean useEntityCulling = true;
         public boolean useParticleCulling = true;
         public boolean useFogOcclusion = true;
         public boolean useCompactVertexFormat = true;
         public boolean useChunkFaceCulling = true;
-        public boolean useMemoryIntrinsics = true;
-        public boolean disableDriverBlacklist = false;
+        public boolean allowDirectMemoryAccess = true;
+        public boolean ignoreDriverBlacklist = false;
     }
 
     public static class QualitySettings {
