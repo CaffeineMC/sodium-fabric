@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
+import me.jellysquid.mods.sodium.client.model.PrimitiveSink;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -379,33 +380,43 @@ public class FluidRenderer {
             lightOrder = 1;
         }
 
-//        ModelVertexSink sink = buffers.getBuilder(facing);
-//        sink.ensureCapacity(4);
-//
-//        for (int i = 0; i < 4; i++) {
-//            float x = quad.getX(i);
-//            float y = quad.getY(i);
-//            float z = quad.getZ(i);
-//
-//            int color = this.quadColors[vertexIdx];
-//
-//            float u = quad.getTexU(i);
-//            float v = quad.getTexV(i);
-//
-//            int light = this.quadLightData.lm[vertexIdx];
-//
-//            sink.writeVertex(x, y, z, color, u, v, light);
-//
-//            vertexIdx += lightOrder;
-//        }
-//
-//        Sprite sprite = quad.getSprite();
-//
-//        if (sprite != null) {
-//            buffers.getRenderData().addSprite(sprite);
-//        }
-//
-//        sink.flush();
+        PrimitiveSink<ModelVertexSink> sink = buffers.getBuilder(facing);
+        sink.vertices.ensureCapacity(4);
+
+        int count = sink.vertices.getVertexCount();
+
+        for (int i = 0; i < 4; i++) {
+            float x = quad.getX(i);
+            float y = quad.getY(i);
+            float z = quad.getZ(i);
+
+            int color = this.quadColors[vertexIdx];
+
+            float u = quad.getTexU(i);
+            float v = quad.getTexV(i);
+
+            int light = this.quadLightData.lm[vertexIdx];
+
+            sink.vertices.writeVertex(x, y, z, color, u, v, light);
+
+            vertexIdx += lightOrder;
+        }
+
+        sink.vertices.flush();
+
+        sink.indices.add(count + 0);
+        sink.indices.add(count + 1);
+        sink.indices.add(count + 2);
+
+        sink.indices.add(count + 2);
+        sink.indices.add(count + 3);
+        sink.indices.add(count + 0);
+
+        Sprite sprite = quad.getSprite();
+
+        if (sprite != null) {
+            buffers.getRenderData().addSprite(sprite);
+        }
     }
 
     private void setVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {
