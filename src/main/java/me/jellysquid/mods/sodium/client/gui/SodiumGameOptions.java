@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
+    public final NotificationSettings notifications = new NotificationSettings();
 
     private Path configPath;
 
@@ -49,6 +50,10 @@ public class SodiumGameOptions {
         public boolean enableClouds = true;
 
         public LightingQuality smoothLighting = LightingQuality.HIGH;
+    }
+
+    public static class NotificationSettings {
+        public boolean hideDonationButton = false;
     }
 
     public enum GraphicsQuality implements TextProvider {
