@@ -163,7 +163,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     public void updateChunks(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
         this.frustum = frustum;
 
-        this.useEntityCulling = SodiumClientMod.options().advanced.useAdvancedEntityCulling;
+        this.useEntityCulling = SodiumClientMod.options().advanced.useEntityCulling;
 
         Profiler profiler = this.client.getProfiler();
         profiler.push("camera_setup");
@@ -265,9 +265,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private static ChunkRenderBackend<?> createChunkRenderBackend(RenderDevice device,
                                                                   SodiumGameOptions options,
                                                                   ChunkVertexType vertexFormat) {
-        boolean disableBlacklist = SodiumClientMod.options().advanced.disableDriverBlacklist;
+        boolean disableBlacklist = SodiumClientMod.options().advanced.ignoreDriverBlacklist;
 
-        if (options.advanced.useMultidraw && MultidrawChunkRenderBackend.isSupported(disableBlacklist)) {
+        if (options.advanced.useChunkMultidraw && MultidrawChunkRenderBackend.isSupported(disableBlacklist)) {
             return new MultidrawChunkRenderBackend(device, vertexFormat);
         } else {
             return new ChunkRenderBackendOneshot(vertexFormat);
