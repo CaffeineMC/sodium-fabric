@@ -79,7 +79,7 @@ public class GLRenderDevice implements RenderDevice {
 
         @Override
         public void copyBufferSubData(GlBuffer src, GlMutableBuffer dst, long readOffset, long writeOffset, long bytes) {
-            if (dst.getSize() <= writeOffset + bytes) {
+            if (writeOffset + bytes > dst.getSize()) {
                 throw new IllegalArgumentException("Not enough space in destination buffer (writeOffset + bytes > bufferSize)");
             }
 
