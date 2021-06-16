@@ -7,15 +7,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 8
-    - name: Build artifacts
-      run: ./gradlew build
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v1
-      with:
-        name: build-artifacts
-        path: build/libs
+      - uses: actions/checkout@v2
+      - name: Set up JDK 8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
+      - name: Cache Gradle packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Build Artifacts
+        run: chmod +x gradlew; ./gradlew build
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: build-artifacts
+          path: build/libs
