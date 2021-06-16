@@ -35,7 +35,16 @@ public class SodiumGameOptionPages {
                         .setTooltip("The view distance controls how far away terrain will be rendered. Lower distances mean that less terrain will be " +
                                 "rendered, improving frame rates.")
                         .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.quantity("Chunks")))
-                        .setBinding((options, value) -> options.viewDistance = value, options -> options.viewDistance)
+                        .setBinding((options, value) -> {
+                                options.viewDistance = value;
+
+                                if (MinecraftClient.isFabulousGraphicsOrBetter()) {
+                                    Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
+                                    if (framebuffer != null) {
+                                        framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
+                                    }
+                                }
+                            }, options -> options.viewDistance)
                         .setImpact(OptionImpact.HIGH)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
