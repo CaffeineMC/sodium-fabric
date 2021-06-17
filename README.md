@@ -54,11 +54,6 @@ If you are using the CurseForge client, you can continue to find downloads throu
 [CurseForge page](https://www.curseforge.com/minecraft/mc-mods/sodium). Unless you are using the CurseForge
 client, you should prefer the downloads linked on our Modrinth or GitHub release pages above.
 
-The CurseForge client does not natively support Fabric modding, so you will need to install
-[Jumploader](https://www.curseforge.com/minecraft/mc-mods/jumploader) in order to set up your Fabric environment. Due to
-the extra complexity and startup overhead this workaround adds, we generally do not recommend using this method unless
-you have an existing setup with it.
-
 ---
 
 ### Reporting Issues
