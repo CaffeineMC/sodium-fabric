@@ -46,6 +46,7 @@ public class SodiumGameOptionPages {
                                 }
                             }, options -> options.viewDistance)
                         .setImpact(OptionImpact.HIGH)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName("Brightness")
