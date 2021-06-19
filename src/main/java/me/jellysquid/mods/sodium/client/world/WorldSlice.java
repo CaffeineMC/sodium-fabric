@@ -91,7 +91,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage {
 
     public static ChunkRenderContext prepare(World world, ChunkSectionPos origin, ClonedChunkSectionCache sectionCache) {
         WorldChunk chunk = world.getChunk(origin.getX(), origin.getZ());
-        ChunkSection section = chunk.getSectionArray()[world.sectionIndexToCoord(origin.getY())];
+        ChunkSection section = chunk.getSectionArray()[world.sectionCoordToIndex(origin.getY())];
 
         // If the chunk section is absent or empty, simply terminate now. There will never be anything in this chunk
         // section to render, so we need to signal that a chunk render task shouldn't created. This saves a considerable
