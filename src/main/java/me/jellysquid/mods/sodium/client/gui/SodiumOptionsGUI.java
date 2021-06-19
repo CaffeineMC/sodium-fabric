@@ -8,7 +8,6 @@ import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
 import net.minecraft.client.util.math.MatrixStack;
@@ -63,6 +62,7 @@ public class SodiumOptionsGUI extends Screen {
     }
 
     private void rebuildGUI() {
+        this.controls.clear();
         this.clearChildren();
 
         if (this.currentPage == null) {
@@ -81,15 +81,9 @@ public class SodiumOptionsGUI extends Screen {
         this.applyButton = new FlatButtonWidget(new Dim2i(this.width - 142, this.height - 30, 65, 20), "Apply", this::applyChanges);
         this.closeButton = new FlatButtonWidget(new Dim2i(this.width - 73, this.height - 30, 65, 20), "Close", this::onClose);
 
-        this.addDrawable(this.undoButton);
-        this.addDrawable(this.applyButton);
-        this.addDrawable(this.closeButton);
-
-        for (Element element : this.children()) {
-            if (element instanceof Drawable) {
-                this.drawable.add((Drawable) element);
-            }
-        }
+        this.addDrawableChild(this.undoButton);
+        this.addDrawableChild(this.applyButton);
+        this.addDrawableChild(this.closeButton);
     }
 
     private void rebuildGUIPages() {
@@ -104,7 +98,7 @@ public class SodiumOptionsGUI extends Screen {
 
             x += width + 6;
 
-            this.addDrawable(button);
+            this.addDrawableChild(button);
         }
     }
 
@@ -118,7 +112,7 @@ public class SodiumOptionsGUI extends Screen {
                 Control<?> control = option.getControl();
                 ControlElement<?> element = control.createElement(new Dim2i(x, y, 200, 18));
 
-                this.addDrawable(element);
+                this.addDrawableChild(element);
 
                 // Move down to the next option
                 y += 18;
@@ -135,9 +129,7 @@ public class SodiumOptionsGUI extends Screen {
 
         this.updateControls();
 
-        for (Drawable drawable : this.drawable) {
-            drawable.render(matrixStack, mouseX, mouseY, delta);
-        }
+        super.render(matrixStack, mouseX, mouseY, delta);
 
         if (this.hoveredElement != null) {
             this.renderOptionTooltip(matrixStack, this.hoveredElement);
