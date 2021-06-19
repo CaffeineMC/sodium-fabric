@@ -104,15 +104,22 @@ public class ChunkRenderBackendOneshot extends ChunkRenderShaderBackend<ChunkOne
             }
 
             ElementRange range = state.getModelPart(i);
-            batch.addChunkRender(range);
+
+            if (range != null) {
+                batch.addChunkRender(range);
+            }
         }
     }
 
     protected void drawBatch(CommandList commandList, ChunkOneshotGraphicsState state) {
         this.batch.end();
 
+        if (this.batch.isEmpty()) {
+            return;
+        }
+
         try (DrawCommandList drawCommandList = commandList.beginTessellating(state.tessellation)) {
-            drawCommandList.multiDrawElementsBaseVertex(this.batch.getIndicesBuffer(), this.batch.getCountBuffer(), this.batch.getBaseVertexBuffer());
+            drawCommandList.multiDrawElementsBaseVertex(this.batch.getPointerBuffer(), this.batch.getCountBuffer(), this.batch.getBaseVertexBuffer());
         }
     }
 

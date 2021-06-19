@@ -81,8 +81,8 @@ public class VertexBufferBuilder implements VertexBufferView {
      * Ends the stream of written data and makes a copy of it to be passed around.
      */
     public void get(ByteBuffer dst) {
-        this.buffer.position(this.writerOffset);
-        this.buffer.flip();
+        this.buffer.clear();
+        this.buffer.limit(this.writerOffset);
 
         dst.put(this.buffer);
 
