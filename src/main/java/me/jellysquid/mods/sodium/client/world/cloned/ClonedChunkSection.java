@@ -152,7 +152,7 @@ public class ClonedChunkSection {
         ChunkSection section = null;
 
         if (!world.isOutOfHeightLimit(ChunkSectionPos.getBlockCoord(pos.getY()))) {
-            section = chunk.getSectionArray()[pos.getY()];
+            section = chunk.getSectionArray()[world.sectionIndexToCoord(pos.getY())];
         }
 
         return section;
