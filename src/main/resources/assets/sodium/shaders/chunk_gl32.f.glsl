@@ -1,4 +1,4 @@
-#version 150
+#version 150 core
 
 out vec4 fragColor;
 
@@ -26,7 +26,7 @@ float getFogFactor() {
 
 void main() {
     // Block texture sample
-    vec4 sampleBlockTex = texture2D(u_BlockTex, v_TexCoord);
+    vec4 sampleBlockTex = texture(u_BlockTex, v_TexCoord);
 
     // FIXME: Only use this for cutout layers to help performance
     if (sampleBlockTex.a < 0.5) {
@@ -34,7 +34,7 @@ void main() {
     }
 
     // Light map texture sample
-    vec4 sampleLightTex = texture2D(u_LightTex, v_LightCoord);
+    vec4 sampleLightTex = texture(u_LightTex, v_LightCoord);
 
     // Blend the colors from both textures and the vertex itself
     vec4 diffuseColor = sampleBlockTex * sampleLightTex * v_Color;
