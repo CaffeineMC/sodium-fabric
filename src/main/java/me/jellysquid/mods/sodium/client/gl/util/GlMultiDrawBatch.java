@@ -23,7 +23,7 @@ public class GlMultiDrawBatch {
         this.bufBaseVertex = MemoryUtil.memAllocInt(capacity);
     }
 
-    public PointerBuffer getIndicesBuffer() {
+    public PointerBuffer getPointerBuffer() {
         return this.bufPointer;
     }
 
@@ -53,7 +53,7 @@ public class GlMultiDrawBatch {
     }
 
     public void addChunkRender(ElementRange range) {
-        this.addChunkRender(range.offset, range.count, range.baseVertex);
+        this.addChunkRender(range.elementOffset * 4 /* TODO: Allow custom pointer size */, range.elementCount, range.baseVertex);
     }
 
     public void addChunkRender(int pointer, int count, int baseVertex) {
@@ -76,5 +76,9 @@ public class GlMultiDrawBatch {
 
     public IntBuffer getBaseVertexBuffer() {
         return this.bufBaseVertex;
+    }
+
+    public int getCount() {
+        return this.count;
     }
 }

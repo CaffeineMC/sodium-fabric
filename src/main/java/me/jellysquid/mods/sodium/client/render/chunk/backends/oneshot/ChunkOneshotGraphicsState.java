@@ -16,6 +16,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 
+import java.util.Arrays;
 import java.util.Map;
 
 public class ChunkOneshotGraphicsState extends ChunkGraphicsState {
@@ -67,6 +68,8 @@ public class ChunkOneshotGraphicsState extends ChunkGraphicsState {
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.LIGHT_COORD, vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT))
                 }, false)
         }, this.indexBuffer);
+
+        Arrays.fill(this.parts, null);
 
         for (Map.Entry<ModelQuadFacing, ElementRange> entry : meshData.getSlices()) {
             this.setModelPart(entry.getKey(), entry.getValue());

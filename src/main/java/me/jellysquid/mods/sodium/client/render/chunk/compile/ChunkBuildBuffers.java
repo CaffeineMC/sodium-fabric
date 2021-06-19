@@ -114,6 +114,10 @@ public class ChunkBuildBuffers {
             IndexBufferBuilder indexBufferBuilder = indexBufferBuilders[facing.ordinal()];
             VertexBufferBuilder vertexBufferBuilder = vertexBufferBuilders[facing.ordinal()];
 
+            if (indexBufferBuilder.getCount() == 0) {
+                continue;
+            }
+
             int indexCount = indexBufferBuilder.getCount();
             int vertexCount = vertexBufferBuilder.getSize() / vertexStride;
 

@@ -280,7 +280,9 @@ public class MultidrawChunkRenderBackend extends ChunkRenderShaderBackend<Multid
                 if ((visible & mask) != 0) {
                     ElementRange part = state.getModelPart(i);
 
-                    batch.addIndirectDrawCall(part.count, 1, indexOffset + part.offset, vertexOffset + part.baseVertex, index);
+                    if (part != null) {
+                        batch.addIndirectDrawCall(part.elementCount, 1, indexOffset + part.elementOffset, vertexOffset + part.baseVertex, index);
+                    }
                 }
 
                 mask <<= 1;
