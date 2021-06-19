@@ -226,4 +226,50 @@ public class MixinMatrix3f implements Matrix3fExtended {
         this.a21 = a21;
         this.a22 = a22;
     }
+
+
+    @Override
+    public float getA00() {
+        return this.a00;
+    }
+
+    @Override
+    public float getA10() {
+        return this.a10;
+    }
+
+    @Override
+    public float getA20() {
+        return this.a20;
+    }
+
+    @Override
+    public float getA01() {
+        return this.a01;
+    }
+
+    @Override
+    public float getA11() {
+        return this.a11;
+    }
+
+    @Override
+    public float getA21() {
+        return this.a21;
+    }
+
+    @Override
+    public float getA02() {
+        return this.a02;
+    }
+
+    @Override
+    public float getA12() {
+        return this.a12;
+    }
+
+    @Override
+    public float getA22() {
+        return this.a22;
+    }
 }
