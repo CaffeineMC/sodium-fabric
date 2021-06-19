@@ -382,7 +382,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     private ChunkRenderContainer<T> createChunkRender(ChunkRenderColumn<T> column, int x, int y, int z) {
         ChunkRenderContainer<T> render = new ChunkRenderContainer<>(this.backend, this.renderer, x, y, z, column);
 
-        if (ChunkSection.isEmpty(this.world.getChunk(x, z).getSectionArray()[this.world.sectionIndexToCoord(y)])) {
+        if (ChunkSection.isEmpty(this.world.getChunk(x, z).getSectionArray()[this.world.sectionCoordToIndex(y)])) {
             render.setData(ChunkRenderData.EMPTY);
         } else {
             render.scheduleRebuild(false);
