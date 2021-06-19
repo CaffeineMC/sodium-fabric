@@ -31,4 +31,22 @@ public interface Matrix3fExtended {
     default float transformVecZ(Vec3f dir) {
         return this.transformVecZ(dir.getX(), dir.getY(), dir.getZ());
     }
+
+    float getA00();
+
+    float getA10();
+
+    float getA20();
+
+    float getA01();
+
+    float getA11();
+
+    float getA21();
+
+    float getA02();
+
+    float getA12();
+
+    float getA22();
 }

@@ -10,15 +10,27 @@ public class LineVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe imple
         super(backingBuffer, VanillaVertexTypes.LINES);
     }
 
+    @Override
+    public void ensureCapacity(int count) {
+        super.ensureCapacity(count * 2);
+    }
+
     @SuppressWarnings("SuspiciousNameCombination")
     @Override
-    public void vertexLine(float x, float y, float z, int color) {
+    public void vertexLine(float x, float y, float z, int color, int normal) {
+        for (int i = 0; i < 2; i++) {
+            this.vertexLine0(x, y, z, color, normal);
+        }
+    }
+
+    private void vertexLine0(float x, float y, float z, int color, int normal) {
         long i = this.writePointer;
 
         UNSAFE.putFloat(i, x);
         UNSAFE.putFloat(i + 4, y);
         UNSAFE.putFloat(i + 8, z);
         UNSAFE.putInt(i + 12, color);
+        UNSAFE.putInt(i + 16, normal);
 
         this.advance();
     }
