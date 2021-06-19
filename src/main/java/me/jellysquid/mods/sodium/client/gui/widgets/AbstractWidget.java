@@ -34,6 +34,8 @@ public abstract class AbstractWidget implements Drawable, Element {
     }
 
     protected void drawQuads(Consumer<VertexConsumer> consumer) {
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
