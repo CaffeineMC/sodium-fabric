@@ -253,7 +253,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
             return null;
         }
 
-        return column.getRender(y);
+        return column.getRender(this.world.sectionCoordToIndex(y));
     }
 
     private void reset() {
@@ -293,7 +293,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     }
 
     private void loadChunk(int x, int z) {
-        ChunkRenderColumn<T> column = new ChunkRenderColumn<>(x, z);
+        ChunkRenderColumn<T> column = new ChunkRenderColumn<>(x, z, this.world.countVerticalSections());
         ChunkRenderColumn<T> prev;
 
         if ((prev = this.columns.put(ChunkPos.toLong(x, z), column)) != null) {
@@ -323,9 +323,9 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         int x = column.getX();
         int z = column.getZ();
 
-        for (int y = 0; y < 16; y++) {
+        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
             ChunkRenderContainer<T> render = this.createChunkRender(column, x, y, z);
-            column.setRender(y, render);
+            column.setRender(this.world.sectionCoordToIndex(y), render);
 
             this.culler.onSectionLoaded(x, y, z, render.getId());
         }
@@ -335,8 +335,8 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         int x = column.getX();
         int z = column.getZ();
 
-        for (int y = 0; y < 16; y++) {
-            ChunkRenderContainer<T> render = column.getRender(y);
+        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
+            ChunkRenderContainer<T> render = column.getRender(this.world.sectionCoordToIndex(y));
 
             if (render != null) {
                 this.unloadQueue.enqueue(render);
@@ -489,7 +489,7 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
     }
 
     public int getTotalSections() {
-        return this.columns.size() * 16;
+        return this.columns.size() * this.world.countVerticalSections();
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {

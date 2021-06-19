@@ -360,7 +360,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         // Entities outside the valid world height will never map to a rendered chunk
         // Always render these entities or they'll be culled incorrectly!
-        if (box.maxY < 0.5D || box.minY > 255.5D) {
+        if (box.maxY < this.world.getBottomY() + 0.5D || box.minY > this.world.getTopY() - 0.5D) {
             return true;
         }
 
