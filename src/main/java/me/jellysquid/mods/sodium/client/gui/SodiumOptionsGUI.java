@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.control.Control;
@@ -11,6 +12,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.OrderedText;
@@ -31,7 +33,6 @@ public class SodiumOptionsGUI extends Screen {
     private final List<OptionPage> pages = new ArrayList<>();
 
     private final List<ControlElement<?>> controls = new ArrayList<>();
-    private final List<Drawable> drawable = new ArrayList<>();
 
     private final Screen prevScreen;
 
@@ -68,6 +69,7 @@ public class SodiumOptionsGUI extends Screen {
 
     private void rebuildGUI() {
         this.controls.clear();
+
         this.clearChildren();
 
         if (this.currentPage == null) {
@@ -144,6 +146,8 @@ public class SodiumOptionsGUI extends Screen {
                 ControlElement<?> element = control.createElement(new Dim2i(x, y, 200, 18));
 
                 this.addDrawableChild(element);
+
+                this.controls.add(element);
 
                 // Move down to the next option
                 y += 18;
