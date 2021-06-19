@@ -250,16 +250,6 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.EXTREME)
                         .setEnabled(MultidrawChunkRenderBackend.isSupported(sodiumOpts.getData().advanced.ignoreDriverBlacklist))
                         .build())
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Vertex Array Objects")
-                        .setTooltip("Helps to improve performance by moving information about how vertex data should be rendered into " +
-                                "the driver, allowing it to better optimize for repeated rendering of the same objects. There is generally " +
-                                "no reason to disable this unless you're using incompatible mods.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.advanced.useVertexArrayObjects = value, opts -> opts.advanced.useVertexArrayObjects)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .setImpact(OptionImpact.LOW)
-                        .build())
                 .build());
 
         groups.add(OptionGroup.createBuilder()
