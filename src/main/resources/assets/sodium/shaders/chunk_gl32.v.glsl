@@ -1,4 +1,4 @@
-#version 150
+#version 150 core
 
 in vec3 a_Pos; // The position of the vertex
 in vec4 a_Color; // The color of the vertex
