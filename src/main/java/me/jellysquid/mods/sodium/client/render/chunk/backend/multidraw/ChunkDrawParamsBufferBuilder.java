@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.backend.multidraw;
 
+import me.jellysquid.mods.sodium.client.gl.util.StructBuffer;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 
 public interface ChunkDrawParamsBufferBuilder extends StructBuffer {
