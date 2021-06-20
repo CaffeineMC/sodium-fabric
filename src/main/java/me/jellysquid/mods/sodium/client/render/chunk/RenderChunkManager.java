@@ -141,7 +141,7 @@ public class RenderChunkManager implements ChunkStatusListener {
             int x = ChunkPos.getPackedX(entry.getLongKey());
             int z = ChunkPos.getPackedZ(entry.getLongKey());
 
-            for (int y = 0; y < 16; y++) {
+            for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
                 this.processStatusChangeForSection(x, y, z, entry.getValue());
             }
         }
@@ -251,10 +251,6 @@ public class RenderChunkManager implements ChunkStatusListener {
         if (!blockEntities.isEmpty()) {
             this.visibleBlockEntities.addAll(blockEntities);
         }
-    }
-
-    public RenderChunk getRender(int x, int y, int z) {
-        return this.regions.getChunk(x, y, z);
     }
 
     private void resetLists() {
@@ -424,7 +420,7 @@ public class RenderChunkManager implements ChunkStatusListener {
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
-        RenderChunk render = this.getRender(x, y, z);
+        RenderChunk render = this.regions.getChunk(x, y, z);
 
         if (render != null) {
             // Nearby chunks are always rendered immediately
