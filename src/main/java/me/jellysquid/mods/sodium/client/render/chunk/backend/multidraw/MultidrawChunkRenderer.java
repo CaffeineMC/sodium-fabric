@@ -44,9 +44,9 @@ public class MultidrawChunkRenderer extends RegionChunkRenderer {
         super(device, vertexType);
 
         try (CommandList commands = device.createCommandList()) {
-            this.uploadBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STREAM_COPY);
+            this.uploadBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STREAM_DRAW);
             this.uniformBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
-            this.commandBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
+            this.commandBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STREAM_DRAW);
         }
 
         this.uniformBufferBuilder = ChunkDrawParamsBufferBuilder.create(2048);
