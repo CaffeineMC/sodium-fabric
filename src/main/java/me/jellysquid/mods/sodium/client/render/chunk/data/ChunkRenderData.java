@@ -33,7 +33,6 @@ public class ChunkRenderData {
 
     private boolean isEmpty;
     private int meshByteSize;
-    private int facesWithData;
 
     /**
      * @return True if the chunk has no renderables, otherwise false
@@ -80,10 +79,6 @@ public class ChunkRenderData {
         return this.meshByteSize;
     }
 
-    public int getFacesWithData() {
-        return this.facesWithData;
-    }
-
     public static class Builder {
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> blockEntities = new ArrayList<>();
@@ -93,12 +88,6 @@ public class ChunkRenderData {
 
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
-
-        public Builder() {
-            for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-                this.setMesh(pass, ChunkMeshData.EMPTY);
-            }
-        }
 
         public void setBounds(ChunkRenderBounds bounds) {
             this.bounds = bounds;
@@ -141,20 +130,14 @@ public class ChunkRenderData {
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
 
-            int facesWithData = 0;
             int size = 0;
 
             for (ChunkMeshData meshData : this.meshes.values()) {
                 size += meshData.getVertexDataSize();
-
-                for (Map.Entry<ModelQuadFacing, ElementRange> entry : meshData.getSlices()) {
-                    facesWithData |= 1 << entry.getKey().ordinal();
-                }
             }
 
-            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && facesWithData == 0;
+            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.meshes.isEmpty();
             data.meshByteSize = size;
-            data.facesWithData = facesWithData;
 
             return data;
         }

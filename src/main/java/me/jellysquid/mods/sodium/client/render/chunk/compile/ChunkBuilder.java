@@ -1,22 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
-import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
-import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
-import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
-import me.jellysquid.mods.sodium.common.util.collections.DequeDrain;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
@@ -29,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ChunkBuilder<T extends ChunkGraphicsState> {
+public class ChunkBuilder {
     /**
      * The maximum number of jobs that can be queued for a given worker thread.
      */
@@ -37,26 +26,21 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
-    private final Deque<WrappedTask<T>> buildQueue = new ConcurrentLinkedDeque<>();
-    private final Deque<ChunkBuildResult<T>> uploadQueue = new ConcurrentLinkedDeque<>();
+    private final Deque<WrappedTask> buildQueue = new ConcurrentLinkedDeque<>();
 
     private final Object jobNotifier = new Object();
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
-    private ClonedChunkSectionCache sectionCache;
-
     private World world;
     private BlockRenderPassManager renderPassManager;
 
     private final int limitThreads;
     private final ChunkVertexType vertexType;
-    private final ChunkRenderBackend<T> backend;
 
-    public ChunkBuilder(ChunkVertexType vertexType, ChunkRenderBackend<T> backend) {
+    public ChunkBuilder(ChunkVertexType vertexType) {
         this.vertexType = vertexType;
-        this.backend = backend;
         this.limitThreads = getOptimalThreadCount();
     }
 
@@ -130,39 +114,21 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         this.threads.clear();
 
-        // Drop any pending work queues and cancel futures
-        this.uploadQueue.clear();
-
-        for (WrappedTask<?> job : this.buildQueue) {
+        for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
         }
 
         this.buildQueue.clear();
 
         this.world = null;
-        this.sectionCache = null;
     }
 
-    /**
-     * Processes all pending build task uploads using the chunk render backend.
-     */
-    // TODO: Limit the amount of time this can take per frame
-    public boolean performPendingUploads() {
-        if (this.uploadQueue.isEmpty()) {
-            return false;
-        }
-
-        this.backend.upload(RenderDevice.INSTANCE.createCommandList(), new DequeDrain<>(this.uploadQueue));
-
-        return true;
-    }
-
-    public CompletableFuture<ChunkBuildResult<T>> schedule(ChunkRenderBuildTask<T> task) {
+    public CompletableFuture<ChunkBuildResult> schedule(ChunkRenderBuildTask task) {
         if (!this.running.get()) {
             throw new IllegalStateException("Executor is stopped");
         }
 
-        WrappedTask<T> job = new WrappedTask<>(task);
+        WrappedTask job = new WrappedTask(task);
 
         this.buildQueue.add(job);
 
@@ -196,7 +162,6 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         this.world = world;
         this.renderPassManager = renderPassManager;
-        this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         this.startWorkers();
     }
@@ -207,55 +172,6 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
      */
     private static int getOptimalThreadCount() {
         return Math.max(1, Runtime.getRuntime().availableProcessors());
-    }
-
-    /**
-     * Creates a rebuild task and defers it to the work queue. When the task is completed, it will be moved onto the
-     * completed uploads queued which will then be drained during the next available synchronization point with the
-     * main thread.
-     * @param render The render to rebuild
-     */
-    public void deferRebuild(ChunkRenderContainer<T> render) {
-        this.scheduleRebuildTaskAsync(render)
-                .thenAccept(this::enqueueUpload);
-    }
-
-
-    /**
-     * Enqueues the build task result to the pending result queue to be later processed during the next available
-     * synchronization point on the main thread.
-     * @param result The build task's result
-     */
-    private void enqueueUpload(ChunkBuildResult<T> result) {
-        this.uploadQueue.add(result);
-    }
-
-    /**
-     * Schedules the rebuild task asynchronously on the worker pool, returning a future wrapping the task.
-     * @param render The render to rebuild
-     */
-    public CompletableFuture<ChunkBuildResult<T>> scheduleRebuildTaskAsync(ChunkRenderContainer<T> render) {
-        return this.schedule(this.createRebuildTask(render));
-    }
-
-    /**
-     * Creates a task to rebuild the geometry of a {@link ChunkRenderContainer}.
-     * @param render The render to rebuild
-     */
-    private ChunkRenderBuildTask<T> createRebuildTask(ChunkRenderContainer<T> render) {
-        render.cancelRebuildTask();
-
-        ChunkRenderContext context = WorldSlice.prepare(this.world, render.getChunkPos(), this.sectionCache);
-
-        if (context == null) {
-            return new ChunkRenderEmptyBuildTask<>(render);
-        } else {
-            return new ChunkRenderRebuildTask<>(render, context, render.getRenderOrigin());
-        }
-    }
-
-    public void onChunkDataChanged(int x, int y, int z) {
-        this.sectionCache.invalidate(x, y, z);
     }
 
     private class WorkerRunnable implements Runnable {
@@ -277,14 +193,14 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         public void run() {
             // Run until the chunk builder shuts down
             while (this.running.get()) {
-                WrappedTask<T> job = this.getNextJob();
+                WrappedTask job = this.getNextJob();
 
                 // If the job is null or no longer valid, keep searching for a task
                 if (job == null || job.isCancelled()) {
                     continue;
                 }
 
-                ChunkBuildResult<T> result;
+                ChunkBuildResult result;
 
                 try {
                     // Perform the build task with this worker's local resources and obtain the result
@@ -312,8 +228,8 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
          * Returns the next task which this worker can work on or blocks until one becomes available. If no tasks are
          * currently available, it will wait on {@link ChunkBuilder#jobNotifier} field until notified.
          */
-        private WrappedTask<T> getNextJob() {
-            WrappedTask<T> job = ChunkBuilder.this.buildQueue.poll();
+        private WrappedTask getNextJob() {
+            WrappedTask job = ChunkBuilder.this.buildQueue.poll();
 
             if (job == null) {
                 synchronized (ChunkBuilder.this.jobNotifier) {
@@ -328,11 +244,11 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         }
     }
 
-    private static class WrappedTask<T extends ChunkGraphicsState> implements CancellationSource {
-        private final ChunkRenderBuildTask<T> task;
-        private final CompletableFuture<ChunkBuildResult<T>> future;
+    private static class WrappedTask implements CancellationSource {
+        private final ChunkRenderBuildTask task;
+        private final CompletableFuture<ChunkBuildResult> future;
 
-        private WrappedTask(ChunkRenderBuildTask<T> task) {
+        private WrappedTask(ChunkRenderBuildTask task) {
             this.task = task;
             this.future = new CompletableFuture<>();
         }

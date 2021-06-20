@@ -1,29 +1,29 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.backend.multidraw.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 
-import java.lang.reflect.Array;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * The render state object for a chunk section. This contains all the graphics state for each render pass along with
  * data about the render in the chunk visibility graph.
  */
-public class ChunkRenderContainer<T extends ChunkGraphicsState> {
+public class RenderChunk {
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
-    private final T[] graphicsStates;
-    private final ChunkRenderColumn<T> column;
+    private final ChunkGraphicsState[] graphicsStates;
+    private final RenderRegion region;
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<Void> rebuildTask = null;
@@ -34,16 +34,17 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private boolean tickable;
     private int id;
 
-    public ChunkRenderContainer(ChunkRenderBackend<T> backend, SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, ChunkRenderColumn<T> column) {
+    private boolean disposed;
+
+    public RenderChunk(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
         this.worldRenderer = worldRenderer;
+        this.region = region;
 
         this.chunkX = chunkX;
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
 
-        //noinspection unchecked
-        this.graphicsStates = (T[]) Array.newInstance(backend.getGraphicsStateType(), BlockRenderPass.COUNT);
-        this.column = column;
+        this.graphicsStates = new ChunkGraphicsState[BlockRenderPass.COUNT];
     }
 
     /**
@@ -87,16 +88,18 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         this.cancelRebuildTask();
         this.setData(ChunkRenderData.ABSENT);
         this.deleteGraphicsState();
+
+        this.disposed = true;
     }
 
     private void deleteGraphicsState() {
-        T[] states = this.graphicsStates;
+        ChunkGraphicsState[] states = this.graphicsStates;
 
         for (int i = 0; i < states.length; i++) {
-            T state = states[i];
+            ChunkGraphicsState state = states[i];
 
             if (state != null) {
-                state.delete(RenderDevice.INSTANCE.createCommandList());
+                state.delete();
                 states[i] = null;
             }
         }
@@ -156,7 +159,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
     /**
      * Ensures that all resources attached to the given chunk render are "ticked" forward. This should be called every
-     * time before this render is drawn if {@link ChunkRenderContainer#isTickable()} is true.
+     * time before this render is drawn if {@link RenderChunk#isTickable()} is true.
      */
     public void tick() {
         for (Sprite sprite : this.data.getAnimatedSprites()) {
@@ -233,11 +236,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         return new BlockPos(this.getRenderX(), this.getRenderY(), this.getRenderZ());
     }
 
-    public T[] getGraphicsStates() {
-        return this.graphicsStates;
-    }
-
-    public void setGraphicsState(BlockRenderPass pass, T state) {
+    public void setGraphicsState(BlockRenderPass pass, ChunkGraphicsState state) {
         this.graphicsStates[pass.ordinal()] = state;
     }
 
@@ -267,20 +266,12 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         return this.data.getBounds();
     }
 
-    public T getGraphicsState(BlockRenderPass pass) {
+    public ChunkGraphicsState getGraphicsState(BlockRenderPass pass) {
         return this.graphicsStates[pass.ordinal()];
     }
 
     public boolean isTickable() {
         return this.tickable;
-    }
-
-    public int getFacesWithData() {
-        return this.data.getFacesWithData();
-    }
-
-    public boolean canRebuild() {
-        return this.column.areNeighborsPresent();
     }
 
     public void setId(int id) {
@@ -289,5 +280,19 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
     public int getId() {
         return this.id;
+    }
+
+    public RenderRegion getRegion() {
+        return this.region;
+    }
+
+    public boolean isDisposed() {
+        return this.disposed;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("RenderChunk{chunkX=%d, chunkY=%d, chunkZ=%d, id=%d}",
+                this.chunkX, this.chunkY, this.chunkZ, this.id);
     }
 }
