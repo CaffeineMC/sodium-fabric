@@ -11,7 +11,6 @@ import org.lwjgl.opengl.GL32C;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.FloatBuffer;
-import java.util.function.Function;
 
 /**
  * A forward-rendering shader program for chunks.
@@ -27,8 +26,8 @@ public class ChunkProgram extends GlProgram {
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
 
-    protected ChunkProgram(RenderDevice owner, Identifier name, int handle, Function<ChunkProgram, ChunkShaderFogComponent> fogShaderFunction) {
-        super(owner, name, handle);
+    protected ChunkProgram(RenderDevice owner, int handle, ChunkShaderOptions options) {
+        super(owner, handle);
 
         this.uModelViewProjectionMatrix = this.getUniformLocation("u_ModelViewProjectionMatrix");
 
@@ -37,7 +36,7 @@ public class ChunkProgram extends GlProgram {
         this.uModelScale = this.getUniformLocation("u_ModelScale");
         this.uTextureScale = this.getUniformLocation("u_TextureScale");
 
-        this.fogShader = fogShaderFunction.apply(this);
+        this.fogShader = options.fogMode.getFactory().apply(this);
     }
 
     public void setup(MatrixStack matrixStack, float modelScale, float textureScale) {

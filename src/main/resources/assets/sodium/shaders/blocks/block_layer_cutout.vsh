@@ -1,6 +1,6 @@
 #version 150 core
 
-#import <sodium:blocks/base.v.glsl>
+#import <sodium:blocks/base.vsh>
 
 void main() {
     // Translates the vertex position around the position of the camera
