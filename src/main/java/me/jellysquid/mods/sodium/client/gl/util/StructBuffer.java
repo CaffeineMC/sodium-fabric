@@ -43,6 +43,7 @@ public interface StructBuffer {
         @Override
         public void reset() {
             this.writePointer = this.address;
+            this.count = 0;
         }
 
         @Override
