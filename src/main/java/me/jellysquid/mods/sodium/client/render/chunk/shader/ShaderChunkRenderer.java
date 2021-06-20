@@ -3,11 +3,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.shader;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
-import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
+import me.jellysquid.mods.sodium.client.gl.shader.*;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
@@ -36,10 +33,10 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
 
     private ChunkProgram createShader(RenderDevice device, ChunkFogMode fogMode) {
         GlShader vertShader = ShaderLoader.loadShader(device, ShaderType.VERTEX,
-                new Identifier("sodium", "chunk_gl32.v.glsl"), fogMode.getDefines());
-
+                new Identifier("sodium", "blocks/block_layer_solid.v.glsl"), ShaderConstants.fromStringList(fogMode.getDefines()));
+        
         GlShader fragShader = ShaderLoader.loadShader(device, ShaderType.FRAGMENT,
-                new Identifier("sodium", "chunk_gl32.f.glsl"), fogMode.getDefines());
+                new Identifier("sodium", "blocks/block_layer_solid.f.glsl"), ShaderConstants.fromStringList(fogMode.getDefines()));
 
         try {
             return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
