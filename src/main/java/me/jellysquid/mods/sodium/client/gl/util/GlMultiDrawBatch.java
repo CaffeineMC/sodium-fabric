@@ -52,8 +52,8 @@ public class GlMultiDrawBatch {
         return this.count <= 0;
     }
 
-    public void addChunkRender(ElementRange range) {
-        this.addChunkRender(range.elementOffset * 4 /* TODO: Allow custom pointer size */, range.elementCount, range.baseVertex);
+    public void addChunkRender(ElementRange range, int vertexOffset, int indexOffset) {
+        this.addChunkRender((indexOffset + range.elementOffset) * 4 /* TODO: Allow custom pointer size */, range.elementCount, vertexOffset + range.baseVertex);
     }
 
     public void addChunkRender(int pointer, int count, int baseVertex) {

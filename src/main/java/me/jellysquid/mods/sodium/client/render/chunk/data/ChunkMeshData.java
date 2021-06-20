@@ -8,8 +8,6 @@ import java.util.EnumMap;
 import java.util.Map;
 
 public class ChunkMeshData {
-    public static final ChunkMeshData EMPTY = new ChunkMeshData();
-
     private final EnumMap<ModelQuadFacing, ElementRange> parts = new EnumMap<>(ModelQuadFacing.class);
     private IndexedVertexData vertexData;
 

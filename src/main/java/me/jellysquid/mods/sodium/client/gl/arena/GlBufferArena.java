@@ -8,6 +8,7 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 
+import java.nio.ByteBuffer;
 import java.util.Set;
 
 public class GlBufferArena {
@@ -18,7 +19,8 @@ public class GlBufferArena {
 
     private final Set<GlBufferSegment> freeRegions = new ObjectLinkedOpenHashSet<>();
 
-    private GlMutableBuffer buffer;
+    private GlMutableBuffer arenaBuffer;
+    private GlMutableBuffer stagingBuffer;
 
     private int position;
     private int capacity;
@@ -29,7 +31,9 @@ public class GlBufferArena {
 
         try (CommandList commands = device.createCommandList()) {
             commands.allocateBuffer(GlBufferTarget.COPY_WRITE_BUFFER,
-                    this.buffer = commands.createMutableBuffer(BUFFER_USAGE), initialSize);
+                    this.arenaBuffer = commands.createMutableBuffer(BUFFER_USAGE), initialSize);
+
+            this.stagingBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
         }
 
         this.resizeIncrement = initialSize;
@@ -37,29 +41,33 @@ public class GlBufferArena {
     }
 
     private void resize(CommandList commandList, int newCapacity) {
-        GlMutableBuffer src = this.buffer;
+        GlMutableBuffer src = this.arenaBuffer;
         GlMutableBuffer dst = commandList.createMutableBuffer(BUFFER_USAGE);
 
         commandList.allocateBuffer(GlBufferTarget.COPY_WRITE_BUFFER, dst, newCapacity);
         commandList.copyBufferSubData(src, dst, 0, 0, this.position);
         commandList.deleteBuffer(src);
 
-        this.buffer = dst;
+        this.arenaBuffer = dst;
         this.capacity = newCapacity;
     }
 
-    public void prepareBuffer(CommandList commandList, int bytes) {
+    public void checkArenaCapacity(CommandList commandList, int bytes) {
         if (this.position + bytes >= this.capacity) {
             this.resize(commandList, this.getNextSize(bytes));
         }
     }
 
-    public GlBufferSegment uploadBuffer(CommandList commandList, GlBuffer readBuffer, int readOffset, int byteCount) {
-        this.prepareBuffer(commandList, byteCount);
+    public GlBufferSegment uploadBuffer(CommandList commandList, ByteBuffer buffer) {
+        int byteCount = buffer.remaining();
+
+        this.checkArenaCapacity(commandList, byteCount);
 
         GlBufferSegment segment = this.alloc(byteCount);
 
-        commandList.copyBufferSubData(readBuffer, this.buffer, readOffset, segment.getStart(), byteCount);
+        commandList.uploadData(this.stagingBuffer, buffer);
+        commandList.copyBufferSubData(this.stagingBuffer, this.arenaBuffer, 0, segment.getStart(), byteCount);
+        commandList.invalidateBuffer(this.stagingBuffer);
 
         return segment;
     }
@@ -120,7 +128,7 @@ public class GlBufferArena {
 
     public void delete() {
         try (CommandList commands = this.device.createCommandList()) {
-            commands.deleteBuffer(this.buffer);
+            commands.deleteBuffer(this.arenaBuffer);
         }
     }
 
@@ -128,7 +136,7 @@ public class GlBufferArena {
         return this.allocCount <= 0;
     }
 
-    public GlBuffer getBuffer() {
-        return this.buffer;
+    public GlBuffer getArenaBuffer() {
+        return this.arenaBuffer;
     }
 }

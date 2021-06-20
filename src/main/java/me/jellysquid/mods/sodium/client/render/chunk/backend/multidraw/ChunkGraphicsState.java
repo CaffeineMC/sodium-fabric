@@ -1,26 +1,28 @@
-package me.jellysquid.mods.sodium.client.render.chunk.backends.multidraw;
+package me.jellysquid.mods.sodium.client.render.chunk.backend.multidraw;
 
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferSegment;
-import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderChunk;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.region.ChunkRegion;
+import me.jellysquid.mods.sodium.client.render.RenderRegion;
 
 import java.util.Map;
 
-public class MultidrawGraphicsState extends ChunkGraphicsState {
-    private final ChunkRegion<MultidrawGraphicsState> region;
+public class ChunkGraphicsState {
+    private final int x, y, z;
+
+    private final RenderRegion region;
 
     private final GlBufferSegment vertexSegment;
     private final GlBufferSegment indexSegment;
 
     private final ElementRange[] parts;
 
-    public MultidrawGraphicsState(ChunkRenderContainer<?> container, ChunkRegion<MultidrawGraphicsState> region, GlBufferSegment vertexSegment, GlBufferSegment indexSegment, ChunkMeshData meshData) {
-        super(container);
+    public ChunkGraphicsState(RenderChunk container, RenderRegion region, GlBufferSegment vertexSegment, GlBufferSegment indexSegment, ChunkMeshData meshData) {
+        this.x = container.getRenderX();
+        this.y = container.getRenderY();
+        this.z = container.getRenderZ();
 
         this.region = region;
         this.vertexSegment = vertexSegment;
@@ -33,18 +35,17 @@ public class MultidrawGraphicsState extends ChunkGraphicsState {
         }
     }
 
-    @Override
-    public void delete(CommandList commandList) {
+    public void delete() {
         this.vertexSegment.delete();
         this.indexSegment.delete();
     }
 
-    public ChunkRegion<MultidrawGraphicsState> getRegion() {
+    public RenderRegion getRegion() {
         return this.region;
     }
 
-    public ElementRange getModelPart(int facing) {
-        return this.parts[facing];
+    public ElementRange getModelPart(ModelQuadFacing facing) {
+        return this.parts[facing.ordinal()];
     }
 
     public GlBufferSegment getVertexSegment() {
@@ -53,5 +54,17 @@ public class MultidrawGraphicsState extends ChunkGraphicsState {
 
     public GlBufferSegment getIndexSegment() {
         return this.indexSegment;
+    }
+
+    public int getX() {
+        return this.x;
+    }
+
+    public int getY() {
+        return this.y;
+    }
+
+    public int getZ() {
+        return this.z;
     }
 }

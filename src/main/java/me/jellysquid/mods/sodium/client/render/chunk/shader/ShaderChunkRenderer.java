@@ -1,23 +1,24 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
+import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
+import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import me.jellysquid.mods.sodium.client.gl.shader.GlShader;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderType;
 import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
+import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 
 import java.util.EnumMap;
 
-public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState>
-        implements ChunkRenderBackend<T> {
+public abstract class ShaderChunkRenderer implements ChunkRenderer {
     private final EnumMap<ChunkFogMode, ChunkProgram> programs = new EnumMap<>(ChunkFogMode.class);
 
     protected final ChunkVertexType vertexType;
@@ -25,9 +26,12 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState>
 
     protected ChunkProgram activeProgram;
 
-    public ChunkRenderShaderBackend(ChunkVertexType vertexType) {
+    public ShaderChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         this.vertexType = vertexType;
         this.vertexFormat = vertexType.getCustomVertexFormat();
+
+        this.programs.put(ChunkFogMode.NONE, this.createShader(device, ChunkFogMode.NONE));
+        this.programs.put(ChunkFogMode.SMOOTH, this.createShader(device, ChunkFogMode.SMOOTH));
     }
 
     private ChunkProgram createShader(RenderDevice device, ChunkFogMode fogMode) {
@@ -54,24 +58,18 @@ public abstract class ChunkRenderShaderBackend<T extends ChunkGraphicsState>
         }
     }
 
-    @Override
-    public final void createShaders(RenderDevice device) {
-        this.programs.put(ChunkFogMode.NONE, this.createShader(device, ChunkFogMode.NONE));
-        this.programs.put(ChunkFogMode.SMOOTH, this.createShader(device, ChunkFogMode.SMOOTH));
-    }
-
-    @Override
-    public void begin(MatrixStack matrixStack) {
+    protected void begin(MatrixStack matrixStack) {
         this.activeProgram = this.programs.get(LegacyFogHelper.getFogMode());
         this.activeProgram.bind();
         this.activeProgram.setup(matrixStack, this.vertexType.getModelScale(), this.vertexType.getTextureScale());
     }
 
-    @Override
-    public void end(MatrixStack matrixStack) {
+    protected void end() {
         this.activeProgram.unbind();
         this.activeProgram = null;
     }
+
+    protected abstract GlTessellation createRegionTessellation(CommandList commandList, GlBufferArena vertices, GlBufferArena indices);
 
     @Override
     public void delete() {

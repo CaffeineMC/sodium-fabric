@@ -1,9 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
+import it.unimi.dsi.fastutil.longs.LongCollection;
+import it.unimi.dsi.fastutil.longs.LongCollections;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
-import me.jellysquid.mods.sodium.client.world.ChunkStatusListenerManager;
+import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
@@ -24,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BooleanSupplier;
 
 @Mixin(ClientChunkManager.class)
-public abstract class MixinClientChunkManager implements ChunkStatusListenerManager {
+public abstract class MixinClientChunkManager implements ClientChunkManagerExtended {
     @Shadow
     @Nullable
     public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
@@ -92,6 +94,11 @@ public abstract class MixinClientChunkManager implements ChunkStatusListenerMana
     @Override
     public void setListener(ChunkStatusListener listener) {
         this.listener = listener;
+    }
+
+    @Override
+    public LongCollection getLoadedChunks() {
+        return LongCollections.unmodifiable(this.loadedChunks);
     }
 
     @Mixin(targets = "net/minecraft/client/world/ClientChunkManager$ClientChunkMap")

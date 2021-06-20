@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.mixin.features.debug;
 import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,8 +28,6 @@ public abstract class MixinDebugHud {
         strings.add("");
         strings.add("Sodium Renderer");
         strings.add(Formatting.UNDERLINE + getFormattedVersionText());
-        strings.add("");
-        strings.addAll(getChunkRendererDebugStrings());
 
         if (SodiumClientMod.options().advanced.ignoreDriverBlacklist) {
             strings.add(Formatting.RED + "(!!) Driver blacklist ignored");
@@ -61,16 +59,6 @@ public abstract class MixinDebugHud {
         }
 
         return color + version;
-    }
-
-    private static List<String> getChunkRendererDebugStrings() {
-        ChunkRenderBackend<?> backend = SodiumWorldRenderer.getInstance().getChunkRenderer();
-
-        List<String> strings = new ArrayList<>(4);
-        strings.add("Chunk Renderer: " + backend.getRendererName());
-        strings.addAll(backend.getDebugStrings());
-
-        return strings;
     }
 
     private static String getNativeMemoryString() {
