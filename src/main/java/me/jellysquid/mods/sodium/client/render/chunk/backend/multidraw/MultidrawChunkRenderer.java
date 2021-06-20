@@ -55,7 +55,7 @@ public class MultidrawChunkRenderer extends RegionChunkRenderer {
 
     @Override
     public void render(MatrixStack matrixStack, CommandList commandList, ObjectList<RenderChunk> renders, BlockRenderPass pass, ChunkCameraContext camera) {
-        super.begin(matrixStack);
+        super.begin(pass, matrixStack);
 
         Map<RenderRegion, List<RenderChunk>> sortedRenders = this.sortRenders(renders);
         List<ChunkRegionDrawInfo> sortedDraws = this.setupDrawBatches(commandList, sortedRenders, pass, camera);
