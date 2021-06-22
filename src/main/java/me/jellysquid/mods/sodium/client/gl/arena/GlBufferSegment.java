@@ -2,21 +2,22 @@ package me.jellysquid.mods.sodium.client.gl.arena;
 
 public class GlBufferSegment {
     private final GlBufferArena arena;
-    private final int start;
-    private final int len;
+    private final int offset;
+    private final int count;
 
-    GlBufferSegment(GlBufferArena arena, int start, int len) {
+    GlBufferSegment(GlBufferArena arena, int offset, int count) {
         this.arena = arena;
-        this.start = start;
-        this.len = len;
+
+        this.offset = offset;
+        this.count = count;
     }
 
-    public int getStart() {
-        return this.start;
+    public int getElementOffset() {
+        return this.offset;
     }
 
-    public int getLength() {
-        return this.len;
+    public int getElementCount() {
+        return this.count;
     }
 
     public void delete() {

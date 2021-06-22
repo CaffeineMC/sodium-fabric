@@ -19,9 +19,11 @@ public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
 
     private final RenderDevice device;
+    private final ChunkRenderer renderer;
 
-    public RenderRegionManager(RenderDevice device) {
+    public RenderRegionManager(RenderDevice device, ChunkRenderer renderer) {
         this.device = device;
+        this.renderer = renderer;
     }
 
     public void upload(CommandList commandList, Iterator<ChunkBuildResult> queue) {
@@ -40,8 +42,8 @@ public class RenderRegionManager {
     }
 
     private void upload(CommandList commandList, RenderRegion region, BlockRenderPass pass, List<ChunkBuildResult> results) {
-        int vertexSize = 0;
-        int indexSize = 0;
+        int vertexBytes = 0;
+        int indexBytes = 0;
 
         for (ChunkBuildResult result : results) {
             ChunkMeshData meshData = result.getMesh(pass);
@@ -49,8 +51,8 @@ public class RenderRegionManager {
             if (meshData != null) {
                 IndexedVertexData vertexData = meshData.getVertexData();
 
-                vertexSize += vertexData.vertexBuffer.remaining();
-                indexSize += vertexData.indexBuffer.remaining();
+                vertexBytes += vertexData.vertexBuffer.remaining();
+                indexBytes += vertexData.indexBuffer.remaining();
             }
 
             ChunkGraphicsState graphics = result.render.setGraphicsState(pass, null);
@@ -65,15 +67,17 @@ public class RenderRegionManager {
         RenderRegion.RenderRegionArenas arenas = region.getArenas(pass);
 
         if (arenas == null) {
-            if (vertexSize + indexSize == 0) {
+            if (vertexBytes + indexBytes == 0) {
                 return;
             }
 
             arenas = region.createArenas(commandList, pass);
         }
 
-        arenas.vertexBuffers.checkArenaCapacity(commandList, vertexSize);
-        arenas.indexBuffers.checkArenaCapacity(commandList, indexSize);
+        int vertexStride = this.renderer.getVertexType().getBufferVertexFormat().getStride();
+
+        arenas.vertexBuffers.checkArenaCapacity(commandList, vertexBytes / vertexStride);
+        arenas.indexBuffers.checkArenaCapacity(commandList, indexBytes / 4);
 
         for (ChunkBuildResult result : results) {
             ChunkMeshData meshData = result.getMesh(pass);
@@ -171,7 +175,7 @@ public class RenderRegionManager {
         RenderRegion region = this.regions.get(key);
 
         if (region == null) {
-            this.regions.put(key, region = RenderRegion.createRegionForChunk(this.device, x, y, z));
+            this.regions.put(key, region = RenderRegion.createRegionForChunk(this.renderer, this.device, x, y, z));
         }
 
         return region;

@@ -34,6 +34,8 @@ public class RenderRegion {
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_LENGTH));
     }
 
+    private final ChunkRenderer renderer;
+
     private final RenderChunk[] renders = new RenderChunk[REGION_SIZE];
     private int loadedChunks = 0;
 
@@ -42,7 +44,8 @@ public class RenderRegion {
     private final RenderDevice device;
     private final int x, y, z;
 
-    public RenderRegion(RenderDevice device, int x, int y, int z) {
+    public RenderRegion(ChunkRenderer renderer, RenderDevice device, int x, int y, int z) {
+        this.renderer = renderer;
         this.device = device;
 
         this.x = x;
@@ -50,8 +53,8 @@ public class RenderRegion {
         this.z = z;
     }
 
-    public static RenderRegion createRegionForChunk(RenderDevice device, int x, int y, int z) {
-        return new RenderRegion(device, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
+    public static RenderRegion createRegionForChunk(ChunkRenderer renderer, RenderDevice device, int x, int y, int z) {
+        return new RenderRegion(renderer, device, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
     public RenderChunk getChunk(int x, int y, int z) {
@@ -131,7 +134,7 @@ public class RenderRegion {
     }
 
     public RenderRegionArenas createArenas(CommandList commandList, BlockRenderPass pass) {
-        RenderRegionArenas arenas = new RenderRegionArenas(commandList);
+        RenderRegionArenas arenas = new RenderRegionArenas(commandList, this.renderer);
         this.arenas.put(pass, arenas);
 
         return arenas;
@@ -148,9 +151,9 @@ public class RenderRegion {
 
         public GlTessellation tessellation;
 
-        public RenderRegionArenas(CommandList commandList) {
-            this.vertexBuffers = new GlBufferArena(commandList, 768 * 1024);
-            this.indexBuffers = new GlBufferArena(commandList, 64 * 1024);
+        public RenderRegionArenas(CommandList commandList, ChunkRenderer renderer) {
+            this.vertexBuffers = new GlBufferArena(commandList, 24 * 1024, renderer.getVertexType().getBufferVertexFormat().getStride());
+            this.indexBuffers = new GlBufferArena(commandList, 6 * 1024, 4);
         }
 
         public void delete(CommandList commandList) {
