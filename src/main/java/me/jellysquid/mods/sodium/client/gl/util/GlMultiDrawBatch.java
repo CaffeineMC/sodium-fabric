@@ -1,64 +1,190 @@
 package me.jellysquid.mods.sodium.client.gl.util;
 
-import org.lwjgl.opengl.GL20C;
+import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Pointer;
+import sun.misc.Unsafe;
 
+import java.nio.BufferUnderflowException;
 import java.nio.IntBuffer;
 
 /**
  * Provides a fixed-size queue for batching draw calls for vertex data in the same buffer. This internally
  * uses {@link GL20#glMultiDrawArrays(int, IntBuffer, IntBuffer)} and should be compatible on any relevant platform.
  */
-public class GlMultiDrawBatch {
-    private final IntBuffer bufIndices;
-    private final IntBuffer bufLen;
-    private int count;
-    private boolean isBuilding;
-
-    public GlMultiDrawBatch(int capacity) {
-        this.bufIndices = MemoryUtil.memAllocInt(capacity);
-        this.bufLen = MemoryUtil.memAllocInt(capacity);
+public interface GlMultiDrawBatch {
+    static GlMultiDrawBatch create(int capacity) {
+        return UnsafeUtil.isAvailable() ? new UnsafeMultiDrawBatch(capacity) : new NioMultiDrawBatch(capacity);
     }
 
-    public IntBuffer getIndicesBuffer() {
-        return this.bufIndices;
+    PointerBuffer getPointerBuffer();
+
+    IntBuffer getCountBuffer();
+
+    IntBuffer getBaseVertexBuffer();
+
+    void begin();
+
+    void add(int pointer, int count, int baseVertex);
+
+    void end();
+
+    void delete();
+
+    boolean isEmpty();
+
+    class NioMultiDrawBatch implements GlMultiDrawBatch {
+        private final PointerBuffer bufPointer;
+        private final IntBuffer bufCount;
+        private final IntBuffer bufBaseVertex;
+
+        private int count;
+
+        private NioMultiDrawBatch(int capacity) {
+            this.bufPointer = MemoryUtil.memAllocPointer(capacity);
+            this.bufCount = MemoryUtil.memAllocInt(capacity);
+            this.bufBaseVertex = MemoryUtil.memAllocInt(capacity);
+        }
+
+        @Override
+        public PointerBuffer getPointerBuffer() {
+            return this.bufPointer;
+        }
+
+        @Override
+        public IntBuffer getCountBuffer() {
+            return this.bufCount;
+        }
+
+        @Override
+        public IntBuffer getBaseVertexBuffer() {
+            return this.bufBaseVertex;
+        }
+
+        @Override
+        public void begin() {
+            this.bufPointer.clear();
+            this.bufCount.clear();
+            this.bufBaseVertex.clear();
+
+            this.count = 0;
+        }
+
+        @Override
+        public void add(int pointer, int count, int baseVertex) {
+            int i = this.count++;
+
+            this.bufPointer.put(i, pointer);
+            this.bufCount.put(i, count);
+            this.bufBaseVertex.put(i, baseVertex);
+        }
+
+        @Override
+        public void end() {
+            this.bufPointer.limit(this.count);
+            this.bufCount.limit(this.count);
+            this.bufBaseVertex.limit(this.count);
+        }
+
+        @Override
+        public void delete() {
+            MemoryUtil.memFree(this.bufPointer);
+            MemoryUtil.memFree(this.bufCount);
+            MemoryUtil.memFree(this.bufBaseVertex);
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return this.count <= 0;
+        }
     }
 
-    public IntBuffer getLengthBuffer() {
-        return this.bufLen;
-    }
+    class UnsafeMultiDrawBatch implements GlMultiDrawBatch {
+        private static final Unsafe UNSAFE = UnsafeUtil.instanceNullable();
 
-    public void begin() {
-        this.bufIndices.clear();
-        this.bufLen.clear();
-        this.count = 0;
+        private final PointerBuffer bufPointer;
+        private final IntBuffer bufCount;
+        private final IntBuffer bufBaseVertex;
 
-        this.isBuilding = true;
-    }
+        private long bufPointerAddr;
+        private long bufCountAddr;
+        private long bufBaseVertexAddr;
 
-    public void end() {
-        this.bufIndices.limit(this.count);
-        this.bufLen.limit(this.count);
+        private final int capacity;
 
-        this.isBuilding = false;
-    }
+        private int count;
 
-    public boolean isEmpty() {
-        return this.count <= 0;
-    }
+        private UnsafeMultiDrawBatch(int capacity) {
+            this.bufPointer = MemoryUtil.memAllocPointer(capacity);
+            this.bufCount = MemoryUtil.memAllocInt(capacity);
+            this.bufBaseVertex = MemoryUtil.memAllocInt(capacity);
+            this.capacity = capacity;
 
-    public void addChunkRender(int first, int count) {
-        int i = this.count++;
-        this.bufIndices.put(i, first);
-        this.bufLen.put(i, count);
-    }
+            this.resetPointers();
+        }
 
-    public boolean isBuilding() {
-        return this.isBuilding;
-    }
+        private void resetPointers() {
+            this.bufPointerAddr = MemoryUtil.memAddress(this.bufPointer);
+            this.bufCountAddr = MemoryUtil.memAddress(this.bufCount);
+            this.bufBaseVertexAddr = MemoryUtil.memAddress(this.bufBaseVertex);
+        }
 
-    public void delete() {
-        MemoryUtil.memFree(this.bufIndices);
-        MemoryUtil.memFree(this.bufLen);
+        @Override
+        public PointerBuffer getPointerBuffer() {
+            return MemoryUtil.memPointerBuffer(MemoryUtil.memAddress(this.bufPointer), this.count);
+        }
+
+        @Override
+        public IntBuffer getCountBuffer() {
+            return MemoryUtil.memIntBuffer(MemoryUtil.memAddress(this.bufCount), this.count);
+        }
+
+        @Override
+        public IntBuffer getBaseVertexBuffer() {
+            return MemoryUtil.memIntBuffer(MemoryUtil.memAddress(this.bufBaseVertex), this.count);
+        }
+
+        @Override
+        public void begin() {
+            this.count = 0;
+
+            this.resetPointers();
+        }
+
+        @Override
+        public void add(int pointer, int count, int baseVertex) {
+            if (this.count >= this.capacity)  {
+                throw new BufferUnderflowException();
+            }
+
+            UNSAFE.putLong(this.bufPointerAddr, pointer);
+            this.bufPointerAddr += Pointer.POINTER_SIZE;
+
+            UNSAFE.putInt(this.bufCountAddr, count);
+            this.bufCountAddr += 4;
+
+            UNSAFE.putInt(this.bufBaseVertexAddr, baseVertex);
+            this.bufBaseVertexAddr += 4;
+
+            this.count++;
+        }
+
+        @Override
+        public void end() {
+
+        }
+
+        @Override
+        public void delete() {
+            MemoryUtil.memFree(this.bufPointer);
+            MemoryUtil.memFree(this.bufCount);
+            MemoryUtil.memFree(this.bufBaseVertex);
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return this.count <= 0;
+        }
     }
 }

@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
@@ -13,10 +12,10 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.options.AttackIndicator;
-import net.minecraft.client.options.GraphicsMode;
-import net.minecraft.client.options.Option;
-import net.minecraft.client.options.ParticlesMode;
+import net.minecraft.client.option.AttackIndicator;
+import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.client.option.Option;
+import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.client.util.Window;
 
 import java.util.ArrayList;
@@ -240,37 +239,21 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Chunk Multi-Draw")
-                        .setTooltip("Allows for many chunks to be rendered together in larger draw call batches.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.advanced.useMultidraw = value, opts -> opts.advanced.useMultidraw)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build())
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Vertex Arrays")
-                        .setTooltip("Minimizes CPU overhead when switching between different kinds of render tasks.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.advanced.useVertexArrays = value, opts -> opts.advanced.useVertexArrays)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build())
-                .build());
-
-        groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Chunk Face Culling")
-                        .setTooltip("If enabled, an additional culling pass will be performed on the CPU to determine which planes of a chunk mesh are visible. This " +
-                                "can eliminate a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU.")
+                        .setName("Use Block Face Culling")
+                        .setTooltip("If enabled, only the sides of blocks which are facing the camera will be submitted for rendering. This can eliminate " +
+                                "a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU. Some resource " +
+                                "packs may have issues with this option, so try disabling it if you're seeing holes in blocks.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.advanced.useChunkFaceCulling = value, opts -> opts.advanced.useChunkFaceCulling)
+                        .setBinding((opts, value) -> opts.advanced.useBlockFaceCulling = value, opts -> opts.advanced.useBlockFaceCulling)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Compact Vertex Format")
-                        .setTooltip("If enabled, a more compact vertex format will be used for chunk meshes which limits the precision of vertex attributes. This format " +
-                                "will reduce graphics memory usage and bandwidth requirements by around 40%, but could cause z-fighting/flickering texture issues in " +
-                                "some edge cases.")
+                        .setTooltip("If enabled, a more compact vertex format will be used for rendering chunks. This can reduce graphics memory usage and bandwidth " +
+                                "requirements significantly, especially for integrated graphics cards, but can cause z-fighting with some resource packs due " +
+                                "to how it reduces the precision of position and texture coordinate attributes.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.advanced.useCompactVertexFormat = value, opts -> opts.advanced.useCompactVertexFormat)
@@ -279,9 +262,9 @@ public class SodiumGameOptionPages {
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Fog Occlusion")
-                        .setTooltip("If enabled, chunks which are determined to be fully hidden by fog effects will be skipped during rendering. This " +
-                                "will generally provide a modest improvement to the number of chunks rendered each frame, especially " +
-                                "where fog effects are heavier (i.e. while underwater.)")
+                        .setTooltip("If enabled, chunks which are determined to be fully hidden by fog effects will not be rendered, helping to improve performance. The " +
+                                "improvement can be more dramatic when fog effects are heavier (such as while underwater), but it may cause undesirable visual artifacts " +
+                                "between the sky and fog in some scenarios.")
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.advanced.useFogOcclusion = value, opts -> opts.advanced.useFogOcclusion)
                         .setImpact(OptionImpact.MEDIUM)
@@ -290,11 +273,11 @@ public class SodiumGameOptionPages {
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Entity Culling")
-                        .setTooltip("If enabled, a secondary culling pass will be performed before attempting to render an entity. This additional pass " +
-                                "takes into account the current set of visible chunks and removes entities which are not in any visible chunks.")
+                        .setTooltip("If enabled, entities determined not to be in any visible chunks will be skipped during rendering. This can help improve performance " +
+                                "by avoiding the rendering of entities located underground or behind walls.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.advanced.useAdvancedEntityCulling = value, opts -> opts.advanced.useAdvancedEntityCulling)
+                        .setBinding((opts, value) -> opts.advanced.useEntityCulling = value, opts -> opts.advanced.useEntityCulling)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
@@ -309,9 +292,10 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Animate Only Visible Textures")
                         .setTooltip("If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame " +
-                                "rates on some hardware. If you experience issues with some textures not being animated, disable this option.")
+                                "rates on some hardware, especially with heavier resource packs. If you experience issues with some textures not being animated, " +
+                                "try disabling this option.")
                         .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.MEDIUM)
+                        .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.advanced.animateOnlyVisibleTextures = value, opts -> opts.advanced.animateOnlyVisibleTextures)
                         .build()
                 )
@@ -319,26 +303,15 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Memory Intrinsics")
-                        .setTooltip("If enabled, special intrinsics will be used to speed up the copying of client memory in certain vertex-limited scenarios, such " +
-                                "as particle and text rendering. This option only exists for debugging purposes and should be left enabled unless you know what " +
-                                "you are doing.")
+                        .setName("Allow Direct Memory Access")
+                        .setTooltip("If enabled, some critical code paths will be allowed to use direct memory access for performance. This " +
+                                "often greatly reduces CPU overhead for chunk and entity rendering, but can make it harder to diagnose some " +
+                                "bugs and crashes. You should only disable this if you've been asked to or otherwise know what you're doing.")
                         .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.MEDIUM)
+                        .setImpact(OptionImpact.HIGH)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .setEnabled(UnsafeUtil.isSupported())
-                        .setBinding((opts, value) -> opts.advanced.useMemoryIntrinsics = value, opts -> opts.advanced.useMemoryIntrinsics)
-                        .build()
-                )
-                .build());
-
-        groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Disable Driver Blacklist")
-                        .setTooltip("If selected, Sodium will ignore the built-in driver blacklist and enable options which are known to be broken " +
-                                "with your system configuration. This might cause serious problems and should not be used unless you really do know better. The settings " +
-                                "screen must be saved, closed, and re-opened after changing this option in order to reveal previously hidden options.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.advanced.disableDriverBlacklist = value, opts -> opts.advanced.disableDriverBlacklist)
+                        .setBinding((opts, value) -> opts.advanced.allowDirectMemoryAccess = value, opts -> opts.advanced.allowDirectMemoryAccess)
                         .build()
                 )
                 .build());

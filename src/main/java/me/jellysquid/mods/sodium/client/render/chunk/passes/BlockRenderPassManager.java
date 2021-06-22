@@ -44,6 +44,7 @@ public class BlockRenderPassManager {
 
         return mapper;
     }
+
     public BlockRenderPass getRenderPassForLayer(RenderLayer layer) {
         return this.getRenderPass(this.getRenderPassId(layer));
     }

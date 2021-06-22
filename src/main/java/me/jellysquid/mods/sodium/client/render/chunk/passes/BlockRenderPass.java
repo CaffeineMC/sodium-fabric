@@ -25,10 +25,16 @@ public enum BlockRenderPass {
         return this.translucent;
     }
 
+    public RenderLayer getLayer() {
+        return this.layer;
+    }
+
+    @Deprecated
     public void endDrawing() {
         this.layer.endDrawing();
     }
 
+    @Deprecated
     public void startDrawing() {
         this.layer.startDrawing();
     }

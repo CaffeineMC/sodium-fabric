@@ -30,7 +30,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
         ImmutableList<VertexFormatElement> elements = this.format.getElements();
 
         do {
-            this.elementOffset += this.currentElement.getSize();
+            this.elementOffset += this.currentElement.getByteLength();
 
             // Wrap around the element pointer without using modulo
             if (++this.currentElementId >= elements.size()) {

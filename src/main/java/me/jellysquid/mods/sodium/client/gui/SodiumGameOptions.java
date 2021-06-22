@@ -5,8 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.multidraw.MultidrawChunkRenderBackend;
-import net.minecraft.client.options.GraphicsMode;
+import net.minecraft.client.option.GraphicsMode;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -14,12 +13,11 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.stream.Stream;
 
 public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
+    public final NotificationSettings notifications = new NotificationSettings();
 
     private Path configPath;
 
@@ -28,17 +26,13 @@ public class SodiumGameOptions {
     }
 
     public static class AdvancedSettings {
-        public boolean useVertexArrays = true;
-        public boolean useMultidraw = true;
-
         public boolean animateOnlyVisibleTextures = true;
-        public boolean useAdvancedEntityCulling = true;
+        public boolean useEntityCulling = true;
         public boolean useParticleCulling = true;
         public boolean useFogOcclusion = true;
         public boolean useCompactVertexFormat = true;
-        public boolean useChunkFaceCulling = true;
-        public boolean useMemoryIntrinsics = true;
-        public boolean disableDriverBlacklist = false;
+        public boolean useBlockFaceCulling = true;
+        public boolean allowDirectMemoryAccess = true;
     }
 
     public static class QualitySettings {
@@ -49,6 +43,10 @@ public class SodiumGameOptions {
         public boolean enableClouds = true;
 
         public LightingQuality smoothLighting = LightingQuality.HIGH;
+    }
+
+    public static class NotificationSettings {
+        public boolean hideDonationButton = false;
     }
 
     public enum GraphicsQuality implements TextProvider {

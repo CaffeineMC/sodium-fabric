@@ -1,20 +1,18 @@
 package me.jellysquid.mods.sodium.client.gl.tessellation;
 
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferSource;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
 
 public class GlVertexArrayTessellation extends GlAbstractTessellation {
     private final GlVertexArray array;
 
-    public GlVertexArrayTessellation(GlVertexArray array, GlPrimitiveType primitiveType, TessellationBinding[] bindings) {
-        super(primitiveType, bindings);
+    public GlVertexArrayTessellation(GlVertexArray array, GlPrimitiveType primitiveType, TessellationBinding[] bindings, GlBuffer indexBuffer) {
+        super(primitiveType, bindings, indexBuffer);
 
         this.array = array;
-    }
-
-    public static boolean isSupported() {
-        return GlFunctions.isVertexArraySupported();
     }
 
     public void init(CommandList commandList) {

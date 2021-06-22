@@ -7,8 +7,15 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
 import me.jellysquid.mods.sodium.client.gl.state.GlStateTracker;
-import me.jellysquid.mods.sodium.client.gl.tessellation.*;
-import org.lwjgl.opengl.*;
+import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
+import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
+import me.jellysquid.mods.sodium.client.gl.tessellation.GlVertexArrayTessellation;
+import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.GL20C;
+import org.lwjgl.opengl.GL30C;
+import org.lwjgl.opengl.GL31C;
+import org.lwjgl.opengl.GL32C;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -64,7 +71,7 @@ public class GLRenderDevice implements RenderDevice {
         @Override
         public void bindVertexArray(GlVertexArray array) {
             if (this.stateTracker.makeVertexArrayActive(array)) {
-                GlFunctions.VERTEX_ARRAY.glBindVertexArray(array.handle());
+                GL30C.glBindVertexArray(array.handle());
             }
         }
 
@@ -79,14 +86,14 @@ public class GLRenderDevice implements RenderDevice {
 
         @Override
         public void copyBufferSubData(GlBuffer src, GlMutableBuffer dst, long readOffset, long writeOffset, long bytes) {
-            if (dst.getSize() <= writeOffset + bytes) {
+            if (writeOffset + bytes > dst.getSize()) {
                 throw new IllegalArgumentException("Not enough space in destination buffer (writeOffset + bytes > bufferSize)");
             }
 
             this.bindBuffer(GlBufferTarget.COPY_READ_BUFFER, src);
             this.bindBuffer(GlBufferTarget.COPY_WRITE_BUFFER, dst);
 
-            GlFunctions.BUFFER_COPY.glCopyBufferSubData(GL31C.GL_COPY_READ_BUFFER, GL31C.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, bytes);
+            GL31C.glCopyBufferSubData(GL31C.GL_COPY_READ_BUFFER, GL31C.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, bytes);
         }
 
         @Override
@@ -97,16 +104,9 @@ public class GLRenderDevice implements RenderDevice {
         }
 
         @Override
-        public void unbindBuffer(GlBufferTarget target) {
-            if (this.stateTracker.makeBufferActive(target, null)) {
-                GL20C.glBindBuffer(target.getTargetParameter(), GlBuffer.NULL_BUFFER_ID);
-            }
-        }
-
-        @Override
         public void unbindVertexArray() {
             if (this.stateTracker.makeVertexArrayActive(null)) {
-                GlFunctions.VERTEX_ARRAY.glBindVertexArray(GlVertexArray.NULL_ARRAY_ID);
+                GL30C.glBindVertexArray(GlVertexArray.NULL_ARRAY_ID);
             }
         }
 
@@ -136,7 +136,7 @@ public class GLRenderDevice implements RenderDevice {
             int handle = array.handle();
             array.invalidateHandle();
 
-            GlFunctions.VERTEX_ARRAY.glDeleteVertexArrays(handle);
+            GL30C.glDeleteVertexArrays(handle);
         }
 
         @Override
@@ -158,25 +158,16 @@ public class GLRenderDevice implements RenderDevice {
         }
 
         @Override
-        public GlVertexArray createVertexArray() {
-            return new GlVertexArray(GLRenderDevice.this);
-        }
-
-        @Override
         public GlMutableBuffer createMutableBuffer(GlBufferUsage usage) {
             return new GlMutableBuffer(GLRenderDevice.this, usage);
         }
 
         @Override
-        public GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings) {
-            if (GlVertexArrayTessellation.isSupported()) {
-                GlVertexArrayTessellation tessellation = new GlVertexArrayTessellation(new GlVertexArray(GLRenderDevice.this), primitiveType, bindings);
-                tessellation.init(this);
+        public GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings, GlBuffer indexBuffer) {
+            GlVertexArrayTessellation tessellation = new GlVertexArrayTessellation(new GlVertexArray(GLRenderDevice.this), primitiveType, bindings, indexBuffer);
+            tessellation.init(this);
 
-                return tessellation;
-            } else {
-                return new GlFallbackTessellation(primitiveType, bindings);
-            }
+            return tessellation;
         }
     }
 
@@ -186,15 +177,15 @@ public class GLRenderDevice implements RenderDevice {
         }
 
         @Override
-        public void multiDrawArrays(IntBuffer first, IntBuffer count) {
+        public void multiDrawElementsIndirect(long pointer, int count, int stride) {
             GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
-            GL20C.glMultiDrawArrays(primitiveType.getId(), first, count);
+            GlFunctions.INDIRECT_DRAW.glMultiDrawElementsIndirect(primitiveType.getId(), GL20C.GL_UNSIGNED_INT, pointer, count, stride);
         }
 
         @Override
-        public void multiDrawArraysIndirect(long pointer, int count, int stride) {
+        public void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex) {
             GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
-            GlFunctions.INDIRECT_DRAW.glMultiDrawArraysIndirect(primitiveType.getId(), pointer, count, stride);
+            GL32C.glMultiDrawElementsBaseVertex(primitiveType.getId(), count, GL20C.GL_UNSIGNED_INT, pointer, baseVertex);
         }
 
         @Override

@@ -14,6 +14,7 @@ public abstract class VertexBufferWriter implements VertexSink {
     protected final int vertexStride;
 
     private int vertexCount;
+    private int vertexCountFlushed;
 
     protected VertexBufferWriter(VertexBufferView backingBuffer, BufferVertexType<?> vertexType) {
         this.backingBuffer = backingBuffer;
@@ -34,6 +35,7 @@ public abstract class VertexBufferWriter implements VertexSink {
     @Override
     public void flush() {
         this.backingBuffer.flush(this.vertexCount, this.vertexFormat);
+        this.vertexCountFlushed += this.vertexCount;
         this.vertexCount = 0;
     }
 
@@ -50,4 +52,9 @@ public abstract class VertexBufferWriter implements VertexSink {
      * should update any pointers
      */
     protected abstract void onBufferStorageChanged();
+
+    @Override
+    public int getVertexCount() {
+        return this.vertexCountFlushed + this.vertexCount;
+    }
 }

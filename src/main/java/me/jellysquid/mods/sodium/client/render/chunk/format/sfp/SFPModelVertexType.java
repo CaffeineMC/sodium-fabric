@@ -19,6 +19,7 @@ public class SFPModelVertexType implements ChunkVertexType {
             .addElement(ChunkMeshAttribute.COLOR, 12, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true)
             .addElement(ChunkMeshAttribute.TEXTURE, 16, GlVertexAttributeFormat.FLOAT, 2, false)
             .addElement(ChunkMeshAttribute.LIGHT, 24, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, true)
+            .addElement(ChunkMeshAttribute.CHUNK_OFFSET, 28, GlVertexAttributeFormat.UNSIGNED_BYTE, 3, false)
             .build();
 
     public static final float MODEL_SCALE = 1.0f;

@@ -4,8 +4,7 @@ import org.lwjgl.opengl.GL20C;
 
 public enum GlPrimitiveType {
     LINES(GL20C.GL_LINES),
-    TRIANGLES(GL20C.GL_TRIANGLES),
-    QUADS(GL20C.GL_QUADS);
+    TRIANGLES(GL20C.GL_TRIANGLES);
 
     private final int id;
 
