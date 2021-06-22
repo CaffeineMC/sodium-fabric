@@ -1,8 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectList;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.DrawCommandList;
@@ -27,8 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 public class RegionChunkRenderer extends ShaderChunkRenderer {
-    private final GlMultiDrawBatch batch = new GlMultiDrawBatch(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
-
+    private final GlMultiDrawBatch batch = GlMultiDrawBatch.create(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
     private final GlVertexAttributeBinding[] vertexAttributeBindings;
 
     public RegionChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
@@ -99,12 +95,12 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 }
             }
 
+            this.batch.end();
+
             if (this.batch.isEmpty()) {
                 continue;
             }
 
-            this.batch.end();
-            
             if (arenas.getTessellation() == null) {
                 arenas.setTessellation(this.createRegionTessellation(commandList, arenas));
             }
