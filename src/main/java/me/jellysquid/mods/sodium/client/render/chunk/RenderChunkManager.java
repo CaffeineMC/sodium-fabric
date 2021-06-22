@@ -111,7 +111,7 @@ public class RenderChunkManager implements ChunkStatusListener {
 
         this.culler = new ChunkGraphCuller(world, renderDistance);
 
-        this.regions = new RenderRegionManager(RenderDevice.INSTANCE);
+        this.regions = new RenderRegionManager(RenderDevice.INSTANCE, this.chunkRenderer);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         LongIterator it = ((ClientChunkManagerExtended) world.getChunkManager()).getLoadedChunks().iterator();
