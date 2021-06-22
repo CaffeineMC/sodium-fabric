@@ -6,6 +6,9 @@ import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import net.minecraft.client.util.math.MatrixStack;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * The chunk render backend takes care of managing the graphics resource state of chunk render containers. This includes
  * the handling of uploading their data to the graphics card and rendering responsibilities.
@@ -19,7 +22,7 @@ public interface ChunkRenderer {
      * @param pass The block render pass to execute
      * @param camera The camera context containing chunk offsets for the current render
      */
-    void render(MatrixStack matrixStack, CommandList commandList, ObjectList<RenderChunk> renders, BlockRenderPass pass, ChunkCameraContext camera);
+    void render(MatrixStack matrixStack, CommandList commandList, Map<RenderRegion, List<RenderChunk>> renders, BlockRenderPass pass, ChunkCameraContext camera);
 
     /**
      * Deletes this render backend and any resources attached to it.

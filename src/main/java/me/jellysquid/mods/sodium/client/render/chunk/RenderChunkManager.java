@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
@@ -17,6 +18,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.cull.ChunkCuller;
 import me.jellysquid.mods.sodium.client.render.chunk.cull.graph.ChunkGraphCuller;
+import me.jellysquid.mods.sodium.client.render.chunk.cull.graph.ChunkGraphIterationQueue;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
@@ -42,9 +44,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ChunkStatus;
 
-import java.util.ArrayDeque;
-import java.util.Collection;
-import java.util.Deque;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -85,6 +85,8 @@ public class RenderChunkManager implements ChunkStatusListener {
 
     private final ObjectList<RenderChunk> visibleChunks = new ObjectArrayList<>();
     private final ObjectList<RenderChunk> tickableChunks = new ObjectArrayList<>();
+
+    private final Map<RenderRegion, List<RenderChunk>> sortedVisibleChunks = new Reference2ObjectLinkedOpenHashMap<>();
 
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
@@ -127,8 +129,23 @@ public class RenderChunkManager implements ChunkStatusListener {
 
         this.setup(camera);
         this.iterateChunks(camera, frustum, frame, spectator);
+        this.sortChunks();
 
         this.dirty = false;
+    }
+
+    private void sortChunks() {
+        this.sortedVisibleChunks.clear();
+
+        for (RenderChunk render : this.visibleChunks) {
+            List<RenderChunk> list = this.sortedVisibleChunks.get(render.getRegion());
+
+            if (list == null) {
+                this.sortedVisibleChunks.put(render.getRegion(), list = new ObjectArrayList<>(RenderRegion.REGION_SIZE));
+            }
+
+            list.add(render);
+        }
     }
 
     private void processStatusChanges() {
@@ -316,7 +333,7 @@ public class RenderChunkManager implements ChunkStatusListener {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRenderer.render(matrixStack, commandList, this.visibleChunks, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRenderer.render(matrixStack, commandList, this.sortedVisibleChunks, pass, new ChunkCameraContext(x, y, z));
 
         commandList.flush();
     }
