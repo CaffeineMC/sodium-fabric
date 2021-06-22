@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectList;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
@@ -22,7 +23,7 @@ public interface ChunkRenderer {
      * @param pass The block render pass to execute
      * @param camera The camera context containing chunk offsets for the current render
      */
-    void render(MatrixStack matrixStack, CommandList commandList, Map<RenderRegion, List<RenderChunk>> renders, BlockRenderPass pass, ChunkCameraContext camera);
+    void render(MatrixStack matrixStack, CommandList commandList, Reference2ObjectMap<RenderRegion, List<RenderChunk>> renders, BlockRenderPass pass, ChunkCameraContext camera);
 
     /**
      * Deletes this render backend and any resources attached to it.

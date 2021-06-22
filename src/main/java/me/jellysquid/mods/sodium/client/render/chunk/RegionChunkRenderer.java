@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.DrawCommandList;
@@ -45,10 +46,12 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     }
 
     @Override
-    public void render(MatrixStack matrixStack, CommandList commandList, Map<RenderRegion, List<RenderChunk>> renders, BlockRenderPass pass, ChunkCameraContext camera) {
+    public void render(MatrixStack matrixStack, CommandList commandList,
+                       Reference2ObjectMap<RenderRegion, List<RenderChunk>> renders, BlockRenderPass pass,
+                       ChunkCameraContext camera) {
         super.begin(pass, matrixStack);
 
-        for (Map.Entry<RenderRegion, List<RenderChunk>> entry : renders.entrySet()) {
+        for (Map.Entry<RenderRegion, List<RenderChunk>> entry : renders.reference2ObjectEntrySet()) {
             RenderRegion region = entry.getKey();
             RenderRegion.RenderRegionArenas arenas = region.getArenas(pass);
 
