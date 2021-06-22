@@ -49,12 +49,10 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     }
 
     @Override
-    public void render(MatrixStack matrixStack, CommandList commandList, ObjectList<RenderChunk> renders, BlockRenderPass pass, ChunkCameraContext camera) {
+    public void render(MatrixStack matrixStack, CommandList commandList, Map<RenderRegion, List<RenderChunk>> renders, BlockRenderPass pass, ChunkCameraContext camera) {
         super.begin(pass, matrixStack);
 
-        Map<RenderRegion, List<RenderChunk>> sortedRenders = sortRenders(renders);
-
-        for (Map.Entry<RenderRegion, List<RenderChunk>> entry : sortedRenders.entrySet()) {
+        for (Map.Entry<RenderRegion, List<RenderChunk>> entry : renders.entrySet()) {
             RenderRegion region = entry.getKey();
             RenderRegion.RenderRegionArenas arenas = region.getArenas(pass);
 
@@ -138,21 +136,5 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
                 new TessellationBinding(arenas.vertexBuffers.getBufferObject(), this.vertexAttributeBindings, false)
         }, arenas.indexBuffers.getBufferObject());
-    }
-
-    private static Map<RenderRegion, List<RenderChunk>> sortRenders(ObjectList<RenderChunk> renders) {
-        Map<RenderRegion, List<RenderChunk>> lists = new Reference2ObjectLinkedOpenHashMap<>();
-
-        for (RenderChunk render : renders) {
-            List<RenderChunk> list = lists.get(render.getRegion());
-
-            if (list == null) {
-                lists.put(render.getRegion(), list = new ObjectArrayList<>(RenderRegion.REGION_SIZE));
-            }
-
-            list.add(render);
-        }
-
-        return lists;
     }
 }
