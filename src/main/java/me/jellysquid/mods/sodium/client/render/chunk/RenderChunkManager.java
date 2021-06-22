@@ -5,10 +5,7 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectList;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.*;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
@@ -86,7 +83,7 @@ public class RenderChunkManager implements ChunkStatusListener {
     private final ObjectList<RenderChunk> visibleChunks = new ObjectArrayList<>();
     private final ObjectList<RenderChunk> tickableChunks = new ObjectArrayList<>();
 
-    private final Map<RenderRegion, List<RenderChunk>> sortedVisibleChunks = new Reference2ObjectLinkedOpenHashMap<>();
+    private final Reference2ObjectMap<RenderRegion, List<RenderChunk>> sortedVisibleChunks = new Reference2ObjectLinkedOpenHashMap<>();
 
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
