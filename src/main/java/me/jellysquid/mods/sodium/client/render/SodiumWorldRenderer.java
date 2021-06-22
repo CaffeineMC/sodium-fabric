@@ -8,8 +8,7 @@ import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderChunkManager;
-import me.jellysquid.mods.sodium.client.render.chunk.backend.multidraw.MultidrawChunkRenderer;
-import me.jellysquid.mods.sodium.client.render.chunk.backend.onedraw.OnedrawChunkRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.RegionChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.DefaultModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
@@ -28,7 +27,10 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 
 import java.util.Set;
@@ -257,19 +259,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             vertexFormat = DefaultModelVertexFormats.MODEL_VERTEX_SFP;
         }
 
-        this.chunkRenderer = createChunkRenderBackend(device, opts, vertexFormat);
+        this.chunkRenderer = new RegionChunkRenderer(device, vertexFormat);
 
         this.renderChunkManager = new RenderChunkManager(this, this.chunkRenderer, this.renderPassManager, this.world, this.renderDistance);
-    }
-
-    private static ChunkRenderer createChunkRenderBackend(RenderDevice device,
-                                                          SodiumGameOptions options,
-                                                          ChunkVertexType vertexFormat) {
-        if (options.advanced.useChunkMultidraw && MultidrawChunkRenderer.isSupported(options.advanced.ignoreDriverBlacklist)) {
-            return new MultidrawChunkRenderer(device, vertexFormat);
-        } else {
-            return new OnedrawChunkRenderer(device, vertexFormat);
-        }
     }
 
     public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,

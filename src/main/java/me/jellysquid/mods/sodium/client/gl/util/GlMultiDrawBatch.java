@@ -15,7 +15,6 @@ public class GlMultiDrawBatch {
     private final IntBuffer bufBaseVertex;
 
     private int count;
-    private boolean isBuilding;
 
     public GlMultiDrawBatch(int capacity) {
         this.bufPointer = MemoryUtil.memAllocPointer(capacity);
@@ -31,32 +30,19 @@ public class GlMultiDrawBatch {
         return this.bufCount;
     }
 
+    public IntBuffer getBaseVertexBuffer() {
+        return this.bufBaseVertex;
+    }
+
     public void begin() {
         this.bufPointer.clear();
         this.bufCount.clear();
         this.bufBaseVertex.clear();
 
         this.count = 0;
-        this.isBuilding = true;
     }
 
-    public void end() {
-        this.bufPointer.limit(this.count);
-        this.bufCount.limit(this.count);
-        this.bufBaseVertex.limit(this.count);
-
-        this.isBuilding = false;
-    }
-
-    public boolean isEmpty() {
-        return this.count <= 0;
-    }
-
-    public void addChunkRender(ElementRange range, int vertexOffset, int indexOffset) {
-        this.addChunkRender((indexOffset + range.elementOffset) * 4 /* TODO: Allow custom pointer size */, range.elementCount, vertexOffset + range.baseVertex);
-    }
-
-    public void addChunkRender(int pointer, int count, int baseVertex) {
+    public void add(int pointer, int count, int baseVertex) {
         int i = this.count++;
 
         this.bufPointer.put(i, pointer);
@@ -64,8 +50,10 @@ public class GlMultiDrawBatch {
         this.bufBaseVertex.put(i, baseVertex);
     }
 
-    public boolean isBuilding() {
-        return this.isBuilding;
+    public void end() {
+        this.bufPointer.limit(this.count);
+        this.bufCount.limit(this.count);
+        this.bufBaseVertex.limit(this.count);
     }
 
     public void delete() {
@@ -74,11 +62,7 @@ public class GlMultiDrawBatch {
         MemoryUtil.memFree(this.bufBaseVertex);
     }
 
-    public IntBuffer getBaseVertexBuffer() {
-        return this.bufBaseVertex;
-    }
-
-    public int getCount() {
-        return this.count;
+    public boolean isEmpty() {
+        return this.count <= 0;
     }
 }

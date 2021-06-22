@@ -14,27 +14,22 @@ import java.util.Set;
 public class GlBufferArena {
     private static final GlBufferUsage BUFFER_USAGE = GlBufferUsage.GL_DYNAMIC_DRAW;
 
-    private final RenderDevice device;
     private final int resizeIncrement;
 
     private final Set<GlBufferSegment> freeRegions = new ObjectLinkedOpenHashSet<>();
 
+    private final GlMutableBuffer stagingBuffer;
     private GlMutableBuffer arenaBuffer;
-    private GlMutableBuffer stagingBuffer;
 
     private int position;
     private int capacity;
     private int allocCount;
 
-    public GlBufferArena(RenderDevice device, int initialSize) {
-        this.device = device;
+    public GlBufferArena(CommandList commands, int initialSize) {
+        commands.allocateBuffer(GlBufferTarget.COPY_WRITE_BUFFER,
+                this.arenaBuffer = commands.createMutableBuffer(BUFFER_USAGE), initialSize);
 
-        try (CommandList commands = device.createCommandList()) {
-            commands.allocateBuffer(GlBufferTarget.COPY_WRITE_BUFFER,
-                    this.arenaBuffer = commands.createMutableBuffer(BUFFER_USAGE), initialSize);
-
-            this.stagingBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
-        }
+        this.stagingBuffer = commands.createMutableBuffer(GlBufferUsage.GL_STATIC_DRAW);
 
         this.resizeIncrement = initialSize;
         this.capacity = initialSize;
@@ -126,17 +121,16 @@ public class GlBufferArena {
         return new GlBufferSegment(this, bestSegment.getStart(), len);
     }
 
-    public void delete() {
-        try (CommandList commands = this.device.createCommandList()) {
-            commands.deleteBuffer(this.arenaBuffer);
-        }
+    public void delete(CommandList commands) {
+        commands.deleteBuffer(this.arenaBuffer);
+        commands.deleteBuffer(this.stagingBuffer);
     }
 
     public boolean isEmpty() {
         return this.allocCount <= 0;
     }
 
-    public GlBuffer getArenaBuffer() {
+    public GlBuffer getBufferObject() {
         return this.arenaBuffer;
     }
 }

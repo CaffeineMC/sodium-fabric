@@ -3,10 +3,7 @@
 #import <sodium:blocks/base.vsh>
 
 void main() {
-    // Translates the vertex position around the position of the camera
-    // This can be used to calculate the distance of the vertex from the camera without needing to
-    // transform it into model-view space with a matrix, which is much slower.
-    vec3 pos = (a_Pos * u_ModelScale) + d_ModelOffset.xyz;
+    vec3 pos = getVertexPosition(a_Pos, a_ChunkOffset, u_RegionTranslation, u_ModelScale);
 
 #ifdef USE_FOG
     v_FragDistance = length(pos);

@@ -23,10 +23,12 @@ public class ChunkProgram extends GlProgram {
     private final int uBlockTex;
     private final int uLightTex;
 
+    public final int uRegionTranslation;
+
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
 
-    protected ChunkProgram(RenderDevice owner, int handle, ChunkShaderOptions options) {
+    public ChunkProgram(RenderDevice owner, int handle, ChunkShaderOptions options) {
         super(owner, handle);
 
         this.uModelViewProjectionMatrix = this.getUniformLocation("u_ModelViewProjectionMatrix");
@@ -35,6 +37,7 @@ public class ChunkProgram extends GlProgram {
         this.uLightTex = this.getUniformLocation("u_LightTex");
         this.uModelScale = this.getUniformLocation("u_ModelScale");
         this.uTextureScale = this.getUniformLocation("u_TextureScale");
+        this.uRegionTranslation = this.getUniformLocation("u_RegionTranslation");
 
         this.fogShader = options.fogMode.getFactory().apply(this);
     }

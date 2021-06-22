@@ -23,6 +23,9 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 /**
  * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
  * to graphics memory on the main thread.
@@ -48,7 +51,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
-        buffers.init(renderData);
+        buffers.init(renderData, this.render.getRelativeOffset());
 
         cache.init(this.context);
 
@@ -122,18 +125,20 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
+        Map<BlockRenderPass, ChunkMeshData> meshes = new EnumMap<>(BlockRenderPass.class);
+
         for (BlockRenderPass pass : BlockRenderPass.VALUES) {
             ChunkMeshData mesh = buffers.createMesh(pass);
 
             if (mesh != null) {
-                renderData.setMesh(pass, mesh);
+                meshes.put(pass, mesh);
             }
         }
 
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
 
-        return new ChunkBuildResult(this.render, renderData.build());
+        return new ChunkBuildResult(this.render, renderData.build(), meshes);
     }
 
     @Override

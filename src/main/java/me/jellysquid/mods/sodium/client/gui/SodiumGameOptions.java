@@ -26,8 +26,6 @@ public class SodiumGameOptions {
     }
 
     public static class AdvancedSettings {
-        public boolean useChunkMultidraw = true;
-
         public boolean animateOnlyVisibleTextures = true;
         public boolean useEntityCulling = true;
         public boolean useParticleCulling = true;
@@ -35,7 +33,6 @@ public class SodiumGameOptions {
         public boolean useCompactVertexFormat = true;
         public boolean useBlockFaceCulling = true;
         public boolean allowDirectMemoryAccess = true;
-        public boolean ignoreDriverBlacklist = false;
     }
 
     public static class QualitySettings {

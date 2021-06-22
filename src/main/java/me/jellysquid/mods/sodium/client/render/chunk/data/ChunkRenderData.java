@@ -24,15 +24,12 @@ public class ChunkRenderData {
     private List<BlockEntity> globalBlockEntities;
     private List<BlockEntity> blockEntities;
 
-    private EnumMap<BlockRenderPass, ChunkMeshData> meshes;
-
     private ChunkOcclusionData occlusionData;
     private ChunkRenderBounds bounds;
 
     private List<Sprite> animatedSprites;
 
     private boolean isEmpty;
-    private int meshByteSize;
 
     /**
      * @return True if the chunk has no renderables, otherwise false
@@ -68,23 +65,10 @@ public class ChunkRenderData {
         return this.globalBlockEntities;
     }
 
-    /**
-     * The collection of chunk meshes belonging to this render.
-     */
-    public ChunkMeshData getMesh(BlockRenderPass pass) {
-        return this.meshes.get(pass);
-    }
-
-    public int getMeshSize() {
-        return this.meshByteSize;
-    }
-
     public static class Builder {
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
-
-        private final EnumMap<BlockRenderPass, ChunkMeshData> meshes = new EnumMap<>(BlockRenderPass.class);
 
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
@@ -108,10 +92,6 @@ public class ChunkRenderData {
             }
         }
 
-        public void setMesh(BlockRenderPass pass, ChunkMeshData data) {
-            this.meshes.put(pass, data);
-        }
-
         /**
          * Adds a block entity to the data container.
          * @param entity The block entity itself
@@ -126,18 +106,9 @@ public class ChunkRenderData {
             data.globalBlockEntities = this.globalBlockEntities;
             data.blockEntities = this.blockEntities;
             data.occlusionData = this.occlusionData;
-            data.meshes = this.meshes;
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
-
-            int size = 0;
-
-            for (ChunkMeshData meshData : this.meshes.values()) {
-                size += meshData.getVertexDataSize();
-            }
-
-            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.meshes.isEmpty();
-            data.meshByteSize = size;
+            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty();
 
             return data;
         }

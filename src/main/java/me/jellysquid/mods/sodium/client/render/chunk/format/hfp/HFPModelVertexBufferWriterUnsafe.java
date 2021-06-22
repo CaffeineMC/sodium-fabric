@@ -12,7 +12,7 @@ public class HFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe i
     }
 
     @Override
-    public void writeVertex(float x, float y, float z, int color, float u, float v, int light) {
+    public void writeVertex(float x, float y, float z, int color, float u, float v, int light, int offset) {
         this.writeQuadInternal(
                 ModelVertexUtil.denormalizeVertexPositionFloatAsShort(x),
                 ModelVertexUtil.denormalizeVertexPositionFloatAsShort(y),
@@ -20,12 +20,13 @@ public class HFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe i
                 color,
                 ModelVertexUtil.denormalizeVertexTextureFloatAsShort(u),
                 ModelVertexUtil.denormalizeVertexTextureFloatAsShort(v),
-                ModelVertexUtil.encodeLightMapTexCoord(light)
+                ModelVertexUtil.encodeLightMapTexCoord(light),
+                offset
         );
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
-    private void writeQuadInternal(short x, short y, short z, int color, short u, short v, int light) {
+    private void writeQuadInternal(short x, short y, short z, int color, short u, short v, int light, int offset) {
         long i = this.writePointer;
 
         UNSAFE.putShort(i, x);
@@ -35,6 +36,7 @@ public class HFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe i
         UNSAFE.putShort(i + 12, u);
         UNSAFE.putShort(i + 14, v);
         UNSAFE.putInt(i + 16, light);
+        UNSAFE.putInt(i + 20, offset);
 
         this.advance();
     }
