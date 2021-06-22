@@ -309,6 +309,7 @@ public class SodiumGameOptionPages {
                                 "bugs and crashes. You should only disable this if you've been asked to or otherwise know what you're doing.")
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .setEnabled(UnsafeUtil.isSupported())
                         .setBinding((opts, value) -> opts.advanced.allowDirectMemoryAccess = value, opts -> opts.advanced.allowDirectMemoryAccess)
                         .build()
