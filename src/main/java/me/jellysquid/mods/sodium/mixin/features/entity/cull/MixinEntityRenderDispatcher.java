@@ -35,8 +35,8 @@ public abstract class MixinEntityRenderDispatcher {
         // is also not visible, just render the entity nametag and nothing else.
         if (((EntityLabelAccessor) entityRenderer).bridge$hasLabel(entity) && !MinecraftClient.getInstance().hasOutline(entity) && !SodiumWorldRenderer.getInstance().isEntityVisible(entity)) {
             ((EntityLabelAccessor) entityRenderer).bridge$renderLabelIfPresent(entity, entity.getDisplayName(), matrices, vertexConsumers, this.getLight(entity, tickDelta));
-            matrices.pop();
 
+            matrices.pop();
             callbackInfo.cancel();
         }
     }
@@ -55,7 +55,6 @@ public abstract class MixinEntityRenderDispatcher {
         // cancel the rest of the entity rendering.
         if (MinecraftClient.getInstance().hasOutline(entity) && !SodiumWorldRenderer.getInstance().isEntityVisible(entity)) {
             matrices.pop();
-
             callbackInfo.cancel();
         }
     }
