@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.client.gl.util.BufferSlice;
+import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import net.minecraft.block.entity.BlockEntity;
@@ -24,16 +24,12 @@ public class ChunkRenderData {
     private List<BlockEntity> globalBlockEntities;
     private List<BlockEntity> blockEntities;
 
-    private EnumMap<BlockRenderPass, ChunkMeshData> meshes;
-
     private ChunkOcclusionData occlusionData;
     private ChunkRenderBounds bounds;
 
     private List<Sprite> animatedSprites;
 
     private boolean isEmpty;
-    private int meshByteSize;
-    private int facesWithData;
 
     /**
      * @return True if the chunk has no renderables, otherwise false
@@ -69,36 +65,13 @@ public class ChunkRenderData {
         return this.globalBlockEntities;
     }
 
-    /**
-     * The collection of chunk meshes belonging to this render.
-     */
-    public ChunkMeshData getMesh(BlockRenderPass pass) {
-        return this.meshes.get(pass);
-    }
-
-    public int getMeshSize() {
-        return this.meshByteSize;
-    }
-
-    public int getFacesWithData() {
-        return this.facesWithData;
-    }
-
     public static class Builder {
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
-        private final EnumMap<BlockRenderPass, ChunkMeshData> meshes = new EnumMap<>(BlockRenderPass.class);
-
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
-
-        public Builder() {
-            for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-                this.setMesh(pass, ChunkMeshData.EMPTY);
-            }
-        }
 
         public void setBounds(ChunkRenderBounds bounds) {
             this.bounds = bounds;
@@ -114,13 +87,9 @@ public class ChunkRenderData {
          * @param sprite The sprite
          */
         public void addSprite(Sprite sprite) {
-            if (sprite.isAnimated()) {
+            if (sprite.getAnimation() != null) {
                 this.animatedSprites.add(sprite);
             }
-        }
-
-        public void setMesh(BlockRenderPass pass, ChunkMeshData data) {
-            this.meshes.put(pass, data);
         }
 
         /**
@@ -137,24 +106,9 @@ public class ChunkRenderData {
             data.globalBlockEntities = this.globalBlockEntities;
             data.blockEntities = this.blockEntities;
             data.occlusionData = this.occlusionData;
-            data.meshes = this.meshes;
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
-
-            int facesWithData = 0;
-            int size = 0;
-
-            for (ChunkMeshData meshData : this.meshes.values()) {
-                size += meshData.getVertexDataSize();
-
-                for (Map.Entry<ModelQuadFacing, BufferSlice> entry : meshData.getSlices()) {
-                    facesWithData |= 1 << entry.getKey().ordinal();
-                }
-            }
-
-            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && facesWithData == 0;
-            data.meshByteSize = size;
-            data.facesWithData = facesWithData;
+            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty();
 
             return data;
         }

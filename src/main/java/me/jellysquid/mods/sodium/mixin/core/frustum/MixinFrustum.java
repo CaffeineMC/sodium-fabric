@@ -2,8 +2,8 @@ package me.jellysquid.mods.sodium.mixin.core.frustum;
 
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import net.minecraft.client.render.Frustum;
-import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.injection.At;

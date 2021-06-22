@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
+import me.jellysquid.mods.sodium.client.model.PrimitiveSink;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -10,7 +11,7 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuffers;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -105,7 +106,7 @@ public class FluidRenderer {
         return true;
     }
 
-    public boolean render(BlockRenderView world, FluidState fluidState, BlockPos pos, ChunkModelBuffers buffers) {
+    public boolean render(BlockRenderView world, FluidState fluidState, BlockPos pos, ChunkModelBuilder buffers) {
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();
@@ -368,7 +369,7 @@ public class FluidRenderer {
         }
     }
 
-    private void flushQuad(ChunkModelBuffers buffers, ModelQuadView quad, ModelQuadFacing facing, boolean flip) {
+    private void flushQuad(ChunkModelBuilder model, ModelQuadView quad, ModelQuadFacing facing, boolean flip) {
         int vertexIdx, lightOrder;
 
         if (flip) {
@@ -379,8 +380,10 @@ public class FluidRenderer {
             lightOrder = 1;
         }
 
-        ModelVertexSink sink = buffers.getSink(facing);
-        sink.ensureCapacity(4);
+        PrimitiveSink<ModelVertexSink> sink = model.getBuilder(facing);
+        sink.vertices.ensureCapacity(4);
+
+        int count = sink.vertices.getVertexCount();
 
         for (int i = 0; i < 4; i++) {
             float x = quad.getX(i);
@@ -394,18 +397,26 @@ public class FluidRenderer {
 
             int light = this.quadLightData.lm[vertexIdx];
 
-            sink.writeQuad(x, y, z, color, u, v, light);
+            sink.vertices.writeVertex(x, y, z, color, u, v, light, model.getOffset());
 
             vertexIdx += lightOrder;
         }
 
+        sink.vertices.flush();
+
+        sink.indices.add(count + 0);
+        sink.indices.add(count + 1);
+        sink.indices.add(count + 2);
+
+        sink.indices.add(count + 2);
+        sink.indices.add(count + 3);
+        sink.indices.add(count + 0);
+
         Sprite sprite = quad.getSprite();
 
         if (sprite != null) {
-            buffers.getRenderData().addSprite(sprite);
+            model.addSprite(sprite);
         }
-
-        sink.flush();
     }
 
     private void setVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {

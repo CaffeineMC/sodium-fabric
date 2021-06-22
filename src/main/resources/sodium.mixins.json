@@ -1,7 +1,7 @@
 {
   "package": "me.jellysquid.mods.sodium.mixin",
   "required": true,
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_16",
   "plugin": "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
   "injectors": {
     "defaultRequire": 1
@@ -13,7 +13,6 @@
     "core.frustum.MixinFrustum",
     "core.matrix.MixinMatrix3f",
     "core.matrix.MixinMatrix4f",
-    "core.matrix.MixinGameRenderer",
     "core.model.MixinBlockColors",
     "core.model.MixinItemColors",
     "core.pipeline.MixinBakedQuad",
@@ -23,7 +22,6 @@
     "features.block.MixinBlockModelRenderer",
     "features.block.MixinWorldRenderer",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
-    "features.buffer_builder.fast_sort.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinSpriteTexturedVertexConsumer",
     "features.buffer_builder.intrinsics.MixinWorldRenderer",
@@ -31,9 +29,9 @@
     "features.chunk_rendering.MixinClientChunkManager",
     "features.chunk_rendering.MixinClientChunkManager$MixinClientChunkMap",
     "features.chunk_rendering.MixinClientWorld",
+    "features.chunk_rendering.MixinPackedIntegerArray",
     "features.chunk_rendering.MixinPalettedContainer",
     "features.chunk_rendering.MixinWorldRenderer",
-    "features.chunk_rendering.MixinPackedIntegerArray",
     "features.debug.MixinDebugHud",
     "features.entity.cull.MixinEntityRenderer",
     "features.entity.cull.MixinEntityRenderDispatcher",
@@ -58,6 +56,6 @@
     "features.render_layer.MixinRenderLayers",
     "features.texture_tracking.MixinSprite",
     "features.texture_tracking.MixinSpriteAtlasTexture",
-    "features.world_ticking.MixinClientWorld"
+    "features.texture_tracking.MixinSpriteAnimation"
   ]
 }

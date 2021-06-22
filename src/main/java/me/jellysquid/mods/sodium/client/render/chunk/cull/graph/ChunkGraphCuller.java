@@ -30,6 +30,7 @@ public class ChunkGraphCuller implements ChunkCuller {
     private boolean useOcclusionCulling;
 
     private int activeFrame = 0;
+    private int centerChunkX, centerChunkY, centerChunkZ;
 
     public ChunkGraphCuller(World world, int renderDistance) {
         this.world = world;
@@ -53,13 +54,20 @@ public class ChunkGraphCuller implements ChunkCuller {
 
                 ChunkGraphNode adj = node.getConnectedNode(dir);
 
-                if (adj != null) {
+                if (adj != null && this.isWithinRenderDistance(adj)) {
                     this.bfsEnqueue(node, adj, dir.getOpposite());
                 }
             }
         }
 
         return this.visible.getOrderedIdList();
+    }
+
+    private boolean isWithinRenderDistance(ChunkGraphNode adj) {
+        int x = Math.abs(adj.getChunkX() - this.centerChunkX);
+        int z = Math.abs(adj.getChunkZ() - this.centerChunkZ);
+
+        return x <= this.renderDistance && z <= this.renderDistance;
     }
 
     private boolean isCulled(ChunkGraphNode node, Direction from, Direction to) {
@@ -83,6 +91,10 @@ public class ChunkGraphCuller implements ChunkCuller {
         int chunkY = origin.getY() >> 4;
         int chunkZ = origin.getZ() >> 4;
 
+        this.centerChunkX = chunkX;
+        this.centerChunkY = chunkY;
+        this.centerChunkZ = chunkZ;
+
         ChunkGraphNode rootNode = this.getNode(chunkX, chunkY, chunkZ);
 
         if (rootNode != null) {
@@ -95,7 +107,7 @@ public class ChunkGraphCuller implements ChunkCuller {
 
             this.visible.add(rootNode, null);
         } else {
-            chunkY = MathHelper.clamp(origin.getY() >> 4, 0, 15);
+            chunkY = MathHelper.clamp(origin.getY() >> 4, this.world.getBottomSectionCoord(), this.world.getTopSectionCoord() - 1);
 
             List<ChunkGraphNode> bestNodes = new ArrayList<>();
 

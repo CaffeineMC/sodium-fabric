@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.texture;
 
 public interface SpriteExtended {
-    void markActive();
+    void setActive(boolean b);
+
+    boolean isActive();
 }

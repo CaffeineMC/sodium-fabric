@@ -12,7 +12,7 @@ public class SFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe i
 
     @SuppressWarnings("SuspiciousNameCombination")
     @Override
-    public void writeQuad(float x, float y, float z, int color, float u, float v, int light) {
+    public void writeVertex(float x, float y, float z, int color, float u, float v, int light, int offset) {
         long i = this.writePointer;
 
         UNSAFE.putFloat(i, x);
@@ -22,6 +22,7 @@ public class SFPModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe i
         UNSAFE.putFloat(i + 16, u);
         UNSAFE.putFloat(i + 20, v);
         UNSAFE.putInt(i + 24, encodeLightMapTexCoord(light));
+        UNSAFE.putInt(i + 28, offset);
 
         this.advance();
     }

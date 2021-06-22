@@ -5,6 +5,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
+import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.render.*;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
@@ -13,7 +15,7 @@ import org.lwjgl.opengl.GL20C;
 
 import java.util.function.Consumer;
 
-public abstract class AbstractWidget implements Drawable, Element {
+public abstract class AbstractWidget implements Drawable, Element, Selectable {
     protected final TextRenderer font;
 
     protected AbstractWidget() {
@@ -34,12 +36,14 @@ public abstract class AbstractWidget implements Drawable, Element {
     }
 
     protected void drawQuads(Consumer<VertexConsumer> consumer) {
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
 
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
-        bufferBuilder.begin(GL20C.GL_QUADS, VertexFormats.POSITION_COLOR);
+        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
         consumer.accept(bufferBuilder);
 
@@ -64,5 +68,20 @@ public abstract class AbstractWidget implements Drawable, Element {
 
     protected int getStringWidth(String text) {
         return this.font.getWidth(text);
+    }
+
+    public Selectable.SelectionType getType() {
+        // FIXME
+        return SelectionType.NONE;
+    }
+
+    public boolean method_37303() {
+        // FIXME
+        return true;
+    }
+
+    @Override
+    public void appendNarrations(NarrationMessageBuilder builder) {
+        // FIXME
     }
 }

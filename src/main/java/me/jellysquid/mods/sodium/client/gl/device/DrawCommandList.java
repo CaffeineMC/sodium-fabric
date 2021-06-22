@@ -1,13 +1,13 @@
 package me.jellysquid.mods.sodium.client.gl.device;
 
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
+import org.lwjgl.PointerBuffer;
 
 import java.nio.IntBuffer;
 
 public interface DrawCommandList extends AutoCloseable {
-    void multiDrawArrays(IntBuffer first, IntBuffer count);
+    void multiDrawElementsIndirect(long pointer, int count, int stride);
 
-    void multiDrawArraysIndirect(long pointer, int count, int stride);
+    void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex);
 
     void endTessellating();
 

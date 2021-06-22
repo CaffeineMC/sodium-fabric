@@ -12,6 +12,7 @@ public interface ModelVertexSink extends VertexSink {
      * @param u The u-texture of the vertex
      * @param v The y-texture of the vertex
      * @param light The packed light-map coordinates of the vertex
+     * @param offset The chunk offset for the vertex
      */
-    void writeQuad(float x, float y, float z, int color, float u, float v, int light);
+    void writeVertex(float x, float y, float z, int color, float u, float v, int light, int offset);
 }

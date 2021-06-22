@@ -1,9 +1,8 @@
 package me.jellysquid.mods.sodium.client.gl.tessellation;
 
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttribute;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferSource;
 
 public class TessellationBinding {
     private final GlBuffer buffer;

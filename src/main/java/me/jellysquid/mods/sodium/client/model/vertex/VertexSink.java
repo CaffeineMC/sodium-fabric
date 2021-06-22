@@ -33,4 +33,6 @@ public interface VertexSink {
      * flushing, in effect batching their writes.
      */
     void flush();
+
+    int getVertexCount();
 }

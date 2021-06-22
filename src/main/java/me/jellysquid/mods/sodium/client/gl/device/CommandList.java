@@ -5,29 +5,22 @@ import me.jellysquid.mods.sodium.client.gl.buffer.*;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
+import me.jellysquid.mods.sodium.client.model.BufferRange;
 
 import java.nio.ByteBuffer;
 
 public interface CommandList extends AutoCloseable {
-    GlVertexArray createVertexArray();
-
     GlMutableBuffer createMutableBuffer(GlBufferUsage usage);
 
-    GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings);
+    GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings, GlBuffer indexBuffer);
 
     void bindVertexArray(GlVertexArray array);
-
-    default void uploadData(GlMutableBuffer glBuffer, VertexData data) {
-        this.uploadData(glBuffer, data.buffer);
-    }
 
     void uploadData(GlMutableBuffer glBuffer, ByteBuffer byteBuffer);
 
     void copyBufferSubData(GlBuffer src, GlMutableBuffer dst, long readOffset, long writeOffset, long bytes);
 
     void bindBuffer(GlBufferTarget target, GlBuffer buffer);
-
-    void unbindBuffer(GlBufferTarget target);
 
     void unbindVertexArray();
 
