@@ -4,5 +4,6 @@ public enum ChunkMeshAttribute {
     POSITION,
     COLOR,
     TEXTURE,
-    LIGHT
+    LIGHT,
+    CHUNK_OFFSET;
 }

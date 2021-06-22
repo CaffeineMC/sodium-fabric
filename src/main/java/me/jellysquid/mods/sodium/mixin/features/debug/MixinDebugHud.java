@@ -29,10 +29,6 @@ public abstract class MixinDebugHud {
         strings.add("Sodium Renderer");
         strings.add(Formatting.UNDERLINE + getFormattedVersionText());
 
-        if (SodiumClientMod.options().advanced.ignoreDriverBlacklist) {
-            strings.add(Formatting.RED + "(!!) Driver blacklist ignored");
-        }
-
         for (int i = 0; i < strings.size(); i++) {
             String str = strings.get(i);
 

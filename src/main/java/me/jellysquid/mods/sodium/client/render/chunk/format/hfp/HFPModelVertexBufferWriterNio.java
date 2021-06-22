@@ -14,7 +14,7 @@ public class HFPModelVertexBufferWriterNio extends VertexBufferWriterNio impleme
     }
 
     @Override
-    public void writeVertex(float x, float y, float z, int color, float u, float v, int light) {
+    public void writeVertex(float x, float y, float z, int color, float u, float v, int light, int offset) {
         this.writeQuadInternal(
                 ModelVertexUtil.denormalizeVertexPositionFloatAsShort(x),
                 ModelVertexUtil.denormalizeVertexPositionFloatAsShort(y),
@@ -22,11 +22,12 @@ public class HFPModelVertexBufferWriterNio extends VertexBufferWriterNio impleme
                 color,
                 ModelVertexUtil.denormalizeVertexTextureFloatAsShort(u),
                 ModelVertexUtil.denormalizeVertexTextureFloatAsShort(v),
-                ModelVertexUtil.encodeLightMapTexCoord(light)
+                ModelVertexUtil.encodeLightMapTexCoord(light),
+                offset
         );
     }
 
-    private void writeQuadInternal(short x, short y, short z, int color, short u, short v, int light) {
+    private void writeQuadInternal(short x, short y, short z, int color, short u, short v, int light, int offset) {
         int i = this.writeOffset;
 
         ByteBuffer buffer = this.byteBuffer;
@@ -37,6 +38,7 @@ public class HFPModelVertexBufferWriterNio extends VertexBufferWriterNio impleme
         buffer.putShort(i + 12, u);
         buffer.putShort(i + 14, v);
         buffer.putInt(i + 16, light);
+        buffer.putInt(i + 20, offset);
 
         this.advance();
     }

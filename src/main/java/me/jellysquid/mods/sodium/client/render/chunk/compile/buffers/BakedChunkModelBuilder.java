@@ -4,15 +4,21 @@ import me.jellysquid.mods.sodium.client.model.PrimitiveSink;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.util.math.Vec3i;
 
-public class BakedChunkModelBuffers implements ChunkModelBuffers {
+public class BakedChunkModelBuilder implements ChunkModelBuilder {
     private final PrimitiveSink<ModelVertexSink>[] builders;
     private final ChunkRenderData.Builder renderData;
+    private final int offset;
 
-    public BakedChunkModelBuffers(PrimitiveSink<ModelVertexSink>[] builders,
-                                  ChunkRenderData.Builder renderData) {
+    public BakedChunkModelBuilder(PrimitiveSink<ModelVertexSink>[] builders,
+                                  ChunkRenderData.Builder renderData,
+                                  Vec3i offset) {
         this.builders = builders;
         this.renderData = renderData;
+
+        this.offset = offset.getZ() << 16 | offset.getY() << 8 | offset.getX();
     }
 
     @Override
@@ -21,7 +27,12 @@ public class BakedChunkModelBuffers implements ChunkModelBuffers {
     }
 
     @Override
-    public ChunkRenderData.Builder getRenderData() {
-        return this.renderData;
+    public void addSprite(Sprite sprite) {
+        this.renderData.addSprite(sprite);
+    }
+
+    @Override
+    public int getOffset() {
+        return this.offset;
     }
 }

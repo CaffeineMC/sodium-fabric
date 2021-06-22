@@ -7,6 +7,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 
+import java.util.Collections;
+
 /**
  * A build task which does no computation and always return an empty build result. These tasks are created whenever
  * chunk meshes need to be deleted as the only way to change graphics state is to send a message to the main
@@ -22,7 +24,7 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
 
     @Override
     public ChunkBuildResult performBuild(ChunkRenderCacheLocal cache, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
-        return new ChunkBuildResult(this.render, ChunkRenderData.EMPTY);
+        return new ChunkBuildResult(this.render, ChunkRenderData.EMPTY, Collections.emptyMap());
     }
 
     @Override

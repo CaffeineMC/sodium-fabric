@@ -1,7 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.render.chunk.RenderChunk;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+
+import java.util.Map;
 
 /**
  * The result of a chunk rebuild task which contains any and all data that needs to be processed or uploaded on
@@ -11,9 +15,15 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 public class ChunkBuildResult {
     public final RenderChunk render;
     public final ChunkRenderData data;
+    public final Map<BlockRenderPass, ChunkMeshData> meshes;
 
-    public ChunkBuildResult(RenderChunk render, ChunkRenderData data) {
+    public ChunkBuildResult(RenderChunk render, ChunkRenderData data, Map<BlockRenderPass, ChunkMeshData> meshes) {
         this.render = render;
         this.data = data;
+        this.meshes = meshes;
+    }
+
+    public ChunkMeshData getMesh(BlockRenderPass pass) {
+        return this.meshes.get(pass);
     }
 }

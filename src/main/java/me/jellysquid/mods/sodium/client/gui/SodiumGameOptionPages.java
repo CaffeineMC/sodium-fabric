@@ -9,7 +9,6 @@ import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.TickBoxControl;
 import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
-import me.jellysquid.mods.sodium.client.render.chunk.backend.multidraw.MultidrawChunkRenderer;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
@@ -240,20 +239,6 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Chunk Multi-Draw")
-                        .setTooltip("Multi-draw allows multiple chunks to be rendered with fewer draw calls, greatly reducing CPU overhead when " +
-                                "rendering the world while also potentially allowing for more efficient GPU utilization. This optimization may cause " +
-                                "issues with some graphics drivers, so you should try disabling it if you are experiencing glitches.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.advanced.useChunkMultidraw = value, opts -> opts.advanced.useChunkMultidraw)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .setImpact(OptionImpact.EXTREME)
-                        .setEnabled(MultidrawChunkRenderer.isSupported(sodiumOpts.getData().advanced.ignoreDriverBlacklist))
-                        .build())
-                .build());
-
-        groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Block Face Culling")
                         .setTooltip("If enabled, only the sides of blocks which are facing the camera will be submitted for rendering. This can eliminate " +
                                 "a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU. Some resource " +
@@ -326,18 +311,6 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.HIGH)
                         .setEnabled(UnsafeUtil.isSupported())
                         .setBinding((opts, value) -> opts.advanced.allowDirectMemoryAccess = value, opts -> opts.advanced.allowDirectMemoryAccess)
-                        .build()
-                )
-                .build());
-
-        groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Ignore Driver Blacklist")
-                        .setTooltip("If enabled, known incompatibilities with your hardware/driver configuration will be ignored, allowing you to enable options that " +
-                                "may cause issues with your game. You should generally not touch this option unless you know exactly what you are doing. After changing " +
-                                "this option, you must save, close, and then re-open the settings screen.")
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.advanced.ignoreDriverBlacklist = value, opts -> opts.advanced.ignoreDriverBlacklist)
                         .build()
                 )
                 .build());

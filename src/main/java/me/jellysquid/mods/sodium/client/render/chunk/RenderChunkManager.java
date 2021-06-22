@@ -12,7 +12,6 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
@@ -385,6 +384,10 @@ public class RenderChunkManager implements ChunkStatusListener {
     }
 
     public ChunkRenderBuildTask createRebuildTask(RenderChunk render) {
+        if (render.isDisposed()) {
+            throw new IllegalStateException("Tried to rebuild a chunk which is disposed");
+        }
+
         render.cancelRebuildTask();
 
         ChunkRenderContext context = WorldSlice.prepare(this.world, render.getChunkPos(), this.sectionCache);

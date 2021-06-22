@@ -13,7 +13,7 @@ public class SFPModelVertexBufferWriterNio extends VertexBufferWriterNio impleme
     }
 
     @Override
-    public void writeVertex(float x, float y, float z, int color, float u, float v, int light) {
+    public void writeVertex(float x, float y, float z, int color, float u, float v, int light, int offset) {
         int i = this.writeOffset;
 
         ByteBuffer buffer = this.byteBuffer;
@@ -24,6 +24,7 @@ public class SFPModelVertexBufferWriterNio extends VertexBufferWriterNio impleme
         buffer.putFloat(i + 16, u);
         buffer.putFloat(i + 20, v);
         buffer.putInt(i + 24, encodeLightMapTexCoord(light));
+        buffer.putInt(i + 28, offset);
 
         this.advance();
     }

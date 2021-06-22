@@ -4,46 +4,23 @@ import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 
-import java.util.EnumMap;
+import java.util.Collections;
 import java.util.Map;
 
 public class ChunkMeshData {
-    private final EnumMap<ModelQuadFacing, ElementRange> parts = new EnumMap<>(ModelQuadFacing.class);
-    private IndexedVertexData vertexData;
+    private final Map<ModelQuadFacing, ElementRange> parts;
+    private final IndexedVertexData vertexData;
 
-    public void setVertexData(IndexedVertexData vertexData) {
+    public ChunkMeshData(IndexedVertexData vertexData, Map<ModelQuadFacing, ElementRange> parts) {
+        this.parts = parts;
         this.vertexData = vertexData;
     }
 
-    public void setModelSlice(ModelQuadFacing facing, ElementRange slice) {
-        this.parts.put(facing, slice);
+    public Map<ModelQuadFacing, ElementRange> getParts() {
+        return Collections.unmodifiableMap(this.parts);
     }
 
-    public IndexedVertexData takeVertexData() {
-        IndexedVertexData data = this.vertexData;
-
-        if (data == null) {
-            throw new NullPointerException("No pending data to upload");
-        }
-
-        this.vertexData = null;
-
-        return data;
-    }
-
-    public boolean hasVertexData() {
-        return this.vertexData != null;
-    }
-
-    public int getVertexDataSize() {
-        if (this.vertexData != null) {
-            return this.vertexData.vertexBuffer.capacity();
-        }
-
-        return 0;
-    }
-
-    public Iterable<? extends Map.Entry<ModelQuadFacing, ElementRange>> getSlices() {
-        return this.parts.entrySet();
+    public IndexedVertexData getVertexData() {
+        return this.vertexData;
     }
 }

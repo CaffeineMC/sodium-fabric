@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.shader;
+package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
@@ -12,6 +12,9 @@ import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkProgram;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderOptions;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 
@@ -78,11 +81,11 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
             return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
                     .attachShader(vertShader)
                     .attachShader(fragShader)
-                    .bindAttribute("a_Pos", ChunkShaderBindingPoints.POSITION)
-                    .bindAttribute("a_Color", ChunkShaderBindingPoints.COLOR)
-                    .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.TEX_COORD)
-                    .bindAttribute("a_LightCoord", ChunkShaderBindingPoints.LIGHT_COORD)
-                    .bindAttribute("d_ModelOffset", ChunkShaderBindingPoints.MODEL_OFFSET)
+                    .bindAttribute("a_Pos", ChunkShaderBindingPoints.ATTRIBUTE_POSITION)
+                    .bindAttribute("a_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
+                    .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_TEX_COORD)
+                    .bindAttribute("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_COORD)
+                    .bindAttribute("a_ChunkOffset", ChunkShaderBindingPoints.ATTRIBUTE_TRANSLATION)
                     .bindFragmentData("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
                     .build((name) -> new ChunkProgram(device, name, options));
         } finally {
@@ -104,8 +107,6 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         this.activeProgram.unbind();
         this.activeProgram = null;
     }
-
-    protected abstract GlTessellation createRegionTessellation(CommandList commandList, GlBufferArena vertices, GlBufferArena indices);
 
     @Override
     public void delete() {

@@ -1,17 +1,18 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.render.chunk.backend.multidraw.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.Vec3i;
 
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -22,7 +23,7 @@ public class RenderChunk {
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
-    private final ChunkGraphicsState[] graphicsStates;
+    private final Map<BlockRenderPass, ChunkGraphicsState> graphicsStates;
     private final RenderRegion region;
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
@@ -44,7 +45,7 @@ public class RenderChunk {
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
 
-        this.graphicsStates = new ChunkGraphicsState[BlockRenderPass.COUNT];
+        this.graphicsStates = new EnumMap<>(BlockRenderPass.class);
     }
 
     /**
@@ -93,16 +94,11 @@ public class RenderChunk {
     }
 
     private void deleteGraphicsState() {
-        ChunkGraphicsState[] states = this.graphicsStates;
-
-        for (int i = 0; i < states.length; i++) {
-            ChunkGraphicsState state = states[i];
-
-            if (state != null) {
-                state.delete();
-                states[i] = null;
-            }
+        for (ChunkGraphicsState state : this.graphicsStates.values()) {
+            state.delete();
         }
+
+        this.graphicsStates.clear();
     }
 
     public void setData(ChunkRenderData info) {
@@ -134,7 +130,7 @@ public class RenderChunk {
      * @return True if the chunk render contains no data, otherwise false
      */
     public boolean isEmpty() {
-        return this.data.isEmpty();
+        return this.graphicsStates.isEmpty() && this.data.isEmpty();
     }
 
     /**
@@ -142,19 +138,6 @@ public class RenderChunk {
      */
     public ChunkSectionPos getChunkPos() {
         return ChunkSectionPos.from(this.chunkX, this.chunkY, this.chunkZ);
-    }
-
-    /**
-     * Tests if the given chunk render is visible within the provided frustum.
-     * @param frustum The frustum to test against
-     * @return True if visible, otherwise false
-     */
-    public boolean isOutsideFrustum(FrustumExtended frustum) {
-        float x = this.getOriginX();
-        float y = this.getOriginY();
-        float z = this.getOriginZ();
-
-        return !frustum.fastAabbTest(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
     }
 
     /**
@@ -236,8 +219,12 @@ public class RenderChunk {
         return new BlockPos(this.getRenderX(), this.getRenderY(), this.getRenderZ());
     }
 
-    public void setGraphicsState(BlockRenderPass pass, ChunkGraphicsState state) {
-        this.graphicsStates[pass.ordinal()] = state;
+    public ChunkGraphicsState setGraphicsState(BlockRenderPass pass, ChunkGraphicsState state) {
+        if (state == null) {
+            return this.graphicsStates.remove(pass);
+        } else {
+            return this.graphicsStates.put(pass, state);
+        }
     }
 
     /**
@@ -267,7 +254,7 @@ public class RenderChunk {
     }
 
     public ChunkGraphicsState getGraphicsState(BlockRenderPass pass) {
-        return this.graphicsStates[pass.ordinal()];
+        return this.graphicsStates.get(pass);
     }
 
     public boolean isTickable() {
@@ -294,5 +281,9 @@ public class RenderChunk {
     public String toString() {
         return String.format("RenderChunk{chunkX=%d, chunkY=%d, chunkZ=%d, id=%d}",
                 this.chunkX, this.chunkY, this.chunkZ, this.id);
+    }
+
+    public Vec3i getRelativeOffset() {
+        return this.region.getRelativeOffset(this.chunkX, this.chunkY, this.chunkZ);
     }
 }
