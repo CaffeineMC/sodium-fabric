@@ -10,7 +10,6 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 
 import java.util.*;
@@ -93,8 +92,7 @@ public class RenderRegionManager {
         }
 
         if (arenas.getTessellation() != null) {
-            arenas.getTessellation()
-                    .delete(commandList);
+            commandList.deleteTessellation(arenas.getTessellation());
 
             arenas.setTessellation(null);
         }

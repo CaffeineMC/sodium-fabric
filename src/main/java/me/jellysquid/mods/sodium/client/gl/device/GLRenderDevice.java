@@ -5,7 +5,6 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTarget;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
-import me.jellysquid.mods.sodium.client.gl.func.GlFunctions;
 import me.jellysquid.mods.sodium.client.gl.state.GlStateTracker;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
@@ -174,12 +173,6 @@ public class GLRenderDevice implements RenderDevice {
     private class ImmediateDrawCommandList implements DrawCommandList {
         public ImmediateDrawCommandList() {
 
-        }
-
-        @Override
-        public void multiDrawElementsIndirect(long pointer, int count, int stride) {
-            GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
-            GlFunctions.INDIRECT_DRAW.glMultiDrawElementsIndirect(primitiveType.getId(), GL20C.GL_UNSIGNED_INT, pointer, count, stride);
         }
 
         @Override

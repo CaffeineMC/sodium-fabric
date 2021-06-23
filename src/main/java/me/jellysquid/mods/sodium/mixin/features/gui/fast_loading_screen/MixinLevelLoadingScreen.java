@@ -14,7 +14,6 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.world.chunk.ChunkStatus;
-import org.lwjgl.opengl.GL20C;
 import org.spongepowered.asm.mixin.*;
 
 /**

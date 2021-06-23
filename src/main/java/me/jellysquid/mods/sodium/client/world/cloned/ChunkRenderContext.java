@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.world.cloned;
 
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.world.World;
 
 public class ChunkRenderContext {
     private final ChunkSectionPos origin;

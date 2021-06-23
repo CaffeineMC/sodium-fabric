@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.gl.state;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTarget;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
 

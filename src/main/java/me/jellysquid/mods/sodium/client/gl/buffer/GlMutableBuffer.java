@@ -1,9 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import org.lwjgl.opengl.GL20C;
-
-import java.nio.ByteBuffer;
 
 /**
  * A mutable buffer type which is supported with OpenGL 1.5+. The buffer's storage can be reallocated at any time
