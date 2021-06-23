@@ -1,9 +1,6 @@
 package me.jellysquid.mods.sodium.client.world.cloned;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeCache;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPaletteFallback;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalleteArray;

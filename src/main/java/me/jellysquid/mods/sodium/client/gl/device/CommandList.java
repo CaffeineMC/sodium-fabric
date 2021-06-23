@@ -5,7 +5,6 @@ import me.jellysquid.mods.sodium.client.gl.buffer.*;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
-import me.jellysquid.mods.sodium.client.model.BufferRange;
 
 import java.nio.ByteBuffer;
 

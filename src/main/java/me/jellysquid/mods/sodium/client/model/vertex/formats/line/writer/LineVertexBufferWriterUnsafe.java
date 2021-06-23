@@ -15,7 +15,6 @@ public class LineVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe imple
         super.ensureCapacity(count * 2);
     }
 
-    @SuppressWarnings("SuspiciousNameCombination")
     @Override
     public void vertexLine(float x, float y, float z, int color, int normal) {
         for (int i = 0; i < 2; i++) {

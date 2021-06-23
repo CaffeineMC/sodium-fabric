@@ -1,17 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
-import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.shader.*;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkProgram;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderOptions;
@@ -96,7 +92,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
 
     protected void begin(BlockRenderPass pass, MatrixStack matrixStack) {
         ChunkShaderOptions options = new ChunkShaderOptions();
-        options.fogMode = LegacyFogHelper.getFogMode();
+        options.fogMode = ChunkFogMode.SMOOTH;
 
         this.activeProgram = this.compileProgram(pass, options);
         this.activeProgram.bind();

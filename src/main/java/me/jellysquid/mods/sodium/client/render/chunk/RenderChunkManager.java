@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
@@ -7,7 +8,6 @@ import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.*;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.compat.LegacyFogHelper;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
@@ -15,7 +15,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.cull.ChunkCuller;
 import me.jellysquid.mods.sodium.client.render.chunk.cull.graph.ChunkGraphCuller;
-import me.jellysquid.mods.sodium.client.render.chunk.cull.graph.ChunkGraphIterationQueue;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
@@ -183,7 +182,7 @@ public class RenderChunkManager implements ChunkStatusListener {
         this.useFogCulling = false;
 
         if (SodiumClientMod.options().advanced.useFogOcclusion) {
-            float dist = LegacyFogHelper.getFogCutoff() + FOG_PLANE_OFFSET;
+            float dist = RenderSystem.getShaderFogEnd() + FOG_PLANE_OFFSET;
 
             if (dist != 0.0f) {
                 this.useFogCulling = true;

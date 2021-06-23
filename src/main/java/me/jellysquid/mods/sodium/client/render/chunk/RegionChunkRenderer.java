@@ -133,7 +133,14 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.RenderRegionArenas arenas) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                new TessellationBinding(arenas.vertexBuffers.getBufferObject(), this.vertexAttributeBindings, false)
+                new TessellationBinding(arenas.vertexBuffers.getBufferObject(), this.vertexAttributeBindings)
         }, arenas.indexBuffers.getBufferObject());
+    }
+
+    @Override
+    public void delete() {
+        super.delete();
+
+        this.batch.delete();
     }
 }

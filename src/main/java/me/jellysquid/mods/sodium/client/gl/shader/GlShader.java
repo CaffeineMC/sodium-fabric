@@ -7,10 +7,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL20C;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
-
 /**
  * A compiled OpenGL shader object.
  */

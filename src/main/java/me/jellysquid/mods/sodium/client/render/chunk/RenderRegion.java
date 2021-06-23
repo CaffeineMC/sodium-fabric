@@ -161,7 +161,7 @@ public class RenderRegion {
             this.indexBuffers.delete(commandList);
 
             if (this.tessellation != null) {
-                this.tessellation.delete(commandList);
+                commandList.deleteTessellation(this.tessellation);
             }
         }
 

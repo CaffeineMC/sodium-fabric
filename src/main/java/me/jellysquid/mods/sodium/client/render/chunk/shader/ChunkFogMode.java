@@ -1,9 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.google.common.collect.ImmutableList;
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
-import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL20C;
 
 import java.util.List;
 import java.util.function.Function;
