@@ -10,6 +10,7 @@ public class VertexBufferBuilder implements VertexBufferView {
 
     private ByteBuffer buffer;
     private int writerOffset;
+    private int count;
     private int capacity;
 
     public VertexBufferBuilder(BufferVertexFormat vertexFormat, int initialCapacity) {
@@ -61,7 +62,8 @@ public class VertexBufferBuilder implements VertexBufferView {
             throw new IllegalStateException("Mis-matched vertex format (expected: [" + format + "], currently using: [" + this.vertexFormat + "])");
         }
 
-        this.writerOffset += vertexCount * format.getStride();
+        this.count += vertexCount;
+        this.writerOffset = this.count * format.getStride();
     }
 
     @Override
@@ -70,11 +72,15 @@ public class VertexBufferBuilder implements VertexBufferView {
     }
 
     public boolean isEmpty() {
-        return this.writerOffset == 0;
+        return this.count <= 0;
     }
 
-    public int getSize() {
+    public int getByteSize() {
         return this.writerOffset;
+    }
+
+    public int getCount() {
+        return this.count;
     }
 
     /**
@@ -91,5 +97,6 @@ public class VertexBufferBuilder implements VertexBufferView {
 
     public void reset() {
         this.writerOffset = 0;
+        this.count = 0;
     }
 }

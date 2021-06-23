@@ -127,7 +127,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     private void addDrawCall(ElementRange part, int vertexBase, int indexOffset) {
         if (part != null) {
-            this.batch.add((indexOffset * 4) + part.elementOffset, part.elementCount, vertexBase + part.baseVertex);
+            this.batch.add((indexOffset + part.elementOffset) * 4, part.elementCount, vertexBase + part.baseVertex);
         }
     }
 

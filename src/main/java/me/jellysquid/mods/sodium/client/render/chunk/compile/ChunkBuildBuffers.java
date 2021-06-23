@@ -95,10 +95,8 @@ public class ChunkBuildBuffers {
         VertexBufferBuilder[] vertexBufferBuilders = this.vertexBuffers[pass.ordinal()];
         IndexBufferBuilder[] indexBufferBuilders = this.indexBuffers[pass.ordinal()];
 
-        int vertexStride = this.vertexType.getBufferVertexFormat().getStride();
-
         int vertexDataLength = Arrays.stream(vertexBufferBuilders)
-                .mapToInt(VertexBufferBuilder::getSize)
+                .mapToInt(VertexBufferBuilder::getByteSize)
                 .sum();
 
         int indexDataLength = Arrays.stream(indexBufferBuilders)
@@ -126,7 +124,7 @@ public class ChunkBuildBuffers {
             }
 
             int indexCount = indexBufferBuilder.getCount();
-            int vertexCount = vertexBufferBuilder.getSize() / vertexStride;
+            int vertexCount = vertexBufferBuilder.getCount();
 
             ranges.put(facing, new ElementRange(baseIndex, indexCount, baseVertex));
 
@@ -136,7 +134,7 @@ public class ChunkBuildBuffers {
             indexBufferBuilder.get(indexBuffer);
             indexBufferBuilder.reset();
 
-            baseIndex += indexCount * 4;
+            baseIndex += indexCount;
             baseVertex += vertexCount;
         }
 
