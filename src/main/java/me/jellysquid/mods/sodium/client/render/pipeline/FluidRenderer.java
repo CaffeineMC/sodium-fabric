@@ -339,8 +339,10 @@ public class FluidRenderer {
 
                 float br = dir.getAxis() == Direction.Axis.Z ? 0.8F : 0.6F;
 
+                ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
+
                 this.calculateQuadColors(quad, world, pos, lighter, dir, br, !lava);
-                this.flushQuad(buffers, offset, quad, ModelQuadFacing.fromDirection(dir), false);
+                this.flushQuad(buffers, offset, quad, facing, false);
 
                 if (sprite != this.waterOverlaySprite) {
                     this.setVertex(quad, 0, x1, c1, z1, u1, v1);
@@ -348,7 +350,7 @@ public class FluidRenderer {
                     this.setVertex(quad, 2, x2, yOffset, z2, u2, v3);
                     this.setVertex(quad, 3, x2, c2, z2, u2, v2);
 
-                    this.flushQuad(buffers, offset, quad, ModelQuadFacing.fromDirection(dir), true);
+                    this.flushQuad(buffers, offset, quad, facing.getOpposite(), true);
                 }
 
                 rendered = true;
