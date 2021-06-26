@@ -408,7 +408,7 @@ public class RenderChunkManager implements ChunkStatusListener {
         if (context == null) {
             return new ChunkRenderEmptyBuildTask(render);
         } else {
-            return new ChunkRenderRebuildTask(render, context, render.getRenderOrigin());
+            return new ChunkRenderRebuildTask(render, context);
         }
     }
 

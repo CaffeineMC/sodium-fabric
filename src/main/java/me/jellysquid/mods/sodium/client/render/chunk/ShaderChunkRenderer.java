@@ -77,11 +77,11 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
             return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
                     .attachShader(vertShader)
                     .attachShader(fragShader)
+                    .bindAttribute("a_Origin", ChunkShaderBindingPoints.ATTRIBUTE_ORIGIN)
                     .bindAttribute("a_Pos", ChunkShaderBindingPoints.ATTRIBUTE_POSITION)
                     .bindAttribute("a_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
-                    .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_TEX_COORD)
-                    .bindAttribute("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_COORD)
-                    .bindAttribute("a_ChunkOffset", ChunkShaderBindingPoints.ATTRIBUTE_TRANSLATION)
+                    .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE)
+                    .bindAttribute("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
                     .bindFragmentData("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
                     .build((name) -> new ChunkProgram(device, name, options));
         } finally {
@@ -96,7 +96,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
 
         this.activeProgram = this.compileProgram(pass, options);
         this.activeProgram.bind();
-        this.activeProgram.setup(matrixStack, this.vertexType.getModelScale(), this.vertexType.getTextureScale());
+        this.activeProgram.setup(matrixStack, this.vertexType);
     }
 
     protected void end() {

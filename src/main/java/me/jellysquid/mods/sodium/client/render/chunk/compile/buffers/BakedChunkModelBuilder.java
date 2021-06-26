@@ -10,15 +10,11 @@ import net.minecraft.util.math.Vec3i;
 public class BakedChunkModelBuilder implements ChunkModelBuilder {
     private final PrimitiveSink<ModelVertexSink>[] builders;
     private final ChunkRenderData.Builder renderData;
-    private final int offset;
 
     public BakedChunkModelBuilder(PrimitiveSink<ModelVertexSink>[] builders,
-                                  ChunkRenderData.Builder renderData,
-                                  Vec3i offset) {
+                                  ChunkRenderData.Builder renderData) {
         this.builders = builders;
         this.renderData = renderData;
-
-        this.offset = offset.getZ() << 16 | offset.getY() << 8 | offset.getX();
     }
 
     @Override
@@ -29,10 +25,5 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
     @Override
     public void addSprite(Sprite sprite) {
         this.renderData.addSprite(sprite);
-    }
-
-    @Override
-    public int getOffset() {
-        return this.offset;
     }
 }
