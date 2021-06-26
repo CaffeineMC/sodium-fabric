@@ -9,7 +9,6 @@ import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferBuilder;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.BakedChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelVertexTransformer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelOffset;
@@ -39,7 +38,6 @@ public class ChunkBuildBuffers {
     private final ChunkVertexType vertexType;
 
     private final BlockRenderPassManager renderPassManager;
-    private final ChunkModelOffset offset;
 
     public ChunkBuildBuffers(ChunkVertexType vertexType, BlockRenderPassManager renderPassManager) {
         this.vertexType = vertexType;
@@ -49,8 +47,6 @@ public class ChunkBuildBuffers {
 
         this.vertexBuffers = new VertexBufferBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
         this.indexBuffers = new IndexBufferBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
-
-        this.offset = new ChunkModelOffset();
 
         for (BlockRenderPass pass : BlockRenderPass.VALUES) {
             VertexBufferBuilder[] vertexBuffers = this.vertexBuffers[pass.ordinal()];
@@ -65,22 +61,22 @@ public class ChunkBuildBuffers {
         }
     }
 
-    public void init(ChunkRenderData.Builder renderData, Vec3i relativeOffset) {
+    public void init(ChunkRenderData.Builder renderData) {
         for (int layer = 0; layer < this.indexBuffers.length; layer++) {
             // TODO: Fix unsafe cast
             PrimitiveSink<ModelVertexSink>[] writers = new PrimitiveSink[ModelQuadFacing.COUNT];
 
             for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
                 writers[facing] = new PrimitiveSink<>(this.indexBuffers[layer][facing],
-                        new ChunkModelVertexTransformer(this.vertexType.createBufferWriter(this.vertexBuffers[layer][facing]), this.offset));
+                        this.vertexType.createBufferWriter(this.vertexBuffers[layer][facing]));
             }
 
-            this.delegates[layer] = new BakedChunkModelBuilder(writers, renderData, relativeOffset);
+            this.delegates[layer] = new BakedChunkModelBuilder(writers, renderData);
         }
     }
 
     /**
-     * Return the {@link ChunkModelVertexTransformer} for the given {@link RenderLayer} as mapped by the
+     * Return the {@link ChunkModelBuilder} for the given {@link RenderLayer} as mapped by the
      * {@link BlockRenderPassManager} for this render context.
      */
     public ChunkModelBuilder get(RenderLayer layer) {
@@ -145,9 +141,5 @@ public class ChunkBuildBuffers {
                 vertexBuffer, indexBuffer);
 
         return new ChunkMeshData(vertexData, ranges);
-    }
-
-    public void setRenderOffset(int x, int y, int z) {
-        this.offset.set(x, y, z);
     }
 }

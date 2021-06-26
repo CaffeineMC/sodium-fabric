@@ -122,15 +122,27 @@ public class RenderRegion {
     }
 
     public int getRenderX() {
-        return ((this.x << REGION_WIDTH_SH) << 4) - 8;
+        return this.getOriginX() - 8;
     }
 
     public int getRenderY() {
-        return ((this.y << REGION_HEIGHT_SH) << 4) - 8;
+        return this.getOriginY() - 8;
     }
 
     public int getRenderZ() {
-        return ((this.z << REGION_LENGTH_SH) << 4) - 8;
+        return this.getOriginZ() - 8;
+    }
+
+    public int getOriginX() {
+        return this.x << REGION_WIDTH_SH << 4;
+    }
+
+    public int getOriginY() {
+        return this.y << REGION_HEIGHT_SH << 4;
+    }
+
+    public int getOriginZ() {
+        return this.z << REGION_LENGTH_SH << 4;
     }
 
     public RenderRegionArenas createArenas(CommandList commandList, BlockRenderPass pass) {

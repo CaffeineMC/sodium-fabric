@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
 import me.jellysquid.mods.sodium.client.render.chunk.RenderChunk;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
@@ -22,6 +23,7 @@ import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.ChunkRegion;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -35,13 +37,10 @@ import java.util.Map;
  */
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
     private final RenderChunk render;
-    private final BlockPos offset;
-
     private final ChunkRenderContext context;
 
-    public ChunkRenderRebuildTask(RenderChunk render, ChunkRenderContext context, BlockPos offset) {
+    public ChunkRenderRebuildTask(RenderChunk render, ChunkRenderContext context) {
         this.render = render;
-        this.offset = offset;
         this.context = context;
     }
 
@@ -51,35 +50,41 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
-        buffers.init(renderData, this.render.getRelativeOffset());
+        buffers.init(renderData);
 
         cache.init(this.context);
 
         WorldSlice slice = cache.getWorldSlice();
+        RenderRegion region = this.render.getRegion();
 
-        int baseX = this.render.getOriginX();
-        int baseY = this.render.getOriginY();
-        int baseZ = this.render.getOriginZ();
+        int minX = this.render.getOriginX();
+        int minY = this.render.getOriginY();
+        int minZ = this.render.getOriginZ();
 
-        BlockPos.Mutable pos = new BlockPos.Mutable();
-        BlockPos renderOffset = this.offset;
+        int maxX = minX + 16;
+        int maxY = minY + 16;
+        int maxZ = minZ + 16;
 
-        for (int relY = 0; relY < 16; relY++) {
+        BlockPos.Mutable blockPos = new BlockPos.Mutable();
+        BlockPos.Mutable offset = new BlockPos.Mutable();
+
+        for (int y = minY; y < maxY; y++) {
             if (cancellationSource.isCancelled()) {
                 return null;
             }
 
-            for (int relZ = 0; relZ < 16; relZ++) {
-                for (int relX = 0; relX < 16; relX++) {
-                    BlockState blockState = slice.getBlockStateRelative(relX + 16, relY + 16, relZ + 16);
+            for (int z = minZ; z < maxZ; z++) {
+                for (int x = minX; x < maxX; x++) {
+                    BlockState blockState = slice.getBlockState(x, y, z);
 
                     if (blockState.isAir()) {
                         continue;
                     }
 
-                    // TODO: commit this separately
-                    pos.set(baseX + relX, baseY + relY, baseZ + relZ);
-                    buffers.setRenderOffset(pos.getX() - renderOffset.getX(), pos.getY() - renderOffset.getY(), pos.getZ() - renderOffset.getZ());
+                    blockPos.set(x, y, z);
+                    offset.set(x & 127, y & 63, z & 127);
+
+                    boolean rendered = false;
 
                     if (blockState.getRenderType() == BlockRenderType.MODEL) {
                         RenderLayer layer = RenderLayers.getBlockLayer(blockState);
@@ -87,10 +92,10 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                         BakedModel model = cache.getBlockModels()
                                 .getModel(blockState);
 
-                        long seed = blockState.getRenderingSeed(pos);
+                        long seed = blockState.getRenderingSeed(blockPos);
 
-                        if (cache.getBlockRenderer().renderModel(slice, blockState, pos, model, buffers.get(layer), true, seed)) {
-                            bounds.addBlock(relX, relY, relZ);
+                        if (cache.getBlockRenderer().renderModel(slice, blockState, blockPos, offset, model, buffers.get(layer), true, seed)) {
+                            rendered = true;
                         }
                     }
 
@@ -99,27 +104,30 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     if (!fluidState.isEmpty()) {
                         RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
 
-                        if (cache.getFluidRenderer().render(slice, fluidState, pos, buffers.get(layer))) {
-                            bounds.addBlock(relX, relY, relZ);
+                        if (cache.getFluidRenderer().render(slice, fluidState, blockPos, offset, buffers.get(layer))) {
+                            rendered = true;
                         }
                     }
 
                     if (blockState.hasBlockEntity()) {
-                        BlockEntity entity = slice.getBlockEntity(pos);
+                        BlockEntity entity = slice.getBlockEntity(blockPos);
 
                         if (entity != null) {
                             BlockEntityRenderer<BlockEntity> renderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher().get(entity);
 
                             if (renderer != null) {
                                 renderData.addBlockEntity(entity, !renderer.rendersOutsideBoundingBox(entity));
-
-                                bounds.addBlock(relX, relY, relZ);
+                                rendered = true;
                             }
                         }
                     }
 
-                    if (blockState.isOpaqueFullCube(slice, pos)) {
-                        occluder.markClosed(pos);
+                    if (blockState.isOpaqueFullCube(slice, blockPos)) {
+                        occluder.markClosed(blockPos);
+                    }
+
+                    if (rendered) {
+                        bounds.addBlock(x & 15, y & 15, z & 15);
                     }
                 }
             }

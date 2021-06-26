@@ -1,18 +1,26 @@
 package me.jellysquid.mods.sodium.client.render.chunk.format;
 
 import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
+import net.minecraft.util.math.Vec3i;
 
 public interface ModelVertexSink extends VertexSink {
     /**
      * Writes a quad vertex to this sink.
-     * @param x The x-position of the vertex
-     * @param y The y-position of the vertex
-     * @param z The z-position of the vertex
+     * @param offsetX The x-position of the vertex's integer offset
+     * @param offsetY The y-position of the vertex's integer offset
+     * @param offsetZ The z-position of the vertex's integer offset
+     * @param posX The x-position of the vertex
+     * @param posY The y-position of the vertex
+     * @param posZ The z-position of the vertex
      * @param color The ABGR-packed color of the vertex
      * @param u The u-texture of the vertex
      * @param v The y-texture of the vertex
      * @param light The packed light-map coordinates of the vertex
-     * @param offset The chunk offset for the vertex
      */
-    void writeVertex(float x, float y, float z, int color, float u, float v, int light, int offset);
+    void writeVertex(int offsetX, int offsetY, int offsetZ, float posX, float posY, float posZ, int color, float u, float v, int light);
+
+    default void writeVertex(Vec3i offset, float posX, float posY, float posZ, int color, float u, float v, int light) {
+        this.writeVertex(offset.getX(), offset.getY(), offset.getZ(), posX, posY, posZ, color, u, v, light);
+    }
+
 }

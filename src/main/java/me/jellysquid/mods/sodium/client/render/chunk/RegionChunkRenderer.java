@@ -33,16 +33,16 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         super(device, vertexType);
 
         this.vertexAttributeBindings = new GlVertexAttributeBinding[] {
+                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_ORIGIN,
+                        this.vertexFormat.getAttribute(ChunkMeshAttribute.CHUNK_OFFSET)),
                 new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION,
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION)),
                 new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.COLOR)),
-                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_TEX_COORD,
-                        this.vertexFormat.getAttribute(ChunkMeshAttribute.TEXTURE)),
-                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_COORD,
-                        this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT)),
-                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_TRANSLATION,
-                        this.vertexFormat.getAttribute(ChunkMeshAttribute.CHUNK_OFFSET))
+                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
+                        this.vertexFormat.getAttribute(ChunkMeshAttribute.BLOCK_TEXTURE)),
+                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,
+                        this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_TEXTURE))
         };
     }
 
@@ -111,11 +111,11 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 FloatBuffer fb = stack.mallocFloat(3);
-                fb.put(0, camera.getChunkModelOffset(region.getRenderX(), camera.blockX, camera.deltaX));
-                fb.put(1, camera.getChunkModelOffset(region.getRenderY(), camera.blockY, camera.deltaY));
-                fb.put(2, camera.getChunkModelOffset(region.getRenderZ(), camera.blockZ, camera.deltaZ));
+                fb.put(0, camera.getChunkModelOffset(region.getOriginX(), camera.blockX, camera.deltaX));
+                fb.put(1, camera.getChunkModelOffset(region.getOriginY(), camera.blockY, camera.deltaY));
+                fb.put(2, camera.getChunkModelOffset(region.getOriginZ(), camera.blockZ, camera.deltaZ));
 
-                GL20C.glUniform3fv(this.activeProgram.uRegionTranslation, fb);
+                GL20C.glUniform3fv(this.activeProgram.uRegionOrigin, fb);
             }
 
             try (DrawCommandList drawCommandList = commandList.beginTessellating(arenas.getTessellation())) {

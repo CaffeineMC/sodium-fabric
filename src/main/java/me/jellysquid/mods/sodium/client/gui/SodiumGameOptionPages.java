@@ -250,17 +250,6 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Compact Vertex Format")
-                        .setTooltip("If enabled, a more compact vertex format will be used for rendering chunks. This can reduce graphics memory usage and bandwidth " +
-                                "requirements significantly, especially for integrated graphics cards, but can cause z-fighting with some resource packs due " +
-                                "to how it reduces the precision of position and texture coordinate attributes.")
-                        .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.advanced.useCompactVertexFormat = value, opts -> opts.advanced.useCompactVertexFormat)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build()
-                )
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName("Use Fog Occlusion")
                         .setTooltip("If enabled, chunks which are determined to be fully hidden by fog effects will not be rendered, helping to improve performance. The " +
                                 "improvement can be more dramatic when fog effects are heavier (such as while underwater), but it may cause undesirable visual artifacts " +

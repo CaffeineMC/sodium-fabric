@@ -38,6 +38,10 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockRenderView;
 
 public class FluidRenderer {
+    // TODO: allow this to be changed by vertex format
+    // TODO: move fluid rendering to a separate render pass and control glPolygonOffset and glDepthFunc to fix this properly
+    private static final float EPSILON = 0.001f;
+
     private static final BlockColorProvider FLUID_COLOR_PROVIDER = (state, world, pos, tintIndex) -> {
         if (world == null) return 0xFFFFFFFF;
         return BiomeColors.getWaterColor(world, pos);
@@ -106,7 +110,7 @@ public class FluidRenderer {
         return true;
     }
 
-    public boolean render(BlockRenderView world, FluidState fluidState, BlockPos pos, ChunkModelBuilder buffers) {
+    public boolean render(BlockRenderView world, FluidState fluidState, BlockPos pos, BlockPos offset, ChunkModelBuilder buffers) {
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();
@@ -135,7 +139,7 @@ public class FluidRenderer {
         float h3 = this.getCornerHeight(world, posX + 1, posY, posZ + 1, fluidState.getFluid());
         float h4 = this.getCornerHeight(world, posX + 1, posY, posZ, fluidState.getFluid());
 
-        float yOffset = sfDown ? 0.001F : 0.0F;
+        float yOffset = sfDown ? EPSILON : 0.0F;
 
         final ModelQuadViewMutable quad = this.quad;
 
@@ -145,10 +149,10 @@ public class FluidRenderer {
         quad.setFlags(0);
 
         if (sfUp && this.isSideExposed(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
-            h1 -= 0.001F;
-            h2 -= 0.001F;
-            h3 -= 0.001F;
-            h4 -= 0.001F;
+            h1 -= EPSILON;
+            h2 -= EPSILON;
+            h3 -= EPSILON;
+            h4 -= EPSILON;
 
             Vec3d velocity = fluidState.getVelocity(world, pos);
 
@@ -207,7 +211,7 @@ public class FluidRenderer {
             this.setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
 
             this.calculateQuadColors(quad, world, pos, lighter, Direction.UP, 1.0F, !lava);
-            this.flushQuad(buffers, quad, facing, false);
+            this.flushQuad(buffers, offset, quad, facing, false);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
                 this.setVertex(quad, 3, 0.0f, h1, 0.0f, u1, v1);
@@ -215,7 +219,7 @@ public class FluidRenderer {
                 this.setVertex(quad, 1, 1.0F, h3, 1.0F, u3, v3);
                 this.setVertex(quad, 0, 1.0F, h4, 0.0f, u4, v4);
 
-                this.flushQuad(buffers, quad, ModelQuadFacing.DOWN, true);
+                this.flushQuad(buffers, offset, quad, ModelQuadFacing.DOWN, true);
             }
 
             rendered = true;
@@ -236,7 +240,7 @@ public class FluidRenderer {
             this.setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.calculateQuadColors(quad, world, pos, lighter, Direction.DOWN, 1.0F, !lava);
-            this.flushQuad(buffers, quad, ModelQuadFacing.DOWN, false);
+            this.flushQuad(buffers, offset, quad, ModelQuadFacing.DOWN, false);
 
             rendered = true;
         }
@@ -261,7 +265,7 @@ public class FluidRenderer {
                     c2 = h4;
                     x1 = 0.0f;
                     x2 = 1.0F;
-                    z1 = 0.001f;
+                    z1 = EPSILON;
                     z2 = z1;
                     break;
                 case SOUTH:
@@ -273,7 +277,7 @@ public class FluidRenderer {
                     c2 = h2;
                     x1 = 1.0F;
                     x2 = 0.0f;
-                    z1 = 0.999f;
+                    z1 = 1.0f - EPSILON;
                     z2 = z1;
                     break;
                 case WEST:
@@ -283,7 +287,7 @@ public class FluidRenderer {
 
                     c1 = h2;
                     c2 = h1;
-                    x1 = 0.001f;
+                    x1 = EPSILON;
                     x2 = x1;
                     z1 = 1.0F;
                     z2 = 0.0f;
@@ -295,7 +299,7 @@ public class FluidRenderer {
 
                     c1 = h4;
                     c2 = h3;
-                    x1 = 0.999f;
+                    x1 = 1.0f - EPSILON;
                     x2 = x1;
                     z1 = 0.0f;
                     z2 = 1.0F;
@@ -336,7 +340,7 @@ public class FluidRenderer {
                 float br = dir.getAxis() == Direction.Axis.Z ? 0.8F : 0.6F;
 
                 this.calculateQuadColors(quad, world, pos, lighter, dir, br, !lava);
-                this.flushQuad(buffers, quad, ModelQuadFacing.fromDirection(dir), false);
+                this.flushQuad(buffers, offset, quad, ModelQuadFacing.fromDirection(dir), false);
 
                 if (sprite != this.waterOverlaySprite) {
                     this.setVertex(quad, 0, x1, c1, z1, u1, v1);
@@ -344,7 +348,7 @@ public class FluidRenderer {
                     this.setVertex(quad, 2, x2, yOffset, z2, u2, v3);
                     this.setVertex(quad, 3, x2, c2, z2, u2, v2);
 
-                    this.flushQuad(buffers, quad, ModelQuadFacing.fromDirection(dir), true);
+                    this.flushQuad(buffers, offset, quad, ModelQuadFacing.fromDirection(dir), true);
                 }
 
                 rendered = true;
@@ -369,7 +373,7 @@ public class FluidRenderer {
         }
     }
 
-    private void flushQuad(ChunkModelBuilder model, ModelQuadView quad, ModelQuadFacing facing, boolean flip) {
+    private void flushQuad(ChunkModelBuilder model, BlockPos offset, ModelQuadView quad, ModelQuadFacing facing, boolean flip) {
         int vertexIdx, lightOrder;
 
         if (flip) {
@@ -397,7 +401,7 @@ public class FluidRenderer {
 
             int light = this.quadLightData.lm[vertexIdx];
 
-            sink.vertices.writeVertex(x, y, z, color, u, v, light, model.getOffset());
+            sink.vertices.writeVertex(offset, x, y, z, color, u, v, light);
 
             vertexIdx += lightOrder;
         }

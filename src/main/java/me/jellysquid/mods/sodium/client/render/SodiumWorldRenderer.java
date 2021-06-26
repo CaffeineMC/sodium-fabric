@@ -5,12 +5,11 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
-import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderChunkManager;
 import me.jellysquid.mods.sodium.client.render.chunk.RegionChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.format.DefaultModelVertexFormats;
+import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheShared;
@@ -250,16 +249,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         SodiumGameOptions opts = SodiumClientMod.options();
 
         this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
-
-        final ChunkVertexType vertexFormat;
-
-        if (opts.advanced.useCompactVertexFormat) {
-            vertexFormat = DefaultModelVertexFormats.MODEL_VERTEX_HFP;
-        } else {
-            vertexFormat = DefaultModelVertexFormats.MODEL_VERTEX_SFP;
-        }
-
-        this.chunkRenderer = new RegionChunkRenderer(device, vertexFormat);
+        this.chunkRenderer = new RegionChunkRenderer(device, ChunkModelVertexFormats.DEFAULT);
 
         this.renderChunkManager = new RenderChunkManager(this, this.chunkRenderer, this.renderPassManager, this.world, this.renderDistance);
     }

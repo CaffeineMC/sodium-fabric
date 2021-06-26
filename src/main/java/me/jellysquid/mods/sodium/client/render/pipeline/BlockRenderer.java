@@ -24,6 +24,7 @@ import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BlockRenderView;
 
@@ -53,7 +54,7 @@ public class BlockRenderer {
         this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
     }
 
-    public boolean renderModel(BlockRenderView world, BlockState state, BlockPos pos, BakedModel model, ChunkModelBuilder buffers, boolean cull, long seed) {
+    public boolean renderModel(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, BakedModel model, ChunkModelBuilder buffers, boolean cull, long seed) {
         LightPipeline lighter = this.lighters.getLighter(this.getLightingMode(state, model));
         Vec3d offset = state.getModelOffset(world, pos);
 
@@ -69,7 +70,7 @@ public class BlockRenderer {
             }
 
             if (!cull || this.occlusionCache.shouldDrawSide(state, world, pos, dir)) {
-                this.renderQuadList(world, state, pos, lighter, offset, buffers, sided, ModelQuadFacing.fromDirection(dir));
+                this.renderQuadList(world, state, pos, origin, lighter, offset, buffers, sided, ModelQuadFacing.fromDirection(dir));
 
                 rendered = true;
             }
@@ -80,7 +81,7 @@ public class BlockRenderer {
         List<BakedQuad> all = model.getQuads(state, null, this.random);
 
         if (!all.isEmpty()) {
-            this.renderQuadList(world, state, pos, lighter, offset, buffers, all, ModelQuadFacing.UNASSIGNED);
+            this.renderQuadList(world, state, pos, origin, lighter, offset, buffers, all, ModelQuadFacing.UNASSIGNED);
 
             rendered = true;
         }
@@ -88,7 +89,7 @@ public class BlockRenderer {
         return rendered;
     }
 
-    private void renderQuadList(BlockRenderView world, BlockState state, BlockPos pos, LightPipeline lighter, Vec3d offset,
+    private void renderQuadList(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, LightPipeline lighter, Vec3d offset,
                                 ChunkModelBuilder buffers, List<BakedQuad> quads, ModelQuadFacing facing) {
         BlockColorProvider colorizer = null;
 
@@ -107,13 +108,13 @@ public class BlockRenderer {
                 colorizer = this.blockColors.getColorProvider(state);
             }
 
-            this.renderQuad(world, state, pos, sink, offset, colorizer, quad, light, buffers);
+            this.renderQuad(world, state, pos, origin, sink, offset, colorizer, quad, light, buffers);
         }
 
         sink.vertices.flush();
     }
 
-    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, PrimitiveSink<ModelVertexSink> out, Vec3d blockOffset,
+    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, PrimitiveSink<ModelVertexSink> out, Vec3d blockOffset,
                             BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light, ChunkModelBuilder model) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
 
@@ -142,7 +143,7 @@ public class BlockRenderer {
 
             int lm = light.lm[srcIndex];
 
-            out.vertices.writeVertex(x, y, z, color, u, v, lm, model.getOffset());
+            out.vertices.writeVertex(origin, x, y, z, color, u, v, lm);
         }
 
         out.indices.add(count + 0);

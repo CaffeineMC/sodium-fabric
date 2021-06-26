@@ -9,6 +9,4 @@ public interface ChunkModelBuilder {
     PrimitiveSink<ModelVertexSink> getBuilder(ModelQuadFacing facing);
 
     void addSprite(Sprite sprite);
-
-    int getOffset();
 }
