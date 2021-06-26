@@ -51,7 +51,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                        ChunkCameraContext camera) {
         super.begin(pass, matrixStack);
 
-        for (Map.Entry<RenderRegion, List<RenderChunk>> entry : renders.reference2ObjectEntrySet()) {
+        for (Map.Entry<RenderRegion, List<RenderChunk>> entry : Reference2ObjectMaps.fastIterable(renders)) {
             RenderRegion region = entry.getKey();
             RenderRegion.RenderRegionArenas arenas = region.getArenas(pass);
 
