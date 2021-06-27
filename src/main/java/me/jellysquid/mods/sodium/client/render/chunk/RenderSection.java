@@ -1,14 +1,18 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.Direction;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -18,12 +22,15 @@ import java.util.concurrent.CompletableFuture;
  * The render state object for a chunk section. This contains all the graphics state for each render pass along with
  * data about the render in the chunk visibility graph.
  */
-public class RenderChunk {
+public class RenderSection {
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
     private final Map<BlockRenderPass, ChunkGraphicsState> graphicsStates;
     private final RenderRegion region;
+    private final ChunkGraphInfo graphInfo;
+
+    private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<Void> rebuildTask = null;
@@ -32,11 +39,9 @@ public class RenderChunk {
     private boolean needsImportantRebuild;
 
     private boolean tickable;
-    private int id;
-
     private boolean disposed;
 
-    public RenderChunk(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
+    public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
         this.worldRenderer = worldRenderer;
         this.region = region;
 
@@ -44,7 +49,18 @@ public class RenderChunk {
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
 
+        this.graphInfo = new ChunkGraphInfo(this);
+
         this.graphicsStates = new EnumMap<>(BlockRenderPass.class);
+    }
+
+
+    public RenderSection getAdjacent(Direction dir) {
+        return this.adjacent[dir.ordinal()];
+    }
+
+    public void setAdjacentNode(Direction dir, RenderSection node) {
+        this.adjacent[dir.ordinal()] = node;
     }
 
     /**
@@ -141,7 +157,7 @@ public class RenderChunk {
 
     /**
      * Ensures that all resources attached to the given chunk render are "ticked" forward. This should be called every
-     * time before this render is drawn if {@link RenderChunk#isTickable()} is true.
+     * time before this render is drawn if {@link RenderSection#isTickable()} is true.
      */
     public void tick() {
         for (Sprite sprite : this.data.getAnimatedSprites()) {
@@ -180,6 +196,14 @@ public class RenderChunk {
 
     public int getRenderZ() {
         return this.getOriginZ() - 8;
+    }
+
+    /**
+     * @return The squared distance from the center of this chunk in the world to the center of the block position
+     * given by {@param pos}
+     */
+    public double getSquaredDistance(BlockPos pos) {
+        return this.getSquaredDistance(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
     }
 
     /**
@@ -260,14 +284,6 @@ public class RenderChunk {
         return this.tickable;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public int getId() {
-        return this.id;
-    }
-
     public RenderRegion getRegion() {
         return this.region;
     }
@@ -278,11 +294,15 @@ public class RenderChunk {
 
     @Override
     public String toString() {
-        return String.format("RenderChunk{chunkX=%d, chunkY=%d, chunkZ=%d, id=%d}",
-                this.chunkX, this.chunkY, this.chunkZ, this.id);
+        return String.format("RenderChunk{chunkX=%d, chunkY=%d, chunkZ=%d}",
+                this.chunkX, this.chunkY, this.chunkZ);
     }
 
-    public Vec3i getRelativeOffset() {
-        return this.region.getRelativeOffset(this.chunkX, this.chunkY, this.chunkZ);
+    public ChunkGraphInfo getGraphInfo() {
+        return this.graphInfo;
+    }
+
+    public void setOcclusionData(ChunkOcclusionData occlusionData) {
+        this.graphInfo.setOcclusionData(occlusionData);
     }
 }

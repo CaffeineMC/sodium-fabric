@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
-import me.jellysquid.mods.sodium.client.render.chunk.RenderChunk;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
@@ -16,9 +16,9 @@ import java.util.Collections;
  * synchronously update the render's data to an empty state to speed things along.
  */
 public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
-    private final RenderChunk render;
+    private final RenderSection render;
 
-    public ChunkRenderEmptyBuildTask(RenderChunk render) {
+    public ChunkRenderEmptyBuildTask(RenderSection render) {
         this.render = render;
     }
 

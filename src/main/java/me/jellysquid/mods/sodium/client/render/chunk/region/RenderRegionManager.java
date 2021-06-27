@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk;
+package me.jellysquid.mods.sodium.client.render.chunk.region;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.*;
@@ -7,12 +7,12 @@ import me.jellysquid.mods.sodium.client.gl.arena.GlBufferSegment;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.ChunkSectionPos;
 
 import java.util.*;
 
@@ -107,7 +107,7 @@ public class RenderRegionManager {
 
         while (renders.hasNext()) {
             ChunkBuildResult result = renders.next();
-            RenderChunk render = result.render;
+            RenderSection render = result.render;
 
             if (render.isDisposed()) {
                 SodiumClientMod.logger().warn("Tried to upload meshes for chunk " + result.render + ", but it has already been disposed");
@@ -164,7 +164,7 @@ public class RenderRegionManager {
         }
     }
 
-    public Collection<RenderRegion> getLoadedChunks() {
+    public Collection<RenderRegion> getLoadedRegions() {
         return this.regions.values();
     }
 }

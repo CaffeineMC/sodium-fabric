@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
-import me.jellysquid.mods.sodium.client.render.chunk.RenderChunk;
-import me.jellysquid.mods.sodium.client.render.chunk.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
@@ -23,7 +23,6 @@ import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.ChunkRegion;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -36,10 +35,10 @@ import java.util.Map;
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
-    private final RenderChunk render;
+    private final RenderSection render;
     private final ChunkRenderContext context;
 
-    public ChunkRenderRebuildTask(RenderChunk render, ChunkRenderContext context) {
+    public ChunkRenderRebuildTask(RenderSection render, ChunkRenderContext context) {
         this.render = render;
         this.context = context;
     }

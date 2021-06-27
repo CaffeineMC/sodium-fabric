@@ -1,13 +1,15 @@
-package me.jellysquid.mods.sodium.client.render.chunk;
+package me.jellysquid.mods.sodium.client.render.chunk.region;
 
-import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Vec3i;
 import org.apache.commons.lang3.Validate;
@@ -39,11 +41,13 @@ public class RenderRegion {
 
     private final ChunkRenderer renderer;
 
-    private final Set<RenderChunk> chunks = new ObjectOpenHashSet<>();
+    private final Set<RenderSection> chunks = new ObjectOpenHashSet<>();
     private final Map<BlockRenderPass, RenderRegionArenas> arenas = new EnumMap<>(BlockRenderPass.class);
 
     private final RenderDevice device;
     private final int x, y, z;
+
+    private RenderRegionVisibility visibility;
 
     public RenderRegion(ChunkRenderer renderer, RenderDevice device, int x, int y, int z) {
         this.renderer = renderer;
@@ -108,13 +112,13 @@ public class RenderRegion {
         return ChunkSectionPos.asLong(this.x, this.y, this.z);
     }
 
-    public void addChunk(RenderChunk chunk) {
+    public void addChunk(RenderSection chunk) {
         if (!this.chunks.add(chunk)) {
             throw new IllegalStateException("Chunk " + chunk + " is already a member of region " + this);
         }
     }
 
-    public void removeChunk(RenderChunk chunk) {
+    public void removeChunk(RenderSection chunk) {
         if (!this.chunks.remove(chunk)) {
             throw new IllegalStateException("Chunk " + chunk + " is not a member of region " + this);
         }
@@ -126,6 +130,19 @@ public class RenderRegion {
 
     public int getChunkCount() {
         return this.chunks.size();
+    }
+
+    public void updateVisibility(FrustumExtended frustum) {
+        int x = this.getOriginX();
+        int y = this.getOriginY();
+        int z = this.getOriginZ();
+
+        this.visibility = frustum.aabbTest(x, y, z,
+                x + (REGION_WIDTH << 4), y + (REGION_HEIGHT << 4), z + (REGION_LENGTH << 4));
+    }
+
+    public RenderRegionVisibility getVisibility() {
+        return this.visibility;
     }
 
     public static class RenderRegionArenas {

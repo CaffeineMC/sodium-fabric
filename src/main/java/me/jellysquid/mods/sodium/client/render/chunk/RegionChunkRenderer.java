@@ -15,6 +15,7 @@ import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.opengl.GL20C;
@@ -51,10 +52,10 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                        ChunkCameraContext camera) {
         super.begin(pass, matrixStack);
 
-        for (Map.Entry<RenderRegion, List<RenderChunk>> entry : sortedRegions(list, pass.isTranslucent())) {
+        for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, pass.isTranslucent())) {
             this.batch.begin();
 
-            for (RenderChunk render : sortedChunks(entry.getValue(), pass.isTranslucent())) {
+            for (RenderSection render : sortedChunks(entry.getValue(), pass.isTranslucent())) {
                 ChunkGraphicsState state = render.getGraphicsState(pass);
 
                 if (state == null) {
@@ -123,14 +124,6 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         super.end();
     }
 
-    private static Iterable<Map.Entry<RenderRegion, List<RenderChunk>>> sortedRegions(ChunkRenderList list, boolean translucent) {
-        return list.sorted(translucent);
-    }
-
-    private static Iterable<RenderChunk> sortedChunks(List<RenderChunk> chunks, boolean translucent) {
-        return translucent ? Lists.reverse(chunks) : chunks;
-    }
-
     private void addDrawCall(ElementRange part, int vertexBase, int indexOffset) {
         if (part != null) {
             this.batch.add((indexOffset + part.elementOffset) * 4, part.elementCount, vertexBase);
@@ -148,5 +141,13 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         super.delete();
 
         this.batch.delete();
+    }
+
+    private static Iterable<Map.Entry<RenderRegion, List<RenderSection>>> sortedRegions(ChunkRenderList list, boolean translucent) {
+        return list.sorted(translucent);
+    }
+
+    private static Iterable<RenderSection> sortedChunks(List<RenderSection> chunks, boolean translucent) {
+        return translucent ? Lists.reverse(chunks) : chunks;
     }
 }
