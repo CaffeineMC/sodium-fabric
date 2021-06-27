@@ -8,6 +8,7 @@ import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSection;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
+import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.fluid.FluidState;
@@ -21,6 +22,7 @@ import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.chunk.*;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.ColorResolver;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -34,7 +36,7 @@ import java.util.Map;
  *
  * Object pooling should be used to avoid huge allocations as this class contains many large arrays.
  */
-public class WorldSlice implements BlockRenderView, BiomeAccess.Storage {
+public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderAttachedBlockView {
     // The number of blocks on each axis in a section.
     private static final int SECTION_BLOCK_LENGTH = 16;
 
@@ -357,5 +359,15 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage {
     @Override
     public int getBottomY() {
         return this.world.getBottomY();
+    }
+
+    @Override
+    public @Nullable Object getBlockEntityRenderAttachment(BlockPos pos) {
+        int relX = pos.getX() - this.baseX;
+        int relY = pos.getY() - this.baseY;
+        int relZ = pos.getZ() - this.baseZ;
+
+        return this.sections[WorldSlice.getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
+                .getBlockEntityRenderAttachment(relX & 15, relY & 15, relZ & 15);
     }
 }
