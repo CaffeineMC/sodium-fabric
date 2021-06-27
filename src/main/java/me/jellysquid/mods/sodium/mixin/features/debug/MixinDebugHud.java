@@ -2,8 +2,6 @@ package me.jellysquid.mods.sodium.mixin.features.debug;
 
 import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,7 +11,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
-import java.util.List;
 
 @Mixin(DebugHud.class)
 public abstract class MixinDebugHud {

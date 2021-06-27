@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.common.util.collections;
 
-import it.unimi.dsi.fastutil.PriorityQueue;
-
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;

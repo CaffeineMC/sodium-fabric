@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import me.jellysquid.mods.sodium.client.render.chunk.RenderChunk;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
@@ -13,11 +13,11 @@ import java.util.Map;
  * will instead be discarded.
  */
 public class ChunkBuildResult {
-    public final RenderChunk render;
+    public final RenderSection render;
     public final ChunkRenderData data;
     public final Map<BlockRenderPass, ChunkMeshData> meshes;
 
-    public ChunkBuildResult(RenderChunk render, ChunkRenderData data, Map<BlockRenderPass, ChunkMeshData> meshes) {
+    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<BlockRenderPass, ChunkMeshData> meshes) {
         this.render = render;
         this.data = data;
         this.meshes = meshes;

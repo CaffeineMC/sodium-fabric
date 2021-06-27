@@ -38,7 +38,7 @@ public class BufferUtil {
     }
 
     private static void copyIntArrayUnsafe(int[] data, int limit, int offset, long addr) {
-        UnsafeUtil.instance().copyMemory(data, UnsafeUtil.INT_ARRAY_OFFSET, null, addr + offset, limit * 4);
+        UnsafeUtil.instance().copyMemory(data, UnsafeUtil.INT_ARRAY_OFFSET, null, addr + offset, limit * 4L);
     }
 
     private static void copyIntArrayDefault(int[] data, int limit, int offset, ByteBuffer buffer) {
