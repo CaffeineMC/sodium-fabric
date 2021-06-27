@@ -6,13 +6,21 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
+import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
+import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
+import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.ChunkSectionCache;
+import net.minecraft.world.World;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -33,7 +41,7 @@ public class RenderSection {
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
-    private CompletableFuture<Void> rebuildTask = null;
+    private CompletableFuture<?> rebuildTask = null;
 
     private boolean needsRebuild;
     private boolean needsImportantRebuild;
@@ -186,18 +194,6 @@ public class RenderSection {
         return this.chunkZ << 4;
     }
 
-    public int getRenderX() {
-        return this.getOriginX() - 8;
-    }
-
-    public int getRenderY() {
-        return this.getOriginY() - 8;
-    }
-
-    public int getRenderZ() {
-        return this.getOriginZ() - 8;
-    }
-
     /**
      * @return The squared distance from the center of this chunk in the world to the center of the block position
      * given by {@param pos}
@@ -236,10 +232,6 @@ public class RenderSection {
      */
     private double getCenterZ() {
         return this.getOriginZ() + 8.0D;
-    }
-
-    public BlockPos getRenderOrigin() {
-        return new BlockPos(this.getRenderX(), this.getRenderY(), this.getRenderZ());
     }
 
     public ChunkGraphicsState setGraphicsState(BlockRenderPass pass, ChunkGraphicsState state) {
@@ -304,5 +296,11 @@ public class RenderSection {
 
     public void setOcclusionData(ChunkOcclusionData occlusionData) {
         this.graphInfo.setOcclusionData(occlusionData);
+    }
+
+    public void setRebuildFuture(CompletableFuture<?> task) {
+        this.cancelRebuildTask();
+
+        this.rebuildTask = task;
     }
 }

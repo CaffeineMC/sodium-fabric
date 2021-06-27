@@ -54,7 +54,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         cache.init(this.context);
 
         WorldSlice slice = cache.getWorldSlice();
-        RenderRegion region = this.render.getRegion();
 
         int minX = this.render.getOriginX();
         int minY = this.render.getOriginY();
