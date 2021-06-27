@@ -171,8 +171,6 @@ public class ChunkBuilder {
      * but can be up to the number of available processor threads on the system.
      */
     private static int getOptimalThreadCount() {
-        if (true) return 1;
-
         return Math.max(1, Runtime.getRuntime().availableProcessors());
     }
 
