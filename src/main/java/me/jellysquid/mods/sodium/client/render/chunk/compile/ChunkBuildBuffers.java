@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
-import me.jellysquid.mods.sodium.client.model.PrimitiveSink;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferBuilder;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
@@ -11,13 +10,11 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.BakedChunkM
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelOffset;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.GlAllocationUtils;
-import net.minecraft.util.math.Vec3i;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -32,7 +29,7 @@ import java.util.Map;
 public class ChunkBuildBuffers {
     private final ChunkModelBuilder[] delegates;
 
-    private final VertexBufferBuilder[][] vertexBuffers;
+    private final VertexBufferBuilder[] vertexBuffers;
     private final IndexBufferBuilder[][] indexBuffers;
 
     private final ChunkVertexType vertexType;
@@ -45,33 +42,27 @@ public class ChunkBuildBuffers {
 
         this.delegates = new ChunkModelBuilder[BlockRenderPass.COUNT];
 
-        this.vertexBuffers = new VertexBufferBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
+        this.vertexBuffers = new VertexBufferBuilder[BlockRenderPass.COUNT];
         this.indexBuffers = new IndexBufferBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
 
         for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            VertexBufferBuilder[] vertexBuffers = this.vertexBuffers[pass.ordinal()];
             IndexBufferBuilder[] indexBuffers = this.indexBuffers[pass.ordinal()];
-
-            int vertexBufferSize = pass.getLayer().getExpectedBufferSize() / ModelQuadFacing.COUNT;
 
             for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
                 indexBuffers[facing] = new IndexBufferBuilder(1024);
-                vertexBuffers[facing] = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(), vertexBufferSize);
             }
+
+            this.vertexBuffers[pass.ordinal()] = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(),
+                    pass.getLayer().getExpectedBufferSize());
         }
     }
 
     public void init(ChunkRenderData.Builder renderData) {
-        for (int layer = 0; layer < this.indexBuffers.length; layer++) {
-            // TODO: Fix unsafe cast
-            PrimitiveSink<ModelVertexSink>[] writers = new PrimitiveSink[ModelQuadFacing.COUNT];
+        for (int i = 0; i < this.delegates.length; i++) {
+            ModelVertexSink vertexSink = this.vertexType.createBufferWriter(this.vertexBuffers[i]);
+            IndexBufferBuilder[] indexBuffers = this.indexBuffers[i];
 
-            for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
-                writers[facing] = new PrimitiveSink<>(this.indexBuffers[layer][facing],
-                        this.vertexType.createBufferWriter(this.vertexBuffers[layer][facing]));
-            }
-
-            this.delegates[layer] = new BakedChunkModelBuilder(writers, renderData);
+            this.delegates[i] = new BakedChunkModelBuilder(indexBuffers, vertexSink, renderData);
         }
     }
 
@@ -88,51 +79,45 @@ public class ChunkBuildBuffers {
      * builders. This is used after all blocks have been rendered to pass the finished meshes over to the graphics card.
      */
     public ChunkMeshData createMesh(BlockRenderPass pass) {
-        VertexBufferBuilder[] vertexBufferBuilders = this.vertexBuffers[pass.ordinal()];
+        VertexBufferBuilder vertexBufferBuilder = this.vertexBuffers[pass.ordinal()];
         IndexBufferBuilder[] indexBufferBuilders = this.indexBuffers[pass.ordinal()];
 
-        int vertexDataLength = Arrays.stream(vertexBufferBuilders)
-                .mapToInt(VertexBufferBuilder::getByteSize)
-                .sum();
+        int vertexDataLength = vertexBufferBuilder.getByteSize();
+
+        if (vertexDataLength == 0) {
+            return null;
+        }
 
         int indexDataLength = Arrays.stream(indexBufferBuilders)
                 .mapToInt(IndexBufferBuilder::getSize)
                 .sum();
 
-        if (indexDataLength == 0) {
-            return null;
-        }
-
         ByteBuffer vertexBuffer = GlAllocationUtils.allocateByteBuffer(vertexDataLength);
         ByteBuffer indexBuffer = GlAllocationUtils.allocateByteBuffer(indexDataLength);
 
         int baseIndex = 0;
-        int baseVertex = 0;
 
         Map<ModelQuadFacing, ElementRange> ranges = new EnumMap<>(ModelQuadFacing.class);
 
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
             IndexBufferBuilder indexBufferBuilder = indexBufferBuilders[facing.ordinal()];
-            VertexBufferBuilder vertexBufferBuilder = vertexBufferBuilders[facing.ordinal()];
 
             if (indexBufferBuilder.getCount() == 0) {
                 continue;
             }
 
             int indexCount = indexBufferBuilder.getCount();
-            int vertexCount = vertexBufferBuilder.getCount();
 
-            ranges.put(facing, new ElementRange(baseIndex, indexCount, baseVertex));
-
-            vertexBufferBuilder.get(vertexBuffer);
-            vertexBufferBuilder.reset();
+            ranges.put(facing, new ElementRange(baseIndex, indexCount));
 
             indexBufferBuilder.get(indexBuffer);
             indexBufferBuilder.reset();
 
             baseIndex += indexCount;
-            baseVertex += vertexCount;
         }
+
+        vertexBufferBuilder.get(vertexBuffer);
+        vertexBufferBuilder.reset();
 
         vertexBuffer.flip();
         indexBuffer.flip();

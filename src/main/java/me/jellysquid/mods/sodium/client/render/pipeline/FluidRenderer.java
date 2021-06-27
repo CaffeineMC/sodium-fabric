@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
-import me.jellysquid.mods.sodium.client.model.PrimitiveSink;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -11,6 +10,8 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
@@ -211,15 +212,15 @@ public class FluidRenderer {
             this.setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
 
             this.calculateQuadColors(quad, world, pos, lighter, Direction.UP, 1.0F, !lava);
-            this.flushQuad(buffers, offset, quad, facing, false);
+
+            int vertexStart = this.writeVertices(buffers, offset, quad);
+
+            buffers.getIndexBufferBuilder(facing)
+                    .add(vertexStart, ModelQuadWinding.CLOCKWISE);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.setVertex(quad, 3, 0.0f, h1, 0.0f, u1, v1);
-                this.setVertex(quad, 2, 0.0f, h2, 1.0F, u2, v2);
-                this.setVertex(quad, 1, 1.0F, h3, 1.0F, u3, v3);
-                this.setVertex(quad, 0, 1.0F, h4, 0.0f, u4, v4);
-
-                this.flushQuad(buffers, offset, quad, ModelQuadFacing.DOWN, true);
+                buffers.getIndexBufferBuilder(ModelQuadFacing.DOWN)
+                        .add(vertexStart, ModelQuadWinding.COUNTERCLOCKWISE);
             }
 
             rendered = true;
@@ -240,7 +241,11 @@ public class FluidRenderer {
             this.setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.calculateQuadColors(quad, world, pos, lighter, Direction.DOWN, 1.0F, !lava);
-            this.flushQuad(buffers, offset, quad, ModelQuadFacing.DOWN, false);
+
+            int vertexStart = this.writeVertices(buffers, offset, quad);
+
+            buffers.getIndexBufferBuilder(ModelQuadFacing.DOWN)
+                    .add(vertexStart, ModelQuadWinding.CLOCKWISE);
 
             rendered = true;
         }
@@ -342,15 +347,15 @@ public class FluidRenderer {
                 ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
 
                 this.calculateQuadColors(quad, world, pos, lighter, dir, br, !lava);
-                this.flushQuad(buffers, offset, quad, facing, false);
+
+                int vertexStart = this.writeVertices(buffers, offset, quad);
+
+                buffers.getIndexBufferBuilder(facing)
+                        .add(vertexStart, ModelQuadWinding.CLOCKWISE);
 
                 if (sprite != this.waterOverlaySprite) {
-                    this.setVertex(quad, 0, x1, c1, z1, u1, v1);
-                    this.setVertex(quad, 1, x1, yOffset, z1, u1, v3);
-                    this.setVertex(quad, 2, x2, yOffset, z2, u2, v3);
-                    this.setVertex(quad, 3, x2, c2, z2, u2, v2);
-
-                    this.flushQuad(buffers, offset, quad, facing.getOpposite(), true);
+                    buffers.getIndexBufferBuilder(facing.getOpposite())
+                            .add(vertexStart, ModelQuadWinding.COUNTERCLOCKWISE);
                 }
 
                 rendered = true;
@@ -375,54 +380,36 @@ public class FluidRenderer {
         }
     }
 
-    private void flushQuad(ChunkModelBuilder model, BlockPos offset, ModelQuadView quad, ModelQuadFacing facing, boolean flip) {
-        int vertexIdx, lightOrder;
+    private int writeVertices(ChunkModelBuilder model, BlockPos offset, ModelQuadView quad) {
+        ModelVertexSink vertices = model.getVertexSink();
+        vertices.ensureCapacity(4);
 
-        if (flip) {
-            vertexIdx = 3;
-            lightOrder = -1;
-        } else {
-            vertexIdx = 0;
-            lightOrder = 1;
-        }
-
-        PrimitiveSink<ModelVertexSink> sink = model.getBuilder(facing);
-        sink.vertices.ensureCapacity(4);
-
-        int count = sink.vertices.getVertexCount();
+        int vertexStart = vertices.getVertexCount();
 
         for (int i = 0; i < 4; i++) {
             float x = quad.getX(i);
             float y = quad.getY(i);
             float z = quad.getZ(i);
 
-            int color = this.quadColors[vertexIdx];
+            int color = this.quadColors[i];
 
             float u = quad.getTexU(i);
             float v = quad.getTexV(i);
 
-            int light = this.quadLightData.lm[vertexIdx];
+            int light = this.quadLightData.lm[i];
 
-            sink.vertices.writeVertex(offset, x, y, z, color, u, v, light);
-
-            vertexIdx += lightOrder;
+            vertices.writeVertex(offset, x, y, z, color, u, v, light);
         }
 
-        sink.vertices.flush();
-
-        sink.indices.add(count + 0);
-        sink.indices.add(count + 1);
-        sink.indices.add(count + 2);
-
-        sink.indices.add(count + 2);
-        sink.indices.add(count + 3);
-        sink.indices.add(count + 0);
+        vertices.flush();
 
         Sprite sprite = quad.getSprite();
 
         if (sprite != null) {
             model.addSprite(sprite);
         }
+
+        return vertexStart;
     }
 
     private void setVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {

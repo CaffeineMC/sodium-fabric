@@ -122,13 +122,13 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 drawCommandList.multiDrawElementsBaseVertex(this.batch.getPointerBuffer(), this.batch.getCountBuffer(), this.batch.getBaseVertexBuffer());
             }
         }
-
+        
         super.end();
     }
 
     private void addDrawCall(ElementRange part, int vertexBase, int indexOffset) {
         if (part != null) {
-            this.batch.add((indexOffset + part.elementOffset) * 4, part.elementCount, vertexBase + part.baseVertex);
+            this.batch.add((indexOffset + part.elementOffset) * 4, part.elementCount, vertexBase);
         }
     }
 

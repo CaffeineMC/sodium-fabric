@@ -182,6 +182,12 @@ public class GLRenderDevice implements RenderDevice {
         }
 
         @Override
+        public void multiDrawElements(PointerBuffer pointer, IntBuffer count) {
+            GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
+            GL32C.glMultiDrawElements(primitiveType.getId(), count, GL20C.GL_UNSIGNED_INT, pointer);
+        }
+
+        @Override
         public void endTessellating() {
             GLRenderDevice.this.activeTessellation.unbind(GLRenderDevice.this.commandList);
             GLRenderDevice.this.activeTessellation = null;
