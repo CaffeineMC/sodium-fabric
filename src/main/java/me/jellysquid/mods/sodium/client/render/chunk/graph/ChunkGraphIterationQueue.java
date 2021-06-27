@@ -1,13 +1,12 @@
-package me.jellysquid.mods.sodium.client.render.chunk.cull.graph;
+package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import net.minecraft.util.math.Direction;
 
 import java.util.Arrays;
 
 public class ChunkGraphIterationQueue {
-    private int[] positions;
-    private ChunkGraphNode[] nodes;
+    private RenderSection[] renders;
     private Direction[] directions;
 
     private int pos;
@@ -18,35 +17,32 @@ public class ChunkGraphIterationQueue {
     }
 
     public ChunkGraphIterationQueue(int capacity) {
-        this.positions = new int[capacity];
-        this.nodes = new ChunkGraphNode[capacity];
+        this.renders = new RenderSection[capacity];
         this.directions = new Direction[capacity];
 
         this.capacity = capacity;
     }
 
-    public void add(ChunkGraphNode node, Direction direction) {
+    public void add(RenderSection render, Direction direction) {
         int i = this.pos++;
 
         if (i == this.capacity) {
             this.resize();
         }
 
-        this.positions[i] = node.getId();
-        this.nodes[i] = node;
+        this.renders[i] = render;
         this.directions[i] = direction;
     }
 
     private void resize() {
         this.capacity *= 2;
 
-        this.positions = Arrays.copyOf(this.positions, this.capacity);
-        this.nodes = Arrays.copyOf(this.nodes, this.capacity);
+        this.renders = Arrays.copyOf(this.renders, this.capacity);
         this.directions = Arrays.copyOf(this.directions, this.capacity);
     }
 
-    public ChunkGraphNode getNode(int i) {
-        return this.nodes[i];
+    public RenderSection getRender(int i) {
+        return this.renders[i];
     }
 
     public Direction getDirection(int i) {
@@ -59,9 +55,5 @@ public class ChunkGraphIterationQueue {
 
     public int size() {
         return this.pos;
-    }
-
-    public IntArrayList getOrderedIdList() {
-        return IntArrayList.wrap(this.positions, this.pos);
     }
 }
