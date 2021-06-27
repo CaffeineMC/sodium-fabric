@@ -40,8 +40,6 @@ public class SodiumGameOptions {
 
         public boolean enableVignette = true;
         public boolean enableClouds = true;
-
-        public LightingQuality smoothLighting = LightingQuality.HIGH;
     }
 
     public static class NotificationSettings {
@@ -66,23 +64,6 @@ public class SodiumGameOptions {
 
         public boolean isFancy(GraphicsMode graphicsMode) {
             return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsMode.FANCY || graphicsMode == GraphicsMode.FABULOUS));
-        }
-    }
-
-    public enum LightingQuality implements TextProvider {
-        HIGH("High"),
-        LOW("Low"),
-        OFF("Off");
-
-        private final String name;
-
-        LightingQuality(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getLocalizedName() {
-            return this.name;
         }
     }
 
