@@ -29,7 +29,7 @@ public class ChunkRenderCacheLocal extends ChunkRenderCache {
         BiomeColorBlender biomeColorBlender = this.createBiomeColorBlender();
 
         this.blockRenderer = new BlockRenderer(client, lightPipelineProvider, biomeColorBlender);
-        this.fluidRenderer = new FluidRenderer(client, lightPipelineProvider, biomeColorBlender);
+        this.fluidRenderer = new FluidRenderer(lightPipelineProvider, biomeColorBlender);
 
         this.blockModels = client.getBakedModelManager().getBlockModels();
     }
