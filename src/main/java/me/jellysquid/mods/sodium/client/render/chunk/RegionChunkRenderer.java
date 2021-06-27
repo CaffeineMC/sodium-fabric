@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectMaps;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.DrawCommandList;
@@ -23,7 +21,6 @@ import org.lwjgl.system.MemoryStack;
 
 import java.nio.FloatBuffer;
 import java.util.List;
-import java.util.Map;
 
 public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final GlMultiDrawBatch batch = GlMultiDrawBatch.create(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
@@ -48,19 +45,17 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     @Override
     public void render(MatrixStack matrixStack, CommandList commandList,
-                       Reference2ObjectMap<RenderRegion, List<RenderChunk>> renders, BlockRenderPass pass,
+                       ChunkRenderList renders, BlockRenderPass pass,
                        ChunkCameraContext camera) {
         super.begin(pass, matrixStack);
 
-        for (Map.Entry<RenderRegion, List<RenderChunk>> entry : Reference2ObjectMaps.fastIterable(renders)) {
-            RenderRegion region = entry.getKey();
+        for (ChunkRenderList.Entry entry : renders.iterable(pass.isTranslucent())) {
+            RenderRegion region = entry.getRegion();
             RenderRegion.RenderRegionArenas arenas = region.getArenas(pass);
-
-            List<RenderChunk> chunks = entry.getValue();
 
             this.batch.begin();
 
-            for (RenderChunk render : chunks) {
+            for (RenderChunk render : entry.iterable(pass.isTranslucent())) {
                 ChunkGraphicsState state = render.getGraphicsState(pass);
 
                 if (state == null) {
