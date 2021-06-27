@@ -15,6 +15,13 @@ minecraft {
     accessWidener = file("src/main/resources/sodium.accesswidener")
 }
 
+configurations {
+    modIncludeImplementation
+
+    include.extendsFrom modIncludeImplementation
+    modImplementation.extendsFrom modIncludeImplementation
+}
+
 dependencies {
     //to change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
@@ -22,8 +29,9 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Fabric API
-    modImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
-    modImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
+    modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
+    modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
+    modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
 }
 
 if (project.use_third_party_mods) {
