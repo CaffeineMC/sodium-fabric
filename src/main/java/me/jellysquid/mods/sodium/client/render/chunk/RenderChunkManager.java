@@ -79,10 +79,10 @@ public class RenderChunkManager implements ChunkStatusListener {
 
     private final Deque<ChunkBuildResult> uploadQueue = new ConcurrentLinkedDeque<>();
 
-    private final ObjectList<RenderChunk> visibleChunks = new ObjectArrayList<>();
+    private final Reference2ObjectMap<RenderRegion, List<RenderChunk>> visibleChunks = new Reference2ObjectLinkedOpenHashMap<>();
     private final ObjectList<RenderChunk> tickableChunks = new ObjectArrayList<>();
 
-    private final Reference2ObjectMap<RenderRegion, List<RenderChunk>> sortedVisibleChunks = new Reference2ObjectLinkedOpenHashMap<>();
+    private final ChunkRenderList chunkRenderList = new ChunkRenderList();
 
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
@@ -125,23 +125,10 @@ public class RenderChunkManager implements ChunkStatusListener {
 
         this.setup(camera);
         this.iterateChunks(camera, frustum, frame, spectator);
-        this.sortChunks();
+
+        this.chunkRenderList.addChunks(this.visibleChunks);
 
         this.dirty = false;
-    }
-
-    private void sortChunks() {
-        this.sortedVisibleChunks.clear();
-
-        for (RenderChunk render : this.visibleChunks) {
-            List<RenderChunk> list = this.sortedVisibleChunks.get(render.getRegion());
-
-            if (list == null) {
-                this.sortedVisibleChunks.put(render.getRegion(), list = new ObjectArrayList<>(RenderRegion.REGION_SIZE));
-            }
-
-            list.add(render);
-        }
     }
 
     private void processStatusChanges() {
@@ -216,7 +203,7 @@ public class RenderChunkManager implements ChunkStatusListener {
         }
 
         if (!render.isEmpty()) {
-            this.addChunkToRenderLists(render);
+            this.addChunkToVisible(render);
             this.addEntitiesToRenderLists(render);
         }
     }
@@ -249,8 +236,14 @@ public class RenderChunkManager implements ChunkStatusListener {
         return this.world.getChunk(x, z, ChunkStatus.FULL, false) != null;
     }
 
-    private void addChunkToRenderLists(RenderChunk render) {
-        this.visibleChunks.add(render);
+    private void addChunkToVisible(RenderChunk render) {
+        List<RenderChunk> list = this.visibleChunks.get(render.getRegion());
+
+        if (list == null) {
+            this.visibleChunks.put(render.getRegion(), list = new ObjectArrayList<>(RenderRegion.REGION_SIZE));
+        }
+
+        list.add(render);
 
         if (render.isTickable()) {
             this.tickableChunks.add(render);
@@ -271,6 +264,8 @@ public class RenderChunkManager implements ChunkStatusListener {
 
         this.visibleBlockEntities.clear();
         this.visibleChunks.clear();
+
+        this.chunkRenderList.clear();
 
         this.tickableChunks.clear();
     }
@@ -329,7 +324,7 @@ public class RenderChunkManager implements ChunkStatusListener {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRenderer.render(matrixStack, commandList, this.sortedVisibleChunks, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRenderer.render(matrixStack, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
 
         commandList.flush();
     }
