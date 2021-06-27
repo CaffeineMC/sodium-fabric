@@ -38,17 +38,15 @@ public abstract class MixinClientChunkManager implements ClientChunkManagerExten
 
     @Inject(method = "loadChunkFromPacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;resetChunkColor(Lnet/minecraft/util/math/ChunkPos;)V", shift = At.Shift.AFTER))
     private void afterLoadChunkFromPacket(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound nbt, BitSet bitSet, CallbackInfoReturnable<WorldChunk> cir) {
-        if (this.listener != null) {
+        if (this.listener != null && this.loadedChunks.add(ChunkPos.toLong(x, z))) {
             this.listener.onChunkAdded(x, z);
-            this.loadedChunks.add(ChunkPos.toLong(x, z));
         }
     }
 
     @Inject(method = "unload", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientChunkManager$ClientChunkMap;compareAndSet(ILnet/minecraft/world/chunk/WorldChunk;Lnet/minecraft/world/chunk/WorldChunk;)Lnet/minecraft/world/chunk/WorldChunk;", shift = At.Shift.AFTER))
     private void afterUnloadChunk(int x, int z, CallbackInfo ci) {
-        if (this.listener != null) {
+        if (this.listener != null && this.loadedChunks.remove(ChunkPos.toLong(x, z))) {
             this.listener.onChunkRemoved(x, z);
-            this.loadedChunks.remove(ChunkPos.toLong(x, z));
         }
     }
 

@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.DrawCommandList;
@@ -21,6 +22,7 @@ import org.lwjgl.system.MemoryStack;
 
 import java.nio.FloatBuffer;
 import java.util.List;
+import java.util.Map;
 
 public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final GlMultiDrawBatch batch = GlMultiDrawBatch.create(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
@@ -45,17 +47,14 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     @Override
     public void render(MatrixStack matrixStack, CommandList commandList,
-                       ChunkRenderList renders, BlockRenderPass pass,
+                       ChunkRenderList list, BlockRenderPass pass,
                        ChunkCameraContext camera) {
         super.begin(pass, matrixStack);
 
-        for (ChunkRenderList.Entry entry : renders.iterable(pass.isTranslucent())) {
-            RenderRegion region = entry.getRegion();
-            RenderRegion.RenderRegionArenas arenas = region.getArenas(pass);
-
+        for (Map.Entry<RenderRegion, List<RenderChunk>> entry : sortedRegions(list, pass.isTranslucent())) {
             this.batch.begin();
 
-            for (RenderChunk render : entry.iterable(pass.isTranslucent())) {
+            for (RenderChunk render : sortedChunks(entry.getValue(), pass.isTranslucent())) {
                 ChunkGraphicsState state = render.getGraphicsState(pass);
 
                 if (state == null) {
@@ -100,6 +99,9 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
+            RenderRegion region = entry.getKey();
+            RenderRegion.RenderRegionArenas arenas = region.getArenas(pass);
+
             if (arenas.getTessellation() == null) {
                 arenas.setTessellation(this.createRegionTessellation(commandList, arenas));
             }
@@ -119,6 +121,14 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         }
         
         super.end();
+    }
+
+    private static Iterable<Map.Entry<RenderRegion, List<RenderChunk>>> sortedRegions(ChunkRenderList list, boolean translucent) {
+        return list.sorted(translucent);
+    }
+
+    private static Iterable<RenderChunk> sortedChunks(List<RenderChunk> chunks, boolean translucent) {
+        return translucent ? Lists.reverse(chunks) : chunks;
     }
 
     private void addDrawCall(ElementRange part, int vertexBase, int indexOffset) {
