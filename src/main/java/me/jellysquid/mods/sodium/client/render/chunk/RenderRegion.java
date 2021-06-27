@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import it.unimi.dsi.fastutil.objects.ObjectArraySet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
@@ -12,6 +14,7 @@ import org.apache.commons.lang3.Validate;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Set;
 
 public class RenderRegion {
     public static final int REGION_WIDTH = 8;
@@ -36,9 +39,7 @@ public class RenderRegion {
 
     private final ChunkRenderer renderer;
 
-    private final RenderChunk[] renders = new RenderChunk[REGION_SIZE];
-    private int loadedChunks = 0;
-
+    private final Set<RenderChunk> chunks = new ObjectOpenHashSet<>();
     private final Map<BlockRenderPass, RenderRegionArenas> arenas = new EnumMap<>(BlockRenderPass.class);
 
     private final RenderDevice device;
@@ -57,44 +58,6 @@ public class RenderRegion {
         return new RenderRegion(renderer, device, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
-    public RenderChunk getChunk(int x, int y, int z) {
-        return this.renders[getRenderIndex(x, y, z)];
-    }
-
-    public void addRender(int x, int y, int z, RenderChunk render) {
-        if (render == null) {
-            throw new IllegalArgumentException("Render must not be null");
-        }
-
-        int idx = getRenderIndex(x, y, z);
-        RenderChunk prev = this.renders[idx];
-
-        if (prev != null) {
-            throw new IllegalArgumentException("Chunk is already loaded at " + ChunkSectionPos.from(x, y, z));
-        }
-
-        this.renders[idx] = render;
-        this.loadedChunks++;
-    }
-
-    public RenderChunk removeChunk(int x, int y, int z) {
-        int idx = getRenderIndex(x, y, z);
-        RenderChunk prev = this.renders[idx];
-
-        if (prev == null) {
-            throw new IllegalArgumentException("Chunk is not loaded at " + ChunkSectionPos.from(x, y, z));
-        }
-
-        this.renders[idx] = null;
-        this.loadedChunks--;
-
-        return prev;
-    }
-
-    private static int getRenderIndex(int x, int y, int z) {
-        return (REGION_HEIGHT * REGION_WIDTH * (z & REGION_LENGTH_M)) + (REGION_WIDTH * (y & REGION_HEIGHT_M)) + (x & REGION_WIDTH_M);
-    }
-
     public RenderRegionArenas getArenas(BlockRenderPass pass) {
         return this.arenas.get(pass);
     }
@@ -109,28 +72,12 @@ public class RenderRegion {
         this.arenas.clear();
     }
 
-    public int getChunkCount() {
-        return this.loadedChunks;
-    }
-
-    public static long getRegionKey(int x, int y, int z) {
+    public static long getRegionKeyForChunk(int x, int y, int z) {
         return ChunkSectionPos.asLong(x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
     public Vec3i getRelativeOffset(int chunkX, int chunkY, int chunkZ) {
         return new Vec3i(chunkX & REGION_WIDTH_M, chunkY & REGION_HEIGHT_M, chunkZ & REGION_LENGTH_M);
-    }
-
-    public int getRenderX() {
-        return this.getOriginX() - 8;
-    }
-
-    public int getRenderY() {
-        return this.getOriginY() - 8;
-    }
-
-    public int getRenderZ() {
-        return this.getOriginZ() - 8;
     }
 
     public int getOriginX() {
@@ -155,6 +102,30 @@ public class RenderRegion {
     public void deleteArenas(CommandList commandList, BlockRenderPass pass) {
         this.arenas.remove(pass)
                 .delete(commandList);
+    }
+
+    public long getKey() {
+        return ChunkSectionPos.asLong(this.x, this.y, this.z);
+    }
+
+    public void addChunk(RenderChunk chunk) {
+        if (!this.chunks.add(chunk)) {
+            throw new IllegalStateException("Chunk " + chunk + " is already a member of region " + this);
+        }
+    }
+
+    public void removeChunk(RenderChunk chunk) {
+        if (!this.chunks.remove(chunk)) {
+            throw new IllegalStateException("Chunk " + chunk + " is not a member of region " + this);
+        }
+    }
+
+    public boolean isEmpty() {
+        return this.chunks.isEmpty();
+    }
+
+    public int getChunkCount() {
+        return this.chunks.size();
     }
 
     public static class RenderRegionArenas {

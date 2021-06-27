@@ -143,7 +143,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     public void scheduleTerrainUpdate() {
         // BUG: seems to be called before init
         if (this.renderChunkManager != null) {
-            this.renderChunkManager.markDirty();
+            this.renderChunkManager.markGraphDirty();
         }
     }
 
@@ -151,7 +151,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
      * @return True if no chunks are pending rebuilds
      */
     public boolean isTerrainRenderComplete() {
-        return this.renderChunkManager.isBuildComplete();
+        return this.renderChunkManager.getBuilder().isBuildQueueEmpty();
     }
 
     /**
@@ -183,7 +183,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
                 pitch != this.lastCameraPitch || yaw != this.lastCameraYaw;
 
         if (dirty) {
-            this.renderChunkManager.markDirty();
+            this.renderChunkManager.markGraphDirty();
         }
 
         this.lastCameraX = pos.x;
@@ -196,7 +196,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         this.renderChunkManager.updateChunks();
 
-        if (!hasForcedFrustum && this.renderChunkManager.isDirty()) {
+        if (!hasForcedFrustum && this.renderChunkManager.isGraphDirty()) {
             profiler.swap("chunk_graph_rebuild");
 
             this.renderChunkManager.update(camera, (FrustumExtended) frustum, frame, spectator);
