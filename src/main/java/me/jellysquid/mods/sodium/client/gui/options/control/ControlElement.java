@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.widgets.AbstractWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public class ControlElement<T> extends AbstractWidget {
@@ -24,7 +25,7 @@ public class ControlElement<T> extends AbstractWidget {
 
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
-        String name = this.option.getName();
+        String name = this.option.getName().getString();
         String label;
 
         if (this.hovered && this.font.getWidth(name) > (this.dim.getWidth() - this.option.getControl().getMaxWidth())) {
