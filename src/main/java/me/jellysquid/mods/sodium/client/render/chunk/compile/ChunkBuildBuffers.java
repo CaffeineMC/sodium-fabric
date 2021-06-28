@@ -3,22 +3,18 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
-import me.jellysquid.mods.sodium.client.model.PrimitiveSink;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferBuilder;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.BakedChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelVertexTransformer;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelOffset;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.GlAllocationUtils;
-import net.minecraft.util.math.Vec3i;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -33,13 +29,12 @@ import java.util.Map;
 public class ChunkBuildBuffers {
     private final ChunkModelBuilder[] delegates;
 
-    private final VertexBufferBuilder[][] vertexBuffers;
+    private final VertexBufferBuilder[] vertexBuffers;
     private final IndexBufferBuilder[][] indexBuffers;
 
     private final ChunkVertexType vertexType;
 
     private final BlockRenderPassManager renderPassManager;
-    private final ChunkModelOffset offset;
 
     public ChunkBuildBuffers(ChunkVertexType vertexType, BlockRenderPassManager renderPassManager) {
         this.vertexType = vertexType;
@@ -47,40 +42,32 @@ public class ChunkBuildBuffers {
 
         this.delegates = new ChunkModelBuilder[BlockRenderPass.COUNT];
 
-        this.vertexBuffers = new VertexBufferBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
+        this.vertexBuffers = new VertexBufferBuilder[BlockRenderPass.COUNT];
         this.indexBuffers = new IndexBufferBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
 
-        this.offset = new ChunkModelOffset();
-
         for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            VertexBufferBuilder[] vertexBuffers = this.vertexBuffers[pass.ordinal()];
             IndexBufferBuilder[] indexBuffers = this.indexBuffers[pass.ordinal()];
-
-            int vertexBufferSize = pass.getLayer().getExpectedBufferSize() / ModelQuadFacing.COUNT;
 
             for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
                 indexBuffers[facing] = new IndexBufferBuilder(1024);
-                vertexBuffers[facing] = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(), vertexBufferSize);
             }
+
+            this.vertexBuffers[pass.ordinal()] = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(),
+                    pass.getLayer().getExpectedBufferSize());
         }
     }
 
-    public void init(ChunkRenderData.Builder renderData, Vec3i relativeOffset) {
-        for (int layer = 0; layer < this.indexBuffers.length; layer++) {
-            // TODO: Fix unsafe cast
-            PrimitiveSink<ModelVertexSink>[] writers = new PrimitiveSink[ModelQuadFacing.COUNT];
+    public void init(ChunkRenderData.Builder renderData) {
+        for (int i = 0; i < this.delegates.length; i++) {
+            ModelVertexSink vertexSink = this.vertexType.createBufferWriter(this.vertexBuffers[i]);
+            IndexBufferBuilder[] indexBuffers = this.indexBuffers[i];
 
-            for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
-                writers[facing] = new PrimitiveSink<>(this.indexBuffers[layer][facing],
-                        new ChunkModelVertexTransformer(this.vertexType.createBufferWriter(this.vertexBuffers[layer][facing]), this.offset));
-            }
-
-            this.delegates[layer] = new BakedChunkModelBuilder(writers, renderData, relativeOffset);
+            this.delegates[i] = new BakedChunkModelBuilder(indexBuffers, vertexSink, renderData);
         }
     }
 
     /**
-     * Return the {@link ChunkModelVertexTransformer} for the given {@link RenderLayer} as mapped by the
+     * Return the {@link ChunkModelBuilder} for the given {@link RenderLayer} as mapped by the
      * {@link BlockRenderPassManager} for this render context.
      */
     public ChunkModelBuilder get(RenderLayer layer) {
@@ -92,53 +79,45 @@ public class ChunkBuildBuffers {
      * builders. This is used after all blocks have been rendered to pass the finished meshes over to the graphics card.
      */
     public ChunkMeshData createMesh(BlockRenderPass pass) {
-        VertexBufferBuilder[] vertexBufferBuilders = this.vertexBuffers[pass.ordinal()];
+        VertexBufferBuilder vertexBufferBuilder = this.vertexBuffers[pass.ordinal()];
         IndexBufferBuilder[] indexBufferBuilders = this.indexBuffers[pass.ordinal()];
 
-        int vertexStride = this.vertexType.getBufferVertexFormat().getStride();
+        int vertexDataLength = vertexBufferBuilder.getByteSize();
 
-        int vertexDataLength = Arrays.stream(vertexBufferBuilders)
-                .mapToInt(VertexBufferBuilder::getSize)
-                .sum();
+        if (vertexDataLength == 0) {
+            return null;
+        }
 
         int indexDataLength = Arrays.stream(indexBufferBuilders)
                 .mapToInt(IndexBufferBuilder::getSize)
                 .sum();
 
-        if (indexDataLength == 0) {
-            return null;
-        }
-
         ByteBuffer vertexBuffer = GlAllocationUtils.allocateByteBuffer(vertexDataLength);
         ByteBuffer indexBuffer = GlAllocationUtils.allocateByteBuffer(indexDataLength);
 
         int baseIndex = 0;
-        int baseVertex = 0;
 
         Map<ModelQuadFacing, ElementRange> ranges = new EnumMap<>(ModelQuadFacing.class);
 
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
             IndexBufferBuilder indexBufferBuilder = indexBufferBuilders[facing.ordinal()];
-            VertexBufferBuilder vertexBufferBuilder = vertexBufferBuilders[facing.ordinal()];
 
             if (indexBufferBuilder.getCount() == 0) {
                 continue;
             }
 
             int indexCount = indexBufferBuilder.getCount();
-            int vertexCount = vertexBufferBuilder.getSize() / vertexStride;
 
-            ranges.put(facing, new ElementRange(baseIndex, indexCount, baseVertex));
-
-            vertexBufferBuilder.get(vertexBuffer);
-            vertexBufferBuilder.reset();
+            ranges.put(facing, new ElementRange(baseIndex, indexCount));
 
             indexBufferBuilder.get(indexBuffer);
             indexBufferBuilder.reset();
 
-            baseIndex += indexCount * 4;
-            baseVertex += vertexCount;
+            baseIndex += indexCount;
         }
+
+        vertexBufferBuilder.get(vertexBuffer);
+        vertexBufferBuilder.reset();
 
         vertexBuffer.flip();
         indexBuffer.flip();
@@ -147,9 +126,5 @@ public class ChunkBuildBuffers {
                 vertexBuffer, indexBuffer);
 
         return new ChunkMeshData(vertexData, ranges);
-    }
-
-    public void setRenderOffset(int x, int y, int z) {
-        this.offset.set(x, y, z);
     }
 }

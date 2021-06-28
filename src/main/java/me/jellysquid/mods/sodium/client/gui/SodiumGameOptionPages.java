@@ -12,10 +12,8 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.option.AttackIndicator;
-import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.client.option.*;
 import net.minecraft.client.option.Option;
-import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.client.util.Window;
 
 import java.util.ArrayList;
@@ -171,15 +169,13 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.particles = value, (opts) -> opts.particles)
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
-                .add(OptionImpl.createBuilder(SodiumGameOptions.LightingQuality.class, sodiumOpts)
+                .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName("Smooth Lighting")
-                        .setTooltip("Controls the quality of smooth lighting effects.\n" +
-                                "\nOff - No smooth lighting" +
-                                "\nLow - Smooth block lighting only" +
-                                "\nHigh (new!) - Smooth block and entity lighting")
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.LightingQuality.class))
-                        .setBinding((opts, value) -> opts.quality.smoothLighting = value, opts -> opts.quality.smoothLighting)
-                        .setImpact(OptionImpact.MEDIUM)
+                        .setTooltip("Controls whether blocks will be smoothly lit and shaded. This slightly increases the amount " +
+                                "of time needed to re-build a chunk, but doesn't affect frame rates.")
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.ao = value ? AoMode.MAX : AoMode.OFF, opts -> opts.ao == AoMode.MAX)
+                        .setImpact(OptionImpact.LOW)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
@@ -246,17 +242,6 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.advanced.useBlockFaceCulling = value, opts -> opts.advanced.useBlockFaceCulling)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build()
-                )
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Use Compact Vertex Format")
-                        .setTooltip("If enabled, a more compact vertex format will be used for rendering chunks. This can reduce graphics memory usage and bandwidth " +
-                                "requirements significantly, especially for integrated graphics cards, but can cause z-fighting with some resource packs due " +
-                                "to how it reduces the precision of position and texture coordinate attributes.")
-                        .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setBinding((opts, value) -> opts.advanced.useCompactVertexFormat = value, opts -> opts.advanced.useCompactVertexFormat)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )

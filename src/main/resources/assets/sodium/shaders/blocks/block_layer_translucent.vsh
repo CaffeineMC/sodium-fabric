@@ -3,7 +3,7 @@
 #import <sodium:blocks/base.vsh>
 
 void main() {
-    vec3 pos = getVertexPosition(a_Pos, a_ChunkOffset, u_RegionTranslation, u_ModelScale);
+    vec3 pos = getVertexPosition();
 
 #ifdef USE_FOG
     v_FragDistance = length(pos);

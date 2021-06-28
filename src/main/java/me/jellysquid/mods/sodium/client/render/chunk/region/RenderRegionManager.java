@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk;
+package me.jellysquid.mods.sodium.client.render.chunk.region;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.*;
@@ -7,10 +7,11 @@ import me.jellysquid.mods.sodium.client.gl.arena.GlBufferSegment;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 
 import java.util.*;
@@ -18,11 +19,9 @@ import java.util.*;
 public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
 
-    private final RenderDevice device;
     private final ChunkRenderer renderer;
 
-    public RenderRegionManager(RenderDevice device, ChunkRenderer renderer) {
-        this.device = device;
+    public RenderRegionManager(ChunkRenderer renderer) {
         this.renderer = renderer;
     }
 
@@ -93,8 +92,7 @@ public class RenderRegionManager {
         }
 
         if (arenas.getTessellation() != null) {
-            arenas.getTessellation()
-                    .delete(commandList);
+            commandList.deleteTessellation(arenas.getTessellation());
 
             arenas.setTessellation(null);
         }
@@ -109,14 +107,14 @@ public class RenderRegionManager {
 
         while (renders.hasNext()) {
             ChunkBuildResult result = renders.next();
-            RenderChunk render = result.render;
+            RenderSection render = result.render;
 
             if (render.isDisposed()) {
                 SodiumClientMod.logger().warn("Tried to upload meshes for chunk " + result.render + ", but it has already been disposed");
                 continue;
             }
 
-            RenderRegion region = this.regions.get(RenderRegion.getRegionKey(render.getChunkX(), render.getChunkY(), render.getChunkZ()));
+            RenderRegion region = this.regions.get(RenderRegion.getRegionKeyForChunk(render.getChunkX(), render.getChunkY(), render.getChunkZ()));
 
             if (region == null) {
                 throw new NullPointerException("Couldn't find region for chunk: " + render);
@@ -129,58 +127,6 @@ public class RenderRegionManager {
         return map;
     }
 
-    public RenderChunk createChunk(SodiumWorldRenderer renderer, int x, int y, int z) {
-        RenderRegion region = this.createRegionForChunk(x, y, z);
-        RenderChunk chunk = region.getChunk(x, y, z);
-
-        if (chunk == null) {
-            region.addRender(x, y, z, chunk = new RenderChunk(renderer, x, y, z, region));
-        }
-
-        return chunk;
-    }
-
-    public RenderChunk getChunk(int x, int y, int z) {
-        RenderRegion region = this.regions.get(RenderRegion.getRegionKey(x, y, z));
-
-        if (region == null) {
-            return null;
-        }
-
-        return region.getChunk(x, y, z);
-    }
-
-    public RenderChunk removeChunk(int x, int y, int z) {
-        long key = RenderRegion.getRegionKey(x, y, z);
-        RenderRegion region = this.regions.get(key);
-
-        if (region == null) {
-            return null;
-        }
-
-        RenderChunk chunk = region.removeChunk(x, y, z);
-
-        if (region.getChunkCount() <= 0) {
-            region.deleteResources();
-
-            this.regions.remove(key);
-        }
-
-        return chunk;
-    }
-
-    private RenderRegion createRegionForChunk(int x, int y, int z) {
-        long key = RenderRegion.getRegionKey(x, y, z);
-
-        RenderRegion region = this.regions.get(key);
-
-        if (region == null) {
-            this.regions.put(key, region = RenderRegion.createRegionForChunk(this.renderer, this.device, x, y, z));
-        }
-
-        return region;
-    }
-
     public void delete() {
         for (RenderRegion region : this.regions.values()) {
             region.deleteResources();
@@ -189,10 +135,36 @@ public class RenderRegionManager {
         this.regions.clear();
     }
 
-    public int getLoadedChunks() {
-        return this.regions.values()
-                .stream()
-                .mapToInt(RenderRegion::getChunkCount)
-                .sum();
+    public void unloadRegion(RenderRegion region) {
+        if (!this.regions.remove(region.getKey(), region)) {
+            throw new IllegalStateException("Tried to remove region " + region + " but it isn't loaded");
+        }
+
+        region.deleteResources();
+    }
+
+    public RenderRegion getRegionForChunk(int x, int y, int z) {
+        return this.regions.get(RenderRegion.getRegionKeyForChunk(x, y, z));
+    }
+
+    public RenderRegion createRegionForChunk(int x, int y, int z) {
+        long key = RenderRegion.getRegionKeyForChunk(x, y, z);
+        RenderRegion region = this.regions.get(key);
+
+        if (region == null) {
+            this.regions.put(key, region = RenderRegion.createRegionForChunk(this.renderer, RenderDevice.INSTANCE, x, y, z));
+        }
+
+        return region;
+    }
+
+    public void addRegion(RenderRegion region) {
+        if (this.regions.putIfAbsent(region.getKey(), region) != null) {
+            throw new IllegalStateException("Tried to add region " + region + " but it's already loaded");
+        }
+    }
+
+    public Collection<RenderRegion> getLoadedRegions() {
+        return this.regions.values();
     }
 }

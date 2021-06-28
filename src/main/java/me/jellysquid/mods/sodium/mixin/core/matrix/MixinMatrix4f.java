@@ -1,19 +1,10 @@
 package me.jellysquid.mods.sodium.mixin.core.matrix;
 
-import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Quaternion;
-import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import sun.misc.Unsafe;
-
-import java.nio.BufferUnderflowException;
-import java.nio.FloatBuffer;
 
 @Mixin(Matrix4f.class)
 public class MixinMatrix4f implements Matrix4fExtended {
