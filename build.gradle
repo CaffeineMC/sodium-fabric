@@ -15,7 +15,7 @@ minecraft {
 configurations {
     modFAPI
 
-    if (project.use_fapi)
+    if (project.use_fabric_at_runtime)
         modImplementation.extendsFrom modFAPI
     else
         modCompileOnly.extendsFrom modFAPI
