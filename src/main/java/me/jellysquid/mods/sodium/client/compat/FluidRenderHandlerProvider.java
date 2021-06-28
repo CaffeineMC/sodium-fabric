@@ -5,7 +5,7 @@ import net.minecraft.fluid.Fluid;
 import org.jetbrains.annotations.NotNull;
 
 @FunctionalInterface
-interface FluidRenderHandlerProvider {
+public interface FluidRenderHandlerProvider {
     @NotNull FluidRenderHandler get(@NotNull Fluid fluid);
 
     default void onResourceReload(Sprite[] waterSprites, Sprite[] lavaSprites) { }

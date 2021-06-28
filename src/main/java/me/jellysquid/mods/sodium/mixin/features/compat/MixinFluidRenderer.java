@@ -21,6 +21,6 @@ public class MixinFluidRenderer {
 
     @Inject(method = "onResourceReload", at = @At("RETURN"))
     public void onResourceReload(CallbackInfo ci) {
-        CompatHolder.onFluidResourceReload(waterSprites, lavaSprites);
+        CompatHolder.FLUID_RENDER_HANDLER_PROVIDER.onResourceReload(waterSprites, lavaSprites);
     }
 }

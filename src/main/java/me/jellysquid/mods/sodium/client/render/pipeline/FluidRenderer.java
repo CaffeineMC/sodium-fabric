@@ -36,8 +36,13 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockRenderView;
+import org.jetbrains.annotations.NotNull;
 
 public class FluidRenderer {
+    public static @NotNull FluidRenderHandler getRenderHandler(@NotNull Fluid fluid) {
+        return CompatHolder.FLUID_RENDER_HANDLER_PROVIDER.get(fluid);
+    }
+
     // TODO: allow this to be changed by vertex format
     // TODO: move fluid rendering to a separate render pass and control glPolygonOffset and glDepthFunc to fix this properly
     private static final float EPSILON = 0.001f;
@@ -116,7 +121,7 @@ public class FluidRenderer {
 
         boolean isWater = fluidState.isIn(FluidTags.WATER);
 
-        FluidRenderHandler handler = CompatHolder.getFluidRenderHandler(fluidState.getFluid());
+        FluidRenderHandler handler = getRenderHandler(fluidState.getFluid());
 
         Sprite[] sprites = handler.getFluidSprites(world, pos, fluidState);
 

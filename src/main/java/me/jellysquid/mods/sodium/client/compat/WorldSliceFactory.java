@@ -5,6 +5,6 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 
 @FunctionalInterface
-interface WorldSliceFactory {
+public interface WorldSliceFactory {
     @NotNull WorldSlice create(@NotNull World world);
 }

@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import me.jellysquid.mods.sodium.client.compat.CompatHolder;
 import me.jellysquid.mods.sodium.client.world.cloned.PackedIntegerArrayExtended;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCache;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeColorCache;
@@ -22,6 +23,8 @@ import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.chunk.*;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.ColorResolver;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -132,6 +135,12 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage {
         return new ChunkRenderContext(origin, sections, volume);
     }
 
+    public static @NotNull WorldSlice create(@NotNull World world) {
+        return CompatHolder.WORLD_SLICE_FACTORY.create(world);
+    }
+
+    // don't use this directly, use WorldSlice.create instead
+    @ApiStatus.Internal
     public WorldSlice(World world) {
         this.world = world;
 

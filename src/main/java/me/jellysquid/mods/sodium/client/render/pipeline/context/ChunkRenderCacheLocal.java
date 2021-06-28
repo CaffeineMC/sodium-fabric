@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.pipeline.context;
 
-import me.jellysquid.mods.sodium.client.compat.CompatHolder;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.client.model.light.cache.ArrayLightDataCache;
 import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
@@ -23,7 +22,7 @@ public class ChunkRenderCacheLocal extends ChunkRenderCache {
     private final WorldSlice worldSlice;
 
     public ChunkRenderCacheLocal(MinecraftClient client, World world) {
-        this.worldSlice = CompatHolder.createWorldSlice(world);
+        this.worldSlice = WorldSlice.create(world);
         this.lightDataCache = new ArrayLightDataCache(this.worldSlice);
 
         LightPipelineProvider lightPipelineProvider = new LightPipelineProvider(this.lightDataCache);
