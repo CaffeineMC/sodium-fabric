@@ -32,6 +32,7 @@
     "features.chunk_rendering.MixinPackedIntegerArray",
     "features.chunk_rendering.MixinPalettedContainer",
     "features.chunk_rendering.MixinWorldRenderer",
+    "features.compat.MixinFluidRenderer",
     "features.debug.MixinDebugHud",
     "features.entity.fast_render.MixinCuboid",
     "features.entity.fast_render.MixinModelPart",

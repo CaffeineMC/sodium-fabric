@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
+import me.jellysquid.mods.sodium.client.compat.CompatHolder;
+import me.jellysquid.mods.sodium.client.compat.FluidRenderHandler;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -17,8 +19,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
-import net.fabricmc.fabric.impl.client.rendering.fluid.FluidRenderHandlerRegistryImpl;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -120,7 +120,7 @@ public class FluidRenderer {
 
         boolean isWater = fluidState.isIn(FluidTags.WATER);
 
-        FluidRenderHandler handler = FluidRenderHandlerRegistryImpl.INSTANCE.getOverride(fluidState.getFluid());
+        FluidRenderHandler handler = CompatHolder.getFluidRenderHandler(fluidState.getFluid());
         ModelQuadColorProvider<FluidState> colorizer = this.createColorProviderAdapter(handler);
 
         Sprite[] sprites = handler.getFluidSprites(world, pos, fluidState);

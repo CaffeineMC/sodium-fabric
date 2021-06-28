@@ -34,6 +34,7 @@ public class SodiumConfig {
         this.addMixinRule("features.buffer_builder.fast_sort", true);
         this.addMixinRule("features.buffer_builder.intrinsics", true);
         this.addMixinRule("features.chunk_rendering", true);
+        this.addMixinRule("features.compat", true);
         this.addMixinRule("features.debug", true);
         this.addMixinRule("features.entity", true);
         this.addMixinRule("features.entity.fast_render", true);
