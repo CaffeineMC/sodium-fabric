@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client;
 
+import me.jellysquid.mods.sodium.client.compat.CompatHolder;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.fabricmc.api.ClientModInitializer;
@@ -23,6 +24,8 @@ public class SodiumClientMod implements ClientModInitializer {
         MOD_VERSION = mod.getMetadata()
                 .getVersion()
                 .getFriendlyString();
+
+        CompatHolder.init();
     }
 
     public static SodiumGameOptions options() {

@@ -16,10 +16,12 @@ minecraft {
 }
 
 configurations {
-    modIncludeImplementation
+    modFAPI
 
-    include.extendsFrom modIncludeImplementation
-    modImplementation.extendsFrom modIncludeImplementation
+    if (project.use_fapi)
+        modImplementation.extendsFrom modFAPI
+    else
+        modCompileOnly.extendsFrom modFAPI
 }
 
 dependencies {
@@ -29,9 +31,9 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Fabric API
-    modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
-    modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
-    modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
+    modFAPI(fabricApi.module("fabric-api-base", project.fabric_version))
+    modFAPI(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
+    modFAPI(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
 }
 
 if (project.use_third_party_mods) {
