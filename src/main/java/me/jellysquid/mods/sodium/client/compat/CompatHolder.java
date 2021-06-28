@@ -46,7 +46,7 @@ public final class CompatHolder {
                 public @NotNull FluidRenderHandler get(@NotNull Fluid fluid) {
                     return cache.computeIfAbsent(fluid, fluid1 -> {
                         net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler delegate
-                                = FluidRenderHandlerRegistry.INSTANCE.get(fluid);
+                                = FluidRenderHandlerRegistry.INSTANCE.get(fluid1);
                         return new FluidRenderHandler() {
                             @Override
                             public Sprite[] getFluidSprites(@Nullable BlockRenderView view, @Nullable BlockPos pos, FluidState state) {
