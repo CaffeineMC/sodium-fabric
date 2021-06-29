@@ -60,6 +60,12 @@ public final class CompatHolder {
                         };
                     });
                 }
+
+                @Override
+                public void onResourceReload(Sprite[] waterSprites, Sprite[] lavaSprites) {
+                    // clear cache, since sprites could have changed
+                    cache.clear();
+                }
             };
         else
             return new VanillaFluidRenderHandlerProvider();
