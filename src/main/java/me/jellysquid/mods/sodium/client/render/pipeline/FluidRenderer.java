@@ -71,8 +71,18 @@ public class FluidRenderer {
         this.biomeColorBlender = biomeColorBlender;
     }
 
-    private boolean isFluidExposed(BlockRenderView world, int x, int y, int z, Fluid fluid) {
-        BlockPos pos = this.scratchPos.set(x, y, z);
+    private boolean isFluidExposed(BlockRenderView world, int x, int y, int z, Direction dir, Fluid fluid) {
+        // Up direction is hard to test since it doesnt fill the block
+        if(dir != Direction.UP) {
+            BlockPos pos = this.scratchPos.set(x, y, z);
+            BlockState blockState = world.getBlockState(pos);
+            VoxelShape shape = blockState.getCullingShape(world, pos);
+            if (VoxelShapes.isSideCovered(shape, VoxelShapes.fullCube(), dir)) {
+                return false; // Fluid is in waterlogged block that self occludes
+            }
+        }
+
+        BlockPos pos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
         return !world.getFluidState(pos).getFluid().matchesType(fluid);
     }
 
@@ -106,13 +116,13 @@ public class FluidRenderer {
 
         Fluid fluid = fluidState.getFluid();
 
-        boolean sfUp = this.isFluidExposed(world, posX, posY + 1, posZ, fluid);
-        boolean sfDown = this.isFluidExposed(world, posX, posY - 1, posZ, fluid) &&
+        boolean sfUp = this.isFluidExposed(world, posX, posY, posZ, Direction.UP, fluid);
+        boolean sfDown = this.isFluidExposed(world, posX, posY, posZ, Direction.DOWN, fluid) &&
                 this.isSideExposed(world, posX, posY, posZ, Direction.DOWN, 0.8888889F);
-        boolean sfNorth = this.isFluidExposed(world, posX, posY, posZ - 1, fluid);
-        boolean sfSouth = this.isFluidExposed(world, posX, posY, posZ + 1, fluid);
-        boolean sfWest = this.isFluidExposed(world, posX - 1, posY, posZ, fluid);
-        boolean sfEast = this.isFluidExposed(world, posX + 1, posY, posZ, fluid);
+        boolean sfNorth = this.isFluidExposed(world, posX, posY, posZ, Direction.NORTH, fluid);
+        boolean sfSouth = this.isFluidExposed(world, posX, posY, posZ, Direction.SOUTH, fluid);
+        boolean sfWest = this.isFluidExposed(world, posX, posY, posZ, Direction.WEST, fluid);
+        boolean sfEast = this.isFluidExposed(world, posX, posY, posZ, Direction.EAST, fluid);
 
         if (!sfUp && !sfDown && !sfEast && !sfWest && !sfNorth && !sfSouth) {
             return false;
