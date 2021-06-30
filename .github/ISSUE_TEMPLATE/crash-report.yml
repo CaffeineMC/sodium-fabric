@@ -1,5 +1,6 @@
 name: Crash report
 description: Use this template if your game is crashing or failing to start correctly
+labels: crash
 body:
   - type: markdown
     attributes:
