@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterNio;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
-import me.jellysquid.mods.sodium.client.util.Int10;
 
 import java.nio.ByteBuffer;
 
@@ -18,7 +17,9 @@ public class ModelVertexBufferWriterNio extends VertexBufferWriterNio implements
         int i = this.writeOffset;
 
         ByteBuffer buffer = this.byteBuffer;
-        buffer.putInt(i, Int10.pack(offsetX, offsetY, offsetZ));
+        buffer.put(i, (byte) offsetX);
+        buffer.put(i + 1, (byte) offsetY);
+        buffer.put(i + 2, (byte) offsetZ);
 
         buffer.putShort(i + 4, ModelVertexType.encodePosition(posX));
         buffer.putShort(i + 6, ModelVertexType.encodePosition(posY));

@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
-import me.jellysquid.mods.sodium.client.util.Int10;
 
 public class ModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe implements ModelVertexSink {
     public ModelVertexBufferWriterUnsafe(VertexBufferView backingBuffer) {
@@ -15,7 +14,9 @@ public class ModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe impl
     public void writeVertex(int offsetX, int offsetY, int offsetZ, float posX, float posY, float posZ, int color, float u, float v, int light) {
         long i = this.writePointer;
 
-        UNSAFE.putInt(i, Int10.pack(offsetX, offsetY, offsetZ));
+        UNSAFE.putByte(i, (byte) offsetX);
+        UNSAFE.putByte(i + 1, (byte) offsetY);
+        UNSAFE.putByte(i + 2, (byte) offsetZ);
 
         UNSAFE.putShort(i + 4, ModelVertexType.encodePosition(posX));
         UNSAFE.putShort(i + 6, ModelVertexType.encodePosition(posY));
