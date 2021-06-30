@@ -58,7 +58,7 @@ body:
     attributes:
       label: Reproduction Steps
       description: >-
-        Provide information on how to reproduce this game crash. You can either
+        Provide information on how to reproduce this bug. You can either
         fill this section in like the example below or do something else just
         make sure your instructions are minimal and clear, as other people will
         need to be able to replicate your issue.
