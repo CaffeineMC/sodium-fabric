@@ -7,9 +7,7 @@ import me.jellysquid.mods.sodium.client.model.vertex.type.BlittableVertexType;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
-import me.jellysquid.mods.sodium.client.util.Int10;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.util.math.MathHelper;
 
 /**
  * Simple vertex format which uses single-precision floating point numbers to represent position and texture
@@ -17,7 +15,7 @@ import net.minecraft.util.math.MathHelper;
  */
 public class ModelVertexType implements ChunkVertexType {
     public static final GlVertexFormat<ChunkMeshAttribute> VERTEX_FORMAT = GlVertexFormat.builder(ChunkMeshAttribute.class, 24)
-            .addElement(ChunkMeshAttribute.CHUNK_OFFSET, 0, GlVertexAttributeFormat.UNSIGNED_INT_2_10_10_10_REV, 4, false)
+            .addElement(ChunkMeshAttribute.OFFSET, 0, GlVertexAttributeFormat.UNSIGNED_BYTE, 3, false)
             .addElement(ChunkMeshAttribute.POSITION, 4, GlVertexAttributeFormat.UNSIGNED_SHORT, 4, false)
             .addElement(ChunkMeshAttribute.COLOR, 12, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true)
             .addElement(ChunkMeshAttribute.BLOCK_TEXTURE, 16, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false)
