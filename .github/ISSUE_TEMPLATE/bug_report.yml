@@ -1,5 +1,6 @@
 name: Bug report
 description: ' Use this template if you''re running into bugs or other issues '
+labels: bug
 body:
   - type: markdown
     attributes:
