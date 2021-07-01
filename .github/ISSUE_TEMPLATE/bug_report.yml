@@ -43,7 +43,7 @@ body:
     attributes:
       label: Expected Behavior
       description: What did you expect to happen?
-      placeholder: 'Example: The Piston does not extend.'
+      placeholder: 'Example: The Piston should extend.'
     validations:
       required: true
   - type: textarea
