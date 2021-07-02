@@ -56,6 +56,7 @@
     "features.texture_updates.MixinSpriteInterpolated"
   ],
   "mixins": [
+    "core.MixinShader",
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinClientWorld"
   ]
