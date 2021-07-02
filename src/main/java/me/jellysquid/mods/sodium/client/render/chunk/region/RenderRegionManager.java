@@ -36,6 +36,7 @@ public class RenderRegionManager {
 
             for (ChunkBuildResult result : uploadQueue) {
                 result.render.setData(result.data);
+                result.delete();
             }
         }
     }
@@ -50,8 +51,8 @@ public class RenderRegionManager {
             if (meshData != null) {
                 IndexedVertexData vertexData = meshData.getVertexData();
 
-                vertexBytes += vertexData.vertexBuffer.remaining();
-                indexBytes += vertexData.indexBuffer.remaining();
+                vertexBytes += vertexData.vertexBuffer.size();
+                indexBytes += vertexData.indexBuffer.size();
             }
 
             ChunkGraphicsState graphics = result.render.setGraphicsState(pass, null);
@@ -84,8 +85,8 @@ public class RenderRegionManager {
             if (meshData != null) {
                 IndexedVertexData upload = meshData.getVertexData();
 
-                GlBufferSegment vertexSegment = arenas.vertexBuffers.uploadBuffer(commandList, upload.vertexBuffer);
-                GlBufferSegment indexSegment = arenas.indexBuffers.uploadBuffer(commandList, upload.indexBuffer);
+                GlBufferSegment vertexSegment = arenas.vertexBuffers.uploadBuffer(commandList, upload.vertexBuffer.getUnsafeBuffer());
+                GlBufferSegment indexSegment = arenas.indexBuffers.uploadBuffer(commandList, upload.indexBuffer.getUnsafeBuffer());
 
                 result.render.setGraphicsState(pass, new ChunkGraphicsState(vertexSegment, indexSegment, meshData));
             }
@@ -111,6 +112,8 @@ public class RenderRegionManager {
 
             if (render.isDisposed()) {
                 SodiumClientMod.logger().warn("Tried to upload meshes for chunk " + result.render + ", but it has already been disposed");
+                result.delete();
+
                 continue;
             }
 
@@ -143,10 +146,6 @@ public class RenderRegionManager {
         region.deleteResources();
     }
 
-    public RenderRegion getRegionForChunk(int x, int y, int z) {
-        return this.regions.get(RenderRegion.getRegionKeyForChunk(x, y, z));
-    }
-
     public RenderRegion createRegionForChunk(int x, int y, int z) {
         long key = RenderRegion.getRegionKeyForChunk(x, y, z);
         RenderRegion region = this.regions.get(key);
@@ -156,12 +155,6 @@ public class RenderRegionManager {
         }
 
         return region;
-    }
-
-    public void addRegion(RenderRegion region) {
-        if (this.regions.putIfAbsent(region.getKey(), region) != null) {
-            throw new IllegalStateException("Tried to add region " + region + " but it's already loaded");
-        }
     }
 
     public Collection<RenderRegion> getLoadedRegions() {
