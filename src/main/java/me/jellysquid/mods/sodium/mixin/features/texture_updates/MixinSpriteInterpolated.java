@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.texture_updates;
 
+import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
+import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.Sprite;
 import org.lwjgl.system.MemoryUtil;
@@ -17,11 +19,7 @@ public class MixinSpriteInterpolated {
     @Shadow(aliases = "field_21757")
     private Sprite parent;
 
-    private static final int COLOR_MAX_VALUE = 256;
     private static final int STRIDE = 4;
-
-    private static final long MASK1 = 0x00FF00FF;
-    private static final long MASK2 = 0xFF00FF00;
 
     /**
      * @author JellySquid
@@ -40,8 +38,8 @@ public class MixinSpriteInterpolated {
 
         float delta = 1.0F - (float) animation.frameTicks / (float) animationFrame.time;
 
-        int f2 = (int) (COLOR_MAX_VALUE * delta);
-        int f1 = COLOR_MAX_VALUE - f2;
+        int f1 = ColorMixer.getStartRatio(delta);
+        int f2 = ColorMixer.getEndRatio(delta);
 
         for (int layer = 0; layer < this.images.length; layer++) {
             int width = this.parent.width >> layer;
@@ -66,14 +64,7 @@ public class MixinSpriteInterpolated {
             int pixelCount = width * height;
 
             for (int i = 0; i < pixelCount; i++) {
-                // Source colors
-                long c1 = Integer.toUnsignedLong(MemoryUtil.memGetInt(s1p));
-                long c2 = Integer.toUnsignedLong(MemoryUtil.memGetInt(s2p));
-
-                long color = (((((c2 & MASK1) * f1) + ((c1 & MASK1) * f2)) >> 8) & MASK1) |
-                        (((((c2 & MASK2) * f1) + ((c1 & MASK2) * f2)) >> 8) & MASK2);
-
-                MemoryUtil.memPutInt(dp, (int) color);
+                MemoryUtil.memPutInt(dp, ColorMixer.mixARGB(MemoryUtil.memGetInt(s1p), MemoryUtil.memGetInt(s2p), f1, f2));
 
                 s1p += STRIDE;
                 s2p += STRIDE;
