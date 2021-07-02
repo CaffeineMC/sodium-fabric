@@ -20,8 +20,8 @@ public class MixinSpriteInterpolated {
     private static final int COLOR_MAX_VALUE = 256;
     private static final int STRIDE = 4;
 
-    private static final int MASK1 = 0x00FF00FF;
-    private static final int MASK2 = 0xFF00FF00;
+    private static final long MASK1 = 0x00FF00FF;
+    private static final long MASK2 = 0xFF00FF00;
 
     /**
      * @author JellySquid
@@ -67,13 +67,13 @@ public class MixinSpriteInterpolated {
 
             for (int i = 0; i < pixelCount; i++) {
                 // Source colors
-                int c1 = MemoryUtil.memGetInt(s1p);
-                int c2 = MemoryUtil.memGetInt(s2p);
+                long c1 = Integer.toUnsignedLong(MemoryUtil.memGetInt(s1p));
+                long c2 = Integer.toUnsignedLong(MemoryUtil.memGetInt(s2p));
 
-                int color = (((((c2 & MASK1) * f1) + ((c1 & MASK1) * f2)) >> 8) & MASK1) |
+                long color = (((((c2 & MASK1) * f1) + ((c1 & MASK1) * f2)) >> 8) & MASK1) |
                         (((((c2 & MASK2) * f1) + ((c1 & MASK2) * f2)) >> 8) & MASK2);
 
-                MemoryUtil.memPutInt(dp, color);
+                MemoryUtil.memPutInt(dp, (int) color);
 
                 s1p += STRIDE;
                 s2p += STRIDE;
