@@ -12,27 +12,31 @@ public class NativeBuffer {
     }
 
     public void free() {
-        this.check();
+        ByteBuffer buffer = this.getUnsafeBuffer();
+        MemoryUtil.memFree(buffer);
 
-        MemoryUtil.memFree(this.buffer);
         this.buffer = null;
     }
 
     public ByteBuffer getUnsafeBuffer() {
-        this.check();
+        if (this.buffer == null) {
+            throw new IllegalStateException("Buffer has been deleted");
+        }
 
         return this.buffer;
     }
 
     public int size() {
-        this.check();
-
-        return this.buffer.remaining();
+        return this.getUnsafeBuffer()
+                .remaining();
     }
 
-    private void check() {
-        if (this.buffer == null) {
-            throw new IllegalStateException("Buffer has been deleted");
+    @Override
+    protected void finalize() {
+        if (this.buffer != null) {
+            MemoryUtil.memFree(this.buffer);
+
+            this.buffer = null;
         }
     }
 }

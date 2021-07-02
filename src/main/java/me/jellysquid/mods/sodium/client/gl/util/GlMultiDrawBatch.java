@@ -26,7 +26,7 @@ public interface GlMultiDrawBatch {
 
     void begin();
 
-    void add(int pointer, int count, int baseVertex);
+    void add(long pointer, int count, int baseVertex);
 
     void end();
 
@@ -72,7 +72,7 @@ public interface GlMultiDrawBatch {
         }
 
         @Override
-        public void add(int pointer, int count, int baseVertex) {
+        public void add(long pointer, int count, int baseVertex) {
             int i = this.count++;
 
             this.bufPointer.put(i, pointer);
@@ -153,7 +153,7 @@ public interface GlMultiDrawBatch {
         }
 
         @Override
-        public void add(int pointer, int count, int baseVertex) {
+        public void add(long pointer, int count, int baseVertex) {
             if (this.count >= this.capacity)  {
                 throw new BufferUnderflowException();
             }

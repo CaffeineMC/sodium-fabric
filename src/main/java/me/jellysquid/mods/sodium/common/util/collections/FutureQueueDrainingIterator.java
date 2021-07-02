@@ -1,16 +1,18 @@
 package me.jellysquid.mods.sodium.common.util.collections;
 
+import it.unimi.dsi.fastutil.PriorityQueue;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
 public class FutureQueueDrainingIterator<T> implements Iterator<T> {
-    private final Queue<CompletableFuture<T>> queue;
+    private final PriorityQueue<CompletableFuture<T>> queue;
     private T next = null;
 
-    public FutureQueueDrainingIterator(Queue<CompletableFuture<T>> queue) {
+    public FutureQueueDrainingIterator(PriorityQueue<CompletableFuture<T>> queue) {
         this.queue = queue;
     }
 
@@ -27,13 +29,13 @@ public class FutureQueueDrainingIterator<T> implements Iterator<T> {
 
     private void findNext() {
         while (!queue.isEmpty()) {
-            CompletableFuture<T> future = queue.remove();
+            CompletableFuture<T> future = queue.dequeue();
 
             try {
                 next = future.join();
                 return;
             } catch (CancellationException e) {
-                // no-op
+                SodiumClientMod.logger().warn("Future was cancelled: {}", future);
             }
         }
     }

@@ -55,8 +55,8 @@ public class MixinSpriteInterpolated {
             NativeImage dst = this.images[layer];
 
             // Source pointers
-            long s1p = src.pointer + (curX + (curY * src.getWidth()) * STRIDE);
-            long s2p = src.pointer + (nextX + (nextY * src.getWidth()) * STRIDE);
+            long s1p = src.pointer + (curX + ((long) curY * src.getWidth()) * STRIDE);
+            long s2p = src.pointer + (nextX + ((long) nextY * src.getWidth()) * STRIDE);
 
             // Destination pointers
             long dp = dst.pointer;
