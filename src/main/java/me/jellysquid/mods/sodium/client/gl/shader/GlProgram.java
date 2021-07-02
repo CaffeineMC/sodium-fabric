@@ -87,7 +87,7 @@ public abstract class GlProgram extends GlObject {
                 LOGGER.warn("Program link log for " + this.name + ": " + log);
             }
 
-            int result = GL20C.glGetProgrami(this.program, GL20C.GL_LINK_STATUS);
+            int result = GlStateManager.glGetShaderi(this.program, GL20C.GL_LINK_STATUS);
 
             if (result != GL20C.GL_TRUE) {
                 throw new RuntimeException("Shader program linking failed, see log for details");
