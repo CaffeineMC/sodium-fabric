@@ -352,7 +352,7 @@ public class RenderSectionManager implements ChunkStatusListener {
             if (!this.isChunkPrioritized(render)) {
                 this.deferChunkRebuild(render);
             } else {
-                blockingFutures.add(this.deferChunkRebuild(render));
+                blockingFutures.add(this.createImmediateChunkRebuild(render));
             }
 
             this.isGraphDirty = true;
@@ -377,9 +377,6 @@ public class RenderSectionManager implements ChunkStatusListener {
     }
 
     private boolean performPendingUploads() {
-        this.uploadQueue.removeIf(result ->
-                result.render.isDisposed());
-
         if (this.uploadQueue.isEmpty()) {
             return false;
         }
@@ -398,6 +395,12 @@ public class RenderSectionManager implements ChunkStatusListener {
         render.setRebuildFuture(future);
 
         return future;
+    }
+
+    private CompletableFuture<ChunkBuildResult> createImmediateChunkRebuild(RenderSection render) {
+        ChunkRenderBuildTask task = this.createRebuildTask(render);
+
+        return this.builder.schedule(task);
     }
 
     public ChunkRenderBuildTask createRebuildTask(RenderSection render) {

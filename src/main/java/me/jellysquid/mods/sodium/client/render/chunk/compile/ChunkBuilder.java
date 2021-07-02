@@ -222,6 +222,8 @@ public class ChunkBuilder {
                     job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
                 }
             }
+
+            this.bufferCache.destroy();
         }
 
         /**
