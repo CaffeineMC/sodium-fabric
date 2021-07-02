@@ -15,6 +15,7 @@ import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCache
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
+import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import me.jellysquid.mods.sodium.common.util.ListUtil;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
@@ -38,8 +39,6 @@ import java.util.SortedSet;
  * Provides an extension to vanilla's {@link WorldRenderer}.
  */
 public class SodiumWorldRenderer implements ChunkStatusListener {
-    private static SodiumWorldRenderer instance;
-
     private final MinecraftClient client;
 
     private ClientWorld world;
@@ -58,29 +57,13 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private ChunkRenderer chunkRenderer;
 
     /**
-     * Instantiates Sodium's world renderer. This should be called at the time of the world renderer initialization.
-     */
-    public static SodiumWorldRenderer create() {
-        if (instance == null) {
-            instance = new SodiumWorldRenderer(MinecraftClient.getInstance());
-        }
-
-        return instance;
-    }
-
-    /**
-     * @throws IllegalStateException If the renderer has not yet been created
-     * @return The current instance of this type
+     * @return The SodiumWorldRenderer based on the current dimension
      */
     public static SodiumWorldRenderer getInstance() {
-        if (instance == null) {
-            throw new IllegalStateException("Renderer not initialized");
-        }
-
-        return instance;
+        return ((WorldRendererExtended) MinecraftClient.getInstance().worldRenderer).getSodiumWorldRenderer();
     }
 
-    private SodiumWorldRenderer(MinecraftClient client) {
+    public SodiumWorldRenderer(MinecraftClient client) {
         this.client = client;
     }
 
