@@ -38,6 +38,7 @@
     "features.entity.smooth_lighting.MixinEntityRenderer",
     "features.gui.MixinDebugHud",
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
+    "features.gui.fast_status_bars.MixinDrawableHelper",
     "features.gui.fast_status_bars.MixinInGameHud",
     "features.gui.font.MixinGlyphRenderer",
     "features.item.MixinItemRenderer",
