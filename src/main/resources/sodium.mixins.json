@@ -52,6 +52,11 @@
     "features.render_layer.MixinRenderLayers",
     "features.texture_tracking.MixinSprite",
     "features.texture_tracking.MixinSpriteAnimation",
-    "features.texture_tracking.MixinSpriteAtlasTexture"
+    "features.texture_tracking.MixinSpriteAtlasTexture",
+    "features.texture_updates.MixinSpriteInterpolated"
+  ],
+  "mixins": [
+    "features.fast_biome_colors.MixinBackgroundRenderer",
+    "features.fast_biome_colors.MixinClientWorld"
   ]
 }
