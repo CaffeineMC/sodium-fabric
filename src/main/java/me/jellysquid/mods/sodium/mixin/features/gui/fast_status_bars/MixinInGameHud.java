@@ -19,7 +19,7 @@ public abstract class MixinInGameHud extends DrawableHelper {
     @Shadow
     protected abstract PlayerEntity getCameraPlayer();
 
-    private final BufferBuilder bufferBuilder = new BufferBuilder(65536);
+    private final BufferBuilder bufferBuilder = new BufferBuilder(8192);
     // It's possible for status bar rendering to be skipped
     private boolean isRenderingStatusBars;
 
