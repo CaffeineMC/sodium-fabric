@@ -41,6 +41,7 @@ public class SodiumConfig {
         this.addMixinRule("features.gui", true);
         this.addMixinRule("features.gui.fast_loading_screen", true);
         this.addMixinRule("features.gui.fast_status_bars", true);
+        this.addMixinRule("features.gui.fast_fps_pie", true);
         this.addMixinRule("features.gui.font", true);
         this.addMixinRule("features.item", true);
         this.addMixinRule("features.matrix_stack", true);
