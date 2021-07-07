@@ -116,6 +116,7 @@ public class ChunkBuilder {
 
         for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
+            job.task.releaseResources();
         }
 
         this.buildQueue.clear();
@@ -195,35 +196,42 @@ public class ChunkBuilder {
             while (this.running.get()) {
                 WrappedTask job = this.getNextJob();
 
-                // If the job is null or no longer valid, keep searching for a task
-                if (job == null || job.isCancelled()) {
+                if (job == null) {
                     continue;
                 }
 
-                ChunkBuildResult result;
-
-                try {
-                    // Perform the build task with this worker's local resources and obtain the result
-                    result = job.task.performBuild(this.cache, this.bufferCache, job);
-                } catch (Exception e) {
-                    // Propagate any exception from chunk building
-                    job.future.completeExceptionally(e);
-                    continue;
-                } finally {
-                    job.task.releaseResources();
-                }
-
-                // The result can be null if the task is cancelled
-                if (result != null) {
-                    // Notify the future that the result is now available
-                    job.future.complete(result);
-                } else if (!job.isCancelled()) {
-                    // If the job wasn't cancelled and no result was produced, we've hit a bug
-                    job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
-                }
+                this.processJob(job);
             }
 
             this.bufferCache.destroy();
+        }
+
+        private void processJob(WrappedTask job) {
+            ChunkBuildResult result;
+
+            try {
+                if (job.isCancelled()) {
+                    return;
+                }
+
+                // Perform the build task with this worker's local resources and obtain the result
+                result = job.task.performBuild(this.cache, this.bufferCache, job);
+            } catch (Exception e) {
+                // Propagate any exception from chunk building
+                job.future.completeExceptionally(e);
+                return;
+            } finally {
+                job.task.releaseResources();
+            }
+
+            // The result can be null if the task is cancelled
+            if (result != null) {
+                // Notify the future that the result is now available
+                job.future.complete(result);
+            } else if (!job.isCancelled()) {
+                // If the job wasn't cancelled and no result was produced, we've hit a bug
+                job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
+            }
         }
 
         /**
