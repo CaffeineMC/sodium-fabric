@@ -83,7 +83,7 @@ public class ClonedChunkSection {
     }
 
     private void copyBlockData(ChunkSection section) {
-        PalettedContainerExtended<BlockState> container = PalettedContainerExtended.cast(section.getContainer());;
+        PalettedContainerExtended<BlockState> container = PalettedContainerExtended.cast(section.getContainer());
 
         this.blockStateData = copyBlockData(container);
         this.blockStatePalette = copyPalette(container);

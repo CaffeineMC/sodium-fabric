@@ -64,33 +64,36 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
                 ChunkRenderBounds bounds = render.getBounds();
 
-                int vertexOffset = state.getVertexSegment().getElementOffset();
-                int indexOffset = state.getIndexSegment().getElementOffset();
+                long indexOffset = state.getIndexSegment()
+                        .getOffset();
 
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), vertexOffset, indexOffset);
+                int baseVertex = (int) state.getVertexSegment()
+                        .getOffset();
+
+                this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
 
                 if (camera.posY > bounds.y1) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), vertexOffset, indexOffset);
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
                 }
 
                 if (camera.posY < bounds.y2) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.DOWN), vertexOffset, indexOffset);
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.DOWN), indexOffset, baseVertex);
                 }
 
                 if (camera.posX > bounds.x1) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.EAST), vertexOffset, indexOffset);
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.EAST), indexOffset, baseVertex);
                 }
 
                 if (camera.posX < bounds.x2) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.WEST), vertexOffset, indexOffset);
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.WEST), indexOffset, baseVertex);
                 }
 
                 if (camera.posZ > bounds.z1) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.SOUTH), vertexOffset, indexOffset);
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
                 }
 
                 if (camera.posZ < bounds.z2) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.NORTH), vertexOffset, indexOffset);
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.NORTH), indexOffset, baseVertex);
                 }
             }
 
@@ -124,9 +127,9 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         super.end();
     }
 
-    private void addDrawCall(ElementRange part, int vertexBase, int indexOffset) {
+    private void addDrawCall(ElementRange part, long indexOffset, int baseVertex) {
         if (part != null) {
-            this.batch.add((indexOffset + part.elementOffset) * 4, part.elementCount, vertexBase);
+            this.batch.add((indexOffset + part.elementOffset) * 4L, part.elementCount, baseVertex);
         }
     }
 

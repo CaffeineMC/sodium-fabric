@@ -17,7 +17,7 @@ public class ChunkMeshData {
     }
 
     public Map<ModelQuadFacing, ElementRange> getParts() {
-        return Collections.unmodifiableMap(this.parts);
+        return this.parts;
     }
 
     public IndexedVertexData getVertexData() {

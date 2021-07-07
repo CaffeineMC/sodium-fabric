@@ -7,17 +7,8 @@ import org.lwjgl.opengl.GL20C;
 public abstract class GlBuffer extends GlObject {
     public static final int NULL_BUFFER_ID = 0;
 
-    protected final GlBufferUsage usage;
-
-    protected GlBuffer(RenderDevice owner, GlBufferUsage usage) {
-        super(owner);
-
+    protected GlBuffer() {
         this.setHandle(GL20C.glGenBuffers());
-
-        this.usage = usage;
     }
 
-    public GlBufferUsage getUsageHint() {
-        return this.usage;
-    }
 }
