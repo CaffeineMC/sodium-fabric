@@ -10,7 +10,6 @@ public class GlBufferSegment {
 
     private GlBufferSegment next;
     private GlBufferSegment prev;
-    private long crc;
 
     public GlBufferSegment(GlBufferArena arena, long offset, long length) {
         this.arena = arena;
@@ -82,13 +81,5 @@ public class GlBufferSegment {
             this.getNext()
                     .setPrev(this);
         }
-    }
-
-    public void setCrc(long crc) {
-        this.crc = crc;
-    }
-
-    public long getCrc() {
-        return this.crc;
     }
 }

@@ -5,22 +5,17 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL32C;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.CRC32;
 
 public class GlBufferArena {
     static final boolean CHECK_ASSERTIONS = false;
-    static final boolean CHECK_CRC = false;
 
     private static final GlBufferUsage BUFFER_USAGE = GlBufferUsage.DYNAMIC_DRAW;
 
@@ -56,7 +51,6 @@ public class GlBufferArena {
         }
 
         this.checkAssertions();
-        this.checkCrc();
 
         long base = newCapacity - this.used;
 
@@ -77,7 +71,6 @@ public class GlBufferArena {
         }
 
         this.checkAssertions();
-        this.checkCrc();
     }
 
     private List<PendingBufferCopyCommand> buildTransferList(List<GlBufferSegment> usedSegments, long base) {
@@ -230,7 +223,6 @@ public class GlBufferArena {
         }
 
         entry.setFree(true);
-        entry.setCrc(0);
 
         this.used -= entry.getLength();
 
@@ -309,23 +301,16 @@ public class GlBufferArena {
             return false;
         }
 
-        ByteBuffer buf = upload.data.getUnsafeBuffer();
-        dst.setCrc(calculateCrc(buf));
+        ByteBuffer data = upload.data.getUnsafeBuffer();
 
-        if (dst.getLength() * this.stride != buf.remaining()) {
-            throw new IllegalStateException("Buffer alloc length mismatch (expected %d, found %d)".formatted(dst.getLength() * this.stride, buf.remaining()));
+        if (dst.getLength() * this.stride != data.remaining()) {
+            throw new IllegalStateException("Buffer alloc length mismatch (expected %d, found %d)".formatted(dst.getLength() * this.stride, data.remaining()));
         }
 
         // Copy the data into our staging buffer, then copy it into the arena's buffer
-        commandList.uploadData(this.stagingBuffer, buf, GlBufferUsage.STREAM_DRAW);
+        commandList.uploadData(this.stagingBuffer, data, GlBufferUsage.STREAM_DRAW);
         commandList.copyBufferSubData(this.stagingBuffer, this.arenaBuffer,
                 0, dst.getOffset() * this.stride, dst.getLength() * this.stride);
-
-        try {
-            this.checkCrc();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed CRC check after uploading %d..%d".formatted(dst.getOffset(), dst.getLength()), e);
-        }
 
         upload.setResult(dst);
 
@@ -344,51 +329,9 @@ public class GlBufferArena {
         this.resize(commandList, Math.max(this.capacity + this.resizeIncrement, this.capacity + elementsNeeded));
     }
 
-    private void checkCrc() {
-        if (CHECK_CRC) {
-            this.checkCrc0();
-        }
-    }
-
     private void checkAssertions() {
         if (CHECK_ASSERTIONS) {
             this.checkAssertions0();
-        }
-    }
-
-    private void checkCrc0() {
-        int prevBuffer = GL32C.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
-
-        GL32C.glBindBuffer(GL15.GL_ARRAY_BUFFER, this.arenaBuffer.handle());
-        ByteBuffer map = GL32C.glMapBufferRange(GL15.GL_ARRAY_BUFFER, 0, this.capacity * this.stride, GL32C.GL_MAP_READ_BIT);
-
-        if (map == null) {
-            throw new IllegalStateException("Failed to map buffer");
-        }
-
-        try {
-            GlBufferSegment seg = this.head;
-
-            while (seg != null) {
-                if (!seg.isFree() && seg.getCrc() != 0) {
-                    map.position((int) (seg.getOffset() * this.stride));
-                    map.limit((int) ((seg.getOffset() + seg.getLength()) * this.stride));
-
-                    long crc = calculateCrc(map);
-                    map.clear();
-
-                    if (seg.getCrc() != crc) {
-                        String a = "Buffer segment %d..%d corrupted! (expected crc: %08X, calculated crc: %08X)".formatted(seg.getOffset(), seg.getLength(), seg.getCrc(), crc);
-
-                        throw new IllegalStateException(a);
-                    }
-                }
-
-                seg = seg.getNext();
-            }
-        } finally {
-            GL32C.glUnmapBuffer(GL15.GL_ARRAY_BUFFER);
-            GL32C.glBindBuffer(GL15.GL_ARRAY_BUFFER, prevBuffer);
         }
     }
 
@@ -451,15 +394,6 @@ public class GlBufferArena {
         if (this.used != used) {
             throw new IllegalStateException("arena.used is invalid");
         }
-    }
-
-    private static long calculateCrc(ByteBuffer buf) {
-        CRC32 crc = new CRC32();
-        crc.update(buf);
-
-        buf.rewind();
-
-        return crc.getValue();
     }
 
     private static class PendingBufferCopyCommand {

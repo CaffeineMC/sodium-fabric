@@ -60,6 +60,16 @@ public class ChunkBuildBuffers {
     }
 
     public void init(ChunkRenderData.Builder renderData) {
+        for (VertexBufferBuilder vertexBuffer : this.vertexBuffers) {
+            vertexBuffer.reset();
+        }
+
+        for (IndexBufferBuilder[] indexBuffers : this.indexBuffers) {
+            for (IndexBufferBuilder indexBuffer : indexBuffers) {
+                indexBuffer.reset();
+            }
+        }
+
         for (int i = 0; i < this.delegates.length; i++) {
             ModelVertexSink vertexSink = this.vertexType.createBufferWriter(this.vertexBuffers[i]);
             IndexBufferBuilder[] indexBuffers = this.indexBuffers[i];
@@ -77,8 +87,9 @@ public class ChunkBuildBuffers {
     }
 
     /**
-     * Creates immutable baked chunk meshes from all non-empty scratch buffers and resets the state of all mesh
-     * builders. This is used after all blocks have been rendered to pass the finished meshes over to the graphics card.
+     * Creates immutable baked chunk meshes from all non-empty scratch buffers. This is used after all blocks
+     * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
+     * times to return multiple copies.
      */
     public ChunkMeshData createMesh(BlockRenderPass pass) {
         VertexBufferBuilder vertexBufferBuilder = this.vertexBuffers[pass.ordinal()];
@@ -113,13 +124,11 @@ public class ChunkBuildBuffers {
             ranges.put(facing, new ElementRange(baseIndex, indexCount));
 
             indexBufferBuilder.get(indexBuffer);
-            indexBufferBuilder.reset();
 
             baseIndex += indexCount;
         }
 
         vertexBufferBuilder.get(vertexBuffer);
-        vertexBufferBuilder.reset();
 
         vertexBuffer.flip();
         indexBuffer.flip();
