@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.core;
+package me.jellysquid.mods.sodium.mixin.features.shader;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
