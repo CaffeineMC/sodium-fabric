@@ -16,14 +16,23 @@ public class ChunkBuildResult {
     public final RenderSection render;
     public final ChunkRenderData data;
     public final Map<BlockRenderPass, ChunkMeshData> meshes;
+    public final int buildTime;
 
-    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<BlockRenderPass, ChunkMeshData> meshes) {
+    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<BlockRenderPass, ChunkMeshData> meshes, int buildTime) {
         this.render = render;
         this.data = data;
         this.meshes = meshes;
+        this.buildTime = buildTime;
     }
 
     public ChunkMeshData getMesh(BlockRenderPass pass) {
         return this.meshes.get(pass);
+    }
+
+    public void delete() {
+        for (ChunkMeshData data : this.meshes.values()) {
+            data.getVertexData()
+                    .delete();
+        }
     }
 }

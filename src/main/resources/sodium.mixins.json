@@ -43,6 +43,7 @@
     "features.matrix_stack.MixinMatrixStack",
     "features.matrix_stack.MixinVertexConsumer",
     "features.model.MixinMultipartBakedModel",
+    "features.model.MixinWeightedBakedModel",
     "features.options.MixinGameOptions",
     "features.options.MixinInGameHud",
     "features.options.MixinOptionsScreen",
@@ -56,6 +57,7 @@
     "features.texture_updates.MixinSpriteInterpolated"
   ],
   "mixins": [
+    "core.MixinShader",
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinClientWorld"
   ]

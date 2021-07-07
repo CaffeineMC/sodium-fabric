@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.render.chunk.region;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
@@ -11,7 +10,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Vec3i;
 import org.apache.commons.lang3.Validate;
 
 import java.util.EnumMap;
@@ -44,33 +42,29 @@ public class RenderRegion {
     private final Set<RenderSection> chunks = new ObjectOpenHashSet<>();
     private final Map<BlockRenderPass, RenderRegionArenas> arenas = new EnumMap<>(BlockRenderPass.class);
 
-    private final RenderDevice device;
     private final int x, y, z;
 
     private RenderRegionVisibility visibility;
 
-    public RenderRegion(ChunkRenderer renderer, RenderDevice device, int x, int y, int z) {
+    public RenderRegion(ChunkRenderer renderer, int x, int y, int z) {
         this.renderer = renderer;
-        this.device = device;
 
         this.x = x;
         this.y = y;
         this.z = z;
     }
 
-    public static RenderRegion createRegionForChunk(ChunkRenderer renderer, RenderDevice device, int x, int y, int z) {
-        return new RenderRegion(renderer, device, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
+    public static RenderRegion createRegionForChunk(ChunkRenderer renderer, int x, int y, int z) {
+        return new RenderRegion(renderer, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
     public RenderRegionArenas getArenas(BlockRenderPass pass) {
         return this.arenas.get(pass);
     }
 
-    public void deleteResources() {
-        try (CommandList commandList = this.device.createCommandList()) {
-            for (RenderRegionArenas arenas : this.arenas.values()) {
-                arenas.delete(commandList);
-            }
+    public void deleteResources(CommandList commandList) {
+        for (RenderRegionArenas arenas : this.arenas.values()) {
+            arenas.delete(commandList);
         }
 
         this.arenas.clear();
@@ -78,10 +72,6 @@ public class RenderRegion {
 
     public static long getRegionKeyForChunk(int x, int y, int z) {
         return ChunkSectionPos.asLong(x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
-    }
-
-    public Vec3i getRelativeOffset(int chunkX, int chunkY, int chunkZ) {
-        return new Vec3i(chunkX & REGION_WIDTH_M, chunkY & REGION_HEIGHT_M, chunkZ & REGION_LENGTH_M);
     }
 
     public int getOriginX() {
@@ -96,20 +86,14 @@ public class RenderRegion {
         return this.z << REGION_LENGTH_SH << 4;
     }
 
-    public RenderRegionArenas createArenas(CommandList commandList, BlockRenderPass pass) {
-        RenderRegionArenas arenas = new RenderRegionArenas(commandList, this.renderer);
-        this.arenas.put(pass, arenas);
+    public RenderRegionArenas getOrCreateArenas(CommandList commandList, BlockRenderPass pass) {
+        RenderRegionArenas arenas = this.arenas.get(pass);
+
+        if (arenas == null) {
+            this.arenas.put(pass, arenas = new RenderRegionArenas(commandList, this.renderer));
+        }
 
         return arenas;
-    }
-
-    public void deleteArenas(CommandList commandList, BlockRenderPass pass) {
-        this.arenas.remove(pass)
-                .delete(commandList);
-    }
-
-    public long getKey() {
-        return ChunkSectionPos.asLong(this.x, this.y, this.z);
     }
 
     public void addChunk(RenderSection chunk) {
@@ -175,6 +159,22 @@ public class RenderRegion {
 
         public boolean isEmpty() {
             return this.vertexBuffers.isEmpty() && this.indexBuffers.isEmpty();
+        }
+
+        public long getUsedMemory() {
+            return this.vertexBuffers.getUsedMemory() + this.indexBuffers.getUsedMemory();
+        }
+
+        public long getAllocatedMemory() {
+            return this.vertexBuffers.getAllocatedMemory() + this.indexBuffers.getAllocatedMemory();
+        }
+
+        public void invalidateTessellation(CommandList commandList) {
+            if (this.tessellation != null) {
+                commandList.deleteTessellation(this.tessellation);
+
+                this.tessellation = null;
+            }
         }
     }
 }
