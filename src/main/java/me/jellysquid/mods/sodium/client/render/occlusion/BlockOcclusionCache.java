@@ -100,9 +100,7 @@ public class BlockOcclusionCache {
 
         @Override
         public boolean equals(Object o) {
-            if (o instanceof CachedOcclusionShapeTest) {
-                CachedOcclusionShapeTest that = (CachedOcclusionShapeTest) o;
-
+            if (o instanceof CachedOcclusionShapeTest that) {
                 return this.a == that.a &&
                         this.b == that.b;
             }

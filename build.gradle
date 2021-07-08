@@ -3,8 +3,8 @@ plugins {
     id 'org.ajoberstar.grgit' version '4.1.0'
 }
 
-sourceCompatibility = "1.8"
-targetCompatibility = "1.8"
+sourceCompatibility = "16"
+targetCompatibility = "16"
 
 archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}"
 version = "${project.mod_version}+${getVersionMetadata()}"

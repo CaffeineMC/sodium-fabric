@@ -8,14 +8,13 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
  * not stop code from cloning the handle and trying to use it after it has been deleted and as such should not be
  * relied on too heavily.
  */
-public class GlObject {
+public abstract class GlObject {
     private static final int INVALID_HANDLE = Integer.MIN_VALUE;
 
-    protected final RenderDevice device;
     private int handle = INVALID_HANDLE;
 
-    public GlObject(RenderDevice owner) {
-        this.device = owner;
+    protected GlObject() {
+
     }
 
     protected final void setHandle(int handle) {
@@ -40,9 +39,5 @@ public class GlObject {
 
     public final void invalidateHandle() {
         this.handle = INVALID_HANDLE;
-    }
-
-    public RenderDevice getDevice() {
-        return this.device;
     }
 }

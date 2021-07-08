@@ -11,6 +11,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheShared;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
@@ -31,8 +32,8 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Provides an extension to vanilla's {@link WorldRenderer}.
@@ -249,6 +250,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.chunkRenderer = new RegionChunkRenderer(device, ChunkModelVertexFormats.DEFAULT);
 
         this.renderSectionManager = new RenderSectionManager(this, this.chunkRenderer, this.renderPassManager, this.world, this.renderDistance);
+        this.renderSectionManager.loadChunks();
     }
 
     public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
@@ -395,5 +397,37 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     public ChunkRenderer getChunkRenderer() {
         return this.chunkRenderer;
+    }
+
+    public Collection<String> getMemoryDebugStrings() {
+        List<String> list = new ArrayList<>();
+
+        Iterator<RenderRegion.RenderRegionArenas> it = this.renderSectionManager.getRegions()
+                .stream()
+                .flatMap(i -> Arrays.stream(BlockRenderPass.values())
+                        .map(i::getArenas))
+                .filter(Objects::nonNull)
+                .iterator();
+
+        int count = 0;
+
+        long used = 0;
+        long allocated = 0;
+
+        while (it.hasNext()) {
+            RenderRegion.RenderRegionArenas arena = it.next();
+            used += arena.getUsedMemory();
+            allocated += arena.getAllocatedMemory();
+
+            count++;
+        }
+
+        list.add(String.format("Chunk Arenas: %d/%d MiB (%d buffers)", toMib(used), toMib(allocated), count));
+
+        return list;
+    }
+
+    private static long toMib(long x) {
+        return x / 1024L / 1024L;
     }
 }
