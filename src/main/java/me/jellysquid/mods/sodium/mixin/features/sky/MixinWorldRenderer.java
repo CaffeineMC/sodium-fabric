@@ -39,10 +39,8 @@ public class MixinWorldRenderer {
      * also more "correct" in the sense that underwater fog is applied to chunks
      * outside of water, so the fog should also be covering the sun and sky.</p>
      * 
-     * <p>When updating Sodium, please ensure that {@link CallbackInfo#cancel()}
-     * is called when the fog distance is not the default. The logic for the fog
-     * distance is found in {@link BackgroundRenderer#applyFog()}. If the end of
-     * the fog is set to the render distance, the sky shouldn't be rendered.</p>
+     * <p>When updating Sodium to new releases of the game, please check for new
+     * ways the fog can be reduced in {@link BackgroundRenderer#applyFog()}.</p>
      */
     @Inject(method = "renderSky", at = @At("HEAD"), cancellable = true)
     private void preRenderSky(MatrixStack matrices, Matrix4f matrix4f, float tickDelta, Runnable runnable, CallbackInfo callbackInfo) {
