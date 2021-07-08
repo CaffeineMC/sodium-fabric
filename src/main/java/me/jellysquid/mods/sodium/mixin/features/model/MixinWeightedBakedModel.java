@@ -52,7 +52,7 @@ public class MixinWeightedBakedModel {
                 return null;
             }
 
-            weighted = pool.get(i);
+            weighted = pool.get(i++);
             totalWeight -= weighted.getWeight().getValue();
         } while (totalWeight >= 0);
 
