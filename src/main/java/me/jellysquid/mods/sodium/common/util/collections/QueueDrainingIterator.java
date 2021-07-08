@@ -1,12 +1,14 @@
 package me.jellysquid.mods.sodium.common.util.collections;
 
+import it.unimi.dsi.fastutil.PriorityQueue;
+
 import java.util.Iterator;
 import java.util.Queue;
 
 public class QueueDrainingIterator<T> implements Iterator<T> {
-    private final Queue<T> queue;
+    private final PriorityQueue<T> queue;
 
-    public QueueDrainingIterator(Queue<T> queue) {
+    public QueueDrainingIterator(PriorityQueue<T> queue) {
         this.queue = queue;
     }
 
@@ -17,6 +19,6 @@ public class QueueDrainingIterator<T> implements Iterator<T> {
 
     @Override
     public T next() {
-        return this.queue.remove();
+        return this.queue.dequeue();
     }
 }

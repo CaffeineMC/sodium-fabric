@@ -36,44 +36,43 @@ public class MixinFrustum implements FrustumExtended {
         vec.normalize();
 
         switch (index) {
-            case 0:
+            case 0 -> {
                 this.nxX = vec.getX();
                 this.nxY = vec.getY();
                 this.nxZ = vec.getZ();
                 this.nxW = vec.getW();
-                break;
-            case 1:
+            }
+            case 1 -> {
                 this.pxX = vec.getX();
                 this.pxY = vec.getY();
                 this.pxZ = vec.getZ();
                 this.pxW = vec.getW();
-                break;
-            case 2:
+            }
+            case 2 -> {
                 this.nyX = vec.getX();
                 this.nyY = vec.getY();
                 this.nyZ = vec.getZ();
                 this.nyW = vec.getW();
-                break;
-            case 3:
+            }
+            case 3 -> {
                 this.pyX = vec.getX();
                 this.pyY = vec.getY();
                 this.pyZ = vec.getZ();
                 this.pyW = vec.getW();
-                break;
-            case 4:
+            }
+            case 4 -> {
                 this.nzX = vec.getX();
                 this.nzY = vec.getY();
                 this.nzZ = vec.getZ();
                 this.nzW = vec.getW();
-                break;
-            case 5:
+            }
+            case 5 -> {
                 this.pzX = vec.getX();
                 this.pzY = vec.getY();
                 this.pzZ = vec.getZ();
                 this.pzW = vec.getW();
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid index");
+            }
+            default -> throw new IllegalArgumentException("Invalid index");
         }
     }
 

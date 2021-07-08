@@ -6,7 +6,6 @@ public enum OptionImpact {
     LOW(Formatting.GREEN, "Low"),
     MEDIUM(Formatting.YELLOW, "Medium"),
     HIGH(Formatting.GOLD, "High"),
-    EXTREME(Formatting.RED, "Extreme"),
     VARIES(Formatting.WHITE, "Varies");
 
     private final Formatting color;
