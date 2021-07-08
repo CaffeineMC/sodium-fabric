@@ -106,7 +106,6 @@ public class SodiumGameOptions {
             throw new IOException("Not a directory: " + dir);
         }
 
-        Files.write(this.configPath, GSON.toJson(this)
-                .getBytes(StandardCharsets.UTF_8));
+        Files.writeString(this.configPath, GSON.toJson(this));
     }
 }

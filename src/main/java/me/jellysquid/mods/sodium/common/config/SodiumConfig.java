@@ -51,7 +51,10 @@ public class SodiumConfig {
         this.addMixinRule("features.render_layer", true);
         this.addMixinRule("features.sky", true);
         this.addMixinRule("features.texture_tracking", true);
+        this.addMixinRule("features.texture_updates", true);
         this.addMixinRule("features.world_ticking", true);
+        this.addMixinRule("features.fast_biome_colors", true);
+        this.addMixinRule("features.shader", true);
     }
 
     /**

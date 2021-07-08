@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.debug;
 
 import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,6 +26,8 @@ public abstract class MixinDebugHud {
         strings.add("");
         strings.add("Sodium Renderer");
         strings.add(Formatting.UNDERLINE + getFormattedVersionText());
+
+        strings.addAll(SodiumWorldRenderer.getInstance().getMemoryDebugStrings());
 
         for (int i = 0; i < strings.size(); i++) {
             String str = strings.get(i);

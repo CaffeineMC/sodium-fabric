@@ -30,7 +30,7 @@ public class ChunkProgram extends GlProgram {
     private final ChunkShaderFogComponent fogShader;
 
     public ChunkProgram(RenderDevice owner, int handle, ChunkShaderOptions options) {
-        super(owner, handle);
+        super(handle);
 
         this.uModelViewProjectionMatrix = this.getUniformLocation("u_ModelViewProjectionMatrix");
 
@@ -41,7 +41,7 @@ public class ChunkProgram extends GlProgram {
         this.uTextureScale = this.getUniformLocation("u_TextureScale");
         this.uRegionOrigin = this.getUniformLocation("u_RegionOrigin");
 
-        this.fogShader = options.fogMode.getFactory().apply(this);
+        this.fogShader = options.fog().getFactory().apply(this);
     }
 
     public void setup(MatrixStack matrixStack, ChunkVertexType vertexType) {

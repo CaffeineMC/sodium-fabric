@@ -14,9 +14,7 @@ import org.lwjgl.opengl.GL30C;
 public abstract class GlProgram extends GlObject {
     private static final Logger LOGGER = LogManager.getLogger(GlProgram.class);
 
-    protected GlProgram(RenderDevice owner, int program) {
-        super(owner);
-
+    protected GlProgram(int program) {
         this.setHandle(program);
     }
 
@@ -97,13 +95,13 @@ public abstract class GlProgram extends GlObject {
         }
 
         public Builder bindAttribute(String name, ShaderBindingPoint binding) {
-            GL20C.glBindAttribLocation(this.program, binding.getGenericAttributeIndex(), name);
+            GL20C.glBindAttribLocation(this.program, binding.genericAttributeIndex(), name);
 
             return this;
         }
 
         public Builder bindFragmentData(String name, ShaderBindingPoint binding) {
-            GL30C.glBindFragDataLocation(this.program, binding.getGenericAttributeIndex(), name);
+            GL30C.glBindFragDataLocation(this.program, binding.genericAttributeIndex(), name);
 
             return this;
         }

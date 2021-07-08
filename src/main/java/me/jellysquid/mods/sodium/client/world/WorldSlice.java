@@ -72,7 +72,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     private ClonedChunkSection[] sections;
 
     // Biome caches for each chunk section
-    private BiomeCache[] biomeCaches;
+    private final BiomeCache[] biomeCaches;
 
     // The biome blend caches for each color resolver type
     // This map is always re-initialized, but the caches themselves are taken from an object pool
@@ -229,11 +229,6 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
 
         return this.blockStatesArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
                 [getLocalBlockIndex(relX & 15, relY & 15, relZ & 15)];
-    }
-
-    public BlockState getBlockStateRelative(int x, int y, int z) {
-        return this.blockStatesArrays[getLocalSectionIndex(x >> 4, y >> 4, z >> 4)]
-                [getLocalBlockIndex(x & 15, y & 15, z & 15)];
     }
 
     @Override
