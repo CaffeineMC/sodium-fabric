@@ -15,8 +15,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.util.GlAllocationUtils;
-import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -61,12 +59,12 @@ public class ChunkBuildBuffers {
 
     public void init(ChunkRenderData.Builder renderData) {
         for (VertexBufferBuilder vertexBuffer : this.vertexBuffers) {
-            vertexBuffer.reset();
+            vertexBuffer.start();
         }
 
         for (IndexBufferBuilder[] indexBuffers : this.indexBuffers) {
             for (IndexBufferBuilder indexBuffer : indexBuffers) {
-                indexBuffer.reset();
+                indexBuffer.start();
             }
         }
 
@@ -105,8 +103,11 @@ public class ChunkBuildBuffers {
                 .mapToInt(IndexBufferBuilder::getSize)
                 .sum();
 
-        ByteBuffer vertexBuffer = MemoryUtil.memAlloc(vertexDataLength);
-        ByteBuffer indexBuffer = MemoryUtil.memAlloc(indexDataLength);
+        NativeBuffer vertexBuffer = new NativeBuffer(vertexDataLength);
+        NativeBuffer indexBuffer = new NativeBuffer(indexDataLength);
+
+        ByteBuffer vertexBufferB = vertexBuffer.getDirectBuffer();
+        ByteBuffer indexBufferB = indexBuffer.getDirectBuffer();
 
         int baseIndex = 0;
 
@@ -123,18 +124,15 @@ public class ChunkBuildBuffers {
 
             ranges.put(facing, new ElementRange(baseIndex, indexCount));
 
-            indexBufferBuilder.get(indexBuffer);
+            indexBufferBuilder.get(indexBufferB);
 
             baseIndex += indexCount;
         }
 
-        vertexBufferBuilder.get(vertexBuffer);
-
-        vertexBuffer.flip();
-        indexBuffer.flip();
+        vertexBufferBuilder.get(vertexBufferB);
 
         IndexedVertexData vertexData = new IndexedVertexData(this.vertexType.getCustomVertexFormat(),
-                new NativeBuffer(vertexBuffer), new NativeBuffer(indexBuffer));
+                vertexBuffer, indexBuffer);
 
         return new ChunkMeshData(vertexData, ranges);
     }

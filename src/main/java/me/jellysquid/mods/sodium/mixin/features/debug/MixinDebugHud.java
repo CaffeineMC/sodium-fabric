@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.features.debug;
 import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
@@ -58,6 +59,10 @@ public abstract class MixinDebugHud {
     }
 
     private static String getNativeMemoryString() {
-        return "Off-Heap: +" + toMiB(ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getUsed()) + "MB";
+        return "Off-Heap: +" + toMiB(getNativeMemoryUsage()) + "MB";
+    }
+
+    private static long getNativeMemoryUsage() {
+        return ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getUsed() + NativeBuffer.getTotalAllocated();
     }
 }

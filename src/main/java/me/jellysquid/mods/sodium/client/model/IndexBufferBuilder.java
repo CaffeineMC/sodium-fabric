@@ -31,7 +31,7 @@ public class IndexBufferBuilder {
         return this.getCount() * 4;
     }
 
-    public void reset() {
+    public void start() {
         this.indices.clear();
     }
 
