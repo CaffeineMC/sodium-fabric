@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.common.util.collections;
 import it.unimi.dsi.fastutil.PriorityQueue;
 
 import java.util.Iterator;
-import java.util.Queue;
 
 public class QueueDrainingIterator<T> implements Iterator<T> {
     private final PriorityQueue<T> queue;

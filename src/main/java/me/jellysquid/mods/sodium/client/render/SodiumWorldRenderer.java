@@ -34,7 +34,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Provides an extension to vanilla's {@link WorldRenderer}.
