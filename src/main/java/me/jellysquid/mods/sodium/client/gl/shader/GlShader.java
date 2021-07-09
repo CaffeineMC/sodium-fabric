@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.shader;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import me.jellysquid.mods.sodium.client.gl.GlObject;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
@@ -27,7 +28,7 @@ public class GlShader extends GlObject {
             LOGGER.warn("Shader compilation log for " + this.name + ": " + log);
         }
 
-        int result = GL20C.glGetShaderi(handle, GL20C.GL_COMPILE_STATUS);
+        int result = GlStateManager.glGetShaderi(handle, GL20C.GL_COMPILE_STATUS);
 
         if (result != GL20C.GL_TRUE) {
             throw new RuntimeException("Shader compilation failed, see log for details");
