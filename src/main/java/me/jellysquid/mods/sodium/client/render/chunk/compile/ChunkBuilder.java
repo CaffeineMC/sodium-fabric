@@ -5,15 +5,14 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManag
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
+import me.jellysquid.mods.sodium.common.util.collections.QueueDrainingIterator;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,6 +38,8 @@ public class ChunkBuilder {
     private final int limitThreads;
     private final ChunkVertexType vertexType;
 
+    private final Queue<ChunkBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
+
     public ChunkBuilder(ChunkVertexType vertexType) {
         this.vertexType = vertexType;
         this.limitThreads = getOptimalThreadCount();
@@ -49,7 +50,7 @@ public class ChunkBuilder {
      * spawn more tasks than the budget allows, it will block until resources become available.
      */
     public int getSchedulingBudget() {
-        return Math.max(0, (this.limitThreads * TASK_QUEUE_LIMIT_PER_WORKER) - this.buildQueue.size());
+        return Math.max(0, (this.limitThreads * TASK_QUEUE_LIMIT_PER_WORKER) - this.buildQueue.size() - this.deferredResultQueue.size());
     }
 
     /**
@@ -114,9 +115,16 @@ public class ChunkBuilder {
 
         this.threads.clear();
 
+        // Delete any queued tasks and resources attached to them
         for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
             job.task.releaseResources();
+        }
+
+        // Delete any results in the deferred queue
+        while (!this.deferredResultQueue.isEmpty()) {
+            this.deferredResultQueue.remove()
+                    .delete();
         }
 
         this.buildQueue.clear();
@@ -173,6 +181,15 @@ public class ChunkBuilder {
      */
     private static int getOptimalThreadCount() {
         return Math.max(1, Runtime.getRuntime().availableProcessors());
+    }
+
+    public CompletableFuture<Void> scheduleDeferred(ChunkRenderBuildTask task) {
+        return this.schedule(task)
+                .thenAccept(this.deferredResultQueue::add);
+    }
+
+    public Iterator<ChunkBuildResult> createDeferredBuildResultDrain() {
+        return new QueueDrainingIterator<>(this.deferredResultQueue);
     }
 
     private class WorkerRunnable implements Runnable {
