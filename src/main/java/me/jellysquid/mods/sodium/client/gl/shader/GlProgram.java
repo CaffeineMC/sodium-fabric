@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
+import org.lwjgl.opengl.GL32C;
 
 /**
  * An OpenGL shader program.
@@ -50,6 +51,22 @@ public abstract class GlProgram extends GlObject {
         GL20C.glDeleteProgram(this.handle());
 
         this.invalidateHandle();
+    }
+
+    /**
+     * Retrieves the index of the uniform block with the given name.
+     * @param name The name of the uniform block to find the index of
+     * @return The uniform block's index
+     * @throws NullPointerException If no uniform block exists with the given name
+     */
+    protected int getUniformBlockIndex(String name) {
+        int index = GL32C.glGetUniformBlockIndex(this.handle(), name);
+
+        if (index < 0) {
+            throw new NullPointerException("No uniform block exists with name: " + name);
+        }
+
+        return index;
     }
 
     public static class Builder {

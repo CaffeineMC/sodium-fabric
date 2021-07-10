@@ -376,8 +376,8 @@ public class FluidRenderer {
         }
     }
 
-    private int writeVertices(ChunkModelBuilder model, BlockPos offset, ModelQuadView quad) {
-        ModelVertexSink vertices = model.getVertexSink();
+    private int writeVertices(ChunkModelBuilder builder, BlockPos offset, ModelQuadView quad) {
+        ModelVertexSink vertices = builder.getVertexSink();
         vertices.ensureCapacity(4);
 
         int vertexStart = vertices.getVertexCount();
@@ -394,7 +394,7 @@ public class FluidRenderer {
 
             int light = this.quadLightData.lm[i];
 
-            vertices.writeVertex(offset, x, y, z, color, u, v, light);
+            vertices.writeVertex(offset, x, y, z, color, u, v, light, builder.getChunkId());
         }
 
         vertices.flush();
@@ -402,7 +402,7 @@ public class FluidRenderer {
         Sprite sprite = quad.getSprite();
 
         if (sprite != null) {
-            model.addSprite(sprite);
+            builder.addSprite(sprite);
         }
 
         return vertexStart;

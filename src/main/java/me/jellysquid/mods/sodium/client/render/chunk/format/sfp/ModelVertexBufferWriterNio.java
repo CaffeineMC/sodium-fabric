@@ -13,24 +13,21 @@ public class ModelVertexBufferWriterNio extends VertexBufferWriterNio implements
     }
 
     @Override
-    public void writeVertex(int offsetX, int offsetY, int offsetZ, float posX, float posY, float posZ, int color, float u, float v, int light) {
+    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId) {
         int i = this.writeOffset;
 
         ByteBuffer buffer = this.byteBuffer;
-        buffer.put(i, (byte) offsetX);
-        buffer.put(i + 1, (byte) offsetY);
-        buffer.put(i + 2, (byte) offsetZ);
+        buffer.putShort(i + 0, ModelVertexType.encodePosition(posX));
+        buffer.putShort(i + 2, ModelVertexType.encodePosition(posY));
+        buffer.putShort(i + 4, ModelVertexType.encodePosition(posZ));
+        buffer.putShort(i + 6, (short) chunkId);
 
-        buffer.putShort(i + 4, ModelVertexType.encodePosition(posX));
-        buffer.putShort(i + 6, ModelVertexType.encodePosition(posY));
-        buffer.putShort(i + 8, ModelVertexType.encodePosition(posZ));
+        buffer.putInt(i + 8, color);
 
-        buffer.putInt(i + 12, color);
+        buffer.putShort(i + 12, ModelVertexType.encodeBlockTexture(u));
+        buffer.putShort(i + 14, ModelVertexType.encodeBlockTexture(v));
 
-        buffer.putShort(i + 16, ModelVertexType.encodeBlockTexture(u));
-        buffer.putShort(i + 18, ModelVertexType.encodeBlockTexture(v));
-
-        buffer.putInt(i + 20, ModelVertexType.encodeLightMapTexCoord(light));
+        buffer.putInt(i + 16, ModelVertexType.encodeLightMapTexCoord(light));
 
         this.advance();
     }

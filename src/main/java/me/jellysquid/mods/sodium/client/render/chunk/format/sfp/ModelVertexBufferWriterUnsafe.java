@@ -12,23 +12,20 @@ public class ModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe impl
     }
 
     @Override
-    public void writeVertex(int offsetX, int offsetY, int offsetZ, float posX, float posY, float posZ, int color, float u, float v, int light) {
+    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId) {
         long i = this.writePointer;
 
-        MemoryUtil.memPutByte(i, (byte) offsetX);
-        MemoryUtil.memPutByte(i + 1, (byte) offsetY);
-        MemoryUtil.memPutByte(i + 2, (byte) offsetZ);
+        MemoryUtil.memPutShort(i + 0, ModelVertexType.encodePosition(posX));
+        MemoryUtil.memPutShort(i + 2, ModelVertexType.encodePosition(posY));
+        MemoryUtil.memPutShort(i + 4, ModelVertexType.encodePosition(posZ));
+        MemoryUtil.memPutShort(i + 6, (short) chunkId);
 
-        MemoryUtil.memPutShort(i + 4, ModelVertexType.encodePosition(posX));
-        MemoryUtil.memPutShort(i + 6, ModelVertexType.encodePosition(posY));
-        MemoryUtil.memPutShort(i + 8, ModelVertexType.encodePosition(posZ));
+        MemoryUtil.memPutInt(i + 8, color);
 
-        MemoryUtil.memPutInt(i + 12, color);
+        MemoryUtil.memPutShort(i + 12, ModelVertexType.encodeBlockTexture(u));
+        MemoryUtil.memPutShort(i + 14, ModelVertexType.encodeBlockTexture(v));
 
-        MemoryUtil.memPutShort(i + 16, ModelVertexType.encodeBlockTexture(u));
-        MemoryUtil.memPutShort(i + 18, ModelVertexType.encodeBlockTexture(v));
-
-        MemoryUtil.memPutInt(i + 20, ModelVertexType.encodeLightMapTexCoord(light));
+        MemoryUtil.memPutInt(i + 16, ModelVertexType.encodeLightMapTexCoord(light));
 
         this.advance();
     }
