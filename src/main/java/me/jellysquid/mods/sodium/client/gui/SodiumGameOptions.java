@@ -27,6 +27,7 @@ public class SodiumGameOptions {
         public boolean useFogOcclusion = true;
         public boolean useBlockFaceCulling = true;
         public boolean allowDirectMemoryAccess = true;
+        public boolean enableMemoryTracing = false;
     }
 
     public static class QualitySettings {

@@ -297,6 +297,15 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.advanced.allowDirectMemoryAccess = value, opts -> opts.advanced.allowDirectMemoryAccess)
                         .build()
                 )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName("Enable Memory Tracing")
+                        .setTooltip("Debugging feature. If enabled, stack traces will be collected alongside memory allocations to help " +
+                                "improve diagnostic information when memory leaks are detected.")
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.LOW)
+                        .setBinding((opts, value) -> opts.advanced.enableMemoryTracing = value, opts -> opts.advanced.enableMemoryTracing)
+                        .build()
+                )
                 .build());
 
         return new OptionPage("Advanced", ImmutableList.copyOf(groups));
