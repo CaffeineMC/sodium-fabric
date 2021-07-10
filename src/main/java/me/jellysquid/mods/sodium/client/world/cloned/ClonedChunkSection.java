@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPaletteFallback;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalleteArray;
+import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -17,6 +18,7 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.*;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,6 +30,8 @@ public class ClonedChunkSection {
     private final ClonedChunkSectionCache backingCache;
 
     private final Long2ObjectOpenHashMap<BlockEntity> blockEntities;
+    private final Long2ObjectOpenHashMap<Object> renderAttachments;
+
     private final ChunkNibbleArray[] lightDataArrays;
 
     private ChunkSectionPos pos;
@@ -39,7 +43,8 @@ public class ClonedChunkSection {
 
     ClonedChunkSection(ClonedChunkSectionCache backingCache) {
         this.backingCache = backingCache;
-        this.blockEntities = new Long2ObjectOpenHashMap<>(8);
+        this.blockEntities = new Long2ObjectOpenHashMap<>();
+        this.renderAttachments = new Long2ObjectOpenHashMap<>();
         this.lightDataArrays = new ChunkNibbleArray[LIGHT_TYPES.length];
     }
 
@@ -56,36 +61,44 @@ public class ClonedChunkSection {
             section = EMPTY_SECTION;
         }
 
-        this.pos = pos;
+        this.reset(pos);
 
-        PalettedContainerExtended<BlockState> container = PalettedContainerExtended.cast(section.getContainer());;
+        this.copyBlockData(section);
+        this.copyLightData(world);
+        this.copyBiomeData(chunk);
+        this.copyBlockEntities(chunk, pos);
+    }
+
+    private void reset(ChunkSectionPos pos) {
+        this.pos = pos;
+        this.blockEntities.clear();
+        this.renderAttachments.clear();
+
+        this.blockStateData = null;
+        this.blockStatePalette = null;
+
+        this.biomeData = null;
+
+        Arrays.fill(this.lightDataArrays, null);
+    }
+
+    private void copyBlockData(ChunkSection section) {
+        PalettedContainerExtended<BlockState> container = PalettedContainerExtended.cast(section.getContainer());
 
         this.blockStateData = copyBlockData(container);
         this.blockStatePalette = copyPalette(container);
+    }
 
+    private void copyLightData(World world) {
         for (LightType type : LIGHT_TYPES) {
             this.lightDataArrays[type.ordinal()] = world.getLightingProvider()
                     .get(type)
                     .getLightSection(pos);
         }
-
-        this.biomeData = chunk.getBiomeArray();
-
-        BlockBox box = new BlockBox(pos.getMinX(), pos.getMinY(), pos.getMinZ(), pos.getMaxX(), pos.getMaxY(), pos.getMaxZ());
-
-        this.blockEntities.clear();
-
-        for (Map.Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities().entrySet()) {
-            BlockPos entityPos = entry.getKey();
-
-            if (box.contains(entityPos)) {
-                this.blockEntities.put(BlockPos.asLong(entityPos.getX() & 15, entityPos.getY() & 15, entityPos.getZ() & 15), entry.getValue());
-            }
-        }
     }
 
-    public BlockState getBlockState(int x, int y, int z) {
-        return this.blockStatePalette.get(this.blockStateData.get(y << 8 | z << 4 | x));
+    private void copyBiomeData(Chunk chunk) {
+        this.biomeData = chunk.getBiomeArray();
     }
 
     public int getLightLevel(LightType type, int x, int y, int z) {
@@ -98,12 +111,42 @@ public class ClonedChunkSection {
         return 0;
     }
 
+    private void copyBlockEntities(WorldChunk chunk, ChunkSectionPos chunkCoord) {
+        BlockBox box = new BlockBox(chunkCoord.getMinX(), chunkCoord.getMinY(), chunkCoord.getMinZ(),
+                chunkCoord.getMaxX(), chunkCoord.getMaxY(), chunkCoord.getMaxZ());
+
+        this.blockEntities.clear();
+
+        for (Map.Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities().entrySet()) {
+            BlockPos pos = entry.getKey();
+            BlockEntity entity = entry.getValue();
+
+            if (box.contains(pos)) {
+                this.addBlockEntity(pos, entity);
+            }
+        }
+    }
+
+    private void addBlockEntity(BlockPos pos, BlockEntity entity) {
+        long key = BlockPos.asLong(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
+
+        this.blockEntities.put(key, entity);
+
+        if (entity instanceof RenderAttachmentBlockEntity) {
+            this.renderAttachments.put(key, ((RenderAttachmentBlockEntity) entity).getRenderAttachmentData());
+        }
+    }
+
     public Biome getBiomeForNoiseGen(int x, int y, int z) {
         return this.biomeData.getBiomeForNoiseGen(x, y, z);
     }
 
     public BlockEntity getBlockEntity(int x, int y, int z) {
         return this.blockEntities.get(BlockPos.asLong(x, y, z));
+    }
+
+    public Object getBlockEntityRenderAttachment(int x, int y, int z) {
+        return this.renderAttachments.get(BlockPos.asLong(x, y, z));
     }
 
     public PackedIntegerArray getBlockData() {

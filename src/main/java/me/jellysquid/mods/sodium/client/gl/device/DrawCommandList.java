@@ -7,8 +7,6 @@ import java.nio.IntBuffer;
 public interface DrawCommandList extends AutoCloseable {
     void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex);
 
-    void multiDrawElements(PointerBuffer pointer, IntBuffer count);
-
     void endTessellating();
 
     void flush();

@@ -1,12 +1,13 @@
 package me.jellysquid.mods.sodium.client.gl.shader;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import me.jellysquid.mods.sodium.client.gl.GlObject;
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
+import org.lwjgl.opengl.GL32C;
 
 /**
  * An OpenGL shader program.
@@ -14,9 +15,7 @@ import org.lwjgl.opengl.GL30C;
 public abstract class GlProgram extends GlObject {
     private static final Logger LOGGER = LogManager.getLogger(GlProgram.class);
 
-    protected GlProgram(RenderDevice owner, int program) {
-        super(owner);
-
+    protected GlProgram(int program) {
         this.setHandle(program);
     }
 
@@ -54,6 +53,22 @@ public abstract class GlProgram extends GlObject {
         this.invalidateHandle();
     }
 
+    /**
+     * Retrieves the index of the uniform block with the given name.
+     * @param name The name of the uniform block to find the index of
+     * @return The uniform block's index
+     * @throws NullPointerException If no uniform block exists with the given name
+     */
+    protected int getUniformBlockIndex(String name) {
+        int index = GL32C.glGetUniformBlockIndex(this.handle(), name);
+
+        if (index < 0) {
+            throw new NullPointerException("No uniform block exists with name: " + name);
+        }
+
+        return index;
+    }
+
     public static class Builder {
         private final Identifier name;
         private final int program;
@@ -87,7 +102,7 @@ public abstract class GlProgram extends GlObject {
                 LOGGER.warn("Program link log for " + this.name + ": " + log);
             }
 
-            int result = GL20C.glGetProgrami(this.program, GL20C.GL_LINK_STATUS);
+            int result = GlStateManager.glGetProgrami(this.program, GL20C.GL_LINK_STATUS);
 
             if (result != GL20C.GL_TRUE) {
                 throw new RuntimeException("Shader program linking failed, see log for details");
@@ -97,13 +112,13 @@ public abstract class GlProgram extends GlObject {
         }
 
         public Builder bindAttribute(String name, ShaderBindingPoint binding) {
-            GL20C.glBindAttribLocation(this.program, binding.getGenericAttributeIndex(), name);
+            GL20C.glBindAttribLocation(this.program, binding.genericAttributeIndex(), name);
 
             return this;
         }
 
         public Builder bindFragmentData(String name, ShaderBindingPoint binding) {
-            GL30C.glBindFragDataLocation(this.program, binding.getGenericAttributeIndex(), name);
+            GL30C.glBindFragDataLocation(this.program, binding.genericAttributeIndex(), name);
 
             return this;
         }

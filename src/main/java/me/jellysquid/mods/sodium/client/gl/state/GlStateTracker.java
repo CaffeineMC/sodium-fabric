@@ -21,6 +21,22 @@ public class GlStateTracker {
         this.clearRestoreState();
     }
 
+    public void notifyVertexArrayDeleted(GlVertexArray vertexArray) {
+        if (this.vertexArrayState == vertexArray.handle()) {
+            this.vertexArrayState = UNASSIGNED_HANDLE;
+        }
+    }
+
+    public void notifyBufferDeleted(GlBuffer buffer) {
+        int h = buffer.handle();
+
+        for (int i = 0; i < this.bufferState.length; i++) {
+            if (this.bufferState[i] == h) {
+                this.bufferState[i] = UNASSIGNED_HANDLE;
+            }
+        }
+    }
+
     public boolean makeBufferActive(GlBufferTarget target, GlBuffer buffer) {
         return this.makeBufferActive(target, buffer == null ? GlBuffer.NULL_BUFFER_ID : buffer.handle());
     }

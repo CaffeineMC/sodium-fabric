@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.line.LineVertexSink;
+import org.lwjgl.system.MemoryUtil;
 
 public class LineVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe implements LineVertexSink {
     public LineVertexBufferWriterUnsafe(VertexBufferView backingBuffer) {
@@ -25,11 +26,11 @@ public class LineVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe imple
     private void vertexLine0(float x, float y, float z, int color, int normal) {
         long i = this.writePointer;
 
-        UNSAFE.putFloat(i, x);
-        UNSAFE.putFloat(i + 4, y);
-        UNSAFE.putFloat(i + 8, z);
-        UNSAFE.putInt(i + 12, color);
-        UNSAFE.putInt(i + 16, normal);
+        MemoryUtil.memPutFloat(i, x);
+        MemoryUtil.memPutFloat(i + 4, y);
+        MemoryUtil.memPutFloat(i + 8, z);
+        MemoryUtil.memPutInt(i + 12, color);
+        MemoryUtil.memPutInt(i + 16, normal);
 
         this.advance();
     }

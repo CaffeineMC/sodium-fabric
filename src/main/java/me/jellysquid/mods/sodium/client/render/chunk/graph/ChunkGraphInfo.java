@@ -96,8 +96,4 @@ public class ChunkGraphInfo {
     public int getOriginZ() {
         return this.parent.getChunkZ() << 4;
     }
-
-    public RenderSection getParent() {
-        return this.parent;
-    }
 }

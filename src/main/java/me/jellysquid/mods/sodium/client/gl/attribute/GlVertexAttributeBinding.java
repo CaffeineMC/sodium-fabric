@@ -8,7 +8,7 @@ public class GlVertexAttributeBinding extends GlVertexAttribute {
     public GlVertexAttributeBinding(ShaderBindingPoint bindingPoint, GlVertexAttribute attribute) {
         super(attribute.getFormat(), attribute.getSize(), attribute.getCount(), attribute.isNormalized(), attribute.getPointer(), attribute.getStride());
 
-        this.index = bindingPoint.getGenericAttributeIndex();
+        this.index = bindingPoint.genericAttributeIndex();
     }
 
     public int getIndex() {

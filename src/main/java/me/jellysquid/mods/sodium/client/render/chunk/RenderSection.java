@@ -1,26 +1,19 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
-import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
-import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
-import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
-import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.ChunkSectionCache;
-import net.minecraft.world.World;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -43,11 +36,12 @@ public class RenderSection {
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<?> rebuildTask = null;
 
-    private boolean needsRebuild;
-    private boolean needsImportantRebuild;
+    private ChunkUpdateType pendingUpdate;
 
     private boolean tickable;
     private boolean disposed;
+
+    private int lastAcceptedBuildTime = -1;
 
     public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
         this.worldRenderer = worldRenderer;
@@ -76,9 +70,6 @@ public class RenderSection {
      * those will also be discarded when processing finally happens.
      */
     public void cancelRebuildTask() {
-        this.needsRebuild = false;
-        this.needsImportantRebuild = false;
-
         if (this.rebuildTask != null) {
             this.rebuildTask.cancel(false);
             this.rebuildTask = null;
@@ -87,20 +78,6 @@ public class RenderSection {
 
     public ChunkRenderData getData() {
         return this.data;
-    }
-
-    /**
-     * @return True if the render's state is out of date with the world state
-     */
-    public boolean needsRebuild() {
-        return this.needsRebuild;
-    }
-
-    /**
-     * @return True if the render's rebuild should be performed as blocking
-     */
-    public boolean needsImportantRebuild() {
-        return this.needsImportantRebuild;
     }
 
     /**
@@ -133,20 +110,6 @@ public class RenderSection {
         this.data = info;
 
         this.tickable = !info.getAnimatedSprites().isEmpty();
-    }
-
-    /**
-     * Marks this render as needing an update. Important updates are scheduled as "blocking" and will prevent the next
-     * frame from being rendered until the update is performed.
-     * @param important True if the update is blocking, otherwise false
-     */
-    public boolean scheduleRebuild(boolean important) {
-        boolean changed = !this.needsRebuild || (!this.needsImportantRebuild && important);
-
-        this.needsImportantRebuild = important;
-        this.needsRebuild = true;
-
-        return changed;
     }
 
     /**
@@ -298,9 +261,36 @@ public class RenderSection {
         this.graphInfo.setOcclusionData(occlusionData);
     }
 
-    public void setRebuildFuture(CompletableFuture<?> task) {
-        this.cancelRebuildTask();
+    public ChunkUpdateType getPendingUpdate() {
+        return this.pendingUpdate;
+    }
+
+    public void markForUpdate(ChunkUpdateType type) {
+        if (this.pendingUpdate == null || type.ordinal() > this.pendingUpdate.ordinal()) {
+            this.pendingUpdate = type;
+        }
+    }
+
+    public void onBuildSubmitted(CompletableFuture<?> task) {
+        if (this.rebuildTask != null) {
+            this.rebuildTask.cancel(false);
+            this.rebuildTask = null;
+        }
 
         this.rebuildTask = task;
+        this.pendingUpdate = null;
+    }
+
+    public boolean isBuilt() {
+        return this.data != ChunkRenderData.ABSENT;
+    }
+
+    public boolean canAcceptBuildResults(ChunkBuildResult result) {
+        return !this.isDisposed() && result.buildTime > this.lastAcceptedBuildTime;
+    }
+
+    public void onBuildFinished(ChunkBuildResult result) {
+        this.setData(result.data);
+        this.lastAcceptedBuildTime = result.buildTime;
     }
 }

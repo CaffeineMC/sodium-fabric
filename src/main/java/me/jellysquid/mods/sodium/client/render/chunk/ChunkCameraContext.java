@@ -20,8 +20,4 @@ public class ChunkCameraContext {
         this.posZ = (float) z;
     }
 
-    public float getChunkModelOffset(int chunkBlockPos, int cameraBlockPos, float cameraPos) {
-        int t = chunkBlockPos - cameraBlockPos;
-        return t - cameraPos;
-    }
 }
