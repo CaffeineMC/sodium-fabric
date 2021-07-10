@@ -33,6 +33,12 @@ public class NativeBuffer {
         ACTIVE_BUFFERS.put(new PhantomReference<>(this, RECLAIM_QUEUE), this.ref);
     }
 
+    public static NativeBuffer copy(ByteBuffer src) {
+        NativeBuffer dst = new NativeBuffer(src.remaining());
+        MemoryUtil.memCopy(src, dst.getDirectBuffer());
+        return dst;
+    }
+
     public ByteBuffer getDirectBuffer() {
         this.ref.checkFreed();
 
@@ -43,7 +49,7 @@ public class NativeBuffer {
         deallocate(this.ref);
     }
 
-    public int size() {
+    public int getLength() {
         return this.ref.length;
     }
 
