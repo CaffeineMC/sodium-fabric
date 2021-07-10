@@ -3,6 +3,8 @@ package me.jellysquid.mods.sodium.client.util;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMaps;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryUtil;
@@ -16,8 +18,6 @@ import java.util.stream.Collectors;
 
 public class NativeBuffer {
     private static final Logger LOGGER = LogManager.getLogger(NativeBuffer.class);
-
-    private static final boolean ENABLE_STACK_TRACE_LOGGING = false;
 
     private static final ReferenceQueue<NativeBuffer> RECLAIM_QUEUE = new ReferenceQueue<>();
     private static final Reference2ReferenceMap<Reference<NativeBuffer>, BufferReference> ACTIVE_BUFFERS =
@@ -81,7 +81,7 @@ public class NativeBuffer {
     }
 
     private static StackTraceElement[] getStackTrace() {
-        return ENABLE_STACK_TRACE_LOGGING ? Thread.currentThread()
+        return SodiumClientMod.options().advanced.enableMemoryTracing ? Thread.currentThread()
                 .getStackTrace() : null;
     }
 
@@ -103,7 +103,7 @@ public class NativeBuffer {
             throw new OutOfMemoryError("Couldn't allocate %s bytes".formatted(capacity));
         }
 
-        StackTraceElement[] stackTrace = ENABLE_STACK_TRACE_LOGGING ? Thread.currentThread().getStackTrace() : null;
+        StackTraceElement[] stackTrace = getStackTrace();
 
         BufferReference ref = new BufferReference(address, capacity, stackTrace);
         ALLOCATED += ref.length;
