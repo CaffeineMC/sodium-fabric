@@ -5,7 +5,6 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.WeightedBakedModel;
 import net.minecraft.util.collection.Weighted;
-import net.minecraft.util.collection.Weighting;
 import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -52,7 +51,7 @@ public class MixinWeightedBakedModel {
                 return null;
             }
 
-            weighted = pool.get(i);
+            weighted = pool.get(i++);
             totalWeight -= weighted.getWeight().getValue();
         } while (totalWeight >= 0);
 

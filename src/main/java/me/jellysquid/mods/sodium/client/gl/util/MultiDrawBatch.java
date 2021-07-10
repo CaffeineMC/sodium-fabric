@@ -1,21 +1,20 @@
 package me.jellysquid.mods.sodium.client.gl.util;
 
-import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.Pointer;
-import sun.misc.Unsafe;
 
 import java.nio.BufferUnderflowException;
 import java.nio.IntBuffer;
 
 /**
- * Provides a fixed-size queue for batching draw calls for vertex data in the same buffer. This internally
- * uses {@link GL20#glMultiDrawArrays(int, IntBuffer, IntBuffer)} and should be compatible on any relevant platform.
+ * Provides a fixed-size queue for building a draw-command list usable with
+ * {@link org.lwjgl.opengl.GL33C#glMultiDrawElementsBaseVertex(int, IntBuffer, int, PointerBuffer, IntBuffer)}.
  */
-public interface GlMultiDrawBatch {
-    static GlMultiDrawBatch create(int capacity) {
-        return UnsafeUtil.isAvailable() ? new UnsafeMultiDrawBatch(capacity) : new NioMultiDrawBatch(capacity);
+public interface MultiDrawBatch {
+    static MultiDrawBatch create(int capacity) {
+        return SodiumClientMod.isDirectMemoryAccessEnabled() ? new UnsafeMultiDrawBatch(capacity) : new NioMultiDrawBatch(capacity);
     }
 
     PointerBuffer getPointerBuffer();
@@ -34,7 +33,7 @@ public interface GlMultiDrawBatch {
 
     boolean isEmpty();
 
-    class NioMultiDrawBatch implements GlMultiDrawBatch {
+    class NioMultiDrawBatch implements MultiDrawBatch {
         private final PointerBuffer bufPointer;
         private final IntBuffer bufCount;
         private final IntBuffer bufBaseVertex;
@@ -100,9 +99,7 @@ public interface GlMultiDrawBatch {
         }
     }
 
-    class UnsafeMultiDrawBatch implements GlMultiDrawBatch {
-        private static final Unsafe UNSAFE = UnsafeUtil.instanceNullable();
-
+    class UnsafeMultiDrawBatch implements MultiDrawBatch {
         private final PointerBuffer bufPointer;
         private final IntBuffer bufCount;
         private final IntBuffer bufBaseVertex;
@@ -158,13 +155,13 @@ public interface GlMultiDrawBatch {
                 throw new BufferUnderflowException();
             }
 
-            UNSAFE.putLong(this.bufPointerAddr, pointer);
+            MemoryUtil.memPutLong(this.bufPointerAddr, pointer);
             this.bufPointerAddr += Pointer.POINTER_SIZE;
 
-            UNSAFE.putInt(this.bufCountAddr, count);
+            MemoryUtil.memPutInt(this.bufCountAddr, count);
             this.bufCountAddr += 4;
 
-            UNSAFE.putInt(this.bufBaseVertexAddr, baseVertex);
+            MemoryUtil.memPutInt(this.bufBaseVertexAddr, baseVertex);
             this.bufBaseVertexAddr += 4;
 
             this.count++;

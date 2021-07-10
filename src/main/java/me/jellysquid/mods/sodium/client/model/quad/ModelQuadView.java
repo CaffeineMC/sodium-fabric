@@ -3,8 +3,6 @@ package me.jellysquid.mods.sodium.client.model.quad;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import net.minecraft.client.texture.Sprite;
 
-import java.nio.ByteBuffer;
-
 /**
  * Provides a read-only view of a model quad. For mutable access to a model quad, see {@link ModelQuadViewMutable}.
  */

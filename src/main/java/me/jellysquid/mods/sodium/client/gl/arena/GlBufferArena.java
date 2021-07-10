@@ -301,7 +301,7 @@ public class GlBufferArena {
             return false;
         }
 
-        ByteBuffer data = upload.data.getUnsafeBuffer();
+        ByteBuffer data = upload.data.getDirectBuffer();
 
         if (dst.getLength() * this.stride != data.remaining()) {
             throw new IllegalStateException("Buffer alloc length mismatch (expected %d, found %d)".formatted(dst.getLength() * this.stride, data.remaining()));
