@@ -13,14 +13,10 @@ public class ChunkCameraContext {
         this.deltaX = (float) (x - this.blockX);
         this.deltaY = (float) (y - this.blockY);
         this.deltaZ = (float) (z - this.blockZ);
-        
+
         this.posX = (float) x;
         this.posY = (float) y;
         this.posZ = (float) z;
     }
 
-    public float getChunkModelOffset(int chunkBlockPos, int cameraBlockPos, float cameraPos) {
-        int t = chunkBlockPos - cameraBlockPos;
-        return t - cameraPos;
-    }
 }
