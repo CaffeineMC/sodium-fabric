@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -14,6 +13,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+// TODO: handle alignment
+// TODO: handle element vs pointers
 public class GlBufferArena {
     static final boolean CHECK_ASSERTIONS = false;
 
@@ -30,19 +31,28 @@ public class GlBufferArena {
     private long capacity;
     private long used;
 
-    public GlBufferArena(CommandList commands, long initialCapacity, int stride) {
-        this.arenaBuffer = commands.createMutableBuffer();
-
-        commands.allocateStorage(this.arenaBuffer, initialCapacity * stride, BUFFER_USAGE);
-
+    private GlBufferArena(CommandList commands, long initialCapacity, int stride) {
         this.stride = stride;
-        this.stagingBuffer = commands.createMutableBuffer();
 
-        this.resizeIncrement = initialCapacity / 8;
+        this.resizeIncrement = initialCapacity / 16;
         this.capacity = initialCapacity;
 
         this.head = new GlBufferSegment(this, 0, initialCapacity);
         this.head.setFree(true);
+
+        this.arenaBuffer = commands.createMutableBuffer();
+
+        commands.allocateStorage(this.arenaBuffer, toBytes(initialCapacity), BUFFER_USAGE);
+
+        this.stagingBuffer = commands.createMutableBuffer();
+    }
+
+    public static GlBufferArena createIndexArena(CommandList commandList, int initialCapacity) {
+        return new GlBufferArena(commandList, initialCapacity, 1);
+    }
+
+    public static GlBufferArena createVertexArena(CommandList commandList, int initialCapacity, int stride) {
+        return new GlBufferArena(commandList, initialCapacity, stride);
     }
 
     private void resize(CommandList commandList, long newCapacity) {
@@ -120,14 +130,14 @@ public class GlBufferArena {
         GlMutableBuffer srcBufferObj = this.arenaBuffer;
         GlMutableBuffer dstBufferObj = commandList.createMutableBuffer();
 
-        commandList.allocateStorage(dstBufferObj, capacity * this.stride, BUFFER_USAGE);
+        commandList.allocateStorage(dstBufferObj, toBytes(capacity), BUFFER_USAGE);
 
 
         for (PendingBufferCopyCommand cmd : list) {
             commandList.copyBufferSubData(srcBufferObj, dstBufferObj,
-                    cmd.readOffset * this.stride,
-                    cmd.writeOffset * this.stride,
-                    cmd.length * this.stride);
+                    toBytes(cmd.readOffset),
+                    toBytes(cmd.writeOffset),
+                    toBytes(cmd.length));
         }
 
         commandList.deleteBuffer(srcBufferObj);
@@ -154,11 +164,11 @@ public class GlBufferArena {
     }
 
     public long getUsedMemory() {
-        return this.used * this.stride;
+        return toBytes(this.used);
     }
 
     public long getAllocatedMemory() {
-        return this.capacity * this.stride;
+        return toBytes(this.capacity);
     }
 
     private GlBufferSegment alloc(long size) {
@@ -268,14 +278,14 @@ public class GlBufferArena {
         // If we weren't able to upload some buffers, they will have been left behind in the queue
         if (!queue.isEmpty()) {
             // Calculate the amount of memory needed for the remaining uploads
-            int remainingBytes = queue.stream()
-                    .mapToInt(upload -> upload.data.size())
+            int remainingElements = queue.stream()
+                    .mapToInt(upload -> toElements(upload.getDataBuffer().getLength()))
                     .sum();
 
             // Ask the arena to grow to accommodate the remaining uploads
             // This will force a re-allocation and compaction, which will leave us a continuous free segment
             // for the remaining uploads
-            this.ensureCapacity(commandList, remainingBytes);
+            this.ensureCapacity(commandList, remainingElements);
 
             // Try again to upload any buffers that failed last time
             queue.removeIf(upload -> this.tryUpload(commandList, upload));
@@ -293,7 +303,10 @@ public class GlBufferArena {
     }
 
     private boolean tryUpload(CommandList commandList, PendingUpload upload) {
-        int elementCount = upload.data.size() / this.stride;
+        ByteBuffer data = upload.getDataBuffer()
+                .getDirectBuffer();
+
+        int elementCount = toElements(data.remaining());
 
         GlBufferSegment dst = this.alloc(elementCount);
 
@@ -301,25 +314,17 @@ public class GlBufferArena {
             return false;
         }
 
-        ByteBuffer data = upload.data.getDirectBuffer();
-
-        if (dst.getLength() * this.stride != data.remaining()) {
-            throw new IllegalStateException("Buffer alloc length mismatch (expected %d, found %d)".formatted(dst.getLength() * this.stride, data.remaining()));
-        }
-
         // Copy the data into our staging buffer, then copy it into the arena's buffer
         commandList.uploadData(this.stagingBuffer, data, GlBufferUsage.STREAM_DRAW);
         commandList.copyBufferSubData(this.stagingBuffer, this.arenaBuffer,
-                0, dst.getOffset() * this.stride, dst.getLength() * this.stride);
+                0, toBytes(dst.getOffset()), toBytes(dst.getLength()));
 
         upload.setResult(dst);
 
         return true;
     }
 
-    public void ensureCapacity(CommandList commandList, int bytes) {
-        int elementCount = bytes / this.stride;
-
+    public void ensureCapacity(CommandList commandList, int elementCount) {
         // Re-sizing the arena results in a compaction, so any free space in the arena will be
         // made into one contiguous segment, joined with the new segment of free space we're asking for
         // We calculate the number of free elements in our arena and then subtract that from the total requested
@@ -396,41 +401,15 @@ public class GlBufferArena {
         }
     }
 
-    private static class PendingBufferCopyCommand {
-        public final long readOffset;
-        public final long writeOffset;
-
-        public long length;
-
-        private PendingBufferCopyCommand(long readOffset, long writeOffset, long length) {
-            this.readOffset = readOffset;
-            this.writeOffset = writeOffset;
-            this.length = length;
-        }
+    private long toBytes(long elementCount) {
+        return elementCount * this.stride;
     }
 
-    public static class PendingUpload {
-        private final NativeBuffer data;
-        private GlBufferSegment result;
-
-        public PendingUpload(NativeBuffer data) {
-            this.data = data;
+    private int toElements(long bytes) {
+        if (this.stride == 1) {
+            return (int) bytes;
         }
 
-        protected void setResult(GlBufferSegment result) {
-            if (this.result != null) {
-                throw new IllegalStateException("Result already provided");
-            }
-
-            this.result = result;
-        }
-
-        public GlBufferSegment getResult() {
-            if (this.result == null) {
-                throw new IllegalStateException("Result not computed");
-            }
-
-            return this.result;
-        }
+        return (int) (bytes / this.stride);
     }
 }

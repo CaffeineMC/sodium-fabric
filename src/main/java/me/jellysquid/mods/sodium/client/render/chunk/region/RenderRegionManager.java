@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.region;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
+import me.jellysquid.mods.sodium.client.gl.arena.PendingUpload;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
@@ -89,8 +90,8 @@ public class RenderRegionManager {
                 IndexedVertexData vertexData = meshData.getVertexData();
 
                 sectionUploads.add(new PendingSectionUpload(result.render, meshData,
-                        new GlBufferArena.PendingUpload(vertexData.vertexBuffer()),
-                        new GlBufferArena.PendingUpload(vertexData.indexBuffer())));
+                        new PendingUpload(vertexData.vertexBuffer()),
+                        new PendingUpload(vertexData.indexBuffer())));
             }
         }
 
@@ -171,10 +172,10 @@ public class RenderRegionManager {
         private final RenderSection section;
         private final ChunkMeshData meshData;
 
-        private final GlBufferArena.PendingUpload vertexUpload;
-        private final GlBufferArena.PendingUpload indicesUpload;
+        private final PendingUpload vertexUpload;
+        private final PendingUpload indicesUpload;
 
-        private PendingSectionUpload(RenderSection section, ChunkMeshData meshData, GlBufferArena.PendingUpload vertexUpload, GlBufferArena.PendingUpload indicesUpload) {
+        private PendingSectionUpload(RenderSection section, ChunkMeshData meshData, PendingUpload vertexUpload, PendingUpload indicesUpload) {
             this.section = section;
             this.meshData = meshData;
             this.vertexUpload = vertexUpload;

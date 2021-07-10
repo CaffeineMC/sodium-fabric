@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.vertex.buffer;
 
 import me.jellysquid.mods.sodium.client.gl.attribute.BufferVertexFormat;
+import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -76,31 +77,15 @@ public class VertexBufferBuilder implements VertexBufferView {
         return this.count <= 0;
     }
 
-    public int getByteSize() {
-        return this.writerOffset;
-    }
-
     public int getCount() {
         return this.count;
-    }
-
-    /**
-     * Ends the stream of written data and makes a copy of it to be passed around.
-     */
-    public void get(ByteBuffer dst) {
-        this.buffer.clear();
-        this.buffer.limit(this.writerOffset);
-
-        dst.put(this.buffer);
-
-        this.buffer.clear();
     }
 
     public void start() {
         this.writerOffset = 0;
         this.count = 0;
 
-        this.setBufferSize(capacity);
+        this.setBufferSize(this.initialCapacity);
     }
 
     public void destroy() {
@@ -111,8 +96,11 @@ public class VertexBufferBuilder implements VertexBufferView {
         this.buffer = null;
     }
 
-    private void setBuffer(ByteBuffer buf) {
-        this.buffer = buf;
-        this.capacity = buf.capacity();
+    public NativeBuffer pop() {
+        if (this.writerOffset == 0) {
+            return null;
+        }
+
+        return NativeBuffer.copy(MemoryUtil.memByteBuffer(MemoryUtil.memAddress(this.buffer), this.writerOffset));
     }
 }

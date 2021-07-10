@@ -17,10 +17,10 @@ import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.math.Vec3i;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A collection of temporary buffers for each worker thread which will be used to build chunk meshes for given render
@@ -91,46 +91,37 @@ public class ChunkBuildBuffers {
      * times to return multiple copies.
      */
     public ChunkMeshData createMesh(BlockRenderPass pass) {
-        VertexBufferBuilder vertexBufferBuilder = this.vertexBuffers[pass.ordinal()];
-        IndexBufferBuilder[] indexBufferBuilders = this.indexBuffers[pass.ordinal()];
+        NativeBuffer vertexBuffer = this.vertexBuffers[pass.ordinal()].pop();
 
-        int vertexDataLength = vertexBufferBuilder.getByteSize();
-
-        if (vertexDataLength == 0) {
+        if (vertexBuffer == null) {
             return null;
         }
 
-        int indexDataLength = Arrays.stream(indexBufferBuilders)
-                .mapToInt(IndexBufferBuilder::getSize)
-                .sum();
+        IndexBufferBuilder.Result[] indexBuffers = Arrays.stream(this.indexBuffers[pass.ordinal()])
+                .map(IndexBufferBuilder::pop)
+                .toArray(IndexBufferBuilder.Result[]::new);
 
-        NativeBuffer vertexBuffer = new NativeBuffer(vertexDataLength);
-        NativeBuffer indexBuffer = new NativeBuffer(indexDataLength);
+        NativeBuffer indexBuffer = new NativeBuffer(Arrays.stream(indexBuffers)
+                .filter(Objects::nonNull)
+                .mapToInt(IndexBufferBuilder.Result::getByteSize)
+                .sum());
 
-        ByteBuffer vertexBufferB = vertexBuffer.getDirectBuffer();
-        ByteBuffer indexBufferB = indexBuffer.getDirectBuffer();
-
-        int baseIndex = 0;
+        int indexPointer = 0;
 
         Map<ModelQuadFacing, ElementRange> ranges = new EnumMap<>(ModelQuadFacing.class);
 
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
-            IndexBufferBuilder indexBufferBuilder = indexBufferBuilders[facing.ordinal()];
+            IndexBufferBuilder.Result indices = indexBuffers[facing.ordinal()];
 
-            if (indexBufferBuilder.getCount() == 0) {
+            if (indices == null) {
                 continue;
             }
 
-            int indexCount = indexBufferBuilder.getCount();
+            ranges.put(facing,
+                    new ElementRange(indexPointer, indices.getCount(), indices.getFormat(), indices.getBaseVertex()));
 
-            ranges.put(facing, new ElementRange(baseIndex, indexCount));
-
-            indexBufferBuilder.get(indexBufferB);
-
-            baseIndex += indexCount;
+            indexPointer = indices.writeTo(indexPointer, indexBuffer.getDirectBuffer());
         }
-
-        vertexBufferBuilder.get(vertexBufferB);
 
         IndexedVertexData vertexData = new IndexedVertexData(this.vertexType.getCustomVertexFormat(),
                 vertexBuffer, indexBuffer);

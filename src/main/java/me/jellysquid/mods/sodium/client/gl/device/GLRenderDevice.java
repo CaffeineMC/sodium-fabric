@@ -3,10 +3,7 @@ package me.jellysquid.mods.sodium.client.gl.device;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.*;
 import me.jellysquid.mods.sodium.client.gl.state.GlStateTracker;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlVertexArrayTessellation;
-import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
+import me.jellysquid.mods.sodium.client.gl.tessellation.*;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.*;
 
@@ -173,9 +170,9 @@ public class GLRenderDevice implements RenderDevice {
         }
 
         @Override
-        public void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex) {
+        public void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex, GlIndexType indexType) {
             GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
-            GL32C.glMultiDrawElementsBaseVertex(primitiveType.getId(), count, GL20C.GL_UNSIGNED_INT, pointer, baseVertex);
+            GL32C.glMultiDrawElementsBaseVertex(primitiveType.getId(), count, indexType.getFormatId(), pointer, baseVertex);
         }
 
         @Override
