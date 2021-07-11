@@ -329,7 +329,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         if (this.client.hasOutline(entity) || entity.shouldRenderName()) {
             return true;
         }
-
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
     }
 
