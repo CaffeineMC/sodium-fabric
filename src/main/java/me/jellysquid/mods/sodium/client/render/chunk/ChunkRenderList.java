@@ -20,7 +20,7 @@ public class ChunkRenderList {
                 this.entries.reference2ObjectEntrySet();
 
         if (reverse) {
-            return () -> new Iterator<Map.Entry<RenderRegion, List<RenderSection>>>() {
+            return () -> new Iterator<>() {
                 final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, List<RenderSection>>> iterator =
                         entries.fastIterator(entries.last());
 
@@ -35,7 +35,7 @@ public class ChunkRenderList {
                 }
             };
         } else {
-            return () -> new Iterator<Map.Entry<RenderRegion, List<RenderSection>>>() {
+            return () -> new Iterator<>() {
                 final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, List<RenderSection>>> iterator =
                         entries.fastIterator();
 

@@ -25,8 +25,6 @@ public class SodiumOptionsStorage implements OptionStorage<SodiumGameOptions> {
             throw new RuntimeException("Couldn't save configuration changes", e);
         }
 
-        this.options.notifyListeners();
-
         SodiumClientMod.logger().info("Flushed changes to Sodium configuration");
     }
 }

@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 
-import java.util.Collections;
 import java.util.Map;
 
 public class ChunkMeshData {
@@ -17,7 +16,7 @@ public class ChunkMeshData {
     }
 
     public Map<ModelQuadFacing, ElementRange> getParts() {
-        return Collections.unmodifiableMap(this.parts);
+        return this.parts;
     }
 
     public IndexedVertexData getVertexData() {

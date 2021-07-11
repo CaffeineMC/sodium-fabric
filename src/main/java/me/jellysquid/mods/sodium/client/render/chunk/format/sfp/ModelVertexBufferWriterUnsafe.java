@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
+import org.lwjgl.system.MemoryUtil;
 
 public class ModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe implements ModelVertexSink {
     public ModelVertexBufferWriterUnsafe(VertexBufferView backingBuffer) {
@@ -11,23 +12,20 @@ public class ModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe impl
     }
 
     @Override
-    public void writeVertex(int offsetX, int offsetY, int offsetZ, float posX, float posY, float posZ, int color, float u, float v, int light) {
+    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId) {
         long i = this.writePointer;
 
-        UNSAFE.putByte(i, (byte) offsetX);
-        UNSAFE.putByte(i + 1, (byte) offsetY);
-        UNSAFE.putByte(i + 2, (byte) offsetZ);
+        MemoryUtil.memPutShort(i + 0, ModelVertexType.encodePosition(posX));
+        MemoryUtil.memPutShort(i + 2, ModelVertexType.encodePosition(posY));
+        MemoryUtil.memPutShort(i + 4, ModelVertexType.encodePosition(posZ));
+        MemoryUtil.memPutShort(i + 6, (short) chunkId);
 
-        UNSAFE.putShort(i + 4, ModelVertexType.encodePosition(posX));
-        UNSAFE.putShort(i + 6, ModelVertexType.encodePosition(posY));
-        UNSAFE.putShort(i + 8, ModelVertexType.encodePosition(posZ));
+        MemoryUtil.memPutInt(i + 8, color);
 
-        UNSAFE.putInt(i + 12, color);
+        MemoryUtil.memPutShort(i + 12, ModelVertexType.encodeBlockTexture(u));
+        MemoryUtil.memPutShort(i + 14, ModelVertexType.encodeBlockTexture(v));
 
-        UNSAFE.putShort(i + 16, ModelVertexType.encodeBlockTexture(u));
-        UNSAFE.putShort(i + 18, ModelVertexType.encodeBlockTexture(v));
-
-        UNSAFE.putInt(i + 20, ModelVertexType.encodeLightMapTexCoord(light));
+        MemoryUtil.memPutInt(i + 16, ModelVertexType.encodeLightMapTexCoord(light));
 
         this.advance();
     }

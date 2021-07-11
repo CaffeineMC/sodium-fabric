@@ -27,7 +27,7 @@ public abstract class MixinDebugHud {
 
     @Shadow
     @Final
-    private TextRenderer fontRenderer;
+    private TextRenderer textRenderer;
 
     private List<String> capturedList = null;
 
@@ -68,13 +68,13 @@ public abstract class MixinDebugHud {
 
             if (!Strings.isNullOrEmpty(string)) {
                 int height = 9;
-                int width = this.fontRenderer.getWidth(string);
+                int width = this.textRenderer.getWidth(string);
 
                 float x1 = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
                 float y1 = 2 + (height * i);
 
-                this.fontRenderer.draw(string, x1, y1, 0xe0e0e0, false, modelMatrix, immediate,
-                        false, 0, 15728880, this.fontRenderer.isRightToLeft());
+                this.textRenderer.draw(string, x1, y1, 0xe0e0e0, false, modelMatrix, immediate,
+                        false, 0, 15728880, this.textRenderer.isRightToLeft());
             }
         }
 
@@ -109,7 +109,7 @@ public abstract class MixinDebugHud {
             }
 
             int height = 9;
-            int width = this.fontRenderer.getWidth(string);
+            int width = this.textRenderer.getWidth(string);
 
             int x = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
             int y = 2 + height * i;

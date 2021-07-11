@@ -1,0 +1,76 @@
+name: Crash report
+description: Use this template if your game is crashing or failing to start correctly
+labels: crash
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        ## Instructions (read me before you open an issue!)
+
+
+        This is a template for the issue you are about to open! It will help you
+        provide the information necessary to complete your **crash report**.
+        Before you open an issue, ensure you've completed every step on the
+        checklist below.
+
+
+        - Have you used the [search
+        tool](https://github.com/CaffeineMC/sodium-fabric/issues) to find
+        similar issues? If you find one that looks like what you are getting,
+        consider contributing additional information to it instead. Make sure
+        you are not opening a duplicate.
+
+        - Are you using the latest version of the mod? If not, try updating to
+        see if it resolves your issue. You can find the latest versions of
+        CaffeineMC mods [here](https://caffeinemc.net).
+
+
+        All good? Then continue to fill the issue by providing the following
+        information about it:
+  - type: input
+    id: version
+    attributes:
+      label: Version information
+      description: >-
+        Please provide the exact version of the mod you are using. Every part of
+        the version is important! If you do not know what version you are using,
+        look at the file name in your `mods` folder.
+      placeholder: 'Example: mc1.16.4-0.1.1+rev.4b3964a'
+    validations:
+      required: true
+  - type: textarea
+    id: repro-steps
+    attributes:
+      label: Reproduction Steps
+      description: >-
+        Provide information on how to reproduce this game crash. You can either
+        fill this section in like the example below or do something else just
+        make sure your instructions are minimal and clear, as other people will
+        need to be able to replicate your issue.
+      placeholder: |
+        Example:
+        1. Place a Redstone Lamp in front of a Redstone Repeater
+        2. Use a Lever to activate the Redstone Repeater
+        3. The game crashes
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Crash Report file
+      description: >-
+        Upload your crash report file as an attachment to this issue (drag-and-drop) or to a service such as GitHub
+        Gist (paste a link) and replace this section. This information is critical in resolving your issue!
+        
+        Messages like "Exit code 0" from your launcher are not what you're looking for. If your launcher does not
+        provide a button to view the most recent crash report, check your game's `crash-reports` folder for the most recent
+        crash report file.
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional information
+      description: >-
+        Provide any additional information or context which may be relevant to
+        the issue. If you have none to add,  you can leave this section blank.
