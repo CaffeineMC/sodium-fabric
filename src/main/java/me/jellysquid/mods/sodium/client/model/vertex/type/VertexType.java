@@ -13,6 +13,7 @@ public interface VertexType<T extends VertexSink> {
      * Creates a {@link VertexSink} which can write into any {@link VertexConsumer}. This is generally used when
      * a special implementation of {@link VertexConsumer} is used that cannot be optimized for, or when
      * complex/unsupported transformations need to be performed using vanilla code paths.
+     *
      * @param consumer The {@link VertexConsumer} to write into
      */
     T createFallbackWriter(VertexConsumer consumer);

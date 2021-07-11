@@ -1,9 +1,9 @@
 package me.jellysquid.mods.sodium.client.model.vertex.transformers;
 
 import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.glyph.GlyphVertexSink;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.particle.ParticleVertexSink;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
+import me.jellysquid.mods.sodium.client.model.vertex.formats.GlyphVertexSink;
+import me.jellysquid.mods.sodium.client.model.vertex.formats.ParticleVertexSink;
+import me.jellysquid.mods.sodium.client.model.vertex.formats.ModelQuadVertexSink;
 import net.minecraft.client.texture.Sprite;
 
 /**
@@ -36,8 +36,8 @@ public abstract class SpriteTexturedVertexTransformer<T extends VertexSink> exte
         return (this.vMaxMin * v) + this.vMin;
     }
 
-    public static class Quad extends SpriteTexturedVertexTransformer<QuadVertexSink> implements QuadVertexSink {
-        public Quad(QuadVertexSink delegate, Sprite sprite) {
+    public static class ModelQuad extends SpriteTexturedVertexTransformer<ModelQuadVertexSink> implements ModelQuadVertexSink {
+        public ModelQuad(ModelQuadVertexSink delegate, Sprite sprite) {
             super(delegate, sprite);
         }
 

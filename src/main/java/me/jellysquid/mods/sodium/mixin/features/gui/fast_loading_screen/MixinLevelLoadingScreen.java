@@ -5,7 +5,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.screen_quad.BasicScreenQuadVertexSink;
+import me.jellysquid.mods.sodium.client.model.vertex.formats.generic.PositionColorSink;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import net.minecraft.client.gui.WorldGenerationProgressTracker;
@@ -63,7 +63,7 @@ public class MixinLevelLoadingScreen {
         BufferBuilder buffer = tessellator.getBuffer();
         buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
-        BasicScreenQuadVertexSink sink = VertexDrain.of(buffer).createSink(VanillaVertexTypes.BASIC_SCREEN_QUADS);
+        PositionColorSink sink = VertexDrain.of(buffer).createSink(VanillaVertexTypes.POSITION_COLOR);
 
         int centerSize = tracker.getCenterSize();
         int size = tracker.getSize();
@@ -118,7 +118,7 @@ public class MixinLevelLoadingScreen {
         RenderSystem.disableBlend();
     }
 
-    private static void addRect(Matrix4f matrix, BasicScreenQuadVertexSink sink, int x1, int y1, int x2, int y2, int color) {
+    private static void addRect(Matrix4f matrix, PositionColorSink sink, int x1, int y1, int x2, int y2, int color) {
         sink.writeQuad(matrix, x1, y2, 0, color);
         sink.writeQuad(matrix, x2, y2, 0, color);
         sink.writeQuad(matrix, x2, y1, 0, color);

@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Matrix3f;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vec3i;
 
 @SuppressWarnings("ConstantConditions")
 public class MatrixUtil {
@@ -19,17 +20,17 @@ public class MatrixUtil {
         return (Matrix3fExtended) (Object) matrix;
     }
 
-    public static int transformPackedNormal(int norm, Matrix3f matrix) {
+    public static int transformNormalVector(Vec3i vector, Matrix3f matrix) {
         Matrix3fExtended mat = MatrixUtil.getExtendedMatrix(matrix);
 
-        float normX1 = Norm3b.unpackX(norm);
-        float normY1 = Norm3b.unpackY(norm);
-        float normZ1 = Norm3b.unpackZ(norm);
+        float x = vector.getX();
+        float y = vector.getY();
+        float z = vector.getZ();
 
-        float normX2 = mat.transformVecX(normX1, normY1, normZ1);
-        float normY2 = mat.transformVecY(normX1, normY1, normZ1);
-        float normZ2 = mat.transformVecZ(normX1, normY1, normZ1);
-
-        return Norm3b.pack(normX2, normY2, normZ2);
+        return Norm3b.pack(
+                mat.transformVecX(x, y, z),
+                mat.transformVecY(x, y, z),
+                mat.transformVecZ(x, y, z)
+        );
     }
 }

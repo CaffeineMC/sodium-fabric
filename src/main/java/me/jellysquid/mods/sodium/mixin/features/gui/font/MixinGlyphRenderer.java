@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.gui.font;
 
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.glyph.GlyphVertexSink;
+import me.jellysquid.mods.sodium.client.model.vertex.formats.GlyphVertexSink;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.font.GlyphRenderer;
 import net.minecraft.client.render.VertexConsumer;

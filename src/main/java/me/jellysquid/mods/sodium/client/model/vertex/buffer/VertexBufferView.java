@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 public interface VertexBufferView {
     /**
      * Ensures there is capacity in the buffer for the given number of bytes.
+     *
      * @param bytes The number of bytes to allocate space for
      * @return True if the buffer was resized, otherwise false
      */
@@ -31,8 +32,9 @@ public interface VertexBufferView {
     /**
      * Flushes the given number of vertices to this buffer. This ensures that all constraints are still valid, and if
      * so, advances the vertex counter and writer pointer to the end of the data that was written by the caller.
-     *  @param vertexCount The number of vertices to flush
-     * @param format The format of each vertex
+     *
+     * @param vertexCount The number of vertices to flush
+     * @param format      The format of each vertex
      */
     void flush(int vertexCount, BufferVertexFormat format);
 

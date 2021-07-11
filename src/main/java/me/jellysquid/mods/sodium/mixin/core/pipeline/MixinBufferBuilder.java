@@ -2,14 +2,17 @@ package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.attribute.BufferVertexFormat;
+import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.type.BlittableVertexType;
 import me.jellysquid.mods.sodium.client.model.vertex.type.VertexType;
+import me.jellysquid.mods.sodium.client.render.ModelQuadOverlayAdapter;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.GlAllocationUtils;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Final;
@@ -90,12 +93,20 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
         this.elementOffset += vertexCount * format.getStride();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T extends VertexSink> T createSink(VertexType<T> factory) {
         BlittableVertexType<T> blittable = factory.asBlittable();
 
-        if (blittable != null && blittable.getBufferVertexFormat() == this.getVertexFormat())  {
-            return blittable.createBufferWriter(this, SodiumClientMod.isDirectMemoryAccessEnabled());
+        if (blittable != null) {
+            if (blittable.getBufferVertexFormat() == this.getVertexFormat()) {
+                return blittable.createBufferWriter(this, SodiumClientMod.isDirectMemoryAccessEnabled());
+            } else if (factory == VanillaVertexTypes.QUADS) {
+                if (this.format == VertexFormats.POSITION_TEXTURE) {
+                    return (T) new ModelQuadOverlayAdapter(VanillaVertexTypes.POSITION_TEXTURE.asBlittable()
+                            .createBufferWriter(this));
+                }
+            }
         }
 
         return factory.createFallbackWriter((VertexConsumer) this);

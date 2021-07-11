@@ -26,7 +26,7 @@ public abstract class MixinSpriteTexturedVertexConsumer implements VertexDrain {
     @Override
     public <T extends VertexSink> T createSink(VertexType<T> type) {
         if (type == VanillaVertexTypes.QUADS) {
-            return (T) new SpriteTexturedVertexTransformer.Quad(VertexDrain.of(this.parent)
+            return (T) new SpriteTexturedVertexTransformer.ModelQuad(VertexDrain.of(this.parent)
                     .createSink(VanillaVertexTypes.QUADS), this.sprite);
         } else if (type == VanillaVertexTypes.PARTICLES) {
             return (T) new SpriteTexturedVertexTransformer.Particle(VertexDrain.of(this.parent)
