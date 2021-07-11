@@ -44,6 +44,10 @@ public class BlockOcclusionCache {
                 return false;
             }
 
+            if (selfShape.isEmpty()) {
+                return true;
+            }
+
             return this.calculate(selfShape, adjShape);
         } else {
             return true;
