@@ -336,13 +336,18 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             return true;
         }
 
-        int minX = MathHelper.floor(box.minX - 0.5D) >> 4;
-        int minY = MathHelper.floor(box.minY - 0.5D) >> 4;
-        int minZ = MathHelper.floor(box.minZ - 0.5D) >> 4;
+        return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+    }
 
-        int maxX = MathHelper.floor(box.maxX + 0.5D) >> 4;
-        int maxY = MathHelper.floor(box.maxY + 0.5D) >> 4;
-        int maxZ = MathHelper.floor(box.maxZ + 0.5D) >> 4;
+
+    public boolean isBoxVisible(double x1, double y1, double z1, double x2, double y2, double z2) {
+        int minX = MathHelper.floor(x1 - 0.5D) >> 4;
+        int minY = MathHelper.floor(y1 - 0.5D) >> 4;
+        int minZ = MathHelper.floor(z1 - 0.5D) >> 4;
+
+        int maxX = MathHelper.floor(x2 + 0.5D) >> 4;
+        int maxY = MathHelper.floor(y2 + 0.5D) >> 4;
+        int maxZ = MathHelper.floor(z2 + 0.5D) >> 4;
 
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
