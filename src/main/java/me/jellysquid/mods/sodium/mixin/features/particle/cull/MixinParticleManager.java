@@ -30,20 +30,12 @@ public class MixinParticleManager {
     private Map<ParticleTextureSheet, Queue<Particle>> particles;
 
     private final Queue<Particle> cachedQueue = new ArrayDeque<>();
-
-    private Frustum cullingFrustum;
+    private boolean useCulling;
 
     @Inject(method = "renderParticles", at = @At("HEAD"))
     private void preRenderParticles(MatrixStack matrixStack, VertexConsumerProvider.Immediate immediate, LightmapTextureManager lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
-        Frustum frustum = SodiumWorldRenderer.getInstance().getFrustum();
-        boolean useCulling = SodiumClientMod.options().advanced.useParticleCulling;
-
         // Setup the frustum state before rendering particles
-        if (useCulling && frustum != null) {
-            this.cullingFrustum = frustum;
-        } else {
-            this.cullingFrustum = null;
-        }
+        this.useCulling = SodiumClientMod.options().advanced.useParticleCulling;
     }
 
     @SuppressWarnings({ "SuspiciousMethodCalls", "unchecked" })
@@ -55,8 +47,8 @@ public class MixinParticleManager {
             return null;
         }
 
-        // If the frustum isn't available (whether disabled or some other issue arose), simply return the queue as-is
-        if (this.cullingFrustum == null) {
+        // If culling isn't enabled, simply return the queue as-is
+        if (!this.useCulling) {
             return (V) queue;
         }
 
@@ -64,13 +56,17 @@ public class MixinParticleManager {
         Queue<Particle> filtered = this.cachedQueue;
         filtered.clear();
 
+        SodiumWorldRenderer worldRenderer = SodiumWorldRenderer.getInstance();
+
         for (Particle particle : queue) {
             Box box = particle.getBoundingBox();
 
             // Hack: Grow the particle's bounding box in order to work around mis-behaved particles
-            if (this.cullingFrustum.isVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
-                filtered.add(particle);
+            if (!worldRenderer.isBoxVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
+                continue;
             }
+
+            filtered.add(particle);
         }
 
         return (V) filtered;
