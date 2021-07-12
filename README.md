@@ -93,7 +93,7 @@ projects. The basic overview is provided here for those familiar.
 
 - JRE 8 or 16 (1.17 and up) or newer (for running Gradle)
 - JDK 8 or 16 (1.17 and up, optional)
-  - If you neither have JDK 16 available on your shell's path or installed through a supported package manager (such as
+  - If you neither have JDK 8 and up available on your shell's path or installed through a supported package manager (such as
 [SDKMAN](https://sdkman.io)), Gradle will automatically download a suitable toolchain from the [AdoptOpenJDK project](https://adoptopenjdk.net/)
 and use it to compile the project. For more information on what package managers are supported and how you can
 customize this behavior on a system-wide level, please see [Gradle's Toolchain user guide](https://docs.gradle.org/current/userguide/toolchains.html).
