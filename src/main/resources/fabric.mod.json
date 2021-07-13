@@ -17,6 +17,9 @@
   "entrypoints": {
     "client": [
       "me.jellysquid.mods.sodium.client.SodiumClientMod"
+    ],
+    "preLaunch": [
+      "me.jellysquid.mods.sodium.client.SodiumPreLaunch"
     ]
   },
   "custom": {
