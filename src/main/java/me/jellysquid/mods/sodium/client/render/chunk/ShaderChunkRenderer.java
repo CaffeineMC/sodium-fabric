@@ -51,34 +51,28 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
 
     // TODO: Define these in the render pass itself
     protected String getShaderName(BlockRenderPass pass) {
-        switch (pass) {
-            case CUTOUT:
-                return "blocks/block_layer_cutout";
-            case CUTOUT_MIPPED:
-                return "blocks/block_layer_cutout_mipped";
-            case TRANSLUCENT:
-            case TRIPWIRE:
-                return "blocks/block_layer_translucent";
-            default:
-                return "blocks/block_layer_solid";
-        }
+        return switch (pass) {
+            case CUTOUT -> "blocks/block_layer_cutout";
+            case CUTOUT_MIPPED -> "blocks/block_layer_cutout_mipped";
+            case TRANSLUCENT, TRIPWIRE -> "blocks/block_layer_translucent";
+            default -> "blocks/block_layer_solid";
+        };
     }
 
     private ChunkProgram createShader(RenderDevice device, String path, ChunkShaderOptions options) {
         ShaderConstants constants = options.constants();
 
-        GlShader vertShader = ShaderLoader.loadShader(device, ShaderType.VERTEX,
+        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX,
                 new Identifier("sodium", path + ".vsh"), constants);
         
-        GlShader fragShader = ShaderLoader.loadShader(device, ShaderType.FRAGMENT,
+        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT,
                 new Identifier("sodium", path + ".fsh"), constants);
 
         try {
             return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
                     .attachShader(vertShader)
                     .attachShader(fragShader)
-                    .bindAttribute("a_Origin", ChunkShaderBindingPoints.ATTRIBUTE_ORIGIN)
-                    .bindAttribute("a_Pos", ChunkShaderBindingPoints.ATTRIBUTE_POSITION)
+                    .bindAttribute("a_Pos", ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID)
                     .bindAttribute("a_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
                     .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE)
                     .bindAttribute("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
@@ -91,8 +85,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     }
 
     protected void begin(BlockRenderPass pass, MatrixStack matrixStack) {
-        ChunkShaderOptions options = new ChunkShaderOptions();
-        options.fogMode = ChunkFogMode.SMOOTH;
+        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH);
 
         this.activeProgram = this.compileProgram(pass, options);
         this.activeProgram.bind();

@@ -44,6 +44,10 @@ public class BlockOcclusionCache {
                 return false;
             }
 
+            if (selfShape.isEmpty()) {
+                return true;
+            }
+
             return this.calculate(selfShape, adjShape);
         } else {
             return true;
@@ -100,9 +104,7 @@ public class BlockOcclusionCache {
 
         @Override
         public boolean equals(Object o) {
-            if (o instanceof CachedOcclusionShapeTest) {
-                CachedOcclusionShapeTest that = (CachedOcclusionShapeTest) o;
-
+            if (o instanceof CachedOcclusionShapeTest that) {
                 return this.a == that.a &&
                         this.b == that.b;
             }

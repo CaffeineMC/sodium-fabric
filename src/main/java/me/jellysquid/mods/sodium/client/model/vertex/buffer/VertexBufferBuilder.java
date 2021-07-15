@@ -1,12 +1,14 @@
 package me.jellysquid.mods.sodium.client.model.vertex.buffer;
 
 import me.jellysquid.mods.sodium.client.gl.attribute.BufferVertexFormat;
-import net.minecraft.client.util.GlAllocationUtils;
+import me.jellysquid.mods.sodium.client.util.NativeBuffer;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
 public class VertexBufferBuilder implements VertexBufferView {
     private final BufferVertexFormat vertexFormat;
+    private final int initialCapacity;
 
     private ByteBuffer buffer;
     private int writerOffset;
@@ -16,22 +18,22 @@ public class VertexBufferBuilder implements VertexBufferView {
     public VertexBufferBuilder(BufferVertexFormat vertexFormat, int initialCapacity) {
         this.vertexFormat = vertexFormat;
 
-        this.buffer = GlAllocationUtils.allocateByteBuffer(initialCapacity);
+        this.buffer = null;
         this.capacity = initialCapacity;
         this.writerOffset = 0;
+        this.initialCapacity = initialCapacity;
     }
 
     private void grow(int len) {
         // The new capacity will at least as large as the write it needs to service
         int cap = Math.max(this.capacity * 2, this.capacity + len);
 
-        // Allocate a new buffer and copy the old buffer's contents into it
-        ByteBuffer buffer = GlAllocationUtils.allocateByteBuffer(cap);
-        buffer.put(this.buffer);
-        buffer.position(0);
-
         // Update the buffer and capacity now
-        this.buffer = buffer;
+        this.setBufferSize(cap);
+    }
+
+    private void setBufferSize(int cap) {
+        this.buffer = MemoryUtil.memRealloc(this.buffer, cap);
         this.capacity = cap;
     }
 
@@ -75,28 +77,30 @@ public class VertexBufferBuilder implements VertexBufferView {
         return this.count <= 0;
     }
 
-    public int getByteSize() {
-        return this.writerOffset;
-    }
-
     public int getCount() {
         return this.count;
     }
 
-    /**
-     * Ends the stream of written data and makes a copy of it to be passed around.
-     */
-    public void get(ByteBuffer dst) {
-        this.buffer.clear();
-        this.buffer.limit(this.writerOffset);
-
-        dst.put(this.buffer);
-
-        this.buffer.clear();
-    }
-
-    public void reset() {
+    public void start() {
         this.writerOffset = 0;
         this.count = 0;
+
+        this.setBufferSize(this.initialCapacity);
+    }
+
+    public void destroy() {
+        if (this.buffer != null) {
+            MemoryUtil.memFree(this.buffer);
+        }
+
+        this.buffer = null;
+    }
+
+    public NativeBuffer pop() {
+        if (this.writerOffset == 0) {
+            return null;
+        }
+
+        return NativeBuffer.copy(MemoryUtil.memByteBuffer(MemoryUtil.memAddress(this.buffer), this.writerOffset));
     }
 }

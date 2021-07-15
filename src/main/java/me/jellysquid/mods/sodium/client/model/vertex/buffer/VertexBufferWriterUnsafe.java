@@ -1,9 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.vertex.buffer;
 
 import me.jellysquid.mods.sodium.client.model.vertex.type.BufferVertexType;
-import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import org.lwjgl.system.MemoryUtil;
-import sun.misc.Unsafe;
 
 /**
  * An unsafe {@link VertexBufferWriter} implementation which uses direct memory operations to enable fast blitting of
@@ -12,8 +10,6 @@ import sun.misc.Unsafe;
  * meaning that errors can corrupt process memory.
  */
 public abstract class VertexBufferWriterUnsafe extends VertexBufferWriter {
-    protected static final Unsafe UNSAFE = UnsafeUtil.instanceNullable();
-
     /**
      * The write pointer into the buffer storage. This is advanced by the vertex stride every time
      * {@link VertexBufferWriterUnsafe#advance()} is called.

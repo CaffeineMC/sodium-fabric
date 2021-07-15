@@ -5,15 +5,14 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManag
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
+import me.jellysquid.mods.sodium.common.util.collections.QueueDrainingIterator;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,6 +38,8 @@ public class ChunkBuilder {
     private final int limitThreads;
     private final ChunkVertexType vertexType;
 
+    private final Queue<ChunkBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
+
     public ChunkBuilder(ChunkVertexType vertexType) {
         this.vertexType = vertexType;
         this.limitThreads = getOptimalThreadCount();
@@ -49,7 +50,7 @@ public class ChunkBuilder {
      * spawn more tasks than the budget allows, it will block until resources become available.
      */
     public int getSchedulingBudget() {
-        return Math.max(0, (this.limitThreads * TASK_QUEUE_LIMIT_PER_WORKER) - this.buildQueue.size());
+        return Math.max(0, (this.limitThreads * TASK_QUEUE_LIMIT_PER_WORKER) - this.buildQueue.size() - this.deferredResultQueue.size());
     }
 
     /**
@@ -114,8 +115,16 @@ public class ChunkBuilder {
 
         this.threads.clear();
 
+        // Delete any queued tasks and resources attached to them
         for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
+            job.task.releaseResources();
+        }
+
+        // Delete any results in the deferred queue
+        while (!this.deferredResultQueue.isEmpty()) {
+            this.deferredResultQueue.remove()
+                    .delete();
         }
 
         this.buildQueue.clear();
@@ -174,6 +183,15 @@ public class ChunkBuilder {
         return Math.max(1, Runtime.getRuntime().availableProcessors());
     }
 
+    public CompletableFuture<Void> scheduleDeferred(ChunkRenderBuildTask task) {
+        return this.schedule(task)
+                .thenAccept(this.deferredResultQueue::add);
+    }
+
+    public Iterator<ChunkBuildResult> createDeferredBuildResultDrain() {
+        return new QueueDrainingIterator<>(this.deferredResultQueue);
+    }
+
     private class WorkerRunnable implements Runnable {
         private final AtomicBoolean running = ChunkBuilder.this.running;
 
@@ -195,32 +213,41 @@ public class ChunkBuilder {
             while (this.running.get()) {
                 WrappedTask job = this.getNextJob();
 
-                // If the job is null or no longer valid, keep searching for a task
-                if (job == null || job.isCancelled()) {
+                if (job == null) {
                     continue;
                 }
 
-                ChunkBuildResult result;
+                this.processJob(job);
+            }
 
-                try {
-                    // Perform the build task with this worker's local resources and obtain the result
-                    result = job.task.performBuild(this.cache, this.bufferCache, job);
-                } catch (Exception e) {
-                    // Propagate any exception from chunk building
-                    job.future.completeExceptionally(e);
-                    continue;
-                } finally {
-                    job.task.releaseResources();
+            this.bufferCache.destroy();
+        }
+
+        private void processJob(WrappedTask job) {
+            ChunkBuildResult result;
+
+            try {
+                if (job.isCancelled()) {
+                    return;
                 }
 
-                // The result can be null if the task is cancelled
-                if (result != null) {
-                    // Notify the future that the result is now available
-                    job.future.complete(result);
-                } else if (!job.isCancelled()) {
-                    // If the job wasn't cancelled and no result was produced, we've hit a bug
-                    job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
-                }
+                // Perform the build task with this worker's local resources and obtain the result
+                result = job.task.performBuild(this.cache, this.bufferCache, job);
+            } catch (Exception e) {
+                // Propagate any exception from chunk building
+                job.future.completeExceptionally(e);
+                return;
+            } finally {
+                job.task.releaseResources();
+            }
+
+            // The result can be null if the task is cancelled
+            if (result != null) {
+                // Notify the future that the result is now available
+                job.future.complete(result);
+            } else if (!job.isCancelled()) {
+                // If the job wasn't cancelled and no result was produced, we've hit a bug
+                job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
             }
         }
 

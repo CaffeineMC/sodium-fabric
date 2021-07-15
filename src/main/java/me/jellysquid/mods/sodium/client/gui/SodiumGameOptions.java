@@ -12,7 +12,6 @@ import net.minecraft.text.TranslatableText;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -23,10 +22,6 @@ public class SodiumGameOptions {
 
     private Path configPath;
 
-    public void notifyListeners() {
-        SodiumClientMod.onConfigChanged(this);
-    }
-
     public static class AdvancedSettings {
         public boolean animateOnlyVisibleTextures = true;
         public boolean useEntityCulling = true;
@@ -34,6 +29,7 @@ public class SodiumGameOptions {
         public boolean useFogOcclusion = true;
         public boolean useBlockFaceCulling = true;
         public boolean allowDirectMemoryAccess = true;
+        public boolean enableMemoryTracing = false;
     }
 
     public static class QualitySettings {
@@ -108,7 +104,6 @@ public class SodiumGameOptions {
             throw new IOException("Not a directory: " + dir);
         }
 
-        Files.write(this.configPath, GSON.toJson(this)
-                .getBytes(StandardCharsets.UTF_8));
+        Files.writeString(this.configPath, GSON.toJson(this));
     }
 }

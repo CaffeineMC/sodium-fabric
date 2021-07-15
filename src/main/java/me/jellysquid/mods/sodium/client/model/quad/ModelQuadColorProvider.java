@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.model.quad;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.state.State;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
 import org.jetbrains.annotations.Nullable;

@@ -17,7 +17,7 @@ public class GlVertexAttribute {
      * @param pointer The offset to the first component in the attribute
      */
     public GlVertexAttribute(GlVertexAttributeFormat format, int count, boolean normalized, int pointer, int stride) {
-        this(format.getGlFormat(), format.getSize() * count, count, normalized, pointer, stride);
+        this(format.typeId(), format.size() * count, count, normalized, pointer, stride);
     }
 
     protected GlVertexAttribute(int format, int size, int count, boolean normalized, int pointer, int stride) {

@@ -210,7 +210,7 @@ public class SodiumOptionsGUI extends Screen {
 
         int boxWidth = 200;
 
-        int boxY = dim.getOriginY();
+        int boxY = dim.y();
         int boxX = dim.getLimitX() + boxPadding;
 
         Option<?> option = element.getOption();

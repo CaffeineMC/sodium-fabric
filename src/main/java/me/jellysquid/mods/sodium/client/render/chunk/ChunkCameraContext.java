@@ -10,17 +10,14 @@ public class ChunkCameraContext {
         this.blockY = (int) y;
         this.blockZ = (int) z;
 
-        this.deltaX = (float) (x - this.blockX);
-        this.deltaY = (float) (y - this.blockY);
-        this.deltaZ = (float) (z - this.blockZ);
-        
+        // Reduce camera delta precision to 14 bits to avoid seams along chunk/region boundaries
+        this.deltaX = (float) Math.round((x - this.blockX) * 0x1p14f) * 0x1p-14f;
+        this.deltaY = (float) Math.round((y - this.blockY) * 0x1p14f) * 0x1p-14f;
+        this.deltaZ = (float) Math.round((z - this.blockZ) * 0x1p14f) * 0x1p-14f;
+
         this.posX = (float) x;
         this.posY = (float) y;
         this.posZ = (float) z;
     }
 
-    public float getChunkModelOffset(int chunkBlockPos, int cameraBlockPos, float cameraPos) {
-        int t = chunkBlockPos - cameraBlockPos;
-        return t - cameraPos;
-    }
 }

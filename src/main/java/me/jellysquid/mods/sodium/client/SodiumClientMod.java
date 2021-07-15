@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client;
 
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
-import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -42,14 +41,7 @@ public class SodiumClientMod implements ClientModInitializer {
     }
 
     private static SodiumGameOptions loadConfig() {
-        SodiumGameOptions config = SodiumGameOptions.load(FabricLoader.getInstance().getConfigDir().resolve("sodium-options.json"));
-        onConfigChanged(config);
-
-        return config;
-    }
-
-    public static void onConfigChanged(SodiumGameOptions options) {
-        UnsafeUtil.setEnabled(options.advanced.allowDirectMemoryAccess);
+        return SodiumGameOptions.load(FabricLoader.getInstance().getConfigDir().resolve("sodium-options.json"));
     }
 
     public static String getVersion() {
@@ -58,5 +50,9 @@ public class SodiumClientMod implements ClientModInitializer {
         }
 
         return MOD_VERSION;
+    }
+
+    public static boolean isDirectMemoryAccessEnabled() {
+        return options().advanced.allowDirectMemoryAccess;
     }
 }
