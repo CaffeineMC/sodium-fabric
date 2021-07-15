@@ -43,6 +43,8 @@
   "sodium.options.animate_only_visible_textures.tooltip": "If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame rates on some hardware, especially with heavier resource packs. If you experience issues with some textures not being animated, try disabling this option.",
   "sodium.options.allow_direct_memory_access.name": "Allow Direct Memory Access",
   "sodium.options.allow_direct_memory_access.tooltip": "If enabled, some critical code paths will be allowed to use direct memory access for performance. This often greatly reduces CPU overhead for chunk and entity rendering, but can make it harder to diagnose some bugs and crashes. You should only disable this if you've been asked to or otherwise know what you're doing.",
+  "sodium.options.enable_memory_tracing.name": "Enable Memory Tracing",
+  "sodium.options.enable_memory_tracing.tooltip": "Debugging feature. If enabled, stack traces will be collected alongside memory allocations to help improve diagnostic information when memory leaks are detected.",
   "sodium.options.performance_impact_string": "Performance Impact: %s",
   "sodium.options.buttons.undo": "Undo",
   "sodium.options.buttons.apply": "Apply",

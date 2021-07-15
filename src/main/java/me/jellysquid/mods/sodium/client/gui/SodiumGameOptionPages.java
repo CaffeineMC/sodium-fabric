@@ -279,9 +279,8 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName("Enable Memory Tracing")
-                        .setTooltip("Debugging feature. If enabled, stack traces will be collected alongside memory allocations to help " +
-                                "improve diagnostic information when memory leaks are detected.")
+                        .setName(new TranslatableText("sodium.options.enable_memory_tracing.name"))
+                        .setTooltip(new TranslatableText("sodium.options.enable_memory_tracing.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.LOW)
                         .setBinding((opts, value) -> opts.advanced.enableMemoryTracing = value, opts -> opts.advanced.enableMemoryTracing)
