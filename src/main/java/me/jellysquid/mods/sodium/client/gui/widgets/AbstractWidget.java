@@ -11,6 +11,8 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.StringVisitable;
+import net.minecraft.text.Text;
 
 import java.util.function.Consumer;
 
@@ -23,6 +25,10 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
 
     protected void drawString(MatrixStack matrixStack, String str, int x, int y, int color) {
         this.font.draw(matrixStack, str, x, y, color);
+    }
+
+    protected void drawString(MatrixStack matrixStack, Text text, int x, int y, int color) {
+        this.font.draw(matrixStack, text, x, y, color);
     }
 
     protected void drawRect(double x1, double y1, double x2, double y2, int color) {
@@ -66,6 +72,10 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
     }
 
     protected int getStringWidth(String text) {
+        return this.font.getWidth(text);
+    }
+
+    protected int getStringWidth(StringVisitable text) {
         return this.font.getWidth(text);
     }
 
