@@ -8,7 +8,7 @@ public interface ControlValueFormatter {
     }
 
     static ControlValueFormatter fpsLimit() {
-        return (v) -> (v == 260) ? new TranslatableText("options.framerateLimit.max").getString() : v + " FPS";
+        return (v) -> (v == 260) ? new TranslatableText("options.framerateLimit.max").getString() : new TranslatableText("options.framerate", v).getString();
     }
 
     static ControlValueFormatter brightness() {
@@ -23,6 +23,14 @@ public interface ControlValueFormatter {
         };
     }
 
+    static ControlValueFormatter chunks(){
+        return (v) -> new TranslatableText("options.chunks", v).getString();
+    }
+
+    static ControlValueFormatter biomeBlend() {
+        return (v) -> (v == 0) ? new TranslatableText("gui.none").getString() : new TranslatableText("sodium.options.biome_blend.value", v).getString();
+    }
+
     String format(int value);
 
     static ControlValueFormatter percentage() {
@@ -31,14 +39,6 @@ public interface ControlValueFormatter {
 
     static ControlValueFormatter multiplier() {
         return (v) -> v + "x";
-    }
-
-    static ControlValueFormatter quantity(String name) {
-        return (v) -> v + " " + name;
-    }
-
-    static ControlValueFormatter quantityOrDisabled(String name, String disableText) {
-        return (v) -> v == 0 ? disableText : v + " " + name;
     }
 
     static ControlValueFormatter number() {
