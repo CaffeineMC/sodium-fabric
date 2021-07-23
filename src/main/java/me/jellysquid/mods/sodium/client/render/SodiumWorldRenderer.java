@@ -420,4 +420,8 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private static long toMib(long x) {
         return x / 1024L / 1024L;
     }
+
+    public RenderSectionManager getRenderSectionManager() {
+        return this.renderSectionManager;
+    }
 }
