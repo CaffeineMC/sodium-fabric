@@ -2,7 +2,10 @@
 
 // STRUCTS
 struct DrawParameters {
-    vec3 Offset;
+    // Older AMD drivers can't handle vec3 in std140 layouts correctly
+    // The alignment requirement is 16 bytes (4 float components) anyways, so we're not wasting extra memory with this,
+    // only fixing broken drivers.
+    vec4 Offset;
 };
 
 // INPUTS
@@ -34,9 +37,13 @@ out vec2 v_LightCoord;
 out float v_FragDistance;
 #endif
 
+vec3 getChunkOffset() {
+    return Chunks[int(a_Pos.w)].Offset.xyz;
+}
+
 vec3 getVertexPosition() {
     vec3 vertexPosition = a_Pos.xyz * u_ModelScale + u_ModelOffset;
-    vec3 chunkOffset = Chunks[int(a_Pos.w)].Offset;
+    vec3 chunkOffset = getChunkOffset();
 
     return chunkOffset + vertexPosition + u_CameraTranslation;
 }
