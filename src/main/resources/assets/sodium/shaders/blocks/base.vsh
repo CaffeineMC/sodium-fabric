@@ -37,13 +37,9 @@ out vec2 v_LightCoord;
 out float v_FragDistance;
 #endif
 
-vec3 getChunkOffset() {
-    return Chunks[int(a_Pos.w)].Offset.xyz;
-}
-
 vec3 getVertexPosition() {
     vec3 vertexPosition = a_Pos.xyz * u_ModelScale + u_ModelOffset;
-    vec3 chunkOffset = getChunkOffset();
+    vec3 chunkOffset = Chunks[int(a_Pos.w)].Offset.xyz; // AMD drivers also need this manually inlined
 
     return chunkOffset + vertexPosition + u_CameraTranslation;
 }
