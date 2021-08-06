@@ -325,6 +325,11 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             return true;
         }
 
+        // Ensure entities with outlines or nametags are always visible
+        if (this.client.hasOutline(entity) || entity.shouldRenderName()) {
+            return true;
+        }
+
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
     }
 
