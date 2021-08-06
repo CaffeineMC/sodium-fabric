@@ -9,7 +9,6 @@
   "sodium.options.pages.advanced": "Advanced",
   "sodium.options.view_distance.tooltip": "The render distance controls how far away terrain will be rendered. Lower distances mean that less terrain will be rendered, improving frame rates.",
   "sodium.options.brightness.tooltip": "Controls the brightness (gamma) of the game.",
-  "sodium.options.clouds.tooltip": "Controls whether or not clouds will be visible.",
   "sodium.options.gui_scale.tooltip": "Sets the maximum scale factor to be used for the user interface. If 'auto' is used, then the largest scale factor will always be used.",
   "sodium.options.fullscreen.tooltip": "If enabled, the game will display in full-screen (if supported).",
   "sodium.options.v_sync.name": "V-Sync",
