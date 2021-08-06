@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import com.google.common.collect.Lists;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
@@ -135,30 +136,39 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             int baseVertex = (int) state.getVertexSegment()
                     .getOffset();
 
-            this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
+            if (SodiumClientMod.options().advanced.useBlockFaceCulling) {
 
-            if (camera.posY > bounds.y1) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
+                this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
+
+                if (camera.posY > bounds.y1) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
+                }
+
+                if (camera.posY < bounds.y2) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.DOWN), indexOffset, baseVertex);
+                }
+
+                if (camera.posX > bounds.x1) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.EAST), indexOffset, baseVertex);
+                }
+
+                if (camera.posX < bounds.x2) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.WEST), indexOffset, baseVertex);
+                }
+
+                if (camera.posZ > bounds.z1) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
+                }
+
+                if (camera.posZ < bounds.z2) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.NORTH), indexOffset, baseVertex);
+                }
             }
+            else {
+                for (ModelQuadFacing modelFace : ModelQuadFacing.values()){
+                    this.addDrawCall(state.getModelPart(modelFace), indexOffset, baseVertex);
+                }
 
-            if (camera.posY < bounds.y2) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.DOWN), indexOffset, baseVertex);
-            }
-
-            if (camera.posX > bounds.x1) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.EAST), indexOffset, baseVertex);
-            }
-
-            if (camera.posX < bounds.x2) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.WEST), indexOffset, baseVertex);
-            }
-
-            if (camera.posZ > bounds.z1) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
-            }
-
-            if (camera.posZ < bounds.z2) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.NORTH), indexOffset, baseVertex);
             }
         }
 
