@@ -128,8 +128,6 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            ChunkRenderBounds bounds = render.getBounds();
-
             long indexOffset = state.getIndexSegment()
                     .getOffset();
 
@@ -137,6 +135,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                     .getOffset();
 
             if (SodiumClientMod.options().advanced.useBlockFaceCulling) {
+                
+                ChunkRenderBounds bounds = render.getBounds();
 
                 this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
 
