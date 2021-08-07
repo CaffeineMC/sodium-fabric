@@ -34,6 +34,7 @@ import java.util.Map;
 public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final MultiDrawBatch[] batches;
     private final GlVertexAttributeBinding[] vertexAttributeBindings;
+    private final boolean enableBlockFaceCull = SodiumClientMod.options().advanced.useBlockFaceCulling;
 
     private final GlMutableBuffer chunkInfoBuffer;
 
@@ -134,8 +135,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             int baseVertex = (int) state.getVertexSegment()
                     .getOffset();
 
-            if (SodiumClientMod.options().advanced.useBlockFaceCulling) {
-                
+            if (this.enableBlockFaceCull) {
+
                 ChunkRenderBounds bounds = render.getBounds();
 
                 this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
