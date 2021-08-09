@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 
 @Mixin(TextureAtlasSprite.InterpolationData.class)
-public class MixinSpriteInterpolated {
+public class MixinSpriteInterpolationData {
     @Shadow
     @Final
     private NativeImage[] activeFrame;

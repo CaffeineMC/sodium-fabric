@@ -12,7 +12,7 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.SodiumLevelRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
@@ -87,8 +87,8 @@ public class RenderSectionManager implements ChunkStatusListener {
     private final ObjectList<RenderSection> tickableChunks = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
-    private final SodiumWorldRenderer worldRenderer;
-    private final ClientLevel world;
+    private final SodiumLevelRenderer worldRenderer;
+    private final ClientLevel level;
 
     private final int renderDistance;
 
@@ -106,19 +106,19 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private int currentFrame = 0;
 
-    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ChunkRenderer chunkRenderer, BlockRenderPassManager renderPassManager, ClientLevel world, int renderDistance) {
+    public RenderSectionManager(SodiumLevelRenderer worldRenderer, ChunkRenderer chunkRenderer, BlockRenderPassManager renderPassManager, ClientLevel level, int renderDistance) {
         this.chunkRenderer = chunkRenderer;
         this.worldRenderer = worldRenderer;
-        this.world = world;
+        this.level = level;
 
         this.builder = new ChunkBuilder(chunkRenderer.getVertexType());
-        this.builder.init(world, renderPassManager);
+        this.builder.init(level, renderPassManager);
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
 
         this.regions = new RenderRegionManager(this.chunkRenderer);
-        this.sectionCache = new ClonedChunkSectionCache(this.world);
+        this.sectionCache = new ClonedChunkSectionCache(this.level);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
             this.rebuildQueues.put(type, new ObjectArrayFIFOQueue<>());
@@ -126,7 +126,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     }
 
     public void loadChunks() {
-        LongIterator it = ((ClientChunkManagerExtended) this.world.getChunkSource())
+        LongIterator it = ((ClientChunkManagerExtended) this.level.getChunkSource())
                 .getLoadedChunks()
                 .iterator();
 
@@ -240,7 +240,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     public void onChunkAdded(int x, int z) {
         this.adjacencyMap.onChunkLoaded(x, z);
 
-        for (int y = this.world.getMinSection(); y < this.world.getMaxSection(); y++) {
+        for (int y = this.level.getMinSection(); y < this.level.getMaxSection(); y++) {
             this.needsUpdate |= this.loadSection(x, y, z);
         }
     }
@@ -249,7 +249,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     public void onChunkRemoved(int x, int z) {
         this.adjacencyMap.onChunkUnloaded(x, z);
 
-        for (int y = this.world.getMinSection(); y < this.world.getMaxSection(); y++) {
+        for (int y = this.level.getMinSection(); y < this.level.getMaxSection(); y++) {
             this.needsUpdate |= this.unloadSection(x, y, z);
         }
     }
@@ -262,8 +262,8 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         this.sections.put(SectionPos.asLong(x, y, z), render);
 
-        ChunkAccess chunk = this.world.getChunk(x, z);
-        LevelChunkSection section = chunk.getSections()[this.world.getSectionIndexFromSectionY(y)];
+        ChunkAccess chunk = this.level.getChunk(x, z);
+        LevelChunkSection section = chunk.getSections()[this.level.getSectionIndexFromSectionY(y)];
 
         if (LevelChunkSection.isEmpty(section)) {
             render.setData(ChunkRenderData.EMPTY);
@@ -389,7 +389,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     }
 
     public ChunkRenderBuildTask createRebuildTask(RenderSection render) {
-        ChunkRenderContext context = WorldSlice.prepare(this.world, render.getChunkPos(), this.sectionCache);
+        ChunkRenderContext context = WorldSlice.prepare(this.level, render.getChunkPos(), this.sectionCache);
         int frame = this.currentFrame;
 
         if (context == null) {
@@ -501,13 +501,13 @@ public class RenderSectionManager implements ChunkStatusListener {
             rootInfo.resetCullingState();
             rootInfo.setLastVisibleFrame(frame);
 
-            if (spectator && this.world.getBlockState(origin).isSolidRender(this.world, origin)) {
+            if (spectator && this.level.getBlockState(origin).isSolidRender(this.level, origin)) {
                 this.useOcclusionCulling = false;
             }
 
             this.addVisible(rootRender, null);
         } else {
-            chunkY = Mth.clamp(origin.getY() >> 4, this.world.getMinSection(), this.world.getMaxSection() - 1);
+            chunkY = Mth.clamp(origin.getY() >> 4, this.level.getMinSection(), this.level.getMaxSection() - 1);
 
             List<RenderSection> sorted = new ArrayList<>();
 

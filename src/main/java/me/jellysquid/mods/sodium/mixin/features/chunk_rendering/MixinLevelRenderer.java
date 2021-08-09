@@ -4,8 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
+import me.jellysquid.mods.sodium.client.render.SodiumLevelRenderer;
+import me.jellysquid.mods.sodium.client.world.LevelRendererExtended;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
@@ -30,7 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.SortedSet;
 
 @Mixin(LevelRenderer.class)
-public abstract class MixinLevelRenderer implements WorldRendererExtended {
+public abstract class MixinLevelRenderer implements LevelRendererExtended {
     @Shadow
     @Final
     private RenderBuffers renderBuffers;
@@ -39,10 +39,10 @@ public abstract class MixinLevelRenderer implements WorldRendererExtended {
     @Final
     private Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress;
 
-    private SodiumWorldRenderer renderer;
+    private SodiumLevelRenderer renderer;
 
     @Override
-    public SodiumWorldRenderer getSodiumWorldRenderer() {
+    public SodiumLevelRenderer getSodiumLevelRenderer() {
         return renderer;
     }
 
@@ -54,7 +54,7 @@ public abstract class MixinLevelRenderer implements WorldRendererExtended {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(Minecraft client, RenderBuffers bufferBuilders, CallbackInfo ci) {
-        this.renderer = new SodiumWorldRenderer(client);
+        this.renderer = new SodiumLevelRenderer(client);
     }
 
     @Inject(method = "setLevel", at = @At("RETURN"))

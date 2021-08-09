@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(TextureAtlas.class)
-public class MixinSpriteAtlasTexture {
+public class MixinTextureAtlas {
     @Inject(method = "getSprite", at = @At("RETURN"))
     private void preReturnSprite(CallbackInfoReturnable<TextureAtlasSprite> cir) {
         TextureAtlasSprite sprite = cir.getReturnValue();

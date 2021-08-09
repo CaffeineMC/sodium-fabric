@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.particle.cull;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.SodiumLevelRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleEngine;
@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Queue;
 
 @Mixin(ParticleEngine.class)
-public class MixinParticleManager {
+public class MixinParticleEngine {
     @Shadow
     @Final
     private Map<ParticleRenderType, Queue<Particle>> particles;
@@ -54,7 +54,7 @@ public class MixinParticleManager {
         Queue<Particle> filtered = this.cachedQueue;
         filtered.clear();
 
-        SodiumWorldRenderer worldRenderer = SodiumWorldRenderer.getInstance();
+        SodiumLevelRenderer worldRenderer = SodiumLevelRenderer.getInstance();
 
         for (Particle particle : queue) {
             AABB box = particle.getBoundingBox();

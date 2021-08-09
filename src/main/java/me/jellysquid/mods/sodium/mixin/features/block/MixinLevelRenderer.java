@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LevelRenderer.class)
-public class MixinWorldRenderer {
+public class MixinLevelRenderer {
     /**
      * Reset any global cached state before rendering a frame. This will hopefully ensure that any world state that has
      * changed is reflected in vanilla-style rendering.

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.smooth_lighting;
 
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.SodiumLevelRenderer;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.world.entity.Entity;
@@ -14,7 +14,7 @@ public abstract class MixinEntityRenderer<T extends Entity> {
     @Inject(method = "shouldRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/culling/Frustum;isVisible(Lnet/minecraft/world/phys/AABB;)Z", shift = At.Shift.AFTER), cancellable = true)
     private void preShouldRender(T entity, Frustum frustum, double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
         // If the entity isn't culled already by other means, try to perform a second pass
-        if (cir.getReturnValue() && !SodiumWorldRenderer.getInstance().isEntityVisible(entity)) {
+        if (cir.getReturnValue() && !SodiumLevelRenderer.getInstance().isEntityVisible(entity)) {
             cir.setReturnValue(false);
         }
     }

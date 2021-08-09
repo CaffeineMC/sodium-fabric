@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.features.texture_tracking;
 
-import me.jellysquid.mods.sodium.client.render.texture.SpriteExtended;
+import me.jellysquid.mods.sodium.client.render.texture.TextureAtlasSpriteExtended;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.spongepowered.asm.mixin.Mixin;
 
 @Mixin(TextureAtlasSprite.class)
-public abstract class MixinSprite implements SpriteExtended {
+public abstract class MixinTextureAtlasSprite implements TextureAtlasSpriteExtended {
     private boolean active;
 
     @Override

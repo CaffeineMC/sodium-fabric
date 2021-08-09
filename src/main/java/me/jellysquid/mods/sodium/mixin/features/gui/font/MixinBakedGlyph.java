@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(BakedGlyph.class)
-public class MixinGlyphRenderer {
+public class MixinBakedGlyph {
     @Shadow
     @Final
     private float left;

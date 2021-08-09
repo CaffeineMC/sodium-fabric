@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(SpriteCoordinateExpander.class)
-public abstract class MixinSpriteTexturedVertexConsumer implements VertexDrain {
+public abstract class MixinSpriteCoordinateExpander implements VertexDrain {
     @Shadow
     @Final
     private TextureAtlasSprite sprite;

@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.debug;
 
 import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.SodiumLevelRenderer;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
@@ -15,7 +15,7 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 
 @Mixin(DebugScreenOverlay.class)
-public abstract class MixinDebugHud {
+public abstract class MixinDebugScreenOverlay {
     @Shadow
     private static long bytesToMegabytes(long bytes) {
         throw new UnsupportedOperationException();
@@ -28,7 +28,7 @@ public abstract class MixinDebugHud {
         strings.add("Sodium Renderer");
         strings.add(ChatFormatting.UNDERLINE + getFormattedVersionText());
 
-        strings.addAll(SodiumWorldRenderer.getInstance().getMemoryDebugStrings());
+        strings.addAll(SodiumLevelRenderer.getInstance().getMemoryDebugStrings());
 
         for (int i = 0; i < strings.size(); i++) {
             String str = strings.get(i);

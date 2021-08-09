@@ -156,20 +156,20 @@ public class ChunkBuilder {
     }
 
     /**
-     * Initializes this chunk builder for the given world. If the builder is already running (which can happen during
-     * a world teleportation event), the worker threads will first be stopped and all pending tasks will be discarded
+     * Initializes this chunk builder for the given level. If the builder is already running (which can happen during
+     * a level teleportation event), the worker threads will first be stopped and all pending tasks will be discarded
      * before being started again.
-     * @param world The world instance
-     * @param renderPassManager The render pass manager used for the world
+     * @param level The level instance
+     * @param renderPassManager The render pass manager used for the level
      */
-    public void init(ClientLevel world, BlockRenderPassManager renderPassManager) {
-        if (world == null) {
-            throw new NullPointerException("World is null");
+    public void init(ClientLevel level, BlockRenderPassManager renderPassManager) {
+        if (level == null) {
+            throw new NullPointerException("Level is null");
         }
 
         this.stopWorkers();
 
-        this.world = world;
+        this.world = level;
         this.renderPassManager = renderPassManager;
 
         this.startWorkers();

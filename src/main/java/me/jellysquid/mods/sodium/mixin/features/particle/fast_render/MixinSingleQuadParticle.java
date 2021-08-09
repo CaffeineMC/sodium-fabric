@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(SingleQuadParticle.class)
-public abstract class MixinBillboardParticle extends Particle {
+public abstract class MixinSingleQuadParticle extends Particle {
     @Shadow
     public abstract float getQuadSize(float tickDelta);
 
@@ -34,8 +34,8 @@ public abstract class MixinBillboardParticle extends Particle {
     @Shadow
     protected abstract float getV1();
 
-    protected MixinBillboardParticle(ClientLevel world, double x, double y, double z) {
-        super(world, x, y, z);
+    protected MixinSingleQuadParticle(ClientLevel level, double x, double y, double z) {
+        super(level, x, y, z);
     }
 
     /**

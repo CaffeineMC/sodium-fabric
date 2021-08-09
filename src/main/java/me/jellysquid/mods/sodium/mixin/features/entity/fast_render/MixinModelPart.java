@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
-import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
+import me.jellysquid.mods.sodium.client.model.ModelPartCubeAccessor;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
@@ -42,7 +42,7 @@ public class MixinModelPart {
         int color = ColorABGR.pack(red, green, blue, alpha);
 
         for (ModelPart.Cube cuboid : this.cubes) {
-            for (ModelPart.Polygon quad : ((ModelCuboidAccessor) cuboid).getQuads()) {
+            for (ModelPart.Polygon quad : ((ModelPartCubeAccessor) cuboid).getQuads()) {
                 float normX = normalExt.transformVecX(quad.normal);
                 float normY = normalExt.transformVecY(quad.normal);
                 float normZ = normalExt.transformVecZ(quad.normal);

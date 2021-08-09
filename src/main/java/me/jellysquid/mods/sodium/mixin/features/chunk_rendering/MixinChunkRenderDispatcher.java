@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(ChunkRenderDispatcher.class)
-public class MixinChunkBuilder {
+public class MixinChunkRenderDispatcher {
     @ModifyVariable(method = "<init>", index = 9, at = @At(value = "INVOKE", target = "Lcom/google/common/collect/Lists;newArrayListWithExpectedSize(I)Ljava/util/ArrayList;", remap = false))
     private int modifyThreadPoolSize(int prev) {
         // Do not allow any resources to be allocated

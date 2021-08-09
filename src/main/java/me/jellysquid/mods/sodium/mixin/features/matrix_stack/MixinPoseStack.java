@@ -12,7 +12,7 @@ import com.mojang.math.Quaternion;
 import java.util.Deque;
 
 @Mixin(PoseStack.class)
-public class MixinMatrixStack {
+public class MixinPoseStack {
     @Shadow
     @Final
     private Deque<PoseStack.Pose> poseStack;

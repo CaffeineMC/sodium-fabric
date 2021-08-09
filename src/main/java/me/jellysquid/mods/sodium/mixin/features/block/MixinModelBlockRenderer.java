@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Random;
 
 @Mixin(ModelBlockRenderer.class)
-public class MixinBlockModelRenderer {
+public class MixinModelBlockRenderer {
     private final XoRoShiRoRandom random = new XoRoShiRoRandom();
 
     @Inject(method = "tesselateBlock", at = @At("HEAD"), cancellable = true)

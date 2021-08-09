@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
-import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
+import me.jellysquid.mods.sodium.client.world.ClientLevelExtended;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.function.Supplier;
 
 @Mixin(ClientLevel.class)
-public abstract class MixinClientWorld implements ClientWorldExtended {
+public abstract class MixinClientLevel implements ClientLevelExtended {
     private long biomeSeed;
 
     /**

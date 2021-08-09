@@ -21,7 +21,7 @@ import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
-import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
+import me.jellysquid.mods.sodium.client.world.LevelRendererExtended;
 import me.jellysquid.mods.sodium.common.util.ListUtil;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -47,10 +47,10 @@ import java.util.*;
 /**
  * Provides an extension to vanilla's {@link LevelRenderer}.
  */
-public class SodiumWorldRenderer implements ChunkStatusListener {
+public class SodiumLevelRenderer implements ChunkStatusListener {
     private final Minecraft client;
 
-    private ClientLevel world;
+    private ClientLevel level;
     private int renderDistance;
 
     private double lastCameraX, lastCameraY, lastCameraZ;
@@ -66,45 +66,45 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private ChunkRenderer chunkRenderer;
 
     /**
-     * @return The SodiumWorldRenderer based on the current dimension
+     * @return The SodiumLevelRenderer based on the current dimension
      */
-    public static SodiumWorldRenderer getInstance() {
-        return ((WorldRendererExtended) Minecraft.getInstance().levelRenderer).getSodiumWorldRenderer();
+    public static SodiumLevelRenderer getInstance() {
+        return ((LevelRendererExtended) Minecraft.getInstance().levelRenderer).getSodiumLevelRenderer();
     }
 
-    public SodiumWorldRenderer(Minecraft client) {
+    public SodiumLevelRenderer(Minecraft client) {
         this.client = client;
     }
 
-    public void setLevel(ClientLevel world) {
-        // Check that the world is actually changing
-        if (this.world == world) {
+    public void setLevel(ClientLevel level) {
+        // Check that the level is actually changing
+        if (this.level == level) {
             return;
         }
 
-        // If we have a world is already loaded, unload the renderer
-        if (this.world != null) {
-            this.unloadWorld();
+        // If we have a level is already loaded, unload the renderer
+        if (this.level != null) {
+            this.unloadLevel();
         }
 
-        // If we're loading a new world, load the renderer
-        if (world != null) {
-            this.loadWorld(world);
+        // If we're loading a new level, load the renderer
+        if (level != null) {
+            this.loadLevel(level);
         }
     }
 
-    private void loadWorld(ClientLevel world) {
-        this.world = world;
+    private void loadLevel(ClientLevel level) {
+        this.level = level;
 
-        ChunkRenderCacheShared.createRenderContext(this.world);
+        ChunkRenderCacheShared.createRenderContext(this.level);
 
         this.initRenderer();
 
-        ((ClientChunkManagerExtended) world.getChunkSource()).setListener(this);
+        ((ClientChunkManagerExtended) level.getChunkSource()).setListener(this);
     }
 
-    private void unloadWorld() {
-        ChunkRenderCacheShared.destroyRenderContext(this.world);
+    private void unloadLevel() {
+        ChunkRenderCacheShared.destroyRenderContext(this.level);
 
         if (this.renderSectionManager != null) {
             this.renderSectionManager.destroy();
@@ -118,7 +118,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         this.globalBlockEntities.clear();
 
-        this.world = null;
+        this.level = null;
     }
 
     /**
@@ -217,7 +217,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     }
 
     public void reload() {
-        if (this.world == null) {
+        if (this.level == null) {
             return;
         }
 
@@ -242,7 +242,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
         this.chunkRenderer = new RegionChunkRenderer(device, ChunkModelVertexFormats.DEFAULT);
 
-        this.renderSectionManager = new RenderSectionManager(this, this.chunkRenderer, this.renderPassManager, this.world, this.renderDistance);
+        this.renderSectionManager = new RenderSectionManager(this, this.chunkRenderer, this.renderPassManager, this.level, this.renderDistance);
         this.renderSectionManager.loadChunks();
     }
 

@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.material.Fluid;
 
 @Mixin(ItemBlockRenderTypes.class)
-public class MixinRenderLayers {
+public class MixinItemBlockRenderTypes {
     @Mutable
     @Shadow
     @Final

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
-import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
+import me.jellysquid.mods.sodium.client.world.ClientLevelExtended;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
@@ -15,7 +15,7 @@ public class BiomeCache {
 
     public BiomeCache(Level world) {
         this.type = world.dimensionType().getBiomeZoomer();
-        this.seed = ((ClientWorldExtended) world).getBiomeSeed();
+        this.seed = ((ClientLevelExtended) world).getBiomeSeed();
 
         this.biomes = new Biome[16 * 16];
     }

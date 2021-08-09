@@ -9,10 +9,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(ShaderInstance.class)
-public class MixinShader {
+public class MixinShaderInstance {
     private final Object2IntMap<CharSequence> uniformLocationCache = new Object2IntOpenHashMap<>();
 
-    public MixinShader() {
+    public MixinShaderInstance() {
         this.uniformLocationCache.defaultReturnValue(-1);
     }
 
