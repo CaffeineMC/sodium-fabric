@@ -88,9 +88,9 @@ public interface MultiDrawBatch {
 
         @Override
         public void delete() {
-            MemoryUtil.memFree(this.bufPointer);
-            MemoryUtil.memFree(this.bufCount);
-            MemoryUtil.memFree(this.bufBaseVertex);
+            MemoryUtilHelper.memFree(this.bufPointer);
+            MemoryUtilHelper.memFree(this.bufCount);
+            MemoryUtilHelper.memFree(this.bufBaseVertex);
         }
 
         @Override
@@ -151,7 +151,7 @@ public interface MultiDrawBatch {
 
         @Override
         public void add(long pointer, int count, int baseVertex) {
-            if (this.count >= this.capacity)  {
+            if (this.count >= this.capacity) {
                 throw new BufferUnderflowException();
             }
 
@@ -174,9 +174,9 @@ public interface MultiDrawBatch {
 
         @Override
         public void delete() {
-            MemoryUtil.memFree(this.bufPointer);
-            MemoryUtil.memFree(this.bufCount);
-            MemoryUtil.memFree(this.bufBaseVertex);
+            MemoryUtilHelper.memFree(this.bufPointer);
+            MemoryUtilHelper.memFree(this.bufCount);
+            MemoryUtilHelper.memFree(this.bufBaseVertex);
         }
 
         @Override

@@ -7,8 +7,8 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 public class GlVertexArrayTessellation extends GlAbstractTessellation {
     private final GlVertexArray array;
 
-    public GlVertexArrayTessellation(GlVertexArray array, GlPrimitiveType primitiveType, TessellationBinding[] bindings, GlBuffer indexBuffer) {
-        super(primitiveType, bindings, indexBuffer);
+    public GlVertexArrayTessellation(GlVertexArray array, GlPrimitiveType primitiveType, TessellationBinding[] bindings) {
+        super(primitiveType, bindings);
 
         this.array = array;
     }

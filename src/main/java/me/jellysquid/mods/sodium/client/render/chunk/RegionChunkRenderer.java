@@ -102,7 +102,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
             pushCameraTranslation(region, camera);
 
-            GlTessellation tessellation = createTessellationForRegion(commandList, region.getArenas(pass));
+            GlTessellation tessellation = this.createTessellationForRegion(commandList, region.getArenas(), pass);
             executeDrawBatches(commandList, tessellation);
         }
         
@@ -132,8 +132,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             long indexOffset = state.getIndexSegment()
                     .getOffset();
 
-            int baseVertex = (int) state.getVertexSegment()
-                    .getOffset();
+            int baseVertex = state.getVertexSegment()
+                    .getOffset() / this.vertexFormat.getStride();
 
             this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
 
@@ -173,11 +173,11 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         return nonEmpty;
     }
 
-    private GlTessellation createTessellationForRegion(CommandList commandList, RenderRegion.RenderRegionArenas arenas) {
-        GlTessellation tessellation = arenas.getTessellation();
+    private GlTessellation createTessellationForRegion(CommandList commandList, RenderRegion.RenderRegionArenas arenas, BlockRenderPass pass) {
+        GlTessellation tessellation = arenas.getTessellation(pass);
 
         if (tessellation == null) {
-            arenas.setTessellation(tessellation = this.createRegionTessellation(commandList, arenas));
+            arenas.setTessellation(pass, tessellation = this.createRegionTessellation(commandList, arenas));
         }
 
         return tessellation;
@@ -213,8 +213,9 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.RenderRegionArenas arenas) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                new TessellationBinding(arenas.vertexBuffers.getBufferObject(), this.vertexAttributeBindings)
-        }, arenas.indexBuffers.getBufferObject());
+                TessellationBinding.forVertexBuffer(arenas.vertexBuffers.getBufferObject(), this.vertexAttributeBindings),
+                TessellationBinding.forElementBuffer(arenas.indexBuffers.getBufferObject())
+        });
     }
 
     @Override

@@ -1,11 +1,16 @@
 package me.jellysquid.mods.sodium.client.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.arena.AsyncBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
+import me.jellysquid.mods.sodium.client.gl.arena.SwapBufferArena;
+import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
@@ -37,37 +42,36 @@ public class RenderRegion {
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_LENGTH));
     }
 
-    private final ChunkRenderer renderer;
+    private final RenderRegionManager manager;
 
     private final Set<RenderSection> chunks = new ObjectOpenHashSet<>();
-    private final Map<BlockRenderPass, RenderRegionArenas> arenas = new EnumMap<>(BlockRenderPass.class);
+    private RenderRegionArenas arenas;
 
     private final int x, y, z;
 
     private RenderRegionVisibility visibility;
 
-    public RenderRegion(ChunkRenderer renderer, int x, int y, int z) {
-        this.renderer = renderer;
+    public RenderRegion(RenderRegionManager manager, int x, int y, int z) {
+        this.manager = manager;
 
         this.x = x;
         this.y = y;
         this.z = z;
     }
 
-    public static RenderRegion createRegionForChunk(ChunkRenderer renderer, int x, int y, int z) {
-        return new RenderRegion(renderer, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
+    public static RenderRegion createRegionForChunk(RenderRegionManager manager, int x, int y, int z) {
+        return new RenderRegion(manager, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
-    public RenderRegionArenas getArenas(BlockRenderPass pass) {
-        return this.arenas.get(pass);
+    public RenderRegionArenas getArenas() {
+        return this.arenas;
     }
 
     public void deleteResources(CommandList commandList) {
-        for (RenderRegionArenas arenas : this.arenas.values()) {
-            arenas.delete(commandList);
+        if (this.arenas != null) {
+            this.arenas.delete(commandList);
+            this.arenas = null;
         }
-
-        this.arenas.clear();
     }
 
     public static long getRegionKeyForChunk(int x, int y, int z) {
@@ -86,11 +90,11 @@ public class RenderRegion {
         return this.z << REGION_LENGTH_SH << 4;
     }
 
-    public RenderRegionArenas getOrCreateArenas(CommandList commandList, BlockRenderPass pass) {
-        RenderRegionArenas arenas = this.arenas.get(pass);
+    public RenderRegionArenas getOrCreateArenas(CommandList commandList) {
+        RenderRegionArenas arenas = this.arenas;
 
         if (arenas == null) {
-            this.arenas.put(pass, arenas = new RenderRegionArenas(commandList, this.renderer));
+            this.arenas = (arenas = this.manager.createRegionArenas(commandList));
         }
 
         return arenas;
@@ -137,51 +141,56 @@ public class RenderRegion {
         public final GlBufferArena vertexBuffers;
         public final GlBufferArena indexBuffers;
 
-        public GlTessellation tessellation;
+        public final Map<BlockRenderPass, GlTessellation> tessellations = new EnumMap<>(BlockRenderPass.class);
 
-        public RenderRegionArenas(CommandList commandList, ChunkRenderer renderer) {
-            int expectedVertexCount = 32 * 1024;
+        public RenderRegionArenas(CommandList commandList, StagingBuffer stagingBuffer) {
+            int expectedVertexCount = REGION_SIZE * 756;
             int expectedIndexCount = (expectedVertexCount / 4) * 6;
 
-            this.vertexBuffers = GlBufferArena.createVertexArena(commandList, expectedVertexCount, renderer.getVertexType().getBufferVertexFormat().getStride());
-            this.indexBuffers = GlBufferArena.createIndexArena(commandList, expectedIndexCount);
+            this.vertexBuffers = createArena(commandList, expectedVertexCount * ChunkModelVertexFormats.DEFAULT.getBufferVertexFormat().getStride(), stagingBuffer);
+            this.indexBuffers = createArena(commandList, expectedIndexCount * 4, stagingBuffer);
         }
 
         public void delete(CommandList commandList) {
+            this.deleteTessellations(commandList);
+
             this.vertexBuffers.delete(commandList);
             this.indexBuffers.delete(commandList);
+        }
 
-            if (this.tessellation != null) {
-                commandList.deleteTessellation(this.tessellation);
+        public void deleteTessellations(CommandList commandList) {
+            for (GlTessellation tessellation : this.tessellations.values()) {
+                commandList.deleteTessellation(tessellation);
             }
+
+            this.tessellations.clear();
         }
 
-        public void setTessellation(GlTessellation tessellation) {
-            this.tessellation = tessellation;
+        public void setTessellation(BlockRenderPass pass, GlTessellation tessellation) {
+            this.tessellations.put(pass, tessellation);
         }
 
-        public GlTessellation getTessellation() {
-            return this.tessellation;
+        public GlTessellation getTessellation(BlockRenderPass pass) {
+            return this.tessellations.get(pass);
         }
 
         public boolean isEmpty() {
             return this.vertexBuffers.isEmpty() && this.indexBuffers.isEmpty();
         }
 
-        public long getUsedMemory() {
-            return this.vertexBuffers.getUsedMemory() + this.indexBuffers.getUsedMemory();
+        public long getDeviceUsedMemory() {
+            return this.vertexBuffers.getDeviceUsedMemory() + this.indexBuffers.getDeviceUsedMemory();
         }
 
-        public long getAllocatedMemory() {
-            return this.vertexBuffers.getAllocatedMemory() + this.indexBuffers.getAllocatedMemory();
+        public long getDeviceAllocatedMemory() {
+            return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
         }
 
-        public void invalidateTessellation(CommandList commandList) {
-            if (this.tessellation != null) {
-                commandList.deleteTessellation(this.tessellation);
-
-                this.tessellation = null;
-            }
+        private static GlBufferArena createArena(CommandList commandList, int initialCapacity, StagingBuffer stagingBuffer) {
+            return switch (SodiumClientMod.options().advanced.arenaMemoryAllocator) {
+                case ASYNC -> new AsyncBufferArena(commandList, initialCapacity, stagingBuffer);
+                case SWAP -> new SwapBufferArena(commandList);
+            };
         }
     }
 }

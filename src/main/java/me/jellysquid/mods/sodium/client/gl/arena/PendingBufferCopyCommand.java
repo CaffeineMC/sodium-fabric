@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.client.gl.arena;
 
 class PendingBufferCopyCommand {
-    public final long readOffset;
-    public final long writeOffset;
+    public final int readOffset;
+    public final int writeOffset;
 
-    public long length;
+    public int length;
 
-    PendingBufferCopyCommand(long readOffset, long writeOffset, long length) {
+    PendingBufferCopyCommand(int readOffset, int writeOffset, int length) {
         this.readOffset = readOffset;
         this.writeOffset = writeOffset;
         this.length = length;

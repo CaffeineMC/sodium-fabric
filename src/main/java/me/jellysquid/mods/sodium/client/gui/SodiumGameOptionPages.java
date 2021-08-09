@@ -226,6 +226,34 @@ public class SodiumGameOptionPages {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(SodiumGameOptions.ArenaMemoryAllocator.class, sodiumOpts)
+                        .setName(new LiteralText("Chunk Memory Allocator"))
+                        .setTooltip(new TranslatableText("""
+                                Selects the memory allocator that will be used for chunk rendering.
+                                - ASYNC: Fastest option, works well with most modern graphics drivers.
+                                - SWAP: Fallback option for older graphics drivers. May increase memory usage significantly."""))
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.ArenaMemoryAllocator.class))
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.advanced.arenaMemoryAllocator = value, opts -> opts.advanced.arenaMemoryAllocator)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(new LiteralText("Use Persistent Mapping"))
+                        .setTooltip(new LiteralText("""
+                                If enabled, a small amount of memory (less than 16 MB) will be persistently mapped as a staging buffer for chunk uploading, helping to reduce CPU overhead and frame time instability when loading or updating chunks.
+                                
+                                Requires OpenGL 4.4 or ARB_buffer_storage."""))
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setEnabled(MappedStagingBuffer.isSupported(RenderDevice.INSTANCE))
+                        .setBinding((opts, value) -> opts.advanced.useAdvancedStagingBuffers = value, opts -> opts.advanced.useAdvancedStagingBuffers)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build()
+                )
+                .build());
+
+        groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(new TranslatableComponent("sodium.options.use_block_face_culling.name"))
                         .setTooltip(new TranslatableComponent("sodium.options.use_block_face_culling.tooltip"))
@@ -266,6 +294,18 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.advanced.animateOnlyVisibleTextures = value, opts -> opts.advanced.animateOnlyVisibleTextures)
+                        .build()
+                )
+                .build());
+
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(int.class, sodiumOpts)
+                        .setName(new LiteralText("Max Pre-Rendered Frames"))
+                        .setTooltip(new LiteralText("Specifies the maximum number of frames the CPU can be waiting on the GPU to finish rendering. " +
+                                "Very low or high values may create frame rate instability."))
+                        .setControl(opt -> new SliderControl(opt, 0, 9, 1, ControlValueFormatter.quantity("frames")))
+                        .setBinding((opts, value) -> opts.advanced.maxPreRenderedFrames = value, opts -> opts.advanced.maxPreRenderedFrames)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )
                 .build());

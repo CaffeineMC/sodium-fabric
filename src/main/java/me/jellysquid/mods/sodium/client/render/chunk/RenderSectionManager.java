@@ -16,6 +16,7 @@ import me.jellysquid.mods.sodium.client.render.SodiumLevelRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
@@ -70,7 +71,6 @@ public class RenderSectionManager implements ChunkStatusListener {
     private static final float FOG_PLANE_OFFSET = 12.0f;
 
     private final ChunkBuilder builder;
-    private final ChunkRenderer chunkRenderer;
 
     private final RenderRegionManager regions;
     private final ClonedChunkSectionCache sectionCache;
@@ -86,6 +86,8 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private final ObjectList<RenderSection> tickableChunks = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
+
+    private final Map<BlockRenderPass, ChunkRenderer> chunkRendererMap = new EnumMap<>(BlockRenderPass.class);
 
     private final SodiumLevelRenderer levelRenderer;
     private final ClientLevel level;
@@ -106,19 +108,22 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private int currentFrame = 0;
 
-    public RenderSectionManager(SodiumLevelRenderer levelRenderer, ChunkRenderer chunkRenderer, BlockRenderPassManager renderPassManager, ClientLevel level, int renderDistance) {
-        this.chunkRenderer = chunkRenderer;
+    public RenderSectionManager(SodiumLevelRenderer levelRenderer, BlockRenderPassManager renderPassManager, ClientLevel level, int renderDistance) {
+        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
+            this.chunkRendererMap.put(pass, new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT));
+        }
+
         this.levelRenderer = levelRenderer;
         this.level = level;
 
-        this.builder = new ChunkBuilder(chunkRenderer.getVertexType());
+        this.builder = new ChunkBuilder(ChunkModelVertexFormats.DEFAULT);
         this.builder.init(level, renderPassManager);
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
 
-        this.regions = new RenderRegionManager(this.chunkRenderer);
-        this.sectionCache = new ClonedChunkSectionCache(this.level);
+        this.regions = new RenderRegionManager();
+        this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
             this.rebuildQueues.put(type, new ObjectArrayFIFOQueue<>());
@@ -297,7 +302,8 @@ public class RenderSectionManager implements ChunkStatusListener {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRenderer.render(matrixStack, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRendererMap.get(pass)
+                .render(matrixStack, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
 
         commandList.flush();
     }
@@ -416,6 +422,10 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.regions.delete(commandList);
+        }
+
+        for (ChunkRenderer renderer : this.chunkRendererMap.values()) {
+            renderer.delete();
         }
 
         this.builder.stopWorkers();

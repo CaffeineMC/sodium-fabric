@@ -54,7 +54,17 @@ public class GlStateTracker {
     }
 
     public boolean makeVertexArrayActive(GlVertexArray array) {
-        return this.makeVertexArrayActive(array == null ? GlVertexArray.NULL_ARRAY_ID : array.handle());
+        boolean ret = this.makeVertexArrayActive(array == null ? GlVertexArray.NULL_ARRAY_ID : array.handle());
+
+        if (ret) {
+            this.clearStateCache();
+        }
+
+        return ret;
+    }
+
+    private void clearStateCache() {
+        Arrays.fill(this.bufferState, UNASSIGNED_HANDLE);
     }
 
     private boolean makeVertexArrayActive(int array) {
