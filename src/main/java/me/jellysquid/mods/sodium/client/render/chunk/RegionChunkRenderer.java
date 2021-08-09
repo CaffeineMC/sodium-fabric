@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import com.google.common.collect.Lists;
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
@@ -21,6 +22,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Matrix4f;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL32C;
 import org.lwjgl.system.MemoryStack;
@@ -88,7 +90,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     public void render(MatrixStack matrixStack, CommandList commandList,
                        ChunkRenderList list, BlockRenderPass pass,
                        ChunkCameraContext camera) {
-        super.begin(pass, matrixStack);
+        super.begin(pass);
 
         this.bindDrawParameters();
 
@@ -100,7 +102,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            pushCameraTranslation(region, camera);
+            this.setupMatrixUniforms(matrixStack, region, camera);
 
             GlTessellation tessellation = this.createTessellationForRegion(commandList, region.getArenas(), pass);
             executeDrawBatches(commandList, tessellation);
@@ -193,14 +195,20 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
-    private void pushCameraTranslation(RenderRegion region, ChunkCameraContext camera) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            FloatBuffer fb = stack.mallocFloat(3);
-            fb.put(0, getCameraTranslation(region.getOriginX(), camera.blockX, camera.deltaX));
-            fb.put(1, getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY));
-            fb.put(2, getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ));
+    private void setupMatrixUniforms(MatrixStack matrixStack, RenderRegion region, ChunkCameraContext camera) {
+        float x = getCameraTranslation(region.getOriginX(), camera.blockX, camera.deltaX);
+        float y = getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY);
+        float z = getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ);
 
-            GL20C.glUniform3fv(this.activeProgram.uCameraTranslation, fb);
+        try (MemoryStack memoryStack = MemoryStack.stackPush()) {
+            FloatBuffer bufModelViewProjection = memoryStack.mallocFloat(16);
+
+            Matrix4f matrix = RenderSystem.getProjectionMatrix().copy();
+            matrix.multiply(matrixStack.peek().getModel());
+            matrix.multiplyByTranslation(x, y, z);
+            matrix.writeColumnMajor(bufModelViewProjection);
+
+            GL20C.glUniformMatrix4fv(this.activeProgram.uModelViewProjectionMatrix, false, bufModelViewProjection);
         }
     }
 

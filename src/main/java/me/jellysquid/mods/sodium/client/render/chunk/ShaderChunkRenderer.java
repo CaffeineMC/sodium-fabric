@@ -84,12 +84,12 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         }
     }
 
-    protected void begin(BlockRenderPass pass, MatrixStack matrixStack) {
+    protected void begin(BlockRenderPass pass) {
         ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH);
 
         this.activeProgram = this.compileProgram(pass, options);
         this.activeProgram.bind();
-        this.activeProgram.setup(matrixStack, this.vertexType);
+        this.activeProgram.setup(this.vertexType);
     }
 
     protected void end() {

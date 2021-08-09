@@ -17,14 +17,13 @@ import java.nio.FloatBuffer;
  */
 public class ChunkProgram extends GlProgram {
     // Uniform variable binding indexes
-    private final int uModelViewProjectionMatrix;
     private final int uModelScale;
     private final int uModelOffset;
     private final int uTextureScale;
     private final int uBlockTex;
     private final int uLightTex;
 
-    public final int uCameraTranslation;
+    public final int uModelViewProjectionMatrix;
     public final int uboDrawParametersIndex;
 
     // The fog shader component used by this program in order to setup the appropriate GL state
@@ -40,14 +39,13 @@ public class ChunkProgram extends GlProgram {
         this.uModelScale = this.getUniformLocation("u_ModelScale");
         this.uModelOffset = this.getUniformLocation("u_ModelOffset");
         this.uTextureScale = this.getUniformLocation("u_TextureScale");
-        this.uCameraTranslation = this.getUniformLocation("u_CameraTranslation");
 
         this.uboDrawParametersIndex = this.getUniformBlockIndex("ubo_DrawParameters");
 
         this.fogShader = options.fog().getFactory().apply(this);
     }
 
-    public void setup(MatrixStack matrixStack, ChunkVertexType vertexType) {
+    public void setup(ChunkVertexType vertexType) {
         RenderSystem.activeTexture(GL32C.GL_TEXTURE0);
         RenderSystem.bindTexture(RenderSystem.getShaderTexture(0));
 
@@ -62,15 +60,5 @@ public class ChunkProgram extends GlProgram {
         GL20C.glUniform1f(this.uTextureScale, vertexType.getTextureScale());
         
         this.fogShader.setup();
-
-        try (MemoryStack memoryStack = MemoryStack.stackPush()) {
-            FloatBuffer bufModelViewProjection = memoryStack.mallocFloat(16);
-
-            Matrix4f matrix = RenderSystem.getProjectionMatrix().copy();
-            matrix.multiply(matrixStack.peek().getModel());
-            matrix.writeColumnMajor(bufModelViewProjection);
-
-            GL20C.glUniformMatrix4fv(this.uModelViewProjectionMatrix, false, bufModelViewProjection);
-        }
     }
 }
