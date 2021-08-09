@@ -20,14 +20,10 @@ public class MixinSpriteInterpolationData {
     @Final
     private NativeImage[] activeFrame;
 
+    @Shadow(aliases = {"this$0", "field_21757"})
     private TextureAtlasSprite parent;
 
     private static final int STRIDE = 4;
-
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void getInfo(TextureAtlasSprite outer, TextureAtlasSprite.Info info, int i, CallbackInfo ci) {
-        this.parent = outer;
-    }
 
     /**
      * @author JellySquid
