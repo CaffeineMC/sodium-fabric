@@ -83,7 +83,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     private final ObjectList<RenderSection> tickableChunks = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
-    private final Map<BlockRenderPass, ChunkRenderer> chunkRendererMap = new EnumMap<>(BlockRenderPass.class);
+    private final RegionChunkRenderer chunkRenderer;
 
     private final SodiumWorldRenderer worldRenderer;
     private final ClientWorld world;
@@ -105,9 +105,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     private int currentFrame = 0;
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            this.chunkRendererMap.put(pass, new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT));
-        }
+        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT);
 
         this.worldRenderer = worldRenderer;
         this.world = world;
@@ -298,8 +296,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRendererMap.get(pass)
-                .render(matrixStack, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRenderer.render(matrixStack, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
 
         commandList.flush();
     }
@@ -420,10 +417,7 @@ public class RenderSectionManager implements ChunkStatusListener {
             this.regions.delete(commandList);
         }
 
-        for (ChunkRenderer renderer : this.chunkRendererMap.values()) {
-            renderer.delete();
-        }
-
+        this.chunkRenderer.delete();
         this.builder.stopWorkers();
     }
 
