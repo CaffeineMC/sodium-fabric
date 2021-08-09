@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.mixin.core.model;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
-import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
+import me.jellysquid.mods.sodium.client.level.biome.BlockColorsExtended;
 import net.minecraft.client.color.block.BlockColor;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.world.level.block.Block;

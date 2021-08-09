@@ -6,8 +6,8 @@ import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.render.pipeline.BlockRenderer;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderCache;
 import me.jellysquid.mods.sodium.client.render.pipeline.FluidRenderer;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
+import me.jellysquid.mods.sodium.client.level.LevelSlice;
+import me.jellysquid.mods.sodium.client.level.cloned.ChunkRenderContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.world.level.Level;
@@ -19,19 +19,19 @@ public class ChunkRenderCacheLocal extends ChunkRenderCache {
     private final FluidRenderer fluidRenderer;
 
     private final BlockModelShaper blockModels;
-    private final WorldSlice worldSlice;
+    private final LevelSlice levelSlice;
 
-    public ChunkRenderCacheLocal(Minecraft client, Level world) {
-        this.worldSlice = new WorldSlice(world);
-        this.lightDataCache = new ArrayLightDataCache(this.worldSlice);
+    public ChunkRenderCacheLocal(Minecraft minecraft, Level level) {
+        this.levelSlice = new LevelSlice(level);
+        this.lightDataCache = new ArrayLightDataCache(this.levelSlice);
 
         LightPipelineProvider lightPipelineProvider = new LightPipelineProvider(this.lightDataCache);
         BiomeColorBlender biomeColorBlender = this.createBiomeColorBlender();
 
-        this.blockRenderer = new BlockRenderer(client, lightPipelineProvider, biomeColorBlender);
+        this.blockRenderer = new BlockRenderer(minecraft, lightPipelineProvider, biomeColorBlender);
         this.fluidRenderer = new FluidRenderer(lightPipelineProvider, biomeColorBlender);
 
-        this.blockModels = client.getModelManager().getBlockModelShaper();
+        this.blockModels = minecraft.getModelManager().getBlockModelShaper();
     }
 
     public BlockModelShaper getBlockModels() {
@@ -48,10 +48,10 @@ public class ChunkRenderCacheLocal extends ChunkRenderCache {
 
     public void init(ChunkRenderContext context) {
         this.lightDataCache.reset(context.getOrigin());
-        this.worldSlice.copyData(context);
+        this.levelSlice.copyData(context);
     }
 
-    public WorldSlice getWorldSlice() {
-        return this.worldSlice;
+    public LevelSlice getWorldSlice() {
+        return this.levelSlice;
     }
 }

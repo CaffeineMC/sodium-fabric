@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.world.cloned;
+package me.jellysquid.mods.sodium.client.level.cloned;
 
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;

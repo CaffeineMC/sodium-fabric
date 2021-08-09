@@ -15,8 +15,8 @@ import java.util.function.Function;
 public class MixinClientLevel {
     @Redirect(method = "getSkyColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/CubicSampler;gaussianSampleVec3(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/util/CubicSampler$Vec3Fetcher;)Lnet/minecraft/world/phys/Vec3;"))
     private Vec3 redirectSampleColor(Vec3 pos, CubicSampler.Vec3Fetcher rgbFetcher) {
-        Level world = (Level) (Object) this;
+        Level level = (Level) (Object) this;
 
-        return FastCubicSampler.sampleColor(pos, (x, y, z) -> world.getNoiseBiome(x, y, z).getSkyColor(), Function.identity());
+        return FastCubicSampler.sampleColor(pos, (x, y, z) -> level.getNoiseBiome(x, y, z).getSkyColor(), Function.identity());
     }
 }

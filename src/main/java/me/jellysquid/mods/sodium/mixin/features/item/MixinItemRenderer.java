@@ -8,7 +8,7 @@ import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
-import me.jellysquid.mods.sodium.client.world.biome.ItemColorsExtended;
+import me.jellysquid.mods.sodium.client.level.biome.ItemColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.color.item.ItemColor;
 import net.minecraft.client.color.item.ItemColors;

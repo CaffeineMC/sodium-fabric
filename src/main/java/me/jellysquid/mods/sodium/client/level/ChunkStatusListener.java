@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.world;
+package me.jellysquid.mods.sodium.client.level;
 
 /**
  * Defines a listener that can be attached to a world's chunk manager to receive chunk load and unload events.

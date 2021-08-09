@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
-import me.jellysquid.mods.sodium.client.world.ClientLevelExtended;
+import me.jellysquid.mods.sodium.client.level.ClientLevelExtended;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -23,7 +23,7 @@ public abstract class MixinClientLevel implements ClientLevelExtended {
      * Captures the biome generation seed so that our own caches can make use of it.
      */
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void init(ClientPacketListener clientPlayNetworkHandler, ClientLevel.ClientLevelData properties, ResourceKey<Level> registryKey, DimensionType dimensionType, int i, Supplier<ProfilerFiller> supplier, LevelRenderer worldRenderer, boolean bl, long seed, CallbackInfo ci) {
+    private void init(ClientPacketListener clientPlayNetworkHandler, ClientLevel.ClientLevelData properties, ResourceKey<Level> registryKey, DimensionType dimensionType, int i, Supplier<ProfilerFiller> supplier, LevelRenderer levelRenderer, boolean bl, long seed, CallbackInfo ci) {
         this.biomeSeed = seed;
     }
 

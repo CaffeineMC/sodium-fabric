@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.world.cloned.palette;
+package me.jellysquid.mods.sodium.client.level.cloned.palette;
 
 import net.minecraft.core.IdMapper;
 

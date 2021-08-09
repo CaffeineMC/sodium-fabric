@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.world;
+package me.jellysquid.mods.sodium.client.level;
 
 import me.jellysquid.mods.sodium.client.render.SodiumLevelRenderer;
 

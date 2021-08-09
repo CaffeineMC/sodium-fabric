@@ -1,7 +1,7 @@
-package me.jellysquid.mods.sodium.client.world.biome;
+package me.jellysquid.mods.sodium.client.level.biome;
 
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.client.level.LevelSlice;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -13,7 +13,7 @@ public class BiomeColorCache {
     private static final int BLENDED_COLORS_DIM = 16 + 2 * 2;
 
     private final ColorResolver resolver;
-    private final WorldSlice slice;
+    private final LevelSlice slice;
 
     private final int[] blendedColors;
     private final int[] cache;
@@ -27,7 +27,7 @@ public class BiomeColorCache {
     private final int blendedColorsMinX;
     private final int blendedColorsMinZ;
 
-    public BiomeColorCache(ColorResolver resolver, WorldSlice slice) {
+    public BiomeColorCache(ColorResolver resolver, LevelSlice slice) {
         this.resolver = resolver;
         this.slice = slice;
         this.radius = Minecraft.getInstance().options.biomeBlendRadius;

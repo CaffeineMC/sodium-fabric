@@ -16,10 +16,10 @@ public class ChunkRenderCacheShared extends ChunkRenderCache {
     private final BlockRenderer blockRenderer;
     private final HashLightDataCache lightCache;
 
-    private ChunkRenderCacheShared(BlockAndTintGetter world) {
+    private ChunkRenderCacheShared(BlockAndTintGetter level) {
         Minecraft client = Minecraft.getInstance();
 
-        this.lightCache = new HashLightDataCache(world);
+        this.lightCache = new HashLightDataCache(level);
 
         BiomeColorBlender biomeColorBlender = this.createBiomeColorBlender();
         LightPipelineProvider lightPipelineProvider = new LightPipelineProvider(this.lightCache);

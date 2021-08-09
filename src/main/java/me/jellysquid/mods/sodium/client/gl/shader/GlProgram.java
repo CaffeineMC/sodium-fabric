@@ -19,8 +19,8 @@ public abstract class GlProgram extends GlObject {
         this.setHandle(program);
     }
 
-    public static Builder builder(ResourceLocation identifier) {
-        return new Builder(identifier);
+    public static Builder builder(ResourceLocation location) {
+        return new Builder(location);
     }
 
     public void bind() {

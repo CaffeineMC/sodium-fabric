@@ -19,9 +19,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheShared;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
-import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
-import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
-import me.jellysquid.mods.sodium.client.world.LevelRendererExtended;
+import me.jellysquid.mods.sodium.client.level.ChunkStatusListener;
+import me.jellysquid.mods.sodium.client.level.ClientChunkManagerExtended;
+import me.jellysquid.mods.sodium.client.level.LevelRendererExtended;
 import me.jellysquid.mods.sodium.common.util.ListUtil;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -207,8 +207,8 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
     /**
      * Performs a render pass for the given {@link RenderType} and draws all visible chunks for it.
      */
-    public void drawChunkLayer(RenderType renderLayer, PoseStack matrixStack, double x, double y, double z) {
-        BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
+    public void drawChunkLayer(RenderType renderType, PoseStack matrixStack, double x, double y, double z) {
+        BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderType);
         pass.startDrawing();
 
         this.renderSectionManager.renderLayer(matrixStack, pass, x, y, z);

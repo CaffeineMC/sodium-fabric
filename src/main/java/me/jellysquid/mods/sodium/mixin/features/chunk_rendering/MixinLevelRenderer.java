@@ -5,7 +5,7 @@ import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumLevelRenderer;
-import me.jellysquid.mods.sodium.client.world.LevelRendererExtended;
+import me.jellysquid.mods.sodium.client.level.LevelRendererExtended;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
@@ -96,11 +96,11 @@ public abstract class MixinLevelRenderer implements LevelRendererExtended {
      * @author JellySquid
      */
     @Overwrite
-    private void renderChunkLayer(RenderType renderLayer, PoseStack matrices, double x, double y, double z, Matrix4f matrix) {
+    private void renderChunkLayer(RenderType renderType, PoseStack matrices, double x, double y, double z, Matrix4f matrix) {
         RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
+            this.renderer.drawChunkLayer(renderType, matrices, x, y, z);
         } finally {
             RenderDevice.exitManagedCode();
         }

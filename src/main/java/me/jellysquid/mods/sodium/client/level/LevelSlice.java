@@ -1,13 +1,13 @@
-package me.jellysquid.mods.sodium.client.world;
+package me.jellysquid.mods.sodium.client.level;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.client.world.cloned.PackedIntegerArrayExtended;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeCache;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeColorCache;
-import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
-import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSection;
-import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
-import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
+import me.jellysquid.mods.sodium.client.level.cloned.PackedIntegerArrayExtended;
+import me.jellysquid.mods.sodium.client.level.biome.BiomeCache;
+import me.jellysquid.mods.sodium.client.level.biome.BiomeColorCache;
+import me.jellysquid.mods.sodium.client.level.cloned.ChunkRenderContext;
+import me.jellysquid.mods.sodium.client.level.cloned.ClonedChunkSection;
+import me.jellysquid.mods.sodium.client.level.cloned.ClonedChunkSectionCache;
+import me.jellysquid.mods.sodium.client.level.cloned.palette.ClonedPalette;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -32,16 +32,16 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 /**
- * Takes a slice of world state (block states, biome and light data arrays) and copies the data for use in off-thread
+ * Takes a slice of level state (block states, biome and light data arrays) and copies the data for use in off-thread
  * operations. This allows chunk build tasks to see a consistent snapshot of chunk data at the exact moment the task was
  * created.
  *
- * World slices are not safe to use from multiple threads at once, but the data they contain is safe from modification
+ * Level slices are not safe to use from multiple threads at once, but the data they contain is safe from modification
  * by the main client thread.
  *
  * Object pooling should be used to avoid huge allocations as this class contains many large arrays.
  */
-public class WorldSlice implements BlockAndTintGetter, BiomeManager.NoiseBiomeSource, RenderAttachedBlockView {
+public class LevelSlice implements BlockAndTintGetter, BiomeManager.NoiseBiomeSource, RenderAttachedBlockView {
     // The number of blocks on each axis in a section.
     private static final int SECTION_BLOCK_LENGTH = 16;
 
@@ -67,8 +67,8 @@ public class WorldSlice implements BlockAndTintGetter, BiomeManager.NoiseBiomeSo
     // The array size for the section lookup table.
     private static final int SECTION_TABLE_ARRAY_SIZE = TABLE_LENGTH * TABLE_LENGTH * TABLE_LENGTH;
 
-    // The world this slice has copied data from
-    private final Level world;
+    // The level this slice has copied data from
+    private final Level level;
 
     // Local Section->BlockState table.
     private final BlockState[][] blockStatesArrays;
@@ -96,13 +96,13 @@ public class WorldSlice implements BlockAndTintGetter, BiomeManager.NoiseBiomeSo
     // The chunk origin of this slice
     private SectionPos origin;
 
-    public static ChunkRenderContext prepare(Level world, SectionPos origin, ClonedChunkSectionCache sectionCache) {
-        LevelChunk chunk = world.getChunk(origin.getX(), origin.getZ());
-        LevelChunkSection section = chunk.getSections()[world.getSectionIndexFromSectionY(origin.getY())];
+    public static ChunkRenderContext prepare(Level level, SectionPos origin, ClonedChunkSectionCache sectionCache) {
+        LevelChunk chunk = level.getChunk(origin.getX(), origin.getZ());
+        LevelChunkSection section = chunk.getSections()[level.getSectionIndexFromSectionY(origin.getY())];
 
         // If the chunk section is absent or empty, simply terminate now. There will never be anything in this chunk
         // section to render, so we need to signal that a chunk render task shouldn't created. This saves a considerable
-        // amount of time in queueing instant build tasks and greatly accelerates how quickly the world can be loaded.
+        // amount of time in queueing instant build tasks and greatly accelerates how quickly the level can be loaded.
         if (LevelChunkSection.isEmpty(section)) {
             return null;
         }
@@ -137,8 +137,8 @@ public class WorldSlice implements BlockAndTintGetter, BiomeManager.NoiseBiomeSo
         return new ChunkRenderContext(origin, sections, volume);
     }
 
-    public WorldSlice(Level world) {
-        this.world = world;
+    public LevelSlice(Level level) {
+        this.level = level;
 
         this.sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
         this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][];
@@ -150,7 +150,7 @@ public class WorldSlice implements BlockAndTintGetter, BiomeManager.NoiseBiomeSo
                     int i = getLocalSectionIndex(x, y, z);
 
                     this.blockStatesArrays[i] = new BlockState[SECTION_BLOCK_COUNT];
-                    this.biomeCaches[i] = new BiomeCache(this.world);
+                    this.biomeCaches[i] = new BiomeCache(this.level);
                 }
             }
         }
@@ -244,12 +244,12 @@ public class WorldSlice implements BlockAndTintGetter, BiomeManager.NoiseBiomeSo
 
     @Override
     public float getShade(Direction direction, boolean shaded) {
-        return this.world.getShade(direction, shaded);
+        return this.level.getShade(direction, shaded);
     }
 
     @Override
     public LevelLightEngine getLightEngine() {
-        return this.world.getLightEngine();
+        return this.level.getLightEngine();
     }
 
     @Override
@@ -312,14 +312,14 @@ public class WorldSlice implements BlockAndTintGetter, BiomeManager.NoiseBiomeSo
         int z2 = (z >> 2) - (this.baseZ >> 4);
 
         // Coordinates are in biome space!
-        // [VanillaCopy] WorldView#getBiomeForNoiseGen(int, int, int)
+        // [VanillaCopy] levelView#getBiomeForNoiseGen(int, int, int)
         ClonedChunkSection section = this.sections[getLocalChunkIndex(x2, z2)];
 
         if (section != null ) {
             return section.getBiomeForNoiseGen(x, y, z);
         }
 
-        return this.world.getUncachedNoiseBiome(x, y, z);
+        return this.level.getUncachedNoiseBiome(x, y, z);
     }
 
     /**
@@ -353,12 +353,12 @@ public class WorldSlice implements BlockAndTintGetter, BiomeManager.NoiseBiomeSo
 
     @Override
     public int getHeight() {
-        return this.world.getHeight();
+        return this.level.getHeight();
     }
 
     @Override
     public int getMinBuildHeight() {
-        return this.world.getMinBuildHeight();
+        return this.level.getMinBuildHeight();
     }
 
     @Override
@@ -367,7 +367,7 @@ public class WorldSlice implements BlockAndTintGetter, BiomeManager.NoiseBiomeSo
         int relY = pos.getY() - this.baseY;
         int relZ = pos.getZ() - this.baseZ;
 
-        return this.sections[WorldSlice.getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
+        return this.sections[LevelSlice.getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
                 .getBlockEntityRenderAttachment(relX & 15, relY & 15, relZ & 15);
     }
 }

@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.world.cloned.palette;
+package me.jellysquid.mods.sodium.client.level.cloned.palette;
 
 public class ClonedPalleteArray<K> implements ClonedPalette<K> {
     private final K[] array;

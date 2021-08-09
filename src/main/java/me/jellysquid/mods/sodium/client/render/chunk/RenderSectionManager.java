@@ -27,11 +27,11 @@ import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
-import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
-import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
-import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
+import me.jellysquid.mods.sodium.client.level.ChunkStatusListener;
+import me.jellysquid.mods.sodium.client.level.ClientChunkManagerExtended;
+import me.jellysquid.mods.sodium.client.level.LevelSlice;
+import me.jellysquid.mods.sodium.client.level.cloned.ChunkRenderContext;
+import me.jellysquid.mods.sodium.client.level.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import me.jellysquid.mods.sodium.common.util.collections.FutureQueueDrainingIterator;
 import net.minecraft.client.Camera;
@@ -87,7 +87,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     private final ObjectList<RenderSection> tickableChunks = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
-    private final SodiumLevelRenderer worldRenderer;
+    private final SodiumLevelRenderer levelRenderer;
     private final ClientLevel level;
 
     private final int renderDistance;
@@ -106,9 +106,9 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private int currentFrame = 0;
 
-    public RenderSectionManager(SodiumLevelRenderer worldRenderer, ChunkRenderer chunkRenderer, BlockRenderPassManager renderPassManager, ClientLevel level, int renderDistance) {
+    public RenderSectionManager(SodiumLevelRenderer levelRenderer, ChunkRenderer chunkRenderer, BlockRenderPassManager renderPassManager, ClientLevel level, int renderDistance) {
         this.chunkRenderer = chunkRenderer;
-        this.worldRenderer = worldRenderer;
+        this.levelRenderer = levelRenderer;
         this.level = level;
 
         this.builder = new ChunkBuilder(chunkRenderer.getVertexType());
@@ -257,7 +257,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     private boolean loadSection(int x, int y, int z) {
         RenderRegion region = this.regions.createRegionForChunk(x, y, z);
 
-        RenderSection render = new RenderSection(this.worldRenderer, x, y, z, region);
+        RenderSection render = new RenderSection(this.levelRenderer, x, y, z, region);
         region.addChunk(render);
 
         this.sections.put(SectionPos.asLong(x, y, z), render);
@@ -389,7 +389,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     }
 
     public ChunkRenderBuildTask createRebuildTask(RenderSection render) {
-        ChunkRenderContext context = WorldSlice.prepare(this.level, render.getChunkPos(), this.sectionCache);
+        ChunkRenderContext context = LevelSlice.prepare(this.level, render.getChunkPos(), this.sectionCache);
         int frame = this.currentFrame;
 
         if (context == null) {

@@ -10,8 +10,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
+import me.jellysquid.mods.sodium.client.level.LevelSlice;
+import me.jellysquid.mods.sodium.client.level.cloned.ChunkRenderContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -59,7 +59,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
         cache.init(this.context);
 
-        WorldSlice slice = cache.getWorldSlice();
+        LevelSlice slice = cache.getWorldSlice();
 
         int minX = this.render.getOriginX();
         int minY = this.render.getOriginY();

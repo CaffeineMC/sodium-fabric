@@ -14,8 +14,8 @@ public class FlatBiomeColorBlender implements BiomeColorBlender {
     private final int[] cachedRet = new int[4];
 
     @Override
-    public <T> int[] getColors(BlockAndTintGetter world, BlockPos origin, ModelQuadView quad, ModelQuadColorProvider<T> colorizer, T state) {
-        Arrays.fill(this.cachedRet, ColorARGB.toABGR(colorizer.getColor(state, world, origin, quad.getTintIndex())));
+    public <T> int[] getColors(BlockAndTintGetter level, BlockPos origin, ModelQuadView quad, ModelQuadColorProvider<T> colorizer, T state) {
+        Arrays.fill(this.cachedRet, ColorARGB.toABGR(colorizer.getColor(state, level, origin, quad.getTintIndex())));
 
         return this.cachedRet;
     }

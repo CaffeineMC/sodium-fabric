@@ -54,13 +54,13 @@ public class MixinParticleEngine {
         Queue<Particle> filtered = this.cachedQueue;
         filtered.clear();
 
-        SodiumLevelRenderer worldRenderer = SodiumLevelRenderer.getInstance();
+        SodiumLevelRenderer levelRenderer = SodiumLevelRenderer.getInstance();
 
         for (Particle particle : queue) {
             AABB box = particle.getBoundingBox();
 
             // Hack: Grow the particle's bounding box in order to work around mis-behaved particles
-            if (!worldRenderer.isBoxVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
+            if (!levelRenderer.isBoxVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
                 continue;
             }
 

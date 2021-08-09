@@ -1,9 +1,9 @@
-package me.jellysquid.mods.sodium.client.world.cloned;
+package me.jellysquid.mods.sodium.client.level.cloned;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
-import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPaletteFallback;
-import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalleteArray;
+import me.jellysquid.mods.sodium.client.level.cloned.palette.ClonedPalette;
+import me.jellysquid.mods.sodium.client.level.cloned.palette.ClonedPaletteFallback;
+import me.jellysquid.mods.sodium.client.level.cloned.palette.ClonedPalleteArray;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -52,14 +52,14 @@ public class ClonedChunkSection {
         this.lightDataArrays = new DataLayer[LIGHT_TYPES.length];
     }
 
-    public void init(Level world, SectionPos pos) {
-        LevelChunk chunk = world.getChunk(pos.getX(), pos.getZ());
+    public void init(Level level, SectionPos pos) {
+        LevelChunk chunk = level.getChunk(pos.getX(), pos.getZ());
 
         if (chunk == null) {
             throw new RuntimeException("Couldn't retrieve chunk at " + pos.chunk());
         }
 
-        LevelChunkSection section = getChunkSection(world, chunk, pos);
+        LevelChunkSection section = getChunkSection(level, chunk, pos);
 
         if (LevelChunkSection.isEmpty(section)) {
             section = EMPTY_SECTION;
@@ -68,7 +68,7 @@ public class ClonedChunkSection {
         this.reset(pos);
 
         this.copyBlockData(section);
-        this.copyLightData(world);
+        this.copyLightData(level);
         this.copyBiomeData(chunk);
         this.copyBlockEntities(chunk, pos);
     }
@@ -93,9 +93,9 @@ public class ClonedChunkSection {
         this.blockStatePalette = copyPalette(container);
     }
 
-    private void copyLightData(Level world) {
+    private void copyLightData(Level level) {
         for (LightLayer type : LIGHT_TYPES) {
-            this.lightDataArrays[type.ordinal()] = world.getLightEngine()
+            this.lightDataArrays[type.ordinal()] = level.getLightEngine()
                     .getLayerListener(type)
                     .getDataLayerData(pos);
         }
@@ -192,11 +192,11 @@ public class ClonedChunkSection {
         return new BitStorage(container.getBits(), array.getSize(), storage.clone());
     }
 
-    private static LevelChunkSection getChunkSection(Level world, ChunkAccess chunk, SectionPos pos) {
+    private static LevelChunkSection getChunkSection(Level level, ChunkAccess chunk, SectionPos pos) {
         LevelChunkSection section = null;
 
-        if (!world.isOutsideBuildHeight(SectionPos.sectionToBlockCoord(pos.getY()))) {
-            section = chunk.getSections()[world.getSectionIndexFromSectionY(pos.getY())];
+        if (!level.isOutsideBuildHeight(SectionPos.sectionToBlockCoord(pos.getY()))) {
+            section = chunk.getSections()[level.getSectionIndexFromSectionY(pos.getY())];
         }
 
         return section;

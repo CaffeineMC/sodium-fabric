@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.world.cloned;
+package me.jellysquid.mods.sodium.client.level.cloned;
 
 import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.chunk.Palette;

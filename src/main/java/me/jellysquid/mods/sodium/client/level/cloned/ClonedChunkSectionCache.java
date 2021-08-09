@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.world.cloned;
+package me.jellysquid.mods.sodium.client.level.cloned;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
@@ -7,13 +7,13 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.Level;
 
 public class ClonedChunkSectionCache {
-    private final Level world;
+    private final Level level;
 
     private final ConcurrentLinkedQueue<ClonedChunkSection> inactivePool = new ConcurrentLinkedQueue<>();
     private final Long2ReferenceMap<ClonedChunkSection> byPosition = new Long2ReferenceOpenHashMap<>();
 
-    public ClonedChunkSectionCache(Level world) {
-        this.world = world;
+    public ClonedChunkSectionCache(Level level) {
+        this.level = level;
     }
 
     public ClonedChunkSection acquire(int x, int y, int z) {
@@ -43,7 +43,7 @@ public class ClonedChunkSectionCache {
         }
 
         SectionPos pos = SectionPos.of(x, y, z);
-        section.init(this.world, pos);
+        section.init(this.level, pos);
 
         this.byPosition.put(pos.asLong(), section);
 

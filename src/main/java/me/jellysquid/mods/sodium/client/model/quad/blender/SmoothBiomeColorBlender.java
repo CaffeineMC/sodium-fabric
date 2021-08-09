@@ -14,7 +14,7 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
     private final BlockPos.MutableBlockPos mpos = new BlockPos.MutableBlockPos();
 
     @Override
-    public <T> int[] getColors(BlockAndTintGetter world, BlockPos origin, ModelQuadView quad, ModelQuadColorProvider<T> colorizer, T state) {
+    public <T> int[] getColors(BlockAndTintGetter level, BlockPos origin, ModelQuadView quad, ModelQuadColorProvider<T> colorizer, T state) {
         final int[] colors = this.cachedRet;
 
         boolean aligned = ModelQuadFlags.contains(quad.getFlags(), ModelQuadFlags.IS_ALIGNED);
@@ -22,9 +22,9 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
         for (int i = 0; i < 4; i++) {
             // If the vertex is aligned to the block grid, we do not need to interpolate
             if (aligned) {
-                colors[i] = this.getVertexColor(colorizer, world, state, origin, quad, i);
+                colors[i] = this.getVertexColor(colorizer, level, state, origin, quad, i);
             } else {
-                colors[i] = this.getInterpolatedVertexColor(colorizer, world, state, origin, quad, i);
+                colors[i] = this.getInterpolatedVertexColor(colorizer, level, state, origin, quad, i);
             }
         }
 

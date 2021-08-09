@@ -32,7 +32,7 @@ public class ChunkBuilder {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
-    private Level world;
+    private Level level;
     private BlockRenderPassManager renderPassManager;
 
     private final int limitThreads;
@@ -70,7 +70,7 @@ public class ChunkBuilder {
 
         for (int i = 0; i < this.limitThreads; i++) {
             ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.vertexType, this.renderPassManager);
-            ChunkRenderCacheLocal pipeline = new ChunkRenderCacheLocal(client, this.world);
+            ChunkRenderCacheLocal pipeline = new ChunkRenderCacheLocal(client, this.level);
 
             WorkerRunnable worker = new WorkerRunnable(buffers, pipeline);
 
@@ -129,7 +129,7 @@ public class ChunkBuilder {
 
         this.buildQueue.clear();
 
-        this.world = null;
+        this.level = null;
     }
 
     public CompletableFuture<ChunkBuildResult> schedule(ChunkRenderBuildTask task) {
@@ -169,7 +169,7 @@ public class ChunkBuilder {
 
         this.stopWorkers();
 
-        this.world = level;
+        this.level = level;
         this.renderPassManager = renderPassManager;
 
         this.startWorkers();
