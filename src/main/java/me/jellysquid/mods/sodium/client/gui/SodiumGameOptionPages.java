@@ -3,6 +3,8 @@ package me.jellysquid.mods.sodium.client.gui;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Window;
+import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
@@ -18,6 +20,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.Option;
 import net.minecraft.client.ParticleStatus;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.TranslatableComponent;
 import java.util.ArrayList;
 import java.util.List;
@@ -227,8 +230,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(SodiumGameOptions.ArenaMemoryAllocator.class, sodiumOpts)
-                        .setName(new LiteralText("Chunk Memory Allocator"))
-                        .setTooltip(new TranslatableText("""
+                        .setName(new TextComponent("Chunk Memory Allocator"))
+                        .setTooltip(new TranslatableComponent("""
                                 Selects the memory allocator that will be used for chunk rendering.
                                 - ASYNC: Fastest option, works well with most modern graphics drivers.
                                 - SWAP: Fallback option for older graphics drivers. May increase memory usage significantly."""))
@@ -239,8 +242,8 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(new LiteralText("Use Persistent Mapping"))
-                        .setTooltip(new LiteralText("""
+                        .setName(new TextComponent("Use Persistent Mapping"))
+                        .setTooltip(new TextComponent("""
                                 If enabled, a small amount of memory (less than 16 MB) will be persistently mapped as a staging buffer for chunk uploading, helping to reduce CPU overhead and frame time instability when loading or updating chunks.
                                 
                                 Requires OpenGL 4.4 or ARB_buffer_storage."""))
@@ -300,8 +303,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, sodiumOpts)
-                        .setName(new LiteralText("Max Pre-Rendered Frames"))
-                        .setTooltip(new LiteralText("Specifies the maximum number of frames the CPU can be waiting on the GPU to finish rendering. " +
+                        .setName(new TextComponent("Max Pre-Rendered Frames"))
+                        .setTooltip(new TextComponent("Specifies the maximum number of frames the CPU can be waiting on the GPU to finish rendering. " +
                                 "Very low or high values may create frame rate instability."))
                         .setControl(opt -> new SliderControl(opt, 0, 9, 1, ControlValueFormatter.quantity("frames")))
                         .setBinding((opts, value) -> opts.advanced.maxPreRenderedFrames = value, opts -> opts.advanced.maxPreRenderedFrames)

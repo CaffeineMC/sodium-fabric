@@ -123,7 +123,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         this.renderDistance = renderDistance;
 
         this.regions = new RenderRegionManager();
-        this.sectionCache = new ClonedChunkSectionCache(this.world);
+        this.sectionCache = new ClonedChunkSectionCache(this.level);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
             this.rebuildQueues.put(type, new ObjectArrayFIFOQueue<>());

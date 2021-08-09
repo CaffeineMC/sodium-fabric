@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.TranslatableComponent;
 import java.io.FileReader;
 import java.io.IOException;
@@ -58,8 +59,8 @@ public class SodiumGameOptions {
         }
 
         @Override
-        public Text getLocalizedName() {
-            return new LiteralText(this.name);
+        public Component getLocalizedName() {
+            return new TextComponent(this.name);
         }
 
         public String getName() {
