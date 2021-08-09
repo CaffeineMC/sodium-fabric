@@ -26,8 +26,6 @@ layout(std140) uniform ubo_DrawParameters {
     DrawParameters Chunks[256];
 };
 
-uniform vec3 u_CameraTranslation;
-
 // OUTPUTS
 out vec4 v_Color;
 out vec2 v_TexCoord;
@@ -41,5 +39,5 @@ vec3 getVertexPosition() {
     vec3 vertexPosition = a_Pos.xyz * u_ModelScale + u_ModelOffset;
     vec3 chunkOffset = Chunks[int(a_Pos.w)].Offset.xyz; // AMD drivers also need this manually inlined
 
-    return chunkOffset + vertexPosition + u_CameraTranslation;
+    return chunkOffset + vertexPosition;
 }
