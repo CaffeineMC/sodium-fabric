@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.world.cloned;
 
-import net.minecraft.util.collection.PackedIntegerArray;
-import net.minecraft.world.chunk.Palette;
-import net.minecraft.world.chunk.PalettedContainer;
+import net.minecraft.util.BitStorage;
+import net.minecraft.world.level.chunk.Palette;
+import net.minecraft.world.level.chunk.PalettedContainer;
 
 public interface PalettedContainerExtended<T> {
     @SuppressWarnings("unchecked")
@@ -10,11 +10,11 @@ public interface PalettedContainerExtended<T> {
         return (PalettedContainerExtended<T>) container;
     }
 
-    PackedIntegerArray getDataArray();
+    BitStorage getDataArray();
 
     Palette<T> getPalette();
 
     T getDefaultValue();
 
-    int getPaletteSize();
+    int getBits();
 }

@@ -1,16 +1,16 @@
 package me.jellysquid.mods.sodium.client.world.cloned.palette;
 
-import net.minecraft.util.collection.IdList;
+import net.minecraft.core.IdMapper;
 
 public class ClonedPaletteFallback<K> implements ClonedPalette<K> {
-    private final IdList<K> idList;
+    private final IdMapper<K> idList;
 
-    public ClonedPaletteFallback(IdList<K> idList) {
+    public ClonedPaletteFallback(IdMapper<K> idList) {
         this.idList = idList;
     }
 
     @Override
     public K get(int id) {
-        return this.idList.get(id);
+        return this.idList.byId(id);
     }
 }

@@ -1,40 +1,40 @@
 package me.jellysquid.mods.sodium.mixin.features.particle.fast_render;
 
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Quaternion;
+import com.mojang.math.Vector3f;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.particle.ParticleVertexSink;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import net.minecraft.client.particle.BillboardParticle;
+import net.minecraft.client.Camera;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Quaternion;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3f;
+import net.minecraft.client.particle.SingleQuadParticle;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(BillboardParticle.class)
+@Mixin(SingleQuadParticle.class)
 public abstract class MixinBillboardParticle extends Particle {
     @Shadow
-    public abstract float getSize(float tickDelta);
+    public abstract float getQuadSize(float tickDelta);
 
     @Shadow
-    protected abstract float getMinU();
+    protected abstract float getU0();
 
     @Shadow
-    protected abstract float getMaxU();
+    protected abstract float getU1();
 
     @Shadow
-    protected abstract float getMinV();
+    protected abstract float getV0();
 
     @Shadow
-    protected abstract float getMaxV();
+    protected abstract float getV1();
 
-    protected MixinBillboardParticle(ClientWorld world, double x, double y, double z) {
+    protected MixinBillboardParticle(ClientLevel world, double x, double y, double z) {
         super(world, x, y, z);
     }
 
@@ -43,33 +43,33 @@ public abstract class MixinBillboardParticle extends Particle {
      * @author JellySquid
      */
     @Overwrite
-    public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
-        Vec3d vec3d = camera.getPos();
+    public void render(VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
+        Vec3 vec3d = camera.getPosition();
 
-        float x = (float) (MathHelper.lerp(tickDelta, this.prevPosX, this.x) - vec3d.getX());
-        float y = (float) (MathHelper.lerp(tickDelta, this.prevPosY, this.y) - vec3d.getY());
-        float z = (float) (MathHelper.lerp(tickDelta, this.prevPosZ, this.z) - vec3d.getZ());
+        float x = (float) (Mth.lerp(tickDelta, this.xo, this.x) - vec3d.x());
+        float y = (float) (Mth.lerp(tickDelta, this.yo, this.y) - vec3d.y());
+        float z = (float) (Mth.lerp(tickDelta, this.zo, this.z) - vec3d.z());
 
         Quaternion quaternion;
 
-        if (this.angle == 0.0F) {
-            quaternion = camera.getRotation();
+        if (this.roll == 0.0F) {
+            quaternion = camera.rotation();
         } else {
-            float angle = MathHelper.lerp(tickDelta, this.prevAngle, this.angle);
+            float angle = Mth.lerp(tickDelta, this.oRoll, this.roll);
 
-            quaternion = new Quaternion(camera.getRotation());
-            quaternion.hamiltonProduct(Vec3f.POSITIVE_Z.getRadialQuaternion(angle));
+            quaternion = new Quaternion(camera.rotation());
+            quaternion.mul(Vector3f.ZP.rotation(angle));
         }
 
-        float size = this.getSize(tickDelta);
-        int light = this.getBrightness(tickDelta);
+        float size = this.getQuadSize(tickDelta);
+        int light = this.getLightColor(tickDelta);
 
-        float minU = this.getMinU();
-        float maxU = this.getMaxU();
-        float minV = this.getMinV();
-        float maxV = this.getMaxV();
+        float minU = this.getU0();
+        float maxU = this.getU1();
+        float minV = this.getV0();
+        float maxV = this.getV1();
 
-        int color = ColorABGR.pack(this.colorRed, this.colorGreen, this.colorBlue, this.colorAlpha);
+        int color = ColorABGR.pack(this.rCol, this.gCol, this.bCol, this.alpha);
 
         ParticleVertexSink drain = VertexDrain.of(vertexConsumer)
                 .createSink(VanillaVertexTypes.PARTICLES);
@@ -86,10 +86,10 @@ public abstract class MixinBillboardParticle extends Particle {
     private static void addVertex(ParticleVertexSink drain, Quaternion rotation,
                                   float x, float y, float posX, float posY, float posZ, float u, float v, int color, int light, float size) {
         // Quaternion q0 = new Quaternion(rotation);
-        float q0x = rotation.getX();
-        float q0y = rotation.getY();
-        float q0z = rotation.getZ();
-        float q0w = rotation.getW();
+        float q0x = rotation.i();
+        float q0y = rotation.j();
+        float q0z = rotation.k();
+        float q0w = rotation.r();
 
         // q0.hamiltonProduct(x, y, 0.0f, 0.0f)
         float q1x = (q0w * x) - (q0z * y);

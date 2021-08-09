@@ -6,14 +6,14 @@ import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
-import net.minecraft.client.world.ClientChunkManager;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.biome.source.BiomeArray;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.client.multiplayer.ClientChunkCache;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkBiomeContainer;
+import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.LevelChunk;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,27 +25,27 @@ import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BooleanSupplier;
 
-@Mixin(ClientChunkManager.class)
-public abstract class MixinClientChunkManager implements ClientChunkManagerExtended {
+@Mixin(ClientChunkCache.class)
+public abstract class MixinClientChunkCache implements ClientChunkManagerExtended {
     @Shadow
     @Nullable
-    public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
+    public abstract LevelChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
 
     private final LongOpenHashSet loadedChunks = new LongOpenHashSet();
     private boolean needsTrackingUpdate = false;
 
     private ChunkStatusListener listener;
 
-    @Inject(method = "loadChunkFromPacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;resetChunkColor(Lnet/minecraft/util/math/ChunkPos;)V", shift = At.Shift.AFTER))
-    private void afterLoadChunkFromPacket(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound nbt, BitSet bitSet, CallbackInfoReturnable<WorldChunk> cir) {
-        if (this.listener != null && this.loadedChunks.add(ChunkPos.toLong(x, z))) {
+    @Inject(method = "replaceWithPacketData", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;onChunkLoaded(Lnet/minecraft/world/level/ChunkPos;)V", shift = At.Shift.AFTER))
+    private void afterLoadChunkFromPacket(int x, int z, ChunkBiomeContainer biomes, FriendlyByteBuf buf, CompoundTag nbt, BitSet bitSet, CallbackInfoReturnable<LevelChunk> cir) {
+        if (this.listener != null && this.loadedChunks.add(ChunkPos.asLong(x, z))) {
             this.listener.onChunkAdded(x, z);
         }
     }
 
-    @Inject(method = "unload", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientChunkManager$ClientChunkMap;compareAndSet(ILnet/minecraft/world/chunk/WorldChunk;Lnet/minecraft/world/chunk/WorldChunk;)Lnet/minecraft/world/chunk/WorldChunk;", shift = At.Shift.AFTER))
+    @Inject(method = "drop", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientChunkCache$Storage;replace(ILnet/minecraft/world/level/chunk/LevelChunk;Lnet/minecraft/world/level/chunk/LevelChunk;)Lnet/minecraft/world/level/chunk/LevelChunk;", shift = At.Shift.AFTER))
     private void afterUnloadChunk(int x, int z, CallbackInfo ci) {
-        if (this.listener != null && this.loadedChunks.remove(ChunkPos.toLong(x, z))) {
+        if (this.listener != null && this.loadedChunks.remove(ChunkPos.asLong(x, z))) {
             this.listener.onChunkRemoved(x, z);
         }
     }
@@ -61,8 +61,8 @@ public abstract class MixinClientChunkManager implements ClientChunkManagerExten
         while (it.hasNext()) {
             long pos = it.nextLong();
 
-            int x = ChunkPos.getPackedX(pos);
-            int z = ChunkPos.getPackedZ(pos);
+            int x = ChunkPos.getX(pos);
+            int z = ChunkPos.getZ(pos);
 
             if (this.getChunk(x, z, ChunkStatus.FULL, false) == null) {
                 it.remove();
@@ -76,14 +76,14 @@ public abstract class MixinClientChunkManager implements ClientChunkManagerExten
         this.needsTrackingUpdate = false;
     }
 
-    @Inject(method = "setChunkMapCenter(II)V", at = @At("RETURN"))
+    @Inject(method = "updateViewCenter(II)V", at = @At("RETURN"))
     private void afterChunkMapCenterChanged(int x, int z, CallbackInfo ci) {
         this.needsTrackingUpdate = true;
     }
 
-    @Inject(method = "updateLoadDistance",
+    @Inject(method = "updateViewRadius",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/world/ClientChunkManager$ClientChunkMap;set(ILnet/minecraft/world/chunk/WorldChunk;)V",
+                    target = "Lnet/minecraft/client/multiplayer/ClientChunkCache$Storage;replace(ILnet/minecraft/world/level/chunk/LevelChunk;)V",
                     shift = At.Shift.AFTER))
     private void afterLoadDistanceChanged(int loadDistance, CallbackInfo ci) {
         this.needsTrackingUpdate = true;
@@ -99,38 +99,38 @@ public abstract class MixinClientChunkManager implements ClientChunkManagerExten
         return LongCollections.unmodifiable(this.loadedChunks);
     }
 
-    @Mixin(targets = "net/minecraft/client/world/ClientChunkManager$ClientChunkMap")
-    public static class MixinClientChunkMap {
+    @Mixin(targets = "net/minecraft/client/multiplayer/ClientChunkCache$Storage")
+    public static class MixinClientChunkCacheStorage {
         @Mutable
         @Shadow
         @Final
-        AtomicReferenceArray<WorldChunk> chunks;
+        AtomicReferenceArray<LevelChunk> chunks;
 
         @Mutable
         @Shadow
         @Final
-        private int diameter;
+        private int viewRange;
 
         @Mutable
         @Shadow
         @Final
-        int radius;
+        int chunkRadius;
 
         private int factor;
 
         @Inject(method = "<init>", at = @At("RETURN"))
-        private void reinit(ClientChunkManager outer, int loadDistance, CallbackInfo ci) {
+        private void reinit(ClientChunkCache outer, int loadDistance, CallbackInfo ci) {
             // This re-initialization is a bit expensive on memory, but it only happens when either the world is
             // switched or the render distance is changed;
-            this.radius = loadDistance;
+            this.chunkRadius = loadDistance;
 
             // Make the diameter a power-of-two so we can exploit bit-wise math when computing indices
-            this.diameter = MathHelper.smallestEncompassingPowerOfTwo(loadDistance * 2 + 1);
+            this.viewRange = Mth.smallestEncompassingPowerOfTwo(loadDistance * 2 + 1);
 
             // The factor is used as a bit mask to replace the modulo in getIndex
-            this.factor = this.diameter - 1;
+            this.factor = this.viewRange - 1;
 
-            this.chunks = new AtomicReferenceArray<>(this.diameter * this.diameter);
+            this.chunks = new AtomicReferenceArray<>(this.viewRange * this.viewRange);
         }
 
         /**
@@ -139,7 +139,7 @@ public abstract class MixinClientChunkManager implements ClientChunkManagerExten
          */
         @Overwrite
         int getIndex(int chunkX, int chunkZ) {
-            return (chunkZ & this.factor) * this.diameter + (chunkX & this.factor);
+            return (chunkZ & this.factor) * this.viewRange + (chunkX & this.factor);
         }
     }
 }

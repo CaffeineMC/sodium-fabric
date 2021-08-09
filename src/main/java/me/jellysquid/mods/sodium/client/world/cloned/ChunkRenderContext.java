@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.client.world.cloned;
 
-import net.minecraft.util.math.BlockBox;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 public class ChunkRenderContext {
-    private final ChunkSectionPos origin;
+    private final SectionPos origin;
     private final ClonedChunkSection[] sections;
-    private final BlockBox volume;
+    private final BoundingBox volume;
 
-    public ChunkRenderContext(ChunkSectionPos origin, ClonedChunkSection[] sections, BlockBox volume) {
+    public ChunkRenderContext(SectionPos origin, ClonedChunkSection[] sections, BoundingBox volume) {
         this.origin = origin;
         this.sections = sections;
         this.volume = volume;
@@ -18,11 +18,11 @@ public class ChunkRenderContext {
         return this.sections;
     }
 
-    public ChunkSectionPos getOrigin() {
+    public SectionPos getOrigin() {
         return this.origin;
     }
 
-    public BlockBox getVolume() {
+    public BoundingBox getVolume() {
         return this.volume;
     }
 

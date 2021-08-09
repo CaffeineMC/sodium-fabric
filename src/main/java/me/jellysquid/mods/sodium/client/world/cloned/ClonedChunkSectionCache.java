@@ -2,23 +2,22 @@ package me.jellysquid.mods.sodium.client.world.cloned;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.world.World;
-
 import java.util.concurrent.ConcurrentLinkedQueue;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.Level;
 
 public class ClonedChunkSectionCache {
-    private final World world;
+    private final Level world;
 
     private final ConcurrentLinkedQueue<ClonedChunkSection> inactivePool = new ConcurrentLinkedQueue<>();
     private final Long2ReferenceMap<ClonedChunkSection> byPosition = new Long2ReferenceOpenHashMap<>();
 
-    public ClonedChunkSectionCache(World world) {
+    public ClonedChunkSectionCache(Level world) {
         this.world = world;
     }
 
     public ClonedChunkSection acquire(int x, int y, int z) {
-        long key = ChunkSectionPos.asLong(x, y, z);
+        long key = SectionPos.asLong(x, y, z);
         ClonedChunkSection section = this.byPosition.get(key);
 
         if (section != null) {
@@ -43,7 +42,7 @@ public class ClonedChunkSectionCache {
             section = this.allocate();
         }
 
-        ChunkSectionPos pos = ChunkSectionPos.from(x, y, z);
+        SectionPos pos = SectionPos.of(x, y, z);
         section.init(this.world, pos);
 
         this.byPosition.put(pos.asLong(), section);
@@ -52,7 +51,7 @@ public class ClonedChunkSectionCache {
     }
 
     public void invalidate(int x, int y, int z) {
-        this.byPosition.remove(ChunkSectionPos.asLong(x, y, z));
+        this.byPosition.remove(SectionPos.asLong(x, y, z));
     }
 
     public void release(ClonedChunkSection section) {
