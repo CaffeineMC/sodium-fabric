@@ -43,8 +43,8 @@ public class BlockRenderer {
 
     private final boolean useAmbientOcclusion;
 
-    public BlockRenderer(Minecraft client, LightPipelineProvider lighters, BiomeColorBlender biomeColorBlender) {
-        this.blockColors = (BlockColorsExtended) client.getBlockColors();
+    public BlockRenderer(Minecraft minecraft, LightPipelineProvider lighters, BiomeColorBlender biomeColorBlender) {
+        this.blockColors = (BlockColorsExtended) minecraft.getBlockColors();
         this.biomeColorBlender = biomeColorBlender;
 
         this.lighters = lighters;

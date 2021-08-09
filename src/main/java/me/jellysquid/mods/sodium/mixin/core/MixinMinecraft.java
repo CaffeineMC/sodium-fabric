@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
-public class MixinMinecraftClient {
+public class MixinMinecraft {
     private final LongArrayFIFOQueue fences = new LongArrayFIFOQueue();
 
     @Inject(method = "runTick", at = @At("HEAD"))

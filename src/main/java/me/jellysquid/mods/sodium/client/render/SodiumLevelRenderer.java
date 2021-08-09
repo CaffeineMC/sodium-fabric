@@ -7,12 +7,8 @@ import com.mojang.blaze3d.vertex.VertexMultiConsumer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
-import me.jellysquid.mods.sodium.client.render.chunk.RegionChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
@@ -48,7 +44,7 @@ import java.util.*;
  * Provides an extension to vanilla's {@link LevelRenderer}.
  */
 public class SodiumLevelRenderer implements ChunkStatusListener {
-    private final Minecraft client;
+    private final Minecraft minecraft;
 
     private ClientLevel level;
     private int renderDistance;
@@ -71,8 +67,8 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
         return ((LevelRendererExtended) Minecraft.getInstance().levelRenderer).getSodiumLevelRenderer();
     }
 
-    public SodiumLevelRenderer(Minecraft client) {
-        this.client = client;
+    public SodiumLevelRenderer(Minecraft minecraft) {
+        this.minecraft = minecraft;
     }
 
     public void setLevel(ClientLevel level) {
@@ -149,14 +145,14 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
 
         this.useEntityCulling = SodiumClientMod.options().advanced.useEntityCulling;
 
-        if (this.client.options.renderDistance != this.renderDistance) {
+        if (this.minecraft.options.renderDistance != this.renderDistance) {
             this.reload();
         }
 
-        ProfilerFiller profiler = this.client.getProfiler();
+        ProfilerFiller profiler = this.minecraft.getProfiler();
         profiler.push("camera_setup");
 
-        LocalPlayer player = this.client.player;
+        LocalPlayer player = this.minecraft.player;
 
         if (player == null) {
             throw new IllegalStateException("Client instance has no active player entity");
@@ -195,7 +191,7 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
 
         profiler.pop();
 
-        Entity.setViewScale(Mth.clamp((double) this.client.options.renderDistance / 8.0D, 1.0D, 2.5D) * (double) this.client.options.entityDistanceScaling);
+        Entity.setViewScale(Mth.clamp((double) this.minecraft.options.renderDistance / 8.0D, 1.0D, 2.5D) * (double) this.minecraft.options.entityDistanceScaling);
     }
 
     /**
@@ -224,7 +220,7 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
             this.renderSectionManager = null;
         }
 
-        this.renderDistance = this.client.options.renderDistance;
+        this.renderDistance = this.minecraft.options.renderDistance;
 
         this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
 

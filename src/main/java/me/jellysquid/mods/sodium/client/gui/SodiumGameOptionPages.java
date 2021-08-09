@@ -73,8 +73,8 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> {
                             opts.guiScale = value;
 
-                            Minecraft client = Minecraft.getInstance();
-                            client.resizeDisplay();
+                            Minecraft minecraft = Minecraft.getInstance();
+                            minecraft.resizeDisplay();
                         }, opts -> opts.guiScale)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
@@ -84,8 +84,8 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> {
                             opts.fullscreen = value;
 
-                            Minecraft client = Minecraft.getInstance();
-                            Window window = client.getWindow();
+                            Minecraft minecraft = Minecraft.getInstance();
+                            Window window = minecraft.getWindow();
 
                             if (window != null && window.isFullscreen() != opts.fullscreen) {
                                 window.toggleFullScreen();

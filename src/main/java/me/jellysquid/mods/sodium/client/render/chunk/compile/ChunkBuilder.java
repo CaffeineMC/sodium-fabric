@@ -66,11 +66,11 @@ public class ChunkBuilder {
             throw new IllegalStateException("Threads are still alive while in the STOPPED state");
         }
 
-        Minecraft client = Minecraft.getInstance();
+        Minecraft minecraft = Minecraft.getInstance();
 
         for (int i = 0; i < this.limitThreads; i++) {
             ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.vertexType, this.renderPassManager);
-            ChunkRenderCacheLocal pipeline = new ChunkRenderCacheLocal(client, this.level);
+            ChunkRenderCacheLocal pipeline = new ChunkRenderCacheLocal(minecraft, this.level);
 
             WorkerRunnable worker = new WorkerRunnable(buffers, pipeline);
 

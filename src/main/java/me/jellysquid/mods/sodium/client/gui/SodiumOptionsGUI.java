@@ -252,15 +252,15 @@ public class SodiumOptionsGUI extends Screen {
             dirtyStorages.add(option.getStorage());
         }));
 
-        Minecraft client = Minecraft.getInstance();
+        Minecraft minecraft = Minecraft.getInstance();
 
         if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
-            client.levelRenderer.allChanged();
+            minecraft.levelRenderer.allChanged();
         }
 
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
-            client.updateMaxMipLevel(client.options.mipmapLevels);
-            client.delayTextureReload();
+            minecraft.updateMaxMipLevel(minecraft.options.mipmapLevels);
+            minecraft.delayTextureReload();
         }
 
         for (OptionStorage<?> storage : dirtyStorages) {
