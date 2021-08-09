@@ -2,8 +2,10 @@ package me.jellysquid.mods.sodium.client.gl.device;
 
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.*;
+import me.jellysquid.mods.sodium.client.gl.functions.DeviceFunctions;
 import me.jellysquid.mods.sodium.client.gl.state.GlStateTracker;
 import me.jellysquid.mods.sodium.client.gl.tessellation.*;
+import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.*;
 
@@ -14,6 +16,8 @@ public class GLRenderDevice implements RenderDevice {
     private final GlStateTracker stateTracker = new GlStateTracker();
     private final CommandList commandList = new ImmediateCommandList(this.stateTracker);
     private final DrawCommandList drawCommandList = new ImmediateDrawCommandList();
+
+    private final DeviceFunctions functions = new DeviceFunctions(this);
 
     private boolean isActive;
     private GlTessellation activeTessellation;
@@ -45,6 +49,16 @@ public class GLRenderDevice implements RenderDevice {
         this.isActive = false;
     }
 
+    @Override
+    public GLCapabilities getCapabilities() {
+        return GL.getCapabilities();
+    }
+
+    @Override
+    public DeviceFunctions getDeviceFunctions() {
+        return this.functions;
+    }
+
     private void checkDeviceActive() {
         if (!this.isActive) {
             throw new IllegalStateException("Tried to access device from unmanaged context");
@@ -69,21 +83,12 @@ public class GLRenderDevice implements RenderDevice {
         public void uploadData(GlMutableBuffer glBuffer, ByteBuffer byteBuffer, GlBufferUsage usage) {
             this.bindBuffer(GlBufferTarget.ARRAY_BUFFER, glBuffer);
 
-            if (byteBuffer == null) {
-                GL20C.glBufferData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), 0L, usage.getId());
-                glBuffer.setSize(0L);
-            } else {
-                GL20C.glBufferData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), byteBuffer, usage.getId());
-                glBuffer.setSize(byteBuffer.remaining());
-            }
+            GL20C.glBufferData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), byteBuffer, usage.getId());
+            glBuffer.setSize(byteBuffer.remaining());
         }
 
         @Override
-        public void copyBufferSubData(GlBuffer src, GlMutableBuffer dst, long readOffset, long writeOffset, long bytes) {
-            if (writeOffset + bytes > dst.getSize()) {
-                throw new IllegalArgumentException("Not enough space in destination buffer (writeOffset + bytes > bufferSize)");
-            }
-
+        public void copyBufferSubData(GlBuffer src, GlBuffer dst, long readOffset, long writeOffset, long bytes) {
             this.bindBuffer(GlBufferTarget.COPY_READ_BUFFER, src);
             this.bindBuffer(GlBufferTarget.COPY_WRITE_BUFFER, dst);
 
@@ -114,6 +119,10 @@ public class GLRenderDevice implements RenderDevice {
 
         @Override
         public void deleteBuffer(GlBuffer buffer) {
+            if (buffer.getActiveMapping() != null) {
+                this.unmap(buffer.getActiveMapping());
+            }
+
             this.stateTracker.notifyBufferDeleted(buffer);
 
             int handle = buffer.handle();
@@ -151,13 +160,95 @@ public class GLRenderDevice implements RenderDevice {
         }
 
         @Override
+        public GlBufferMapping mapBuffer(GlBuffer buffer, long offset, long length, EnumBitField<GlBufferMapFlags> flags) {
+            if (buffer.getActiveMapping() != null) {
+                throw new IllegalStateException("Buffer is already mapped");
+            }
+
+            if (flags.contains(GlBufferMapFlags.PERSISTENT) && !(buffer instanceof GlImmutableBuffer)) {
+                throw new IllegalStateException("Tried to map mutable buffer as persistent");
+            }
+
+            // TODO: speed this up?
+            if (buffer instanceof GlImmutableBuffer) {
+                EnumBitField<GlBufferStorageFlags> bufferFlags = ((GlImmutableBuffer) buffer).getFlags();
+
+                if (flags.contains(GlBufferMapFlags.PERSISTENT) && !bufferFlags.contains(GlBufferStorageFlags.PERSISTENT)) {
+                    throw new IllegalArgumentException("Tried to map non-persistent buffer as persistent");
+                }
+
+                if (flags.contains(GlBufferMapFlags.WRITE) && !bufferFlags.contains(GlBufferStorageFlags.MAP_WRITE)) {
+                    throw new IllegalStateException("Tried to map non-writable buffer as writable");
+                }
+
+                if (flags.contains(GlBufferMapFlags.READ) && !bufferFlags.contains(GlBufferStorageFlags.MAP_READ)) {
+                    throw new IllegalStateException("Tried to map non-readable buffer as readable");
+                }
+            }
+
+            this.bindBuffer(GlBufferTarget.ARRAY_BUFFER, buffer);
+
+            ByteBuffer buf = GL32C.glMapBufferRange(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), offset, length, flags.getBitField());
+
+            if (buf == null) {
+                throw new RuntimeException("Failed to map buffer");
+            }
+
+            GlBufferMapping mapping = new GlBufferMapping(buffer, buf);
+
+            buffer.setActiveMapping(mapping);
+
+            return mapping;
+        }
+
+        @Override
+        public void unmap(GlBufferMapping map) {
+            checkMapDisposed(map);
+
+            GlBuffer buffer = map.getBufferObject();
+
+            this.bindBuffer(GlBufferTarget.ARRAY_BUFFER, buffer);
+            GL32C.glUnmapBuffer(GlBufferTarget.ARRAY_BUFFER.getTargetParameter());
+
+            buffer.setActiveMapping(null);
+            map.dispose();
+        }
+
+        @Override
+        public void flushMappedRange(GlBufferMapping map, int offset, int length) {
+            checkMapDisposed(map);
+
+            GlBuffer buffer = map.getBufferObject();
+
+            this.bindBuffer(GlBufferTarget.COPY_READ_BUFFER, buffer);
+            GL32C.glFlushMappedBufferRange(GlBufferTarget.COPY_READ_BUFFER.getTargetParameter(), offset, length);
+        }
+
+        private void checkMapDisposed(GlBufferMapping map) {
+            if (map.isDisposed()) {
+                throw new IllegalStateException("Buffer mapping is already disposed");
+            }
+        }
+
+        @Override
         public GlMutableBuffer createMutableBuffer() {
             return new GlMutableBuffer();
         }
 
         @Override
-        public GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings, GlBuffer indexBuffer) {
-            GlVertexArrayTessellation tessellation = new GlVertexArrayTessellation(new GlVertexArray(), primitiveType, bindings, indexBuffer);
+        public GlImmutableBuffer createImmutableBuffer(long bufferSize, EnumBitField<GlBufferStorageFlags> flags) {
+            GlImmutableBuffer buffer = new GlImmutableBuffer(flags);
+
+            this.bindBuffer(GlBufferTarget.ARRAY_BUFFER, buffer);
+            GLRenderDevice.this.functions.getBufferStorageFunctions()
+                    .createBufferStorage(GlBufferTarget.ARRAY_BUFFER, bufferSize, flags);
+
+            return buffer;
+        }
+
+        @Override
+        public GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings) {
+            GlVertexArrayTessellation tessellation = new GlVertexArrayTessellation(new GlVertexArray(), primitiveType, bindings);
             tessellation.init(this);
 
             return tessellation;

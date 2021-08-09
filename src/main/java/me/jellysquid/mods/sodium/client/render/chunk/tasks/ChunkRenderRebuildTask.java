@@ -52,11 +52,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
-        buffers.init(renderData, new Vec3i(
-                this.render.getChunkX() & (RenderRegion.REGION_WIDTH - 1),
-                this.render.getChunkY() & (RenderRegion.REGION_HEIGHT - 1),
-                this.render.getChunkZ() & (RenderRegion.REGION_LENGTH - 1)
-        ));
+        buffers.init(renderData, this.render.getChunkId());
 
         cache.init(this.context);
 

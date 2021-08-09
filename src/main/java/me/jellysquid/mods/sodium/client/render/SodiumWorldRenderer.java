@@ -5,8 +5,8 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
-import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.RegionChunkRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
@@ -55,7 +55,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private Frustum frustum;
     private RenderSectionManager renderSectionManager;
     private BlockRenderPassManager renderPassManager;
-    private ChunkRenderer chunkRenderer;
 
     /**
      * @return The SodiumWorldRenderer based on the current dimension
@@ -101,11 +100,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         if (this.renderSectionManager != null) {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
-        }
-
-        if (this.chunkRenderer != null) {
-            this.chunkRenderer.delete();
-            this.chunkRenderer = null;
         }
 
         this.globalBlockEntities.clear();
@@ -222,19 +216,11 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             this.renderSectionManager = null;
         }
 
-        if (this.chunkRenderer != null) {
-            this.chunkRenderer.delete();
-            this.chunkRenderer = null;
-        }
-
-        RenderDevice device = RenderDevice.INSTANCE;
-
         this.renderDistance = this.client.options.viewDistance;
 
         this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
-        this.chunkRenderer = new RegionChunkRenderer(device, ChunkModelVertexFormats.DEFAULT);
 
-        this.renderSectionManager = new RenderSectionManager(this, this.chunkRenderer, this.renderPassManager, this.world, this.renderDistance);
+        this.renderSectionManager = new RenderSectionManager(this, this.renderPassManager, this.world, this.renderDistance);
         this.renderSectionManager.loadChunks();
     }
 
@@ -385,34 +371,31 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.renderSectionManager.scheduleRebuild(x, y, z, important);
     }
 
-    public ChunkRenderer getChunkRenderer() {
-        return this.chunkRenderer;
-    }
-
     public Collection<String> getMemoryDebugStrings() {
         List<String> list = new ArrayList<>();
 
         Iterator<RenderRegion.RenderRegionArenas> it = this.renderSectionManager.getRegions()
                 .stream()
-                .flatMap(i -> Arrays.stream(BlockRenderPass.values())
-                        .map(i::getArenas))
+                .map(RenderRegion::getArenas)
                 .filter(Objects::nonNull)
                 .iterator();
 
         int count = 0;
 
-        long used = 0;
-        long allocated = 0;
+        long deviceUsed = 0;
+        long deviceAllocated = 0;
 
         while (it.hasNext()) {
             RenderRegion.RenderRegionArenas arena = it.next();
-            used += arena.getUsedMemory();
-            allocated += arena.getAllocatedMemory();
+            deviceUsed += arena.getDeviceUsedMemory();
+            deviceAllocated += arena.getDeviceAllocatedMemory();
 
             count++;
         }
 
-        list.add(String.format("Chunk Arenas: %d/%d MiB (%d buffers)", toMib(used), toMib(allocated), count));
+        list.add(String.format("Chunk arena allocator: %s", SodiumClientMod.options().advanced.arenaMemoryAllocator.name()));
+        list.add(String.format("Device buffer objects: %d", count));
+        list.add(String.format("Device memory: %d/%d MiB", toMib(deviceUsed), toMib(deviceAllocated)));
 
         return list;
     }
