@@ -13,16 +13,6 @@ public class ShaderConstants {
         return this.defines;
     }
 
-    public static ShaderConstants fromStringList(List<String> defines) {
-        ShaderConstants.Builder builder = new ShaderConstants.Builder();
-
-        for (String define : defines) {
-            builder.define(define);
-        }
-
-        return builder.build();
-    }
-
     public static ShaderConstants.Builder builder() {
         return new Builder();
     }
@@ -36,11 +26,11 @@ public class ShaderConstants {
 
         }
 
-        public void define(String name) {
-            this.define(name, EMPTY_VALUE);
+        public void add(String name) {
+            this.add(name, EMPTY_VALUE);
         }
 
-        public void define(String name, String value) {
+        public void add(String name, String value) {
             String prev = this.constants.get(name);
 
             if (prev != null) {
@@ -57,7 +47,7 @@ public class ShaderConstants {
                 String key = entry.getKey();
                 String value = entry.getValue();
 
-                if (value.length() <= 0) {
+                if (value.isEmpty()) {
                     defines.add("#define " + key);
                 } else {
                     defines.add("#define " + key + " " + value);
@@ -65,6 +55,12 @@ public class ShaderConstants {
             }
 
             return new ShaderConstants(Collections.unmodifiableList(defines));
+        }
+
+        public void addAll(List<String> defines) {
+            for (String value : defines) {
+                this.add(value);
+            }
         }
     }
 }
