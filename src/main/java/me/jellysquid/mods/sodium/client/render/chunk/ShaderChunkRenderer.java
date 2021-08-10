@@ -16,7 +16,7 @@ import net.minecraft.util.Identifier;
 import java.util.Map;
 
 public abstract class ShaderChunkRenderer implements ChunkRenderer {
-    private final Map<BlockRenderPass, Map<ChunkShaderOptions, GlProgram<ChunkShaderInterface>>> programs = new Object2ObjectOpenHashMap<>();
+    private final Map<ChunkShaderOptions, GlProgram<ChunkShaderInterface>> programs = new Object2ObjectOpenHashMap<>();
 
     protected final ChunkVertexType vertexType;
     protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
@@ -31,31 +31,14 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         this.vertexFormat = vertexType.getCustomVertexFormat();
     }
 
-    // TODO: Generalize shader options
-    protected GlProgram<ChunkShaderInterface> compileProgram(BlockRenderPass pass, ChunkShaderOptions options) {
-        Map<ChunkShaderOptions, GlProgram<ChunkShaderInterface>> programs = this.programs.get(pass);
-
-        if (programs == null) {
-            this.programs.put(pass, programs = new Object2ObjectOpenHashMap<>());
-        }
-
-        GlProgram<ChunkShaderInterface> program = programs.get(options);
+    protected GlProgram<ChunkShaderInterface> compileProgram(ChunkShaderOptions options) {
+        GlProgram<ChunkShaderInterface> program = this.programs.get(options);
 
         if (program == null) {
-            programs.put(options, program = this.createShader(getShaderName(pass), options));
+            this.programs.put(options, program = this.createShader("blocks/block_layer_opaque", options));
         }
 
         return program;
-    }
-
-    // TODO: Define these in the render pass itself
-    protected String getShaderName(BlockRenderPass pass) {
-        return switch (pass) {
-            case CUTOUT -> "blocks/block_layer_cutout";
-            case CUTOUT_MIPPED -> "blocks/block_layer_cutout_mipped";
-            case TRANSLUCENT, TRIPWIRE -> "blocks/block_layer_translucent";
-            default -> "blocks/block_layer_solid";
-        };
     }
 
     private GlProgram<ChunkShaderInterface> createShader(String path, ChunkShaderOptions options) {
@@ -84,9 +67,9 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     }
 
     protected void begin(BlockRenderPass pass) {
-        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH);
+        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass);
 
-        this.activeProgram = this.compileProgram(pass, options);
+        this.activeProgram = this.compileProgram(options);
         this.activeProgram.bind();
         this.activeProgram.getInterface()
                 .setup(this.vertexType);
@@ -100,8 +83,6 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     @Override
     public void delete() {
         this.programs.values()
-                .stream()
-                .flatMap(i -> i.values().stream())
                 .forEach(GlProgram::delete);
         this.programs.clear();
     }
