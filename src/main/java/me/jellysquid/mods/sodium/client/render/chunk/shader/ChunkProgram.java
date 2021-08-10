@@ -3,30 +3,28 @@ package me.jellysquid.mods.sodium.client.render.chunk.shader;
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.gl.shader.GlProgram;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformBlock;
+import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformFloat;
+import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformInt;
+import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformMatrix4f;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Matrix4f;
-import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL32C;
-import org.lwjgl.system.MemoryStack;
-
-import java.nio.FloatBuffer;
 
 /**
  * A forward-rendering shader program for chunks.
  */
 public class ChunkProgram extends GlProgram {
-    // Uniform variable binding indexes
-    private final int uModelScale;
-    private final int uModelOffset;
-    private final int uTextureScale;
-    private final int uBlockTex;
-    private final int uLightTex;
+    private final GlUniformFloat uniformModelScale;
+    private final GlUniformFloat uniformModelOffset;
+    private final GlUniformFloat uniformTextureScale;
 
-    public final int uModelViewMatrix;
-    public final int uProjectionMatrix;
+    private final GlUniformInt uniformBlockTex;
+    private final GlUniformInt uniformLightTex;
 
-    public final int uboDrawParametersIndex;
+    public final GlUniformMatrix4f uniformModelViewMatrix;
+    public final GlUniformMatrix4f uniformProjectionMatrix;
+
+    public final GlUniformBlock uniformBlockDrawParameters;
 
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
@@ -34,16 +32,17 @@ public class ChunkProgram extends GlProgram {
     public ChunkProgram(RenderDevice owner, int handle, ChunkShaderOptions options) {
         super(handle);
 
-        this.uModelViewMatrix = this.getUniformLocation("u_ModelViewMatrix");
-        this.uProjectionMatrix = this.getUniformLocation("u_ProjectionMatrix");
+        this.uniformModelViewMatrix = this.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new);
+        this.uniformProjectionMatrix = this.bindUniform("u_ProjectionMatrix", GlUniformMatrix4f::new);
 
-        this.uBlockTex = this.getUniformLocation("u_BlockTex");
-        this.uLightTex = this.getUniformLocation("u_LightTex");
-        this.uModelScale = this.getUniformLocation("u_ModelScale");
-        this.uModelOffset = this.getUniformLocation("u_ModelOffset");
-        this.uTextureScale = this.getUniformLocation("u_TextureScale");
+        this.uniformBlockTex = this.bindUniform("u_BlockTex", GlUniformInt::new);
+        this.uniformLightTex = this.bindUniform("u_LightTex", GlUniformInt::new);
 
-        this.uboDrawParametersIndex = this.getUniformBlockIndex("ubo_DrawParameters");
+        this.uniformModelScale = this.bindUniform("u_ModelScale", GlUniformFloat::new);
+        this.uniformModelOffset = this.bindUniform("u_ModelOffset", GlUniformFloat::new);
+        this.uniformTextureScale = this.bindUniform("u_TextureScale", GlUniformFloat::new);
+
+        this.uniformBlockDrawParameters = this.bindUniformBlock("ubo_DrawParameters", 0);
 
         this.fogShader = options.fog().getFactory().apply(this);
     }
@@ -55,12 +54,12 @@ public class ChunkProgram extends GlProgram {
         RenderSystem.activeTexture(GL32C.GL_TEXTURE2);
         RenderSystem.bindTexture(RenderSystem.getShaderTexture(2));
 
-        GL20C.glUniform1i(this.uBlockTex, 0);
-        GL20C.glUniform1i(this.uLightTex, 2);
+        this.uniformBlockTex.setInt(0);
+        this.uniformLightTex.setInt(2);
 
-        GL20C.glUniform1f(this.uModelScale, vertexType.getModelScale());
-        GL20C.glUniform1f(this.uModelOffset, vertexType.getModelOffset());
-        GL20C.glUniform1f(this.uTextureScale, vertexType.getTextureScale());
+        this.uniformModelScale.setFloat(vertexType.getModelScale());
+        this.uniformModelOffset.setFloat(vertexType.getModelOffset());
+        this.uniformTextureScale.setFloat(vertexType.getTextureScale());
         
         this.fogShader.setup();
     }
