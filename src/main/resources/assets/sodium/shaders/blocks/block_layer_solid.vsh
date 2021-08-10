@@ -3,14 +3,14 @@
 #import <sodium:blocks/base.vsh>
 
 void main() {
-    vec3 pos = getVertexPosition();
+    vec4 pos = u_ModelViewMatrix * vec4(getVertexPosition(), 1.0);
 
-#ifdef USE_FOG
+    #ifdef USE_FOG
     v_FragDistance = length(pos);
-#endif
+    #endif
 
     // Transform the vertex position into model-view-projection space
-    gl_Position = u_ModelViewProjectionMatrix * vec4(pos, 1.0);
+    gl_Position = u_ProjectionMatrix * pos;
 
     // Pass the color and texture coordinates to the fragment shader
     v_Color = a_Color;
