@@ -6,7 +6,7 @@ import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformBlock;
 import java.util.function.IntFunction;
 
 public interface ShaderBindingContext {
-    <U extends GlUniform<T>, T> U bindUniform(String name, IntFunction<U> factory);
+    <U extends GlUniform<?>> U bindUniform(String name, IntFunction<U> factory);
 
     GlUniformBlock bindUniformBlock(String name, int bindingPoint);
 }
