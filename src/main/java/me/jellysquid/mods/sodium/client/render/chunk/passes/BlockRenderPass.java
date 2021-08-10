@@ -1,20 +1,28 @@
 package me.jellysquid.mods.sodium.client.render.chunk.passes;
 
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
 import net.minecraft.client.render.RenderLayer;
 
 public class BlockRenderPass {
     private final RenderLayer layer;
     private final boolean translucent;
-    private final float alphaCutoff;
 
-    BlockRenderPass(RenderLayer layer, boolean translucent, float alphaCutoff) {
+    private final RenderPassShader vertexShader;
+    private final RenderPassShader fragmentShader;
+
+    BlockRenderPass(RenderLayer layer, boolean translucent, RenderPassShader vertexShader, RenderPassShader fragmentShader) {
         this.layer = layer;
         this.translucent = translucent;
-        this.alphaCutoff = alphaCutoff;
+        this.vertexShader = vertexShader;
+        this.fragmentShader = fragmentShader;
     }
 
     public boolean isTranslucent() {
         return this.translucent;
+    }
+
+    public boolean isSolid() {
+        return !this.translucent;
     }
 
     public RenderLayer getLayer() {
@@ -31,7 +39,11 @@ public class BlockRenderPass {
         this.layer.startDrawing();
     }
 
-    public float getAlphaCutoff() {
-        return this.alphaCutoff;
+    public RenderPassShader getVertexShader() {
+        return this.vertexShader;
+    }
+
+    public RenderPassShader getFragmentShader() {
+        return this.fragmentShader;
     }
 }

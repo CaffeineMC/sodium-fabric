@@ -1,6 +1,6 @@
 #version 150 core
 
-#import <sodium:include/fog.glsl>
+#import <sodium:shaders/include/fog.glsl>
 
 in vec4 v_Color; // The interpolated vertex color
 in vec2 v_TexCoord; // The interpolated block texture coordinates

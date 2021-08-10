@@ -1,5 +1,5 @@
 #version 150 core
-#import <sodium:include/fog.glsl>
+#import <sodium:shaders/include/fog.glsl>
 
 struct DrawParameters {
 // Older AMD drivers can't handle vec3 in std140 layouts correctly
