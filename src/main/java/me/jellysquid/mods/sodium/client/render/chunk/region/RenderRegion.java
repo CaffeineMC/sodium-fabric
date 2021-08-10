@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.arena.AsyncBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
@@ -8,7 +9,6 @@ import me.jellysquid.mods.sodium.client.gl.arena.SwapBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
@@ -17,7 +17,6 @@ import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -141,7 +140,7 @@ public class RenderRegion {
         public final GlBufferArena vertexBuffers;
         public final GlBufferArena indexBuffers;
 
-        public final Map<BlockRenderPass, GlTessellation> tessellations = new EnumMap<>(BlockRenderPass.class);
+        public final Map<BlockRenderPass, GlTessellation> tessellations = new Reference2ObjectArrayMap<>();
 
         public RenderRegionArenas(CommandList commandList, StagingBuffer stagingBuffer) {
             int expectedVertexCount = REGION_SIZE * 756;

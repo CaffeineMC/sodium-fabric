@@ -7,7 +7,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -16,16 +15,12 @@ import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
 
-import java.util.EnumMap;
 import java.util.Map;
 
 /**
@@ -88,14 +83,12 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     boolean rendered = false;
 
                     if (blockState.getRenderType() == BlockRenderType.MODEL) {
-                        RenderLayer layer = RenderLayers.getBlockLayer(blockState);
-
                         BakedModel model = cache.getBlockModels()
                                 .getModel(blockState);
 
                         long seed = blockState.getRenderingSeed(blockPos);
 
-                        if (cache.getBlockRenderer().renderModel(slice, blockState, blockPos, offset, model, buffers.get(layer), true, seed)) {
+                        if (cache.getBlockRenderer().renderModel(slice, blockState, blockPos, offset, model, buffers.getModelBuilder(blockState), true, seed)) {
                             rendered = true;
                         }
                     }
@@ -103,9 +96,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     FluidState fluidState = blockState.getFluidState();
 
                     if (!fluidState.isEmpty()) {
-                        RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
-
-                        if (cache.getFluidRenderer().render(slice, fluidState, blockPos, offset, buffers.get(layer))) {
+                        if (cache.getFluidRenderer().render(slice, fluidState, blockPos, offset, buffers.getModelBuilder(fluidState))) {
                             rendered = true;
                         }
                     }
@@ -134,15 +125,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        Map<BlockRenderPass, ChunkMeshData> meshes = new EnumMap<>(BlockRenderPass.class);
-
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            ChunkMeshData mesh = buffers.createMesh(pass);
-
-            if (mesh != null) {
-                meshes.put(pass, mesh);
-            }
-        }
+        Map<BlockRenderPass, ChunkMeshData> meshes = buffers.createMeshes();
 
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
