@@ -7,7 +7,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.DefaultBlockRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheShared;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
@@ -189,21 +188,15 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
 
     public void drawChunkLayerWrapper(RenderLayer renderLayer, MatrixStack matrices, double x, double y, double z) {
-        BlockRenderPass pass = null;
+        List<BlockRenderPass> passes = Collections.emptyList();
 
         if (renderLayer == RenderLayer.getSolid()) {
-            pass = DefaultBlockRenderPasses.SOLID;
-        } else if (renderLayer == RenderLayer.getCutoutMipped()) {
-            pass = DefaultBlockRenderPasses.CUTOUT_MIPPED;
-        } else if (renderLayer == RenderLayer.getCutout()) {
-            pass = DefaultBlockRenderPasses.CUTOUT;
+            passes = this.renderPassManager.getSolidRenderPasses();
         } else if (renderLayer == RenderLayer.getTranslucent()) {
-            pass = DefaultBlockRenderPasses.TRANSLUCENT;
-        } else if (renderLayer == RenderLayer.getTripwire()) {
-            pass = DefaultBlockRenderPasses.TRIPWIRE;
+            passes = this.renderPassManager.getTranslucentRenderPasses();
         }
 
-        if (pass != null) {
+        for (BlockRenderPass pass : passes) {
             this.drawChunkLayer(pass, matrices, x, y, z);
         }
     }

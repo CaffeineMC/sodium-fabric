@@ -1,0 +1,16 @@
+{
+  "name": "sodium:cutout_mipped",
+  "layer": "minecraft:tripwire",
+  "shaders": {
+    "vertex": {
+      "source": "sodium:shaders/block_layer_generic.vsh"
+    },
+    "fragment": {
+      "source": "sodium:shaders/block_layer_generic.fsh",
+      "constants": {
+        "ALPHA_CUTOFF": "0.1"
+      }
+    }
+  },
+  "translucent": true
+}

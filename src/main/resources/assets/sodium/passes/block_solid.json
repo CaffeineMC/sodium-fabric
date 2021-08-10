@@ -1,0 +1,12 @@
+{
+  "name": "sodium:solid",
+  "layer": "minecraft:solid",
+  "shaders": {
+    "vertex": {
+      "source": "sodium:shaders/block_layer_generic.vsh"
+    },
+    "fragment": {
+      "source": "sodium:shaders/block_layer_generic.fsh"
+    }
+  }
+}
