@@ -93,6 +93,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         super.begin(pass);
 
         this.bindDrawParameters();
+        this.setupCameraMatrices();
 
         for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, pass.isTranslucent())) {
             RenderRegion region = entry.getKey();
@@ -102,7 +103,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            this.setupMatrixUniforms(matrixStack, region, camera);
+            this.setupModelMatrices(matrixStack, region, camera);
 
             GlTessellation tessellation = this.createTessellationForRegion(commandList, region.getArenas(), pass);
             executeDrawBatches(commandList, tessellation);
@@ -195,20 +196,32 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
-    private void setupMatrixUniforms(MatrixStack matrixStack, RenderRegion region, ChunkCameraContext camera) {
+    private void setupCameraMatrices() {
+        Matrix4f projectionMatrix = RenderSystem.getProjectionMatrix();
+
+        try (MemoryStack memoryStack = MemoryStack.stackPush()) {
+            FloatBuffer buf = memoryStack.mallocFloat(16);
+            projectionMatrix.writeColumnMajor(buf);
+
+            GL20C.glUniformMatrix4fv(this.activeProgram.uProjectionMatrix, false, buf);
+        }
+    }
+
+    private void setupModelMatrices(MatrixStack matrixStack, RenderRegion region, ChunkCameraContext camera) {
         float x = getCameraTranslation(region.getOriginX(), camera.blockX, camera.deltaX);
         float y = getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY);
         float z = getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ);
 
         try (MemoryStack memoryStack = MemoryStack.stackPush()) {
-            FloatBuffer bufModelViewProjection = memoryStack.mallocFloat(16);
+            FloatBuffer buf = memoryStack.mallocFloat(16);
 
-            Matrix4f matrix = RenderSystem.getProjectionMatrix().copy();
-            matrix.multiply(matrixStack.peek().getModel());
+            Matrix4f matrix = matrixStack.peek()
+                    .getModel()
+                    .copy();
             matrix.multiplyByTranslation(x, y, z);
-            matrix.writeColumnMajor(bufModelViewProjection);
+            matrix.writeColumnMajor(buf);
 
-            GL20C.glUniformMatrix4fv(this.activeProgram.uModelViewProjectionMatrix, false, bufModelViewProjection);
+            GL20C.glUniformMatrix4fv(this.activeProgram.uModelViewMatrix, false, buf);
         }
     }
 

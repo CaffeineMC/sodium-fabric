@@ -15,7 +15,8 @@ in vec2 a_TexCoord; // The block texture coordinate of the vertex
 in vec2 a_LightCoord; // The light texture coordinate of the vertex
 
 // UNIFORMS
-uniform mat4 u_ModelViewProjectionMatrix;
+uniform mat4 u_ProjectionMatrix;
+uniform mat4 u_ModelViewMatrix;
 
 uniform float u_ModelScale;
 uniform float u_ModelOffset;
