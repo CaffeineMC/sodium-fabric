@@ -26,14 +26,14 @@ public class ChunkBuildResult {
         this.buildTime = buildTime;
     }
 
-    public ChunkMeshData getMesh(BlockRenderPass pass) {
-        return this.meshes.get(pass);
-    }
-
     public void delete() {
         for (ChunkMeshData data : this.meshes.values()) {
             data.getVertexData()
                     .delete();
         }
+    }
+
+    public Iterable<Map.Entry<BlockRenderPass, ChunkMeshData>> getMeshEntries() {
+        return this.meshes.entrySet();
     }
 }

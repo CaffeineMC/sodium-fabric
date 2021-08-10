@@ -1,55 +1,110 @@
 package me.jellysquid.mods.sodium.client.render.chunk.passes;
 
-import it.unimi.dsi.fastutil.objects.Reference2IntArrayMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import net.minecraft.block.Block;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.fluid.Fluid;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Maps vanilla render layers to render passes used by Sodium. This provides compatibility with the render layers already
  * used by the base game.
  */
 public class BlockRenderPassManager {
-    private final Reference2IntArrayMap<RenderLayer> mappingsId = new Reference2IntArrayMap<>();
+    private final Map<Block, BlockRenderPass> blocks;
+    private final Map<Fluid, BlockRenderPass> fluids;
 
-    public BlockRenderPassManager() {
-        this.mappingsId.defaultReturnValue(-1);
+    private final BlockRenderPass defaultPass;
+
+    private final Set<BlockRenderPass> totalPasses;
+
+    public BlockRenderPassManager(Map<Block, BlockRenderPass> blocks,
+                                  Map<Fluid, BlockRenderPass> fluids,
+                                  BlockRenderPass defaultPass) {
+        this.blocks = blocks;
+        this.fluids = fluids;
+        this.defaultPass = defaultPass;
+
+        this.totalPasses = Stream.of(blocks.values(), fluids.values(), Collections.singletonList(defaultPass))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
-    public int getRenderPassId(RenderLayer layer) {
-        int pass = this.mappingsId.getInt(layer);
+    public BlockRenderPass getRenderPass(Block block) {
+        return getRenderPass(this.blocks, block);
+    }
 
-        if (pass < 0) {
-            throw new NullPointerException("No render pass exists for layer: " + layer);
+    public BlockRenderPass getRenderPass(Fluid fluid) {
+        return getRenderPass(this.fluids, fluid);
+    }
+
+    private <T> BlockRenderPass getRenderPass(Map<T, BlockRenderPass> registry, T key) {
+        BlockRenderPass pass = registry.get(key);
+
+        if (pass == null) {
+            return this.defaultPass;
         }
 
         return pass;
-    }
-
-    private void addMapping(RenderLayer layer, BlockRenderPass type) {
-        if (this.mappingsId.put(layer, type.ordinal()) >= 0) {
-            throw new IllegalArgumentException("Layer target already defined for " + layer);
-        }
     }
 
     /**
      * Creates a set of render pass mappings to vanilla render layers which closely mirrors the rendering
      * behavior of vanilla.
      */
-    public static BlockRenderPassManager createDefaultMappings() {
-        BlockRenderPassManager mapper = new BlockRenderPassManager();
-        mapper.addMapping(RenderLayer.getSolid(), BlockRenderPass.SOLID);
-        mapper.addMapping(RenderLayer.getCutoutMipped(), BlockRenderPass.CUTOUT_MIPPED);
-        mapper.addMapping(RenderLayer.getCutout(), BlockRenderPass.CUTOUT);
-        mapper.addMapping(RenderLayer.getTranslucent(), BlockRenderPass.TRANSLUCENT);
-        mapper.addMapping(RenderLayer.getTripwire(), BlockRenderPass.TRIPWIRE);
+    public static BlockRenderPassManager create() {
+        Map<Block, BlockRenderPass> blocks = new Reference2ObjectOpenHashMap<>();
+        Map<Fluid, BlockRenderPass> fluids = new Reference2ObjectOpenHashMap<>();
 
-        return mapper;
+        for (Map.Entry<Block, RenderLayer> entry : RenderLayers.BLOCKS.entrySet()) {
+            Block block = entry.getKey();
+            RenderLayer layer = entry.getValue();
+
+            BlockRenderPass pass;
+
+            if (layer == RenderLayer.getCutoutMipped()) {
+                pass = DefaultBlockRenderPasses.CUTOUT_MIPPED;
+            } else if (layer == RenderLayer.getCutout()) {
+                pass = DefaultBlockRenderPasses.CUTOUT;
+            } else if (layer == RenderLayer.getTranslucent()) {
+                pass = DefaultBlockRenderPasses.TRANSLUCENT;
+            } else if (layer == RenderLayer.getTripwire()) {
+                pass = DefaultBlockRenderPasses.TRIPWIRE;
+            } else {
+                pass = DefaultBlockRenderPasses.SOLID;
+            }
+
+            blocks.put(block, pass);
+        }
+
+        for (Map.Entry<Fluid, RenderLayer> entry : RenderLayers.FLUIDS.entrySet()) {
+            Fluid fluid = entry.getKey();
+            RenderLayer layer = entry.getValue();
+
+            BlockRenderPass pass;
+
+            if (layer == RenderLayer.getTranslucent()) {
+                pass = DefaultBlockRenderPasses.TRANSLUCENT;
+            } else if (layer == RenderLayer.getSolid()) {
+                pass = DefaultBlockRenderPasses.SOLID;
+            } else {
+                throw new IllegalStateException("Unknown render layer for fluid: " + fluid);
+            }
+
+            fluids.put(fluid, pass);
+        }
+
+        return new BlockRenderPassManager(blocks, fluids, DefaultBlockRenderPasses.SOLID);
     }
 
-    public BlockRenderPass getRenderPassForLayer(RenderLayer layer) {
-        return this.getRenderPass(this.getRenderPassId(layer));
-    }
-
-    public BlockRenderPass getRenderPass(int i) {
-        return BlockRenderPass.VALUES[i];
+    public Iterable<BlockRenderPass> getRenderPasses() {
+        return this.totalPasses;
     }
 }
