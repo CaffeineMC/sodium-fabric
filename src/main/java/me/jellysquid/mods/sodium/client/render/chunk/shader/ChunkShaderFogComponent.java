@@ -18,7 +18,7 @@ public abstract class ChunkShaderFogComponent {
     public abstract void setup();
 
     public static class None extends ChunkShaderFogComponent {
-        public None(ChunkProgram program) {
+        public None(ShaderBindingContext context) {
 
         }
 
@@ -34,10 +34,10 @@ public abstract class ChunkShaderFogComponent {
         private final GlUniformFloat uFogStart;
         private final GlUniformFloat uFogEnd;
 
-        public Smooth(ChunkProgram program) {
-            this.uFogColor = program.bindUniform("u_FogColor", GlUniformFloat4v::new);
-            this.uFogStart = program.bindUniform("u_FogStart", GlUniformFloat::new);
-            this.uFogEnd = program.bindUniform("u_FogEnd", GlUniformFloat::new);
+        public Smooth(ShaderBindingContext context) {
+            this.uFogColor = context.bindUniform("u_FogColor", GlUniformFloat4v::new);
+            this.uFogStart = context.bindUniform("u_FogStart", GlUniformFloat::new);
+            this.uFogEnd = context.bindUniform("u_FogEnd", GlUniformFloat::new);
         }
 
         @Override
