@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.fast_leaf_culling;
 
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.Block;
@@ -20,10 +21,8 @@ public class MixinLeavesBlock extends Block {
 
     @Override
     public boolean isSideInvisible(BlockState state, BlockState stateFrom, Direction direction) {
-        if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
-            if (MinecraftClient.getInstance().options.graphicsMode == GraphicsMode.FAST) {
-                return stateFrom.getBlock() instanceof LeavesBlock || super.isSideInvisible(state, stateFrom, direction);
-            }
+        if (!(SodiumClientMod.options().quality.leavesQuality.isFancy(MinecraftClient.getInstance().options.graphicsMode))) {
+            return stateFrom.getBlock() instanceof LeavesBlock || super.isSideInvisible(state, stateFrom, direction);
         }
         return super.isSideInvisible(state, stateFrom, direction);
     }
