@@ -35,6 +35,7 @@ public class SodiumGameOptions {
     public static class QualitySettings {
         public GraphicsQuality cloudQuality = GraphicsQuality.DEFAULT;
         public GraphicsQuality weatherQuality = GraphicsQuality.DEFAULT;
+        public GraphicsQuality leavesQuality = GraphicsQuality.DEFAULT;
 
         public boolean enableVignette = true;
         public boolean enableClouds = true;
