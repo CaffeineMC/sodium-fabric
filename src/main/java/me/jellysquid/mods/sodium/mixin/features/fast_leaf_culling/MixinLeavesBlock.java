@@ -22,7 +22,7 @@ public class MixinLeavesBlock extends Block {
     @Override
     public boolean isSideInvisible(BlockState state, BlockState stateFrom, Direction direction) {
         if (!(SodiumClientMod.options().quality.leavesQuality.isFancy(MinecraftClient.getInstance().options.graphicsMode))) {
-            return stateFrom.getBlock() instanceof LeavesBlock;
+            return stateFrom.getBlock() instanceof LeavesBlock || super.isSideInvisible(state, stateFrom, direction);
         }
         return super.isSideInvisible(state, stateFrom, direction);
     }
