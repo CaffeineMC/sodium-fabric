@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
@@ -133,6 +134,7 @@ public class SodiumGameOptions {
             throw new IOException("Not a directory: " + dir);
         }
 
-        Files.writeString(this.configPath, GSON.toJson(this));
+        // Synchronously write the file to disk to hopefully avoid corruption on Windows
+        Files.writeString(this.configPath, GSON.toJson(this), StandardOpenOption.SYNC);
     }
 }
