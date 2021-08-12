@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.gl.shader;
 
-import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPassShader;
-import me.jellysquid.mods.sodium.client.resource.ResourceLoader;
 import net.minecraft.util.Identifier;
 import org.apache.commons.io.IOUtils;
 
@@ -16,7 +14,8 @@ public class ShaderLoader {
      * after the version header, allowing for conditional compilation with macro code.
      *
      * @param type The type of shader to create
-     * @param shader The shader information to load
+     * @param name The identifier used to locate the shader source file
+     * @param constants A list of constants for shader specialization
      * @return An OpenGL shader object compiled with the given user defines
      */
     public static GlShader loadShader(ShaderType type, Identifier name, ShaderConstants constants) {
@@ -24,14 +23,16 @@ public class ShaderLoader {
     }
 
     public static String getShaderSource(Identifier name) {
-        try (InputStream in = ResourceLoader.EMBEDDED.open(name)) {
+        String path = String.format("/assets/%s/shaders/%s", name.getNamespace(), name.getPath());
+
+        try (InputStream in = ShaderLoader.class.getResourceAsStream(path)) {
             if (in == null) {
-                throw new RuntimeException("Shader not found: " + name);
+                throw new RuntimeException("Shader not found: " + path);
             }
 
             return IOUtils.toString(in, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read shader source for " + name, e);
+            throw new RuntimeException("Failed to read shader source for " + path, e);
         }
     }
 }
