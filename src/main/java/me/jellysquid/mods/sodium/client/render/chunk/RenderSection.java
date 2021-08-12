@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
@@ -16,6 +15,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -31,6 +31,10 @@ public class RenderSection {
     private final RenderRegion region;
     private final ChunkGraphInfo graphInfo;
     private final int chunkId;
+
+    private final float regionOffsetX;
+    private final float regionOffsetY;
+    private final float regionOffsetZ;
 
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
@@ -54,11 +58,15 @@ public class RenderSection {
 
         this.graphInfo = new ChunkGraphInfo(this);
 
-        this.graphicsStates = new Reference2ObjectArrayMap<>();
+        this.graphicsStates = new EnumMap<>(BlockRenderPass.class);
 
         int rX = this.getChunkX() & (RenderRegion.REGION_WIDTH - 1);
         int rY = this.getChunkY() & (RenderRegion.REGION_HEIGHT - 1);
         int rZ = this.getChunkZ() & (RenderRegion.REGION_LENGTH - 1);
+
+        this.regionOffsetX = rX * 16.0f;
+        this.regionOffsetY = rY * 16.0f;
+        this.regionOffsetZ = rZ * 16.0f;
 
         this.chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
     }
@@ -204,8 +212,12 @@ public class RenderSection {
         return this.getOriginZ() + 8.0D;
     }
 
-    public void setGraphicsState(BlockRenderPass pass, ChunkGraphicsState state) {
-        this.graphicsStates.put(pass, state);
+    public ChunkGraphicsState setGraphicsState(BlockRenderPass pass, ChunkGraphicsState state) {
+        if (state == null) {
+            return this.graphicsStates.remove(pass);
+        } else {
+            return this.graphicsStates.put(pass, state);
+        }
     }
 
     /**
@@ -301,11 +313,15 @@ public class RenderSection {
         return this.chunkId;
     }
 
-    public void deleteGraphicsStates() {
-        for (ChunkGraphicsState state : this.graphicsStates.values()) {
-            state.delete();
-        }
+    public float getRegionOffsetX() {
+        return this.regionOffsetX;
+    }
 
-        this.graphicsStates.clear();
+    public float getRegionOffsetY() {
+        return this.regionOffsetY;
+    }
+
+    public float getRegionOffsetZ() {
+        return this.regionOffsetZ;
     }
 }

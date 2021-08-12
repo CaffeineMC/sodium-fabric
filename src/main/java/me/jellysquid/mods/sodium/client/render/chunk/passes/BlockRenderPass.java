@@ -1,28 +1,30 @@
 package me.jellysquid.mods.sodium.client.render.chunk.passes;
 
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
 import net.minecraft.client.render.RenderLayer;
 
-public class BlockRenderPass {
+// TODO: Move away from using an enum, make this extensible
+public enum BlockRenderPass {
+    SOLID(RenderLayer.getSolid(), false, 0.0f),
+    CUTOUT(RenderLayer.getCutout(), false, 0.1f),
+    CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false, 0.5f),
+    TRANSLUCENT(RenderLayer.getTranslucent(), true, 0.0f),
+    TRIPWIRE(RenderLayer.getTripwire(), true, 0.1f);
+
+    public static final BlockRenderPass[] VALUES = BlockRenderPass.values();
+    public static final int COUNT = VALUES.length;
+
     private final RenderLayer layer;
     private final boolean translucent;
+    private final float alphaCutoff;
 
-    private final RenderPassShader vertexShader;
-    private final RenderPassShader fragmentShader;
-
-    BlockRenderPass(RenderLayer layer, boolean translucent, RenderPassShader vertexShader, RenderPassShader fragmentShader) {
+    BlockRenderPass(RenderLayer layer, boolean translucent, float alphaCutoff) {
         this.layer = layer;
         this.translucent = translucent;
-        this.vertexShader = vertexShader;
-        this.fragmentShader = fragmentShader;
+        this.alphaCutoff = alphaCutoff;
     }
 
     public boolean isTranslucent() {
         return this.translucent;
-    }
-
-    public boolean isSolid() {
-        return !this.translucent;
     }
 
     public RenderLayer getLayer() {
@@ -39,11 +41,7 @@ public class BlockRenderPass {
         this.layer.startDrawing();
     }
 
-    public RenderPassShader getVertexShader() {
-        return this.vertexShader;
-    }
-
-    public RenderPassShader getFragmentShader() {
-        return this.fragmentShader;
+    public float getAlphaCutoff() {
+        return this.alphaCutoff;
     }
 }

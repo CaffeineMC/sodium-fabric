@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.region;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.PendingUpload;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.FallbackStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
@@ -10,7 +11,9 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
@@ -76,17 +79,24 @@ public class RenderRegionManager {
         List<PendingSectionUpload> sectionUploads = new ArrayList<>();
 
         for (ChunkBuildResult result : results) {
-            result.render.deleteGraphicsStates();
+            for (BlockRenderPass pass : BlockRenderPass.VALUES) {
+                ChunkGraphicsState graphics = result.render.setGraphicsState(pass, null);
 
-            for (Map.Entry<BlockRenderPass, ChunkMeshData> entry : result.getMeshEntries()) {
-                BlockRenderPass pass = entry.getKey();
-                ChunkMeshData data = entry.getValue();
+                // De-allocate all storage for data we're about to replace
+                // This will allow it to be cheaply re-allocated just below
+                if (graphics != null) {
+                    graphics.delete();
+                }
 
-                IndexedVertexData vertexData = data.getVertexData();
+                ChunkMeshData meshData = result.getMesh(pass);
 
-                sectionUploads.add(new PendingSectionUpload(result.render, data, pass,
-                        new PendingUpload(vertexData.vertexBuffer()),
-                        new PendingUpload(vertexData.indexBuffer())));
+                if (meshData != null) {
+                    IndexedVertexData vertexData = meshData.getVertexData();
+
+                    sectionUploads.add(new PendingSectionUpload(result.render, meshData, pass,
+                            new PendingUpload(vertexData.vertexBuffer()),
+                            new PendingUpload(vertexData.indexBuffer())));
+                }
             }
         }
 
@@ -108,8 +118,7 @@ public class RenderRegionManager {
 
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
-            upload.section.setGraphicsState(upload.pass,
-                    new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
+            upload.section.setGraphicsState(upload.pass, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
         }
     }
 
