@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 
 public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
@@ -133,6 +135,13 @@ public class SodiumGameOptions {
             throw new IOException("Not a directory: " + dir);
         }
 
-        Files.writeString(this.configPath, GSON.toJson(this));
+        // Use a temporary location next to the config's final destination
+        Path tempPath = this.configPath.resolveSibling(this.configPath.getFileName() + ".tmp");
+
+        // Write the file to our temporary location
+        Files.writeString(tempPath, GSON.toJson(this));
+
+        // Atomically replace the old config file (if it exists) with the temporary file
+        Files.move(tempPath, this.configPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
     }
 }

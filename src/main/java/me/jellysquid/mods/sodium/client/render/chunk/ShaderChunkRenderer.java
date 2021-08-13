@@ -35,15 +35,20 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         GlProgram<ChunkShaderInterface> program = this.programs.get(options);
 
         if (program == null) {
-            this.programs.put(options, program = this.createShader(options));
+            this.programs.put(options, program = this.createShader("blocks/block_layer_opaque", options));
         }
 
         return program;
     }
 
-    private GlProgram<ChunkShaderInterface> createShader(ChunkShaderOptions options) {
-        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX, options.getVertexShaderName(), options.getVertexShaderConstants());
-        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT, options.getFragmentShaderName(), options.getFragmentShaderConstants());
+    private GlProgram<ChunkShaderInterface> createShader(String path, ChunkShaderOptions options) {
+        ShaderConstants constants = options.constants();
+
+        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX,
+                new Identifier("sodium", path + ".vsh"), constants);
+        
+        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT,
+                new Identifier("sodium", path + ".fsh"), constants);
 
         try {
             return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
