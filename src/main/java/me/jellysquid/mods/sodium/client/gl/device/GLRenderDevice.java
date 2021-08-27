@@ -35,7 +35,7 @@ public class GLRenderDevice implements RenderDevice {
             return;
         }
 
-        this.stateTracker.clearRestoreState();
+        this.stateTracker.push();
         this.isActive = true;
     }
 
@@ -45,7 +45,7 @@ public class GLRenderDevice implements RenderDevice {
             return;
         }
 
-        this.stateTracker.applyRestoreState();
+        this.stateTracker.pop();
         this.isActive = false;
     }
 
