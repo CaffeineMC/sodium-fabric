@@ -34,4 +34,9 @@ public class FallbackStagingBuffer implements StagingBuffer {
     public void flip() {
 
     }
+
+    @Override
+    public String toString() {
+        return "Fallback";
+    }
 }
