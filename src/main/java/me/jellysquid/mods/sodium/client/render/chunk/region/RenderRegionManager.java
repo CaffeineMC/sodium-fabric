@@ -133,7 +133,10 @@ public class RenderRegionManager {
             RenderRegion region = this.regions.get(RenderRegion.getRegionKeyForChunk(render.getChunkX(), render.getChunkY(), render.getChunkZ()));
 
             if (region == null) {
-                throw new NullPointerException("Couldn't find region for chunk: " + render);
+                // Discard the result if the region is no longer loaded
+                result.delete();
+
+                continue;
             }
 
             List<ChunkBuildResult> uploadQueue = map.computeIfAbsent(region, k -> new ArrayList<>());
