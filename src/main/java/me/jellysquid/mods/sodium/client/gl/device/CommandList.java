@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.gl.device;
 
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.*;
+import me.jellysquid.mods.sodium.client.gl.sync.GlFence;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
@@ -48,4 +49,6 @@ public interface CommandList extends AutoCloseable {
     void unmap(GlBufferMapping map);
 
     void flushMappedRange(GlBufferMapping map, int offset, int length);
+
+    GlFence createFence();
 }

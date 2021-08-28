@@ -22,7 +22,11 @@ import java.util.*;
 public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
 
-    private StagingBuffer stagingBuffer;
+    private final StagingBuffer stagingBuffer;
+
+    public RenderRegionManager(CommandList commandList) {
+        this.stagingBuffer = createStagingBuffer(commandList);
+    }
 
     public void updateVisibility(FrustumExtended frustum) {
         for (RenderRegion region : this.regions.values()) {
@@ -33,9 +37,7 @@ public class RenderRegionManager {
     }
 
     public void cleanup() {
-        if (this.stagingBuffer != null) {
-            this.stagingBuffer.flip();
-        }
+        this.stagingBuffer.flip();
 
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             Iterator<RenderRegion> it = this.regions.values()
@@ -165,11 +167,11 @@ public class RenderRegionManager {
         return this.regions.values();
     }
 
-    protected RenderRegion.RenderRegionArenas createRegionArenas(CommandList commandList) {
-        if (this.stagingBuffer == null) {
-            this.stagingBuffer = createStagingBuffer(commandList);
-        }
+    public StagingBuffer getStagingBuffer() {
+        return this.stagingBuffer;
+    }
 
+    protected RenderRegion.RenderRegionArenas createRegionArenas(CommandList commandList) {
         return new RenderRegion.RenderRegionArenas(commandList, this.stagingBuffer);
     }
 
