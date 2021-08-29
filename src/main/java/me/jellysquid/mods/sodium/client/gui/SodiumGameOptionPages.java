@@ -45,22 +45,6 @@ public class SodiumGameOptionPages {
                         .setControl(opt -> new SliderControl(opt, 0, 100, 1, ControlValueFormatter.brightness()))
                         .setBinding((opts, value) -> opts.gamma = value * 0.01D, (opts) -> (int) (opts.gamma / 0.01D))
                         .build())
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(new TranslatableText("options.renderClouds"))
-                        .setTooltip(new TranslatableText("sodium.options.clouds.tooltip"))
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> {
-                            opts.quality.enableClouds = value;
-
-                            if (MinecraftClient.isFabulousGraphicsOrBetter()) {
-                                Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
-                                if (framebuffer != null) {
-                                    framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
-                                }
-                            }
-                        }, (opts) -> opts.quality.enableClouds)
-                        .setImpact(OptionImpact.LOW)
-                        .build())
                 .build());
 
         groups.add(OptionGroup.createBuilder()
@@ -146,11 +130,20 @@ public class SodiumGameOptionPages {
                 .build());
 
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
+                .add(OptionImpl.createBuilder(CloudRenderMode.class, vanillaOpts)
                         .setName(new TranslatableText("sodium.options.clouds_quality.name"))
                         .setTooltip(new TranslatableText("sodium.options.clouds_quality.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.class))
-                        .setBinding((opts, value) -> opts.quality.cloudQuality = value, opts -> opts.quality.cloudQuality)
+                        .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class, new Text[] { new TranslatableText("options.off"), new TranslatableText("options.clouds.fast"), new TranslatableText("options.clouds.fancy") }))
+                        .setBinding((opts, value) -> {
+                            opts.cloudRenderMode = value;
+
+                            if (MinecraftClient.isFabulousGraphicsOrBetter()) {
+                                Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
+                                if (framebuffer != null) {
+                                    framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
+                                }
+                            }
+                        }, opts -> opts.cloudRenderMode)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
