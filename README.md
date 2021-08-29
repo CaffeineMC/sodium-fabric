@@ -34,7 +34,7 @@ Usually, releases will be made available on GitHub slightly sooner than other lo
 
 #### Bleeding-edge builds (unstable)
 
-[![GitHub build status](https://img.shields.io/github/workflow/status/CaffeineMC/sodium-fabric/gradle-ci/1.16.x/dev)](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml)
+[![GitHub build status](https://img.shields.io/github/workflow/status/CaffeineMC/sodium-fabric/gradle-ci/1.17.x/dev)](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml)
 
 If you are a player who is looking to get your hands on the latest **bleeding-edge changes for testing**, consider
 taking a look at the automated builds produced through our [GitHub Actions workflow](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml?query=event%3Apush).
@@ -53,11 +53,6 @@ we will expect that this is the case. Caveat emptor.
 If you are using the CurseForge client, you can continue to find downloads through our
 [CurseForge page](https://www.curseforge.com/minecraft/mc-mods/sodium). Unless you are using the CurseForge
 client, you should prefer the downloads linked on our Modrinth or GitHub release pages above.
-
-The CurseForge client does not natively support Fabric modding, so you will need to install
-[Jumploader](https://www.curseforge.com/minecraft/mc-mods/jumploader) in order to set up your Fabric environment. Due to
-the extra complexity and startup overhead this workaround adds, we generally do not recommend using this method unless
-you have an existing setup with it.
 
 ---
 

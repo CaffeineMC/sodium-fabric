@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile.buffers;
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.RegionChunkRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
@@ -18,12 +19,13 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
 
     public BakedChunkModelBuilder(IndexBufferBuilder[] indexBufferBuilders,
                                   ModelVertexSink vertexSink,
-                                  ChunkRenderData.Builder renderData, Vec3i pos) {
+                                  ChunkRenderData.Builder renderData,
+                                  int chunkId) {
         this.indexBufferBuilders = indexBufferBuilders;
         this.vertexSink = vertexSink;
 
         this.renderData = renderData;
-        this.id = RenderRegion.getChunkIndex(pos.getX(), pos.getY(), pos.getZ());
+        this.id = chunkId;
     }
 
     @Override

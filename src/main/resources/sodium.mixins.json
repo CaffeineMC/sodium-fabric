@@ -10,6 +10,7 @@
     "conformVisibility": true
   },
   "client": [
+    "core.MixinMinecraftClient",
     "core.frustum.MixinFrustum",
     "core.matrix.MixinMatrix3f",
     "core.matrix.MixinMatrix4f",
@@ -35,7 +36,7 @@
     "features.debug.MixinDebugHud",
     "features.entity.fast_render.MixinCuboid",
     "features.entity.fast_render.MixinModelPart",
-    "features.entity.smooth_lighting.MixinEntityRenderer",
+    "features.entity.cull.MixinEntityRenderer",
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinClientWorld",
     "features.gui.MixinDebugHud",
@@ -46,7 +47,6 @@
     "features.matrix_stack.MixinVertexConsumer",
     "features.model.MixinMultipartBakedModel",
     "features.model.MixinWeightedBakedModel",
-    "features.options.MixinGameOptions",
     "features.options.MixinInGameHud",
     "features.options.MixinOptionsScreen",
     "features.options.MixinWorldRenderer",
@@ -58,6 +58,7 @@
     "features.texture_tracking.MixinSprite",
     "features.texture_tracking.MixinSpriteAnimation",
     "features.texture_tracking.MixinSpriteAtlasTexture",
+    "features.texture_tracking.MixinSpriteBillboardParticle",
     "features.texture_updates.MixinSpriteInterpolated"
   ]
 }

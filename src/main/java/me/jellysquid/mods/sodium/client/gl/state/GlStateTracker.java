@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gl.state;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTarget;
+import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
 
@@ -18,7 +19,7 @@ public class GlStateTracker {
     private int vertexArrayRestoreState;
 
     public GlStateTracker() {
-        this.clearRestoreState();
+        this.reset();
     }
 
     public void notifyVertexArrayDeleted(GlVertexArray vertexArray) {
@@ -28,66 +29,65 @@ public class GlStateTracker {
     }
 
     public void notifyBufferDeleted(GlBuffer buffer) {
-        int h = buffer.handle();
-
-        for (int i = 0; i < this.bufferState.length; i++) {
-            if (this.bufferState[i] == h) {
-                this.bufferState[i] = UNASSIGNED_HANDLE;
+        for (GlBufferTarget target : GlBufferTarget.VALUES) {
+            if (this.bufferState[target.ordinal()] == buffer.handle()) {
+                this.bufferState[target.ordinal()] = UNASSIGNED_HANDLE;
             }
         }
     }
 
     public boolean makeBufferActive(GlBufferTarget target, GlBuffer buffer) {
-        return this.makeBufferActive(target, buffer == null ? GlBuffer.NULL_BUFFER_ID : buffer.handle());
-    }
-    
-    private boolean makeBufferActive(GlBufferTarget target, int buffer) {
-        int prevBuffer = this.bufferState[target.ordinal()];
-        
-        if (prevBuffer == UNASSIGNED_HANDLE) {
-            this.bufferRestoreState[target.ordinal()] = GL20C.glGetInteger(target.getBindingParameter());
+        boolean changed = this.bufferState[target.ordinal()] != buffer.handle();
+
+        if (changed) {
+            this.bufferState[target.ordinal()] = buffer.handle();
         }
 
-        this.bufferState[target.ordinal()] = buffer;
-
-        return prevBuffer != buffer;
+        return changed;
     }
 
     public boolean makeVertexArrayActive(GlVertexArray array) {
-        return this.makeVertexArrayActive(array == null ? GlVertexArray.NULL_ARRAY_ID : array.handle());
-    }
-
-    private boolean makeVertexArrayActive(int array) {
-        int prevArray = this.vertexArrayState;
-
-        if (prevArray == UNASSIGNED_HANDLE) {
-            this.vertexArrayRestoreState = GL20C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
+        if (this.vertexArrayRestoreState == UNASSIGNED_HANDLE) {
+            this.vertexArrayRestoreState = GL11C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
         }
 
-        this.vertexArrayState = array;
+        int handle = array == null ? GlVertexArray.NULL_ARRAY_ID : array.handle();
+        boolean changed = this.vertexArrayState != handle;
 
-        return prevArray != array;
+        if (changed) {
+            this.vertexArrayState = handle;
+
+            Arrays.fill(this.bufferState, UNASSIGNED_HANDLE);
+        }
+
+        return changed;
     }
 
-    public void applyRestoreState() {
+    public void pop() {
+        if (this.vertexArrayRestoreState != UNASSIGNED_HANDLE && this.vertexArrayState != this.vertexArrayRestoreState) {
+            GL30C.glBindVertexArray(this.vertexArrayRestoreState);
+        }
+
         for (int i = 0; i < GlBufferTarget.COUNT; i++) {
-            if (this.bufferState[i] != this.bufferRestoreState[i] &&
-                    this.bufferRestoreState[i] != UNASSIGNED_HANDLE) {
+            if (this.bufferRestoreState[i] != UNASSIGNED_HANDLE && this.bufferRestoreState[i] != this.bufferState[i]) {
                 GL20C.glBindBuffer(GlBufferTarget.VALUES[i].getTargetParameter(), this.bufferRestoreState[i]);
             }
         }
 
-        if (this.vertexArrayState != this.vertexArrayRestoreState &&
-                this.vertexArrayRestoreState != UNASSIGNED_HANDLE) {
-            GL30C.glBindVertexArray(this.vertexArrayRestoreState);
-        }
+        this.reset();
     }
 
-    public void clearRestoreState() {
+    public void reset() {
         Arrays.fill(this.bufferState, UNASSIGNED_HANDLE);
         Arrays.fill(this.bufferRestoreState, UNASSIGNED_HANDLE);
 
         this.vertexArrayState = UNASSIGNED_HANDLE;
         this.vertexArrayRestoreState = UNASSIGNED_HANDLE;
+    }
+
+    public void push() {
+        for (GlBufferTarget target : GlBufferTarget.VALUES) {
+            this.bufferRestoreState[target.ordinal()] = GL11C.glGetInteger(target.getBindingParameter());
+        }
     }
 }

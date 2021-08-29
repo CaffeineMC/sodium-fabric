@@ -58,7 +58,7 @@ public class ChunkBuildBuffers {
         }
     }
 
-    public void init(ChunkRenderData.Builder renderData, Vec3i pos) {
+    public void init(ChunkRenderData.Builder renderData, int chunkId) {
         for (VertexBufferBuilder vertexBuffer : this.vertexBuffers) {
             vertexBuffer.start();
         }
@@ -73,7 +73,7 @@ public class ChunkBuildBuffers {
             ModelVertexSink vertexSink = this.vertexType.createBufferWriter(this.vertexBuffers[i]);
             IndexBufferBuilder[] indexBuffers = this.indexBuffers[i];
 
-            this.delegates[i] = new BakedChunkModelBuilder(indexBuffers, vertexSink, renderData, pos);
+            this.delegates[i] = new BakedChunkModelBuilder(indexBuffers, vertexSink, renderData, chunkId);
         }
     }
 
