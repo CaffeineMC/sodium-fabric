@@ -6,7 +6,6 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.client.particle.ParticleTextureSheet;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
@@ -47,8 +46,10 @@ public class MixinParticleManager {
             return null;
         }
 
-        // If culling isn't enabled, simply return the queue as-is
-        if (!this.useCulling) {
+        SodiumWorldRenderer renderer = SodiumWorldRenderer.instanceNullable();
+
+        // If culling isn't enabled or available, simply return the queue as-is
+        if (renderer == null || !this.useCulling) {
             return (V) queue;
         }
 
@@ -56,13 +57,11 @@ public class MixinParticleManager {
         Queue<Particle> filtered = this.cachedQueue;
         filtered.clear();
 
-        SodiumWorldRenderer worldRenderer = SodiumWorldRenderer.getInstance();
-
         for (Particle particle : queue) {
             Box box = particle.getBoundingBox();
 
             // Hack: Grow the particle's bounding box in order to work around mis-behaved particles
-            if (!worldRenderer.isBoxVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
+            if (!renderer.isBoxVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
                 continue;
             }
 
