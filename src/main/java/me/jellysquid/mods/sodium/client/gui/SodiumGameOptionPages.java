@@ -228,11 +228,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(SodiumGameOptions.ArenaMemoryAllocator.class, sodiumOpts)
-                        .setName(new LiteralText("Chunk Memory Allocator"))
-                        .setTooltip(new TranslatableText("""
-                                Selects the memory allocator that will be used for chunk rendering.
-                                - ASYNC: Fastest option, works well with most modern graphics drivers.
-                                - SWAP: Fallback option for older graphics drivers. May increase memory usage significantly."""))
+                        .setName(new TranslatableText("sodium.options.chunk_memory_allocator.name"))
+                        .setTooltip(new TranslatableText("sodium.options.chunk_memory_allocator.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.ArenaMemoryAllocator.class))
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.advanced.arenaMemoryAllocator = value, opts -> opts.advanced.arenaMemoryAllocator)
@@ -240,11 +237,8 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(new LiteralText("Use Persistent Mapping"))
-                        .setTooltip(new LiteralText("""
-                                If enabled, a small amount of memory (less than 16 MB) will be persistently mapped as a staging buffer for chunk uploading, helping to reduce CPU overhead and frame time instability when loading or updating chunks.
-                                
-                                Requires OpenGL 4.4 or ARB_buffer_storage."""))
+                        .setName(new TranslatableText("sodium.options.use_persistent_mapping.name"))
+                        .setTooltip(new TranslatableText("sodium.options.use_persistent_mapping.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setEnabled(MappedStagingBuffer.isSupported(RenderDevice.INSTANCE))
