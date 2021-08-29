@@ -34,7 +34,7 @@ Usually, releases will be made available on GitHub slightly sooner than other lo
 
 #### Bleeding-edge builds (unstable)
 
-[![GitHub build status](https://img.shields.io/github/workflow/status/CaffeineMC/sodium-fabric/gradle-ci/1.16.x/dev)](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml)
+[![GitHub build status](https://img.shields.io/github/workflow/status/CaffeineMC/sodium-fabric/gradle-ci/1.17.x/dev)](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml)
 
 If you are a player who is looking to get your hands on the latest **bleeding-edge changes for testing**, consider
 taking a look at the automated builds produced through our [GitHub Actions workflow](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml?query=event%3Apush).
