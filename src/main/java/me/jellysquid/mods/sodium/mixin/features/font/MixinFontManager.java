@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.features.gui.font;
+package me.jellysquid.mods.sodium.mixin.features.font;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.util.font.FontManagerExtended;

@@ -38,6 +38,7 @@ public class SodiumConfig {
         this.addMixinRule("features.entity", true);
         this.addMixinRule("features.entity.fast_render", true);
         this.addMixinRule("features.entity.smooth_lighting", true);
+        this.addMixinRule("features.font", true);
         this.addMixinRule("features.gui", true);
         this.addMixinRule("features.gui.fast_loading_screen", true);
         this.addMixinRule("features.gui.font", true);

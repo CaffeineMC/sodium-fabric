@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.features.gui.font;
+package me.jellysquid.mods.sodium.mixin.features.font;
 
 import me.jellysquid.mods.sodium.client.util.SparseArray;
 import net.minecraft.client.font.*;
