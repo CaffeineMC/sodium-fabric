@@ -2,28 +2,24 @@ package me.jellysquid.mods.sodium.mixin.features.font;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.client.util.font.FontManagerExtended;
-import net.minecraft.client.font.Font;
+import me.jellysquid.mods.sodium.client.util.font.SinglePreparationResourceReloaderCallback;
 import net.minecraft.client.font.FontManager;
 import net.minecraft.client.font.FontStorage;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.resource.ResourceManager;
+import net.minecraft.client.texture.TextureManager;
+import net.minecraft.resource.ResourceReloader;
+import net.minecraft.resource.SinglePreparationResourceReloader;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.profiler.Profiler;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 @Mixin(FontManager.class)
-public class MixinFontManager implements FontManagerExtended {
+public class MixinFontManager {
     @Shadow
     @Final
     private Map<Identifier, FontStorage> fontStorages;
@@ -35,7 +31,18 @@ public class MixinFontManager implements FontManagerExtended {
     @Final
     private FontStorage missingStorage;
 
+    @Mutable
+    @Shadow
+    @Final
+    private ResourceReloader resourceReloadListener;
     private Map<Identifier, FontStorage> fontStorageOverrides = Collections.emptyMap();
+
+    @SuppressWarnings("unchecked")
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void reinit(TextureManager manager, CallbackInfo ci) {
+        Class<SinglePreparationResourceReloader<?>> type = (Class<SinglePreparationResourceReloader<?>>) this.resourceReloadListener.getClass();
+        this.resourceReloadListener = new SinglePreparationResourceReloaderCallback<>(type.cast(this.resourceReloadListener), this::rebuild);
+    }
 
     /**
      * @author JellySquid
@@ -46,8 +53,7 @@ public class MixinFontManager implements FontManagerExtended {
         return new TextRenderer(this::getFontStorageOverride);
     }
 
-    @Override
-    public void rebuild() {
+    private void rebuild() {
         this.fontStorageOverrides = this.fontStorages.size() < 4 ? new Object2ObjectArrayMap<>(this.fontStorages) : new Object2ObjectOpenHashMap<>(this.fontStorages);
 
         for (Map.Entry<Identifier, Identifier> entry : this.idOverrides.entrySet()) {
@@ -57,17 +63,5 @@ public class MixinFontManager implements FontManagerExtended {
 
     private FontStorage getFontStorageOverride(Identifier id) {
         return this.fontStorageOverrides.getOrDefault(id, this.missingStorage);
-    }
-
-    @Mixin(targets = "net/minecraft/client/font/FontManager$1")
-    private static class MixinReloadListener {
-        @Shadow(aliases = "field_18216", remap = false)
-        @Final
-        private FontManager fontManager;
-
-        @Inject(method = "apply", at = @At("RETURN"))
-        private void postApply(Map<Identifier, List<Font>> map, ResourceManager resourceManager, Profiler profiler, CallbackInfo ci) {
-            ((FontManagerExtended) this.fontManager).rebuild();
-        }
     }
 }

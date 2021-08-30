@@ -65,11 +65,11 @@
     "features.texture_updates.MixinSpriteInterpolated"
   ],
   "mixins": [
+    "core.MixinSinglePreparationResourceReloader",
     "features.block.MixinSignBlockEntityRenderer",
     "features.buffer_builder.fast_sort.MixinBufferBuilder",
     "features.buffer_builder.fast_sort.MixinBufferBuilder$MixinState",
     "features.font.MixinFontManager",
-    "features.font.MixinFontManager$MixinReloadListener",
     "features.font.MixinFontStorage",
     "features.font.MixinTextRenderer",
     "features.font.MixinTextRendererDrawer"
