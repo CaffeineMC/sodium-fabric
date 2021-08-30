@@ -145,7 +145,6 @@ public class SodiumGameOptions {
         // Also use the PID to ensure no other instance of MC can write to the same tmp file
         long pid = ProcessHandle.current().pid();
         Path tempPath = this.configPath.resolveSibling(this.configPath.getFileName() + String.valueOf(pid) + ".tmp");
-        SodiumClientMod.logger().info(tempPath);
 
         // Write the file to our temporary location
         Files.writeString(tempPath, GSON.toJson(this));
