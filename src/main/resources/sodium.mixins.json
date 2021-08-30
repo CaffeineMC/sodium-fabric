@@ -35,15 +35,15 @@
     "features.chunk_rendering.MixinPalettedContainer",
     "features.chunk_rendering.MixinWorldRenderer",
     "features.debug.MixinDebugHud",
+    "features.entity.cull.MixinEntityRenderer",
     "features.entity.fast_render.MixinCuboid",
     "features.entity.fast_render.MixinModelPart",
-    "features.entity.cull.MixinEntityRenderer",
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinClientWorld",
     "features.gui.MixinDebugHud",
+    "features.gui.MixinHandledScreen",
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
     "features.gui.font.MixinGlyphRenderer",
-    "features.gui.MixinHandledScreen",
     "features.item.MixinInGameHud",
     "features.item.MixinItemRenderer",
     "features.matrix_stack.MixinMatrixStack",
@@ -63,5 +63,8 @@
     "features.texture_tracking.MixinSpriteAtlasTexture",
     "features.texture_tracking.MixinSpriteBillboardParticle",
     "features.texture_updates.MixinSpriteInterpolated"
+  ],
+  "mixins": [
+    "features.block.MixinSignBlockEntityRenderer"
   ]
 }
