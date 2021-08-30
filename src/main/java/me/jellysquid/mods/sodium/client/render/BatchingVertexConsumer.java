@@ -26,7 +26,7 @@ public class BatchingVertexConsumer implements VertexConsumerProvider {
     }
 
     private final Map<RenderLayer, BufferBuilder> layerBuffers = new Reference2ObjectOpenHashMap<>();
-    private final Set<RenderLayer> activeLayers = new ObjectArraySet<>();
+    private final Set<RenderLayer> activeLayers = new ReferenceOpenHashSet<>();
 
     @Override
     public VertexConsumer getBuffer(RenderLayer renderLayer) {

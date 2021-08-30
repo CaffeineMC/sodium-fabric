@@ -24,3 +24,5 @@ accessible field net/minecraft/client/texture/Sprite height I
 accessible field net/minecraft/client/texture/Sprite images [Lnet/minecraft/client/texture/NativeImage;
 accessible method net/minecraft/client/texture/Sprite upload (II[Lnet/minecraft/client/texture/NativeImage;)V
 accessible field net/minecraft/client/texture/NativeImage pointer J
+
+accessible method net/minecraft/client/font/TextRenderer getFontStorage (Lnet/minecraft/util/Identifier;)Lnet/minecraft/client/font/FontStorage;

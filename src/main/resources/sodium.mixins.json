@@ -65,6 +65,8 @@
     "features.texture_updates.MixinSpriteInterpolated"
   ],
   "mixins": [
-    "features.block.MixinSignBlockEntityRenderer"
+    "features.block.MixinSignBlockEntityRenderer",
+    "features.gui.font.MixinFontStorage",
+    "features.gui.font.MixinTextRenderer"
   ]
 }
