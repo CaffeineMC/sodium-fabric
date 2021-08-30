@@ -68,6 +68,8 @@
     "features.block.MixinSignBlockEntityRenderer",
     "features.buffer_builder.fast_sort.MixinBufferBuilder",
     "features.buffer_builder.fast_sort.MixinBufferBuilder$MixinState",
+    "features.gui.font.MixinFontManager",
+    "features.gui.font.MixinFontManager$MixinReloadListener",
     "features.gui.font.MixinFontStorage",
     "features.gui.font.MixinTextRendererDrawer"
   ]
