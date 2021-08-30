@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import net.minecraft.client.option.GraphicsMode;
 import net.minecraft.text.LiteralText;
@@ -104,7 +105,8 @@ public class SodiumGameOptions {
             try (JsonReader reader = new JsonReader(new FileReader(path.toFile()))) {
                 config = GSON.fromJson(reader, SodiumGameOptions.class);
             } catch (IOException | JsonSyntaxException e) {
-                throw new RuntimeException("Could not parse config", e);
+                SodiumClientMod.logger().warn("Could not parse config. Resetting config.");
+                config = new SodiumGameOptions();
             }
         } else {
             config = new SodiumGameOptions();
