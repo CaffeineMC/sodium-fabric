@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.font;
 
-import me.jellysquid.mods.sodium.client.util.SparseArray;
+import me.jellysquid.mods.sodium.client.util.HashBackedSparseArray;
 import net.minecraft.client.font.*;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,8 +28,8 @@ public abstract class MixinFontStorage {
     @Shadow
     protected abstract GlyphRenderer getGlyphRenderer(RenderableGlyph c);
 
-    private final SparseArray<Glyph> glyphCacheSparse = new SparseArray<>(65536, 8);
-    private final SparseArray<GlyphRenderer> glyphRendererSparse = new SparseArray<>(65536, 8);
+    private final HashBackedSparseArray<Glyph> glyphCacheSparse = new HashBackedSparseArray<>(65536, 8);
+    private final HashBackedSparseArray<GlyphRenderer> glyphRendererSparse = new HashBackedSparseArray<>(65536, 8);
 
     @Inject(method = "setFonts", at = @At(value = "INVOKE", target = "Lit/unimi/dsi/fastutil/ints/Int2ObjectMap;clear()V", ordinal = 0))
     private void onGlyphCacheCleared(List<Font> fonts, CallbackInfo ci) {
