@@ -20,6 +20,7 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
         this.action = action;
     }
 
+
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
         if (!this.visible) {

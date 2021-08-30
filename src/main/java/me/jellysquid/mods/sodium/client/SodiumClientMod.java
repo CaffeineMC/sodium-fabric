@@ -13,6 +13,8 @@ public class SodiumClientMod implements ClientModInitializer {
 
     private static String MOD_VERSION;
 
+    public static boolean forcedReset = false;
+
     @Override
     public void onInitializeClient() {
         ModContainer mod = FabricLoader.getInstance()

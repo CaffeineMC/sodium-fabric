@@ -52,5 +52,6 @@
   "sodium.options.buttons.undo": "Undo",
   "sodium.options.buttons.apply": "Apply",
   "sodium.options.buttons.close": "Close",
-  "sodium.options.buttons.donate": "Buy us a coffee!"
+  "sodium.options.buttons.donate": "Buy us a coffee!",
+  "sodium.options.buttons.config_error": "§cConfig reset, unable to read at boot"
 }

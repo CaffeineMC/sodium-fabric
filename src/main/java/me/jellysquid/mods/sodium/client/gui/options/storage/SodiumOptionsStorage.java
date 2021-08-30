@@ -7,6 +7,7 @@ import java.io.IOException;
 
 public class SodiumOptionsStorage implements OptionStorage<SodiumGameOptions> {
     private final SodiumGameOptions options;
+    public boolean forcedReset = false;
 
     public SodiumOptionsStorage() {
         this.options = SodiumClientMod.options();

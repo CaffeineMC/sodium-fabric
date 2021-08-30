@@ -49,6 +49,7 @@ public class SodiumGameOptions {
 
     public static class NotificationSettings {
         public boolean hideDonationButton = false;
+        public boolean forcedReset = false;
     }
 
     public enum ArenaMemoryAllocator implements TextProvider {
@@ -70,6 +71,7 @@ public class SodiumGameOptions {
             return this.name;
         }
     }
+
 
     public enum GraphicsQuality implements TextProvider {
         DEFAULT("generator.default"),
@@ -107,9 +109,11 @@ public class SodiumGameOptions {
             } catch (IOException | JsonSyntaxException e) {
                 SodiumClientMod.logger().warn("Could not parse config. Resetting config.");
                 config = new SodiumGameOptions();
+                SodiumClientMod.forcedReset = true;
             }
         } else {
             config = new SodiumGameOptions();
+            SodiumClientMod.forcedReset = true;
         }
 
         config.configPath = path;

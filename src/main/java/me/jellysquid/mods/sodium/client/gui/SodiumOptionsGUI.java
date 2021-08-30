@@ -37,9 +37,11 @@ public class SodiumOptionsGUI extends Screen {
 
     private FlatButtonWidget applyButton, closeButton, undoButton;
     private FlatButtonWidget donateButton, hideDonateButton;
+    private FlatButtonWidget configResetButton;
 
     private boolean hasPendingChanges;
     private ControlElement<?> hoveredElement;
+
 
     public SodiumOptionsGUI(Screen prevScreen) {
         super(new TranslatableText("Sodium Options"));
@@ -84,11 +86,15 @@ public class SodiumOptionsGUI extends Screen {
         this.undoButton = new FlatButtonWidget(new Dim2i(this.width - 211, this.height - 30, 65, 20), new TranslatableText("sodium.options.buttons.undo"), this::undoChanges);
         this.applyButton = new FlatButtonWidget(new Dim2i(this.width - 142, this.height - 30, 65, 20), new TranslatableText("sodium.options.buttons.apply"), this::applyChanges);
         this.closeButton = new FlatButtonWidget(new Dim2i(this.width - 73, this.height - 30, 65, 20), new TranslatableText("sodium.options.buttons.close"), this::onClose);
+        this.configResetButton = new FlatButtonWidget(new Dim2i(this.width - 211, this.height - 55, 203, 20), new TranslatableText("sodium.options.buttons.config_error"),this::hideConfigReset);
         this.donateButton = new FlatButtonWidget(new Dim2i(this.width - 128, 6, 100, 20), new TranslatableText("sodium.options.buttons.donate"), this::openDonationPage);
         this.hideDonateButton = new FlatButtonWidget(new Dim2i(this.width - 26, 6, 20, 20), new LiteralText("x"), this::hideDonationButton);
 
         if (SodiumClientMod.options().notifications.hideDonationButton) {
             this.setDonationButtonVisibility(false);
+        }
+        if (!SodiumClientMod.forcedReset) {
+            this.configResetButton.setVisible(false);
         }
 
         this.addDrawableChild(this.undoButton);
@@ -96,11 +102,17 @@ public class SodiumOptionsGUI extends Screen {
         this.addDrawableChild(this.closeButton);
         this.addDrawableChild(this.donateButton);
         this.addDrawableChild(this.hideDonateButton);
+        this.addDrawableChild(this.configResetButton);
     }
 
     private void setDonationButtonVisibility(boolean value) {
         this.donateButton.setVisible(value);
         this.hideDonateButton.setVisible(value);
+    }
+
+    private void hideConfigReset(){
+        this.configResetButton.setVisible(false);
+        SodiumClientMod.forcedReset = false;
     }
 
     private void hideDonationButton() {
