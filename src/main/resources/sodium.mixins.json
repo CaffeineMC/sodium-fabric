@@ -40,10 +40,10 @@
     "features.entity.fast_render.MixinModelPart",
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinClientWorld",
+    "features.font.MixinGlyphRenderer",
     "features.gui.MixinDebugHud",
     "features.gui.MixinHandledScreen",
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
-    "features.font.MixinGlyphRenderer",
     "features.item.MixinInGameHud",
     "features.item.MixinItemRenderer",
     "features.matrix_stack.MixinMatrixStack",
@@ -71,6 +71,7 @@
     "features.font.MixinFontManager",
     "features.font.MixinFontManager$MixinReloadListener",
     "features.font.MixinFontStorage",
+    "features.font.MixinTextRenderer",
     "features.font.MixinTextRendererDrawer"
   ]
 }

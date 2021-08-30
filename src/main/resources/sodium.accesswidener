@@ -36,3 +36,7 @@ accessible field net/minecraft/client/font/GlyphRenderer$Rectangle red F
 accessible field net/minecraft/client/font/GlyphRenderer$Rectangle green F
 accessible field net/minecraft/client/font/GlyphRenderer$Rectangle blue F
 accessible field net/minecraft/client/font/GlyphRenderer$Rectangle alpha F
+
+accessible class net/minecraft/client/font/TextRenderer$Drawer
+accessible field net/minecraft/client/font/TextRenderer$Drawer x F
+accessible field net/minecraft/client/font/TextRenderer$Drawer y F

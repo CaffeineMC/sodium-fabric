@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.font;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.util.font.FontManagerExtended;
 import net.minecraft.client.font.Font;
@@ -17,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +35,7 @@ public class MixinFontManager implements FontManagerExtended {
     @Final
     private FontStorage missingStorage;
 
-    private Map<Identifier, FontStorage> fontStorageOverrides = new Object2ObjectOpenHashMap<>();
+    private Map<Identifier, FontStorage> fontStorageOverrides = Collections.emptyMap();
 
     /**
      * @author JellySquid
@@ -46,7 +48,7 @@ public class MixinFontManager implements FontManagerExtended {
 
     @Override
     public void rebuild() {
-        this.fontStorageOverrides = new Object2ObjectOpenHashMap<>(this.fontStorages);
+        this.fontStorageOverrides = this.fontStorages.size() < 4 ? new Object2ObjectArrayMap<>(this.fontStorages) : new Object2ObjectOpenHashMap<>(this.fontStorages);
 
         for (Map.Entry<Identifier, Identifier> entry : this.idOverrides.entrySet()) {
             this.fontStorageOverrides.put(entry.getKey(), this.getFontStorageOverride(entry.getValue()));
