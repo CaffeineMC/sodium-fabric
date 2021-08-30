@@ -49,7 +49,6 @@ public class SodiumGameOptions {
 
     public static class NotificationSettings {
         public boolean hideDonationButton = false;
-        public boolean forcedReset = false;
     }
 
     public enum ArenaMemoryAllocator implements TextProvider {
