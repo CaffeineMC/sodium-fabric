@@ -26,3 +26,13 @@ accessible method net/minecraft/client/texture/Sprite upload (II[Lnet/minecraft/
 accessible field net/minecraft/client/texture/NativeImage pointer J
 
 accessible method net/minecraft/client/font/TextRenderer getFontStorage (Lnet/minecraft/util/Identifier;)Lnet/minecraft/client/font/FontStorage;
+
+accessible field net/minecraft/client/font/GlyphRenderer$Rectangle minX F
+accessible field net/minecraft/client/font/GlyphRenderer$Rectangle minY F
+accessible field net/minecraft/client/font/GlyphRenderer$Rectangle maxX F
+accessible field net/minecraft/client/font/GlyphRenderer$Rectangle maxY F
+accessible field net/minecraft/client/font/GlyphRenderer$Rectangle zIndex F
+accessible field net/minecraft/client/font/GlyphRenderer$Rectangle red F
+accessible field net/minecraft/client/font/GlyphRenderer$Rectangle green F
+accessible field net/minecraft/client/font/GlyphRenderer$Rectangle blue F
+accessible field net/minecraft/client/font/GlyphRenderer$Rectangle alpha F

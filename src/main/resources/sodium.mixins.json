@@ -69,6 +69,6 @@
     "features.buffer_builder.fast_sort.MixinBufferBuilder",
     "features.buffer_builder.fast_sort.MixinBufferBuilder$MixinState",
     "features.gui.font.MixinFontStorage",
-    "features.gui.font.MixinTextRenderer"
+    "features.gui.font.MixinTextRendererDrawer"
   ]
 }
