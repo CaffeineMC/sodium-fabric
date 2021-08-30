@@ -134,7 +134,7 @@ public class SodiumGameOptions {
         } else if (!Files.isDirectory(dir)) {
             throw new IOException("Not a directory: " + dir);
         }
-        if (!file.canWrite()){throw new IOException("Sodium Config is read-only.");}
+        if (!file.canWrite() && file.exists()){throw new IOException("Sodium Config is read-only.");}
 
         // Use a temporary location next to the config's final destination
         Path tempPath = this.configPath.resolveSibling(this.configPath.getFileName() + ".tmp");
