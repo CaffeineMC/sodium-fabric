@@ -10,14 +10,12 @@ public record ChunkShaderOptions(ChunkFogMode fog, BlockRenderPass pass) {
 
         if (this.pass.isDetail()) {
             constants.add("DETAIL");
-        }
 
-        if (this.pass.isDetail()) {
-            constants.add(this.pass.isMipped() ? "DETAIL_MIPPED" : "DETAIL_NONMIPPED");
-        }
-
-        if (this.pass.getAlphaCutoff() != 0.0f) {
-            constants.add("ALPHA_CUTOFF", String.valueOf(this.pass.getAlphaCutoff()));
+            if (this.pass == BlockRenderPass.OPAQUE_DETAIL)  {
+                constants.add("DETAIL_FADE_IN");
+            } else {
+                constants.add("DETAIL_FADE_OUT");
+            }
         }
 
         return constants.build();

@@ -12,6 +12,7 @@ in vec4 a_Pos; // The position of the vertex around the model origin
 in vec4 a_Color; // The color of the vertex
 in vec2 a_TexCoord; // The block texture coordinate of the vertex
 in vec2 a_LightCoord; // The light texture coordinate of the vertex
+in int a_Options; // The rendering options for the vertex
 
 uniform mat4 u_ProjectionMatrix;
 uniform mat4 u_ModelViewMatrix;
@@ -28,6 +29,7 @@ layout(std140) uniform ubo_DrawParameters {
 out vec4 v_Color;
 out vec2 v_TexCoord;
 out vec2 v_LightCoord;
+flat out int v_Options;
 
 out float v_FragDistance;
 
@@ -46,4 +48,5 @@ void main() {
     v_Color = a_Color;
     v_TexCoord = a_TexCoord * u_TextureScale;
     v_LightCoord = a_LightCoord;
+    v_Options = a_Options;
 }

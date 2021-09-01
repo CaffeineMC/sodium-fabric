@@ -4,27 +4,19 @@ import net.minecraft.client.render.RenderLayer;
 
 // TODO: Move away from using an enum, make this extensible
 public enum BlockRenderPass {
-    SOLID(RenderLayer.getSolid(), false, 0.0f),
-    CUTOUT(RenderLayer.getCutout(), false, 0.1f),
-    CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false, 0.5f),
-    TRANSLUCENT(RenderLayer.getTranslucent(), true, 0.0f),
-    TRIPWIRE(RenderLayer.getTripwire(), true, 0.1f),
-    DETAIL_CUTOUT(RenderLayer.getCutout(), false, 0.1f),
-    DETAIL_CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false, 0.5f);
+    OPAQUE(RenderLayer.getCutout(), false),
+    OPAQUE_DETAIL(RenderLayer.getCutout(), false),
+    TRANSLUCENT(RenderLayer.getTranslucent(), true);
 
     public static final BlockRenderPass[] VALUES = BlockRenderPass.values();
     public static final int COUNT = VALUES.length;
 
     private final RenderLayer layer;
     private final boolean translucent;
-    private final float alphaCutoff;
 
-    private final boolean detail = this.name().startsWith("DETAIL_");
-
-    BlockRenderPass(RenderLayer layer, boolean translucent, float alphaCutoff) {
+    BlockRenderPass(RenderLayer layer, boolean translucent) {
         this.layer = layer;
         this.translucent = translucent;
-        this.alphaCutoff = alphaCutoff;
     }
 
     public boolean isTranslucent() {
@@ -45,15 +37,7 @@ public enum BlockRenderPass {
         this.layer.startDrawing();
     }
 
-    public float getAlphaCutoff() {
-        return this.alphaCutoff;
-    }
-
     public boolean isDetail() {
-        return this.detail;
-    }
-
-    public boolean isMipped() {
-        return !(this == CUTOUT || this == DETAIL_CUTOUT);
+        return this == OPAQUE_DETAIL;
     }
 }

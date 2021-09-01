@@ -69,6 +69,7 @@
     "features.block.MixinSignBlockEntityRenderer",
     "features.buffer_builder.fast_sort.MixinBufferBuilder",
     "features.buffer_builder.fast_sort.MixinBufferBuilder$MixinState",
+    "features.chunk_rendering.MixinLightmapTextureManager",
     "features.font.MixinFontManager",
     "features.font.MixinFontStorage",
     "features.font.MixinTextRenderer",

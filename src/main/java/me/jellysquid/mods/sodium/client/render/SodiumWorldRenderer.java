@@ -212,28 +212,20 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
      * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
     public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
-        BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
+        if (renderLayer == RenderLayer.getSolid()) {
+            this.drawChunkLayer(BlockRenderPass.OPAQUE, matrixStack, x, y, z);
+            this.drawChunkLayer(BlockRenderPass.OPAQUE_DETAIL, matrixStack, x, y, z);
+        } else if (renderLayer == RenderLayer.getTranslucent()) {
+            this.drawChunkLayer(BlockRenderPass.TRANSLUCENT, matrixStack, x, y, z);
+        }
+    }
+
+    public void drawChunkLayer(BlockRenderPass pass, MatrixStack matrixStack, double x, double y, double z) {
         pass.startDrawing();
 
         this.renderSectionManager.renderLayer(matrixStack, pass, x, y, z);
 
         pass.endDrawing();
-
-        BlockRenderPass[] secondaryPasses = new BlockRenderPass[0];
-
-        if (renderLayer == RenderLayer.getCutoutMipped()) {
-            secondaryPasses = new BlockRenderPass[] { BlockRenderPass.DETAIL_CUTOUT_MIPPED };
-        } else if (renderLayer == RenderLayer.getCutout()) {
-            secondaryPasses = new BlockRenderPass[] { BlockRenderPass.DETAIL_CUTOUT };
-        }
-
-        for (BlockRenderPass secondaryPass : secondaryPasses) {
-            secondaryPass.startDrawing();
-
-            this.renderSectionManager.renderLayer(matrixStack, secondaryPass, x, y, z);
-
-            secondaryPass.endDrawing();
-        }
     }
 
     public void reload() {

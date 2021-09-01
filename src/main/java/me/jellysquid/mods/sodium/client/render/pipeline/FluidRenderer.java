@@ -12,8 +12,8 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.format.MaterialFlag;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -405,7 +405,7 @@ public class FluidRenderer {
 
             int light = this.quadLightData.lm[i];
 
-            vertices.writeVertex(offset, x, y, z, color, u, v, light, builder.getChunkId());
+            vertices.writeVertex(offset, x, y, z, color, u, v, light, builder.getChunkId(), MaterialFlag.CUTOUT);
         }
 
         vertices.flush();

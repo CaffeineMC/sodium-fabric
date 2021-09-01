@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-public class TextureData {
+public class TextureData implements AutoCloseable {
     public final ByteBuffer buffer;
     public final int width, height;
 
@@ -61,5 +61,10 @@ public class TextureData {
 
     public boolean isDisposed() {
         return this.disposed;
+    }
+
+    @Override
+    public void close() {
+        this.dispose();
     }
 }

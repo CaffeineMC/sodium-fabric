@@ -41,13 +41,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final GlMutableBuffer chunkInfoBuffer;
     private final boolean isBlockFaceCullingEnabled = SodiumClientMod.options().advanced.useBlockFaceCulling;
 
-    private final GlTexture stippleTexture;
-    private final float detailDistance;
-
     public RegionChunkRenderer(RenderDevice device, ChunkVertexType vertexType, float detailDistance) {
-        super(device, vertexType);
-
-        this.detailDistance = detailDistance;
+        super(device, vertexType, detailDistance);
 
         this.vertexAttributeBindings = new GlVertexAttributeBinding[] {
                 new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID,
@@ -57,7 +52,9 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.BLOCK_TEXTURE)),
                 new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,
-                        this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_TEXTURE))
+                        this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_TEXTURE)),
+                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_FLAGS,
+                        this.vertexFormat.getAttribute(ChunkMeshAttribute.BLOCK_FLAGS), true)
         };
 
         try (CommandList commandList = device.createCommandList()) {
@@ -73,13 +70,6 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         for (int i = 0; i < this.batches.length; i++) {
             this.batches[i] = MultiDrawBatch.create(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
         }
-
-        var stippleTextureData = TextureData.loadInternal("/assets/sodium/textures/shader/stipple.png");
-
-        this.stippleTexture = new GlTexture();
-        this.stippleTexture.setTextureData(stippleTextureData);
-
-        stippleTextureData.dispose();
     }
 
     private static ByteBuffer createChunkInfoBuffer(MemoryStack stack) {
@@ -108,10 +98,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         super.begin(pass);
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();
-
         shader.setProjectionMatrix(RenderSystem.getProjectionMatrix());
         shader.setDrawUniforms(this.chunkInfoBuffer);
-        shader.setDetailParameters(this.stippleTexture, this.detailDistance);
 
         for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, pass.isTranslucent())) {
             RenderRegion region = entry.getKey();
@@ -251,8 +239,6 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
         RenderDevice.INSTANCE.createCommandList()
                 .deleteBuffer(this.chunkInfoBuffer);
-
-        this.stippleTexture.delete();
     }
 
     private static Iterable<Map.Entry<RenderRegion, List<RenderSection>>> sortedRegions(ChunkRenderList list, boolean translucent) {

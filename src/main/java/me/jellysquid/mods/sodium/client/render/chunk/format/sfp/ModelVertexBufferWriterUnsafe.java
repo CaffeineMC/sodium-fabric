@@ -12,7 +12,7 @@ public class ModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe impl
     }
 
     @Override
-    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId) {
+    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId, int bits) {
         long i = this.writePointer;
 
         MemoryUtil.memPutShort(i + 0, ModelVertexType.encodePosition(posX));
@@ -26,6 +26,7 @@ public class ModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe impl
         MemoryUtil.memPutShort(i + 14, ModelVertexType.encodeBlockTexture(v));
 
         MemoryUtil.memPutInt(i + 16, ModelVertexType.encodeLightMapTexCoord(light));
+        MemoryUtil.memPutInt(i + 20, bits);
 
         this.advance();
     }

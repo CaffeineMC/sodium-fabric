@@ -1,13 +1,16 @@
 #version 150 core
 
 #import <sodium:include/fog.glsl>
+#import <sodium:include/block_material.glsl>
 
 in vec4 v_Color; // The interpolated vertex color
 in vec2 v_TexCoord; // The interpolated block texture coordinates
 in vec2 v_LightCoord; // The interpolated light map texture coordinates
 in float v_FragDistance; // The fragment's distance from the camera
+flat in int v_Options;
 
 uniform sampler2D u_BlockTex; // The block texture sampler
+uniform sampler2D u_BlockMippedTex; // The block texture sampler (with mip-maps)
 uniform sampler2D u_LightTex; // The light map texture sampler
 
 uniform vec4 u_FogColor; // The color of the shader fog
@@ -26,38 +29,38 @@ uniform float u_DetailFarPlane;
 
 uniform sampler2D u_StippleTex;
 
-float _getStipple() {
+float getStippleValue() {
     return texture(u_StippleTex, (gl_FragCoord.xy * StippleCoordScale) + StippleHalfCoordOffset).a;
 }
 #endif
 
 void main() {
-#ifdef DETAIL_NONMIPPED
-    if (_getStipple() <= smoothstep(u_DetailNearPlane, u_DetailFarPlane, v_FragDistance)) {
-        discard;
+    bool cutout = (v_Options & (1 << _MAT_CUTOUT)) != 0;
+    vec4 diffuseColor;
+
+    if (cutout) {
+        diffuseColor = texture(u_BlockTex, v_TexCoord);
+    } else {
+        diffuseColor = texture(u_BlockMippedTex, v_TexCoord);
+    }
+
+#ifdef DETAIL
+    float farPlaneOffset = getStippleValue() * -8.0;
+    float detailRatio = smoothstep(u_DetailNearPlane, u_DetailFarPlane + farPlaneOffset, v_FragDistance);
+
+    if (cutout) {
+        diffuseColor.a = max(0.0, diffuseColor.a - detailRatio);
+    } else {
+        diffuseColor.a = min(1.0, diffuseColor.a + detailRatio);
     }
 #endif
 
-    vec4 sampleBlockTex = texture(u_BlockTex, v_TexCoord);
+    if (diffuseColor.a < _mat_cutoutThreshold(v_Options)) discard;
 
-#ifdef DETAIL_MIPPED
-    sampleBlockTex.a += smoothstep(u_DetailNearPlane - (_getStipple() * 8.0), u_DetailFarPlane, v_FragDistance);
+    vec4 lightColor = texture(u_LightTex, v_LightCoord);
 
-    if (sampleBlockTex.a > 1.0) {
-        sampleBlockTex.a = 1.0;
-    }
-#endif
+    vec4 finalColor = (diffuseColor * lightColor);
+    finalColor *= v_Color;
 
-#ifdef ALPHA_CUTOFF
-    if (sampleBlockTex.a < ALPHA_CUTOFF) {
-        discard;
-    }
-#endif
-
-    vec4 sampleLightTex = texture(u_LightTex, v_LightCoord);
-
-    vec4 diffuseColor = (sampleBlockTex * sampleLightTex);
-    diffuseColor *= v_Color;
-
-    fragColor = _linearFog(diffuseColor, v_FragDistance, u_FogColor, u_FogStart, u_FogEnd);
+    fragColor = _linearFog(finalColor, v_FragDistance, u_FogColor, u_FogStart, u_FogEnd);
 }

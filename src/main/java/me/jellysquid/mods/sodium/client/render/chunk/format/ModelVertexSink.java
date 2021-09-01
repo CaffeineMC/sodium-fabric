@@ -14,11 +14,12 @@ public interface ModelVertexSink extends VertexSink {
      * @param v The y-texture of the vertex
      * @param light The packed light-map coordinates of the vertex
      * @param chunkId
+     * @param bits
      */
-    void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId);
+    void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId, int bits);
 
-    default void writeVertex(Vec3i offset, float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId) {
-        this.writeVertex(offset.getX() + posX, offset.getY() + posY, offset.getZ() + posZ, color, u, v, light, chunkId);
+    default void writeVertex(Vec3i offset, float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId, int bits) {
+        this.writeVertex(offset.getX() + posX, offset.getY() + posY, offset.getZ() + posZ, color, u, v, light, chunkId, bits);
     }
 
 }
