@@ -10,7 +10,6 @@ in float v_FragDistance; // The fragment's distance from the camera
 flat in int v_Options;
 
 uniform sampler2D u_BlockTex; // The block texture sampler
-uniform sampler2D u_BlockMippedTex; // The block texture sampler (with mip-maps)
 uniform sampler2D u_LightTex; // The light map texture sampler
 
 uniform vec4 u_FogColor; // The color of the shader fog
@@ -35,24 +34,19 @@ float getStippleValue() {
 #endif
 
 void main() {
+    // Configures whether mipmapping will be used
     bool cutout = (v_Options & (1 << _MAT_CUTOUT)) != 0;
-    vec4 diffuseColor;
 
-    if (cutout) {
-        diffuseColor = texture(u_BlockTex, v_TexCoord);
-    } else {
-        diffuseColor = texture(u_BlockMippedTex, v_TexCoord);
-    }
+    // A low LOD bias is used with cutout rendering to disable mipmapping
+    vec4 diffuseColor = texture(u_BlockTex, v_TexCoord, cutout ? -4.0 : 0.0);
 
 #ifdef DETAIL
     float farPlaneOffset = getStippleValue() * -8.0;
-    float detailRatio = smoothstep(u_DetailNearPlane, u_DetailFarPlane + farPlaneOffset, v_FragDistance);
 
-    if (cutout) {
-        diffuseColor.a = max(0.0, diffuseColor.a - detailRatio);
-    } else {
-        diffuseColor.a = min(1.0, diffuseColor.a + detailRatio);
-    }
+    float detailRatio = smoothstep(u_DetailNearPlane, u_DetailFarPlane + farPlaneOffset, v_FragDistance);
+    float detailDirection = (cutout ? -1.0 : 1.0);
+
+    diffuseColor.a = clamp((detailRatio * detailDirection) + diffuseColor.a, 0.0, 1.0);
 #endif
 
     if (diffuseColor.a < _mat_cutoutThreshold(v_Options)) discard;

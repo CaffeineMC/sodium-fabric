@@ -27,7 +27,6 @@ public class ChunkShaderInterface {
     private final DetailedShaderInterface detailBlock;
 
     private final GlUniformInt uniformBlockTex;
-    private final GlUniformInt uniformBlockMippedTex;
     private final GlUniformInt uniformLightTex;
 
     public ChunkShaderInterface(ShaderBindingContext context, ChunkShaderOptions options) {
@@ -35,7 +34,6 @@ public class ChunkShaderInterface {
         this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", GlUniformMatrix4f::new);
 
         this.uniformBlockTex = context.bindUniform("u_BlockTex", GlUniformInt::new);
-        this.uniformBlockMippedTex = context.bindUniform("u_BlockMippedTex", GlUniformInt::new);
         this.uniformLightTex = context.bindUniform("u_LightTex", GlUniformInt::new);
 
         this.uniformModelScale = context.bindUniform("u_ModelScale", GlUniformFloat::new);
@@ -56,7 +54,6 @@ public class ChunkShaderInterface {
         this.fogShader.setup();
 
         this.uniformBlockTex.setInt(ChunkShaderTextureUnit.BLOCK_TEXTURE.id());
-        this.uniformBlockMippedTex.setInt(ChunkShaderTextureUnit.BLOCK_MIPPED_TEXTURE.id());
         this.uniformLightTex.setInt(ChunkShaderTextureUnit.LIGHT_TEXTURE.id());
 
         if (this.detailBlock != null) {

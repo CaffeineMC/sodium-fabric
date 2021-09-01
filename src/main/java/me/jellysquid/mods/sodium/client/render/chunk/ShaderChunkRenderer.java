@@ -20,7 +20,6 @@ import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Identifier;
 import org.lwjgl.opengl.GL32C;
 import org.lwjgl.opengl.GL33C;
-import org.lwjgl.opengl.GL46C;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -55,12 +54,9 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         }
 
         var blockTexSampler = this.samplers.get(ChunkShaderTextureUnit.BLOCK_TEXTURE);
-        blockTexSampler.setParameter(GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_NEAREST);
+        blockTexSampler.setParameter(GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_NEAREST_MIPMAP_LINEAR);
         blockTexSampler.setParameter(GL33C.GL_TEXTURE_MAG_FILTER, GL33C.GL_NEAREST);
-
-        var blockTexMippedSampler = this.samplers.get(ChunkShaderTextureUnit.BLOCK_MIPPED_TEXTURE);
-        blockTexMippedSampler.setParameter(GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_NEAREST_MIPMAP_LINEAR);
-        blockTexMippedSampler.setParameter(GL33C.GL_TEXTURE_MAG_FILTER, GL33C.GL_NEAREST);
+        blockTexSampler.setParameter(GL33C.GL_TEXTURE_LOD_BIAS, 0.0F);
 
         var lightTexSampler = this.samplers.get(ChunkShaderTextureUnit.LIGHT_TEXTURE);
         lightTexSampler.setParameter(GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_LINEAR);
@@ -131,7 +127,6 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         AbstractTexture lightTex = lightmapTextureManager.getTexture();
 
         this.bindTexture(ChunkShaderTextureUnit.BLOCK_TEXTURE, blockAtlasTex.getGlId());
-        this.bindTexture(ChunkShaderTextureUnit.BLOCK_MIPPED_TEXTURE, blockAtlasTex.getGlId());
         this.bindTexture(ChunkShaderTextureUnit.LIGHT_TEXTURE, lightTex.getGlId());
         this.bindTexture(ChunkShaderTextureUnit.STIPPLE_TEXTURE, this.stippleTexture.handle());
     }
