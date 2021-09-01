@@ -13,9 +13,10 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.GlIndexType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
+import me.jellysquid.mods.sodium.client.gl.texture.GlTexture;
+import me.jellysquid.mods.sodium.client.gl.texture.TextureData;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.gl.util.MultiDrawBatch;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuad;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
@@ -26,6 +27,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPo
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Matrix4f;
+import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
@@ -39,8 +41,13 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final GlMutableBuffer chunkInfoBuffer;
     private final boolean isBlockFaceCullingEnabled = SodiumClientMod.options().advanced.useBlockFaceCulling;
 
-    public RegionChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
+    private final GlTexture stippleTexture;
+    private final float detailDistance;
+
+    public RegionChunkRenderer(RenderDevice device, ChunkVertexType vertexType, float detailDistance) {
         super(device, vertexType);
+
+        this.detailDistance = detailDistance;
 
         this.vertexAttributeBindings = new GlVertexAttributeBinding[] {
                 new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID,
@@ -66,6 +73,13 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         for (int i = 0; i < this.batches.length; i++) {
             this.batches[i] = MultiDrawBatch.create(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
         }
+
+        var stippleTextureData = TextureData.loadInternal("/assets/sodium/textures/shader/stipple.png");
+
+        this.stippleTexture = new GlTexture();
+        this.stippleTexture.setTextureData(stippleTextureData);
+
+        stippleTextureData.dispose();
     }
 
     private static ByteBuffer createChunkInfoBuffer(MemoryStack stack) {
@@ -97,6 +111,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
         shader.setProjectionMatrix(RenderSystem.getProjectionMatrix());
         shader.setDrawUniforms(this.chunkInfoBuffer);
+        shader.setDetailParameters(this.stippleTexture, this.detailDistance);
 
         for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, pass.isTranslucent())) {
             RenderRegion region = entry.getKey();
@@ -236,6 +251,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
         RenderDevice.INSTANCE.createCommandList()
                 .deleteBuffer(this.chunkInfoBuffer);
+
+        this.stippleTexture.delete();
     }
 
     private static Iterable<Map.Entry<RenderRegion, List<RenderSection>>> sortedRegions(ChunkRenderList list, boolean translucent) {

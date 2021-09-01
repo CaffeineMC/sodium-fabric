@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 public enum ChunkUpdateType {
+    LOD_CHANGE(false),
     INITIAL_BUILD(false),
     REBUILD(false),
     IMPORTANT_REBUILD(true);

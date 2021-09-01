@@ -18,15 +18,17 @@ import java.util.Collections;
 public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
     private final RenderSection render;
     private final int frame;
+    private final int detailLevel;
 
-    public ChunkRenderEmptyBuildTask(RenderSection render, int frame) {
+    public ChunkRenderEmptyBuildTask(RenderSection render, int frame, int detailLevel) {
         this.render = render;
         this.frame = frame;
+        this.detailLevel = detailLevel;
     }
 
     @Override
     public ChunkBuildResult performBuild(ChunkRenderCacheLocal cache, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
-        return new ChunkBuildResult(this.render, ChunkRenderData.EMPTY, Collections.emptyMap(), this.frame);
+        return new ChunkBuildResult(this.render, ChunkRenderData.EMPTY, Collections.emptyMap(), this.frame, this.detailLevel);
     }
 
     @Override

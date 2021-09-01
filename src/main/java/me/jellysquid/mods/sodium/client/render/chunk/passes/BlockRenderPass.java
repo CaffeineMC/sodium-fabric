@@ -8,7 +8,9 @@ public enum BlockRenderPass {
     CUTOUT(RenderLayer.getCutout(), false, 0.1f),
     CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false, 0.5f),
     TRANSLUCENT(RenderLayer.getTranslucent(), true, 0.0f),
-    TRIPWIRE(RenderLayer.getTripwire(), true, 0.1f);
+    TRIPWIRE(RenderLayer.getTripwire(), true, 0.1f),
+    DETAIL_CUTOUT(RenderLayer.getCutout(), false, 0.1f),
+    DETAIL_CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false, 0.5f);
 
     public static final BlockRenderPass[] VALUES = BlockRenderPass.values();
     public static final int COUNT = VALUES.length;
@@ -16,6 +18,8 @@ public enum BlockRenderPass {
     private final RenderLayer layer;
     private final boolean translucent;
     private final float alphaCutoff;
+
+    private final boolean detail = this.name().startsWith("DETAIL_");
 
     BlockRenderPass(RenderLayer layer, boolean translucent, float alphaCutoff) {
         this.layer = layer;
@@ -43,5 +47,13 @@ public enum BlockRenderPass {
 
     public float getAlphaCutoff() {
         return this.alphaCutoff;
+    }
+
+    public boolean isDetail() {
+        return this.detail;
+    }
+
+    public boolean isMipped() {
+        return !(this == CUTOUT || this == DETAIL_CUTOUT);
     }
 }

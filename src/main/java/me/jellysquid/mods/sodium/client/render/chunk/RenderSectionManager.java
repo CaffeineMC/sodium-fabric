@@ -104,10 +104,9 @@ public class RenderSectionManager implements ChunkStatusListener {
     private FrustumExtended frustum;
 
     private int currentFrame = 0;
+    private final double detailFarPlane;
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance, CommandList commandList) {
-        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT);
-
         this.worldRenderer = worldRenderer;
         this.world = world;
 
@@ -116,6 +115,7 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
+        this.detailFarPlane = calculateDetailFarPlane(renderDistance);
 
         this.regions = new RenderRegionManager(commandList);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
@@ -123,6 +123,8 @@ public class RenderSectionManager implements ChunkStatusListener {
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
             this.rebuildQueues.put(type, new ObjectArrayFIFOQueue<>());
         }
+
+        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT, (float) Math.sqrt(this.detailFarPlane));
     }
 
     public void loadChunks() {
@@ -193,17 +195,25 @@ public class RenderSectionManager implements ChunkStatusListener {
     }
 
     private void schedulePendingUpdates(RenderSection section) {
-        if (section.getPendingUpdate() == null || !this.adjacencyMap.hasNeighbors(section.getChunkX(), section.getChunkZ())) {
-            return;
+        if (section.getPendingUpdate() != null) {
+            if (!this.adjacencyMap.hasNeighbors(section.getChunkX(), section.getChunkZ())) {
+                return;
+            }
+
+            PriorityQueue<RenderSection> queue = this.rebuildQueues.get(section.getPendingUpdate());
+
+            if (queue.size() >= 32) {
+                return;
+            }
+
+            queue.enqueue(section);
+        } else if (section.isBuilt() && section.isRebuilding()) {
+            int level = this.getTargetDetailLevel(section);
+
+            if (section.getBuiltDetailLevel() != level) {
+                section.markForUpdate(ChunkUpdateType.LOD_CHANGE);
+            }
         }
-
-        PriorityQueue<RenderSection> queue = this.rebuildQueues.get(section.getPendingUpdate());
-
-        if (queue.size() >= 32) {
-            return;
-        }
-
-        queue.enqueue(section);
     }
 
     private void addChunkToVisible(RenderSection render) {
@@ -322,6 +332,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     public void updateChunks() {
         PriorityQueue<CompletableFuture<ChunkBuildResult>> blockingFutures = this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD);
 
+        this.submitRebuildTasks(ChunkUpdateType.LOD_CHANGE);
         this.submitRebuildTasks(ChunkUpdateType.INITIAL_BUILD);
         this.submitRebuildTasks(ChunkUpdateType.REBUILD);
 
@@ -391,12 +402,13 @@ public class RenderSectionManager implements ChunkStatusListener {
     public ChunkRenderBuildTask createRebuildTask(RenderSection render) {
         ChunkRenderContext context = WorldSlice.prepare(this.world, render.getChunkPos(), this.sectionCache);
         int frame = this.currentFrame;
+        int lod = getTargetDetailLevel(render);
 
         if (context == null) {
-            return new ChunkRenderEmptyBuildTask(render, frame);
+            return new ChunkRenderEmptyBuildTask(render, frame, lod);
         }
 
-        return new ChunkRenderRebuildTask(render, context, frame);
+        return new ChunkRenderRebuildTask(render, context, frame, lod);
     }
 
     public void markGraphDirty() {
@@ -602,6 +614,25 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private RenderSection getRenderSection(int x, int y, int z) {
         return this.sections.get(ChunkSectionPos.asLong(x, y, z));
+    }
+
+    private static double calculateDetailFarPlane(int renderDistance) {
+        var detailDistance = SodiumClientMod.options().quality.detailDistance;
+
+        if (detailDistance < 2) {
+            // Automatic mode
+            return Math.pow(Math.max(64.0D, (renderDistance - Math.max(2.0D, (renderDistance * 0.3D))) * 16.0D), 2.0D);
+        } else if (detailDistance > 32) {
+            // Maximum mode
+            return Math.pow(2048.0D, 2.0D);
+        }
+
+        // User-specified mode
+        return Math.pow(detailDistance * 16.0D, 2.0D);
+    }
+
+    private int getTargetDetailLevel(RenderSection section) {
+        return section.getSquaredDistance(this.cameraX, this.cameraY, this.cameraZ) < this.detailFarPlane ? ChunkDetailLevel.MAXIMUM_DETAIL : ChunkDetailLevel.MINIMUM_DETAIL;
     }
 
     public Collection<String> getDebugStrings() {

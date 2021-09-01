@@ -218,6 +218,22 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.renderSectionManager.renderLayer(matrixStack, pass, x, y, z);
 
         pass.endDrawing();
+
+        BlockRenderPass[] secondaryPasses = new BlockRenderPass[0];
+
+        if (renderLayer == RenderLayer.getCutoutMipped()) {
+            secondaryPasses = new BlockRenderPass[] { BlockRenderPass.DETAIL_CUTOUT_MIPPED };
+        } else if (renderLayer == RenderLayer.getCutout()) {
+            secondaryPasses = new BlockRenderPass[] { BlockRenderPass.DETAIL_CUTOUT };
+        }
+
+        for (BlockRenderPass secondaryPass : secondaryPasses) {
+            secondaryPass.startDrawing();
+
+            this.renderSectionManager.renderLayer(matrixStack, secondaryPass, x, y, z);
+
+            secondaryPass.endDrawing();
+        }
     }
 
     public void reload() {

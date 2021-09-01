@@ -23,6 +23,15 @@ public interface ControlValueFormatter {
         };
     }
 
+    static ControlValueFormatter minMaxQuantity(int min, int max, String minValue, String maxValue, String quantity) {
+        return (value) -> {
+            if (value < min) return minValue;
+            if (value > max) return maxValue;
+
+            return value + " " + quantity;
+        };
+    }
+
     String format(int value);
 
     static ControlValueFormatter percentage() {

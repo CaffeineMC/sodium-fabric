@@ -32,10 +32,6 @@ public class RenderSection {
     private final ChunkGraphInfo graphInfo;
     private final int chunkId;
 
-    private final float regionOffsetX;
-    private final float regionOffsetY;
-    private final float regionOffsetZ;
-
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
@@ -47,6 +43,7 @@ public class RenderSection {
     private boolean disposed;
 
     private int lastAcceptedBuildTime = -1;
+    private int builtDetailLevel = -1;
 
     public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
         this.worldRenderer = worldRenderer;
@@ -63,10 +60,6 @@ public class RenderSection {
         int rX = this.getChunkX() & (RenderRegion.REGION_WIDTH - 1);
         int rY = this.getChunkY() & (RenderRegion.REGION_HEIGHT - 1);
         int rZ = this.getChunkZ() & (RenderRegion.REGION_LENGTH - 1);
-
-        this.regionOffsetX = rX * 16.0f;
-        this.regionOffsetY = rY * 16.0f;
-        this.regionOffsetZ = rZ * 16.0f;
 
         this.chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
     }
@@ -251,7 +244,7 @@ public class RenderSection {
     }
 
     public boolean isTickable() {
-        return this.tickable;
+        return this.tickable && this.builtDetailLevel == 0;
     }
 
     public RenderRegion getRegion() {
@@ -289,7 +282,6 @@ public class RenderSection {
     public void onBuildSubmitted(CompletableFuture<?> task) {
         if (this.rebuildTask != null) {
             this.rebuildTask.cancel(false);
-            this.rebuildTask = null;
         }
 
         this.rebuildTask = task;
@@ -307,21 +299,18 @@ public class RenderSection {
     public void onBuildFinished(ChunkBuildResult result) {
         this.setData(result.data);
         this.lastAcceptedBuildTime = result.buildTime;
+        this.builtDetailLevel = result.detailLevel;
     }
 
     public int getChunkId() {
         return this.chunkId;
     }
 
-    public float getRegionOffsetX() {
-        return this.regionOffsetX;
+    public int getBuiltDetailLevel() {
+        return this.builtDetailLevel;
     }
 
-    public float getRegionOffsetY() {
-        return this.regionOffsetY;
-    }
-
-    public float getRegionOffsetZ() {
-        return this.regionOffsetZ;
+    public boolean isRebuilding() {
+        return this.rebuildTask != null && this.rebuildTask.isDone();
     }
 }

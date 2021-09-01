@@ -39,6 +39,15 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
+                .add(OptionImpl.createBuilder(int.class, sodiumOpts)
+                        .setName(new LiteralText("Detail Distance"))
+                        .setTooltip(new LiteralText("Controls the distance at which more detailed models will be used in world rendering. Lower " +
+                                "values reduce the distance at which detail begins to be eliminated, increasing performance."))
+                        .setControl(option -> new SliderControl(option, 1, 33, 1, ControlValueFormatter.minMaxQuantity(2, 32, "Auto", "Maximum", "chunks")))
+                        .setBinding((opts, value) -> opts.quality.detailDistance = value, opts -> opts.quality.detailDistance)
+                        .setImpact(OptionImpact.HIGH)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(new TranslatableText("options.gamma"))
                         .setTooltip(new TranslatableText("sodium.options.brightness.tooltip"))
@@ -320,4 +329,5 @@ public class SodiumGameOptionPages {
 
         return new OptionPage(new TranslatableText("sodium.options.pages.advanced"), ImmutableList.copyOf(groups));
     }
+
 }

@@ -15,7 +15,6 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 
 public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
@@ -41,6 +40,7 @@ public class SodiumGameOptions {
 
     public static class QualitySettings {
         public GraphicsQuality weatherQuality = GraphicsQuality.DEFAULT;
+        public int detailDistance = 0;
         public boolean enableVignette = true;
     }
 

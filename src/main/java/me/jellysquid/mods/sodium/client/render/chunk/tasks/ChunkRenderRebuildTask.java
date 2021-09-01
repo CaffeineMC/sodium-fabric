@@ -7,7 +7,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -23,7 +22,6 @@ import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -39,11 +37,13 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
     private final RenderSection render;
     private final ChunkRenderContext context;
     private final int frame;
+    private final int detailLevel;
 
-    public ChunkRenderRebuildTask(RenderSection render, ChunkRenderContext context, int frame) {
+    public ChunkRenderRebuildTask(RenderSection render, ChunkRenderContext context, int frame, int detailLevel) {
         this.render = render;
         this.context = context;
         this.frame = frame;
+        this.detailLevel = detailLevel;
     }
 
     @Override
@@ -88,14 +88,12 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     boolean rendered = false;
 
                     if (blockState.getRenderType() == BlockRenderType.MODEL) {
-                        RenderLayer layer = RenderLayers.getBlockLayer(blockState);
-
                         BakedModel model = cache.getBlockModels()
                                 .getModel(blockState);
 
                         long seed = blockState.getRenderingSeed(blockPos);
 
-                        if (cache.getBlockRenderer().renderModel(slice, blockState, blockPos, offset, model, buffers.get(layer), true, seed)) {
+                        if (cache.getBlockRenderer().renderModel(slice, blockState, blockPos, offset, model, buffers, true, seed, this.detailLevel)) {
                             rendered = true;
                         }
                     }
@@ -147,7 +145,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
 
-        return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
+        return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame, this.detailLevel);
     }
 
     @Override

@@ -11,15 +11,20 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkDetailLevel;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
+import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import net.minecraft.block.BlockState;
+import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
@@ -54,7 +59,13 @@ public class BlockRenderer {
         this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
     }
 
-    public boolean renderModel(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, BakedModel model, ChunkModelBuilder buffers, boolean cull, long seed) {
+    public boolean renderModel(WorldSlice world, BlockState state, BlockPos pos, BlockPos origin, BakedModel model, ChunkBuildBuffers buffers, boolean cull, long seed, int level) {
+        BlockRenderPass pass = this.getRenderPassOverride(state, buffers.getRenderPass(RenderLayers.getBlockLayer(state)));
+
+        if (!this.shouldDrawBlockForDetail(state, level)) {
+            return false;
+        }
+
         LightPipeline lighter = this.lighters.getLighter(this.getLightingMode(state, model));
         Vec3d offset = state.getModelOffset(world, pos);
 
@@ -70,9 +81,10 @@ public class BlockRenderer {
             }
 
             if (!cull || this.occlusionCache.shouldDrawSide(state, world, pos, dir)) {
-                this.renderQuadList(world, state, pos, origin, lighter, offset, buffers, sided, ModelQuadFacing.fromDirection(dir));
-
-                rendered = true;
+                if (this.shouldDrawSideForDetail(world, state, pos, dir, level)) {
+                    this.renderQuadList(world, state, pos, origin, lighter, offset, buffers.get(pass), sided, ModelQuadFacing.fromDirection(dir));
+                    rendered = true;
+                }
             }
         }
 
@@ -81,12 +93,44 @@ public class BlockRenderer {
         List<BakedQuad> all = model.getQuads(state, null, this.random);
 
         if (!all.isEmpty()) {
-            this.renderQuadList(world, state, pos, origin, lighter, offset, buffers, all, ModelQuadFacing.UNASSIGNED);
+            this.renderQuadList(world, state, pos, origin, lighter, offset, buffers.get(pass), all, ModelQuadFacing.UNASSIGNED);
 
             rendered = true;
         }
 
         return rendered;
+    }
+
+    private BlockRenderPass getRenderPassOverride(BlockState state, BlockRenderPass pass) {
+        Block block = state.getBlock();
+
+        if (block instanceof VineBlock || block instanceof PlantBlock || block instanceof LeavesBlock) {
+            return pass.isMipped() ? BlockRenderPass.DETAIL_CUTOUT_MIPPED : BlockRenderPass.DETAIL_CUTOUT;
+        }
+
+        return pass;
+    }
+
+    private boolean shouldDrawBlockForDetail(BlockState state, int level) {
+        Block block = state.getBlock();
+
+        if (level < ChunkDetailLevel.MAXIMUM_DETAIL) {
+            return !(block instanceof VineBlock) && !(block instanceof PlantBlock);
+        }
+
+        return true;
+    }
+
+    private boolean shouldDrawSideForDetail(WorldSlice world, BlockState state, BlockPos pos, Direction dir, int level) {
+        if (state.getBlock() instanceof LeavesBlock) {
+            BlockState adjState = world.getBlockState(pos.getX() + dir.getOffsetX(), pos.getY() + dir.getOffsetY(), pos.getZ() + dir.getOffsetZ());
+
+            if (adjState.isOpaque() || adjState.getBlock() instanceof LeavesBlock) {
+                return level == ChunkDetailLevel.MAXIMUM_DETAIL;
+            }
+        }
+
+        return true;
     }
 
     private void renderQuadList(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, LightPipeline lighter, Vec3d offset,

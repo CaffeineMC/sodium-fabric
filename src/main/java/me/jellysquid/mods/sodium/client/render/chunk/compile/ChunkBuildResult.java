@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlIndexType;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
@@ -18,12 +17,14 @@ public class ChunkBuildResult {
     public final ChunkRenderData data;
     public final Map<BlockRenderPass, ChunkMeshData> meshes;
     public final int buildTime;
+    public final int detailLevel;
 
-    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<BlockRenderPass, ChunkMeshData> meshes, int buildTime) {
+    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<BlockRenderPass, ChunkMeshData> meshes, int buildTime, int detailLevel) {
         this.render = render;
         this.data = data;
         this.meshes = meshes;
         this.buildTime = buildTime;
+        this.detailLevel = detailLevel;
     }
 
     public ChunkMeshData getMesh(BlockRenderPass pass) {

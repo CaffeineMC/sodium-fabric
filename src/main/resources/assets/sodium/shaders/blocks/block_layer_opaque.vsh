@@ -29,9 +29,7 @@ out vec4 v_Color;
 out vec2 v_TexCoord;
 out vec2 v_LightCoord;
 
-#ifdef USE_FOG
 out float v_FragDistance;
-#endif
 
 void main() {
     vec3 vertexPosition = a_Pos.xyz * u_ModelScale + u_ModelOffset;
@@ -39,9 +37,7 @@ void main() {
 
     vec4 pos = u_ModelViewMatrix * vec4(chunkOffset + vertexPosition, 1.0);
 
-#ifdef USE_FOG
     v_FragDistance = length(pos);
-#endif
 
     // Transform the vertex position into model-view-projection space
     gl_Position = u_ProjectionMatrix * pos;
