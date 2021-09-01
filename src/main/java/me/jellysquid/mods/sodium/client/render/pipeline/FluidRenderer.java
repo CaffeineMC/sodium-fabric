@@ -405,7 +405,7 @@ public class FluidRenderer {
 
             int light = this.quadLightData.lm[i];
 
-            vertices.writeVertex(offset, x, y, z, color, u, v, light, builder.getChunkId(), MaterialFlag.CUTOUT);
+            vertices.writeVertex(offset, x, y, z, color, u, v, light, builder.getChunkId(), MaterialFlag.DEFAULTS);
         }
 
         vertices.flush();
