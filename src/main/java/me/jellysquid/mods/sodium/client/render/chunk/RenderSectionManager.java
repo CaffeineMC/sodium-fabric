@@ -27,7 +27,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -38,11 +37,11 @@ import me.jellysquid.mods.sodium.common.util.collections.FutureQueueDrainingIter
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
+import org.joml.FrustumIntersection;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -101,7 +100,7 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private double fogRenderCutoff;
 
-    private FrustumExtended frustum;
+    private FrustumIntersection frustum;
 
     private int currentFrame = 0;
 
@@ -137,7 +136,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         }
     }
 
-    public void update(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
+    public void update(Camera camera, FrustumIntersection frustum, int frame, boolean spectator) {
         this.resetLists();
 
         this.regions.updateVisibility(frustum);
@@ -167,7 +166,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         }
     }
 
-    private void iterateChunks(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
+    private void iterateChunks(Camera camera, FrustumIntersection frustum, int frame, boolean spectator) {
         this.initSearch(camera, frustum, frame, spectator);
 
         ChunkGraphIterationQueue queue = this.iterationQueue;
@@ -293,11 +292,11 @@ public class RenderSectionManager implements ChunkStatusListener {
         return true;
     }
 
-    public void renderLayer(MatrixStack matrixStack, BlockRenderPass pass, double x, double y, double z) {
+    public void renderLayer(ChunkRenderMatrices matrices, BlockRenderPass pass, double x, double y, double z) {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRenderer.render(matrixStack, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRenderer.render(matrices, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
 
         commandList.flush();
     }
@@ -478,7 +477,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         return this.useOcclusionCulling && from != null && !node.isVisibleThrough(from, to);
     }
 
-    private void initSearch(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
+    private void initSearch(Camera camera, FrustumIntersection frustum, int frame, boolean spectator) {
         this.currentFrame = frame;
         this.frustum = frustum;
         this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
@@ -550,9 +549,9 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         RenderRegionVisibility parentVisibility = parent.getRegion().getVisibility();
 
-        if (parentVisibility == RenderRegionVisibility.CULLED) {
+        if (parentVisibility == RenderRegionVisibility.OUTSIDE) {
             return;
-        } else if (parentVisibility == RenderRegionVisibility.VISIBLE && info.isCulledByFrustum(this.frustum)) {
+        } else if (parentVisibility == RenderRegionVisibility.INTERSECT && info.isCulledByFrustum(this.frustum)) {
             return;
         }
 
