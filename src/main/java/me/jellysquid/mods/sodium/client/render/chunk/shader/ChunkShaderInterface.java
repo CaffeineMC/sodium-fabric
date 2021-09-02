@@ -92,8 +92,8 @@ public class ChunkShaderInterface {
         }
 
         public void setDetailDistance(float distance) {
-            this.uniformDetailNearPlane.setFloat(distance - 24.0f);
-            this.uniformDetailFarPlane.setFloat(distance - 12.0f);
+            this.uniformDetailNearPlane.setFloat(distance - 18.0f);
+            this.uniformDetailFarPlane.setFloat(distance - 9.0f);
         }
 
         public void setup(ChunkVertexType vertexType) {

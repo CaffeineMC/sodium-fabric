@@ -115,7 +115,6 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
-        this.detailFarPlane = calculateDetailFarPlane(renderDistance);
 
         this.regions = new RenderRegionManager(commandList);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
@@ -124,7 +123,14 @@ public class RenderSectionManager implements ChunkStatusListener {
             this.rebuildQueues.put(type, new ObjectArrayFIFOQueue<>());
         }
 
-        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT, (float) Math.sqrt(this.detailFarPlane));
+        float detailDistance = getDetailDistance(renderDistance);
+
+        this.detailFarPlane = getDetailFarPlane(detailDistance);
+        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT, detailDistance);
+    }
+
+    private static double getDetailFarPlane(float detailDistance) {
+        return Math.pow(detailDistance + 16.0D, 2.0D);
     }
 
     public void loadChunks() {
@@ -616,19 +622,19 @@ public class RenderSectionManager implements ChunkStatusListener {
         return this.sections.get(ChunkSectionPos.asLong(x, y, z));
     }
 
-    private static double calculateDetailFarPlane(int renderDistance) {
+    private static float getDetailDistance(int renderDistance) {
         var detailDistance = SodiumClientMod.options().quality.detailDistance;
 
         if (detailDistance < 2) {
             // Automatic mode
-            return Math.pow(Math.max(64.0D, (renderDistance - Math.max(2.0D, (renderDistance * 0.3D))) * 16.0D), 2.0D);
+            return Math.max(64.0f, (renderDistance - Math.max(2.0f, (renderDistance * 0.3f))) * 16.0f);
         } else if (detailDistance > 32) {
             // Maximum mode
-            return Math.pow(2048.0D, 2.0D);
+            return 2048.0f;
         }
 
         // User-specified mode
-        return Math.pow(detailDistance * 16.0D, 2.0D);
+        return detailDistance * 16.0f;
     }
 
     private int getTargetDetailLevel(RenderSection section) {

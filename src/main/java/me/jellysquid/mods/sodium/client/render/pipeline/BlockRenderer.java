@@ -118,7 +118,7 @@ public class BlockRenderer {
     private BlockRenderPass getRenderPassOverride(BlockState state, BlockRenderPass pass) {
         Block block = state.getBlock();
 
-        if (block instanceof VineBlock || block instanceof PlantBlock || block instanceof LeavesBlock) {
+        if (block instanceof VineBlock || block instanceof PlantBlock || block instanceof LeavesBlock || block instanceof AbstractPlantPartBlock) {
             return BlockRenderPass.OPAQUE_DETAIL;
         }
 
@@ -129,7 +129,7 @@ public class BlockRenderer {
         Block block = state.getBlock();
 
         if (level < ChunkDetailLevel.MAXIMUM_DETAIL) {
-            return !(block instanceof VineBlock) && !(block instanceof PlantBlock);
+            return !(block instanceof VineBlock) && !(block instanceof PlantBlock) && !(block instanceof AbstractPlantPartBlock);
         }
 
         return true;
