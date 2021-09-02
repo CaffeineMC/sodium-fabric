@@ -34,6 +34,7 @@ import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Matrix4f;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -159,7 +160,7 @@ public abstract class MixinItemRenderer implements ItemRendererExtended {
     }
 
     @Override
-    public void renderItemLabel(ItemRenderBatch batch, TextRenderer textRenderer, MatrixStack matrixStack, int x, int y, ItemStack stack, String countLabel) {
+    public void renderItemLabel(ItemRenderBatch batch, MatrixStack matrixStack, int x, int y, ItemStack stack, TextRenderer textRenderer, String countLabel) {
         if (stack.isEmpty()) {
             return;
         }
@@ -178,7 +179,7 @@ public abstract class MixinItemRenderer implements ItemRendererExtended {
     }
     
     @Override
-    public void renderItemOverlays(ItemRenderBatch batch, ItemStack stack, int x, int y) {
+    public void renderItemOverlays(ItemRenderBatch batch, MatrixStack matrices, int x, int y, ItemStack stack) {
         if (stack.isEmpty()) {
             return;
         }
@@ -187,10 +188,10 @@ public abstract class MixinItemRenderer implements ItemRendererExtended {
             int step = stack.getItemBarStep();
             int color = stack.getItemBarColor();
 
-            writeColoredRect(batch.getItemOverlayBuffer(), x + 2, y + 13,
+            writeColoredRect(batch.getItemOverlayBuffer(), matrices, x + 2, y + 13,
                     13, 2, 0, 0, 0, 255);
 
-            writeColoredRect(batch.getItemOverlayBuffer(), x + 2, y + 13, step,
+            writeColoredRect(batch.getItemOverlayBuffer(), matrices, x + 2, y + 13, step,
                     1, color >> 16 & 255, color >> 8 & 255, color & 255, 255);
         }
 
@@ -204,21 +205,23 @@ public abstract class MixinItemRenderer implements ItemRendererExtended {
         }
 
         if (cooldown > 0.0F) {
-            writeColoredRect(batch.getItemOverlayBuffer(), x, y + MathHelper.floor(16.0F * (1.0F - cooldown)),
+            writeColoredRect(batch.getItemOverlayBuffer(), matrices, x, y + MathHelper.floor(16.0F * (1.0F - cooldown)),
                     16, MathHelper.ceil(16.0F * cooldown), 255, 255, 255, 127);
         }
     }
 
-    private static void writeColoredRect(BufferBuilder buffer, int x, int y, int width, int height, int red, int green, int blue, int alpha) {
+    private static void writeColoredRect(BufferBuilder buffer, MatrixStack matrices, int x, int y, int width, int height, int red, int green, int blue, int alpha) {
+        Matrix4f matrix = matrices.peek().getModel();
+
         int color = ColorABGR.pack(red, green, blue, alpha);
 
         PositionColorSink sink = VertexDrain.of(buffer)
                 .createSink(VanillaVertexTypes.POSITION_COLOR);
         sink.ensureCapacity(4);
-        sink.writeQuad(x, y, 0.0f, color);
-        sink.writeQuad(x, y + height, 0.0f, color);
-        sink.writeQuad(x + width, y + height, 0.0f, color);
-        sink.writeQuad(x + width, y, 0.0f, color);
+        sink.writeQuad(matrix, x, y, 0.0f, color);
+        sink.writeQuad(matrix, x, y + height, 0.0f, color);
+        sink.writeQuad(matrix, x + width, y + height, 0.0f, color);
+        sink.writeQuad(matrix, x + width, y, 0.0f, color);
         sink.flush();
     }
 }

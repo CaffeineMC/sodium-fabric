@@ -121,8 +121,8 @@ public abstract class MixinInGameHud extends DrawableHelper {
         }
 
         itemRenderer.renderItemModel(GuiRenderBatches.HUD, matrixStack, x, y, stack, player, seed);
-        itemRenderer.renderItemLabel(GuiRenderBatches.HUD, textRenderer, matrixStack, x, y, stack, null);
-        itemRenderer.renderItemOverlays(GuiRenderBatches.HUD, stack, x, y);
+        itemRenderer.renderItemLabel(GuiRenderBatches.HUD, matrixStack, x, y, stack, textRenderer, null);
+        itemRenderer.renderItemOverlays(GuiRenderBatches.HUD, matrixStack, x, y, stack);
     }
 
     private void drawBatchedTexture(MatrixStack matrices, int x, int y, int u, int v, int width, int height, BufferBuilder bufferBuilder) {

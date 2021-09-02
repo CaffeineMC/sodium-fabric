@@ -77,8 +77,8 @@ public abstract class MixinHandledScreen<T extends ScreenHandler> extends Screen
 
             ItemRendererExtended itemRenderer = ItemRendererExtended.cast(this.itemRenderer);
             itemRenderer.renderItemModel(GuiRenderBatches.CONTAINER, matrices, x, y, stack, this.client.player, slot.x + slot.y * this.backgroundWidth);
-            itemRenderer.renderItemLabel(GuiRenderBatches.CONTAINER, this.textRenderer, matrices, x, y, stack, label);
-            itemRenderer.renderItemOverlays(GuiRenderBatches.CONTAINER, stack, x, y);
+            itemRenderer.renderItemLabel(GuiRenderBatches.CONTAINER, matrices, x, y, stack, this.textRenderer, label);
+            itemRenderer.renderItemOverlays(GuiRenderBatches.CONTAINER, matrices, x, y, stack);
         }
 
         this.itemRenderer.zOffset = 0.0F;
