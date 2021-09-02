@@ -13,8 +13,6 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.GlIndexType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
-import me.jellysquid.mods.sodium.client.gl.texture.GlTexture;
-import me.jellysquid.mods.sodium.client.gl.texture.TextureData;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.gl.util.MultiDrawBatch;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
@@ -25,9 +23,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Matrix4f;
-import org.lwjgl.opengl.GL11C;
+import me.jellysquid.mods.sodium.client.util.math.JomlHelper;
+import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
@@ -92,13 +89,13 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     }
 
     @Override
-    public void render(MatrixStack matrixStack, CommandList commandList,
+    public void render(ChunkRenderMatrices matrices, CommandList commandList,
                        ChunkRenderList list, BlockRenderPass pass,
                        ChunkCameraContext camera) {
         super.begin(pass);
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();
-        shader.setProjectionMatrix(RenderSystem.getProjectionMatrix());
+        shader.setProjectionMatrix(matrices.projection());
         shader.setDrawUniforms(this.chunkInfoBuffer);
 
         for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, pass.isTranslucent())) {
@@ -109,7 +106,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            this.setModelMatrixUniforms(shader, matrixStack, region, camera);
+            this.setModelMatrixUniforms(shader, matrices, region, camera);
 
             GlTessellation tessellation = this.createTessellationForRegion(commandList, region.getArenas(), pass);
             executeDrawBatches(commandList, tessellation);
@@ -202,15 +199,16 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
-    private void setModelMatrixUniforms(ChunkShaderInterface shader, MatrixStack matrixStack, RenderRegion region, ChunkCameraContext camera) {
+    private final Matrix4f cachedModelViewMatrix = new Matrix4f();
+
+    private void setModelMatrixUniforms(ChunkShaderInterface shader, ChunkRenderMatrices matrices, RenderRegion region, ChunkCameraContext camera) {
         float x = getCameraTranslation(region.getOriginX(), camera.blockX, camera.deltaX);
         float y = getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY);
         float z = getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ);
 
-        Matrix4f matrix = matrixStack.peek()
-                .getModel()
-                .copy();
-        matrix.multiplyByTranslation(x, y, z);
+        Matrix4f matrix = this.cachedModelViewMatrix;
+        matrix.set(matrices.modelView());
+        matrix.translate(x, y, z);
 
         shader.setModelViewMatrix(matrix);
     }

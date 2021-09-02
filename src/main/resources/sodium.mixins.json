@@ -11,7 +11,6 @@
   },
   "client": [
     "core.MixinMinecraftClient",
-    "core.frustum.MixinFrustum",
     "core.matrix.MixinMatrix3f",
     "core.matrix.MixinMatrix4f",
     "core.model.MixinBlockColors",
