@@ -143,8 +143,8 @@ public class RenderRegion {
         return this.visibility;
     }
 
-    public static int getChunkIndex(int x, int y, int z) {
-        return (x * RenderRegion.REGION_LENGTH * RenderRegion.REGION_HEIGHT) + (y * RenderRegion.REGION_LENGTH) + z;
+    public static short getChunkIndex(int x, int y, int z) {
+        return (short) ((x * RenderRegion.REGION_LENGTH * RenderRegion.REGION_HEIGHT) + (y * RenderRegion.REGION_LENGTH) + z);
     }
 
     public static class RenderRegionArenas {

@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.ChunkModelBuilder;
+import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexCompression;
 import me.jellysquid.mods.sodium.render.chunk.material.MaterialCutoutFlag;
 import me.jellysquid.mods.sodium.render.chunk.material.MaterialFlag;
 import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexSink;
@@ -56,15 +57,19 @@ public class TerrainRenderer extends AbstractRenderer<TerrainBlockRenderInfo> {
         int vertexStart = vertexSink.getVertexCount();
 
         Vec3i relativePos = this.blockInfo.getRelativeBlockPosition();
-        int chunkId = this.blockInfo.getChunkId();
+        short chunkId = this.blockInfo.getChunkId();
 
         for (int i = 0; i < 4; i++) {
-            vertexSink.writeVertex(quad.x(i) + relativePos.getX(), quad.y(i) + relativePos.getY(), quad.z(i) + relativePos.getZ(),
-                    ColorARGB.toABGR(quad.spriteColor(i, DEFAULT_TEXTURE_INDEX)),
-                    quad.spriteU(i, DEFAULT_TEXTURE_INDEX), quad.spriteV(i, DEFAULT_TEXTURE_INDEX),
-                    quad.lightmap(i),
-                    chunkId,
-                    bits);
+            long pos = ModelVertexCompression.encodePositionAttribute(
+                    quad.x(i) + relativePos.getX(), quad.y(i) + relativePos.getY(), quad.z(i) + relativePos.getZ());
+
+            int color = ColorARGB.toABGR(quad.spriteColor(i, DEFAULT_TEXTURE_INDEX));
+            int blockTexture = ModelVertexCompression.encodeTextureAttribute(
+                    quad.spriteU(i, DEFAULT_TEXTURE_INDEX), quad.spriteV(i, DEFAULT_TEXTURE_INDEX));
+
+            int lightTexture = ModelVertexCompression.encodeLightMapTexCoord(quad.lightmap(i));
+
+            vertexSink.writeVertex(pos, color, blockTexture, lightTexture, chunkId, bits);
         }
 
         indexSink.add(vertexStart, ModelQuadWinding.CLOCKWISE);

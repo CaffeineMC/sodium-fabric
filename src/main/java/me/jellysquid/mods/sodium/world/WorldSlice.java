@@ -138,7 +138,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
         int rY = origin.getY() & (RenderRegion.REGION_HEIGHT - 1);
         int rZ = origin.getZ() & (RenderRegion.REGION_LENGTH - 1);
 
-        int chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
+        short chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
 
         return new ChunkRenderContext(origin, sections, volume, chunkId);
     }

@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.shader;
 
+import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexCompression;
 import me.jellysquid.mods.thingl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.thingl.shader.ShaderBindingContext;
 import me.jellysquid.mods.thingl.shader.uniform.GlUniformBlock;
@@ -48,9 +49,9 @@ public class ChunkShaderInterface {
     }
 
     public void setup(ChunkVertexType vertexType) {
-        this.uniformModelScale.setFloat(vertexType.getModelScale());
-        this.uniformModelOffset.setFloat(vertexType.getModelOffset());
-        this.uniformTextureScale.setFloat(vertexType.getTextureScale());
+        this.uniformModelScale.setFloat(ModelVertexCompression.getModelScale());
+        this.uniformModelOffset.setFloat(ModelVertexCompression.getModelOffset());
+        this.uniformTextureScale.setFloat(ModelVertexCompression.getTextureScale());
         
         this.fogShader.setup();
 

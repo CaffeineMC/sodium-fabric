@@ -22,16 +22,6 @@ public class ModelVertexType implements ChunkVertexType {
             .addElement(ChunkMeshAttribute.BLOCK_FLAGS, 20, GlVertexAttributeFormat.INT, 1, false)
             .build();
 
-    private static final int POSITION_MAX_VALUE = 32768;
-    private static final int TEXTURE_MAX_VALUE = 32768;
-
-    private static final float MODEL_ORIGIN = 8.0f;
-    private static final float MODEL_RANGE = 32.0f;
-    private static final float MODEL_SCALE = MODEL_RANGE / POSITION_MAX_VALUE;
-
-    private static final float MODEL_SCALE_INV = POSITION_MAX_VALUE / MODEL_RANGE;
-
-    private static final float TEXTURE_SCALE = (1.0f / TEXTURE_MAX_VALUE);
 
     @Override
     public ModelVertexSink createFallbackWriter(VertexConsumer consumer) {
@@ -53,42 +43,4 @@ public class ModelVertexType implements ChunkVertexType {
         return VERTEX_FORMAT;
     }
 
-    @Override
-    public float getTextureScale() {
-        return TEXTURE_SCALE;
-    }
-
-    @Override
-    public float getModelScale() {
-        return MODEL_SCALE;
-    }
-
-    @Override
-    public float getModelOffset() {
-        return -MODEL_ORIGIN;
-    }
-
-    static short encodeBlockTexture(float value) {
-        return (short) (value * TEXTURE_MAX_VALUE);
-    }
-
-    static short encodePosition(float v) {
-        return (short) ((MODEL_ORIGIN + v) * MODEL_SCALE_INV);
-    }
-
-    static int encodeLightMapTexCoord(int light) {
-        int r = light;
-
-        // Mask off coordinate values outside 0..255
-        r &= 0x00FF_00FF;
-
-        // Light coordinates are normalized values, so upcasting requires a shift
-        // Scale the coordinates from the range of 0..255 (unsigned byte) into 0..65535 (unsigned short)
-        r <<= 8;
-
-        // Add a half-texel offset to each coordinate so we sample from the center of each texel
-        r += 0x0800_0800;
-
-        return r;
-    }
 }

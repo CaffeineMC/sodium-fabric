@@ -27,7 +27,7 @@ public class TerrainBlockRenderInfo extends BlockRenderInfo {
     private int cullResultFlags;
 
     private final BlockPos.Mutable relativeBlockPosition = new BlockPos.Mutable();
-    private int chunkId;
+    private short chunkId;
 
     public TerrainBlockRenderInfo(BlockOcclusionCache blockOcclusionCache) {
         super(blockOcclusionCache);
@@ -47,7 +47,7 @@ public class TerrainBlockRenderInfo extends BlockRenderInfo {
         );
     }
 
-    public void setChunkId(int chunkId) {
+    public void setChunkId(short chunkId) {
         this.chunkId = chunkId;
     }
 
@@ -74,7 +74,7 @@ public class TerrainBlockRenderInfo extends BlockRenderInfo {
         return this.relativeBlockPosition;
     }
 
-    public int getChunkId() {
+    public short getChunkId() {
         return this.chunkId;
     }
 }

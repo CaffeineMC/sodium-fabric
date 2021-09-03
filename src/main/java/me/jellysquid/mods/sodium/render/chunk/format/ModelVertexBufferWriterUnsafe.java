@@ -10,21 +10,15 @@ public class ModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe impl
     }
 
     @Override
-    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId, int bits) {
+    public void writeVertex(long position, int color, int blockTexture, int lightTexture, short chunkIndex, int materialBits) {
         long i = this.writePointer;
 
-        MemoryUtil.memPutShort(i + 0, ModelVertexType.encodePosition(posX));
-        MemoryUtil.memPutShort(i + 2, ModelVertexType.encodePosition(posY));
-        MemoryUtil.memPutShort(i + 4, ModelVertexType.encodePosition(posZ));
-        MemoryUtil.memPutShort(i + 6, (short) chunkId);
-
+        MemoryUtil.memPutLong(i, position);
+        MemoryUtil.memPutShort(i + 6, chunkIndex);
         MemoryUtil.memPutInt(i + 8, color);
-
-        MemoryUtil.memPutShort(i + 12, ModelVertexType.encodeBlockTexture(u));
-        MemoryUtil.memPutShort(i + 14, ModelVertexType.encodeBlockTexture(v));
-
-        MemoryUtil.memPutInt(i + 16, ModelVertexType.encodeLightMapTexCoord(light));
-        MemoryUtil.memPutInt(i + 20, bits);
+        MemoryUtil.memPutInt(i + 12, blockTexture);
+        MemoryUtil.memPutInt(i + 16, lightTexture);
+        MemoryUtil.memPutInt(i + 20, materialBits);
 
         this.advance();
     }

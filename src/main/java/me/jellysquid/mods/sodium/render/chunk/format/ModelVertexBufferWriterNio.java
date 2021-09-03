@@ -11,22 +11,16 @@ public class ModelVertexBufferWriterNio extends VertexBufferWriterNio implements
     }
 
     @Override
-    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId, int bits) {
+    public void writeVertex(long position, int color, int blockTexture, int lightTexture, short chunkIndex, int materialBits) {
         int i = this.writeOffset;
 
-        ByteBuffer buffer = this.byteBuffer;
-        buffer.putShort(i + 0, ModelVertexType.encodePosition(posX));
-        buffer.putShort(i + 2, ModelVertexType.encodePosition(posY));
-        buffer.putShort(i + 4, ModelVertexType.encodePosition(posZ));
-        buffer.putShort(i + 6, (short) chunkId);
-
-        buffer.putInt(i + 8, color);
-
-        buffer.putShort(i + 12, ModelVertexType.encodeBlockTexture(u));
-        buffer.putShort(i + 14, ModelVertexType.encodeBlockTexture(v));
-
-        buffer.putInt(i + 16, ModelVertexType.encodeLightMapTexCoord(light));
-        buffer.putInt(i + 20, bits);
+        ByteBuffer buf = this.byteBuffer;
+        buf.putLong(i, position);
+        buf.putShort(i + 6, chunkIndex);
+        buf.putInt(i + 8, color);
+        buf.putInt(i + 12, blockTexture);
+        buf.putInt(i + 16, lightTexture);
+        buf.putInt(i + 20, materialBits);
 
         this.advance();
     }
