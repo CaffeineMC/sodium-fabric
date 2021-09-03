@@ -21,8 +21,8 @@ public class ModelVertexType implements ChunkVertexType {
             .addElement(ChunkMeshAttribute.LIGHT_TEXTURE, 16, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, true)
             .build();
 
-    private static final int POSITION_MAX_VALUE = 32768;
-    private static final int TEXTURE_MAX_VALUE = 32768;
+    private static final int POSITION_MAX_VALUE = 65536;
+    private static final int TEXTURE_MAX_VALUE = 65536;
 
     private static final float MODEL_ORIGIN = 8.0f;
     private static final float MODEL_RANGE = 32.0f;
