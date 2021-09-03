@@ -1,8 +1,10 @@
 package me.jellysquid.mods.sodium.model.light.smooth;
 
+import me.jellysquid.mods.sodium.interop.fabric.mesh.QuadViewImpl;
 import me.jellysquid.mods.sodium.model.light.QuadLighter;
 import me.jellysquid.mods.sodium.model.light.data.LightDataAccess;
 import me.jellysquid.mods.sodium.model.light.data.QuadLightData;
+import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
 import me.jellysquid.mods.sodium.interop.fabric.helper.GeometryHelper;
 import me.jellysquid.mods.sodium.interop.fabric.mesh.MutableQuadViewImpl;
@@ -73,10 +75,11 @@ public class SmoothQuadLighter implements QuadLighter {
 
 
     @Override
-    public void compute(MutableQuadViewImpl quad) {
+    public void compute(MutableQuadView quad) {
         this.updateCachedData(this.blockRenderInfo.blockPos.asLong());
 
-        int flags = quad.geometryFlags();
+        var quadS = (QuadViewImpl) quad;
+        int flags = quadS.geometryFlags();
 
         final AoNeighborInfo neighborInfo = AoNeighborInfo.get(quad.lightFace());
         final QuadLightData out = this.lightOutput;
@@ -90,7 +93,7 @@ public class SmoothQuadLighter implements QuadLighter {
             this.applyComplex(neighborInfo, quad, this.blockRenderInfo.blockPos, quad.lightFace(), out, flags);
         }
 
-        this.applySidedBrightness(out, quad.lightFace(), quad.hasShade());
+        this.applySidedBrightness(out, quad.lightFace(), quadS.hasShade());
     }
 
     @Override

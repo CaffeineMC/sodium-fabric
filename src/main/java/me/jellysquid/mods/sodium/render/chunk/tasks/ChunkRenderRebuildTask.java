@@ -78,15 +78,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                     blockPos.set(x, y, z);
 
-                    if (blockState.getRenderType() == BlockRenderType.MODEL) {
-                        context.renderBlock(blockState, blockPos, this.detailLevel);
-                    }
-
-                    FluidState fluidState = blockState.getFluidState();
-
-                    if (!fluidState.isEmpty()) {
-                        context.renderFluid(fluidState, blockPos);
-                    }
+                    context.renderBlock(blockState, blockPos, this.detailLevel);
 
                     if (blockState.hasBlockEntity()) {
                         BlockEntity entity = slice.getBlockEntity(blockPos);

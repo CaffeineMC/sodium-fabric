@@ -11,6 +11,7 @@ import me.jellysquid.mods.sodium.render.chunk.material.MaterialFlag;
 import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.interop.fabric.helper.GeometryHelper;
 import me.jellysquid.mods.sodium.interop.fabric.mesh.MutableQuadViewImpl;
+import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.util.color.ColorARGB;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
@@ -28,7 +29,10 @@ public class TerrainRenderer extends AbstractRenderer<TerrainBlockRenderInfo> {
 
     @Override
     protected void emitQuad(MutableQuadViewImpl quad, BlendMode renderLayer) {
-        RenderLayer layer = renderLayer.blockRenderLayer;
+        BlockRenderPass pass = switch (renderLayer) {
+            case DEFAULT, SOLID, CUTOUT, CUTOUT_MIPPED -> BlockRenderPass.OPAQUE;
+            case TRANSLUCENT -> BlockRenderPass.TRANSLUCENT;
+        };
 
         int bits = switch (renderLayer) {
             case SOLID, DEFAULT, TRANSLUCENT -> MaterialCutoutFlag.shift(MaterialCutoutFlag.NONE);
@@ -36,7 +40,7 @@ public class TerrainRenderer extends AbstractRenderer<TerrainBlockRenderInfo> {
             case CUTOUT_MIPPED -> MaterialCutoutFlag.shift(MaterialCutoutFlag.HALF);
         };
 
-        ChunkModelBuilder builder = this.buildBuffers.getBuilder(layer);
+        ChunkModelBuilder builder = this.buildBuffers.getBuilder(pass);
 
         ModelVertexSink vertexSink = builder.getVertexSink();
         vertexSink.ensureCapacity(4);

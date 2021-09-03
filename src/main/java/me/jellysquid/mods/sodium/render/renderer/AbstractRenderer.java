@@ -67,19 +67,9 @@ public abstract class AbstractRenderer<T extends BlockRenderInfo> {
 
     private void applyQuadColorization(MutableQuadViewImpl quad, int colorIndex) {
         if (colorIndex == -1) {
-            this.applyDefaultQuadColorization(quad);
-        } else {
-            this.applyDynamicQuadColorization(quad);
+            return;
         }
-    }
 
-    private void applyDefaultQuadColorization(MutableQuadViewImpl quad) {
-        for (int i = 0; i < 4; i++) {
-            quad.spriteColor(i, DEFAULT_TEXTURE_INDEX, quad.spriteColor(i, DEFAULT_TEXTURE_INDEX));
-        }
-    }
-
-    private void applyDynamicQuadColorization(MutableQuadViewImpl quad) {
         final QuadColorizer<BlockState> colorProvider = this.blockInfo.getColorProvider();
         final int[] colors = this.biomeColorBlender.getColors(this.blockInfo.blockView, this.blockInfo.blockPos, quad, colorProvider, this.blockInfo.blockState);
 
@@ -87,7 +77,7 @@ public abstract class AbstractRenderer<T extends BlockRenderInfo> {
             quad.spriteColor(i, DEFAULT_TEXTURE_INDEX, ColorARGB.mulRGBA(colors[i], quad.spriteColor(i, DEFAULT_TEXTURE_INDEX)));
         }
     }
-    
+
     protected abstract void emitQuad(MutableQuadViewImpl quad, BlendMode renderLayer);
     
     protected void tessellateSmooth(MutableQuadViewImpl quad, BlendMode blendMode, int colorIndex) {

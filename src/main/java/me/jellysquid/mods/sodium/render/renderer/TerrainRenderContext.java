@@ -5,16 +5,17 @@ import me.jellysquid.mods.sodium.model.light.cache.SlicedLightDataCache;
 import me.jellysquid.mods.sodium.model.light.smooth.SmoothQuadLighter;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.render.occlusion.BlockOcclusionCache;
+import me.jellysquid.mods.sodium.render.pipeline.FluidRenderer;
 import me.jellysquid.mods.sodium.world.WorldSlice;
 import me.jellysquid.mods.sodium.world.cloned.ChunkRenderContext;
 import net.fabricmc.fabric.api.renderer.v1.mesh.Mesh;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -29,6 +30,7 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
     private final Consumer<BakedModel> fallbackConsumer;
 
     private final TerrainRenderer terrainRenderer;
+    private final FluidRenderer fluidRenderer;
 
     public TerrainRenderContext(World world, ChunkBuildBuffers buffers) {
         this.worldSlice = new WorldSlice(world);
@@ -43,6 +45,7 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
         this.terrainRenderer = new TerrainRenderer(this.blockRenderInfo, buffers, lighter, this::transform);
         this.meshConsumer = this.terrainRenderer::acceptFabricMesh;
         this.fallbackConsumer = this.terrainRenderer::renderVanillaModel;
+        this.fluidRenderer = new FluidRenderer(this.terrainRenderer.biomeColorBlender);
     }
 
     @Override
@@ -70,16 +73,17 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
         this.blockRenderInfo.setChunkId(context.getRelativeChunkIndex());
     }
 
-    public boolean renderBlock(BlockState state, BlockPos.Mutable pos, int detailLevel) {
+    public void renderBlock(BlockState state, BlockPos.Mutable pos, int detailLevel) {
         this.blockRenderInfo.prepareForBlock(state, pos, true);
 
-        FabricBakedModel model = (FabricBakedModel) MinecraftClient.getInstance().getBlockRenderManager().getModel(state);
-        model.emitBlockQuads(this.blockRenderInfo.blockView, this.blockRenderInfo.blockState, this.blockRenderInfo.blockPos, this.blockRenderInfo.getRandomSupplier(), this);
+        if (this.blockRenderInfo.blockState.getRenderType() == BlockRenderType.MODEL) {
+            FabricBakedModel model = (FabricBakedModel) MinecraftClient.getInstance().getBlockRenderManager().getModel(state);
+            model.emitBlockQuads(this.blockRenderInfo.blockView, this.blockRenderInfo.blockState, this.blockRenderInfo.blockPos, this.blockRenderInfo.getRandomSupplier(), this);
+        }
 
-        return true;
+        if (!this.blockRenderInfo.fluidState.isEmpty()) {
+            this.fluidRenderer.render(this.blockRenderInfo.blockView, this.blockRenderInfo.fluidState, this.blockRenderInfo.blockPos, this);
+        }
     }
 
-    public boolean renderFluid(FluidState fluidState, BlockPos.Mutable blockPos) {
-        return false;
-    }
 }

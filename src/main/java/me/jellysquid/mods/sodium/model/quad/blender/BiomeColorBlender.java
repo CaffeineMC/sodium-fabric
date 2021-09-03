@@ -8,7 +8,7 @@ import net.minecraft.world.BlockRenderView;
 
 public interface BiomeColorBlender {
     /**
-     * Computes the blended biome colors and returns an an array containing the integer-encoded colors for each vertex.
+     * Computes the blended biome colors and returns an array containing the integer-encoded colors for each vertex.
      * The array returned by this method may be re-used in subsequent calls in order to reduce memory allocations, and
      * as such, the contents of an array returned by this method is undefined after a subsequent call.
      *
@@ -17,7 +17,7 @@ public interface BiomeColorBlender {
      * @param quad The quad which will be colorized
      * @param colorizer The color sampling source
      * @param state The block state being rendered
-     * @return An array of integer colors in ABGR format
+     * @return An array of integer colors in ARGB format
      */
     <T> int[] getColors(BlockRenderView world, BlockPos origin, QuadView quad, QuadColorizer<T> colorizer, T state);
 

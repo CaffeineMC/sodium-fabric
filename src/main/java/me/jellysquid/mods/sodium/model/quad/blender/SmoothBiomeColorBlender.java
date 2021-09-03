@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.model.quad.blender;
 
+import me.jellysquid.mods.sodium.interop.fabric.helper.GeometryHelper;
+import me.jellysquid.mods.sodium.interop.fabric.mesh.QuadViewImpl;
 import me.jellysquid.mods.sodium.model.quad.QuadColorizer;
 import me.jellysquid.mods.sodium.util.color.ColorMixer;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
@@ -15,7 +17,7 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
     public <T> int[] getColors(BlockRenderView world, BlockPos origin, QuadView quad, QuadColorizer<T> colorizer, T state) {
         final int[] colors = this.cachedRet;
 
-        boolean aligned = true;
+        boolean aligned = (((QuadViewImpl) quad).geometryFlags() & GeometryHelper.AXIS_ALIGNED_FLAG) != 0;
 
         for (int i = 0; i < 4; i++) {
             // If the vertex is aligned to the block grid, we do not need to interpolate

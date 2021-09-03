@@ -23,6 +23,7 @@ import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayers;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockRenderView;
@@ -43,6 +44,7 @@ public class BlockRenderInfo {
     public BlockRenderView blockView;
     public BlockPos blockPos;
     public BlockState blockState;
+    public FluidState fluidState;
 
     private long seed;
     private boolean defaultAo;
@@ -72,6 +74,8 @@ public class BlockRenderInfo {
     public void prepareForBlock(BlockState blockState, BlockPos blockPos, boolean modelAO) {
         this.blockPos = blockPos;
         this.blockState = blockState;
+        this.fluidState = blockState.getFluidState();
+
         // in the unlikely case seed actually matches this, we'll simply retrieve it more than one
         this.seed = -1L;
         this.defaultAo = modelAO && MinecraftClient.isAmbientOcclusionEnabled() && blockState.getLuminance() == 0;
