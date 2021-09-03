@@ -73,7 +73,6 @@ public class SmoothQuadLighter implements QuadLighter {
         this.blockRenderInfo = blockRenderInfo;
     }
 
-
     @Override
     public void compute(MutableQuadView quad) {
         this.updateCachedData(this.blockRenderInfo.blockPos.asLong());
@@ -87,7 +86,7 @@ public class SmoothQuadLighter implements QuadLighter {
         // If the model quad is aligned to the block's face and covers it entirely, we can take a fast path and directly
         // map the corner values onto this quad's vertices. This covers most situations during rendering and provides
         // a modest speed-up.
-        if (flags == GeometryHelper.AXIS_ALIGNED_FLAG) {
+        if ((flags & GeometryHelper.CUBIC_FLAG) != 0) {
             this.applyAlignedFullFace(neighborInfo, this.blockRenderInfo.blockPos, quad.lightFace(), out, flags);
         } else {
             this.applyComplex(neighborInfo, quad, this.blockRenderInfo.blockPos, quad.lightFace(), out, flags);
@@ -185,7 +184,7 @@ public class SmoothQuadLighter implements QuadLighter {
      * have two contributing sides.
      */
     private void applyAlignedFullFace(AoNeighborInfo neighborInfo, BlockPos pos, Direction dir, QuadLightData out, int flags) {
-        AoFaceData faceData = this.getCachedFaceData(pos, dir, (flags & GeometryHelper.AXIS_ALIGNED_FLAG) != 0);
+        AoFaceData faceData = this.getCachedFaceData(pos, dir, (flags & GeometryHelper.LIGHT_FACE_FLAG) != 0);
         neighborInfo.mapCorners(faceData.lm, faceData.ao, out.texture, out.shade);
     }
 
