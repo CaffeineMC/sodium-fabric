@@ -31,9 +31,7 @@ import org.jetbrains.annotations.Nullable;
 public class FluidRenderer {
     private static final RenderMaterial WATER_MATERIAL = SodiumRenderer.INSTANCE
             .materialFinder()
-            .blendMode(0, BlendMode.SOLID /* TODO: fix translucency */)
-            .disableAo(0, true)
-            .disableColorIndex(0, true)
+            .blendMode(0, BlendMode.TRANSLUCENT)
             .find();
 
     private static final RenderMaterial LAVA_MATERIAL = SodiumRenderer.INSTANCE
