@@ -26,16 +26,4 @@ public enum ModelQuadFacing {
             case EAST -> EAST;
         };
     }
-
-    public ModelQuadFacing getOpposite() {
-        return switch (this) {
-            case UP -> DOWN;
-            case DOWN -> UP;
-            case EAST -> WEST;
-            case WEST -> EAST;
-            case SOUTH -> NORTH;
-            case NORTH -> SOUTH;
-            default -> UNASSIGNED;
-        };
-    }
 }

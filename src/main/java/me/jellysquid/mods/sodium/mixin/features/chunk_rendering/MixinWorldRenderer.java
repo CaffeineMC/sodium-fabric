@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.util.math.JomlHelper;
-import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
+import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.MatrixConverter;
+import me.jellysquid.mods.sodium.client.interop.vanilla.world.WorldRendererExtended;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.*;
@@ -104,8 +104,8 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
 
     @Inject(method = "setupFrustum", at = @At("RETURN"))
     private void setupFrustum(MatrixStack matrices, Vec3d pos, Matrix4f projectionMatrix, CallbackInfo ci) {
-        org.joml.Matrix4f modelViewMatrix = JomlHelper.copy(projectionMatrix);
-        modelViewMatrix.mul(JomlHelper.copy(matrices.peek().getModel()));
+        org.joml.Matrix4f modelViewMatrix = MatrixConverter.copy(projectionMatrix);
+        modelViewMatrix.mul(MatrixConverter.copy(matrices.peek().getModel()));
         modelViewMatrix.translate((float) -pos.getX(), (float) -pos.getY(), (float) -pos.getZ());
 
         this.renderer.setCullingFrustum(new FrustumIntersection(modelViewMatrix, false));

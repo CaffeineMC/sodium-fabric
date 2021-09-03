@@ -3,8 +3,8 @@ package me.jellysquid.mods.sodium.mixin.features.item;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.generic.PositionTextureSink;
-import me.jellysquid.mods.sodium.client.render.GuiRenderBatches;
-import me.jellysquid.mods.sodium.client.render.ItemRendererExtended;
+import me.jellysquid.mods.sodium.client.render.batch.GuiRenderBatches;
+import me.jellysquid.mods.sodium.client.interop.vanilla.item.ItemRendererBatched;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
@@ -62,7 +62,7 @@ public abstract class MixinInGameHud extends DrawableHelper {
 
     @Redirect(method = "renderHotbar", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/hud/InGameHud;renderHotbarItem(IIFLnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/item/ItemStack;I)V"))
     private void redirectRenderHotbarItem(InGameHud inGameHud, int x, int y, float tickDelta, PlayerEntity player, ItemStack stack, int seed) {
-        this.renderBatchedHotbarItem(ItemRendererExtended.cast(this.itemRenderer), this.client.textRenderer, x, y, tickDelta, player, stack, seed);
+        this.renderBatchedHotbarItem(ItemRendererBatched.cast(this.itemRenderer), this.client.textRenderer, x, y, tickDelta, player, stack, seed);
     }
 
     @Redirect(
@@ -102,7 +102,7 @@ public abstract class MixinInGameHud extends DrawableHelper {
         }
     }
 
-    private void renderBatchedHotbarItem(ItemRendererExtended itemRenderer, TextRenderer textRenderer, int x, int y,
+    private void renderBatchedHotbarItem(ItemRendererBatched itemRenderer, TextRenderer textRenderer, int x, int y,
                                          float tickDelta, PlayerEntity player, ItemStack stack, int seed) {
         if (stack.isEmpty()) {
             return;

@@ -22,6 +22,40 @@ public class ColorARGB implements ColorU8 {
     }
 
     /**
+     * Multiplies the RGB components of the packed ARGB color using the given scale factors.
+     * @param color The ARGB packed color to be multiplied
+     * @param rw The red component scale factor
+     * @param gw The green component scale factor
+     * @param bw The blue component scale factor
+     */
+    public static int mulRGB(int color, float rw, float gw, float bw) {
+        float r = unpackRed(color) * rw;
+        float g = unpackGreen(color) * gw;
+        float b = unpackBlue(color) * bw;
+
+        return pack((int) r, (int) g, (int) b, 0xFF);
+    }
+
+    public static int mulRGB(int color, float w) {
+        return mulRGB(color, w, w, w);
+    }
+
+    public static int mulRGBA(int color1, int color2) {
+        if (color1 == -1) {
+            return color2;
+        } else if (color2 == -1) {
+            return color1;
+        }
+
+        final int alpha = ((color1 >> 24) & 0xFF) * ((color2 >> 24) & 0xFF) / 0xFF;
+        final int red = ((color1 >> 16) & 0xFF) * ((color2 >> 16) & 0xFF) / 0xFF;
+        final int green = ((color1 >> 8) & 0xFF) * ((color2 >> 8) & 0xFF) / 0xFF;
+        final int blue = (color1 & 0xFF) * (color2 & 0xFF) / 0xFF;
+
+        return (alpha << 24) | (red << 16) | (green << 8) | blue;
+    }
+
+    /**
      * @param color The packed 32-bit ARGB color to unpack
      * @return The red color component in the range of 0..255
      */
@@ -63,6 +97,4 @@ public class ColorARGB implements ColorU8 {
     public static int toABGR(int color) {
         return Integer.reverseBytes(color << 8);
     }
-
-
 }

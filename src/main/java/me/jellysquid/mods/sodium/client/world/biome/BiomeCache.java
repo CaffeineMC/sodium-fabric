@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
-import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
+import me.jellysquid.mods.sodium.client.interop.vanilla.world.ClientWorldExtended;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeAccess;

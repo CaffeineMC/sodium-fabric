@@ -3,10 +3,9 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
-import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
-import me.jellysquid.mods.sodium.common.util.collections.QueueDrainingIterator;
-import net.minecraft.client.MinecraftClient;
+import me.jellysquid.mods.sodium.client.util.collections.QueueDrainingIterator;
+import me.jellysquid.mods.sodium.client.render.renderer.TerrainRenderContext;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
@@ -66,13 +65,11 @@ public class ChunkBuilder {
             throw new IllegalStateException("Threads are still alive while in the STOPPED state");
         }
 
-        MinecraftClient client = MinecraftClient.getInstance();
-
         for (int i = 0; i < this.limitThreads; i++) {
             ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.vertexType, this.renderPassManager);
-            ChunkRenderCacheLocal pipeline = new ChunkRenderCacheLocal(client, this.world);
+            TerrainRenderContext context = new TerrainRenderContext(this.world, buffers);
 
-            WorkerRunnable worker = new WorkerRunnable(buffers, pipeline);
+            WorkerRunnable worker = new WorkerRunnable(buffers, context);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
             thread.setPriority(Math.max(0, Thread.NORM_PRIORITY - 2));
@@ -200,11 +197,11 @@ public class ChunkBuilder {
 
         // Making this thread-local provides a small boost to performance by avoiding the overhead in synchronizing
         // caches between different CPU cores
-        private final ChunkRenderCacheLocal cache;
+        private final TerrainRenderContext context;
 
-        public WorkerRunnable(ChunkBuildBuffers bufferCache, ChunkRenderCacheLocal cache) {
+        public WorkerRunnable(ChunkBuildBuffers bufferCache, TerrainRenderContext context) {
             this.bufferCache = bufferCache;
-            this.cache = cache;
+            this.context = context;
         }
 
         @Override
@@ -232,10 +229,11 @@ public class ChunkBuilder {
                 }
 
                 // Perform the build task with this worker's local resources and obtain the result
-                result = job.task.performBuild(this.cache, this.bufferCache, job);
+                result = job.task.performBuild(this.context, this.bufferCache, job);
             } catch (Exception e) {
                 // Propagate any exception from chunk building
                 job.future.completeExceptionally(e);
+                e.printStackTrace();
                 return;
             } finally {
                 job.task.releaseResources();

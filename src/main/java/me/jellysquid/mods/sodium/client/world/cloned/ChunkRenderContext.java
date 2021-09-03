@@ -7,11 +7,13 @@ public class ChunkRenderContext {
     private final ChunkSectionPos origin;
     private final ClonedChunkSection[] sections;
     private final BlockBox volume;
+    private final int chunkIndex;
 
-    public ChunkRenderContext(ChunkSectionPos origin, ClonedChunkSection[] sections, BlockBox volume) {
+    public ChunkRenderContext(ChunkSectionPos origin, ClonedChunkSection[] sections, BlockBox volume, int chunkIndex) {
         this.origin = origin;
         this.sections = sections;
         this.volume = volume;
+        this.chunkIndex = chunkIndex;
     }
 
     public ClonedChunkSection[] getSections() {
@@ -33,5 +35,9 @@ public class ChunkRenderContext {
                         .release(section);
             }
         }
+    }
+
+    public int getRelativeChunkIndex() {
+        return this.chunkIndex;
     }
 }

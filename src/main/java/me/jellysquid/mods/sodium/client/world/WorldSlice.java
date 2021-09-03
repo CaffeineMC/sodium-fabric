@@ -1,7 +1,9 @@
 package me.jellysquid.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.client.world.cloned.PackedIntegerArrayExtended;
+import me.jellysquid.mods.sodium.client.model.light.SidedBrightnessTable;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.interop.vanilla.chunk.PackedIntegerArrayExtended;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCache;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeColorCache;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -68,6 +70,9 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     // Local Section->BlockState table.
     private final BlockState[][] blockStatesArrays;
 
+    // Cached lookup table for brightness used in face darkening
+    private final SidedBrightnessTable sidedBrightnessTable;
+
     // Local section copies. Read-only.
     private ClonedChunkSection[] sections;
 
@@ -129,11 +134,18 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
             }
         }
 
-        return new ChunkRenderContext(origin, sections, volume);
+        int rX = origin.getX() & (RenderRegion.REGION_WIDTH - 1);
+        int rY = origin.getY() & (RenderRegion.REGION_HEIGHT - 1);
+        int rZ = origin.getZ() & (RenderRegion.REGION_LENGTH - 1);
+
+        int chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
+
+        return new ChunkRenderContext(origin, sections, volume, chunkId);
     }
 
     public WorldSlice(World world) {
         this.world = world;
+        this.sidedBrightnessTable = new SidedBrightnessTable(world);
 
         this.sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
         this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][];
@@ -151,7 +163,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
         }
     }
 
-    public void copyData(ChunkRenderContext context) {
+    public void prepare(ChunkRenderContext context) {
         this.origin = context.getOrigin();
         this.sections = context.getSections();
 
@@ -239,7 +251,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
 
     @Override
     public float getBrightness(Direction direction, boolean shaded) {
-        return this.world.getBrightness(direction, shaded);
+        return this.sidedBrightnessTable.get(direction, shaded);
     }
 
     @Override

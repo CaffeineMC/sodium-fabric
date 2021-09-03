@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.font;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.client.util.font.SinglePreparationResourceReloaderCallback;
+import me.jellysquid.mods.sodium.client.interop.vanilla.resource.SinglePreparationResourceReloaderCallback;
 import net.minecraft.client.font.FontManager;
 import net.minecraft.client.font.FontStorage;
 import net.minecraft.client.font.TextRenderer;

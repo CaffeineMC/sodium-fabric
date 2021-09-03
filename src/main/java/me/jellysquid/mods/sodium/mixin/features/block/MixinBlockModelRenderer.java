@@ -1,14 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.features.block;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.interop.vanilla.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.ModelQuadVertexSink;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
-import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.block.BlockModelRenderer;
@@ -86,7 +85,7 @@ public class MixinBlockModelRenderer {
         for (BakedQuad bakedQuad : list) {
             int color = bakedQuad.hasColor() ? defaultColor : 0xFFFFFFFF;
 
-            ModelQuadView quad = ((ModelQuadView) bakedQuad);
+            BakedQuadView quad = ((BakedQuadView) bakedQuad);
 
             for (int i = 0; i < 4; i++) {
                 drain.writeQuad(entry, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),

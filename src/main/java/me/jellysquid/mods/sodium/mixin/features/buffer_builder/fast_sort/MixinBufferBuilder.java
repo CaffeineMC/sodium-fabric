@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.buffer_builder.fast_sort;
 
 import it.unimi.dsi.fastutil.ints.IntConsumer;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.util.geometry.BufferBuilderParametersAccess;
+import me.jellysquid.mods.sodium.client.interop.vanilla.buffer.BufferBuilderParametersAccess;
 import me.jellysquid.mods.sodium.client.util.geometry.GeometrySort;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexFormat;

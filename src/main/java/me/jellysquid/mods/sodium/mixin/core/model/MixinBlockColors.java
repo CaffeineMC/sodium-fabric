@@ -2,8 +2,8 @@ package me.jellysquid.mods.sodium.mixin.core.model;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
-import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
+import me.jellysquid.mods.sodium.client.model.quad.QuadColorizer;
+import me.jellysquid.mods.sodium.client.interop.vanilla.colors.BlockColorsExtended;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.color.block.BlockColorProvider;
@@ -15,15 +15,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BlockColors.class)
 public class MixinBlockColors implements BlockColorsExtended {
-    private Reference2ReferenceMap<Block, ModelQuadColorProvider<BlockState>> blocksToColor;
+    private Reference2ReferenceMap<Block, QuadColorizer<BlockState>> blocksToColor;
 
-    private static final ModelQuadColorProvider<?> DEFAULT_PROVIDER = (state, view, pos, tint) -> -1;
+    private static final QuadColorizer<?> DEFAULT_PROVIDER = (state, view, pos, tint) -> -1;
 
     @SuppressWarnings("unchecked")
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(CallbackInfo ci) {
         this.blocksToColor = new Reference2ReferenceOpenHashMap<>();
-        this.blocksToColor.defaultReturnValue((ModelQuadColorProvider<BlockState>) DEFAULT_PROVIDER);
+        this.blocksToColor.defaultReturnValue((QuadColorizer<BlockState>) DEFAULT_PROVIDER);
     }
 
     @Inject(method = "registerColorProvider", at = @At("HEAD"))
@@ -34,7 +34,7 @@ public class MixinBlockColors implements BlockColorsExtended {
     }
 
     @Override
-    public ModelQuadColorProvider<BlockState> getColorProvider(BlockState state) {
+    public QuadColorizer<BlockState> getColorProvider(BlockState state) {
         return this.blocksToColor.get(state.getBlock());
     }
 }

@@ -1,18 +1,18 @@
 package me.jellysquid.mods.sodium.mixin.features.item;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.interop.vanilla.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.ModelQuadVertexSink;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.generic.PositionColorSink;
-import me.jellysquid.mods.sodium.client.render.ItemRenderBatch;
-import me.jellysquid.mods.sodium.client.render.ItemRendererExtended;
+import me.jellysquid.mods.sodium.client.render.batch.ItemRenderBatch;
+import me.jellysquid.mods.sodium.client.interop.vanilla.item.ItemRendererBatched;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
-import me.jellysquid.mods.sodium.client.world.biome.ItemColorsExtended;
-import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import me.jellysquid.mods.sodium.client.interop.vanilla.colors.ItemColorsExtended;
+import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.color.item.ItemColorProvider;
 import net.minecraft.client.color.item.ItemColors;
@@ -45,7 +45,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import java.util.List;
 
 @Mixin(ItemRenderer.class)
-public abstract class MixinItemRenderer implements ItemRendererExtended {
+public abstract class MixinItemRenderer implements ItemRendererBatched {
     private final XoRoShiRoRandom random = new XoRoShiRoRandom();
 
     @Shadow
@@ -109,14 +109,14 @@ public abstract class MixinItemRenderer implements ItemRendererExtended {
                 color = ColorARGB.toABGR((colorProvider.getColor(stack, bakedQuad.getColorIndex())), 255);
             }
 
-            ModelQuadView quad = ((ModelQuadView) bakedQuad);
+            BakedQuadView q = ((BakedQuadView) bakedQuad);
 
             for (int i = 0; i < 4; i++) {
-                drain.writeQuad(entry, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),
+                drain.writeQuad(entry, q.getX(i), q.getY(i), q.getZ(i), color, q.getTexU(i), q.getTexV(i),
                         light, overlay, bakedQuad.getFace());
             }
 
-            SpriteUtil.markSpriteActive(quad.getSprite());
+            SpriteUtil.markSpriteActive(q.getSprite());
         }
 
         drain.flush();

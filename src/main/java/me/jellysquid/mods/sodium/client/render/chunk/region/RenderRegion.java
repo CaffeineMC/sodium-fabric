@@ -2,14 +2,14 @@ package me.jellysquid.mods.sodium.client.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.arena.AsyncBufferArena;
-import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
-import me.jellysquid.mods.sodium.client.gl.arena.SwapBufferArena;
-import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
-import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
+import me.jellysquid.mods.sodium.client.render.chunk.arena.AsyncBufferArena;
+import me.jellysquid.mods.sodium.client.render.chunk.arena.GlBufferArena;
+import me.jellysquid.mods.sodium.client.render.chunk.arena.SwapBufferArena;
+import me.jellysquid.mods.sodium.client.render.chunk.arena.staging.StagingBuffer;
+import me.jellysquid.mods.thingl.device.CommandList;
+import me.jellysquid.mods.thingl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
+import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -25,9 +25,9 @@ public class RenderRegion {
     public static final int REGION_HEIGHT = 4;
     public static final int REGION_LENGTH = 8;
 
-    private static final int REGION_WIDTH_M = RenderRegion.REGION_WIDTH - 1;
-    private static final int REGION_HEIGHT_M = RenderRegion.REGION_HEIGHT - 1;
-    private static final int REGION_LENGTH_M = RenderRegion.REGION_LENGTH - 1;
+    public static final int REGION_WIDTH_M = RenderRegion.REGION_WIDTH - 1;
+    public static final int REGION_HEIGHT_M = RenderRegion.REGION_HEIGHT - 1;
+    public static final int REGION_LENGTH_M = RenderRegion.REGION_LENGTH - 1;
 
     private static final int REGION_WIDTH_SH = Integer.bitCount(REGION_WIDTH_M);
     private static final int REGION_HEIGHT_SH = Integer.bitCount(REGION_HEIGHT_M);
@@ -157,7 +157,7 @@ public class RenderRegion {
             int expectedVertexCount = REGION_SIZE * 756;
             int expectedIndexCount = (expectedVertexCount / 4) * 6;
 
-            this.vertexBuffers = createArena(commandList, expectedVertexCount * ChunkModelVertexFormats.DEFAULT.getBufferVertexFormat().getStride(), stagingBuffer);
+            this.vertexBuffers = createArena(commandList, expectedVertexCount * ModelVertexType.INSTANCE.getBufferVertexFormat().getStride(), stagingBuffer);
             this.indexBuffers = createArena(commandList, expectedIndexCount * 4, stagingBuffer);
         }
 

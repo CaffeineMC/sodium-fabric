@@ -1,8 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformFloat;
-import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformFloat4v;
+import me.jellysquid.mods.thingl.shader.ShaderBindingContext;
+import me.jellysquid.mods.thingl.shader.uniform.GlUniformFloat;
+import me.jellysquid.mods.thingl.shader.uniform.GlUniformFloat4v;
 
 /**
  * These shader implementations try to remain compatible with the deprecated fixed function pipeline by manually

@@ -8,10 +8,10 @@ public class QuadLightData {
     /**
      * The brightness of each vertex in the quad as normalized floats.
      */
-    public final float[] br = new float[4];
+    public final float[] shade = new float[4];
 
     /**
      * The lightmap texture coordinates for each vertex in the quad.
      */
-    public final int[] lm = new int[4];
+    public final int[] texture = new int[4];
 }

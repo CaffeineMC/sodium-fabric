@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.interop.vanilla.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.ModelQuadVertexSink;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorU8;
-import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
+import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.MatrixUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;
 import net.minecraft.client.render.model.BakedQuad;
@@ -35,7 +35,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
             throw new IllegalStateException();
         }
 
-        ModelQuadView quadView = (ModelQuadView) quad;
+        BakedQuadView quadView = (BakedQuadView) quad;
 
         Matrix4f modelMatrix = matrices.getModel();
         Matrix3f normalMatrix = matrices.getNormal();

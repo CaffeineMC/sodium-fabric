@@ -4,8 +4,8 @@ import com.mojang.datafixers.util.Pair;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.generic.PositionColorSink;
-import me.jellysquid.mods.sodium.client.render.GuiRenderBatches;
-import me.jellysquid.mods.sodium.client.render.ItemRendererExtended;
+import me.jellysquid.mods.sodium.client.render.batch.GuiRenderBatches;
+import me.jellysquid.mods.sodium.client.interop.vanilla.item.ItemRendererBatched;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.*;
@@ -75,7 +75,7 @@ public abstract class MixinHandledScreen<T extends ScreenHandler> extends Screen
                 drawSlotOverlay(matrices.peek().getModel(), x, y, x + 16, y + 16, 0x80ffffff);
             }
 
-            ItemRendererExtended itemRenderer = ItemRendererExtended.cast(this.itemRenderer);
+            ItemRendererBatched itemRenderer = ItemRendererBatched.cast(this.itemRenderer);
             itemRenderer.renderItemModel(GuiRenderBatches.CONTAINER, matrices, x, y, stack, this.client.player, slot.x + slot.y * this.backgroundWidth);
             itemRenderer.renderItemLabel(GuiRenderBatches.CONTAINER, matrices, x, y, stack, this.textRenderer, label);
             itemRenderer.renderItemOverlays(GuiRenderBatches.CONTAINER, matrices, x, y, stack);

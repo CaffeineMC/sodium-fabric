@@ -7,19 +7,16 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
+import me.jellysquid.mods.sodium.client.render.renderer.TerrainRenderContext;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
-import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 
@@ -47,16 +44,14 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
     }
 
     @Override
-    public ChunkBuildResult performBuild(ChunkRenderCacheLocal cache, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
+    public ChunkBuildResult performBuild(TerrainRenderContext context, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
         ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
-        ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
-        buffers.init(renderData, this.render.getChunkId());
+        buffers.init(renderData);
+        context.prepare(this.context);
 
-        cache.init(this.context);
-
-        WorldSlice slice = cache.getWorldSlice();
+        WorldSlice slice = context.getWorldSlice();
 
         int minX = this.render.getOriginX();
         int minY = this.render.getOriginY();
@@ -67,7 +62,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         int maxZ = minZ + 16;
 
         BlockPos.Mutable blockPos = new BlockPos.Mutable();
-        BlockPos.Mutable offset = new BlockPos.Mutable();
 
         for (int y = minY; y < maxY; y++) {
             if (cancellationSource.isCancelled()) {
@@ -83,29 +77,15 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     }
 
                     blockPos.set(x, y, z);
-                    offset.set(x & 15, y & 15, z & 15);
-
-                    boolean rendered = false;
 
                     if (blockState.getRenderType() == BlockRenderType.MODEL) {
-                        BakedModel model = cache.getBlockModels()
-                                .getModel(blockState);
-
-                        long seed = blockState.getRenderingSeed(blockPos);
-
-                        if (cache.getBlockRenderer().renderModel(slice, blockState, blockPos, offset, model, buffers, true, seed, this.detailLevel)) {
-                            rendered = true;
-                        }
+                        context.renderBlock(blockState, blockPos, this.detailLevel);
                     }
 
                     FluidState fluidState = blockState.getFluidState();
 
                     if (!fluidState.isEmpty()) {
-                        RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
-
-                        if (cache.getFluidRenderer().render(slice, fluidState, blockPos, offset, buffers.get(layer))) {
-                            rendered = true;
-                        }
+                        context.renderFluid(fluidState, blockPos);
                     }
 
                     if (blockState.hasBlockEntity()) {
@@ -116,17 +96,12 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                             if (renderer != null) {
                                 renderData.addBlockEntity(entity, !renderer.rendersOutsideBoundingBox(entity));
-                                rendered = true;
                             }
                         }
                     }
 
                     if (blockState.isOpaqueFullCube(slice, blockPos)) {
                         occluder.markClosed(blockPos);
-                    }
-
-                    if (rendered) {
-                        bounds.addBlock(x & 15, y & 15, z & 15);
                     }
                 }
             }
@@ -143,7 +118,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         }
 
         renderData.setOcclusionData(occluder.build());
-        renderData.setBounds(bounds.build(this.render.getChunkPos()));
+        renderData.setBounds(new ChunkRenderBounds(this.render.getChunkPos()));
 
         return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame, this.detailLevel);
     }

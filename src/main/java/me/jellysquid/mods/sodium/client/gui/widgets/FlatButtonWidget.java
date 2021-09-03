@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui.widgets;
 
-import me.jellysquid.mods.sodium.client.util.Dim2i;
+import me.jellysquid.mods.sodium.client.gui.values.Dim2i;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;

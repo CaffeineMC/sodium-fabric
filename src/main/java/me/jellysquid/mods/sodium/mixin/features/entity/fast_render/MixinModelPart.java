@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
-import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
+import me.jellysquid.mods.sodium.client.interop.vanilla.cuboid.ModelCuboidAccessor;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.ModelQuadVertexSink;
-import me.jellysquid.mods.sodium.client.util.Norm3b;
+import me.jellysquid.mods.sodium.client.util.geometry.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.util.math.Matrix3fExtended;
-import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
-import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
+import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.Matrix3fExtended;
+import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.Matrix4fExtended;
+import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.MatrixUtil;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;

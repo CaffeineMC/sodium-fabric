@@ -7,8 +7,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.chunk.renderer.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
@@ -30,7 +31,6 @@ public class RenderSection {
     private final Map<BlockRenderPass, ChunkGraphicsState> graphicsStates;
     private final RenderRegion region;
     private final ChunkGraphInfo graphInfo;
-    private final int chunkId;
 
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
@@ -55,14 +55,7 @@ public class RenderSection {
 
         this.graphInfo = new ChunkGraphInfo(this);
 
-        this.graphicsStates = new EnumMap<>(BlockRenderPass.class);
-
-        int rX = this.getChunkX() & (RenderRegion.REGION_WIDTH - 1);
-        int rY = this.getChunkY() & (RenderRegion.REGION_HEIGHT - 1);
-        int rZ = this.getChunkZ() & (RenderRegion.REGION_LENGTH - 1);
-
-        this.chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
-    }
+        this.graphicsStates = new EnumMap<>(BlockRenderPass.class);}
 
 
     public RenderSection getAdjacent(Direction dir) {
@@ -300,10 +293,6 @@ public class RenderSection {
         this.setData(result.data);
         this.lastAcceptedBuildTime = result.buildTime;
         this.builtDetailLevel = result.detailLevel;
-    }
-
-    public int getChunkId() {
-        return this.chunkId;
     }
 
     public int getBuiltDetailLevel() {

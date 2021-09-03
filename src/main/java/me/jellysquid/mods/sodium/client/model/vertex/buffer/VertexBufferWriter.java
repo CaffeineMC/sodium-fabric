@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.vertex.buffer;
 
-import me.jellysquid.mods.sodium.client.gl.attribute.BufferVertexFormat;
+import me.jellysquid.mods.thingl.attribute.BufferVertexFormat;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
 import me.jellysquid.mods.sodium.client.model.vertex.type.BufferVertexType;
 

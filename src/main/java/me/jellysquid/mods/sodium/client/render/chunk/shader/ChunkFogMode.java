@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.google.common.collect.ImmutableList;
+import me.jellysquid.mods.thingl.shader.ShaderBindingContext;
 
 import java.util.List;
 import java.util.function.Function;

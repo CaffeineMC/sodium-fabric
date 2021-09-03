@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.format;
 
 import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
-import net.minecraft.util.math.Vec3i;
 
 public interface ModelVertexSink extends VertexSink {
     /**
@@ -13,13 +12,9 @@ public interface ModelVertexSink extends VertexSink {
      * @param u The u-texture of the vertex
      * @param v The y-texture of the vertex
      * @param light The packed light-map coordinates of the vertex
-     * @param chunkId
-     * @param bits
+     * @param chunkId The local index of the chunk within a chunk region
+     * @param bits The material bits set for the vertex
      */
     void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId, int bits);
-
-    default void writeVertex(Vec3i offset, float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId, int bits) {
-        this.writeVertex(offset.getX() + posX, offset.getY() + posY, offset.getZ() + posZ, color, u, v, light, chunkId, bits);
-    }
 
 }

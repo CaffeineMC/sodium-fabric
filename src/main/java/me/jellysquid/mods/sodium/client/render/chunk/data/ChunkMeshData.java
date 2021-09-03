@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.data;
 
-import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
-import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
+import me.jellysquid.mods.sodium.client.render.IndexedVertexData;
+import me.jellysquid.mods.thingl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 
 import java.util.Map;

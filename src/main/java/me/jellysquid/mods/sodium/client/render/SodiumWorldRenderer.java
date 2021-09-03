@@ -3,19 +3,18 @@ package me.jellysquid.mods.sodium.client.render;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
+import me.jellysquid.mods.thingl.device.CommandList;
+import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.render.chunk.context.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
-import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheShared;
-import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
-import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
-import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
-import me.jellysquid.mods.sodium.common.util.ListUtil;
+import me.jellysquid.mods.thingl.util.NativeBuffer;
+import me.jellysquid.mods.sodium.client.interop.vanilla.world.ChunkStatusListener;
+import me.jellysquid.mods.sodium.client.interop.vanilla.world.ClientChunkManagerExtended;
+import me.jellysquid.mods.sodium.client.interop.vanilla.world.WorldRendererExtended;
+import me.jellysquid.mods.sodium.client.util.ListUtil;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -103,8 +102,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     private void loadWorld(ClientWorld world) {
         this.world = world;
 
-        ChunkRenderCacheShared.createRenderContext(this.world);
-
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.initRenderer(commandList);
         }
@@ -113,8 +110,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     }
 
     private void unloadWorld() {
-        ChunkRenderCacheShared.destroyRenderContext(this.world);
-
         if (this.renderSectionManager != null) {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;

@@ -1,19 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.features.font;
 
-import me.jellysquid.mods.sodium.client.util.font.OutlineCharacterVisitor;
-import net.minecraft.client.font.FontStorage;
-import net.minecraft.client.font.Glyph;
+import me.jellysquid.mods.sodium.client.interop.vanilla.glyph.OutlineCharacterVisitor;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.text.CharacterVisitor;
 import net.minecraft.text.OrderedText;
-import net.minecraft.text.Style;
 import net.minecraft.util.math.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(TextRenderer.class)
 public abstract class MixinTextRenderer {

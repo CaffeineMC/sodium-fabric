@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderBindingPoint;
+import me.jellysquid.mods.thingl.shader.ShaderBindingPoint;
 
 public class ChunkShaderBindingPoints {
     public static final ShaderBindingPoint ATTRIBUTE_POSITION_ID = new ShaderBindingPoint(1);

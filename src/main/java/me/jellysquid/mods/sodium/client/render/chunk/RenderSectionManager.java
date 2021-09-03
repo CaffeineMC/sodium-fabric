@@ -9,13 +9,16 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.thingl.device.CommandList;
+import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.context.ChunkCameraContext;
+import me.jellysquid.mods.sodium.client.render.chunk.context.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
+import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexType;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkAdjacencyMap;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
@@ -23,17 +26,18 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManag
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionVisibility;
+import me.jellysquid.mods.sodium.client.render.chunk.renderer.RegionChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
-import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
+import me.jellysquid.mods.sodium.client.interop.vanilla.world.ChunkStatusListener;
+import me.jellysquid.mods.sodium.client.interop.vanilla.world.ClientChunkManagerExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
-import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import me.jellysquid.mods.sodium.common.util.collections.FutureQueueDrainingIterator;
+import me.jellysquid.mods.sodium.client.util.DirectionUtil;
+import me.jellysquid.mods.sodium.client.util.collections.FutureQueueDrainingIterator;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
@@ -109,7 +113,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         this.worldRenderer = worldRenderer;
         this.world = world;
 
-        this.builder = new ChunkBuilder(ChunkModelVertexFormats.DEFAULT);
+        this.builder = new ChunkBuilder(ModelVertexType.INSTANCE);
         this.builder.init(world, renderPassManager);
 
         this.needsUpdate = true;
@@ -125,7 +129,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         float detailDistance = getDetailDistance(renderDistance);
 
         this.detailFarPlane = getDetailFarPlane(detailDistance);
-        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT, detailDistance);
+        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ModelVertexType.INSTANCE, detailDistance);
     }
 
     private static double getDetailFarPlane(float detailDistance) {

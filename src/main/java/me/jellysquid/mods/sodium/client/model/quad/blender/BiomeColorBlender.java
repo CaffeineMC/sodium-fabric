@@ -1,7 +1,8 @@
 package me.jellysquid.mods.sodium.client.model.quad.blender;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
+import me.jellysquid.mods.sodium.client.model.quad.QuadColorizer;
+import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
 
@@ -18,5 +19,9 @@ public interface BiomeColorBlender {
      * @param state The block state being rendered
      * @return An array of integer colors in ABGR format
      */
-    <T> int[] getColors(BlockRenderView world, BlockPos origin, ModelQuadView quad, ModelQuadColorProvider<T> colorizer, T state);
+    <T> int[] getColors(BlockRenderView world, BlockPos origin, QuadView quad, QuadColorizer<T> colorizer, T state);
+
+    static BiomeColorBlender create(MinecraftClient client) {
+        return client.options.biomeBlendRadius > 0 ? new SmoothBiomeColorBlender() : new FlatBiomeColorBlender();
+    }
 }

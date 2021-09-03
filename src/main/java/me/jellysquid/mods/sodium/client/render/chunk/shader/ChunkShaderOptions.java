@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
-import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
+import me.jellysquid.mods.thingl.shader.ShaderConstants;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 
 public record ChunkShaderOptions(ChunkFogMode fog, BlockRenderPass pass) {

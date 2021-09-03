@@ -1,10 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
-import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
-import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformBlock;
-import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformFloat;
-import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformInt;
-import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformMatrix4f;
+import me.jellysquid.mods.thingl.buffer.GlMutableBuffer;
+import me.jellysquid.mods.thingl.shader.ShaderBindingContext;
+import me.jellysquid.mods.thingl.shader.uniform.GlUniformBlock;
+import me.jellysquid.mods.thingl.shader.uniform.GlUniformFloat;
+import me.jellysquid.mods.thingl.shader.uniform.GlUniformInt;
+import me.jellysquid.mods.thingl.shader.uniform.GlUniformMatrix4f;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import org.joml.Matrix4f;
 

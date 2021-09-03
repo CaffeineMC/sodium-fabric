@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.core;
 
-import me.jellysquid.mods.sodium.client.util.resource.SinglePreparationResourceReloaderAccess;
+import me.jellysquid.mods.sodium.client.interop.vanilla.resource.SinglePreparationResourceReloaderAccess;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.SinglePreparationResourceReloader;
 import net.minecraft.util.profiler.Profiler;

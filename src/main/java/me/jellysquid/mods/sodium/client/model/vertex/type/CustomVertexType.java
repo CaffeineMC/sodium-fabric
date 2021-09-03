@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.vertex.type;
 
-import me.jellysquid.mods.sodium.client.gl.attribute.BufferVertexFormat;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
+import me.jellysquid.mods.thingl.attribute.BufferVertexFormat;
+import me.jellysquid.mods.thingl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
 
 public interface CustomVertexType<T extends VertexSink, A extends Enum<A>> extends BufferVertexType<T> {

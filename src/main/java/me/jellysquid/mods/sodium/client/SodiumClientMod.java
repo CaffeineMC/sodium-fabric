@@ -1,14 +1,16 @@
 package me.jellysquid.mods.sodium.client;
 
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
+import me.jellysquid.mods.sodium.client.config.SodiumRenderConfig;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
+import me.jellysquid.mods.sodium.client.interop.fabric.SodiumRenderer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SodiumClientMod implements ClientModInitializer {
-    private static SodiumGameOptions CONFIG;
+    private static SodiumRenderConfig CONFIG;
     private static Logger LOGGER;
 
     private static String MOD_VERSION;
@@ -22,9 +24,11 @@ public class SodiumClientMod implements ClientModInitializer {
         MOD_VERSION = mod.getMetadata()
                 .getVersion()
                 .getFriendlyString();
+
+        RendererAccess.INSTANCE.registerRenderer(SodiumRenderer.INSTANCE);
     }
 
-    public static SodiumGameOptions options() {
+    public static SodiumRenderConfig options() {
         if (CONFIG == null) {
             CONFIG = loadConfig();
         }
@@ -40,8 +44,8 @@ public class SodiumClientMod implements ClientModInitializer {
         return LOGGER;
     }
 
-    private static SodiumGameOptions loadConfig() {
-        return SodiumGameOptions.load(FabricLoader.getInstance().getConfigDir().resolve("sodium-options.json"));
+    private static SodiumRenderConfig loadConfig() {
+        return SodiumRenderConfig.load(FabricLoader.getInstance().getConfigDir().resolve("sodium-options.json"));
     }
 
     public static String getVersion() {

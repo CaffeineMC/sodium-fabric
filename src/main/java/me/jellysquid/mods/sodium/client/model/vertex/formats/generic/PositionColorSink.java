@@ -7,8 +7,8 @@ import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterNi
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.client.model.vertex.fallback.VertexWriterFallback;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
-import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
+import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.Matrix4fExtended;
+import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.MatrixUtil;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;

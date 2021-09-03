@@ -5,7 +5,7 @@ import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.GlyphVertexSink;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
-import me.jellysquid.mods.sodium.client.util.font.GlyphRendererBatched;
+import me.jellysquid.mods.sodium.client.interop.vanilla.glyph.GlyphRendererBatched;
 import net.minecraft.client.font.*;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;

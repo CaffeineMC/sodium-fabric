@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
-import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
+import me.jellysquid.mods.sodium.client.render.IndexedVertexData;
+import me.jellysquid.mods.thingl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferBuilder;
@@ -13,11 +13,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
-import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import net.minecraft.block.BlockState;
+import me.jellysquid.mods.thingl.util.NativeBuffer;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderLayers;
-import net.minecraft.util.math.Vec3i;
 
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -60,7 +57,7 @@ public class ChunkBuildBuffers {
         }
     }
 
-    public void init(ChunkRenderData.Builder renderData, int chunkId) {
+    public void init(ChunkRenderData.Builder renderData) {
         for (VertexBufferBuilder vertexBuffer : this.vertexBuffers) {
             vertexBuffer.start();
         }
@@ -75,7 +72,7 @@ public class ChunkBuildBuffers {
             ModelVertexSink vertexSink = this.vertexType.createBufferWriter(this.vertexBuffers[i]);
             IndexBufferBuilder[] indexBuffers = this.indexBuffers[i];
 
-            this.delegates[i] = new BakedChunkModelBuilder(indexBuffers, vertexSink, renderData, chunkId);
+            this.delegates[i] = new BakedChunkModelBuilder(indexBuffers, vertexSink, renderData);
         }
     }
 
@@ -83,7 +80,7 @@ public class ChunkBuildBuffers {
      * Return the {@link ChunkModelBuilder} for the given {@link RenderLayer} as mapped by the
      * {@link BlockRenderPassManager} for this render context.
      */
-    public ChunkModelBuilder get(RenderLayer layer) {
+    public ChunkModelBuilder getBuilder(RenderLayer layer) {
         return this.delegates[this.renderPassManager.getRenderPassId(layer)];
     }
 
@@ -140,7 +137,7 @@ public class ChunkBuildBuffers {
         }
     }
 
-    public ChunkModelBuilder get(BlockRenderPass pass) {
+    public ChunkModelBuilder getBuilder(BlockRenderPass pass) {
         return this.delegates[pass.ordinal()];
     }
 }

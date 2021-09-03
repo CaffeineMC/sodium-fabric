@@ -1,10 +1,8 @@
 package me.jellysquid.mods.sodium.client.model.quad.blender;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
-import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
+import me.jellysquid.mods.sodium.client.model.quad.QuadColorizer;
 import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
+import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
 
@@ -14,10 +12,10 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
     private final BlockPos.Mutable mpos = new BlockPos.Mutable();
 
     @Override
-    public <T> int[] getColors(BlockRenderView world, BlockPos origin, ModelQuadView quad, ModelQuadColorProvider<T> colorizer, T state) {
+    public <T> int[] getColors(BlockRenderView world, BlockPos origin, QuadView quad, QuadColorizer<T> colorizer, T state) {
         final int[] colors = this.cachedRet;
 
-        boolean aligned = ModelQuadFlags.contains(quad.getFlags(), ModelQuadFlags.IS_ALIGNED);
+        boolean aligned = true;
 
         for (int i = 0; i < 4; i++) {
             // If the vertex is aligned to the block grid, we do not need to interpolate
@@ -31,25 +29,23 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
         return colors;
     }
 
-    private <T> int getVertexColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state, BlockPos origin,
-                                   ModelQuadView quad, int vertexIdx) {
-        final int x = origin.getX() + (int) quad.getX(vertexIdx);
-        final int z = origin.getZ() + (int) quad.getZ(vertexIdx);
+    private <T> int getVertexColor(QuadColorizer<T> colorizer, BlockRenderView world, T state, BlockPos origin,
+                                   QuadView quad, int vertexIdx) {
+        final int x = origin.getX() + (int) quad.x(vertexIdx);
+        final int z = origin.getZ() + (int) quad.z(vertexIdx);
 
-        final int color = this.getBlockColor(colorizer, world, state, origin, x, z, quad.getColorIndex());
-
-        return ColorARGB.toABGR(color);
+        return this.getBlockColor(colorizer, world, state, origin, x, z, quad.colorIndex());
     }
 
-    private <T> int getBlockColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state, BlockPos origin,
+    private <T> int getBlockColor(QuadColorizer<T> colorizer, BlockRenderView world, T state, BlockPos origin,
                                   int x, int z, int colorIdx) {
         return colorizer.getColor(state, world, this.mpos.set(x, origin.getY(), z), colorIdx);
     }
 
-    private <T> int getInterpolatedVertexColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state,
-                                               BlockPos origin, ModelQuadView quad, int vertexIdx) {
-        final float x = quad.getX(vertexIdx);
-        final float z = quad.getZ(vertexIdx);
+    private <T> int getInterpolatedVertexColor(QuadColorizer<T> colorizer, BlockRenderView world, T state,
+                                               BlockPos origin, QuadView quad, int vertexIdx) {
+        final float x = quad.x(vertexIdx);
+        final float z = quad.z(vertexIdx);
 
         final int intX = (int) x;
         final int intZ = (int) z;
@@ -59,10 +55,10 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
         final int originZ = origin.getZ() + intZ;
 
         // Retrieve the color values for each neighbor
-        final int c1 = this.getBlockColor(colorizer, world, state, origin, originX, originZ, quad.getColorIndex());
-        final int c2 = this.getBlockColor(colorizer, world, state, origin, originX, originZ + 1, quad.getColorIndex());
-        final int c3 = this.getBlockColor(colorizer, world, state, origin, originX + 1, originZ, quad.getColorIndex());
-        final int c4 = this.getBlockColor(colorizer, world, state, origin, originX + 1, originZ + 1, quad.getColorIndex());
+        final int c1 = this.getBlockColor(colorizer, world, state, origin, originX, originZ, quad.colorIndex());
+        final int c2 = this.getBlockColor(colorizer, world, state, origin, originX, originZ + 1, quad.colorIndex());
+        final int c3 = this.getBlockColor(colorizer, world, state, origin, originX + 1, originZ, quad.colorIndex());
+        final int c4 = this.getBlockColor(colorizer, world, state, origin, originX + 1, originZ + 1, quad.colorIndex());
 
         final int result;
 
@@ -86,7 +82,7 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
             result = ColorMixer.mixARGB(r1, r2, x1, x2);
         }
 
-        return ColorARGB.toABGR(result);
+        return result;
     }
 
 }
