@@ -51,8 +51,7 @@ import static me.jellysquid.mods.sodium.interop.fabric.helper.GeometryHelper.LIG
 public abstract class AbstractRenderer<T extends BlockRenderInfo> {
     private static final int FULL_BRIGHTNESS = 0x00F000F0;
 
-    @Deprecated(forRemoval = true)
-    private static final int DEFAULT_TEXTURE_INDEX = 0;
+    protected static final int DEFAULT_TEXTURE_INDEX = 0;
 
     protected final BiomeColorBlender biomeColorBlender = BiomeColorBlender.create(MinecraftClient.getInstance());
     protected final T blockInfo;

@@ -14,13 +14,20 @@ import me.jellysquid.mods.sodium.interop.fabric.mesh.MutableQuadViewImpl;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.util.color.ColorARGB;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
+import net.fabricmc.fabric.api.renderer.v1.model.SpriteFinder;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.util.math.Vec3i;
 
 public class TerrainRenderer extends AbstractRenderer<TerrainBlockRenderInfo> {
     private final ChunkBuildBuffers buildBuffers;
-    
+    private final SpriteFinder spriteFinder = SpriteFinder.get(MinecraftClient.getInstance()
+            .getBakedModelManager()
+            .getAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE));
+
     TerrainRenderer(TerrainBlockRenderInfo blockInfo, ChunkBuildBuffers buildBuffers, QuadLighter lighter, RenderContext.QuadTransform transform) {
         super(blockInfo, lighter, transform);
         
@@ -53,16 +60,21 @@ public class TerrainRenderer extends AbstractRenderer<TerrainBlockRenderInfo> {
 
         for (int i = 0; i < 4; i++) {
             vertexSink.writeVertex(quad.x(i) + relativePos.getX(), quad.y(i) + relativePos.getY(), quad.z(i) + relativePos.getZ(),
-                    ColorARGB.toABGR(quad.spriteColor(i, 0)),
-                    quad.spriteU(i, 0), quad.spriteV(i, 0),
+                    ColorARGB.toABGR(quad.spriteColor(i, DEFAULT_TEXTURE_INDEX)),
+                    quad.spriteU(i, DEFAULT_TEXTURE_INDEX), quad.spriteV(i, DEFAULT_TEXTURE_INDEX),
                     quad.lightmap(i),
                     chunkId,
                     bits);
         }
 
         indexSink.add(vertexStart, ModelQuadWinding.CLOCKWISE);
-
         vertexSink.flush();
+
+        Sprite sprite = this.spriteFinder.find(quad, DEFAULT_TEXTURE_INDEX);
+
+        if (sprite != null) {
+            builder.addSprite(sprite);
+        }
     }
 
     private static ModelQuadFacing getBlockFace(MutableQuadViewImpl quad) {
