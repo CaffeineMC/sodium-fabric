@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.features.debug;
 
 import com.google.common.collect.Lists;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.thingl.util.NativeBuffer;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.util.Formatting;
@@ -48,7 +48,7 @@ public abstract class MixinDebugHud {
     }
 
     private static String getFormattedVersionText() {
-        String version = SodiumClientMod.getVersion();
+        String version = SodiumClient.getVersion();
         Formatting color;
 
         if (version.endsWith("-dirty")) {

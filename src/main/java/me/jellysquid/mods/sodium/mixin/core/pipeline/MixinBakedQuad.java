@@ -1,13 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
-import me.jellysquid.mods.sodium.client.interop.vanilla.quad.BakedQuadView;
+import me.jellysquid.mods.sodium.interop.vanilla.quad.BakedQuadView;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
-import static me.jellysquid.mods.sodium.client.interop.vanilla.quad.BakedQuadHelper.*;
+import static me.jellysquid.mods.sodium.interop.vanilla.quad.BakedQuadHelper.*;
 
 @Mixin(BakedQuad.class)
 public class MixinBakedQuad implements BakedQuadView {

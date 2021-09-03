@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.SodiumClient;
 import me.jellysquid.mods.thingl.attribute.BufferVertexFormat;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
-import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
-import me.jellysquid.mods.sodium.client.model.vertex.type.BlittableVertexType;
-import me.jellysquid.mods.sodium.client.model.vertex.type.VertexType;
-import me.jellysquid.mods.sodium.client.interop.vanilla.quad.ModelQuadOverlayAdapter;
+import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
+import me.jellysquid.mods.sodium.model.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.model.vertex.VertexSink;
+import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferView;
+import me.jellysquid.mods.sodium.model.vertex.type.BlittableVertexType;
+import me.jellysquid.mods.sodium.model.vertex.type.VertexType;
+import me.jellysquid.mods.sodium.interop.vanilla.quad.ModelQuadOverlayAdapter;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
@@ -100,7 +100,7 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
 
         if (blittable != null) {
             if (blittable.getBufferVertexFormat() == this.getVertexFormat()) {
-                return blittable.createBufferWriter(this, SodiumClientMod.isDirectMemoryAccessEnabled());
+                return blittable.createBufferWriter(this, SodiumClient.isDirectMemoryAccessEnabled());
             } else if (factory == VanillaVertexTypes.QUADS) {
                 if (this.format == VertexFormats.POSITION_TEXTURE) {
                     return (T) new ModelQuadOverlayAdapter(VanillaVertexTypes.POSITION_TEXTURE.asBlittable()

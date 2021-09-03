@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
-import me.jellysquid.mods.sodium.client.interop.vanilla.lightmap.LightmapTextureManagerAccessor;
+import me.jellysquid.mods.sodium.interop.vanilla.lightmap.LightmapTextureManagerAccessor;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.texture.AbstractTexture;
 import net.minecraft.client.texture.NativeImageBackedTexture;

@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin;
 
-import me.jellysquid.mods.sodium.client.config.mixin.MixinOption;
-import me.jellysquid.mods.sodium.client.config.SodiumMixinConfig;
+import me.jellysquid.mods.sodium.config.mixin.MixinOption;
+import me.jellysquid.mods.sodium.config.SodiumMixinConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;

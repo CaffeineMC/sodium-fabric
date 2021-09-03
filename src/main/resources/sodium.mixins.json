@@ -10,6 +10,8 @@
     "conformVisibility": true
   },
   "client": [
+    "core.MixinSinglePreparationResourceReloader",
+    "core.pipeline.MixinBakedQuad",
     "core.MixinMinecraftClient",
     "core.matrix.MixinMatrix3f",
     "core.matrix.MixinMatrix4f",
@@ -19,6 +21,9 @@
     "core.pipeline.MixinVertexConsumer",
     "core.pipeline.MixinVertexFormat",
     "features.block.MixinBlockModelRenderer",
+    "features.block.MixinSignBlockEntityRenderer",
+    "features.buffer_builder.fast_sort.MixinBufferBuilder",
+    "features.buffer_builder.fast_sort.MixinBufferBuilder$MixinState",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinSpriteTexturedVertexConsumer",
@@ -31,6 +36,7 @@
     "features.chunk_rendering.MixinPackedIntegerArray",
     "features.chunk_rendering.MixinPalettedContainer",
     "features.chunk_rendering.MixinWorldRenderer",
+    "features.chunk_rendering.MixinLightmapTextureManager",
     "features.debug.MixinDebugHud",
     "features.entity.cull.MixinEntityRenderer",
     "features.entity.fast_render.MixinCuboid",
@@ -38,6 +44,10 @@
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinClientWorld",
     "features.font.MixinGlyphRenderer",
+    "features.font.MixinFontManager",
+    "features.font.MixinFontStorage",
+    "features.font.MixinTextRenderer",
+    "features.font.MixinTextRendererDrawer",
     "features.gui.MixinDebugHud",
     "features.gui.MixinHandledScreen",
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
@@ -60,17 +70,5 @@
     "features.texture_tracking.MixinSpriteAtlasTexture",
     "features.texture_tracking.MixinSpriteBillboardParticle",
     "features.texture_updates.MixinSpriteInterpolated"
-  ],
-  "mixins": [
-    "core.MixinSinglePreparationResourceReloader",
-    "core.pipeline.MixinBakedQuad",
-    "features.block.MixinSignBlockEntityRenderer",
-    "features.buffer_builder.fast_sort.MixinBufferBuilder",
-    "features.buffer_builder.fast_sort.MixinBufferBuilder$MixinState",
-    "features.chunk_rendering.MixinLightmapTextureManager",
-    "features.font.MixinFontManager",
-    "features.font.MixinFontStorage",
-    "features.font.MixinTextRenderer",
-    "features.font.MixinTextRendererDrawer"
   ]
 }

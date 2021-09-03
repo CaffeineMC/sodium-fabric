@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core;
 
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.SodiumClient;
 import net.minecraft.client.MinecraftClient;
 import org.lwjgl.opengl.GL32C;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,7 +15,7 @@ public class MixinMinecraftClient {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void preRender(boolean tick, CallbackInfo ci) {
-        while (this.fences.size() > SodiumClientMod.options().advanced.maxPreRenderedFrames) {
+        while (this.fences.size() > SodiumClient.options().advanced.maxPreRenderedFrames) {
             GL32C.glClientWaitSync(this.fences.dequeueLong(), GL32C.GL_SYNC_FLUSH_COMMANDS_BIT, Long.MAX_VALUE);
         }
     }

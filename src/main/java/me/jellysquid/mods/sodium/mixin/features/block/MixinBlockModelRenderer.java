@@ -1,13 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.features.block;
 
-import me.jellysquid.mods.sodium.client.interop.vanilla.quad.BakedQuadView;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.ModelQuadVertexSink;
-import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
-import me.jellysquid.mods.sodium.client.util.DirectionUtil;
+import me.jellysquid.mods.sodium.interop.vanilla.quad.BakedQuadView;
+import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
+import me.jellysquid.mods.sodium.model.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.model.vertex.formats.ModelQuadVertexSink;
+import me.jellysquid.mods.sodium.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.util.color.ColorABGR;
+import me.jellysquid.mods.sodium.util.rand.XoRoShiRoRandom;
+import me.jellysquid.mods.sodium.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.block.BlockModelRenderer;

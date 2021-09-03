@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.features.matrix_stack;
 
-import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.Matrix3fExtended;
-import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.Matrix4fExtended;
-import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.MatrixUtil;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix3fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Quaternion;
 import org.spongepowered.asm.mixin.Final;

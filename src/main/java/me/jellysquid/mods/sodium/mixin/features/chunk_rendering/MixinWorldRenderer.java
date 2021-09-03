@@ -2,9 +2,9 @@ package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.thingl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.MatrixConverter;
-import me.jellysquid.mods.sodium.client.interop.vanilla.world.WorldRendererExtended;
+import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixConverter;
+import me.jellysquid.mods.sodium.interop.vanilla.world.WorldRendererExtended;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.*;

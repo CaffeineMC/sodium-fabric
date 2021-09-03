@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
-import me.jellysquid.mods.sodium.client.interop.vanilla.chunk.PalettedContainerExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.chunk.PalettedContainerExtended;
 import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.world.chunk.Palette;
 import net.minecraft.world.chunk.PalettedContainer;

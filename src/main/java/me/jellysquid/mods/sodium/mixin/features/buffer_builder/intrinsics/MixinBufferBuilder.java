@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
-import me.jellysquid.mods.sodium.client.interop.vanilla.quad.BakedQuadView;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.ModelQuadVertexSink;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.util.color.ColorU8;
-import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.MatrixUtil;
+import me.jellysquid.mods.sodium.interop.vanilla.quad.BakedQuadView;
+import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
+import me.jellysquid.mods.sodium.model.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.model.vertex.formats.ModelQuadVertexSink;
+import me.jellysquid.mods.sodium.util.color.ColorABGR;
+import me.jellysquid.mods.sodium.util.color.ColorU8;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;
 import net.minecraft.client.render.model.BakedQuad;

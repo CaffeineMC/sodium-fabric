@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.options;
 
-import me.jellysquid.mods.sodium.client.gui.SodiumConfigScreen;
+import me.jellysquid.mods.sodium.gui.SodiumConfigScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.OptionsScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;

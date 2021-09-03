@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.ModelQuadVertexSink;
-import me.jellysquid.mods.sodium.client.model.vertex.transformers.DualModelQuadVertexSink;
-import me.jellysquid.mods.sodium.client.model.vertex.type.VertexType;
+import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
+import me.jellysquid.mods.sodium.model.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.model.vertex.VertexSink;
+import me.jellysquid.mods.sodium.model.vertex.formats.ModelQuadVertexSink;
+import me.jellysquid.mods.sodium.model.vertex.transformers.DualModelQuadVertexSink;
+import me.jellysquid.mods.sodium.model.vertex.type.VertexType;
 import net.minecraft.client.render.VertexConsumer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;

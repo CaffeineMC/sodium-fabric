@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.features.font;
 
-import me.jellysquid.mods.sodium.client.model.vertex.formats.GlyphVertexSink;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.interop.vanilla.glyph.GlyphRendererBatched;
+import me.jellysquid.mods.sodium.model.vertex.formats.GlyphVertexSink;
+import me.jellysquid.mods.sodium.util.color.ColorABGR;
+import me.jellysquid.mods.sodium.interop.vanilla.glyph.GlyphRendererBatched;
 import net.minecraft.client.font.GlyphRenderer;
 import net.minecraft.util.math.Matrix4f;
 import org.spongepowered.asm.mixin.Final;

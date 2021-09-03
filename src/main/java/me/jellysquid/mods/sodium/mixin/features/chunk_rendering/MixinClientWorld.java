@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
-import me.jellysquid.mods.sodium.client.interop.vanilla.world.ClientWorldExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.world.ClientWorldExtended;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;

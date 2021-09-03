@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
-import me.jellysquid.mods.sodium.client.interop.vanilla.chunk.PackedIntegerArrayExtended;
-import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
+import me.jellysquid.mods.sodium.interop.vanilla.chunk.PackedIntegerArrayExtended;
+import me.jellysquid.mods.sodium.world.cloned.palette.ClonedPalette;
 import net.minecraft.util.collection.PackedIntegerArray;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;

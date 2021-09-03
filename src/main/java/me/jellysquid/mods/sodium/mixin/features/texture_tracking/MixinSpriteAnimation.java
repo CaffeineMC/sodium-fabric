@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.texture_tracking;
 
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.render.texture.SpriteExtended;
+import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.render.texture.SpriteExtended;
 import net.minecraft.client.texture.Sprite;
 import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,7 +20,7 @@ public class MixinSpriteAnimation {
     private void preTick(CallbackInfo ci) {
         SpriteExtended parent = (SpriteExtended) this.parent;
 
-        boolean onDemand = SodiumClientMod.options().advanced.animateOnlyVisibleTextures;
+        boolean onDemand = SodiumClient.options().advanced.animateOnlyVisibleTextures;
 
         if (onDemand && !parent.isActive()) {
             ci.cancel();

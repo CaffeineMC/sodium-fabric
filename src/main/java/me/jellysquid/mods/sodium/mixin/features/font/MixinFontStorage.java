@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.font;
 
-import me.jellysquid.mods.sodium.client.util.UnicodeCodepointTable;
+import me.jellysquid.mods.sodium.util.UnicodeCodepointTable;
 import net.minecraft.client.font.*;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;

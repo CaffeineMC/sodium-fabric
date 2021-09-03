@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.block;
 
-import me.jellysquid.mods.sodium.client.interop.vanilla.consumer.BatchingVertexConsumer;
+import me.jellysquid.mods.sodium.interop.vanilla.consumer.BatchingVertexConsumer;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;

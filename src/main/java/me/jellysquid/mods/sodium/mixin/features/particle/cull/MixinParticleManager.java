@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.particle.cull;
 
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.client.particle.ParticleTextureSheet;
@@ -34,7 +34,7 @@ public class MixinParticleManager {
     @Inject(method = "renderParticles", at = @At("HEAD"))
     private void preRenderParticles(MatrixStack matrixStack, VertexConsumerProvider.Immediate immediate, LightmapTextureManager lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
         // Setup the frustum state before rendering particles
-        this.useCulling = SodiumClientMod.options().advanced.useParticleCulling;
+        this.useCulling = SodiumClient.options().advanced.useParticleCulling;
     }
 
     @SuppressWarnings({ "SuspiciousMethodCalls", "unchecked" })

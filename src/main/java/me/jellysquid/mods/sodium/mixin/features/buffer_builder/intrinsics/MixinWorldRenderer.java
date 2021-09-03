@@ -1,13 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.LineVertexSink;
-import me.jellysquid.mods.sodium.client.util.geometry.Norm3b;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.Matrix3fExtended;
-import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.Matrix4fExtended;
-import me.jellysquid.mods.sodium.client.interop.vanilla.matrix.MatrixUtil;
+import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
+import me.jellysquid.mods.sodium.model.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.model.vertex.formats.LineVertexSink;
+import me.jellysquid.mods.sodium.util.geometry.Norm3b;
+import me.jellysquid.mods.sodium.util.color.ColorABGR;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix3fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixUtil;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.font;
 
-import me.jellysquid.mods.sodium.client.interop.vanilla.glyph.OutlineCharacterVisitor;
+import me.jellysquid.mods.sodium.interop.vanilla.glyph.OutlineCharacterVisitor;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.text.OrderedText;

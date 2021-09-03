@@ -1,9 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.features.particle.fast_render;
 
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.ParticleVertexSink;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
+import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
+import me.jellysquid.mods.sodium.model.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.model.vertex.formats.ParticleVertexSink;
+import me.jellysquid.mods.sodium.util.color.ColorABGR;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.Camera;

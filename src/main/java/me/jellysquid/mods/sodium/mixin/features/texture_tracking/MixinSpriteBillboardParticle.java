@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.texture_tracking;
 
-import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.render.texture.SpriteUtil;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.SpriteBillboardParticle;
 import net.minecraft.client.render.Camera;

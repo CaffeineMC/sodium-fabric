@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.features.gui;
 
 import com.mojang.datafixers.util.Pair;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.generic.PositionColorSink;
-import me.jellysquid.mods.sodium.client.render.batch.GuiRenderBatches;
-import me.jellysquid.mods.sodium.client.interop.vanilla.item.ItemRendererBatched;
+import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
+import me.jellysquid.mods.sodium.model.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.model.vertex.formats.generic.PositionColorSink;
+import me.jellysquid.mods.sodium.render.batch.GuiRenderBatches;
+import me.jellysquid.mods.sodium.interop.vanilla.item.ItemRendererBatched;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.render.*;
