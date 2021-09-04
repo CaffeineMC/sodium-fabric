@@ -45,7 +45,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
-        context.prepare(this.context);
+        context.prepare(this.context, renderData);
 
         WorldSlice slice = context.getWorldSlice();
 

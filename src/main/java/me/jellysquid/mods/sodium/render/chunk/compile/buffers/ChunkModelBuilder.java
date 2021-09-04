@@ -9,4 +9,7 @@ public interface ChunkModelBuilder {
     ModelVertexSink getVertexSink();
 
     IndexBufferBuilder getIndexSink(ModelQuadFacing facing);
+
+    @Deprecated
+    void addSprite(Sprite sprite);
 }

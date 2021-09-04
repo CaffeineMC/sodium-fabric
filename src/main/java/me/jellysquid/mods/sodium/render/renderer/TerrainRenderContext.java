@@ -76,10 +76,11 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
         return this.worldSlice;
     }
 
-    public void prepare(ChunkRenderContext context) {
+    public void prepare(ChunkRenderContext context, ChunkRenderData.Builder renderData) {
         this.worldSlice.prepare(context);
         this.lightDataCache.prepare(context.getOrigin());
         this.blockRenderInfo.setChunkId(context.getRelativeChunkIndex());
+        this.buffers.prepare(renderData);
     }
 
     public void release() {

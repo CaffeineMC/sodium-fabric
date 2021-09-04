@@ -75,11 +75,11 @@ public class TerrainRenderer extends AbstractRenderer<TerrainBlockRenderInfo> {
         indexSink.add(vertexStart, ModelQuadWinding.CLOCKWISE);
         vertexSink.flush();
 
-//        Sprite sprite = this.spriteFinder.find(quad, DEFAULT_TEXTURE_INDEX);
-//
-//        if (sprite != null) {
-//            builder.addSprite(sprite);
-//        }
+        Sprite sprite = this.spriteFinder.find(quad, DEFAULT_TEXTURE_INDEX);
+
+        if (sprite != null) {
+            builder.addSprite(sprite);
+        }
     }
 
     private static ModelQuadFacing getBlockFace(MutableQuadViewImpl quad) {

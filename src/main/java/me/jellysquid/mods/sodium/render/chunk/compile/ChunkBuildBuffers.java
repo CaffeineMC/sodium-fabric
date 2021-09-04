@@ -9,10 +9,13 @@ import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.render.IndexedVertexData;
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.thingl.util.ElementRange;
 import me.jellysquid.mods.thingl.util.NativeBuffer;
+import net.minecraft.client.texture.Sprite;
+import org.apache.commons.lang3.Validate;
 
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -27,6 +30,8 @@ import java.util.Objects;
 public class ChunkBuildBuffers {
     private final Map<BlockRenderPass, ChunkModelBuilderImpl> builders;
     private final ChunkVertexType vertexType;
+
+    private ChunkRenderData.Builder renderData;
 
     public ChunkBuildBuffers(ChunkVertexType vertexType) {
         this.builders = new Reference2ObjectArrayMap<>();
@@ -65,6 +70,8 @@ public class ChunkBuildBuffers {
     }
 
     private ChunkModelBuilder createBuilder(BlockRenderPass pass) {
+        Validate.notNull(this.renderData, "Render data container not attached");
+
         IndexBufferBuilder[] indexBufferBuilders = new IndexBufferBuilder[ModelQuadFacing.COUNT];
 
         for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
@@ -74,11 +81,16 @@ public class ChunkBuildBuffers {
         VertexBufferBuilder vertexBufferBuilder = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(),
                 8192 * this.vertexType.getBufferVertexFormat().getStride());
 
-        ChunkModelBuilderImpl builder = new ChunkModelBuilderImpl(indexBufferBuilders, vertexBufferBuilder, this.vertexType);
+        ChunkModelBuilderImpl builder = new ChunkModelBuilderImpl(indexBufferBuilders, vertexBufferBuilder,
+                this.vertexType, this.renderData);
 
         this.builders.put(pass, builder);
 
         return builder;
+    }
+
+    public void prepare(ChunkRenderData.Builder renderData) {
+        this.renderData = renderData;
     }
 
     private static class ChunkModelBuilderImpl implements ChunkModelBuilder {
@@ -88,12 +100,15 @@ public class ChunkBuildBuffers {
         private final ModelVertexSink vertexSink;
         private final ChunkVertexType vertexType;
 
+        private final ChunkRenderData.Builder renderData;
+
         public ChunkModelBuilderImpl(IndexBufferBuilder[] indexBufferBuilders, VertexBufferBuilder vertexBufferBuilder,
-                                     ChunkVertexType vertexType) {
+                                     ChunkVertexType vertexType, ChunkRenderData.Builder renderData) {
             this.indexBufferBuilders = indexBufferBuilders;
             this.vertexBufferBuilder = vertexBufferBuilder;
             this.vertexSink = vertexType.createBufferWriter(this.vertexBufferBuilder);
             this.vertexType = vertexType;
+            this.renderData = renderData;
         }
 
         @Override
@@ -104,6 +119,11 @@ public class ChunkBuildBuffers {
         @Override
         public IndexBufferBuilder getIndexSink(ModelQuadFacing facing) {
             return this.indexBufferBuilders[facing.ordinal()];
+        }
+
+        @Override
+        public void addSprite(Sprite sprite) {
+            this.renderData.addSprite(sprite);
         }
 
         /**
