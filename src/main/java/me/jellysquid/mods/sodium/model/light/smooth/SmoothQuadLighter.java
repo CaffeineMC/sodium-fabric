@@ -7,7 +7,6 @@ import me.jellysquid.mods.sodium.model.light.data.QuadLightData;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
 import me.jellysquid.mods.sodium.interop.fabric.helper.GeometryHelper;
-import me.jellysquid.mods.sodium.interop.fabric.mesh.MutableQuadViewImpl;
 import me.jellysquid.mods.sodium.render.renderer.BlockRenderInfo;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -40,6 +39,8 @@ import net.minecraft.util.math.MathHelper;
  *   unnecessary computation
  */
 public class SmoothQuadLighter implements QuadLighter {
+    private static final int BASIC_QUAD_FLAGS = GeometryHelper.CUBIC_FLAG | GeometryHelper.LIGHT_FACE_FLAG;
+
     /**
      * The cache which light data will be accessed from.
      */
@@ -86,8 +87,8 @@ public class SmoothQuadLighter implements QuadLighter {
         // If the model quad is aligned to the block's face and covers it entirely, we can take a fast path and directly
         // map the corner values onto this quad's vertices. This covers most situations during rendering and provides
         // a modest speed-up.
-        if ((flags & GeometryHelper.CUBIC_FLAG) != 0) {
-            this.applyAlignedFullFace(neighborInfo, this.blockRenderInfo.blockPos, quad.lightFace(), out, flags);
+        if ((flags & BASIC_QUAD_FLAGS) == BASIC_QUAD_FLAGS) {
+            this.applyBasic(neighborInfo, this.blockRenderInfo.blockPos, quad.lightFace(), out, flags);
         } else {
             this.applyComplex(neighborInfo, quad, this.blockRenderInfo.blockPos, quad.lightFace(), out, flags);
         }
@@ -110,10 +111,7 @@ public class SmoothQuadLighter implements QuadLighter {
     }
 
     private void applyComplex(AoNeighborInfo neighborInfo, QuadView quad, BlockPos pos, Direction dir, QuadLightData out, int flags) {
-        // If the model quad is aligned to the block face, use the corner blocks above this face
-        // TODO: is this correct for outset faces? do we even handle that case at all?
-        boolean offset = (flags & GeometryHelper.AXIS_ALIGNED_FLAG) != 0;
-
+        // TODO: We don't appear to be handling outset faces
         for (int i = 0; i < 4; i++) {
             // Clamp the vertex positions to the block's boundaries to prevent weird errors in lighting
             float cx = clamp(quad.x(i));
@@ -125,11 +123,11 @@ public class SmoothQuadLighter implements QuadLighter {
 
             float depth = neighborInfo.getDepth(cx, cy, cz);
 
-            // If the quad is approximately grid-aligned (not inset), avoid unnecessary computation by treating it is as aligned
+            // If the quad is co-planar to the light face, simply interpolate the corner values
             if (MathHelper.approximatelyEquals(depth, 0.0F)) {
-                this.applyAlignedPartialFace(pos, dir, weights, i, out, offset);
+                this.applyAlignedPartialFace(pos, dir, weights, i, out, false);
             } else if (MathHelper.approximatelyEquals(depth, 1.0F)) {
-                this.applyAlignedPartialFace(pos, dir, weights, i, out, offset);
+                this.applyAlignedPartialFace(pos, dir, weights, i, out, true);
             } else {
                 // Blend the occlusion factor between the blocks directly beside this face and the blocks above it
                 // based on how inset the face is. This fixes a few issues with blocks such as farmland and paths.
@@ -183,7 +181,7 @@ public class SmoothQuadLighter implements QuadLighter {
      * facing quads on a full-block model) and avoids interpolation between neighbors as each corner will only ever
      * have two contributing sides.
      */
-    private void applyAlignedFullFace(AoNeighborInfo neighborInfo, BlockPos pos, Direction dir, QuadLightData out, int flags) {
+    private void applyBasic(AoNeighborInfo neighborInfo, BlockPos pos, Direction dir, QuadLightData out, int flags) {
         AoFaceData faceData = this.getCachedFaceData(pos, dir, (flags & GeometryHelper.LIGHT_FACE_FLAG) != 0);
         neighborInfo.mapCorners(faceData.lm, faceData.ao, out.texture, out.shade);
     }
