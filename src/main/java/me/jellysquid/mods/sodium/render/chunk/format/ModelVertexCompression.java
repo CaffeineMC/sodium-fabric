@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.render.chunk.format;
 
 public class ModelVertexCompression {
-    private static final int POSITION_MAX_VALUE = 32768;
-    private static final int TEXTURE_MAX_VALUE = 32768;
+    private static final int POSITION_MAX_VALUE = 65536;
+    private static final int TEXTURE_MAX_VALUE = 65536;
 
     private static final float MODEL_ORIGIN = 8.0f;
     private static final float MODEL_RANGE = 32.0f;
@@ -41,12 +41,12 @@ public class ModelVertexCompression {
         return -MODEL_ORIGIN;
     }
 
-    private static short encodeTexture(float value) {
-        return (short) (value * TEXTURE_MAX_VALUE);
+    private static int encodeTexture(float value) {
+        return (int) (value * TEXTURE_MAX_VALUE) & 0xFFFF;
     }
 
     private static long encodePosition(float v) {
-        return (short) ((MODEL_ORIGIN + v) * MODEL_SCALE_INV);
+        return (long) ((MODEL_ORIGIN + v) * MODEL_SCALE_INV) & 0xFFFFL;
     }
 
     public static int encodeLightMapTexCoord(int light) {
