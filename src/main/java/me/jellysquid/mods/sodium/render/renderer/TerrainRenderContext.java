@@ -10,6 +10,7 @@ import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.render.pipeline.FluidRenderer;
+import me.jellysquid.mods.sodium.render.renderer.transforms.ModelOffsetTransform;
 import me.jellysquid.mods.sodium.world.WorldSlice;
 import me.jellysquid.mods.sodium.world.cloned.ChunkRenderContext;
 import net.fabricmc.fabric.api.renderer.v1.mesh.Mesh;
@@ -21,6 +22,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import java.util.Map;
@@ -87,12 +89,25 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
         this.buffers.release();
     }
 
+    private final ModelOffsetTransform modelOffsetTransform = new ModelOffsetTransform();
+
     public void renderBlock(BlockState state, BlockPos.Mutable pos, int detailLevel) {
         this.blockRenderInfo.prepareForBlock(state, pos, true);
 
         if (this.blockRenderInfo.blockState.getRenderType() == BlockRenderType.MODEL) {
+            Vec3d offset = this.blockRenderInfo.blockState.getModelOffset(this.blockRenderInfo.blockView, this.blockRenderInfo.blockPos);
+            boolean hasOffset = offset != Vec3d.ZERO;
+
+            if (hasOffset) {
+                this.pushTransform(this.modelOffsetTransform.prepare(offset));
+            }
+
             FabricBakedModel model = (FabricBakedModel) MinecraftClient.getInstance().getBlockRenderManager().getModel(state);
             model.emitBlockQuads(this.blockRenderInfo.blockView, this.blockRenderInfo.blockState, this.blockRenderInfo.blockPos, this.blockRenderInfo.getRandomSupplier(), this);
+
+            if (hasOffset) {
+                this.popTransform();
+            }
         }
 
         if (!this.blockRenderInfo.fluidState.isEmpty()) {
