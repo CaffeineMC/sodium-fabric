@@ -20,8 +20,12 @@ public class VertexBufferBuilder implements VertexBufferView {
 
         this.buffer = null;
         this.capacity = initialCapacity;
-        this.writerOffset = 0;
         this.initialCapacity = initialCapacity;
+
+        this.writerOffset = 0;
+        this.count = 0;
+
+        this.setBufferSize(this.initialCapacity);
     }
 
     private void grow(int len) {
@@ -79,13 +83,6 @@ public class VertexBufferBuilder implements VertexBufferView {
 
     public int getCount() {
         return this.count;
-    }
-
-    public void start() {
-        this.writerOffset = 0;
-        this.count = 0;
-
-        this.setBufferSize(this.initialCapacity);
     }
 
     public void destroy() {

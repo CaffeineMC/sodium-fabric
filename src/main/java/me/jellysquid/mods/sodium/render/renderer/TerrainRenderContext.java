@@ -3,7 +3,11 @@ package me.jellysquid.mods.sodium.render.renderer;
 import me.jellysquid.mods.sodium.model.light.QuadLighter;
 import me.jellysquid.mods.sodium.model.light.cache.SlicedLightDataCache;
 import me.jellysquid.mods.sodium.model.light.smooth.SmoothQuadLighter;
+import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildBuffers;
+import me.jellysquid.mods.sodium.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.render.pipeline.FluidRenderer;
 import me.jellysquid.mods.sodium.world.WorldSlice;
@@ -19,12 +23,16 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class TerrainRenderContext extends RenderContextBase implements RenderContext {
     private final WorldSlice worldSlice;
+
     private final SlicedLightDataCache lightDataCache;
     private final TerrainBlockRenderInfo blockRenderInfo;
+
+    private final ChunkBuildBuffers buffers;
 
     private final Consumer<Mesh> meshConsumer;
     private final Consumer<BakedModel> fallbackConsumer;
@@ -32,17 +40,18 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
     private final TerrainRenderer terrainRenderer;
     private final FluidRenderer fluidRenderer;
 
-    public TerrainRenderContext(World world, ChunkBuildBuffers buffers) {
+    public TerrainRenderContext(World world, ChunkVertexType vertexType) {
         this.worldSlice = new WorldSlice(world);
 
         this.blockRenderInfo = new TerrainBlockRenderInfo(new BlockOcclusionCache());
         this.blockRenderInfo.setBlockView(this.worldSlice);
 
+        this.buffers = new ChunkBuildBuffers(vertexType);
         this.lightDataCache = new SlicedLightDataCache(this.worldSlice);
 
         QuadLighter lighter = new SmoothQuadLighter(this.lightDataCache, this.blockRenderInfo);
 
-        this.terrainRenderer = new TerrainRenderer(this.blockRenderInfo, buffers, lighter, this::transform);
+        this.terrainRenderer = new TerrainRenderer(this.blockRenderInfo, this.buffers, lighter, this::transform);
         this.meshConsumer = this.terrainRenderer::acceptFabricMesh;
         this.fallbackConsumer = this.terrainRenderer::renderVanillaModel;
         this.fluidRenderer = new FluidRenderer(this.terrainRenderer.biomeColorBlender);
@@ -73,6 +82,10 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
         this.blockRenderInfo.setChunkId(context.getRelativeChunkIndex());
     }
 
+    public void release() {
+        this.buffers.release();
+    }
+
     public void renderBlock(BlockState state, BlockPos.Mutable pos, int detailLevel) {
         this.blockRenderInfo.prepareForBlock(state, pos, true);
 
@@ -86,4 +99,7 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
         }
     }
 
+    public Map<BlockRenderPass, ChunkMeshData> createBakedMeshes() {
+        return this.buffers.createMeshes();
+    }
 }

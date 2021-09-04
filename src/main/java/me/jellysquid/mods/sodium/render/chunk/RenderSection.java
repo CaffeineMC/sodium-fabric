@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk;
 
+import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.render.chunk.graph.ChunkGraphInfo;
@@ -55,7 +56,8 @@ public class RenderSection {
 
         this.graphInfo = new ChunkGraphInfo(this);
 
-        this.graphicsStates = new EnumMap<>(BlockRenderPass.class);}
+        this.graphicsStates = new Reference2ObjectArrayMap<>();
+    }
 
 
     public RenderSection getAdjacent(Direction dir) {

@@ -1,20 +1,18 @@
 package me.jellysquid.mods.sodium.render.chunk.compile;
 
-import me.jellysquid.mods.sodium.render.IndexedVertexData;
-import me.jellysquid.mods.thingl.util.ElementRange;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.model.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferBuilder;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
-import me.jellysquid.mods.sodium.render.chunk.compile.buffers.BakedChunkModelBuilder;
+import me.jellysquid.mods.sodium.render.IndexedVertexData;
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPassManager;
+import me.jellysquid.mods.thingl.util.ElementRange;
 import me.jellysquid.mods.thingl.util.NativeBuffer;
-import net.minecraft.client.render.RenderLayer;
 
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -27,117 +25,140 @@ import java.util.Objects;
  * shrink a buffer.
  */
 public class ChunkBuildBuffers {
-    private final ChunkModelBuilder[] delegates;
-
-    private final VertexBufferBuilder[] vertexBuffers;
-    private final IndexBufferBuilder[][] indexBuffers;
-
+    private final Map<BlockRenderPass, ChunkModelBuilderImpl> builders;
     private final ChunkVertexType vertexType;
 
-    private final BlockRenderPassManager renderPassManager;
-
-    public ChunkBuildBuffers(ChunkVertexType vertexType, BlockRenderPassManager renderPassManager) {
+    public ChunkBuildBuffers(ChunkVertexType vertexType) {
+        this.builders = new Reference2ObjectArrayMap<>();
         this.vertexType = vertexType;
-        this.renderPassManager = renderPassManager;
-
-        this.delegates = new ChunkModelBuilder[BlockRenderPass.COUNT];
-
-        this.vertexBuffers = new VertexBufferBuilder[BlockRenderPass.COUNT];
-        this.indexBuffers = new IndexBufferBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
-
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            IndexBufferBuilder[] indexBuffers = this.indexBuffers[pass.ordinal()];
-
-            for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
-                indexBuffers[facing] = new IndexBufferBuilder(1024);
-            }
-
-            this.vertexBuffers[pass.ordinal()] = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(),
-                    pass.getLayer().getExpectedBufferSize());
-        }
     }
 
-    public void init(ChunkRenderData.Builder renderData) {
-        for (VertexBufferBuilder vertexBuffer : this.vertexBuffers) {
-            vertexBuffer.start();
+    public Map<BlockRenderPass, ChunkMeshData> createMeshes() {
+        Map<BlockRenderPass, ChunkMeshData> map = new Reference2ObjectOpenHashMap<>();
+
+        for (Map.Entry<BlockRenderPass, ChunkModelBuilderImpl> entry : this.builders.entrySet()) {
+            BlockRenderPass pass = entry.getKey();
+            ChunkModelBuilderImpl builder = entry.getValue();
+
+            map.put(pass, builder.createMesh());
         }
 
-        for (IndexBufferBuilder[] indexBuffers : this.indexBuffers) {
-            for (IndexBufferBuilder indexBuffer : indexBuffers) {
-                indexBuffer.start();
-            }
-        }
-
-        for (int i = 0; i < this.delegates.length; i++) {
-            ModelVertexSink vertexSink = this.vertexType.createBufferWriter(this.vertexBuffers[i]);
-            IndexBufferBuilder[] indexBuffers = this.indexBuffers[i];
-
-            this.delegates[i] = new BakedChunkModelBuilder(indexBuffers, vertexSink, renderData);
-        }
+        return map;
     }
 
-    /**
-     * Return the {@link ChunkModelBuilder} for the given {@link RenderLayer} as mapped by the
-     * {@link BlockRenderPassManager} for this render context.
-     */
-    public ChunkModelBuilder getBuilder(RenderLayer layer) {
-        return this.delegates[this.renderPassManager.getRenderPassId(layer)];
-    }
-
-    /**
-     * Creates immutable baked chunk meshes from all non-empty scratch buffers. This is used after all blocks
-     * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
-     * times to return multiple copies.
-     */
-    public ChunkMeshData createMesh(BlockRenderPass pass) {
-        NativeBuffer vertexBuffer = this.vertexBuffers[pass.ordinal()].pop();
-
-        if (vertexBuffer == null) {
-            return null;
+    public void release() {
+        for (ChunkModelBuilderImpl builder : this.builders.values()) {
+            builder.release();
         }
 
-        IndexBufferBuilder.Result[] indexBuffers = Arrays.stream(this.indexBuffers[pass.ordinal()])
-                .map(IndexBufferBuilder::pop)
-                .toArray(IndexBufferBuilder.Result[]::new);
-
-        NativeBuffer indexBuffer = new NativeBuffer(Arrays.stream(indexBuffers)
-                .filter(Objects::nonNull)
-                .mapToInt(IndexBufferBuilder.Result::getByteSize)
-                .sum());
-
-        int indexPointer = 0;
-
-        Map<ModelQuadFacing, ElementRange> ranges = new EnumMap<>(ModelQuadFacing.class);
-
-        for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
-            IndexBufferBuilder.Result indices = indexBuffers[facing.ordinal()];
-
-            if (indices == null) {
-                continue;
-            }
-
-            ranges.put(facing,
-                    new ElementRange(indexPointer, indices.getCount(), indices.getFormat(), indices.getBaseVertex()));
-
-            indexPointer = indices.writeTo(indexPointer, indexBuffer.getDirectBuffer());
-        }
-
-        IndexedVertexData vertexData = new IndexedVertexData(this.vertexType.getCustomVertexFormat(),
-                vertexBuffer, indexBuffer);
-
-        return new ChunkMeshData(vertexData, ranges);
-    }
-
-    public BlockRenderPass getRenderPass(RenderLayer layer) {
-        return this.renderPassManager.getRenderPassForLayer(layer);
-    }
-    public void destroy() {
-        for (VertexBufferBuilder builder : this.vertexBuffers) {
-            builder.destroy();
-        }
+        this.builders.clear();
     }
 
     public ChunkModelBuilder getBuilder(BlockRenderPass pass) {
-        return this.delegates[pass.ordinal()];
+        ChunkModelBuilder builder = this.builders.get(pass);
+
+        if (builder == null) {
+            builder = this.createBuilder(pass);
+        }
+
+        return builder;
+    }
+
+    private ChunkModelBuilder createBuilder(BlockRenderPass pass) {
+        IndexBufferBuilder[] indexBufferBuilders = new IndexBufferBuilder[ModelQuadFacing.COUNT];
+
+        for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
+            indexBufferBuilders[facing] = new IndexBufferBuilder(2048);
+        }
+
+        VertexBufferBuilder vertexBufferBuilder = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(),
+                8192 * this.vertexType.getBufferVertexFormat().getStride());
+
+        ChunkModelBuilderImpl builder = new ChunkModelBuilderImpl(indexBufferBuilders, vertexBufferBuilder, this.vertexType);
+
+        this.builders.put(pass, builder);
+
+        return builder;
+    }
+
+    private static class ChunkModelBuilderImpl implements ChunkModelBuilder {
+        private final IndexBufferBuilder[] indexBufferBuilders;
+        private final VertexBufferBuilder vertexBufferBuilder;
+
+        private final ModelVertexSink vertexSink;
+        private final ChunkVertexType vertexType;
+
+        public ChunkModelBuilderImpl(IndexBufferBuilder[] indexBufferBuilders, VertexBufferBuilder vertexBufferBuilder,
+                                     ChunkVertexType vertexType) {
+            this.indexBufferBuilders = indexBufferBuilders;
+            this.vertexBufferBuilder = vertexBufferBuilder;
+            this.vertexSink = vertexType.createBufferWriter(this.vertexBufferBuilder);
+            this.vertexType = vertexType;
+        }
+
+        @Override
+        public ModelVertexSink getVertexSink() {
+            return this.vertexSink;
+        }
+
+        @Override
+        public IndexBufferBuilder getIndexSink(ModelQuadFacing facing) {
+            return this.indexBufferBuilders[facing.ordinal()];
+        }
+
+        /**
+         * Creates immutable baked chunk meshes from all non-empty scratch buffers. This is used after all blocks
+         * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
+         * times to return multiple copies.
+         */
+        public ChunkMeshData createMesh() {
+            VertexBufferBuilder vertexBufferBuilder = this.vertexBufferBuilder;
+            NativeBuffer vertexBuffer = vertexBufferBuilder.pop();
+
+            if (vertexBuffer == null) {
+                return null;
+            }
+
+            IndexBufferBuilder[] indexBufferBuilders = this.indexBufferBuilders;
+
+            IndexBufferBuilder.Result[] indexBuffers = Arrays.stream(indexBufferBuilders)
+                    .map(IndexBufferBuilder::pop)
+                    .toArray(IndexBufferBuilder.Result[]::new);
+
+            NativeBuffer indexBuffer = new NativeBuffer(Arrays.stream(indexBuffers)
+                    .filter(Objects::nonNull)
+                    .mapToInt(IndexBufferBuilder.Result::getByteSize)
+                    .sum());
+
+            int indexPointer = 0;
+
+            Map<ModelQuadFacing, ElementRange> ranges = new EnumMap<>(ModelQuadFacing.class);
+
+            for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+                IndexBufferBuilder.Result indices = indexBuffers[facing.ordinal()];
+
+                if (indices == null) {
+                    continue;
+                }
+
+                ranges.put(facing,
+                        new ElementRange(indexPointer, indices.getCount(), indices.getFormat(), indices.getBaseVertex()));
+
+                indexPointer = indices.writeTo(indexPointer, indexBuffer.getDirectBuffer());
+            }
+
+            IndexedVertexData vertexData = new IndexedVertexData(this.vertexType.getCustomVertexFormat(),
+                    vertexBuffer, indexBuffer);
+
+            return new ChunkMeshData(vertexData, ranges);
+        }
+
+        public void release() {
+            for (IndexBufferBuilder indexBufferBuilder : this.indexBufferBuilders) {
+                indexBufferBuilder.destroy();
+            }
+
+            this.vertexBufferBuilder.destroy();
+        }
     }
 }

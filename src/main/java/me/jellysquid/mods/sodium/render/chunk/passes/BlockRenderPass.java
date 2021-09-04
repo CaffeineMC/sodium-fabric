@@ -2,15 +2,7 @@ package me.jellysquid.mods.sodium.render.chunk.passes;
 
 import net.minecraft.client.render.RenderLayer;
 
-// TODO: Move away from using an enum, make this extensible
-public enum BlockRenderPass {
-    OPAQUE(RenderLayer.getCutout(), false),
-    OPAQUE_DETAIL(RenderLayer.getCutout(), false),
-    TRANSLUCENT(RenderLayer.getTranslucent(), true);
-
-    public static final BlockRenderPass[] VALUES = BlockRenderPass.values();
-    public static final int COUNT = VALUES.length;
-
+public class BlockRenderPass {
     private final RenderLayer layer;
     private final boolean translucent;
 
@@ -23,21 +15,18 @@ public enum BlockRenderPass {
         return this.translucent;
     }
 
-    public RenderLayer getLayer() {
-        return this.layer;
-    }
-
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public void endDrawing() {
         this.layer.endDrawing();
     }
 
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public void startDrawing() {
         this.layer.startDrawing();
     }
 
+    @Deprecated
     public boolean isDetail() {
-        return this == OPAQUE_DETAIL;
+        return this == DefaultBlockRenderPasses.DETAIL;
     }
 }

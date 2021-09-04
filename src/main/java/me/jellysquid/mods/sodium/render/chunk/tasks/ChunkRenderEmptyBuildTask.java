@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.tasks;
 
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.util.task.CancellationSource;
@@ -27,7 +26,7 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
     }
 
     @Override
-    public ChunkBuildResult performBuild(TerrainRenderContext context, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
+    public ChunkBuildResult performBuild(TerrainRenderContext context, CancellationSource cancellationSource) {
         return new ChunkBuildResult(this.render, ChunkRenderData.EMPTY, Collections.emptyMap(), this.frame, this.detailLevel);
     }
 

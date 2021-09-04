@@ -13,12 +13,12 @@ import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.interop.fabric.helper.GeometryHelper;
 import me.jellysquid.mods.sodium.interop.fabric.mesh.MutableQuadViewImpl;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.render.chunk.passes.DefaultBlockRenderPasses;
 import me.jellysquid.mods.sodium.util.color.ColorARGB;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.model.SpriteFinder;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.util.math.Vec3i;
@@ -38,8 +38,8 @@ public class TerrainRenderer extends AbstractRenderer<TerrainBlockRenderInfo> {
     @Override
     protected void emitQuad(MutableQuadViewImpl quad, BlendMode renderLayer) {
         BlockRenderPass pass = switch (renderLayer) {
-            case DEFAULT, SOLID, CUTOUT, CUTOUT_MIPPED -> BlockRenderPass.OPAQUE;
-            case TRANSLUCENT -> BlockRenderPass.TRANSLUCENT;
+            case DEFAULT, SOLID, CUTOUT, CUTOUT_MIPPED -> DefaultBlockRenderPasses.OPAQUE;
+            case TRANSLUCENT -> DefaultBlockRenderPasses.TRANSLUCENT;
         };
 
         int bits = switch (renderLayer) {
@@ -53,7 +53,7 @@ public class TerrainRenderer extends AbstractRenderer<TerrainBlockRenderInfo> {
         ModelVertexSink vertexSink = builder.getVertexSink();
         vertexSink.ensureCapacity(4);
 
-        IndexBufferBuilder indexSink = builder.getIndexBufferBuilder(getBlockFace(quad));
+        IndexBufferBuilder indexSink = builder.getIndexSink(getBlockFace(quad));
         int vertexStart = vertexSink.getVertexCount();
 
         Vec3i relativePos = this.blockInfo.getRelativeBlockPosition();
@@ -75,11 +75,11 @@ public class TerrainRenderer extends AbstractRenderer<TerrainBlockRenderInfo> {
         indexSink.add(vertexStart, ModelQuadWinding.CLOCKWISE);
         vertexSink.flush();
 
-        Sprite sprite = this.spriteFinder.find(quad, DEFAULT_TEXTURE_INDEX);
-
-        if (sprite != null) {
-            builder.addSprite(sprite);
-        }
+//        Sprite sprite = this.spriteFinder.find(quad, DEFAULT_TEXTURE_INDEX);
+//
+//        if (sprite != null) {
+//            builder.addSprite(sprite);
+//        }
     }
 
     private static ModelQuadFacing getBlockFace(MutableQuadViewImpl quad) {

@@ -1,11 +1,10 @@
 package me.jellysquid.mods.sodium.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
-import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.render.chunk.tasks.ChunkRenderBuildTask;
-import me.jellysquid.mods.sodium.util.task.CancellationSource;
-import me.jellysquid.mods.sodium.util.collections.QueueDrainingIterator;
 import me.jellysquid.mods.sodium.render.renderer.TerrainRenderContext;
+import me.jellysquid.mods.sodium.util.collections.QueueDrainingIterator;
+import me.jellysquid.mods.sodium.util.task.CancellationSource;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
@@ -32,7 +31,6 @@ public class ChunkBuilder {
     private final List<Thread> threads = new ArrayList<>();
 
     private World world;
-    private BlockRenderPassManager renderPassManager;
 
     private final int limitThreads;
     private final ChunkVertexType vertexType;
@@ -66,10 +64,8 @@ public class ChunkBuilder {
         }
 
         for (int i = 0; i < this.limitThreads; i++) {
-            ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.vertexType, this.renderPassManager);
-            TerrainRenderContext context = new TerrainRenderContext(this.world, buffers);
-
-            WorkerRunnable worker = new WorkerRunnable(buffers, context);
+            TerrainRenderContext context = new TerrainRenderContext(this.world, this.vertexType);
+            WorkerRunnable worker = new WorkerRunnable(context);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
             thread.setPriority(Math.max(0, Thread.NORM_PRIORITY - 2));
@@ -157,9 +153,8 @@ public class ChunkBuilder {
      * a world teleportation event), the worker threads will first be stopped and all pending tasks will be discarded
      * before being started again.
      * @param world The world instance
-     * @param renderPassManager The render pass manager used for the world
      */
-    public void init(ClientWorld world, BlockRenderPassManager renderPassManager) {
+    public void init(ClientWorld world) {
         if (world == null) {
             throw new NullPointerException("World is null");
         }
@@ -167,7 +162,6 @@ public class ChunkBuilder {
         this.stopWorkers();
 
         this.world = world;
-        this.renderPassManager = renderPassManager;
 
         this.startWorkers();
     }
@@ -192,15 +186,11 @@ public class ChunkBuilder {
     private class WorkerRunnable implements Runnable {
         private final AtomicBoolean running = ChunkBuilder.this.running;
 
-        // The re-useable build buffers used by this worker for building chunk meshes
-        private final ChunkBuildBuffers bufferCache;
-
         // Making this thread-local provides a small boost to performance by avoiding the overhead in synchronizing
         // caches between different CPU cores
         private final TerrainRenderContext context;
 
-        public WorkerRunnable(ChunkBuildBuffers bufferCache, TerrainRenderContext context) {
-            this.bufferCache = bufferCache;
+        public WorkerRunnable(TerrainRenderContext context) {
             this.context = context;
         }
 
@@ -216,8 +206,6 @@ public class ChunkBuilder {
 
                 this.processJob(job);
             }
-
-            this.bufferCache.destroy();
         }
 
         private void processJob(WrappedTask job) {
@@ -229,13 +217,14 @@ public class ChunkBuilder {
                 }
 
                 // Perform the build task with this worker's local resources and obtain the result
-                result = job.task.performBuild(this.context, this.bufferCache, job);
+                result = job.task.performBuild(this.context, job);
             } catch (Exception e) {
                 // Propagate any exception from chunk building
                 job.future.completeExceptionally(e);
                 e.printStackTrace();
                 return;
             } finally {
+                this.context.release();
                 job.task.releaseResources();
             }
 

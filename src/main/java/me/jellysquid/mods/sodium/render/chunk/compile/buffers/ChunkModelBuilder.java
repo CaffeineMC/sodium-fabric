@@ -8,7 +8,5 @@ import net.minecraft.client.texture.Sprite;
 public interface ChunkModelBuilder {
     ModelVertexSink getVertexSink();
 
-    IndexBufferBuilder getIndexBufferBuilder(ModelQuadFacing facing);
-
-    void addSprite(Sprite sprite);
+    IndexBufferBuilder getIndexSink(ModelQuadFacing facing);
 }

@@ -74,7 +74,8 @@ public class RenderRegionManager {
         List<PendingSectionUpload> sectionUploads = new ArrayList<>();
 
         for (ChunkBuildResult result : results) {
-            for (BlockRenderPass pass : BlockRenderPass.VALUES) {
+            for (Map.Entry<BlockRenderPass, ChunkMeshData> entry : result.getMeshes()) {
+                BlockRenderPass pass = entry.getKey();
                 ChunkGraphicsState graphics = result.render.setGraphicsState(pass, null);
 
                 // De-allocate all storage for data we're about to replace
@@ -83,7 +84,7 @@ public class RenderRegionManager {
                     graphics.delete();
                 }
 
-                ChunkMeshData meshData = result.getMesh(pass);
+                ChunkMeshData meshData = entry.getValue();
 
                 if (meshData != null) {
                     IndexedVertexData vertexData = meshData.getVertexData();

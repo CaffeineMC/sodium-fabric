@@ -20,10 +20,6 @@ public class IndexBufferBuilder {
         }
     }
 
-    public void start() {
-        this.indices.clear();
-    }
-
     public Result pop() {
         if (this.indices.isEmpty()) {
             return null;
@@ -42,6 +38,10 @@ public class IndexBufferBuilder {
 
     public int getCount() {
         return this.indices.size();
+    }
+
+    public void destroy() {
+
     }
 
     public static class Result {

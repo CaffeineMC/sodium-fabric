@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.render.chunk.tasks;
 
-import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.render.renderer.TerrainRenderContext;
@@ -21,13 +20,11 @@ public abstract class ChunkRenderBuildTask {
      * to access or modify global mutable state.
      *
      * @param context The render cache to use for building this chunk
-     * @param buffers The temporary scratch buffers for rendering block data
      * @param cancellationSource The cancellation source which can be used to query if the task is cancelled
      * @return The build result of this task, containing any data which needs to be uploaded on the main-thread, or null
      *         if the task was cancelled.
      */
-    public abstract ChunkBuildResult performBuild(TerrainRenderContext context, ChunkBuildBuffers buffers,
-                                                  CancellationSource cancellationSource);
+    public abstract ChunkBuildResult performBuild(TerrainRenderContext context, CancellationSource cancellationSource);
 
     /**
      * Called on the main render thread when the task's execution returns. The implementation should release any

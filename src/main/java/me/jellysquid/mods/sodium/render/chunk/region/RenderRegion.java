@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.render.chunk.region;
 
+import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.SodiumClient;
 import me.jellysquid.mods.sodium.render.chunk.arena.AsyncBufferArena;
 import me.jellysquid.mods.sodium.render.chunk.arena.GlBufferArena;
@@ -151,7 +153,7 @@ public class RenderRegion {
         public final GlBufferArena vertexBuffers;
         public final GlBufferArena indexBuffers;
 
-        public final Map<BlockRenderPass, GlTessellation> tessellations = new EnumMap<>(BlockRenderPass.class);
+        public final Map<BlockRenderPass, GlTessellation> tessellations = new Reference2ObjectOpenHashMap<>();
 
         public RenderRegionArenas(CommandList commandList, StagingBuffer stagingBuffer) {
             int expectedVertexCount = REGION_SIZE * 756;

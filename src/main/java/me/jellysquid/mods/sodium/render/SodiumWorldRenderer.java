@@ -3,13 +3,13 @@ package me.jellysquid.mods.sodium.render;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.render.chunk.passes.DefaultBlockRenderPasses;
 import me.jellysquid.mods.thingl.device.CommandList;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.chunk.context.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.thingl.util.NativeBuffer;
 import me.jellysquid.mods.sodium.interop.vanilla.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.interop.vanilla.world.ClientChunkManagerExtended;
@@ -206,10 +206,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
      */
     public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
         if (renderLayer == RenderLayer.getSolid()) {
-            this.drawChunkLayer(BlockRenderPass.OPAQUE, matrixStack, x, y, z);
-            this.drawChunkLayer(BlockRenderPass.OPAQUE_DETAIL, matrixStack, x, y, z);
+            this.drawChunkLayer(DefaultBlockRenderPasses.OPAQUE, matrixStack, x, y, z);
+            this.drawChunkLayer(DefaultBlockRenderPasses.DETAIL, matrixStack, x, y, z);
         } else if (renderLayer == RenderLayer.getTranslucent()) {
-            this.drawChunkLayer(BlockRenderPass.TRANSLUCENT, matrixStack, x, y, z);
+            this.drawChunkLayer(DefaultBlockRenderPasses.TRANSLUCENT, matrixStack, x, y, z);
         }
     }
 
@@ -239,9 +239,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         this.renderDistance = this.client.options.viewDistance;
 
-        BlockRenderPassManager renderPassManager = BlockRenderPassManager.createDefaultMappings();
-
-        this.renderSectionManager = new RenderSectionManager(this, renderPassManager, this.world, this.renderDistance, commandList);
+        this.renderSectionManager = new RenderSectionManager(this, this.world, this.renderDistance, commandList);
         this.renderSectionManager.loadChunks();
     }
 

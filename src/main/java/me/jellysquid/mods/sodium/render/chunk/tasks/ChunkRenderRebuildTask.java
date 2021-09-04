@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.tasks;
 
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderBounds;
@@ -11,16 +10,13 @@ import me.jellysquid.mods.sodium.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.world.WorldSlice;
 import me.jellysquid.mods.sodium.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.render.renderer.TerrainRenderContext;
-import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
-import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.EnumMap;
 import java.util.Map;
 
 /**
@@ -33,6 +29,7 @@ import java.util.Map;
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
     private final RenderSection render;
     private final ChunkRenderContext context;
+
     private final int frame;
     private final int detailLevel;
 
@@ -44,11 +41,10 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
     }
 
     @Override
-    public ChunkBuildResult performBuild(TerrainRenderContext context, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
+    public ChunkBuildResult performBuild(TerrainRenderContext context, CancellationSource cancellationSource) {
         ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
-        buffers.init(renderData);
         context.prepare(this.context);
 
         WorldSlice slice = context.getWorldSlice();
@@ -99,15 +95,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        Map<BlockRenderPass, ChunkMeshData> meshes = new EnumMap<>(BlockRenderPass.class);
-
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            ChunkMeshData mesh = buffers.createMesh(pass);
-
-            if (mesh != null) {
-                meshes.put(pass, mesh);
-            }
-        }
+        Map<BlockRenderPass, ChunkMeshData> meshes = context.createBakedMeshes();
 
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(new ChunkRenderBounds(this.render.getChunkPos()));

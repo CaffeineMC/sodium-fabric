@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.shader;
 
+import me.jellysquid.mods.sodium.render.chunk.passes.DefaultBlockRenderPasses;
 import me.jellysquid.mods.thingl.shader.ShaderConstants;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 
@@ -11,7 +12,7 @@ public record ChunkShaderOptions(ChunkFogMode fog, BlockRenderPass pass) {
         if (this.pass.isDetail()) {
             constants.add("DETAIL");
 
-            if (this.pass == BlockRenderPass.OPAQUE_DETAIL)  {
+            if (this.pass == DefaultBlockRenderPasses.DETAIL)  {
                 constants.add("DETAIL_FADE_IN");
             } else {
                 constants.add("DETAIL_FADE_OUT");
