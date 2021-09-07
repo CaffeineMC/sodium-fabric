@@ -9,12 +9,10 @@ import org.lwjgl.opengl.GL20C;
 public abstract class GlAbstractTessellation implements GlTessellation {
     protected final GlPrimitiveType primitiveType;
     protected final TessellationBinding[] bindings;
-    protected final GlBuffer indexBuffer;
 
-    protected GlAbstractTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings, GlBuffer indexBuffer) {
+    protected GlAbstractTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings) {
         this.primitiveType = primitiveType;
         this.bindings = bindings;
-        this.indexBuffer = indexBuffer;
     }
 
     @Override
@@ -24,17 +22,13 @@ public abstract class GlAbstractTessellation implements GlTessellation {
 
     protected void bindAttributes(CommandList commandList) {
         for (TessellationBinding binding : this.bindings) {
-            commandList.bindBuffer(GlBufferTarget.ARRAY_BUFFER, binding.buffer());
+            commandList.bindBuffer(binding.target(), binding.buffer());
 
             for (GlVertexAttributeBinding attrib : binding.attributeBindings()) {
                 GL20C.glVertexAttribPointer(attrib.getIndex(), attrib.getCount(), attrib.getFormat(), attrib.isNormalized(),
                         attrib.getStride(), attrib.getPointer());
                 GL20C.glEnableVertexAttribArray(attrib.getIndex());
             }
-        }
-
-        if (this.indexBuffer != null) {
-            commandList.bindBuffer(GlBufferTarget.ELEMENT_BUFFER, this.indexBuffer);
         }
     }
 }

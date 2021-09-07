@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
+import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
@@ -14,6 +16,7 @@ import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.Option;
 import net.minecraft.client.option.*;
 import net.minecraft.client.util.Window;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
@@ -41,22 +44,6 @@ public class SodiumGameOptionPages {
                         .setTooltip(new TranslatableText("sodium.options.brightness.tooltip"))
                         .setControl(opt -> new SliderControl(opt, 0, 100, 1, ControlValueFormatter.brightness()))
                         .setBinding((opts, value) -> opts.gamma = value * 0.01D, (opts) -> (int) (opts.gamma / 0.01D))
-                        .build())
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(new TranslatableText("options.renderClouds"))
-                        .setTooltip(new TranslatableText("sodium.options.clouds.tooltip"))
-                        .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> {
-                            opts.quality.enableClouds = value;
-
-                            if (MinecraftClient.isFabulousGraphicsOrBetter()) {
-                                Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
-                                if (framebuffer != null) {
-                                    framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
-                                }
-                            }
-                        }, (opts) -> opts.quality.enableClouds)
-                        .setImpact(OptionImpact.LOW)
                         .build())
                 .build());
 
@@ -143,11 +130,20 @@ public class SodiumGameOptionPages {
                 .build());
 
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
+                .add(OptionImpl.createBuilder(CloudRenderMode.class, vanillaOpts)
                         .setName(new TranslatableText("sodium.options.clouds_quality.name"))
                         .setTooltip(new TranslatableText("sodium.options.clouds_quality.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.class))
-                        .setBinding((opts, value) -> opts.quality.cloudQuality = value, opts -> opts.quality.cloudQuality)
+                        .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class, new Text[] { new TranslatableText("options.off"), new TranslatableText("options.clouds.fast"), new TranslatableText("options.clouds.fancy") }))
+                        .setBinding((opts, value) -> {
+                            opts.cloudRenderMode = value;
+
+                            if (MinecraftClient.isFabulousGraphicsOrBetter()) {
+                                Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
+                                if (framebuffer != null) {
+                                    framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
+                                }
+                            }
+                        }, opts -> opts.cloudRenderMode)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
@@ -168,7 +164,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(ParticlesMode.class, vanillaOpts)
                         .setName(new TranslatableText("sodium.options.particle_quality.name"))
                         .setTooltip(new TranslatableText("sodium.options.particle_quality.tooltip"))
-                        .setControl(opt -> new CyclingControl<>(opt, ParticlesMode.class, new Text[] { new TranslatableText("options.particles.all"), new TranslatableText("options.particles.decreased"), new TranslatableText("options.particles.minimal") }))
+                        .setControl(option -> new CyclingControl<>(option, ParticlesMode.class, new Text[] { new TranslatableText("options.particles.all"), new TranslatableText("options.particles.decreased"), new TranslatableText("options.particles.minimal") }))
                         .setBinding((opts, value) -> opts.particles = value, (opts) -> opts.particles)
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
@@ -232,6 +228,28 @@ public class SodiumGameOptionPages {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(SodiumGameOptions.ArenaMemoryAllocator.class, sodiumOpts)
+                        .setName(new TranslatableText("sodium.options.chunk_memory_allocator.name"))
+                        .setTooltip(new TranslatableText("sodium.options.chunk_memory_allocator.tooltip"))
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.ArenaMemoryAllocator.class))
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.advanced.arenaMemoryAllocator = value, opts -> opts.advanced.arenaMemoryAllocator)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(new TranslatableText("sodium.options.use_persistent_mapping.name"))
+                        .setTooltip(new TranslatableText("sodium.options.use_persistent_mapping.tooltip"))
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setEnabled(MappedStagingBuffer.isSupported(RenderDevice.INSTANCE))
+                        .setBinding((opts, value) -> opts.advanced.useAdvancedStagingBuffers = value, opts -> opts.advanced.useAdvancedStagingBuffers)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build()
+                )
+                .build());
+
+        groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(new TranslatableText("sodium.options.use_block_face_culling.name"))
                         .setTooltip(new TranslatableText("sodium.options.use_block_face_culling.tooltip"))
@@ -272,6 +290,18 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.advanced.animateOnlyVisibleTextures = value, opts -> opts.advanced.animateOnlyVisibleTextures)
+                        .build()
+                )
+                .build());
+
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(int.class, sodiumOpts)
+                        .setName(new LiteralText("Max Pre-Rendered Frames"))
+                        .setTooltip(new LiteralText("Specifies the maximum number of frames the CPU can be waiting on the GPU to finish rendering. " +
+                                "Very low or high values may create frame rate instability."))
+                        .setControl(opt -> new SliderControl(opt, 0, 9, 1, ControlValueFormatter.quantity("frames")))
+                        .setBinding((opts, value) -> opts.advanced.maxPreRenderedFrames = value, opts -> opts.advanced.maxPreRenderedFrames)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )
                 .build());
