@@ -49,13 +49,13 @@ public class SodiumConfig {
         this.addMixinRule("features.particle.cull", true);
         this.addMixinRule("features.particle.fast_render", true);
         this.addMixinRule("features.render_layer", true);
+        this.addMixinRule("features.render_layer.leaves", true);
         this.addMixinRule("features.sky", true);
         this.addMixinRule("features.texture_tracking", true);
         this.addMixinRule("features.texture_updates", true);
         this.addMixinRule("features.world_ticking", true);
         this.addMixinRule("features.fast_biome_colors", true);
         this.addMixinRule("features.shader", true);
-        this.addMixinRule("features.fast_leaf_culling", true);
     }
 
     /**

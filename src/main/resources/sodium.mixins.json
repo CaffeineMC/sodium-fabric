@@ -39,7 +39,7 @@
     "features.entity.cull.MixinEntityRenderer",
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinClientWorld",
-    "features.fast_leaf_culling.MixinLeavesBlock",
+    "features.render_layer.leaves.MixinLeavesBlock",
     "features.gui.MixinDebugHud",
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
     "features.gui.font.MixinGlyphRenderer",

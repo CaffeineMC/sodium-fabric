@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.features.fast_leaf_culling;
+package me.jellysquid.mods.sodium.mixin.features.render_layer.leaves;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import net.fabricmc.api.EnvType;
