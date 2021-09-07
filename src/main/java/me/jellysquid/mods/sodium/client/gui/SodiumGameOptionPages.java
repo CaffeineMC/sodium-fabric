@@ -158,7 +158,7 @@ public class SodiumGameOptionPages {
                         .setTooltip(new TranslatableText("sodium.options.leaves_quality.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.GraphicsQuality.class))
                         .setBinding((opts, value) -> opts.quality.leavesQuality = value, opts -> opts.quality.leavesQuality)
-                        .setImpact(OptionImpact.LOW)
+                        .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(ParticlesMode.class, vanillaOpts)
