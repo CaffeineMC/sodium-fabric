@@ -53,7 +53,7 @@
     "features.options.MixinWorldRenderer",
     "features.particle.cull.MixinParticleManager",
     "features.particle.fast_render.MixinBillboardParticle",
-    "features.render_layer.MixinRenderLayers",
+    "features.render_layer.leaves.MixinRenderLayers",
     "features.shader.MixinShader",
     "features.sky.MixinWorldRenderer",
     "features.texture_tracking.MixinSprite",

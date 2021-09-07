@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.mixin.features.render_layer;
+package me.jellysquid.mods.sodium.mixin.features.render_layer.leaves;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
