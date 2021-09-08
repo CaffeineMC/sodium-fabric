@@ -10,7 +10,7 @@ import org.lwjgl.opengl.GL30C;
 import java.util.Arrays;
 
 public class GlStateTracker {
-    private static final int UNASSIGNED_HANDLE = -1;
+    private static final int UNASSIGNED_HANDLE = Integer.MIN_VALUE;
 
     private final int[] bufferState = new int[GlBufferTarget.COUNT];
     private final int[] bufferRestoreState = new int[GlBufferTarget.COUNT];
@@ -30,6 +30,10 @@ public class GlStateTracker {
 
     public void notifyBufferDeleted(GlBuffer buffer) {
         for (GlBufferTarget target : GlBufferTarget.VALUES) {
+            if (this.bufferRestoreState[target.ordinal()] == buffer.handle()) {
+                throw new RuntimeException("Tried to delete a buffer that was bound in a foreign context!");
+            }
+
             if (this.bufferState[target.ordinal()] == buffer.handle()) {
                 this.bufferState[target.ordinal()] = UNASSIGNED_HANDLE;
             }
@@ -37,10 +41,15 @@ public class GlStateTracker {
     }
 
     public boolean makeBufferActive(GlBufferTarget target, GlBuffer buffer) {
-        boolean changed = this.bufferState[target.ordinal()] != buffer.handle();
+        if (this.bufferRestoreState[target.ordinal()] == UNASSIGNED_HANDLE) {
+            this.bufferRestoreState[target.ordinal()] = GL11C.glGetInteger(target.getBindingParameter());
+        }
+
+        int handle = buffer.handle();
+        boolean changed = this.bufferState[target.ordinal()] != handle;
 
         if (changed) {
-            this.bufferState[target.ordinal()] = buffer.handle();
+            this.bufferState[target.ordinal()] = handle;
         }
 
         return changed;
@@ -51,7 +60,7 @@ public class GlStateTracker {
             this.vertexArrayRestoreState = GL11C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
         }
 
-        int handle = array == null ? GlVertexArray.NULL_ARRAY_ID : array.handle();
+        int handle = array.handle();
         boolean changed = this.vertexArrayState != handle;
 
         if (changed) {
@@ -83,11 +92,5 @@ public class GlStateTracker {
 
         this.vertexArrayState = UNASSIGNED_HANDLE;
         this.vertexArrayRestoreState = UNASSIGNED_HANDLE;
-    }
-
-    public void push() {
-        for (GlBufferTarget target : GlBufferTarget.VALUES) {
-            this.bufferRestoreState[target.ordinal()] = GL11C.glGetInteger(target.getBindingParameter());
-        }
     }
 }

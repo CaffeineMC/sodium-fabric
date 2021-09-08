@@ -7,7 +7,5 @@ public interface GlTessellation {
 
     void bind(CommandList commandList);
 
-    void unbind(CommandList commandList);
-
     GlPrimitiveType getPrimitiveType();
 }

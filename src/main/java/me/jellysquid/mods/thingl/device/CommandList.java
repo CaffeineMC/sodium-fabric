@@ -35,8 +35,6 @@ public interface CommandList extends AutoCloseable {
 
     void bindBuffer(GlBufferTarget target, GlBuffer buffer);
 
-    void unbindVertexArray();
-
     void allocateStorage(GlMutableBuffer buffer, long bufferSize, GlBufferUsage usage);
 
     void deleteBuffer(GlBuffer buffer);

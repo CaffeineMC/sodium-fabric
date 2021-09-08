@@ -41,7 +41,6 @@ public class GLRenderDevice implements RenderDevice {
             return;
         }
 
-        this.stateTracker.push();
         this.isActive = true;
     }
 
@@ -105,13 +104,6 @@ public class GLRenderDevice implements RenderDevice {
         public void bindBuffer(GlBufferTarget target, GlBuffer buffer) {
             if (this.stateTracker.makeBufferActive(target, buffer)) {
                 GL20C.glBindBuffer(target.getTargetParameter(), buffer.handle());
-            }
-        }
-
-        @Override
-        public void unbindVertexArray() {
-            if (this.stateTracker.makeVertexArrayActive(null)) {
-                GL30C.glBindVertexArray(GlVertexArray.NULL_ARRAY_ID);
             }
         }
 
@@ -235,7 +227,7 @@ public class GLRenderDevice implements RenderDevice {
             return new GlFence(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
         }
 
-        private void checkMapDisposed(GlBufferMapping map) {
+        private static void checkMapDisposed(GlBufferMapping map) {
             if (map.isDisposed()) {
                 throw new IllegalStateException("Buffer mapping is already disposed");
             }
@@ -289,7 +281,6 @@ public class GLRenderDevice implements RenderDevice {
 
         @Override
         public void endTessellating() {
-            GLRenderDevice.this.activeTessellation.unbind(GLRenderDevice.this.commandList);
             GLRenderDevice.this.activeTessellation = null;
         }
 
