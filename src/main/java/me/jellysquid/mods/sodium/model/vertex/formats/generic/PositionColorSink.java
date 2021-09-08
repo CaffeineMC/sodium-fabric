@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.model.vertex.formats.generic;
 
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fUtil;
 import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.model.vertex.VertexSink;
 import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferView;
@@ -7,8 +8,6 @@ import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferWriterNio;
 import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.model.vertex.fallback.VertexWriterFallback;
 import me.jellysquid.mods.sodium.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fExtended;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixUtil;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
@@ -36,13 +35,12 @@ public interface PositionColorSink extends VertexSink {
      * @param matrix The matrix to transform the vertex's position by
      */
     default void writeQuad(Matrix4f matrix, float x, float y, float z, int color) {
-        Matrix4fExtended modelMatrix = MatrixUtil.getExtendedMatrix(matrix);
-
-        float x2 = modelMatrix.transformVecX(x, y, z);
-        float y2 = modelMatrix.transformVecY(x, y, z);
-        float z2 = modelMatrix.transformVecZ(x, y, z);
-
-        this.writeQuad(x2, y2, z2, color);
+        this.writeQuad(
+                Matrix4fUtil.transformVectorX(matrix, x, y, z),
+                Matrix4fUtil.transformVectorY(matrix, x, y, z),
+                Matrix4fUtil.transformVectorZ(matrix, x, y, z),
+                color
+        );
     }
 
     class WriterNio extends VertexBufferWriterNio implements PositionColorSink {

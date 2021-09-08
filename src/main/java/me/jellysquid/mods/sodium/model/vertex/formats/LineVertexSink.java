@@ -29,6 +29,11 @@ public interface LineVertexSink extends VertexSink {
      */
     void vertexLine(float x, float y, float z, int color, int normal);
 
+    default void vertexLine(float x1, float y1, float z1, float x2, float y2, float z2, int color, int normal) {
+        this.vertexLine(x1, y1, z1, color, normal);
+        this.vertexLine(x2, y2, z2, color, normal);
+    }
+
     class WriterFallback extends VertexWriterFallback implements LineVertexSink {
         public WriterFallback(VertexConsumer consumer) {
             super(consumer);

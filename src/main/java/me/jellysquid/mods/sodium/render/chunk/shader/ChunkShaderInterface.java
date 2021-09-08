@@ -2,13 +2,11 @@ package me.jellysquid.mods.sodium.render.chunk.shader;
 
 import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexCompression;
 import me.jellysquid.mods.thingl.buffer.MutableBuffer;
-import me.jellysquid.mods.thingl.buffer.MutableBufferImpl;
 import me.jellysquid.mods.thingl.shader.ShaderBindingContext;
 import me.jellysquid.mods.thingl.shader.uniform.GlUniformBlock;
 import me.jellysquid.mods.thingl.shader.uniform.UniformFloat;
 import me.jellysquid.mods.thingl.shader.uniform.UniformInt;
 import me.jellysquid.mods.thingl.shader.uniform.UniformMatrix4F;
-import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import org.joml.Matrix4f;
 
 /**
@@ -49,7 +47,7 @@ public class ChunkShaderInterface {
         this.fogShader = options.fog().getFactory().apply(context);
     }
 
-    public void setup(ChunkVertexType vertexType) {
+    public void setup() {
         this.uniformModelScale.setFloat(ModelVertexCompression.getModelScale());
         this.uniformModelOffset.setFloat(ModelVertexCompression.getModelOffset());
         this.uniformTextureScale.setFloat(ModelVertexCompression.getTextureScale());
@@ -60,7 +58,7 @@ public class ChunkShaderInterface {
         this.uniformLightTex.setInt(ChunkShaderTextureUnit.LIGHT_TEXTURE.id());
 
         if (this.detailBlock != null) {
-            this.detailBlock.setup(vertexType);
+            this.detailBlock.setup();
         }
     }
 
@@ -99,7 +97,7 @@ public class ChunkShaderInterface {
             this.uniformDetailFarPlane.setFloat(distance - 9.0f);
         }
 
-        public void setup(ChunkVertexType vertexType) {
+        public void setup() {
             this.uniformStippleTex.setInt(ChunkShaderTextureUnit.STIPPLE_TEXTURE.id());
         }
     }

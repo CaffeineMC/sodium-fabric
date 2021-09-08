@@ -1,13 +1,12 @@
 package me.jellysquid.mods.sodium.model.vertex.formats.generic;
 
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fUtil;
 import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.model.vertex.VertexSink;
 import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferWriterNio;
 import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.model.vertex.fallback.VertexWriterFallback;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fExtended;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixUtil;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
@@ -22,11 +21,9 @@ public interface PositionTextureSink extends VertexSink {
     void writeVertex(float x, float y, float z, float u, float v);
 
     default void writeVertex(Matrix4f matrix, float x, float y, float z, float u, float v) {
-        Matrix4fExtended modelMatrix = MatrixUtil.getExtendedMatrix(matrix);
-
-        float x2 = modelMatrix.transformVecX(x, y, z);
-        float y2 = modelMatrix.transformVecY(x, y, z);
-        float z2 = modelMatrix.transformVecZ(x, y, z);
+        float x2 = Matrix4fUtil.transformVectorX(matrix, x, y, z);
+        float y2 = Matrix4fUtil.transformVectorY(matrix, x, y, z);
+        float z2 = Matrix4fUtil.transformVectorZ(matrix, x, y, z);
 
         this.writeVertex(x2, y2, z2, u, v);
     }

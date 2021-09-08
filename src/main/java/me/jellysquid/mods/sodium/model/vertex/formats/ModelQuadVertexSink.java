@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.model.vertex.formats;
 
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix3fUtil;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fUtil;
 import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.model.vertex.VertexSink;
 import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferView;
@@ -8,13 +10,12 @@ import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.model.vertex.fallback.VertexWriterFallback;
 import me.jellysquid.mods.sodium.util.geometry.Norm3b;
 import me.jellysquid.mods.sodium.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fExtended;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixUtil;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -43,13 +44,13 @@ public interface ModelQuadVertexSink extends VertexSink {
      * @param matrices The matrices to transform the vertex's position and normal vectors by
      */
     default void writeQuad(MatrixStack.Entry matrices, float x, float y, float z, int color, float u, float v, int light, int overlay, Direction dir) {
-        Matrix4fExtended modelMatrix = MatrixUtil.getExtendedMatrix(matrices.getModel());
+        Matrix4f modelMatrix = matrices.getModel();
 
-        float x2 = modelMatrix.transformVecX(x, y, z);
-        float y2 = modelMatrix.transformVecY(x, y, z);
-        float z2 = modelMatrix.transformVecZ(x, y, z);
+        float x2 = Matrix4fUtil.transformVectorX(modelMatrix, x, y, z);
+        float y2 = Matrix4fUtil.transformVectorY(modelMatrix, x, y, z);
+        float z2 = Matrix4fUtil.transformVectorZ(modelMatrix, x, y, z);
 
-        int norm = MatrixUtil.transformNormalVector(dir.getVector(), matrices.getNormal());
+        int norm = Matrix3fUtil.transformNormal(matrices.getNormal(), dir);
 
         this.writeQuad(x2, y2, z2, color, u, v, light, overlay, norm);
     }

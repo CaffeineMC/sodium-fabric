@@ -1,8 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.matrix_stack;
 
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix3fExtended;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fExtended;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixUtil;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix3fUtil;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Quaternion;
 import org.spongepowered.asm.mixin.Final;
@@ -26,8 +25,7 @@ public class MixinMatrixStack {
     public void translate(double x, double y, double z) {
         MatrixStack.Entry entry = this.stack.getLast();
 
-        Matrix4fExtended mat = MatrixUtil.getExtendedMatrix(entry.getModel());
-        mat.translate((float) x, (float) y, (float) z);
+        Matrix4fUtil.translateMatrix(entry.getModel(), (float) x, (float) y, (float) z);
     }
 
     /**
@@ -38,10 +36,7 @@ public class MixinMatrixStack {
     public void multiply(Quaternion q) {
         MatrixStack.Entry entry = this.stack.getLast();
 
-        Matrix4fExtended mat4 = MatrixUtil.getExtendedMatrix(entry.getModel());
-        mat4.rotate(q);
-
-        Matrix3fExtended mat3 = MatrixUtil.getExtendedMatrix(entry.getNormal());
-        mat3.rotate(q);
+        Matrix4fUtil.rotateMatrix(entry.getModel(), q);
+        Matrix3fUtil.rotateMatrix(entry.getNormal(), q);
     }
 }

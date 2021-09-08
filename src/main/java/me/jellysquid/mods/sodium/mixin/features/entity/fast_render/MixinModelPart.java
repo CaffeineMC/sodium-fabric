@@ -1,17 +1,18 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
 import me.jellysquid.mods.sodium.interop.vanilla.cuboid.ModelCuboidAccessor;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix3fUtil;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fUtil;
 import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.model.vertex.formats.ModelQuadVertexSink;
-import me.jellysquid.mods.sodium.util.geometry.Norm3b;
 import me.jellysquid.mods.sodium.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix3fExtended;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fExtended;
-import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixUtil;
+import me.jellysquid.mods.sodium.util.geometry.Norm3b;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Matrix3f;
+import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,8 +35,8 @@ public class MixinModelPart {
      */
     @Overwrite
     private void renderCuboids(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
-        Matrix3fExtended normalExt = MatrixUtil.getExtendedMatrix(matrices.getNormal());
-        Matrix4fExtended modelExt = MatrixUtil.getExtendedMatrix(matrices.getModel());
+        Matrix3f normalMatrix = matrices.getNormal();
+        Matrix4f modelMatrix = matrices.getModel();
 
         ModelQuadVertexSink drain = VertexDrain.of(vertexConsumer).createSink(VanillaVertexTypes.QUADS);
         drain.ensureCapacity(this.cuboids.size() * 6 * 4);
@@ -44,11 +45,7 @@ public class MixinModelPart {
 
         for (ModelPart.Cuboid cuboid : this.cuboids) {
             for (ModelPart.Quad quad : ((ModelCuboidAccessor) cuboid).getQuads()) {
-                float normX = normalExt.transformVecX(quad.direction);
-                float normY = normalExt.transformVecY(quad.direction);
-                float normZ = normalExt.transformVecZ(quad.direction);
-
-                int norm = Norm3b.pack(normX, normY, normZ);
+                int norm = Matrix3fUtil.transformNormal(normalMatrix, quad.direction);
 
                 for (ModelPart.Vertex vertex : quad.vertices) {
                     Vec3f pos = vertex.pos;
@@ -57,9 +54,9 @@ public class MixinModelPart {
                     float y1 = pos.getY() * NORM;
                     float z1 = pos.getZ() * NORM;
 
-                    float x2 = modelExt.transformVecX(x1, y1, z1);
-                    float y2 = modelExt.transformVecY(x1, y1, z1);
-                    float z2 = modelExt.transformVecZ(x1, y1, z1);
+                    float x2 = Matrix4fUtil.transformVectorX(modelMatrix, x1, y1, z1);
+                    float y2 = Matrix4fUtil.transformVectorY(modelMatrix, x1, y1, z1);
+                    float z2 = Matrix4fUtil.transformVectorZ(modelMatrix, x1, y1, z1);
 
                     drain.writeQuad(x2, y2, z2, color, vertex.u, vertex.v, light, overlay, norm);
                 }

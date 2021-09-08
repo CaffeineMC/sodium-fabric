@@ -7,9 +7,7 @@ import me.jellysquid.mods.thingl.attribute.VertexFormat;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.shader.*;
 import me.jellysquid.mods.thingl.texture.Sampler;
-import me.jellysquid.mods.thingl.texture.SamplerImpl;
 import me.jellysquid.mods.thingl.texture.Texture;
-import me.jellysquid.mods.thingl.texture.TextureImpl;
 import me.jellysquid.mods.thingl.util.TextureData;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.interop.vanilla.lightmap.LightmapTextureManagerAccessor;
@@ -115,7 +113,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     }
 
     protected void setShaderParameters(ChunkShaderInterface shader) {
-        shader.setup(this.vertexType);
+        shader.setup();
         shader.setDetailParameters(this.detailDistance);
 
         MinecraftClient client = MinecraftClient.getInstance();
