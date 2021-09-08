@@ -193,7 +193,7 @@ public class RenderDeviceImpl implements RenderDevice {
 
     @Override
     public Fence createFence() {
-        return new FenceImpl(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
+        return new FenceImpl();
     }
 
     @Override

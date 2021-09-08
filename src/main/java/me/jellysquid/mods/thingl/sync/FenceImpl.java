@@ -8,8 +8,12 @@ import java.nio.IntBuffer;
 public class FenceImpl implements Fence {
     private final long id;
 
-    public FenceImpl(long id) {
-        this.id = id;
+    public FenceImpl() {
+        this.id = GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+        if (this.id == 0) {
+            throw new RuntimeException("Failed to create fence sync object");
+        }
     }
 
     @Override
