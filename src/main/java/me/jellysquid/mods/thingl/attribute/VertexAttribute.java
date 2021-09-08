@@ -5,7 +5,6 @@ public class VertexAttribute {
     private final int count;
     private final int pointer;
     private final int size;
-    private final int stride;
 
     private final boolean normalized;
 
@@ -16,17 +15,16 @@ public class VertexAttribute {
  *                   as fixed-point values (false)
      * @param pointer The offset to the first component in the attribute
      */
-    public VertexAttribute(VertexAttributeFormat format, int count, boolean normalized, int pointer, int stride) {
-        this(format.typeId(), format.size() * count, count, normalized, pointer, stride);
+    public VertexAttribute(VertexAttributeFormat format, int count, boolean normalized, int pointer) {
+        this(format.typeId(), format.size() * count, count, normalized, pointer);
     }
 
-    protected VertexAttribute(int format, int size, int count, boolean normalized, int pointer, int stride) {
+    protected VertexAttribute(int format, int size, int count, boolean normalized, int pointer) {
         this.format = format;
         this.size = size;
         this.count = count;
         this.normalized = normalized;
         this.pointer = pointer;
-        this.stride = stride;
     }
 
     public int getSize() {
@@ -47,9 +45,5 @@ public class VertexAttribute {
 
     public boolean isNormalized() {
         return this.normalized;
-    }
-
-    public int getStride() {
-        return this.stride;
     }
 }

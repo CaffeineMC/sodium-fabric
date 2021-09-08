@@ -9,9 +9,24 @@ import org.lwjgl.opengl.GL30C;
  * Provides Vertex Array functionality on supported platforms.
  */
 public class VertexArrayImpl extends GlObject implements VertexArray {
-    public VertexArrayImpl(RenderDeviceImpl device) {
+    private VertexArrayImpl(RenderDeviceImpl device, int handle) {
         super(device);
-        this.setHandle(GL30C.glGenVertexArrays());
+
+        this.setHandle(handle);
+    }
+
+    public static VertexArrayImpl create(RenderDeviceImpl device, boolean dsa) {
+        int handle;
+
+        if (dsa) {
+            handle = device.getDeviceFunctions()
+                    .getDirectStateAccessFunctions()
+                    .createVertexArrays();
+        } else {
+            handle = GL30C.glGenVertexArrays();
+        }
+
+        return new VertexArrayImpl(device, handle);
     }
 
     public void bind() {

@@ -5,9 +5,10 @@ import me.jellysquid.mods.thingl.buffer.ImmutableBuffer;
 import me.jellysquid.mods.thingl.buffer.MutableBuffer;
 import me.jellysquid.mods.thingl.shader.*;
 import me.jellysquid.mods.thingl.sync.Fence;
+import me.jellysquid.mods.thingl.tessellation.binding.ElementBufferBinding;
 import me.jellysquid.mods.thingl.tessellation.PrimitiveType;
 import me.jellysquid.mods.thingl.tessellation.Tessellation;
-import me.jellysquid.mods.thingl.tessellation.TessellationBinding;
+import me.jellysquid.mods.thingl.tessellation.binding.VertexBufferBinding;
 import me.jellysquid.mods.thingl.texture.Sampler;
 import me.jellysquid.mods.thingl.texture.Texture;
 import me.jellysquid.mods.thingl.util.EnumBitField;
@@ -19,7 +20,7 @@ public interface ResourceFactory {
 
     <T> Program<T> createProgram(Shader[] shaders, Function<ShaderBindingContext, T> interfaceFactory);
 
-    Tessellation createTessellation(PrimitiveType primitiveType, TessellationBinding[] bindings);
+    Tessellation createTessellation(PrimitiveType primitiveType, VertexBufferBinding[] vertexBindings, ElementBufferBinding elementBinding);
 
     MutableBuffer createMutableBuffer();
 

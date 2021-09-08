@@ -20,6 +20,8 @@ import me.jellysquid.mods.thingl.buffer.MutableBuffer;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.lists.TessellationCommandList;
 import me.jellysquid.mods.thingl.tessellation.*;
+import me.jellysquid.mods.thingl.tessellation.binding.ElementBufferBinding;
+import me.jellysquid.mods.thingl.tessellation.binding.VertexBufferBinding;
 import me.jellysquid.mods.thingl.util.ElementRange;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
@@ -216,10 +218,9 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     }
 
     private Tessellation createRegionTessellation(RenderDevice device, RenderRegion.RenderRegionArenas arenas) {
-        return device.createTessellation(PrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(arenas.vertexBuffers.getBufferObject(), this.vertexAttributeBindings),
-                TessellationBinding.forElementBuffer(arenas.indexBuffers.getBufferObject())
-        });
+        return device.createTessellation(PrimitiveType.TRIANGLES, new VertexBufferBinding[] {
+                new VertexBufferBinding(arenas.vertexBuffers.getBufferObject(), this.vertexFormat, this.vertexAttributeBindings)
+        }, new ElementBufferBinding(arenas.indexBuffers.getBufferObject()));
     }
 
     @Override

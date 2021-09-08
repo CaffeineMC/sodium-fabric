@@ -4,6 +4,7 @@ import me.jellysquid.mods.thingl.array.VertexArray;
 import me.jellysquid.mods.thingl.array.VertexArrayImpl;
 import me.jellysquid.mods.thingl.buffer.*;
 import me.jellysquid.mods.thingl.functions.DeviceFunctions;
+import me.jellysquid.mods.thingl.functions.DirectStateAccessFunctions;
 import me.jellysquid.mods.thingl.lists.PipelineCommandList;
 import me.jellysquid.mods.thingl.lists.ShaderCommandList;
 import me.jellysquid.mods.thingl.lists.TessellationCommandList;
@@ -13,6 +14,8 @@ import me.jellysquid.mods.thingl.state.StateTracker;
 import me.jellysquid.mods.thingl.sync.Fence;
 import me.jellysquid.mods.thingl.sync.FenceImpl;
 import me.jellysquid.mods.thingl.tessellation.*;
+import me.jellysquid.mods.thingl.tessellation.binding.ElementBufferBinding;
+import me.jellysquid.mods.thingl.tessellation.binding.VertexBufferBinding;
 import me.jellysquid.mods.thingl.texture.Sampler;
 import me.jellysquid.mods.thingl.texture.SamplerImpl;
 import me.jellysquid.mods.thingl.texture.Texture;
@@ -63,22 +66,25 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     @Override
-    public Tessellation createTessellation(PrimitiveType primitiveType, TessellationBinding[] bindings) {
-        return new TessellationImpl(this, primitiveType, bindings);
+    public Tessellation createTessellation(PrimitiveType primitiveType, VertexBufferBinding[] vertexBindings, ElementBufferBinding elementBinding) {
+        if (this.functions.getDirectStateAccessFunctions() == DirectStateAccessFunctions.NONE) {
+            return new TessellationImpl.FallbackTessellationImpl(this, primitiveType, vertexBindings, elementBinding);
+        }
+
+        return new TessellationImpl.BindlessTessellationImpl(this, primitiveType, vertexBindings, elementBinding);
     }
 
     @Override
     public MutableBuffer createMutableBuffer() {
-        return new MutableBufferImpl(this);
+        return new MutableBufferImpl(this,
+                this.getDeviceFunctions().getDirectStateAccessFunctions() != DirectStateAccessFunctions.NONE);
     }
 
     @Override
     public ImmutableBuffer createImmutableBuffer(long bufferSize, EnumBitField<BufferStorageFlags> flags) {
-        ImmutableBufferImpl buffer = new ImmutableBufferImpl(this, flags);
-
-        buffer.bind(BufferTarget.ARRAY_BUFFER);
-        RenderDeviceImpl.this.functions.getBufferStorageFunctions()
-                .createBufferStorage(BufferTarget.ARRAY_BUFFER, bufferSize, flags);
+        ImmutableBufferImpl buffer = new ImmutableBufferImpl(this, flags,
+                this.getDeviceFunctions().getDirectStateAccessFunctions() != DirectStateAccessFunctions.NONE);
+        buffer.createBufferStorage(bufferSize);
 
         return buffer;
     }
@@ -94,10 +100,7 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     private void uploadData0(MutableBufferImpl buffer, ByteBuffer data, BufferUsage usage) {
-        buffer.bind(BufferTarget.ARRAY_BUFFER);
-
-        GL20C.glBufferData(BufferTarget.ARRAY_BUFFER.getTargetParameter(), data, usage.getId());
-        buffer.setSize(data.remaining());
+        buffer.upload(data, usage);
     }
 
     @Override
@@ -106,12 +109,16 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     private void copyBufferSubData0(BufferImpl src, BufferImpl dst, long readOffset, long writeOffset, long bytes) {
-        src.bind(BufferTarget.COPY_READ_BUFFER);
-        dst.bind(BufferTarget.COPY_WRITE_BUFFER);
+        if (this.functions.getDirectStateAccessFunctions() == DirectStateAccessFunctions.NONE) {
+            src.bind(BufferTarget.COPY_READ_BUFFER);
+            dst.bind(BufferTarget.COPY_WRITE_BUFFER);
 
-        GL31C.glCopyBufferSubData(GL31C.GL_COPY_READ_BUFFER, GL31C.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, bytes);
+            GL31C.glCopyBufferSubData(GL31C.GL_COPY_READ_BUFFER, GL31C.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, bytes);
+        } else {
+            this.functions.getDirectStateAccessFunctions()
+                    .copyNamedBufferSubData(src.handle(), dst.handle(), readOffset, writeOffset, bytes);
+        }
     }
-
 
     @Override
     public void deleteTessellation(Tessellation tessellation) {
@@ -153,19 +160,7 @@ public class RenderDeviceImpl implements RenderDevice {
             }
         }
 
-        buffer.bind(BufferTarget.ARRAY_BUFFER);
-
-        ByteBuffer buf = GL32C.glMapBufferRange(BufferTarget.ARRAY_BUFFER.getTargetParameter(), offset, length, flags.getBitField());
-
-        if (buf == null) {
-            throw new RuntimeException("Failed to map buffer");
-        }
-
-        BufferMappingImpl mapping = new BufferMappingImpl(buffer, buf);
-
-        buffer.setActiveMapping(mapping);
-
-        return mapping;
+        return buffer.createMapping(offset, length, flags);
     }
 
     @Override
@@ -177,11 +172,8 @@ public class RenderDeviceImpl implements RenderDevice {
         map.checkDisposed();
 
         BufferImpl buffer = map.getBufferObject();
+        buffer.unmap();
 
-        buffer.bind(BufferTarget.ARRAY_BUFFER);
-        GL32C.glUnmapBuffer(BufferTarget.ARRAY_BUFFER.getTargetParameter());
-
-        buffer.setActiveMapping(null);
         map.dispose();
     }
 
