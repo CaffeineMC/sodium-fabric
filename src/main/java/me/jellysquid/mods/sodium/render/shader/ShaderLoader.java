@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.render.shader;
 
-import me.jellysquid.mods.thingl.device.CommandList;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.shader.GlShader;
 import me.jellysquid.mods.thingl.shader.ShaderConstants;
@@ -30,9 +29,7 @@ public class ShaderLoader {
      * @return An OpenGL shader object compiled with the given user defines
      */
     public GlShader loadShader(ShaderType type, Identifier name, ShaderConstants constants) {
-        try (CommandList commandList = this.device.createCommandList()) {
-            return commandList.createShader(type, this.parseShader(name, constants));
-        }
+        return this.device.createShader(type, this.parseShader(name, constants));
     }
 
     public String parseShader(Identifier name, ShaderConstants constants) {

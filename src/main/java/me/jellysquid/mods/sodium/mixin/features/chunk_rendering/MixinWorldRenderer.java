@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixConverter;
 import me.jellysquid.mods.sodium.interop.vanilla.world.WorldRendererExtended;
@@ -55,12 +55,12 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
 
     @Inject(method = "setWorld", at = @At("RETURN"))
     private void onWorldChanged(ClientWorld world, CallbackInfo ci) {
-        RenderDevice.enterManagedCode();
+        SodiumRender.enterManagedCode();
 
         try {
             this.renderer.setWorld(world);
         } finally {
-            RenderDevice.exitManagedCode();
+            SodiumRender.exitManagedCode();
         }
     }
 
@@ -93,12 +93,12 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
      */
     @Overwrite
     private void renderLayer(RenderLayer renderLayer, MatrixStack matrices, double x, double y, double z, Matrix4f matrix) {
-        RenderDevice.enterManagedCode();
+        SodiumRender.enterManagedCode();
 
         try {
             this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
         } finally {
-            RenderDevice.exitManagedCode();
+            SodiumRender.exitManagedCode();
         }
     }
 
@@ -117,12 +117,12 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
      */
     @Overwrite
     private void setupTerrain(Camera camera, Frustum _frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
-        RenderDevice.enterManagedCode();
+        SodiumRender.enterManagedCode();
 
         try {
             this.renderer.updateChunks(camera, frame, spectator);
         } finally {
-            RenderDevice.exitManagedCode();
+            SodiumRender.exitManagedCode();
         }
     }
 
@@ -164,12 +164,12 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
 
     @Inject(method = "reload()V", at = @At("RETURN"))
     private void onReload(CallbackInfo ci) {
-        RenderDevice.enterManagedCode();
+        SodiumRender.enterManagedCode();
 
         try {
             this.renderer.reload();
         } finally {
-            RenderDevice.exitManagedCode();
+            SodiumRender.exitManagedCode();
         }
     }
 

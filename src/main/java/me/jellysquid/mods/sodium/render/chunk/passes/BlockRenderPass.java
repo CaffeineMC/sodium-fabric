@@ -15,9 +15,8 @@ public class BlockRenderPass {
         return this.translucent;
     }
 
-    @Deprecated(forRemoval = true)
-    public void startDrawing() {
-        this.pipeline.enable();
+    public RenderPipeline pipeline() {
+        return this.pipeline;
     }
 
     @Deprecated

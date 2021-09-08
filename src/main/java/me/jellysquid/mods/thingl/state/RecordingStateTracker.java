@@ -9,70 +9,55 @@ import org.lwjgl.opengl.GL30C;
 
 import java.util.Arrays;
 
-public class GlStateTracker {
-    private static final int UNASSIGNED_HANDLE = Integer.MIN_VALUE;
-
-    private final int[] bufferState = new int[GlBufferTarget.COUNT];
+public class RecordingStateTracker extends CachedStateTracker {
     private final int[] bufferRestoreState = new int[GlBufferTarget.COUNT];
-
-    private int vertexArrayState;
     private int vertexArrayRestoreState;
+    private int programRestoreState;
 
-    public GlStateTracker() {
-        this.reset();
-    }
+    private boolean active;
 
+    @Override
     public void notifyVertexArrayDeleted(GlVertexArray vertexArray) {
-        if (this.vertexArrayState == vertexArray.handle()) {
-            this.vertexArrayState = UNASSIGNED_HANDLE;
-        }
+        super.notifyVertexArrayDeleted(vertexArray);
     }
 
+    @Override
     public void notifyBufferDeleted(GlBuffer buffer) {
-        for (GlBufferTarget target : GlBufferTarget.VALUES) {
-            if (this.bufferRestoreState[target.ordinal()] == buffer.handle()) {
-                throw new RuntimeException("Tried to delete a buffer that was bound in a foreign context!");
-            }
-
-            if (this.bufferState[target.ordinal()] == buffer.handle()) {
-                this.bufferState[target.ordinal()] = UNASSIGNED_HANDLE;
-            }
-        }
+        super.notifyBufferDeleted(buffer);
     }
 
-    public boolean makeBufferActive(GlBufferTarget target, GlBuffer buffer) {
+    @Override
+    public boolean makeBufferActive(GlBufferTarget target, int buffer) {
         if (this.bufferRestoreState[target.ordinal()] == UNASSIGNED_HANDLE) {
             this.bufferRestoreState[target.ordinal()] = GL11C.glGetInteger(target.getBindingParameter());
         }
 
-        int handle = buffer.handle();
-        boolean changed = this.bufferState[target.ordinal()] != handle;
-
-        if (changed) {
-            this.bufferState[target.ordinal()] = handle;
-        }
-
-        return changed;
+        return super.makeBufferActive(target, buffer);
     }
 
-    public boolean makeVertexArrayActive(GlVertexArray array) {
+    @Override
+    public boolean makeVertexArrayActive(int array) {
         if (this.vertexArrayRestoreState == UNASSIGNED_HANDLE) {
             this.vertexArrayRestoreState = GL11C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
         }
 
-        int handle = array.handle();
-        boolean changed = this.vertexArrayState != handle;
+        return super.makeVertexArrayActive(array);
+    }
 
-        if (changed) {
-            this.vertexArrayState = handle;
-
-            Arrays.fill(this.bufferState, UNASSIGNED_HANDLE);
+    @Override
+    public boolean makeProgramActive(int program) {
+        if (this.programRestoreState == UNASSIGNED_HANDLE) {
+            this.programRestoreState = GL11C.glGetInteger(GL30C.GL_CURRENT_PROGRAM);
         }
 
-        return changed;
+        return super.makeProgramActive(program);
     }
 
     public void pop() {
+        if (!this.active) {
+            throw new IllegalStateException("Tried to pop state but state tracker is not enabled");
+        }
+
         if (this.vertexArrayRestoreState != UNASSIGNED_HANDLE && this.vertexArrayState != this.vertexArrayRestoreState) {
             GL30C.glBindVertexArray(this.vertexArrayRestoreState);
         }
@@ -83,7 +68,12 @@ public class GlStateTracker {
             }
         }
 
+        if (this.programRestoreState != UNASSIGNED_HANDLE && this.programState != this.programRestoreState) {
+            GL20C.glUseProgram(this.programRestoreState);
+        }
+
         this.reset();
+        this.active = false;
     }
 
     public void reset() {
@@ -92,5 +82,19 @@ public class GlStateTracker {
 
         this.vertexArrayState = UNASSIGNED_HANDLE;
         this.vertexArrayRestoreState = UNASSIGNED_HANDLE;
+    }
+
+    public void push() {
+        if (this.active) {
+            throw new IllegalStateException("Tried to push state twice (re-entrance is not allowed)");
+        }
+
+        this.active = true;
+    }
+
+    private void checkState() {
+        if (!this.active) {
+            throw new RuntimeException("State tracking not enabled");
+        }
     }
 }

@@ -2,13 +2,12 @@ package me.jellysquid.mods.sodium.render.chunk.arena.staging;
 
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import me.jellysquid.mods.sodium.util.MathUtil;
 import me.jellysquid.mods.thingl.buffer.*;
-import me.jellysquid.mods.thingl.device.CommandList;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.functions.BufferStorageFunctions;
 import me.jellysquid.mods.thingl.sync.GlFence;
 import me.jellysquid.mods.thingl.util.EnumBitField;
-import me.jellysquid.mods.sodium.util.MathUtil;
 
 import java.nio.ByteBuffer;
 
@@ -21,6 +20,7 @@ public class MappedStagingBuffer implements StagingBuffer {
 
     private final FallbackStagingBuffer fallbackStagingBuffer;
 
+    private final RenderDevice device;
     private final MappedBuffer mappedBuffer;
     private final PriorityQueue<CopyCommand> pendingCopies = new ObjectArrayFIFOQueue<>();
     private final PriorityQueue<FencedMemoryRegion> fencedRegions = new ObjectArrayFIFOQueue<>();
@@ -30,16 +30,17 @@ public class MappedStagingBuffer implements StagingBuffer {
     private final int capacity;
     private int remaining;
 
-    public MappedStagingBuffer(CommandList commandList) {
-        this(commandList, 1024 * 1024 * 16 /* 16 MB */);
+    public MappedStagingBuffer(RenderDevice device) {
+        this(device, 1024 * 1024 * 16 /* 16 MB */);
     }
 
-    public MappedStagingBuffer(CommandList commandList, int capacity) {
-        GlImmutableBuffer buffer = commandList.createImmutableBuffer(capacity, STORAGE_FLAGS);
-        GlBufferMapping map = commandList.mapBuffer(buffer, 0, capacity, MAP_FLAGS);
+    public MappedStagingBuffer(RenderDevice device, int capacity) {
+        GlImmutableBuffer buffer = device.createImmutableBuffer(capacity, STORAGE_FLAGS);
+        GlBufferMapping map = device.mapBuffer(buffer, 0, capacity, MAP_FLAGS);
 
+        this.device = device;
         this.mappedBuffer = new MappedBuffer(buffer, map);
-        this.fallbackStagingBuffer = new FallbackStagingBuffer(commandList);
+        this.fallbackStagingBuffer = new FallbackStagingBuffer(device);
         this.capacity = capacity;
         this.remaining = this.capacity;
     }
@@ -49,11 +50,11 @@ public class MappedStagingBuffer implements StagingBuffer {
     }
 
     @Override
-    public void enqueueCopy(CommandList commandList, ByteBuffer data, GlBuffer dst, long writeOffset) {
+    public void enqueueCopy(ByteBuffer data, GlBuffer dst, long writeOffset) {
         int length = data.remaining();
 
         if (length > this.remaining) {
-            this.fallbackStagingBuffer.enqueueCopy(commandList, data, dst, writeOffset);
+            this.fallbackStagingBuffer.enqueueCopy(data, dst, writeOffset);
 
             return;
         }
@@ -77,12 +78,12 @@ public class MappedStagingBuffer implements StagingBuffer {
     }
 
     private void addTransfer(ByteBuffer data, GlBuffer dst, long readOffset, long writeOffset) {
-        this.mappedBuffer.map().write(data, (int) readOffset);
+        this.mappedBuffer.map.write(data, (int) readOffset);
         this.pendingCopies.enqueue(new CopyCommand(dst, readOffset, writeOffset, data.remaining()));
     }
 
     @Override
-    public void flush(CommandList commandList) {
+    public void flush() {
         if (this.pendingCopies.isEmpty()) {
             return;
         }
@@ -91,18 +92,18 @@ public class MappedStagingBuffer implements StagingBuffer {
 
         while (!this.pendingCopies.isEmpty()) {
             CopyCommand command = this.pendingCopies.dequeue();
-            commandList.copyBufferSubData(this.mappedBuffer.buffer(), command.buffer, command.readOffset, command.writeOffset, command.bytes);
+            this.device.copyBufferSubData(this.mappedBuffer.buffer, command.buffer, command.readOffset, command.writeOffset, command.bytes);
 
             bytes += command.bytes;
         }
 
-        this.fencedRegions.enqueue(new FencedMemoryRegion(commandList.createFence(), bytes));
+        this.fencedRegions.enqueue(new FencedMemoryRegion(this.device.createFence(), bytes));
     }
 
     @Override
-    public void delete(CommandList commandList) {
-        this.mappedBuffer.delete(commandList);
-        this.fallbackStagingBuffer.delete(commandList);
+    public void delete() {
+        this.mappedBuffer.delete();
+        this.fallbackStagingBuffer.delete();
         this.pendingCopies.clear();
     }
 
@@ -123,11 +124,19 @@ public class MappedStagingBuffer implements StagingBuffer {
     private record CopyCommand(GlBuffer buffer, long readOffset, long writeOffset, long bytes) {
     }
 
-    private record MappedBuffer(GlImmutableBuffer buffer,
-                                GlBufferMapping map) {
-        public void delete(CommandList commandList) {
-            commandList.unmap(this.map);
-            commandList.deleteBuffer(this.buffer);
+    private class MappedBuffer {
+        private final GlImmutableBuffer buffer;
+        private final GlBufferMapping map;
+
+        private MappedBuffer(GlImmutableBuffer buffer,
+                             GlBufferMapping map) {
+            this.buffer = buffer;
+            this.map = map;
+        }
+
+        public void delete() {
+            MappedStagingBuffer.this.device.unmap(this.map);
+            MappedStagingBuffer.this.device.deleteBuffer(this.buffer);
         }
     }
 

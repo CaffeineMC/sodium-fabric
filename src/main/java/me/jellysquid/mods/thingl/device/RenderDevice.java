@@ -1,25 +1,18 @@
 package me.jellysquid.mods.thingl.device;
 
 import me.jellysquid.mods.thingl.functions.DeviceFunctions;
-import org.lwjgl.opengl.GLCapabilities;
+import me.jellysquid.mods.thingl.lists.PipelineCommandList;
+import me.jellysquid.mods.thingl.pipeline.RenderPipeline;
+import me.jellysquid.mods.thingl.state.StateTracker;
 
-public interface RenderDevice {
-    RenderDevice INSTANCE = new GLRenderDevice();
+import java.util.function.Consumer;
 
-    CommandList createCommandList();
-
-    static void enterManagedCode() {
-        RenderDevice.INSTANCE.makeActive();
+public interface RenderDevice extends ResourceFactory, ResourceAccess, ResourceDestructors {
+    static RenderDevice create(StateTracker tracker) {
+        return new RenderDeviceImpl(tracker);
     }
-
-    static void exitManagedCode() {
-        RenderDevice.INSTANCE.makeInactive();
-    }
-
-    void makeActive();
-    void makeInactive();
-
-    GLCapabilities getCapabilities();
 
     DeviceFunctions getDeviceFunctions();
+
+    void usePipeline(RenderPipeline pipeline, Consumer<PipelineCommandList> consumer);
 }

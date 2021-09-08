@@ -34,4 +34,10 @@ public class GlBufferMapping {
     public ByteBuffer getMemoryBuffer() {
         return this.map;
     }
+
+    public void checkDisposed() {
+        if (this.isDisposed()) {
+            throw new IllegalStateException("Buffer mapping is already disposed");
+        }
+    }
 }

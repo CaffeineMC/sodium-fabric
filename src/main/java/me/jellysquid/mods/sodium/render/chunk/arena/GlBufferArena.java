@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.arena;
 
 import me.jellysquid.mods.thingl.buffer.GlBuffer;
-import me.jellysquid.mods.thingl.device.CommandList;
 
 import java.util.stream.Stream;
 
@@ -12,11 +11,11 @@ public interface GlBufferArena {
 
     void free(GlBufferSegment entry);
 
-    void delete(CommandList commands);
+    void delete();
 
     boolean isEmpty();
 
     GlBuffer getBufferObject();
 
-    boolean upload(CommandList commandList, Stream<PendingUpload> stream);
+    boolean upload(Stream<PendingUpload> stream);
 }

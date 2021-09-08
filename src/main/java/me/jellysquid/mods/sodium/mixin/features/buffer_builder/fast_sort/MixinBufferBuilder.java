@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.fast_sort;
 
 import it.unimi.dsi.fastutil.ints.IntConsumer;
-import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.interop.vanilla.buffer.BufferBuilderParametersAccess;
 import me.jellysquid.mods.sodium.util.geometry.GeometrySort;
 import net.minecraft.client.render.BufferBuilder;
@@ -81,7 +81,7 @@ public abstract class MixinBufferBuilder {
         float[] arr = new float[primitiveCount * 3];
         ByteBuffer buf = this.buffer;
 
-        if (SodiumClient.isDirectMemoryAccessEnabled()) {
+        if (SodiumRender.isDirectMemoryAccessEnabled()) {
             long start = MemoryUtil.memAddress(this.buffer, this.buildStart);
             long vertexStride = this.format.getVertexSize();
             long primitiveStride = vertexStride * this.drawMode.size;
@@ -163,7 +163,7 @@ public abstract class MixinBufferBuilder {
 
         GeometrySort.mergeSort(indices, distance);
 
-        if (SodiumClient.isDirectMemoryAccessEnabled()) {
+        if (SodiumRender.isDirectMemoryAccessEnabled()) {
             // Subtract one base unit as we're using += below
             long p = MemoryUtil.memAddress(this.buffer, this.elementOffset) - elementFormat.size;
 

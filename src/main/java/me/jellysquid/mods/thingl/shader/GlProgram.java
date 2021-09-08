@@ -2,13 +2,13 @@ package me.jellysquid.mods.thingl.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import me.jellysquid.mods.thingl.GlObject;
+import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
 import me.jellysquid.mods.thingl.shader.uniform.GlUniform;
 import me.jellysquid.mods.thingl.shader.uniform.GlUniformBlock;
-import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL20C;
-import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL32C;
 
 import java.util.function.Function;
@@ -22,7 +22,9 @@ public class GlProgram<T> extends GlObject implements ShaderBindingContext {
 
     private final T shaderInterface;
 
-    public GlProgram(GlShader[] shaders, Function<ShaderBindingContext, T> interfaceFactory) {
+    public GlProgram(RenderDeviceImpl device, GlShader[] shaders, Function<ShaderBindingContext, T> interfaceFactory) {
+        super(device);
+
         int program = GL20C.glCreateProgram();
 
         this.setHandle(program);
@@ -53,7 +55,12 @@ public class GlProgram<T> extends GlObject implements ShaderBindingContext {
     }
 
     public void bind() {
-        GL20C.glUseProgram(this.handle());
+        var tracker = this.device.getStateTracker();
+        var handle = this.handle();
+
+        if (tracker.makeProgramActive(handle)) {
+            GL20C.glUseProgram(handle);
+        }
     }
 
     public void unbind() {

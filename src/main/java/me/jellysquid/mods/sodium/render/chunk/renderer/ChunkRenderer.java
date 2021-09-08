@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.render.chunk.renderer;
 
-import me.jellysquid.mods.thingl.device.CommandList;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.render.chunk.context.ChunkCameraContext;
 import me.jellysquid.mods.sodium.render.chunk.ChunkRenderList;
 import me.jellysquid.mods.sodium.render.chunk.context.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.thingl.device.RenderDevice;
 
 /**
  * The chunk render backend takes care of managing the graphics resource state of chunk render containers. This includes
@@ -14,13 +14,13 @@ import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 public interface ChunkRenderer {
     /**
      * Renders the given chunk render list to the active framebuffer.
+     * @param device
      * @param matrices The camera matrices to use for rendering
-     * @param commandList The command list which OpenGL commands should be serialized to
      * @param renders An iterator over the list of chunks to be rendered
      * @param pass The block render pass to execute
      * @param camera The camera context containing chunk offsets for the current render
      */
-    void render(ChunkRenderMatrices matrices, CommandList commandList, ChunkRenderList renders, BlockRenderPass pass, ChunkCameraContext camera);
+    void render(RenderDevice device, ChunkRenderMatrices matrices, ChunkRenderList renders, BlockRenderPass pass, ChunkCameraContext camera);
 
     /**
      * Deletes this render backend and any resources attached to it.

@@ -1,10 +1,14 @@
 package me.jellysquid.mods.thingl.texture;
 
 import me.jellysquid.mods.thingl.GlObject;
+import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
 import org.lwjgl.opengl.GL33C;
 
 public class GlSampler extends GlObject {
-    public GlSampler() {
+    public GlSampler(RenderDeviceImpl device) {
+        super(device);
+
         this.setHandle(GL33C.glGenSamplers());
     }
 

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.renderer;
 
-import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.thingl.util.MemoryUtilHelper;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
@@ -15,7 +15,7 @@ import java.nio.IntBuffer;
  */
 public interface MultiDrawBatch {
     static MultiDrawBatch create(int capacity) {
-        return SodiumClient.isDirectMemoryAccessEnabled() ? new UnsafeMultiDrawBatch(capacity) : new NioMultiDrawBatch(capacity);
+        return SodiumRender.isDirectMemoryAccessEnabled() ? new UnsafeMultiDrawBatch(capacity) : new NioMultiDrawBatch(capacity);
     }
 
     PointerBuffer getPointerBuffer();

@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.render.shader.ShaderLoader;
 import me.jellysquid.mods.thingl.attribute.GlVertexFormat;
-import me.jellysquid.mods.thingl.device.CommandList;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.shader.*;
 import me.jellysquid.mods.thingl.texture.GlSampler;
@@ -34,8 +33,6 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
 
     protected final RenderDevice device;
 
-    protected GlProgram<ChunkShaderInterface> activeProgram;
-
     private final Map<ChunkShaderTextureUnit, GlSampler> samplers = new EnumMap<>(ChunkShaderTextureUnit.class);
     private final GlTexture stippleTexture;
     private final float detailDistance;
@@ -47,12 +44,12 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         this.detailDistance = detailDistance;
 
         try (TextureData data = TextureData.loadInternal("/assets/sodium/textures/shader/stipple.png")) {
-            this.stippleTexture = new GlTexture();
+            this.stippleTexture = device.createTexture();
             this.stippleTexture.setTextureData(data);
         }
 
         for (ChunkShaderTextureUnit unit : ChunkShaderTextureUnit.values()) {
-            this.samplers.put(unit, new GlSampler());
+            this.samplers.put(unit, device.createSampler());
         }
 
         var blockTexSampler = this.samplers.get(ChunkShaderTextureUnit.BLOCK_TEXTURE);
@@ -73,23 +70,23 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         stippleSampler.setParameter(GL33C.GL_TEXTURE_WRAP_T, GL33C.GL_REPEAT);
     }
 
-    protected GlProgram<ChunkShaderInterface> compileProgram(CommandList commands, ChunkShaderOptions options) {
+    protected GlProgram<ChunkShaderInterface> compileProgram(RenderDevice device, ChunkShaderOptions options) {
         GlProgram<ChunkShaderInterface> program = this.programs.get(options);
 
         if (program == null) {
-            this.programs.put(options, program = this.createShader(commands, "blocks/block_layer_opaque", options));
+            this.programs.put(options, program = this.createShader(device, "blocks/block_layer_opaque", options));
         }
 
         return program;
     }
 
-    private GlProgram<ChunkShaderInterface> createShader(CommandList commands, String path, ChunkShaderOptions options) {
+    private GlProgram<ChunkShaderInterface> createShader(RenderDevice device, String path, ChunkShaderOptions options) {
         ShaderConstants constants = options.constants();
 
         GlShader vertShader = null;
         GlShader fragShader = null;
 
-        var loader = new ShaderLoader(RenderDevice.INSTANCE);
+        var loader = new ShaderLoader(device);
 
         try {
             vertShader = loader.loadShader(ShaderType.VERTEX,
@@ -98,7 +95,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
             fragShader = loader.loadShader(ShaderType.FRAGMENT,
                     new Identifier("sodium", path + ".fsh"), constants);
 
-            return commands.createProgram(new GlShader[] { vertShader, fragShader },
+            return device.createProgram(new GlShader[] { vertShader, fragShader },
                     (ctx) -> new ChunkShaderInterface(ctx, options));
         } finally {
             if (vertShader != null) {
@@ -111,13 +108,11 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         }
     }
 
-    protected void begin(CommandList commandList, BlockRenderPass pass) {
-        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass);
+    protected GlProgram<ChunkShaderInterface> getProgram(BlockRenderPass pass) {
+        return this.compileProgram(this.device, new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass));
+    }
 
-        this.activeProgram = this.compileProgram(commandList, options);
-        this.activeProgram.bind();
-
-        var shader = this.activeProgram.getInterface();
+    protected void setShaderParameters(ChunkShaderInterface shader) {
         shader.setup(this.vertexType);
         shader.setDetailParameters(this.detailDistance);
 
@@ -144,9 +139,6 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     }
 
     protected void end() {
-        this.activeProgram.unbind();
-        this.activeProgram = null;
-
         for (Map.Entry<ChunkShaderTextureUnit, GlSampler> entry : this.samplers.entrySet()) {
             entry.getValue().unbindTextureUnit(entry.getKey().id());
         }

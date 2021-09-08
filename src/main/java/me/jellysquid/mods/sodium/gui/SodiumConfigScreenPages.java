@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.gui;
 
 import com.google.common.collect.ImmutableList;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.config.SodiumRenderConfig;
 import me.jellysquid.mods.sodium.config.render.*;
 import me.jellysquid.mods.sodium.render.chunk.arena.staging.MappedStagingBuffer;
-import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.sodium.config.render.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.gui.options.ControlValueFormatter;
 import me.jellysquid.mods.sodium.gui.options.CyclingControl;
@@ -236,7 +236,7 @@ public class SodiumConfigScreenPages {
                         .setTooltip(new TranslatableText("sodium.options.use_persistent_mapping.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
-                        .setEnabled(MappedStagingBuffer.isSupported(RenderDevice.INSTANCE))
+                        .setEnabled(MappedStagingBuffer.isSupported(SodiumRender.DEVICE))
                         .setBinding((opts, value) -> opts.advanced.useAdvancedStagingBuffers = value, opts -> opts.advanced.useAdvancedStagingBuffers)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()

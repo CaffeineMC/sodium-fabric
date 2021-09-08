@@ -2,7 +2,8 @@ package me.jellysquid.mods.thingl.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import me.jellysquid.mods.thingl.GlObject;
-import net.minecraft.util.Identifier;
+import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL20C;
@@ -13,7 +14,9 @@ import org.lwjgl.opengl.GL20C;
 public class GlShader extends GlObject {
     private static final Logger LOGGER = LogManager.getLogger(GlShader.class);
 
-    public GlShader(ShaderType type, String src) {
+    public GlShader(RenderDeviceImpl device, ShaderType type, String src) {
+        super(device);
+
         int handle = GL20C.glCreateShader(type.getId());
         ShaderWorkarounds.safeShaderSource(handle, src);
         GL20C.glCompileShader(handle);

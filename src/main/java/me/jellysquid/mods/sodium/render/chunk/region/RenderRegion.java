@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.render.chunk.region;
 
-import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.render.chunk.arena.AsyncBufferArena;
 import me.jellysquid.mods.sodium.render.chunk.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.render.chunk.arena.SwapBufferArena;
 import me.jellysquid.mods.sodium.render.chunk.arena.staging.StagingBuffer;
-import me.jellysquid.mods.thingl.device.CommandList;
+import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexType;
@@ -18,7 +18,6 @@ import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 import org.joml.FrustumIntersection;
 
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -70,9 +69,9 @@ public class RenderRegion {
         return this.arenas;
     }
 
-    public void deleteResources(CommandList commandList) {
+    public void deleteResources() {
         if (this.arenas != null) {
-            this.arenas.delete(commandList);
+            this.arenas.delete();
             this.arenas = null;
         }
     }
@@ -93,11 +92,11 @@ public class RenderRegion {
         return this.z << REGION_LENGTH_SH << 4;
     }
 
-    public RenderRegionArenas getOrCreateArenas(CommandList commandList) {
+    public RenderRegionArenas getOrCreateArenas() {
         RenderRegionArenas arenas = this.arenas;
 
         if (arenas == null) {
-            this.arenas = (arenas = this.manager.createRegionArenas(commandList));
+            this.arenas = (arenas = this.manager.createRegionArenas(SodiumRender.DEVICE));
         }
 
         return arenas;
@@ -155,24 +154,27 @@ public class RenderRegion {
 
         public final Map<BlockRenderPass, GlTessellation> tessellations = new Reference2ObjectOpenHashMap<>();
 
-        public RenderRegionArenas(CommandList commandList, StagingBuffer stagingBuffer) {
+        private final RenderDevice device;
+
+        public RenderRegionArenas(RenderDevice device, StagingBuffer stagingBuffer) {
             int expectedVertexCount = REGION_SIZE * 756;
             int expectedIndexCount = (expectedVertexCount / 4) * 6;
 
-            this.vertexBuffers = createArena(commandList, expectedVertexCount * ModelVertexType.INSTANCE.getBufferVertexFormat().getStride(), stagingBuffer);
-            this.indexBuffers = createArena(commandList, expectedIndexCount * 4, stagingBuffer);
+            this.device = device;
+            this.vertexBuffers = createArena(device, expectedVertexCount * ModelVertexType.INSTANCE.getBufferVertexFormat().getStride(), stagingBuffer);
+            this.indexBuffers = createArena(device, expectedIndexCount * 4, stagingBuffer);
         }
 
-        public void delete(CommandList commandList) {
-            this.deleteTessellations(commandList);
+        public void delete() {
+            this.deleteTessellations();
 
-            this.vertexBuffers.delete(commandList);
-            this.indexBuffers.delete(commandList);
+            this.vertexBuffers.delete();
+            this.indexBuffers.delete();
         }
 
-        public void deleteTessellations(CommandList commandList) {
+        public void deleteTessellations() {
             for (GlTessellation tessellation : this.tessellations.values()) {
-                commandList.deleteTessellation(tessellation);
+                this.device.deleteTessellation(tessellation);
             }
 
             this.tessellations.clear();
@@ -198,10 +200,10 @@ public class RenderRegion {
             return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
         }
 
-        private static GlBufferArena createArena(CommandList commandList, int initialCapacity, StagingBuffer stagingBuffer) {
+        private static GlBufferArena createArena(RenderDevice device, int initialCapacity, StagingBuffer stagingBuffer) {
             return switch (SodiumClient.options().advanced.arenaMemoryAllocator) {
-                case ASYNC -> new AsyncBufferArena(commandList, initialCapacity, stagingBuffer);
-                case SWAP -> new SwapBufferArena(commandList);
+                case ASYNC -> new AsyncBufferArena(device, initialCapacity, stagingBuffer);
+                case SWAP -> new SwapBufferArena(device);
             };
         }
     }

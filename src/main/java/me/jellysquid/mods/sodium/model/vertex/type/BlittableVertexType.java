@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.model.vertex.type;
 
-import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.model.vertex.VertexSink;
 import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferView;
 
@@ -15,6 +15,6 @@ public interface BlittableVertexType<T extends VertexSink> extends BufferVertexT
     T createBufferWriter(VertexBufferView buffer, boolean direct);
 
     default T createBufferWriter(VertexBufferView buffer) {
-        return this.createBufferWriter(buffer, SodiumClient.isDirectMemoryAccessEnabled());
+        return this.createBufferWriter(buffer, SodiumRender.isDirectMemoryAccessEnabled());
     }
 }

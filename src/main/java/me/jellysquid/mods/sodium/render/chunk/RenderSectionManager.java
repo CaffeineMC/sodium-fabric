@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.interop.vanilla.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.interop.vanilla.world.ClientChunkManagerExtended;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
@@ -35,7 +36,6 @@ import me.jellysquid.mods.sodium.util.collections.FutureQueueDrainingIterator;
 import me.jellysquid.mods.sodium.world.WorldSlice;
 import me.jellysquid.mods.sodium.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.world.cloned.ClonedChunkSectionCache;
-import me.jellysquid.mods.thingl.device.CommandList;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
@@ -108,7 +108,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     private int currentFrame = 0;
     private final double detailFarPlane;
 
-    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, CommandList commandList) {
+    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, RenderDevice device) {
         this.worldRenderer = worldRenderer;
         this.world = world;
 
@@ -118,7 +118,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
 
-        this.regions = new RenderRegionManager(commandList);
+        this.regions = new RenderRegionManager(device);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
@@ -128,7 +128,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         float detailDistance = getDetailDistance(renderDistance);
 
         this.detailFarPlane = getDetailFarPlane(detailDistance);
-        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ModelVertexType.INSTANCE, detailDistance);
+        this.chunkRenderer = new RegionChunkRenderer(SodiumRender.DEVICE, ModelVertexType.INSTANCE, detailDistance);
     }
 
     private static double getDetailFarPlane(float detailDistance) {
@@ -312,12 +312,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     }
 
     public void renderLayer(ChunkRenderMatrices matrices, BlockRenderPass pass, double x, double y, double z) {
-        RenderDevice device = RenderDevice.INSTANCE;
-        CommandList commandList = device.createCommandList();
-
-        this.chunkRenderer.render(matrices, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
-
-        commandList.flush();
+        this.chunkRenderer.render(SodiumRender.DEVICE, matrices, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
     }
 
     public void tickVisibleRenders() {
@@ -349,7 +344,7 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         if (!blockingFutures.isEmpty()) {
             this.needsUpdate = true;
-            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), new FutureQueueDrainingIterator<>(blockingFutures));
+            this.regions.upload(new FutureQueueDrainingIterator<>(blockingFutures));
         }
 
         this.regions.cleanup();
@@ -402,7 +397,7 @@ public class RenderSectionManager implements ChunkStatusListener {
             return false;
         }
 
-        this.regions.upload(RenderDevice.INSTANCE.createCommandList(), it);
+        this.regions.upload(it);
 
         return true;
     }
@@ -434,10 +429,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     public void destroy() {
         this.resetLists();
 
-        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
-            this.regions.delete(commandList);
-        }
-
+        this.regions.delete();
         this.chunkRenderer.delete();
         this.builder.stopWorkers();
     }

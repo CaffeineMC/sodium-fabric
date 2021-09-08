@@ -5,7 +5,7 @@ import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.thingl.buffer.GlBuffer;
 import me.jellysquid.mods.thingl.buffer.GlBufferUsage;
 import me.jellysquid.mods.thingl.buffer.GlMutableBuffer;
-import me.jellysquid.mods.thingl.device.CommandList;
+import me.jellysquid.mods.thingl.device.RenderDevice;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -17,14 +17,16 @@ import java.util.stream.Stream;
 public class SwapBufferArena implements GlBufferArena {
     private final Reference2ObjectMap<GlBufferSegment, StashedData> active = new Reference2ObjectOpenHashMap<>();
 
+    private final RenderDevice device;
     private final GlMutableBuffer deviceBuffer;
     private final GlMutableBuffer stagingBuffer;
 
     private int used;
 
-    public SwapBufferArena(CommandList commandList) {
-        this.deviceBuffer = commandList.createMutableBuffer();
-        this.stagingBuffer = commandList.createMutableBuffer();
+    public SwapBufferArena(RenderDevice device) {
+        this.device = device;
+        this.deviceBuffer = device.createMutableBuffer();
+        this.stagingBuffer = device.createMutableBuffer();
     }
 
     @Override
@@ -51,15 +53,15 @@ public class SwapBufferArena implements GlBufferArena {
     }
 
     @Override
-    public void delete(CommandList commands) {
+    public void delete() {
         for (StashedData data : this.active.values()) {
             data.destroy();
         }
 
         this.active.clear();
 
-        commands.deleteBuffer(this.deviceBuffer);
-        commands.deleteBuffer(this.stagingBuffer);
+        this.device.deleteBuffer(this.deviceBuffer);
+        this.device.deleteBuffer(this.stagingBuffer);
     }
 
     @Override
@@ -73,7 +75,7 @@ public class SwapBufferArena implements GlBufferArena {
     }
 
     @Override
-    public boolean upload(CommandList commandList, Stream<PendingUpload> stream) {
+    public boolean upload(Stream<PendingUpload> stream) {
         List<PendingUpload> uploads = stream.collect(Collectors.toList());
 
         int totalBytes = uploads.stream().mapToInt(PendingUpload::getLength).sum() +
@@ -118,10 +120,10 @@ public class SwapBufferArena implements GlBufferArena {
             this.active.put(seg, stashedData);
         }
 
-        commandList.uploadData(this.stagingBuffer, buffer, GlBufferUsage.STREAM_COPY);
-        commandList.allocateStorage(this.deviceBuffer, buffer.remaining(), GlBufferUsage.STATIC_DRAW);
-        commandList.copyBufferSubData(this.stagingBuffer, this.deviceBuffer, 0, 0, buffer.remaining());
-        commandList.allocateStorage(this.stagingBuffer, 0L, GlBufferUsage.STREAM_COPY);
+        this.device.uploadData(this.stagingBuffer, buffer, GlBufferUsage.STREAM_COPY);
+        this.device.allocateStorage(this.deviceBuffer, buffer.remaining(), GlBufferUsage.STATIC_DRAW);
+        this.device.copyBufferSubData(this.stagingBuffer, this.deviceBuffer, 0, 0, buffer.remaining());
+        this.device.allocateStorage(this.stagingBuffer, 0L, GlBufferUsage.STREAM_COPY);
 
         MemoryUtil.memFree(buffer);
 

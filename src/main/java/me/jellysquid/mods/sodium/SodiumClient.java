@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium;
 
 import me.jellysquid.mods.sodium.config.SodiumRenderConfig;
-import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import me.jellysquid.mods.sodium.interop.fabric.SodiumRenderer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -10,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class SodiumClient {
+
     private static SodiumRenderConfig CONFIG;
     private static Logger LOGGER;
 
@@ -55,7 +55,4 @@ public class SodiumClient {
         return MOD_VERSION;
     }
 
-    public static boolean isDirectMemoryAccessEnabled() {
-        return options().advanced.allowDirectMemoryAccess;
-    }
 }

@@ -1,5 +1,8 @@
 package me.jellysquid.mods.thingl;
 
+import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
+
 /**
  * An abstract object used to represent objects in OpenGL code safely. This class hides the direct handle to a OpenGL
  * object, requiring that it first be checked by all callers to prevent null pointer de-referencing. However, this will
@@ -9,10 +12,11 @@ package me.jellysquid.mods.thingl;
 public abstract class GlObject {
     private static final int INVALID_HANDLE = Integer.MIN_VALUE;
 
+    protected final RenderDeviceImpl device;
     private int handle = INVALID_HANDLE;
 
-    protected GlObject() {
-
+    protected GlObject(RenderDeviceImpl device) {
+        this.device = device;
     }
 
     protected final void setHandle(int handle) {

@@ -1,15 +1,15 @@
 package me.jellysquid.mods.thingl.functions;
 
-import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
 
 public class DeviceFunctions {
     private final BufferStorageFunctions bufferStorageFunctions;
 
-    public DeviceFunctions(RenderDevice device) {
+    public DeviceFunctions(RenderDeviceImpl device) {
         this.bufferStorageFunctions = BufferStorageFunctions.pickBest(device);
     }
 
     public BufferStorageFunctions getBufferStorageFunctions() {
-        return bufferStorageFunctions;
+        return this.bufferStorageFunctions;
     }
 }

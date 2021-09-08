@@ -3,8 +3,8 @@ package me.jellysquid.mods.sodium.render;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.render.chunk.passes.DefaultBlockRenderPasses;
-import me.jellysquid.mods.thingl.device.CommandList;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.chunk.context.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.render.chunk.RenderSectionManager;
@@ -101,10 +101,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     private void loadWorld(ClientWorld world) {
         this.world = world;
-
-        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
-            this.initRenderer(commandList);
-        }
+        this.initRenderer(SodiumRender.DEVICE);
 
         ((ClientChunkManagerExtended) world.getChunkManager()).setListener(this);
     }
@@ -214,10 +211,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     }
 
     public void drawChunkLayer(BlockRenderPass pass, MatrixStack matrixStack, double x, double y, double z) {
-        pass.startDrawing();
-
         this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), pass, x, y, z);
-
     }
 
     public void reload() {
@@ -225,12 +219,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
             return;
         }
 
-        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
-            this.initRenderer(commandList);
-        }
+        this.initRenderer(SodiumRender.DEVICE);
     }
 
-    private void initRenderer(CommandList commandList) {
+    private void initRenderer(RenderDevice device) {
         if (this.renderSectionManager != null) {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
@@ -238,7 +230,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         this.renderDistance = this.client.options.viewDistance;
 
-        this.renderSectionManager = new RenderSectionManager(this, this.world, this.renderDistance, commandList);
+        this.renderSectionManager = new RenderSectionManager(this, this.world, this.renderDistance, device);
         this.renderSectionManager.loadChunks();
     }
 

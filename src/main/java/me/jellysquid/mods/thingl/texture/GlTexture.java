@@ -3,11 +3,15 @@ package me.jellysquid.mods.thingl.texture;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.thingl.GlObject;
+import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11C;
 
 public class GlTexture extends GlObject {
-    public GlTexture()  {
+    public GlTexture(RenderDeviceImpl device)  {
+        super(device);
+
         this.setHandle(TextureUtil.generateTextureId());
     }
 

@@ -3,6 +3,7 @@ package me.jellysquid.mods.thingl.functions;
 import me.jellysquid.mods.thingl.buffer.GlBufferStorageFlags;
 import me.jellysquid.mods.thingl.buffer.GlBufferTarget;
 import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
 import me.jellysquid.mods.thingl.util.EnumBitField;
 import org.lwjgl.opengl.ARBBufferStorage;
 import org.lwjgl.opengl.GL44C;
@@ -28,7 +29,7 @@ public enum BufferStorageFunctions {
         }
     };
 
-    public static BufferStorageFunctions pickBest(RenderDevice device) {
+    public static BufferStorageFunctions pickBest(RenderDeviceImpl device) {
         GLCapabilities capabilities = device.getCapabilities();
 
         if (capabilities.OpenGL44) {
