@@ -6,14 +6,14 @@ public class GlVertexAttributeBinding extends GlVertexAttribute {
     private final int index;
     private final boolean isIntegerType;
 
-    public GlVertexAttributeBinding(ShaderBindingPoint bindingPoint, GlVertexAttribute attribute) {
-        this(bindingPoint, attribute, false);
+    public GlVertexAttributeBinding(int index, GlVertexAttribute attribute) {
+        this(index, attribute, false);
     }
 
-    public GlVertexAttributeBinding(ShaderBindingPoint bindingPoint, GlVertexAttribute attribute, boolean isIntegerType) {
+    public GlVertexAttributeBinding(int index, GlVertexAttribute attribute, boolean isIntegerType) {
         super(attribute.getFormat(), attribute.getSize(), attribute.getCount(), attribute.isNormalized(), attribute.getPointer(), attribute.getStride());
 
-        this.index = bindingPoint.genericAttributeIndex();
+        this.index = index;
         this.isIntegerType = isIntegerType;
     }
 

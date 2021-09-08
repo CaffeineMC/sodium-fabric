@@ -1,4 +1,4 @@
-#version 150 core
+#version 330 core
 #import <sodium:include/fog.glsl>
 
 struct DrawParameters {
@@ -8,11 +8,11 @@ struct DrawParameters {
     vec4 Offset;
 };
 
-in vec4 a_Pos; // The position of the vertex around the model origin
-in vec4 a_Color; // The color of the vertex
-in vec2 a_TexCoord; // The block texture coordinate of the vertex
-in vec2 a_LightCoord; // The light texture coordinate of the vertex
-in int a_Options; // The rendering options for the vertex
+layout(location = 0) in vec4 a_Pos; // The position of the vertex around the model origin
+layout(location = 1) in vec4 a_Color; // The color of the vertex
+layout(location = 2) in vec2 a_TexCoord; // The block texture coordinate of the vertex
+layout(location = 3) in vec2 a_LightCoord; // The light texture coordinate of the vertex
+layout(location = 4) in int a_Options; // The rendering options for the vertex
 
 uniform mat4 u_ProjectionMatrix;
 uniform mat4 u_ModelViewMatrix;

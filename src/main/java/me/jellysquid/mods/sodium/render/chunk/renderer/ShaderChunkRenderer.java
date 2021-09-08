@@ -94,12 +94,6 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
             return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
                     .attachShader(vertShader)
                     .attachShader(fragShader)
-                    .bindAttribute("a_Pos", ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID)
-                    .bindAttribute("a_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
-                    .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE)
-                    .bindAttribute("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
-                    .bindAttribute("a_Options", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_FLAGS)
-                    .bindFragmentData("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
                     .link((shader) -> new ChunkShaderInterface(shader, options));
         } finally {
             vertShader.delete();

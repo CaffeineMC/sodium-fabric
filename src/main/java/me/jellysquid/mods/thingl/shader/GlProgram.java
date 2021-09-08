@@ -114,18 +114,6 @@ public class GlProgram<T> extends GlObject implements ShaderBindingContext {
 
             return new GlProgram<>(this.program, factory);
         }
-
-        public Builder bindAttribute(String name, ShaderBindingPoint binding) {
-            GL20C.glBindAttribLocation(this.program, binding.genericAttributeIndex(), name);
-
-            return this;
-        }
-
-        public Builder bindFragmentData(String name, ShaderBindingPoint binding) {
-            GL30C.glBindFragDataLocation(this.program, binding.genericAttributeIndex(), name);
-
-            return this;
-        }
     }
 
     public interface ProgramFactory<P extends GlProgram> {

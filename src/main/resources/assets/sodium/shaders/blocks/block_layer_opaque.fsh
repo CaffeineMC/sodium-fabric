@@ -1,4 +1,4 @@
-#version 150 core
+#version 330 core
 
 #import <sodium:include/fog.glsl>
 #import <sodium:include/block_material.glsl>
@@ -16,7 +16,7 @@ uniform vec4 u_FogColor; // The color of the shader fog
 uniform float u_FogStart; // The starting position of the shader fog
 uniform float u_FogEnd; // The ending position of the shader fog
 
-out vec4 fragColor; // The output fragment for the color framebuffer
+layout(location = 0) out vec4 fragColor; // The output fragment for the color framebuffer
 
 #ifdef DETAIL
 const float StippleTexResolution = 4.0;
