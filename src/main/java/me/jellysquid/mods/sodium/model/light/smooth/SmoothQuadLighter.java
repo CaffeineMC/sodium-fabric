@@ -125,9 +125,9 @@ public class SmoothQuadLighter implements QuadLighter {
 
             // If the quad is co-planar to the light face, simply interpolate the corner values
             if (MathHelper.approximatelyEquals(depth, 0.0F)) {
-                this.applyAlignedPartialFace(pos, dir, weights, i, out, false);
-            } else if (MathHelper.approximatelyEquals(depth, 1.0F)) {
                 this.applyAlignedPartialFace(pos, dir, weights, i, out, true);
+            } else if (MathHelper.approximatelyEquals(depth, 1.0F)) {
+                this.applyAlignedPartialFace(pos, dir, weights, i, out, false);
             } else {
                 // Blend the occlusion factor between the blocks directly beside this face and the blocks above it
                 // based on how inset the face is. This fixes a few issues with blocks such as farmland and paths.
