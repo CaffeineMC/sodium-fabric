@@ -18,37 +18,35 @@ public class RecordingStateTracker extends CachedStateTracker {
 
     @Override
     public void notifyVertexArrayDeleted(VertexArrayImpl vertexArray) {
+        this.checkState();
+
         super.notifyVertexArrayDeleted(vertexArray);
     }
 
     @Override
     public void notifyBufferDeleted(BufferImpl buffer) {
+        this.checkState();
+
         super.notifyBufferDeleted(buffer);
     }
 
     @Override
     public boolean makeBufferActive(BufferTarget target, int buffer) {
-        if (this.bufferRestoreState[target.ordinal()] == UNASSIGNED_HANDLE) {
-            this.bufferRestoreState[target.ordinal()] = GL11C.glGetInteger(target.getBindingParameter());
-        }
+        this.checkState();
 
         return super.makeBufferActive(target, buffer);
     }
 
     @Override
     public boolean makeVertexArrayActive(int array) {
-        if (this.vertexArrayRestoreState == UNASSIGNED_HANDLE) {
-            this.vertexArrayRestoreState = GL11C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
-        }
+        this.checkState();
 
         return super.makeVertexArrayActive(array);
     }
 
     @Override
     public boolean makeProgramActive(int program) {
-        if (this.programRestoreState == UNASSIGNED_HANDLE) {
-            this.programRestoreState = GL11C.glGetInteger(GL30C.GL_CURRENT_PROGRAM);
-        }
+        this.checkState();
 
         return super.makeProgramActive(program);
     }
@@ -58,17 +56,17 @@ public class RecordingStateTracker extends CachedStateTracker {
             throw new IllegalStateException("Tried to pop state but state tracker is not enabled");
         }
 
-        if (this.vertexArrayRestoreState != UNASSIGNED_HANDLE && this.vertexArrayState != this.vertexArrayRestoreState) {
+        if (this.vertexArrayState != this.vertexArrayRestoreState) {
             GL30C.glBindVertexArray(this.vertexArrayRestoreState);
         }
 
         for (int i = 0; i < BufferTarget.COUNT; i++) {
-            if (this.bufferRestoreState[i] != UNASSIGNED_HANDLE && this.bufferRestoreState[i] != this.bufferState[i]) {
+            if (this.bufferRestoreState[i] != this.bufferState[i]) {
                 GL20C.glBindBuffer(BufferTarget.VALUES[i].getTargetParameter(), this.bufferRestoreState[i]);
             }
         }
 
-        if (this.programRestoreState != UNASSIGNED_HANDLE && this.programState != this.programRestoreState) {
+        if (this.programState != this.programRestoreState) {
             GL20C.glUseProgram(this.programRestoreState);
         }
 
@@ -78,15 +76,24 @@ public class RecordingStateTracker extends CachedStateTracker {
 
     public void reset() {
         Arrays.fill(this.bufferState, UNASSIGNED_HANDLE);
-        Arrays.fill(this.bufferRestoreState, UNASSIGNED_HANDLE);
-
         this.vertexArrayState = UNASSIGNED_HANDLE;
+        this.programState = UNASSIGNED_HANDLE;
+
+        Arrays.fill(this.bufferRestoreState, UNASSIGNED_HANDLE);
         this.vertexArrayRestoreState = UNASSIGNED_HANDLE;
+        this.programRestoreState = UNASSIGNED_HANDLE;
     }
 
     public void push() {
         if (this.active) {
             throw new IllegalStateException("Tried to push state twice (re-entrance is not allowed)");
+        }
+
+        this.programRestoreState = GL11C.glGetInteger(GL30C.GL_CURRENT_PROGRAM);
+        this.vertexArrayRestoreState = GL11C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
+
+        for (BufferTarget target : BufferTarget.VALUES) {
+            this.bufferRestoreState[target.ordinal()] = GL11C.glGetInteger(target.getBindingParameter());
         }
 
         this.active = true;
