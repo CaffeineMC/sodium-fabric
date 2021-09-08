@@ -1,13 +1,13 @@
 package me.jellysquid.mods.sodium.render.chunk.passes;
 
-import net.minecraft.client.render.RenderLayer;
+import me.jellysquid.mods.thingl.pipeline.RenderPipeline;
 
 public class BlockRenderPass {
-    private final RenderLayer layer;
+    private final RenderPipeline pipeline;
     private final boolean translucent;
 
-    BlockRenderPass(RenderLayer layer, boolean translucent) {
-        this.layer = layer;
+    BlockRenderPass(RenderPipeline pipeline, boolean translucent) {
+        this.pipeline = pipeline;
         this.translucent = translucent;
     }
 
@@ -16,13 +16,8 @@ public class BlockRenderPass {
     }
 
     @Deprecated(forRemoval = true)
-    public void endDrawing() {
-        this.layer.endDrawing();
-    }
-
-    @Deprecated(forRemoval = true)
     public void startDrawing() {
-        this.layer.startDrawing();
+        this.pipeline.enable();
     }
 
     @Deprecated

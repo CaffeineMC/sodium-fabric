@@ -218,7 +218,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
         this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), pass, x, y, z);
 
-        pass.endDrawing();
     }
 
     public void reload() {

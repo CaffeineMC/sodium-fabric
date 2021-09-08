@@ -9,7 +9,7 @@ import me.jellysquid.mods.sodium.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.occlusion.BlockOcclusionCache;
-import me.jellysquid.mods.sodium.render.pipeline.FluidRenderer;
+import me.jellysquid.mods.sodium.render.FluidRenderer;
 import me.jellysquid.mods.sodium.render.renderer.transforms.ModelOffsetTransform;
 import me.jellysquid.mods.sodium.world.WorldSlice;
 import me.jellysquid.mods.sodium.world.cloned.ChunkRenderContext;

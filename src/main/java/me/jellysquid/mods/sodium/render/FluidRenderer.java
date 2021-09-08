@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.render.pipeline;
+package me.jellysquid.mods.sodium.render;
 
 import me.jellysquid.mods.sodium.interop.fabric.SodiumRenderer;
 import me.jellysquid.mods.sodium.model.quad.QuadColorizer;
