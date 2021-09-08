@@ -6,12 +6,22 @@ import org.lwjgl.opengl.GL20C;
  * An enumeration over the supported OpenGL shader types.
  */
 public enum ShaderType {
-    VERTEX(GL20C.GL_VERTEX_SHADER),
-    FRAGMENT(GL20C.GL_FRAGMENT_SHADER);
+    VERTEX(GL20C.GL_VERTEX_SHADER, ".v.glsl"),
+    FRAGMENT(GL20C.GL_FRAGMENT_SHADER, ".f.glsl");
 
-    public final int id;
+    private final int id;
+    private final String extension;
 
-    ShaderType(int id) {
+    ShaderType(int id, String extension) {
         this.id = id;
+        this.extension = extension;
+    }
+
+    public int getId() {
+        return this.id;
+    }
+
+    public String getExtension() {
+        return this.extension;
     }
 }

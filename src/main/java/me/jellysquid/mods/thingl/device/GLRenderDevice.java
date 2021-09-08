@@ -3,6 +3,10 @@ package me.jellysquid.mods.thingl.device;
 import me.jellysquid.mods.thingl.array.GlVertexArray;
 import me.jellysquid.mods.thingl.buffer.*;
 import me.jellysquid.mods.thingl.functions.DeviceFunctions;
+import me.jellysquid.mods.thingl.shader.GlProgram;
+import me.jellysquid.mods.thingl.shader.GlShader;
+import me.jellysquid.mods.thingl.shader.ShaderBindingContext;
+import me.jellysquid.mods.thingl.shader.ShaderType;
 import me.jellysquid.mods.thingl.state.GlStateTracker;
 import me.jellysquid.mods.thingl.sync.GlFence;
 import me.jellysquid.mods.thingl.tessellation.*;
@@ -12,6 +16,7 @@ import org.lwjgl.opengl.*;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.function.Function;
 
 public class GLRenderDevice implements RenderDevice {
     private final GlStateTracker stateTracker = new GlStateTracker();
@@ -258,6 +263,16 @@ public class GLRenderDevice implements RenderDevice {
             tessellation.init(this);
 
             return tessellation;
+        }
+
+        @Override
+        public GlShader createShader(ShaderType type, String source) {
+            return new GlShader(type, source);
+        }
+
+        @Override
+        public <T> GlProgram<T> createProgram(GlShader[] shaders, Function<ShaderBindingContext, T> interfaceFactory) {
+            return new GlProgram<>(shaders, interfaceFactory);
         }
     }
 

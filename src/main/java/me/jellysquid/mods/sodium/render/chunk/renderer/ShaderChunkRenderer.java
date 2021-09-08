@@ -2,7 +2,9 @@ package me.jellysquid.mods.sodium.render.chunk.renderer;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import me.jellysquid.mods.sodium.render.shader.ShaderLoader;
 import me.jellysquid.mods.thingl.attribute.GlVertexFormat;
+import me.jellysquid.mods.thingl.device.CommandList;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.shader.*;
 import me.jellysquid.mods.thingl.texture.GlSampler;
@@ -71,40 +73,48 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         stippleSampler.setParameter(GL33C.GL_TEXTURE_WRAP_T, GL33C.GL_REPEAT);
     }
 
-    protected GlProgram<ChunkShaderInterface> compileProgram(ChunkShaderOptions options) {
+    protected GlProgram<ChunkShaderInterface> compileProgram(CommandList commands, ChunkShaderOptions options) {
         GlProgram<ChunkShaderInterface> program = this.programs.get(options);
 
         if (program == null) {
-            this.programs.put(options, program = this.createShader("blocks/block_layer_opaque", options));
+            this.programs.put(options, program = this.createShader(commands, "blocks/block_layer_opaque", options));
         }
 
         return program;
     }
 
-    private GlProgram<ChunkShaderInterface> createShader(String path, ChunkShaderOptions options) {
+    private GlProgram<ChunkShaderInterface> createShader(CommandList commands, String path, ChunkShaderOptions options) {
         ShaderConstants constants = options.constants();
 
-        GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX,
-                new Identifier("sodium", path + ".vsh"), constants);
-        
-        GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT,
-                new Identifier("sodium", path + ".fsh"), constants);
+        GlShader vertShader = null;
+        GlShader fragShader = null;
+
+        var loader = new ShaderLoader(RenderDevice.INSTANCE);
 
         try {
-            return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
-                    .attachShader(vertShader)
-                    .attachShader(fragShader)
-                    .link((shader) -> new ChunkShaderInterface(shader, options));
+            vertShader = loader.loadShader(ShaderType.VERTEX,
+                    new Identifier("sodium", path + ".vsh"), constants);
+
+            fragShader = loader.loadShader(ShaderType.FRAGMENT,
+                    new Identifier("sodium", path + ".fsh"), constants);
+
+            return commands.createProgram(new GlShader[] { vertShader, fragShader },
+                    (ctx) -> new ChunkShaderInterface(ctx, options));
         } finally {
-            vertShader.delete();
-            fragShader.delete();
+            if (vertShader != null) {
+                vertShader.delete();
+            }
+
+            if (fragShader != null) {
+                fragShader.delete();
+            }
         }
     }
 
-    protected void begin(BlockRenderPass pass) {
+    protected void begin(CommandList commandList, BlockRenderPass pass) {
         ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass);
 
-        this.activeProgram = this.compileProgram(options);
+        this.activeProgram = this.compileProgram(commandList, options);
         this.activeProgram.bind();
 
         var shader = this.activeProgram.getInterface();

@@ -2,13 +2,19 @@ package me.jellysquid.mods.thingl.device;
 
 import me.jellysquid.mods.thingl.array.GlVertexArray;
 import me.jellysquid.mods.thingl.buffer.*;
+import me.jellysquid.mods.thingl.shader.GlProgram;
+import me.jellysquid.mods.thingl.shader.GlShader;
+import me.jellysquid.mods.thingl.shader.ShaderBindingContext;
+import me.jellysquid.mods.thingl.shader.ShaderType;
 import me.jellysquid.mods.thingl.sync.GlFence;
 import me.jellysquid.mods.thingl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.thingl.tessellation.GlTessellation;
 import me.jellysquid.mods.thingl.tessellation.TessellationBinding;
 import me.jellysquid.mods.thingl.util.EnumBitField;
+import net.minecraft.util.Identifier;
 
 import java.nio.ByteBuffer;
+import java.util.function.Function;
 
 public interface CommandList extends AutoCloseable {
     GlMutableBuffer createMutableBuffer();
@@ -16,6 +22,10 @@ public interface CommandList extends AutoCloseable {
     GlImmutableBuffer createImmutableBuffer(long bufferSize, EnumBitField<GlBufferStorageFlags> flags);
 
     GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings);
+
+    GlShader createShader(ShaderType type, String source);
+
+    <T> GlProgram<T> createProgram(GlShader[] shaders, Function<ShaderBindingContext, T> interfaceFactory);
 
     void bindVertexArray(GlVertexArray array);
 

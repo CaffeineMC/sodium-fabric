@@ -13,19 +13,15 @@ import org.lwjgl.opengl.GL20C;
 public class GlShader extends GlObject {
     private static final Logger LOGGER = LogManager.getLogger(GlShader.class);
 
-    private final Identifier name;
-
-    public GlShader(ShaderType type, Identifier name, String src) {
-        this.name = name;
-
-        int handle = GL20C.glCreateShader(type.id);
+    public GlShader(ShaderType type, String src) {
+        int handle = GL20C.glCreateShader(type.getId());
         ShaderWorkarounds.safeShaderSource(handle, src);
         GL20C.glCompileShader(handle);
 
         String log = GL20C.glGetShaderInfoLog(handle);
 
         if (!log.isEmpty()) {
-            LOGGER.warn("Shader compilation log for " + this.name + ": " + log);
+            LOGGER.warn("Shader compilation log: " + log);
         }
 
         int result = GlStateManager.glGetShaderi(handle, GL20C.GL_COMPILE_STATUS);
@@ -35,10 +31,6 @@ public class GlShader extends GlObject {
         }
 
         this.setHandle(handle);
-    }
-
-    public Identifier getName() {
-        return this.name;
     }
 
     public void delete() {

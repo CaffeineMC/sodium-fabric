@@ -22,17 +22,34 @@ public class GlProgram<T> extends GlObject implements ShaderBindingContext {
 
     private final T shaderInterface;
 
-    protected GlProgram(int program, Function<ShaderBindingContext, T> interfaceFactory) {
+    public GlProgram(GlShader[] shaders, Function<ShaderBindingContext, T> interfaceFactory) {
+        int program = GL20C.glCreateProgram();
+
         this.setHandle(program);
+
+        for (GlShader shader : shaders) {
+            GL20C.glAttachShader(program, shader.handle());
+        }
+
+        GL20C.glLinkProgram(program);
+
+        String log = GL20C.glGetProgramInfoLog(program);
+
+        if (!log.isEmpty()) {
+            LOGGER.warn("Program link log: " + log);
+        }
+
+        int result = GlStateManager.glGetProgrami(program, GL20C.GL_LINK_STATUS);
+
+        if (result != GL20C.GL_TRUE) {
+            throw new RuntimeException("Shader program linking failed, see log for details");
+        }
+
         this.shaderInterface = interfaceFactory.apply(this);
     }
 
     public T getInterface() {
         return this.shaderInterface;
-    }
-
-    public static Builder builder(Identifier identifier) {
-        return new Builder(identifier);
     }
 
     public void bind() {
@@ -71,52 +88,5 @@ public class GlProgram<T> extends GlObject implements ShaderBindingContext {
         GL32C.glUniformBlockBinding(this.handle(), index, bindingPoint);
 
         return new GlUniformBlock(bindingPoint);
-    }
-
-    public static class Builder {
-        private final Identifier name;
-        private final int program;
-
-        public Builder(Identifier name) {
-            this.name = name;
-            this.program = GL20C.glCreateProgram();
-        }
-
-        public Builder attachShader(GlShader shader) {
-            GL20C.glAttachShader(this.program, shader.handle());
-
-            return this;
-        }
-
-        /**
-         * Links the attached shaders to this program and returns a user-defined container which wraps the shader
-         * program. This container can, for example, provide methods for updating the specific uniforms of that shader
-         * set.
-         *
-         * @param factory The factory which will create the shader program's interface
-         * @param <U> The interface type for the shader program
-         * @return An instantiated shader container as provided by the factory
-         */
-        public <U> GlProgram<U> link(Function<ShaderBindingContext, U> factory) {
-            GL20C.glLinkProgram(this.program);
-
-            String log = GL20C.glGetProgramInfoLog(this.program);
-
-            if (!log.isEmpty()) {
-                LOGGER.warn("Program link log for " + this.name + ": " + log);
-            }
-
-            int result = GlStateManager.glGetProgrami(this.program, GL20C.GL_LINK_STATUS);
-
-            if (result != GL20C.GL_TRUE) {
-                throw new RuntimeException("Shader program linking failed, see log for details");
-            }
-
-            return new GlProgram<>(this.program, factory);
-        }
-    }
-
-    public interface ProgramFactory<P extends GlProgram> {
-        P create(int handle);
     }
 }

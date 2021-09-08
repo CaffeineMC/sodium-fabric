@@ -9,6 +9,10 @@ public class ShaderConstants {
         this.defines = defines;
     }
 
+    public static ShaderConstants empty() {
+        return new ShaderConstants(Collections.emptyList());
+    }
+
     public List<String> getDefineStrings() {
         return this.defines;
     }

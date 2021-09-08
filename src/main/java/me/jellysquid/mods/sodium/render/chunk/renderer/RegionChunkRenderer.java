@@ -93,7 +93,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     public void render(ChunkRenderMatrices matrices, CommandList commandList,
                        ChunkRenderList list, BlockRenderPass pass,
                        ChunkCameraContext camera) {
-        super.begin(pass);
+        super.begin(commandList, pass);
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();
         shader.setProjectionMatrix(matrices.projection());
@@ -103,14 +103,14 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             RenderRegion region = entry.getKey();
             List<RenderSection> regionSections = entry.getValue();
 
-            if (!buildDrawBatches(regionSections, pass, camera)) {
+            if (!this.buildDrawBatches(regionSections, pass, camera)) {
                 continue;
             }
 
-            this.setModelMatrixUniforms(shader, matrices, region, camera);
-
             GlTessellation tessellation = this.createTessellationForRegion(commandList, region.getArenas(), pass);
-            executeDrawBatches(commandList, tessellation);
+
+            this.setModelMatrixUniforms(shader, matrices, region, camera);
+            this.executeDrawBatches(commandList, tessellation);
         }
         
         super.end();
