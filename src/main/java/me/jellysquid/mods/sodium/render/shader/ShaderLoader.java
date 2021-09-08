@@ -1,7 +1,8 @@
 package me.jellysquid.mods.sodium.render.shader;
 
 import me.jellysquid.mods.thingl.device.RenderDevice;
-import me.jellysquid.mods.thingl.shader.GlShader;
+import me.jellysquid.mods.thingl.shader.Shader;
+import me.jellysquid.mods.thingl.shader.ShaderImpl;
 import me.jellysquid.mods.thingl.shader.ShaderConstants;
 import me.jellysquid.mods.thingl.shader.ShaderType;
 import net.minecraft.util.Identifier;
@@ -28,7 +29,7 @@ public class ShaderLoader {
      * @param constants A list of constants for shader specialization
      * @return An OpenGL shader object compiled with the given user defines
      */
-    public GlShader loadShader(ShaderType type, Identifier name, ShaderConstants constants) {
+    public Shader loadShader(ShaderType type, Identifier name, ShaderConstants constants) {
         return this.device.createShader(type, this.parseShader(name, constants));
     }
 

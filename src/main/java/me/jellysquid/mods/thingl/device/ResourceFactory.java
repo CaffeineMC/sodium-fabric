@@ -1,36 +1,33 @@
 package me.jellysquid.mods.thingl.device;
 
-import me.jellysquid.mods.thingl.buffer.GlBufferStorageFlags;
-import me.jellysquid.mods.thingl.buffer.GlImmutableBuffer;
-import me.jellysquid.mods.thingl.buffer.GlMutableBuffer;
-import me.jellysquid.mods.thingl.shader.GlProgram;
-import me.jellysquid.mods.thingl.shader.GlShader;
-import me.jellysquid.mods.thingl.shader.ShaderBindingContext;
-import me.jellysquid.mods.thingl.shader.ShaderType;
-import me.jellysquid.mods.thingl.sync.GlFence;
-import me.jellysquid.mods.thingl.tessellation.GlPrimitiveType;
-import me.jellysquid.mods.thingl.tessellation.GlTessellation;
+import me.jellysquid.mods.thingl.buffer.BufferStorageFlags;
+import me.jellysquid.mods.thingl.buffer.ImmutableBuffer;
+import me.jellysquid.mods.thingl.buffer.MutableBuffer;
+import me.jellysquid.mods.thingl.shader.*;
+import me.jellysquid.mods.thingl.sync.Fence;
+import me.jellysquid.mods.thingl.tessellation.PrimitiveType;
+import me.jellysquid.mods.thingl.tessellation.Tessellation;
 import me.jellysquid.mods.thingl.tessellation.TessellationBinding;
-import me.jellysquid.mods.thingl.texture.GlSampler;
-import me.jellysquid.mods.thingl.texture.GlTexture;
+import me.jellysquid.mods.thingl.texture.Sampler;
+import me.jellysquid.mods.thingl.texture.Texture;
 import me.jellysquid.mods.thingl.util.EnumBitField;
 
 import java.util.function.Function;
 
 public interface ResourceFactory {
-    GlShader createShader(ShaderType type, String source);
+    Shader createShader(ShaderType type, String source);
 
-    <T> GlProgram<T> createProgram(GlShader[] shaders, Function<ShaderBindingContext, T> interfaceFactory);
+    <T> Program<T> createProgram(Shader[] shaders, Function<ShaderBindingContext, T> interfaceFactory);
 
-    GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings);
+    Tessellation createTessellation(PrimitiveType primitiveType, TessellationBinding[] bindings);
 
-    GlMutableBuffer createMutableBuffer();
+    MutableBuffer createMutableBuffer();
 
-    GlImmutableBuffer createImmutableBuffer(long bufferSize, EnumBitField<GlBufferStorageFlags> flags);
+    ImmutableBuffer createImmutableBuffer(long bufferSize, EnumBitField<BufferStorageFlags> flags);
 
-    GlSampler createSampler();
+    Sampler createSampler();
 
-    GlFence createFence();
+    Fence createFence();
 
-    GlTexture createTexture();
+    Texture createTexture();
 }

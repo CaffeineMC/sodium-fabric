@@ -1,12 +1,13 @@
 package me.jellysquid.mods.sodium.render.chunk.shader;
 
 import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexCompression;
-import me.jellysquid.mods.thingl.buffer.GlMutableBuffer;
+import me.jellysquid.mods.thingl.buffer.MutableBuffer;
+import me.jellysquid.mods.thingl.buffer.MutableBufferImpl;
 import me.jellysquid.mods.thingl.shader.ShaderBindingContext;
 import me.jellysquid.mods.thingl.shader.uniform.GlUniformBlock;
-import me.jellysquid.mods.thingl.shader.uniform.GlUniformFloat;
-import me.jellysquid.mods.thingl.shader.uniform.GlUniformInt;
-import me.jellysquid.mods.thingl.shader.uniform.GlUniformMatrix4f;
+import me.jellysquid.mods.thingl.shader.uniform.UniformFloat;
+import me.jellysquid.mods.thingl.shader.uniform.UniformInt;
+import me.jellysquid.mods.thingl.shader.uniform.UniformMatrix4F;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import org.joml.Matrix4f;
 
@@ -14,12 +15,12 @@ import org.joml.Matrix4f;
  * A forward-rendering shader program for chunks.
  */
 public class ChunkShaderInterface {
-    private final GlUniformFloat uniformModelScale;
-    private final GlUniformFloat uniformModelOffset;
-    private final GlUniformFloat uniformTextureScale;
+    private final UniformFloat uniformModelScale;
+    private final UniformFloat uniformModelOffset;
+    private final UniformFloat uniformTextureScale;
 
-    private final GlUniformMatrix4f uniformModelViewMatrix;
-    private final GlUniformMatrix4f uniformProjectionMatrix;
+    private final UniformMatrix4F uniformModelViewMatrix;
+    private final UniformMatrix4F uniformProjectionMatrix;
 
     private final GlUniformBlock uniformBlockDrawParameters;
 
@@ -28,19 +29,19 @@ public class ChunkShaderInterface {
 
     private final DetailedShaderInterface detailBlock;
 
-    private final GlUniformInt uniformBlockTex;
-    private final GlUniformInt uniformLightTex;
+    private final UniformInt uniformBlockTex;
+    private final UniformInt uniformLightTex;
 
     public ChunkShaderInterface(ShaderBindingContext context, ChunkShaderOptions options) {
-        this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new);
-        this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", GlUniformMatrix4f::new);
+        this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", UniformMatrix4F::new);
+        this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", UniformMatrix4F::new);
 
-        this.uniformBlockTex = context.bindUniform("u_BlockTex", GlUniformInt::new);
-        this.uniformLightTex = context.bindUniform("u_LightTex", GlUniformInt::new);
+        this.uniformBlockTex = context.bindUniform("u_BlockTex", UniformInt::new);
+        this.uniformLightTex = context.bindUniform("u_LightTex", UniformInt::new);
 
-        this.uniformModelScale = context.bindUniform("u_ModelScale", GlUniformFloat::new);
-        this.uniformModelOffset = context.bindUniform("u_ModelOffset", GlUniformFloat::new);
-        this.uniformTextureScale = context.bindUniform("u_TextureScale", GlUniformFloat::new);
+        this.uniformModelScale = context.bindUniform("u_ModelScale", UniformFloat::new);
+        this.uniformModelOffset = context.bindUniform("u_ModelOffset", UniformFloat::new);
+        this.uniformTextureScale = context.bindUniform("u_TextureScale", UniformFloat::new);
 
         this.uniformBlockDrawParameters = context.bindUniformBlock("ubo_DrawParameters", 0);
 
@@ -71,7 +72,7 @@ public class ChunkShaderInterface {
         this.uniformModelViewMatrix.set(matrix);
     }
 
-    public void setDrawUniforms(GlMutableBuffer buffer) {
+    public void setDrawUniforms(MutableBuffer buffer) {
         this.uniformBlockDrawParameters.bindBuffer(buffer);
     }
 
@@ -82,15 +83,15 @@ public class ChunkShaderInterface {
     }
 
     public static class DetailedShaderInterface {
-        private final GlUniformFloat uniformDetailNearPlane;
-        private final GlUniformFloat uniformDetailFarPlane;
-        private final GlUniformInt uniformStippleTex;
+        private final UniformFloat uniformDetailNearPlane;
+        private final UniformFloat uniformDetailFarPlane;
+        private final UniformInt uniformStippleTex;
 
         public DetailedShaderInterface(ShaderBindingContext context) {
-            this.uniformDetailNearPlane = context.bindUniform("u_DetailNearPlane", GlUniformFloat::new);
-            this.uniformDetailFarPlane = context.bindUniform("u_DetailFarPlane", GlUniformFloat::new);
+            this.uniformDetailNearPlane = context.bindUniform("u_DetailNearPlane", UniformFloat::new);
+            this.uniformDetailFarPlane = context.bindUniform("u_DetailFarPlane", UniformFloat::new);
 
-            this.uniformStippleTex = context.bindUniform("u_StippleTex", GlUniformInt::new);
+            this.uniformStippleTex = context.bindUniform("u_StippleTex", UniformInt::new);
         }
 
         public void setDetailDistance(float distance) {

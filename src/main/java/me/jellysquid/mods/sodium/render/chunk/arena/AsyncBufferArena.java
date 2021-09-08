@@ -1,9 +1,7 @@
 package me.jellysquid.mods.sodium.render.chunk.arena;
 
 import me.jellysquid.mods.sodium.render.chunk.arena.staging.StagingBuffer;
-import me.jellysquid.mods.thingl.buffer.GlBuffer;
-import me.jellysquid.mods.thingl.buffer.GlBufferUsage;
-import me.jellysquid.mods.thingl.buffer.GlMutableBuffer;
+import me.jellysquid.mods.thingl.buffer.*;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 
 import java.nio.ByteBuffer;
@@ -19,13 +17,13 @@ import java.util.stream.Stream;
 public class AsyncBufferArena implements GlBufferArena {
     static final boolean CHECK_ASSERTIONS = false;
 
-    private static final GlBufferUsage BUFFER_USAGE = GlBufferUsage.STATIC_DRAW;
+    private static final BufferUsage BUFFER_USAGE = BufferUsage.STATIC_DRAW;
 
     private final int resizeIncrement;
 
     private final RenderDevice device;
     private final StagingBuffer stagingBuffer;
-    private GlMutableBuffer arenaBuffer;
+    private MutableBuffer arenaBuffer;
 
     private GlBufferSegment head;
 
@@ -118,8 +116,8 @@ public class AsyncBufferArena implements GlBufferArena {
     }
 
     private void transferSegments(Collection<PendingBufferCopyCommand> list, int capacity) {
-        GlMutableBuffer srcBufferObj = this.arenaBuffer;
-        GlMutableBuffer dstBufferObj = this.device.createMutableBuffer();
+        MutableBuffer srcBufferObj = this.arenaBuffer;
+        MutableBuffer dstBufferObj = this.device.createMutableBuffer();
 
         this.device.allocateStorage(dstBufferObj, capacity, BUFFER_USAGE);
 
@@ -255,7 +253,7 @@ public class AsyncBufferArena implements GlBufferArena {
     }
 
     @Override
-    public GlBuffer getBufferObject() {
+    public Buffer getBufferObject() {
         return this.arenaBuffer;
     }
 
@@ -263,7 +261,7 @@ public class AsyncBufferArena implements GlBufferArena {
     public boolean upload(Stream<PendingUpload> stream) {
         // Record the buffer object before we start any work
         // If the arena needs to re-allocate a buffer, this will allow us to check and return an appropriate flag
-        GlBuffer buffer = this.arenaBuffer;
+        Buffer buffer = this.arenaBuffer;
 
         // A linked list is used as we'll be randomly removing elements and want O(1) performance
         List<PendingUpload> queue = stream.collect(Collectors.toCollection(LinkedList::new));

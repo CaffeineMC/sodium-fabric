@@ -6,17 +6,17 @@ import me.jellysquid.mods.sodium.util.MathUtil;
 import me.jellysquid.mods.thingl.buffer.*;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.functions.BufferStorageFunctions;
-import me.jellysquid.mods.thingl.sync.GlFence;
+import me.jellysquid.mods.thingl.sync.Fence;
 import me.jellysquid.mods.thingl.util.EnumBitField;
 
 import java.nio.ByteBuffer;
 
 public class MappedStagingBuffer implements StagingBuffer {
-    private static final EnumBitField<GlBufferStorageFlags> STORAGE_FLAGS =
-            EnumBitField.of(GlBufferStorageFlags.PERSISTENT, GlBufferStorageFlags.CLIENT_STORAGE, GlBufferStorageFlags.MAP_WRITE, GlBufferStorageFlags.COHERENT);
+    private static final EnumBitField<BufferStorageFlags> STORAGE_FLAGS =
+            EnumBitField.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.CLIENT_STORAGE, BufferStorageFlags.MAP_WRITE, BufferStorageFlags.COHERENT);
 
-    private static final EnumBitField<GlBufferMapFlags> MAP_FLAGS =
-            EnumBitField.of(GlBufferMapFlags.PERSISTENT, GlBufferMapFlags.INVALIDATE_BUFFER, GlBufferMapFlags.WRITE, GlBufferMapFlags.COHERENT);
+    private static final EnumBitField<BufferMapFlags> MAP_FLAGS =
+            EnumBitField.of(BufferMapFlags.PERSISTENT, BufferMapFlags.INVALIDATE_BUFFER, BufferMapFlags.WRITE, BufferMapFlags.COHERENT);
 
     private final FallbackStagingBuffer fallbackStagingBuffer;
 
@@ -35,8 +35,8 @@ public class MappedStagingBuffer implements StagingBuffer {
     }
 
     public MappedStagingBuffer(RenderDevice device, int capacity) {
-        GlImmutableBuffer buffer = device.createImmutableBuffer(capacity, STORAGE_FLAGS);
-        GlBufferMapping map = device.mapBuffer(buffer, 0, capacity, MAP_FLAGS);
+        ImmutableBuffer buffer = device.createImmutableBuffer(capacity, STORAGE_FLAGS);
+        BufferMapping map = device.mapBuffer(buffer, 0, capacity, MAP_FLAGS);
 
         this.device = device;
         this.mappedBuffer = new MappedBuffer(buffer, map);
@@ -50,7 +50,7 @@ public class MappedStagingBuffer implements StagingBuffer {
     }
 
     @Override
-    public void enqueueCopy(ByteBuffer data, GlBuffer dst, long writeOffset) {
+    public void enqueueCopy(ByteBuffer data, Buffer dst, long writeOffset) {
         int length = data.remaining();
 
         if (length > this.remaining) {
@@ -77,7 +77,7 @@ public class MappedStagingBuffer implements StagingBuffer {
         this.remaining -= length;
     }
 
-    private void addTransfer(ByteBuffer data, GlBuffer dst, long readOffset, long writeOffset) {
+    private void addTransfer(ByteBuffer data, Buffer dst, long readOffset, long writeOffset) {
         this.mappedBuffer.map.write(data, (int) readOffset);
         this.pendingCopies.enqueue(new CopyCommand(dst, readOffset, writeOffset, data.remaining()));
     }
@@ -121,15 +121,15 @@ public class MappedStagingBuffer implements StagingBuffer {
         }
     }
 
-    private record CopyCommand(GlBuffer buffer, long readOffset, long writeOffset, long bytes) {
+    private record CopyCommand(Buffer buffer, long readOffset, long writeOffset, long bytes) {
     }
 
     private class MappedBuffer {
-        private final GlImmutableBuffer buffer;
-        private final GlBufferMapping map;
+        private final ImmutableBuffer buffer;
+        private final BufferMapping map;
 
-        private MappedBuffer(GlImmutableBuffer buffer,
-                             GlBufferMapping map) {
+        private MappedBuffer(ImmutableBuffer buffer,
+                             BufferMapping map) {
             this.buffer = buffer;
             this.map = map;
         }
@@ -140,7 +140,7 @@ public class MappedStagingBuffer implements StagingBuffer {
         }
     }
 
-    private record FencedMemoryRegion(GlFence fence, int length) {
+    private record FencedMemoryRegion(Fence fence, int length) {
 
     }
 

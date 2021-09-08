@@ -1,17 +1,17 @@
 package me.jellysquid.mods.thingl.tessellation;
 
-import me.jellysquid.mods.thingl.attribute.GlVertexAttributeBinding;
-import me.jellysquid.mods.thingl.buffer.GlBuffer;
-import me.jellysquid.mods.thingl.buffer.GlBufferTarget;
+import me.jellysquid.mods.thingl.attribute.VertexAttributeBinding;
+import me.jellysquid.mods.thingl.buffer.Buffer;
+import me.jellysquid.mods.thingl.buffer.BufferTarget;
 
-public record TessellationBinding(GlBufferTarget target,
-                                  GlBuffer buffer,
-                                  GlVertexAttributeBinding[] attributeBindings) {
-    public static TessellationBinding forVertexBuffer(GlBuffer buffer, GlVertexAttributeBinding[] attributes) {
-        return new TessellationBinding(GlBufferTarget.ARRAY_BUFFER, buffer, attributes);
+public record TessellationBinding(BufferTarget target,
+                                  Buffer buffer,
+                                  VertexAttributeBinding[] attributeBindings) {
+    public static TessellationBinding forVertexBuffer(Buffer buffer, VertexAttributeBinding[] attributes) {
+        return new TessellationBinding(BufferTarget.ARRAY_BUFFER, buffer, attributes);
     }
 
-    public static TessellationBinding forElementBuffer(GlBuffer buffer) {
-        return new TessellationBinding(GlBufferTarget.ELEMENT_BUFFER, buffer, new GlVertexAttributeBinding[0]);
+    public static TessellationBinding forElementBuffer(Buffer buffer) {
+        return new TessellationBinding(BufferTarget.ELEMENT_BUFFER, buffer, new VertexAttributeBinding[0]);
     }
 }

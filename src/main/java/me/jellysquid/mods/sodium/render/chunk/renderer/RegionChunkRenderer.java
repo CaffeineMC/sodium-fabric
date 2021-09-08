@@ -2,21 +2,11 @@ package me.jellysquid.mods.sodium.render.chunk.renderer;
 
 import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.SodiumClient;
-import me.jellysquid.mods.thingl.attribute.GlVertexAttributeBinding;
-import me.jellysquid.mods.thingl.buffer.GlBufferUsage;
-import me.jellysquid.mods.thingl.buffer.GlMutableBuffer;
-import me.jellysquid.mods.thingl.device.*;
-import me.jellysquid.mods.thingl.lists.TessellationCommandList;
-import me.jellysquid.mods.thingl.tessellation.GlIndexType;
-import me.jellysquid.mods.thingl.tessellation.GlPrimitiveType;
-import me.jellysquid.mods.thingl.tessellation.GlTessellation;
-import me.jellysquid.mods.thingl.tessellation.TessellationBinding;
-import me.jellysquid.mods.thingl.util.ElementRange;
 import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
-import me.jellysquid.mods.sodium.render.chunk.*;
-import me.jellysquid.mods.sodium.render.chunk.context.ChunkCameraContext;
 import me.jellysquid.mods.sodium.render.chunk.ChunkRenderList;
+import me.jellysquid.mods.sodium.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.render.chunk.context.ChunkCameraContext;
 import me.jellysquid.mods.sodium.render.chunk.context.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.render.chunk.format.ChunkMeshAttribute;
@@ -24,6 +14,13 @@ import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
+import me.jellysquid.mods.thingl.attribute.VertexAttributeBinding;
+import me.jellysquid.mods.thingl.buffer.BufferUsage;
+import me.jellysquid.mods.thingl.buffer.MutableBuffer;
+import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.thingl.lists.TessellationCommandList;
+import me.jellysquid.mods.thingl.tessellation.*;
+import me.jellysquid.mods.thingl.util.ElementRange;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 
@@ -33,34 +30,34 @@ import java.util.Map;
 
 public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final MultiDrawBatch[] batches;
-    private final GlVertexAttributeBinding[] vertexAttributeBindings;
+    private final VertexAttributeBinding[] vertexAttributeBindings;
 
-    private final GlMutableBuffer chunkInfoBuffer;
+    private final MutableBuffer chunkInfoBuffer;
     private final boolean isBlockFaceCullingEnabled = SodiumClient.options().advanced.useBlockFaceCulling;
 
     public RegionChunkRenderer(RenderDevice device, ChunkVertexType vertexType, float detailDistance) {
         super(device, vertexType, detailDistance);
 
-        this.vertexAttributeBindings = new GlVertexAttributeBinding[] {
-                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID,
+        this.vertexAttributeBindings = new VertexAttributeBinding[] {
+                new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID,
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_ID)),
-                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
+                new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.COLOR)),
-                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
+                new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.BLOCK_TEXTURE)),
-                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,
+                new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_TEXTURE)),
-                new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_FLAGS,
+                new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_FLAGS,
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.BLOCK_FLAGS), true)
         };
 
         this.chunkInfoBuffer = device.createMutableBuffer();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            device.uploadData(this.chunkInfoBuffer, createChunkInfoBuffer(stack), GlBufferUsage.STATIC_DRAW);
+            device.uploadData(this.chunkInfoBuffer, createChunkInfoBuffer(stack), BufferUsage.STATIC_DRAW);
         }
 
-        this.batches = new MultiDrawBatch[GlIndexType.VALUES.length];
+        this.batches = new MultiDrawBatch[IndexType.VALUES.length];
 
         for (int i = 0; i < this.batches.length; i++) {
             this.batches[i] = MultiDrawBatch.create(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
@@ -180,8 +177,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         return nonEmpty;
     }
 
-    private GlTessellation createTessellationForRegion(RenderDevice device, RenderRegion.RenderRegionArenas arenas, BlockRenderPass pass) {
-        GlTessellation tessellation = arenas.getTessellation(pass);
+    private Tessellation createTessellationForRegion(RenderDevice device, RenderRegion.RenderRegionArenas arenas, BlockRenderPass pass) {
+        Tessellation tessellation = arenas.getTessellation(pass);
 
         if (tessellation == null) {
             arenas.setTessellation(pass, tessellation = this.createRegionTessellation(device, arenas));
@@ -193,7 +190,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     private void executeDrawBatches(TessellationCommandList commandList) {
         for (int i = 0; i < this.batches.length; i++) {
             MultiDrawBatch batch = this.batches[i];
-            commandList.multiDrawElementsBaseVertex(batch.getPointerBuffer(), batch.getCountBuffer(), batch.getBaseVertexBuffer(), GlIndexType.VALUES[i]);
+            commandList.multiDrawElementsBaseVertex(batch.getPointerBuffer(), batch.getCountBuffer(), batch.getBaseVertexBuffer(), IndexType.VALUES[i]);
         }
     }
 
@@ -218,8 +215,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
-    private GlTessellation createRegionTessellation(RenderDevice device, RenderRegion.RenderRegionArenas arenas) {
-        return device.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
+    private Tessellation createRegionTessellation(RenderDevice device, RenderRegion.RenderRegionArenas arenas) {
+        return device.createTessellation(PrimitiveType.TRIANGLES, new TessellationBinding[] {
                 TessellationBinding.forVertexBuffer(arenas.vertexBuffers.getBufferObject(), this.vertexAttributeBindings),
                 TessellationBinding.forElementBuffer(arenas.indexBuffers.getBufferObject())
         });

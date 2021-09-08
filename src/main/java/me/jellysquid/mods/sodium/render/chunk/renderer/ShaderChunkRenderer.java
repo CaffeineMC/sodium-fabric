@@ -3,12 +3,14 @@ package me.jellysquid.mods.sodium.render.chunk.renderer;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.render.shader.ShaderLoader;
-import me.jellysquid.mods.thingl.attribute.GlVertexFormat;
+import me.jellysquid.mods.thingl.attribute.VertexFormat;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.shader.*;
-import me.jellysquid.mods.thingl.texture.GlSampler;
-import me.jellysquid.mods.thingl.texture.GlTexture;
-import me.jellysquid.mods.thingl.texture.TextureData;
+import me.jellysquid.mods.thingl.texture.Sampler;
+import me.jellysquid.mods.thingl.texture.SamplerImpl;
+import me.jellysquid.mods.thingl.texture.Texture;
+import me.jellysquid.mods.thingl.texture.TextureImpl;
+import me.jellysquid.mods.thingl.util.TextureData;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.interop.vanilla.lightmap.LightmapTextureManagerAccessor;
 import me.jellysquid.mods.sodium.render.chunk.format.ChunkMeshAttribute;
@@ -26,15 +28,15 @@ import java.util.EnumMap;
 import java.util.Map;
 
 public abstract class ShaderChunkRenderer implements ChunkRenderer {
-    private final Map<ChunkShaderOptions, GlProgram<ChunkShaderInterface>> programs = new Object2ObjectOpenHashMap<>();
+    private final Map<ChunkShaderOptions, Program<ChunkShaderInterface>> programs = new Object2ObjectOpenHashMap<>();
 
     protected final ChunkVertexType vertexType;
-    protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
+    protected final VertexFormat<ChunkMeshAttribute> vertexFormat;
 
     protected final RenderDevice device;
 
-    private final Map<ChunkShaderTextureUnit, GlSampler> samplers = new EnumMap<>(ChunkShaderTextureUnit.class);
-    private final GlTexture stippleTexture;
+    private final Map<ChunkShaderTextureUnit, Sampler> samplers = new EnumMap<>(ChunkShaderTextureUnit.class);
+    private final Texture stippleTexture;
     private final float detailDistance;
 
     public ShaderChunkRenderer(RenderDevice device, ChunkVertexType vertexType, float detailDistance) {
@@ -70,8 +72,8 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         stippleSampler.setParameter(GL33C.GL_TEXTURE_WRAP_T, GL33C.GL_REPEAT);
     }
 
-    protected GlProgram<ChunkShaderInterface> compileProgram(RenderDevice device, ChunkShaderOptions options) {
-        GlProgram<ChunkShaderInterface> program = this.programs.get(options);
+    protected Program<ChunkShaderInterface> compileProgram(RenderDevice device, ChunkShaderOptions options) {
+        Program<ChunkShaderInterface> program = this.programs.get(options);
 
         if (program == null) {
             this.programs.put(options, program = this.createShader(device, "blocks/block_layer_opaque", options));
@@ -80,11 +82,11 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         return program;
     }
 
-    private GlProgram<ChunkShaderInterface> createShader(RenderDevice device, String path, ChunkShaderOptions options) {
+    private Program<ChunkShaderInterface> createShader(RenderDevice device, String path, ChunkShaderOptions options) {
         ShaderConstants constants = options.constants();
 
-        GlShader vertShader = null;
-        GlShader fragShader = null;
+        Shader vertShader = null;
+        Shader fragShader = null;
 
         var loader = new ShaderLoader(device);
 
@@ -95,20 +97,20 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
             fragShader = loader.loadShader(ShaderType.FRAGMENT,
                     new Identifier("sodium", path + ".fsh"), constants);
 
-            return device.createProgram(new GlShader[] { vertShader, fragShader },
+            return device.createProgram(new Shader[] { vertShader, fragShader },
                     (ctx) -> new ChunkShaderInterface(ctx, options));
         } finally {
             if (vertShader != null) {
-                vertShader.delete();
+                this.device.deleteShader(vertShader);
             }
 
             if (fragShader != null) {
-                fragShader.delete();
+                this.device.deleteShader(fragShader);
             }
         }
     }
 
-    protected GlProgram<ChunkShaderInterface> getProgram(BlockRenderPass pass) {
+    protected Program<ChunkShaderInterface> getProgram(BlockRenderPass pass) {
         return this.compileProgram(this.device, new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass));
     }
 
@@ -127,34 +129,34 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
 
         this.bindTexture(ChunkShaderTextureUnit.BLOCK_TEXTURE, blockAtlasTex.getGlId());
         this.bindTexture(ChunkShaderTextureUnit.LIGHT_TEXTURE, lightTex.getGlId());
-        this.bindTexture(ChunkShaderTextureUnit.STIPPLE_TEXTURE, this.stippleTexture.handle());
+        this.bindTexture(ChunkShaderTextureUnit.STIPPLE_TEXTURE, this.stippleTexture.getGlId());
     }
 
     private void bindTexture(ChunkShaderTextureUnit unit, int texture) {
         RenderSystem.activeTexture(GL32C.GL_TEXTURE0 + unit.id());
         RenderSystem.bindTexture(texture);
 
-        GlSampler sampler = this.samplers.get(unit);
+        Sampler sampler = this.samplers.get(unit);
         sampler.bindTextureUnit(unit.id());
     }
 
     protected void end() {
-        for (Map.Entry<ChunkShaderTextureUnit, GlSampler> entry : this.samplers.entrySet()) {
+        for (Map.Entry<ChunkShaderTextureUnit, Sampler> entry : this.samplers.entrySet()) {
             entry.getValue().unbindTextureUnit(entry.getKey().id());
         }
     }
 
     @Override
     public void delete() {
-        this.programs.values()
-                .forEach(GlProgram::delete);
-        this.programs.clear();
-
-        this.stippleTexture.delete();
-
-        for (GlSampler sampler : this.samplers.values()) {
-            sampler.delete();
+        for (Program<?> program : this.programs.values()) {
+            this.device.deleteProgram(program);
         }
+
+        for (Sampler sampler : this.samplers.values()) {
+            this.device.deleteSampler(sampler);
+        }
+
+        this.device.deleteTexture(this.stippleTexture);
     }
 
     @Override

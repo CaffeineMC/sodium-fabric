@@ -2,9 +2,10 @@ package me.jellysquid.mods.sodium.render.chunk.arena;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
-import me.jellysquid.mods.thingl.buffer.GlBuffer;
-import me.jellysquid.mods.thingl.buffer.GlBufferUsage;
-import me.jellysquid.mods.thingl.buffer.GlMutableBuffer;
+import me.jellysquid.mods.thingl.buffer.Buffer;
+import me.jellysquid.mods.thingl.buffer.BufferUsage;
+import me.jellysquid.mods.thingl.buffer.MutableBuffer;
+import me.jellysquid.mods.thingl.buffer.MutableBufferImpl;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import org.lwjgl.system.MemoryUtil;
 
@@ -18,8 +19,8 @@ public class SwapBufferArena implements GlBufferArena {
     private final Reference2ObjectMap<GlBufferSegment, StashedData> active = new Reference2ObjectOpenHashMap<>();
 
     private final RenderDevice device;
-    private final GlMutableBuffer deviceBuffer;
-    private final GlMutableBuffer stagingBuffer;
+    private final MutableBuffer deviceBuffer;
+    private final MutableBuffer stagingBuffer;
 
     private int used;
 
@@ -70,7 +71,7 @@ public class SwapBufferArena implements GlBufferArena {
     }
 
     @Override
-    public GlBuffer getBufferObject() {
+    public Buffer getBufferObject() {
         return this.deviceBuffer;
     }
 
@@ -120,10 +121,10 @@ public class SwapBufferArena implements GlBufferArena {
             this.active.put(seg, stashedData);
         }
 
-        this.device.uploadData(this.stagingBuffer, buffer, GlBufferUsage.STREAM_COPY);
-        this.device.allocateStorage(this.deviceBuffer, buffer.remaining(), GlBufferUsage.STATIC_DRAW);
+        this.device.uploadData(this.stagingBuffer, buffer, BufferUsage.STREAM_COPY);
+        this.device.allocateStorage(this.deviceBuffer, buffer.remaining(), BufferUsage.STATIC_DRAW);
         this.device.copyBufferSubData(this.stagingBuffer, this.deviceBuffer, 0, 0, buffer.remaining());
-        this.device.allocateStorage(this.stagingBuffer, 0L, GlBufferUsage.STREAM_COPY);
+        this.device.allocateStorage(this.stagingBuffer, 0L, BufferUsage.STREAM_COPY);
 
         MemoryUtil.memFree(buffer);
 

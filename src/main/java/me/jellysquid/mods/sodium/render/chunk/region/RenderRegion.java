@@ -9,7 +9,8 @@ import me.jellysquid.mods.sodium.render.chunk.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.render.chunk.arena.SwapBufferArena;
 import me.jellysquid.mods.sodium.render.chunk.arena.staging.StagingBuffer;
 import me.jellysquid.mods.thingl.device.RenderDevice;
-import me.jellysquid.mods.thingl.tessellation.GlTessellation;
+import me.jellysquid.mods.thingl.tessellation.Tessellation;
+import me.jellysquid.mods.thingl.tessellation.TessellationImpl;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexType;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
@@ -152,7 +153,7 @@ public class RenderRegion {
         public final GlBufferArena vertexBuffers;
         public final GlBufferArena indexBuffers;
 
-        public final Map<BlockRenderPass, GlTessellation> tessellations = new Reference2ObjectOpenHashMap<>();
+        public final Map<BlockRenderPass, Tessellation> tessellations = new Reference2ObjectOpenHashMap<>();
 
         private final RenderDevice device;
 
@@ -173,18 +174,18 @@ public class RenderRegion {
         }
 
         public void deleteTessellations() {
-            for (GlTessellation tessellation : this.tessellations.values()) {
+            for (Tessellation tessellation : this.tessellations.values()) {
                 this.device.deleteTessellation(tessellation);
             }
 
             this.tessellations.clear();
         }
 
-        public void setTessellation(BlockRenderPass pass, GlTessellation tessellation) {
+        public void setTessellation(BlockRenderPass pass, Tessellation tessellation) {
             this.tessellations.put(pass, tessellation);
         }
 
-        public GlTessellation getTessellation(BlockRenderPass pass) {
+        public Tessellation getTessellation(BlockRenderPass pass) {
             return this.tessellations.get(pass);
         }
 

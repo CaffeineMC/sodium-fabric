@@ -1,24 +1,22 @@
 package me.jellysquid.mods.thingl.device;
 
-import me.jellysquid.mods.thingl.array.GlVertexArray;
+import me.jellysquid.mods.thingl.array.VertexArray;
+import me.jellysquid.mods.thingl.array.VertexArrayImpl;
 import me.jellysquid.mods.thingl.buffer.*;
 import me.jellysquid.mods.thingl.functions.DeviceFunctions;
 import me.jellysquid.mods.thingl.lists.PipelineCommandList;
 import me.jellysquid.mods.thingl.lists.ShaderCommandList;
 import me.jellysquid.mods.thingl.lists.TessellationCommandList;
 import me.jellysquid.mods.thingl.pipeline.RenderPipeline;
-import me.jellysquid.mods.thingl.shader.GlProgram;
-import me.jellysquid.mods.thingl.shader.GlShader;
-import me.jellysquid.mods.thingl.shader.ShaderBindingContext;
-import me.jellysquid.mods.thingl.shader.ShaderType;
+import me.jellysquid.mods.thingl.shader.*;
 import me.jellysquid.mods.thingl.state.StateTracker;
-import me.jellysquid.mods.thingl.sync.GlFence;
-import me.jellysquid.mods.thingl.tessellation.GlIndexType;
-import me.jellysquid.mods.thingl.tessellation.GlPrimitiveType;
-import me.jellysquid.mods.thingl.tessellation.GlTessellation;
-import me.jellysquid.mods.thingl.tessellation.TessellationBinding;
-import me.jellysquid.mods.thingl.texture.GlSampler;
-import me.jellysquid.mods.thingl.texture.GlTexture;
+import me.jellysquid.mods.thingl.sync.Fence;
+import me.jellysquid.mods.thingl.sync.FenceImpl;
+import me.jellysquid.mods.thingl.tessellation.*;
+import me.jellysquid.mods.thingl.texture.Sampler;
+import me.jellysquid.mods.thingl.texture.SamplerImpl;
+import me.jellysquid.mods.thingl.texture.Texture;
+import me.jellysquid.mods.thingl.texture.TextureImpl;
 import me.jellysquid.mods.thingl.util.EnumBitField;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.*;
@@ -55,100 +53,115 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     @Override
-    public GlShader createShader(ShaderType type, String source) {
-        return new GlShader(this, type, source);
+    public Shader createShader(ShaderType type, String source) {
+        return new ShaderImpl(this, type, source);
     }
 
     @Override
-    public <T> GlProgram<T> createProgram(GlShader[] shaders, Function<ShaderBindingContext, T> interfaceFactory) {
-        return new GlProgram<>(this, shaders, interfaceFactory);
+    public <T> Program<T> createProgram(Shader[] shaders, Function<ShaderBindingContext, T> interfaceFactory) {
+        return new ProgramImpl<>(this, shaders, interfaceFactory);
     }
 
     @Override
-    public GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings) {
-        return new GlTessellation(this, primitiveType, bindings);
+    public Tessellation createTessellation(PrimitiveType primitiveType, TessellationBinding[] bindings) {
+        return new TessellationImpl(this, primitiveType, bindings);
     }
 
     @Override
-    public GlMutableBuffer createMutableBuffer() {
-        return new GlMutableBuffer(this);
+    public MutableBuffer createMutableBuffer() {
+        return new MutableBufferImpl(this);
     }
 
     @Override
-    public GlImmutableBuffer createImmutableBuffer(long bufferSize, EnumBitField<GlBufferStorageFlags> flags) {
-        GlImmutableBuffer buffer = new GlImmutableBuffer(this, flags);
+    public ImmutableBuffer createImmutableBuffer(long bufferSize, EnumBitField<BufferStorageFlags> flags) {
+        ImmutableBufferImpl buffer = new ImmutableBufferImpl(this, flags);
 
-        buffer.bind(GlBufferTarget.ARRAY_BUFFER);
+        buffer.bind(BufferTarget.ARRAY_BUFFER);
         RenderDeviceImpl.this.functions.getBufferStorageFunctions()
-                .createBufferStorage(GlBufferTarget.ARRAY_BUFFER, bufferSize, flags);
+                .createBufferStorage(BufferTarget.ARRAY_BUFFER, bufferSize, flags);
 
         return buffer;
     }
 
     @Override
-    public GlSampler createSampler() {
-        return new GlSampler(this);
+    public Sampler createSampler() {
+        return new SamplerImpl(this);
     }
 
     @Override
-    public void uploadData(GlMutableBuffer glBuffer, ByteBuffer byteBuffer, GlBufferUsage usage) {
-        glBuffer.bind(GlBufferTarget.ARRAY_BUFFER);
-
-        GL20C.glBufferData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), byteBuffer, usage.getId());
-        glBuffer.setSize(byteBuffer.remaining());
+    public void uploadData(MutableBuffer buffer, ByteBuffer data, BufferUsage usage) {
+        this.uploadData0((MutableBufferImpl) buffer, data, usage);
     }
 
+    private void uploadData0(MutableBufferImpl buffer, ByteBuffer data, BufferUsage usage) {
+        buffer.bind(BufferTarget.ARRAY_BUFFER);
+
+        GL20C.glBufferData(BufferTarget.ARRAY_BUFFER.getTargetParameter(), data, usage.getId());
+        buffer.setSize(data.remaining());
+    }
 
     @Override
-    public void copyBufferSubData(GlBuffer src, GlBuffer dst, long readOffset, long writeOffset, long bytes) {
-        src.bind(GlBufferTarget.COPY_READ_BUFFER);
-        dst.bind(GlBufferTarget.COPY_WRITE_BUFFER);
+    public void copyBufferSubData(Buffer src, Buffer dst, long readOffset, long writeOffset, long bytes) {
+        this.copyBufferSubData0((BufferImpl) src, (BufferImpl) dst, readOffset, writeOffset, bytes);
+    }
+
+    private void copyBufferSubData0(BufferImpl src, BufferImpl dst, long readOffset, long writeOffset, long bytes) {
+        src.bind(BufferTarget.COPY_READ_BUFFER);
+        dst.bind(BufferTarget.COPY_WRITE_BUFFER);
 
         GL31C.glCopyBufferSubData(GL31C.GL_COPY_READ_BUFFER, GL31C.GL_COPY_WRITE_BUFFER, readOffset, writeOffset, bytes);
     }
 
 
     @Override
-    public void deleteTessellation(GlTessellation tessellation) {
+    public void deleteTessellation(Tessellation tessellation) {
+        this.deleteTessellation0((TessellationImpl) tessellation);
+    }
+
+    private void deleteTessellation0(TessellationImpl tessellation) {
         tessellation.delete();
     }
 
     @Override
-    public GlBufferMapping mapBuffer(GlBuffer buffer, long offset, long length, EnumBitField<GlBufferMapFlags> flags) {
+    public BufferMapping mapBuffer(Buffer buffer, long offset, long length, EnumBitField<BufferMapFlags> flags) {
+        return this.mapBuffer0((BufferImpl) buffer, offset, length, flags);
+    }
+
+    private BufferMapping mapBuffer0(BufferImpl buffer, long offset, long length, EnumBitField<BufferMapFlags> flags) {
         if (buffer.getActiveMapping() != null) {
             throw new IllegalStateException("Buffer is already mapped");
         }
 
-        if (flags.contains(GlBufferMapFlags.PERSISTENT) && !(buffer instanceof GlImmutableBuffer)) {
+        if (flags.contains(BufferMapFlags.PERSISTENT) && !(buffer instanceof ImmutableBufferImpl)) {
             throw new IllegalStateException("Tried to map mutable buffer as persistent");
         }
 
         // TODO: speed this up?
-        if (buffer instanceof GlImmutableBuffer) {
-            EnumBitField<GlBufferStorageFlags> bufferFlags = ((GlImmutableBuffer) buffer).getFlags();
+        if (buffer instanceof ImmutableBufferImpl) {
+            EnumBitField<BufferStorageFlags> bufferFlags = ((ImmutableBufferImpl) buffer).getFlags();
 
-            if (flags.contains(GlBufferMapFlags.PERSISTENT) && !bufferFlags.contains(GlBufferStorageFlags.PERSISTENT)) {
+            if (flags.contains(BufferMapFlags.PERSISTENT) && !bufferFlags.contains(BufferStorageFlags.PERSISTENT)) {
                 throw new IllegalArgumentException("Tried to map non-persistent buffer as persistent");
             }
 
-            if (flags.contains(GlBufferMapFlags.WRITE) && !bufferFlags.contains(GlBufferStorageFlags.MAP_WRITE)) {
+            if (flags.contains(BufferMapFlags.WRITE) && !bufferFlags.contains(BufferStorageFlags.MAP_WRITE)) {
                 throw new IllegalStateException("Tried to map non-writable buffer as writable");
             }
 
-            if (flags.contains(GlBufferMapFlags.READ) && !bufferFlags.contains(GlBufferStorageFlags.MAP_READ)) {
+            if (flags.contains(BufferMapFlags.READ) && !bufferFlags.contains(BufferStorageFlags.MAP_READ)) {
                 throw new IllegalStateException("Tried to map non-readable buffer as readable");
             }
         }
 
-        buffer.bind(GlBufferTarget.ARRAY_BUFFER);
+        buffer.bind(BufferTarget.ARRAY_BUFFER);
 
-        ByteBuffer buf = GL32C.glMapBufferRange(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), offset, length, flags.getBitField());
+        ByteBuffer buf = GL32C.glMapBufferRange(BufferTarget.ARRAY_BUFFER.getTargetParameter(), offset, length, flags.getBitField());
 
         if (buf == null) {
             throw new RuntimeException("Failed to map buffer");
         }
 
-        GlBufferMapping mapping = new GlBufferMapping(buffer, buf);
+        BufferMappingImpl mapping = new BufferMappingImpl(buffer, buf);
 
         buffer.setActiveMapping(mapping);
 
@@ -156,48 +169,64 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     @Override
-    public void unmap(GlBufferMapping map) {
+    public void unmap(BufferMapping map) {
+        this.unmap0((BufferMappingImpl) map);
+    }
+
+    private void unmap0(BufferMappingImpl map) {
         map.checkDisposed();
 
-        GlBuffer buffer = map.getBufferObject();
+        BufferImpl buffer = map.getBufferObject();
 
-        buffer.bind(GlBufferTarget.ARRAY_BUFFER);
-        GL32C.glUnmapBuffer(GlBufferTarget.ARRAY_BUFFER.getTargetParameter());
+        buffer.bind(BufferTarget.ARRAY_BUFFER);
+        GL32C.glUnmapBuffer(BufferTarget.ARRAY_BUFFER.getTargetParameter());
 
         buffer.setActiveMapping(null);
         map.dispose();
     }
 
     @Override
-    public void flushMappedRange(GlBufferMapping map, int offset, int length) {
+    public void flushMappedRange(BufferMapping map, int offset, int length) {
+        this.flushMappedRange0((BufferMappingImpl) map, offset, length);
+    }
+
+    private void flushMappedRange0(BufferMappingImpl map, int offset, int length) {
         map.checkDisposed();
 
-        GlBuffer buffer = map.getBufferObject();
+        BufferImpl buffer = map.getBufferObject();
 
-        buffer.bind(GlBufferTarget.COPY_READ_BUFFER);
-        GL32C.glFlushMappedBufferRange(GlBufferTarget.COPY_READ_BUFFER.getTargetParameter(), offset, length);
+        buffer.bind(BufferTarget.COPY_READ_BUFFER);
+        GL32C.glFlushMappedBufferRange(BufferTarget.COPY_READ_BUFFER.getTargetParameter(), offset, length);
     }
 
     @Override
-    public GlFence createFence() {
-        return new GlFence(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
+    public Fence createFence() {
+        return new FenceImpl(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
     }
 
     @Override
-    public GlTexture createTexture() {
-        return new GlTexture(this);
+    public Texture createTexture() {
+        return new TextureImpl(this);
     }
 
     @Override
-    public void allocateStorage(GlMutableBuffer buffer, long bufferSize, GlBufferUsage usage) {
-        buffer.bind(GlBufferTarget.ARRAY_BUFFER);
+    public void allocateStorage(MutableBuffer buffer, long bufferSize, BufferUsage usage) {
+        this.allocateStorage0((MutableBufferImpl) buffer, bufferSize, usage);
+    }
 
-        GL20C.glBufferData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), bufferSize, usage.getId());
+    private void allocateStorage0(MutableBufferImpl buffer, long bufferSize, BufferUsage usage) {
+        buffer.bind(BufferTarget.ARRAY_BUFFER);
+
+        GL20C.glBufferData(BufferTarget.ARRAY_BUFFER.getTargetParameter(), bufferSize, usage.getId());
         buffer.setSize(bufferSize);
     }
 
     @Override
-    public void deleteBuffer(GlBuffer buffer) {
+    public void deleteBuffer(Buffer buffer) {
+        this.deleteBuffer0((BufferImpl) buffer);
+    }
+
+    private void deleteBuffer0(BufferImpl buffer) {
         if (buffer.getActiveMapping() != null) {
             this.unmap(buffer.getActiveMapping());
         }
@@ -211,7 +240,47 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     @Override
-    public void deleteVertexArray(GlVertexArray vertexArray) {
+    public void deleteVertexArray(VertexArray vertexArray) {
+        this.deleteVertexArray0((VertexArrayImpl) vertexArray);
+    }
+
+    @Override
+    public void deleteProgram(Program<?> program) {
+        this.deleteProgram0((ProgramImpl<?>) program);
+    }
+
+    @Override
+    public void deleteShader(Shader shader) {
+        this.deleteShader0((ShaderImpl) shader);
+    }
+
+    @Override
+    public void deleteSampler(Sampler sampler) {
+        this.deleteSampler0((SamplerImpl) sampler);
+    }
+
+    @Override
+    public void deleteTexture(Texture texture) {
+        this.deleteTexture0((TextureImpl) texture);
+    }
+
+    private void deleteTexture0(TextureImpl texture) {
+        texture.delete();
+    }
+
+    private void deleteSampler0(SamplerImpl sampler) {
+        sampler.delete();
+    }
+
+    private void deleteShader0(ShaderImpl shader) {
+        shader.delete();
+    }
+
+    private void deleteProgram0(ProgramImpl<?> program) {
+        program.delete();
+    }
+
+    private void deleteVertexArray0(VertexArrayImpl vertexArray) {
         this.stateTracker.notifyVertexArrayDeleted(vertexArray);
 
         int handle = vertexArray.handle();
@@ -226,33 +295,33 @@ public class RenderDeviceImpl implements RenderDevice {
         }
 
         @Override
-        public <T> void useProgram(GlProgram<T> program, ShaderEntrypoint<T> consumer) {
-            consumer.accept(new ImmediateShaderCommandList(program), program.getInterface());
+        public <T> void useProgram(Program<T> program, ShaderEntrypoint<T> consumer) {
+            consumer.accept(new ImmediateShaderCommandList((ProgramImpl<?>) program), program.getInterface());
         }
     }
 
     private static class ImmediateShaderCommandList implements ShaderCommandList {
-        public ImmediateShaderCommandList(GlProgram<?> program) {
+        public ImmediateShaderCommandList(ProgramImpl<?> program) {
             program.bind();
         }
 
         @Override
-        public void useTessellation(GlTessellation tessellation, Consumer<TessellationCommandList> consumer) {
-            consumer.accept(new ImmediateTessellationCommandList(tessellation));
+        public void useTessellation(Tessellation tessellation, Consumer<TessellationCommandList> consumer) {
+            consumer.accept(new ImmediateTessellationCommandList((TessellationImpl) tessellation));
         }
     }
 
     private static class ImmediateTessellationCommandList implements TessellationCommandList {
-        private final GlTessellation tessellation;
+        private final TessellationImpl tessellation;
 
-        public ImmediateTessellationCommandList(GlTessellation tessellation) {
+        public ImmediateTessellationCommandList(TessellationImpl tessellation) {
             this.tessellation = tessellation;
             this.tessellation.bind();
         }
 
         @Override
-        public void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex, GlIndexType indexType) {
-            GlPrimitiveType primitiveType = this.tessellation.getPrimitiveType();
+        public void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex, IndexType indexType) {
+            PrimitiveType primitiveType = this.tessellation.getPrimitiveType();
             GL32C.glMultiDrawElementsBaseVertex(primitiveType.getId(), count, indexType.getFormatId(), pointer, baseVertex);
         }
     }

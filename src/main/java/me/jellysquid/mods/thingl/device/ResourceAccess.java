@@ -1,21 +1,20 @@
 package me.jellysquid.mods.thingl.device;
 
-import me.jellysquid.mods.thingl.array.GlVertexArray;
 import me.jellysquid.mods.thingl.buffer.*;
 import me.jellysquid.mods.thingl.util.EnumBitField;
 
 import java.nio.ByteBuffer;
 
 public interface ResourceAccess {
-    void allocateStorage(GlMutableBuffer buffer, long bufferSize, GlBufferUsage usage);
+    void allocateStorage(MutableBuffer buffer, long bufferSize, BufferUsage usage);
 
-    void uploadData(GlMutableBuffer glBuffer, ByteBuffer byteBuffer, GlBufferUsage usage);
+    void uploadData(MutableBuffer glBuffer, ByteBuffer byteBuffer, BufferUsage usage);
 
-    void copyBufferSubData(GlBuffer src, GlBuffer dst, long readOffset, long writeOffset, long bytes);
+    void copyBufferSubData(Buffer src, Buffer dst, long readOffset, long writeOffset, long bytes);
 
-    GlBufferMapping mapBuffer(GlBuffer buffer, long offset, long length, EnumBitField<GlBufferMapFlags> flags);
+    BufferMapping mapBuffer(Buffer buffer, long offset, long length, EnumBitField<BufferMapFlags> flags);
 
-    void unmap(GlBufferMapping map);
+    void unmap(BufferMapping map);
 
-    void flushMappedRange(GlBufferMapping map, int offset, int length);
+    void flushMappedRange(BufferMapping map, int offset, int length);
 }
