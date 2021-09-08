@@ -35,6 +35,10 @@ public class FenceImpl implements Fence {
 
     @Override
     public void sync(long timeout) {
-        GL32C.glWaitSync(this.id, GL32C.GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
+        GL32C.glClientWaitSync(this.id, GL32C.GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
+    }
+
+    public void delete() {
+        GL32C.glDeleteSync(this.id);
     }
 }

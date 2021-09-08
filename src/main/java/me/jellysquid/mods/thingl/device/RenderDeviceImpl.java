@@ -256,6 +256,15 @@ public class RenderDeviceImpl implements RenderDevice {
         this.deleteTexture0((TextureImpl) texture);
     }
 
+    @Override
+    public void deleteFence(Fence fence) {
+        this.deleteFence0((FenceImpl) fence);
+    }
+
+    private void deleteFence0(FenceImpl fence) {
+        fence.delete();
+    }
+
     private void deleteTexture0(TextureImpl texture) {
         texture.delete();
     }
