@@ -8,7 +8,6 @@ import me.jellysquid.mods.sodium.render.chunk.ChunkRenderList;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.context.ChunkCameraContext;
 import me.jellysquid.mods.sodium.render.chunk.context.ChunkRenderMatrices;
-import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
@@ -128,43 +127,15 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            ChunkRenderBounds bounds = render.getBounds();
-
             long indexOffset = state.getIndexSegment()
                     .getOffset();
 
             int baseVertex = state.getVertexSegment()
                     .getOffset() / this.vertexFormat.getStride();
 
-            this.addDrawCall(state.getModelFace(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
-
-            if (this.isBlockFaceCullingEnabled) {
-                if (camera.posY > bounds.y1) {
-                    this.addDrawCall(state.getModelFace(ModelQuadFacing.UP), indexOffset, baseVertex);
-                }
-
-                if (camera.posY < bounds.y2) {
-                    this.addDrawCall(state.getModelFace(ModelQuadFacing.DOWN), indexOffset, baseVertex);
-                }
-
-                if (camera.posX > bounds.x1) {
-                    this.addDrawCall(state.getModelFace(ModelQuadFacing.EAST), indexOffset, baseVertex);
-                }
-
-                if (camera.posX < bounds.x2) {
-                    this.addDrawCall(state.getModelFace(ModelQuadFacing.WEST), indexOffset, baseVertex);
-                }
-
-                if (camera.posZ > bounds.z1) {
-                    this.addDrawCall(state.getModelFace(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
-                }
-
-                if (camera.posZ < bounds.z2) {
-                    this.addDrawCall(state.getModelFace(ModelQuadFacing.NORTH), indexOffset, baseVertex);
-                }
-            } else {
-                for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
-                    this.addDrawCall(state.getModelFace(facing), indexOffset, baseVertex);
+            for (int faceIndex = 0; faceIndex < ModelQuadFacing.COUNT; faceIndex++) {
+                if (render.isFaceVisible(faceIndex)) {
+                    this.addDrawCall(state.getModelFace(faceIndex), indexOffset, baseVertex);
                 }
             }
         }

@@ -33,8 +33,8 @@ public class ChunkGraphicsState {
         this.indexSegment.delete();
     }
 
-    public ElementRange getModelFace(ModelQuadFacing facing) {
-        return this.faces[facing.ordinal()];
+    public ElementRange getModelFace(int face) {
+        return this.faces[face];
     }
 
     public GlBufferSegment getVertexSegment() {

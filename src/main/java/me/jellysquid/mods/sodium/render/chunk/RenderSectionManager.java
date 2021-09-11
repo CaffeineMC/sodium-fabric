@@ -12,6 +12,8 @@ import me.jellysquid.mods.sodium.SodiumClient;
 import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.interop.vanilla.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.interop.vanilla.world.ClientChunkManagerExtended;
+import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadFacingBits;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuilder;
@@ -108,6 +110,7 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private int currentFrame = 0;
     private final double detailFarPlane;
+    private final boolean useBlockFaceCulling;
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, RenderDevice device) {
         this.worldRenderer = worldRenderer;
@@ -130,6 +133,7 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         this.detailFarPlane = getDetailFarPlane(detailDistance);
         this.chunkRenderer = new RegionChunkRenderer(SodiumRender.DEVICE, ModelVertexType.INSTANCE, detailDistance);
+        this.useBlockFaceCulling = SodiumClient.options().advanced.useBlockFaceCulling;
     }
 
     private static double getDetailFarPlane(float detailDistance) {
@@ -231,6 +235,9 @@ public class RenderSectionManager implements ChunkStatusListener {
         if (render.isTickable()) {
             this.tickableChunks.add(render);
         }
+
+        render.updateFaceVisibility(this.cameraX, this.cameraY, this.cameraZ,
+                this.useBlockFaceCulling ? ModelQuadFacingBits.UNASSIGNED_BITS : ModelQuadFacingBits.ALL_BITS);
     }
 
     private void addEntitiesToRenderLists(RenderSection render) {

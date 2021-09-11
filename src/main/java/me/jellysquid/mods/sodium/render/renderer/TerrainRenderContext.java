@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.model.light.smooth.SmoothQuadLighter;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.render.chunk.data.BuiltChunkMesh;
+import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.occlusion.BlockOcclusionCache;
@@ -41,6 +42,7 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
 
     private final TerrainRenderer terrainRenderer;
     private final FluidRenderer fluidRenderer;
+    private final ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
     public TerrainRenderContext(World world, ChunkVertexType vertexType) {
         this.worldSlice = new WorldSlice(world);
@@ -53,7 +55,7 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
 
         QuadLighter lighter = new SmoothQuadLighter(this.lightDataCache, this.blockRenderInfo);
 
-        this.terrainRenderer = new TerrainRenderer(this.blockRenderInfo, this.buffers, lighter, this::transform);
+        this.terrainRenderer = new TerrainRenderer(this.blockRenderInfo, this.buffers, lighter, this::transform, this.bounds);
         this.meshConsumer = this.terrainRenderer::acceptFabricMesh;
         this.fallbackConsumer = this.terrainRenderer::renderVanillaModel;
         this.fluidRenderer = new FluidRenderer(this.terrainRenderer.biomeColorBlender);
@@ -83,6 +85,7 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
         this.lightDataCache.prepare(context.getOrigin());
         this.blockRenderInfo.setChunkId(context.getRelativeChunkIndex());
         this.buffers.prepare(renderData);
+        this.bounds.reset();
     }
 
     public void release() {
@@ -117,5 +120,9 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
 
     public Map<BlockRenderPass, BuiltChunkMesh> createBakedMeshes() {
         return this.buffers.createMeshes();
+    }
+
+    public ChunkRenderBounds.Builder getBounds() {
+        return this.bounds;
     }
 }

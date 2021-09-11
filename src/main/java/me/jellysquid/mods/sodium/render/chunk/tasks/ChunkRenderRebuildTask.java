@@ -98,7 +98,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         Map<BlockRenderPass, BuiltChunkMesh> meshes = context.createBakedMeshes();
 
         renderData.setOcclusionData(occluder.build());
-        renderData.setBounds(new ChunkRenderBounds(this.render.getChunkPos()));
+        renderData.setBounds(context.getBounds().build(this.render.getChunkPos()));
 
         return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame, this.detailLevel);
     }
