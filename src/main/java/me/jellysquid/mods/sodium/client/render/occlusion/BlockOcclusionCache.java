@@ -44,13 +44,13 @@ public class BlockOcclusionCache {
             if (selfShape == VoxelShapes.fullCube() && adjShape == VoxelShapes.fullCube()) {
                 return false;
             }
-            
+
             if (selfShape.isEmpty()) {
                 if (adjShape.isEmpty()){
-                    return true;
+                    return true; // face of potted plants with cull face enabled are rendered if top slab is placed above
                 }
                 else if (!adjState.isSideSolid(view,pos,facing.getOpposite(), SideShapeType.FULL)){
-                    return true;
+                    return true; // face of potted plants rendered if top stair placed above
                 }
             }
 

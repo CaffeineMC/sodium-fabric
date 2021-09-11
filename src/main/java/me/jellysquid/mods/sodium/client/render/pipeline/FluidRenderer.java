@@ -19,10 +19,7 @@ import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.impl.client.rendering.fluid.FluidRenderHandlerRegistryImpl;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.StainedGlassBlock;
+import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.texture.Sprite;
@@ -72,17 +69,23 @@ public class FluidRenderer {
     }
 
     private boolean isFluidExposed(BlockRenderView world, int x, int y, int z, Direction dir, Fluid fluid) {
-        // Up direction is hard to test since it doesnt fill the block
-        if(dir != Direction.UP) {
-            BlockPos pos = this.scratchPos.set(x, y, z);
-            BlockState blockState = world.getBlockState(pos);
-            VoxelShape shape = blockState.getCullingShape(world, pos);
-            if (blockState.isOpaque() && VoxelShapes.isSideCovered(VoxelShapes.fullCube(), shape, dir.getOpposite())) {
-                return false; // Fluid is in waterlogged block that self occludes
+        BlockPos pos = this.scratchPos.set(x, y, z);
+        BlockState blockState = world.getBlockState(pos);
+
+        if (dir == Direction.UP){
+            if (blockState.isSideSolid(world,pos,dir, SideShapeType.FULL)){
+                return false; // Fluid is in waterlogged stair or slab that self occludes
             }
         }
 
-        BlockPos pos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
+        else{
+            VoxelShape shape = blockState.getCullingShape(world, pos);
+            if (blockState.isOpaque() && VoxelShapes.isSideCovered(VoxelShapes.fullCube(), shape, dir.getOpposite())) {
+                return false; // Fluid is in waterlogged full block that self occludes
+            }
+        }
+
+        pos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
         return !world.getFluidState(pos).getFluid().matchesType(fluid);
     }
 
@@ -90,8 +93,14 @@ public class FluidRenderer {
         BlockPos pos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
         BlockState blockState = world.getBlockState(pos);
 
+        if (blockState.getBlock() instanceof SlabBlock){
+            if (dir == Direction.UP){
+                return false;
+            }}
+
         if (blockState.isOpaque()) {
             VoxelShape shape = blockState.getCullingShape(world, pos);
+
 
             // Hoist these checks to avoid allocating the shape below
             if (shape == VoxelShapes.fullCube()) {
