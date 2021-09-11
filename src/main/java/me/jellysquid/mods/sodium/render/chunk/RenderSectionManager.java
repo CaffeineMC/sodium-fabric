@@ -25,6 +25,7 @@ import me.jellysquid.mods.sodium.render.chunk.graph.ChunkGraphIterationQueue;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegionManager;
+import me.jellysquid.mods.sodium.render.chunk.region.RenderRegionStorage;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegionVisibility;
 import me.jellysquid.mods.sodium.render.chunk.renderer.RegionChunkRenderer;
 import me.jellysquid.mods.sodium.render.chunk.tasks.ChunkRenderBuildTask;
@@ -636,31 +637,26 @@ public class RenderSectionManager implements ChunkStatusListener {
     }
 
     public Collection<String> getDebugStrings() {
-        List<String> list = new ArrayList<>();
-
-        Iterator<RenderRegion.RenderRegionArenas> it = this.regions.getLoadedRegions()
-                .stream()
-                .map(RenderRegion::getArenas)
-                .filter(Objects::nonNull)
-                .iterator();
-
         int count = 0;
 
         long deviceUsed = 0;
         long deviceAllocated = 0;
 
-        while (it.hasNext()) {
-            RenderRegion.RenderRegionArenas arena = it.next();
-            deviceUsed += arena.getDeviceUsedMemory();
-            deviceAllocated += arena.getDeviceAllocatedMemory();
+        for (RenderRegion region : this.regions.getLoadedRegions()) {
+            for (RenderRegionStorage storage : region.getAllStorage()) {
+                deviceUsed += storage.getDeviceUsedMemory();
+                deviceAllocated += storage.getDeviceAllocatedMemory();
 
-            count++;
+                count++;
+            }
         }
 
+        List<String> list = new ArrayList<>();
         list.add(String.format("Chunk arena allocator: %s", SodiumClient.options().advanced.arenaMemoryAllocator.name()));
         list.add(String.format("Device buffer objects: %d", count));
         list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
         list.add(String.format("Staging buffer: %s", this.regions.getStagingBuffer().toString()));
+
         return list;
     }
 

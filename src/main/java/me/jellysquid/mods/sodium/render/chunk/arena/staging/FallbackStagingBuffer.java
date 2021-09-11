@@ -20,11 +20,12 @@ public class FallbackStagingBuffer implements StagingBuffer {
     public void enqueueCopy(ByteBuffer data, Buffer dst, long writeOffset) {
         this.device.uploadData(this.fallbackBufferObject, data, BufferUsage.STREAM_COPY);
         this.device.copyBufferSubData(this.fallbackBufferObject, dst, 0, writeOffset, data.remaining());
+        this.device.allocateStorage(this.fallbackBufferObject, 0L, BufferUsage.STREAM_COPY);
     }
 
     @Override
     public void flush() {
-        this.device.allocateStorage(this.fallbackBufferObject, 0L, BufferUsage.STREAM_COPY);
+
     }
 
     @Override

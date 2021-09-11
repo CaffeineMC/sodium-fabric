@@ -2,11 +2,12 @@ package me.jellysquid.mods.sodium.render.chunk.arena;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import me.jellysquid.mods.sodium.render.chunk.arena.staging.StagingBuffer;
 import me.jellysquid.mods.thingl.buffer.Buffer;
 import me.jellysquid.mods.thingl.buffer.BufferUsage;
 import me.jellysquid.mods.thingl.buffer.MutableBuffer;
-import me.jellysquid.mods.thingl.buffer.MutableBufferImpl;
 import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.thingl.util.NativeBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -76,7 +77,7 @@ public class SwapBufferArena implements GlBufferArena {
     }
 
     @Override
-    public boolean upload(Stream<PendingUpload> stream) {
+    public boolean upload(StagingBuffer stagingBuffer, Stream<PendingUpload> stream) {
         List<PendingUpload> uploads = stream.collect(Collectors.toList());
 
         int totalBytes = uploads.stream().mapToInt(PendingUpload::getLength).sum() +
@@ -102,7 +103,8 @@ public class SwapBufferArena implements GlBufferArena {
         }
 
         for (PendingUpload upload : uploads) {
-            ByteBuffer payload = upload.getDataBuffer().getDirectBuffer();
+            NativeBuffer data = upload.getDataBuffer();
+            ByteBuffer payload = data.getDirectBuffer();
 
             GlBufferSegment seg = new GlBufferSegment(this, writePointer, payload.remaining());
             upload.setResult(seg);

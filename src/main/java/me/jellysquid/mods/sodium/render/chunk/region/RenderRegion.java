@@ -1,24 +1,18 @@
 package me.jellysquid.mods.sodium.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.SodiumClient;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import me.jellysquid.mods.sodium.SodiumRender;
-import me.jellysquid.mods.sodium.render.chunk.arena.AsyncBufferArena;
-import me.jellysquid.mods.sodium.render.chunk.arena.GlBufferArena;
-import me.jellysquid.mods.sodium.render.chunk.arena.SwapBufferArena;
-import me.jellysquid.mods.sodium.render.chunk.arena.staging.StagingBuffer;
-import me.jellysquid.mods.thingl.device.RenderDevice;
-import me.jellysquid.mods.thingl.tessellation.Tessellation;
-import me.jellysquid.mods.thingl.tessellation.TessellationImpl;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexType;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
+import org.jetbrains.annotations.Nullable;
 import org.joml.FrustumIntersection;
 
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,7 +42,7 @@ public class RenderRegion {
     private final RenderRegionManager manager;
 
     private final Set<RenderSection> chunks = new ObjectOpenHashSet<>();
-    private RenderRegionArenas arenas;
+    private final Map<BlockRenderPass, RenderRegionStorage> storage = new Reference2ObjectArrayMap<>();
 
     private final int x, y, z;
 
@@ -66,15 +60,27 @@ public class RenderRegion {
         return new RenderRegion(manager, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
-    public RenderRegionArenas getArenas() {
-        return this.arenas;
+    public RenderRegionStorage initStorage(BlockRenderPass pass) {
+        RenderRegionStorage storage = this.storage.get(pass);
+
+        if (storage == null) {
+            this.storage.put(pass, storage = new RenderRegionStorage(SodiumRender.DEVICE));
+        }
+
+        return storage;
+    }
+
+    @Nullable
+    public RenderRegionStorage getStorage(BlockRenderPass pass) {
+        return this.storage.get(pass);
     }
 
     public void deleteResources() {
-        if (this.arenas != null) {
-            this.arenas.delete();
-            this.arenas = null;
+        for (RenderRegionStorage arena : this.storage.values()) {
+            arena.delete();
         }
+
+        this.storage.clear();
     }
 
     public static long getRegionKeyForChunk(int x, int y, int z) {
@@ -91,16 +97,6 @@ public class RenderRegion {
 
     public int getOriginZ() {
         return this.z << REGION_LENGTH_SH << 4;
-    }
-
-    public RenderRegionArenas getOrCreateArenas() {
-        RenderRegionArenas arenas = this.arenas;
-
-        if (arenas == null) {
-            this.arenas = (arenas = this.manager.createRegionArenas(SodiumRender.DEVICE));
-        }
-
-        return arenas;
     }
 
     public void addChunk(RenderSection chunk) {
@@ -149,63 +145,18 @@ public class RenderRegion {
         return (short) ((x * RenderRegion.REGION_LENGTH * RenderRegion.REGION_HEIGHT) + (y * RenderRegion.REGION_LENGTH) + z);
     }
 
-    public static class RenderRegionArenas {
-        public final GlBufferArena vertexBuffers;
-        public final GlBufferArena indexBuffers;
+    public Collection<RenderRegionStorage> getAllStorage() {
+        return this.storage.values();
+    }
 
-        public final Map<BlockRenderPass, Tessellation> tessellations = new Reference2ObjectOpenHashMap<>();
+    public void deleteUnusedStorage() {
+        for (Iterator<RenderRegionStorage> iterator = this.storage.values().iterator(); iterator.hasNext(); ) {
+            RenderRegionStorage storage = iterator.next();
 
-        private final RenderDevice device;
-
-        public RenderRegionArenas(RenderDevice device, StagingBuffer stagingBuffer) {
-            int expectedVertexCount = REGION_SIZE * 756;
-            int expectedIndexCount = (expectedVertexCount / 4) * 6;
-
-            this.device = device;
-            this.vertexBuffers = createArena(device, expectedVertexCount * ModelVertexType.INSTANCE.getBufferVertexFormat().getStride(), stagingBuffer);
-            this.indexBuffers = createArena(device, expectedIndexCount * 4, stagingBuffer);
-        }
-
-        public void delete() {
-            this.deleteTessellations();
-
-            this.vertexBuffers.delete();
-            this.indexBuffers.delete();
-        }
-
-        public void deleteTessellations() {
-            for (Tessellation tessellation : this.tessellations.values()) {
-                this.device.deleteTessellation(tessellation);
+            if (storage.isEmpty()) {
+                storage.delete();
+                iterator.remove();
             }
-
-            this.tessellations.clear();
-        }
-
-        public void setTessellation(BlockRenderPass pass, Tessellation tessellation) {
-            this.tessellations.put(pass, tessellation);
-        }
-
-        public Tessellation getTessellation(BlockRenderPass pass) {
-            return this.tessellations.get(pass);
-        }
-
-        public boolean isEmpty() {
-            return this.vertexBuffers.isEmpty() && this.indexBuffers.isEmpty();
-        }
-
-        public long getDeviceUsedMemory() {
-            return this.vertexBuffers.getDeviceUsedMemory() + this.indexBuffers.getDeviceUsedMemory();
-        }
-
-        public long getDeviceAllocatedMemory() {
-            return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
-        }
-
-        private static GlBufferArena createArena(RenderDevice device, int initialCapacity, StagingBuffer stagingBuffer) {
-            return switch (SodiumClient.options().advanced.arenaMemoryAllocator) {
-                case ASYNC -> new AsyncBufferArena(device, initialCapacity, stagingBuffer);
-                case SWAP -> new SwapBufferArena(device);
-            };
         }
     }
 }

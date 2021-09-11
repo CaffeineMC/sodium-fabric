@@ -3,9 +3,9 @@ package me.jellysquid.mods.sodium.render.chunk;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.render.chunk.renderer.ChunkGraphicsState;
@@ -17,7 +17,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -96,7 +95,7 @@ public class RenderSection {
         this.disposed = true;
     }
 
-    private void deleteGraphicsState() {
+    public void deleteGraphicsState() {
         for (ChunkGraphicsState state : this.graphicsStates.values()) {
             state.delete();
         }
@@ -200,12 +199,8 @@ public class RenderSection {
         return this.getOriginZ() + 8.0D;
     }
 
-    public ChunkGraphicsState setGraphicsState(BlockRenderPass pass, ChunkGraphicsState state) {
-        if (state == null) {
-            return this.graphicsStates.remove(pass);
-        } else {
-            return this.graphicsStates.put(pass, state);
-        }
+    public void setGraphicsState(BlockRenderPass pass, ChunkGraphicsState state) {
+        this.graphicsStates.put(pass, state);
     }
 
     /**

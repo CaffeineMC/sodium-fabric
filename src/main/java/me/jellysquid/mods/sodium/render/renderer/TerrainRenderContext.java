@@ -5,7 +5,7 @@ import me.jellysquid.mods.sodium.model.light.cache.SlicedLightDataCache;
 import me.jellysquid.mods.sodium.model.light.smooth.SmoothQuadLighter;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildBuffers;
-import me.jellysquid.mods.sodium.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.render.chunk.data.BuiltChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.occlusion.BlockOcclusionCache;
@@ -115,7 +115,7 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
         }
     }
 
-    public Map<BlockRenderPass, ChunkMeshData> createBakedMeshes() {
+    public Map<BlockRenderPass, BuiltChunkMesh> createBakedMeshes() {
         return this.buffers.createMeshes();
     }
 }

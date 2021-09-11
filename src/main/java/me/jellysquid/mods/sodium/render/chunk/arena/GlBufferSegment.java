@@ -11,10 +11,20 @@ public class GlBufferSegment {
     private GlBufferSegment next;
     private GlBufferSegment prev;
 
+    private boolean uploaded;
+
     public GlBufferSegment(GlBufferArena arena, int offset, int length) {
         this.arena = arena;
         this.offset = offset;
         this.length = length;
+    }
+
+    public void setUploaded() {
+        this.uploaded = true;
+    }
+
+    public boolean isUploaded() {
+        return this.uploaded;
     }
 
     public void delete() {

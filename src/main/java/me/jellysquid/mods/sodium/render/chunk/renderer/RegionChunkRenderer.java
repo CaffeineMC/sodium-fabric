@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.render.chunk.region.RenderRegionStorage;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
 import me.jellysquid.mods.thingl.attribute.VertexAttributeBinding;
@@ -29,6 +30,7 @@ import org.lwjgl.system.MemoryStack;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final MultiDrawBatch[] batches;
@@ -106,8 +108,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
                     this.setModelMatrixUniforms(programInterface, matrices, region, camera);
 
-                    programCommands.useTessellation(this.createTessellationForRegion(device, region.getArenas(), pass),
-                            this::executeDrawBatches);
+                    programCommands.useTessellation(this.createTessellationForRegion(device, Objects.requireNonNull(region.getStorage(pass))), this::executeDrawBatches);
                 }
             });
         });
@@ -135,35 +136,35 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             int baseVertex = state.getVertexSegment()
                     .getOffset() / this.vertexFormat.getStride();
 
-            this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
+            this.addDrawCall(state.getModelFace(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
 
             if (this.isBlockFaceCullingEnabled) {
                 if (camera.posY > bounds.y1) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
+                    this.addDrawCall(state.getModelFace(ModelQuadFacing.UP), indexOffset, baseVertex);
                 }
 
                 if (camera.posY < bounds.y2) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.DOWN), indexOffset, baseVertex);
+                    this.addDrawCall(state.getModelFace(ModelQuadFacing.DOWN), indexOffset, baseVertex);
                 }
 
                 if (camera.posX > bounds.x1) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.EAST), indexOffset, baseVertex);
+                    this.addDrawCall(state.getModelFace(ModelQuadFacing.EAST), indexOffset, baseVertex);
                 }
 
                 if (camera.posX < bounds.x2) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.WEST), indexOffset, baseVertex);
+                    this.addDrawCall(state.getModelFace(ModelQuadFacing.WEST), indexOffset, baseVertex);
                 }
 
                 if (camera.posZ > bounds.z1) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
+                    this.addDrawCall(state.getModelFace(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
                 }
 
                 if (camera.posZ < bounds.z2) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.NORTH), indexOffset, baseVertex);
+                    this.addDrawCall(state.getModelFace(ModelQuadFacing.NORTH), indexOffset, baseVertex);
                 }
             } else {
                 for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
-                    this.addDrawCall(state.getModelPart(facing), indexOffset, baseVertex);
+                    this.addDrawCall(state.getModelFace(facing), indexOffset, baseVertex);
                 }
             }
         }
@@ -179,14 +180,12 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         return nonEmpty;
     }
 
-    private Tessellation createTessellationForRegion(RenderDevice device, RenderRegion.RenderRegionArenas arenas, BlockRenderPass pass) {
-        Tessellation tessellation = arenas.getTessellation(pass);
-
-        if (tessellation == null) {
-            arenas.setTessellation(pass, tessellation = this.createRegionTessellation(device, arenas));
+    private Tessellation createTessellationForRegion(RenderDevice device, RenderRegionStorage storage) {
+        if (storage.tessellation == null) {
+            storage.tessellation = this.createRegionTessellation(device, storage);
         }
 
-        return tessellation;
+        return storage.tessellation;
     }
 
     private void executeDrawBatches(TessellationCommandList commandList) {
@@ -217,10 +216,10 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
-    private Tessellation createRegionTessellation(RenderDevice device, RenderRegion.RenderRegionArenas arenas) {
+    private Tessellation createRegionTessellation(RenderDevice device, RenderRegionStorage arenas) {
         return device.createTessellation(PrimitiveType.TRIANGLES, new VertexBufferBinding[] {
-                new VertexBufferBinding(arenas.vertexBuffers.getBufferObject(), this.vertexFormat, this.vertexAttributeBindings)
-        }, new ElementBufferBinding(arenas.indexBuffers.getBufferObject()));
+                new VertexBufferBinding(arenas.vertexArena.getBufferObject(), this.vertexFormat, this.vertexAttributeBindings)
+        }, new ElementBufferBinding(arenas.indicesArena.getBufferObject()));
     }
 
     @Override

@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.render.chunk.tasks;
 
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.render.chunk.data.BuiltChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
@@ -95,7 +95,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        Map<BlockRenderPass, ChunkMeshData> meshes = context.createBakedMeshes();
+        Map<BlockRenderPass, BuiltChunkMesh> meshes = context.createBakedMeshes();
 
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(new ChunkRenderBounds(this.render.getChunkPos()));

@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.render.chunk.data.BuiltChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 
@@ -16,11 +16,11 @@ import java.util.Map;
 public class ChunkBuildResult {
     public final RenderSection render;
     public final ChunkRenderData data;
-    public final Map<BlockRenderPass, ChunkMeshData> meshes;
+    public final Map<BlockRenderPass, BuiltChunkMesh> meshes;
     public final int buildTime;
     public final int detailLevel;
 
-    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<BlockRenderPass, ChunkMeshData> meshes, int buildTime, int detailLevel) {
+    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<BlockRenderPass, BuiltChunkMesh> meshes, int buildTime, int detailLevel) {
         this.render = render;
         this.data = data;
         this.meshes = Collections.unmodifiableMap(meshes);
@@ -29,13 +29,13 @@ public class ChunkBuildResult {
     }
 
     public void delete() {
-        for (ChunkMeshData data : this.meshes.values()) {
+        for (BuiltChunkMesh data : this.meshes.values()) {
             data.getVertexData()
                     .delete();
         }
     }
 
-    public Iterable<Map.Entry<BlockRenderPass, ChunkMeshData>> getMeshes() {
+    public Iterable<Map.Entry<BlockRenderPass, BuiltChunkMesh>> getMeshes() {
         return this.meshes.entrySet();
     }
 }

@@ -1,14 +1,13 @@
 package me.jellysquid.mods.sodium.render.chunk.arena;
 
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.render.chunk.arena.staging.StagingBuffer;
 import me.jellysquid.mods.thingl.buffer.*;
 import me.jellysquid.mods.thingl.device.RenderDevice;
+import org.lwjgl.system.MemoryUtil;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,7 +21,6 @@ public class AsyncBufferArena implements GlBufferArena {
     private final int resizeIncrement;
 
     private final RenderDevice device;
-    private final StagingBuffer stagingBuffer;
     private MutableBuffer arenaBuffer;
 
     private GlBufferSegment head;
@@ -30,7 +28,7 @@ public class AsyncBufferArena implements GlBufferArena {
     private int capacity;
     private int used;
 
-    public AsyncBufferArena(RenderDevice device, int initialCapacity, StagingBuffer stagingBuffer) {
+    public AsyncBufferArena(RenderDevice device, int initialCapacity) {
         this.resizeIncrement = initialCapacity / 16;
         this.capacity = initialCapacity;
 
@@ -40,10 +38,10 @@ public class AsyncBufferArena implements GlBufferArena {
         this.device = device;
         this.arenaBuffer = device.createMutableBuffer();
         device.allocateStorage(this.arenaBuffer, initialCapacity, BUFFER_USAGE);
-
-        this.stagingBuffer = stagingBuffer;
     }
 
+    // Re-sizing the arena results in a compaction, so any free space in the arena will be
+    // made into one contiguous segment and placed at the start of the buffer afterwards.
     private void resize(int newCapacity) {
         if (this.used > newCapacity) {
             throw new UnsupportedOperationException("New capacity must be larger than used size");
@@ -81,12 +79,14 @@ public class AsyncBufferArena implements GlBufferArena {
         for (int i = 0; i < usedSegments.size(); i++) {
             GlBufferSegment s = usedSegments.get(i);
 
-            if (currentCopyCommand == null || currentCopyCommand.writeOffset + currentCopyCommand.length != s.getOffset()) {
+            if (currentCopyCommand == null || currentCopyCommand.writeOffset + currentCopyCommand.length != s.getOffset() || !s.isUploaded()) {
                 if (currentCopyCommand != null) {
                     pendingCopies.add(currentCopyCommand);
                 }
 
-                currentCopyCommand = new PendingBufferCopyCommand(s.getOffset(), writeOffset, s.getLength());
+                if (s.isUploaded()) {
+                    currentCopyCommand = new PendingBufferCopyCommand(s.getOffset(), writeOffset, s.getLength());
+                }
             } else {
                 currentCopyCommand.length += s.getLength();
             }
@@ -258,74 +258,89 @@ public class AsyncBufferArena implements GlBufferArena {
     }
 
     @Override
-    public boolean upload(Stream<PendingUpload> stream) {
+    public boolean upload(StagingBuffer stagingBuffer, Stream<PendingUpload> stream) {
         // Record the buffer object before we start any work
         // If the arena needs to re-allocate a buffer, this will allow us to check and return an appropriate flag
         Buffer buffer = this.arenaBuffer;
 
-        // A linked list is used as we'll be randomly removing elements and want O(1) performance
-        List<PendingUpload> queue = stream.collect(Collectors.toCollection(LinkedList::new));
+        Map<PendingUpload, GlBufferSegment> allocations = new Reference2ObjectOpenHashMap<>();
 
-        // Try to upload all of the data into free segments first
-        this.tryUploads(queue);
+        // We need to first accumulate the incoming uploads into a list, as we iterate over it twice
+        // in order to determine the total payload size. The queue is sorted from largest to smallest so that
+        // free space is re-used packed as efficiently as possible.
+        List<PendingUpload> queue = stream
+                .collect(Collectors.toList());
 
-        // If we weren't able to upload some buffers, they will have been left behind in the queue
+        // If we don't have enough free bytes in the arena, then we can avoid unnecessarily packing data
+        // into the remaining space by compacting and re-allocating now. We don't force the re-allocation here
+        // as we might have enough non-continuous memory available to service all allocations.
+        this.ensureCapacity(queue, false);
+
+        // First stage: Reserve space for as many payloads as possible, with whatever couldn't
+        // be packed into the existing free regions being left in the queue
+        queue.removeIf(upload -> this.reserve(allocations, upload));
+
+        // Second stage: There wasn't enough continuous regions of memory to reserve, so re-allocate &
+        // compact the arena, then try reserving again for any payloads that failed previously.
         if (!queue.isEmpty()) {
-            // Calculate the amount of memory needed for the remaining uploads
-            int remainingElements = queue.stream()
-                    .mapToInt(upload -> upload.getDataBuffer().getLength())
-                    .sum();
+            this.ensureCapacity(queue, true);
 
-            // Ask the arena to grow to accommodate the remaining uploads
-            // This will force a re-allocation and compaction, which will leave us a continuous free segment
-            // for the remaining uploads
-            this.ensureCapacity(remainingElements);
+            // Attempt to reserve space for everything else, since we should have enough available memory now
+            queue.removeIf(upload -> this.reserve(allocations, upload));
+        }
 
-            // Try again to upload any buffers that failed last time
-            this.tryUploads(queue);
+        // At the end of everything, we should've been able to reserve space for all uploads
+        if (!queue.isEmpty()) {
+            throw new RuntimeException("Failed to allocate space for all buffers");
+        }
 
-            // If we still had failures, something has gone wrong
-            if (!queue.isEmpty()) {
-                throw new RuntimeException("Failed to upload all buffers");
-            }
+        // Finally, upload all the data into the reserved regions
+        for (Map.Entry<PendingUpload, GlBufferSegment> entry : allocations.entrySet()) {
+            PendingUpload upload = entry.getKey();
+            GlBufferSegment segment = entry.getValue();
+
+            var data = upload.getDataBuffer();
+
+            // Copy the data into our staging buffer, which then copies it into the arena's buffer
+            stagingBuffer.enqueueCopy(data.getDirectBuffer(), this.arenaBuffer, segment.getOffset());
+            upload.setResult(segment);
+
+            segment.setUploaded();
         }
 
         return this.arenaBuffer != buffer;
     }
 
-    private void tryUploads(List<PendingUpload> queue) {
-        queue.removeIf(this::tryUpload);
-        this.stagingBuffer.flush();
-    }
+    private boolean reserve(Map<PendingUpload, GlBufferSegment> reserved, PendingUpload upload) {
+        GlBufferSegment seg = this.alloc(upload.getLength());
 
-    private boolean tryUpload(PendingUpload upload) {
-        ByteBuffer data = upload.getDataBuffer()
-                .getDirectBuffer();
-
-        int elementCount = data.remaining();
-
-        GlBufferSegment dst = this.alloc(elementCount);
-
-        if (dst == null) {
-            return false;
+        if (seg != null) {
+            reserved.put(upload, seg);
         }
 
-        // Copy the data into our staging buffer, then copy it into the arena's buffer
-        this.stagingBuffer.enqueueCopy(data, this.arenaBuffer, dst.getOffset());
-
-        upload.setResult(dst);
-
-        return true;
+        return seg != null;
     }
 
-    public void ensureCapacity(int elementCount) {
-        // Re-sizing the arena results in a compaction, so any free space in the arena will be
-        // made into one contiguous segment, joined with the new segment of free space we're asking for
-        // We calculate the number of free elements in our arena and then subtract that from the total requested
-        int elementsNeeded = elementCount - (this.capacity - this.used);
+    private void ensureCapacity(List<PendingUpload> queue, boolean force) {
+        int bytes = 0;
 
-        // Try to allocate some extra buffer space unless this is an unusually large allocation
-        this.resize(Math.max(this.capacity + this.resizeIncrement, this.capacity + elementsNeeded));
+        for (PendingUpload upload : queue) {
+            bytes += upload.getLength();
+        }
+
+        int free = this.getFree();
+
+        if (force || bytes > free) {
+            int next = this.capacity + this.resizeIncrement;
+            int minimum = this.capacity + (bytes - free);
+
+            // Try to allocate some extra buffer space unless this is an unusually large allocation
+            this.resize(Math.max(next, minimum));
+        }
+    }
+
+    private int getFree() {
+        return this.capacity - this.used;
     }
 
     private void checkAssertions() {

@@ -6,9 +6,9 @@ import me.jellysquid.mods.sodium.model.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.model.vertex.buffer.VertexBufferBuilder;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
-import me.jellysquid.mods.sodium.render.IndexedVertexData;
+import me.jellysquid.mods.sodium.render.IndexedMesh;
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.ChunkModelBuilder;
-import me.jellysquid.mods.sodium.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.render.chunk.data.BuiltChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
@@ -38,8 +38,8 @@ public class ChunkBuildBuffers {
         this.vertexType = vertexType;
     }
 
-    public Map<BlockRenderPass, ChunkMeshData> createMeshes() {
-        Map<BlockRenderPass, ChunkMeshData> map = new Reference2ObjectOpenHashMap<>();
+    public Map<BlockRenderPass, BuiltChunkMesh> createMeshes() {
+        Map<BlockRenderPass, BuiltChunkMesh> map = new Reference2ObjectOpenHashMap<>();
 
         for (Map.Entry<BlockRenderPass, ChunkModelBuilderImpl> entry : this.builders.entrySet()) {
             BlockRenderPass pass = entry.getKey();
@@ -98,7 +98,6 @@ public class ChunkBuildBuffers {
         private final VertexBufferBuilder vertexBufferBuilder;
 
         private final ModelVertexSink vertexSink;
-        private final ChunkVertexType vertexType;
 
         private final ChunkRenderData.Builder renderData;
 
@@ -107,7 +106,6 @@ public class ChunkBuildBuffers {
             this.indexBufferBuilders = indexBufferBuilders;
             this.vertexBufferBuilder = vertexBufferBuilder;
             this.vertexSink = vertexType.createBufferWriter(this.vertexBufferBuilder);
-            this.vertexType = vertexType;
             this.renderData = renderData;
         }
 
@@ -131,17 +129,14 @@ public class ChunkBuildBuffers {
          * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
          * times to return multiple copies.
          */
-        public ChunkMeshData createMesh() {
-            VertexBufferBuilder vertexBufferBuilder = this.vertexBufferBuilder;
-            NativeBuffer vertexBuffer = vertexBufferBuilder.pop();
+        public BuiltChunkMesh createMesh() {
+            NativeBuffer vertexBuffer = this.vertexBufferBuilder.pop();
 
             if (vertexBuffer == null) {
                 return null;
             }
 
-            IndexBufferBuilder[] indexBufferBuilders = this.indexBufferBuilders;
-
-            IndexBufferBuilder.Result[] indexBuffers = Arrays.stream(indexBufferBuilders)
+            IndexBufferBuilder.Result[] indexBuffers = Arrays.stream(this.indexBufferBuilders)
                     .map(IndexBufferBuilder::pop)
                     .toArray(IndexBufferBuilder.Result[]::new);
 
@@ -152,7 +147,7 @@ public class ChunkBuildBuffers {
 
             int indexPointer = 0;
 
-            Map<ModelQuadFacing, ElementRange> ranges = new EnumMap<>(ModelQuadFacing.class);
+            Map<ModelQuadFacing, ElementRange> slices = new EnumMap<>(ModelQuadFacing.class);
 
             for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
                 IndexBufferBuilder.Result indices = indexBuffers[facing.ordinal()];
@@ -161,16 +156,13 @@ public class ChunkBuildBuffers {
                     continue;
                 }
 
-                ranges.put(facing,
+                slices.put(facing,
                         new ElementRange(indexPointer, indices.getCount(), indices.getFormat(), indices.getBaseVertex()));
 
                 indexPointer = indices.writeTo(indexPointer, indexBuffer.getDirectBuffer());
             }
 
-            IndexedVertexData vertexData = new IndexedVertexData(this.vertexType.getCustomVertexFormat(),
-                    vertexBuffer, indexBuffer);
-
-            return new ChunkMeshData(vertexData, ranges);
+            return new BuiltChunkMesh(new IndexedMesh(vertexBuffer, indexBuffer), slices);
         }
 
         public void release() {
