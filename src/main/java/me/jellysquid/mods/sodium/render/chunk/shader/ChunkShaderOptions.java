@@ -19,6 +19,10 @@ public record ChunkShaderOptions(ChunkFogMode fog, BlockRenderPass pass) {
             }
         }
 
+        if (this.pass.useDiscard()) {
+            constants.add("USE_DISCARD");
+        }
+
         return constants.build();
     }
 }

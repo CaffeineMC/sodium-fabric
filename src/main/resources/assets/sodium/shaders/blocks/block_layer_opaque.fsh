@@ -49,8 +49,10 @@ void main() {
     diffuseColor.a = clamp((detailRatio * detailDirection) + diffuseColor.a, 0.0, 1.0);
 #endif
 
+#ifdef USE_DISCARD
     if (diffuseColor.a < _mat_cutoutThreshold(v_Options)) discard;
-
+#endif
+    
     vec4 lightColor = texture(u_LightTex, v_LightCoord);
 
     vec4 finalColor = (diffuseColor * lightColor);

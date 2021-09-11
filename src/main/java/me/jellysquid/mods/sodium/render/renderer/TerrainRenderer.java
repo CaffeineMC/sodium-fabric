@@ -38,7 +38,8 @@ public class TerrainRenderer extends AbstractRenderer<TerrainBlockRenderInfo> {
     @Override
     protected void emitQuad(MutableQuadViewImpl quad, BlendMode renderLayer) {
         BlockRenderPass pass = switch (renderLayer) {
-            case DEFAULT, SOLID, CUTOUT, CUTOUT_MIPPED -> DefaultBlockRenderPasses.OPAQUE;
+            case DEFAULT, SOLID -> DefaultBlockRenderPasses.SOLID;
+            case CUTOUT, CUTOUT_MIPPED -> DefaultBlockRenderPasses.CUTOUT;
             case TRANSLUCENT -> DefaultBlockRenderPasses.TRANSLUCENT;
         };
 

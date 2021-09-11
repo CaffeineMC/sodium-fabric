@@ -203,7 +203,8 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
      */
     public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
         if (renderLayer == RenderLayer.getSolid()) {
-            this.drawChunkLayer(DefaultBlockRenderPasses.OPAQUE, matrixStack, x, y, z);
+            this.drawChunkLayer(DefaultBlockRenderPasses.SOLID, matrixStack, x, y, z);
+            this.drawChunkLayer(DefaultBlockRenderPasses.CUTOUT, matrixStack, x, y, z);
             this.drawChunkLayer(DefaultBlockRenderPasses.DETAIL, matrixStack, x, y, z);
         } else if (renderLayer == RenderLayer.getTranslucent()) {
             this.drawChunkLayer(DefaultBlockRenderPasses.TRANSLUCENT, matrixStack, x, y, z);
