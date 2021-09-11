@@ -47,10 +47,10 @@ public class BlockOcclusionCache {
 
             if (selfShape.isEmpty()) {
                 if (adjShape.isEmpty()){
-                    return true; // face of potted plants with cull face enabled are rendered if top slab is placed above
+                    return true; //example: top face of potted plants if top slab is placed above
                 }
                 else if (!adjState.isSideSolid(view,pos,facing.getOpposite(), SideShapeType.FULL)){
-                    return true; // face of potted plants rendered if top stair placed above
+                    return true; //example: face of potted plants rendered if top stair placed above
                 }
             }
 
