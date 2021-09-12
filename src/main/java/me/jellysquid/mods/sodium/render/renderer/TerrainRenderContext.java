@@ -58,7 +58,7 @@ public class TerrainRenderContext extends RenderContextBase implements RenderCon
         this.terrainRenderer = new TerrainRenderer(this.blockRenderInfo, this.buffers, lighter, this::transform, this.bounds);
         this.meshConsumer = this.terrainRenderer::acceptFabricMesh;
         this.fallbackConsumer = this.terrainRenderer::renderVanillaModel;
-        this.fluidRenderer = new FluidRenderer(this.terrainRenderer.biomeColorBlender);
+        this.fluidRenderer = new FluidRenderer();
     }
 
     @Override

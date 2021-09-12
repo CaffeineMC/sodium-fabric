@@ -74,7 +74,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     private final SidedBrightnessTable sidedBrightnessTable;
 
     // Local section copies. Read-only.
-    private ClonedChunkSection[] sections;
+    private final ClonedChunkSection[] sections;
 
     // Biome caches for each chunk section
     private final BiomeCache[] biomeCaches;
@@ -82,13 +82,6 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     // The biome blend caches for each color resolver type
     // This map is always re-initialized, but the caches themselves are taken from an object pool
     private final Map<ColorResolver, BiomeColorCache> biomeColorCaches = new Reference2ObjectOpenHashMap<>();
-
-    // The previously accessed and cached color resolver, used in conjunction with the cached color cache field
-    private ColorResolver prevColorResolver;
-
-    // The cached lookup result for the previously accessed color resolver to avoid excess hash table accesses
-    // for vertex color blending
-    private BiomeColorCache prevColorCache;
 
     // The starting point from which this slice captures blocks
     private int baseX, baseY, baseZ;
@@ -165,10 +158,8 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
 
     public void prepare(ChunkRenderContext context) {
         this.origin = context.getOrigin();
-        this.sections = context.getSections();
 
-        this.prevColorCache = null;
-        this.prevColorResolver = null;
+        System.arraycopy(context.getSections(), 0, this.sections, 0, this.sections.length);
 
         this.biomeColorCaches.clear();
 
@@ -275,19 +266,10 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
 
     @Override
     public int getColor(BlockPos pos, ColorResolver resolver) {
-        BiomeColorCache cache;
+        BiomeColorCache cache = this.biomeColorCaches.get(resolver);
 
-        if (this.prevColorResolver == resolver) {
-            cache = this.prevColorCache;
-        } else {
-            cache = this.biomeColorCaches.get(resolver);
-
-            if (cache == null) {
-                this.biomeColorCaches.put(resolver, cache = new BiomeColorCache(resolver, this));
-            }
-
-            this.prevColorResolver = resolver;
-            this.prevColorCache = cache;
+        if (cache == null) {
+            this.biomeColorCaches.put(resolver, cache = new BiomeColorCache(resolver, this));
         }
 
         return cache.getBlendedColor(pos);

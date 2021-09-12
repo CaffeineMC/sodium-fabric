@@ -2,18 +2,20 @@ package me.jellysquid.mods.sodium.render;
 
 import me.jellysquid.mods.sodium.interop.fabric.SodiumRenderer;
 import me.jellysquid.mods.sodium.model.quad.QuadColorizer;
-import me.jellysquid.mods.sodium.model.quad.blender.BiomeColorBlender;
+import me.jellysquid.mods.sodium.model.quad.blender.BiomeBlender;
 import me.jellysquid.mods.sodium.util.DirectionUtil;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
+import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.fabricmc.fabric.impl.client.rendering.fluid.FluidRenderHandlerRegistryImpl;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.StainedGlassBlock;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.fluid.Fluid;
@@ -48,15 +50,16 @@ public class FluidRenderer {
     private static final float EPSILON = 0.001f;
 
     private final BlockPos.Mutable scratchPos = new BlockPos.Mutable();
-    private final BiomeColorBlender biomeColorBlender;
+    private final BiomeBlender biomeBlender;
 
     private final Sprite waterOverlaySprite;
 
     // Cached wrapper type that adapts FluidRenderHandler to support QuadColorProvider<FluidState>
     private final FabricFluidColorizerAdapter fabricColorProviderAdapter = new FabricFluidColorizerAdapter();
+    private final int[] cachedColorOutputs = new int[4];
 
-    public FluidRenderer(BiomeColorBlender biomeColorBlender) {
-        this.biomeColorBlender = biomeColorBlender;
+    public FluidRenderer() {
+        this.biomeBlender = BiomeBlender.create(MinecraftClient.getInstance());
         this.waterOverlaySprite = ModelLoader.WATER_OVERLAY.getSprite();
     }
 
@@ -338,11 +341,11 @@ public class FluidRenderer {
         }
     }
 
-    private void calculateQuadColors(QuadEmitter quad, BlockRenderView world, BlockPos pos, FluidState fluidState, QuadColorizer<FluidState> handler) {
-        int[] biomeColors = this.biomeColorBlender.getColors(world, pos, quad, handler, fluidState);
+    private void calculateQuadColors(QuadEmitter quad, BlockRenderView world, BlockPos pos, FluidState fluidState, QuadColorizer<FluidState> colorizer) {
+        this.biomeBlender.getColors(world, fluidState, pos, quad, colorizer, this.cachedColorOutputs);
 
         for (int i = 0; i < 4; i++) {
-            quad.spriteColor(i, 0, biomeColors != null ? biomeColors[i] : 0xFFFFFFFF);
+            quad.spriteColor(i, 0, this.cachedColorOutputs[i]);
         }
     }
 
@@ -396,7 +399,7 @@ public class FluidRenderer {
         }
 
         @Override
-        public int getColor(FluidState state, @Nullable BlockRenderView world, @Nullable BlockPos pos, int tintIndex) {
+        public int getColor(FluidState state, @Nullable BlockRenderView world, @Nullable BlockPos pos, QuadView quad) {
             if (this.handler == null) {
                 return -1;
             }

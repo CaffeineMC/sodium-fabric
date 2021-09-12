@@ -69,3 +69,5 @@ accessible field net/minecraft/util/math/Matrix3f a12 F
 accessible field net/minecraft/util/math/Matrix3f a20 F
 accessible field net/minecraft/util/math/Matrix3f a21 F
 accessible field net/minecraft/util/math/Matrix3f a22 F
+
+accessible field net/minecraft/state/State owner Ljava/lang/Object;

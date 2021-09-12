@@ -5,47 +5,41 @@ import me.jellysquid.mods.sodium.interop.fabric.mesh.QuadViewImpl;
 import me.jellysquid.mods.sodium.model.quad.QuadColorizer;
 import me.jellysquid.mods.sodium.util.color.ColorMixer;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadView;
+import net.minecraft.state.State;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
 
-public class SmoothBiomeColorBlender implements BiomeColorBlender {
-    private final int[] cachedRet = new int[4];
-
+class SmoothBiomeBlender implements BiomeBlender {
     private final BlockPos.Mutable mpos = new BlockPos.Mutable();
 
     @Override
-    public <T> int[] getColors(BlockRenderView world, BlockPos origin, QuadView quad, QuadColorizer<T> colorizer, T state) {
-        final int[] colors = this.cachedRet;
-
+    public <T extends State<O, ?>, O> void getColors(BlockRenderView world, T state, BlockPos origin, QuadView quad, QuadColorizer<T> resolver, int[] colors) {
         boolean aligned = (((QuadViewImpl) quad).geometryFlags() & GeometryHelper.AXIS_ALIGNED_FLAG) != 0;
 
-        for (int i = 0; i < 4; i++) {
+        for (int vertexIndex = 0; vertexIndex < 4; vertexIndex++) {
             // If the vertex is aligned to the block grid, we do not need to interpolate
             if (aligned) {
-                colors[i] = this.getVertexColor(colorizer, world, state, origin, quad, i);
+                colors[vertexIndex] = this.getVertexColor(world, origin, state, quad, vertexIndex, resolver);
             } else {
-                colors[i] = this.getInterpolatedVertexColor(colorizer, world, state, origin, quad, i);
+                colors[vertexIndex] = this.getInterpolatedVertexColor(world, origin, state, quad, vertexIndex, resolver);
             }
         }
-
-        return colors;
     }
 
-    private <T> int getVertexColor(QuadColorizer<T> colorizer, BlockRenderView world, T state, BlockPos origin,
-                                   QuadView quad, int vertexIdx) {
+    private <T> int getVertexColor(BlockRenderView world, BlockPos origin, T state,
+                                   QuadView quad, int vertexIdx, QuadColorizer<T> resolver) {
         final int x = origin.getX() + (int) quad.x(vertexIdx);
         final int z = origin.getZ() + (int) quad.z(vertexIdx);
 
-        return this.getBlockColor(colorizer, world, state, origin, x, z, quad.colorIndex());
+        return this.getBlockColor(world, origin, state, x, z, quad, resolver);
     }
 
-    private <T> int getBlockColor(QuadColorizer<T> colorizer, BlockRenderView world, T state, BlockPos origin,
-                                  int x, int z, int colorIdx) {
-        return colorizer.getColor(state, world, this.mpos.set(x, origin.getY(), z), colorIdx);
+    private <T> int getBlockColor(BlockRenderView world, BlockPos origin, T state, int x, int z, QuadView quad, QuadColorizer<T> resolver) {
+        return resolver.getColor(state, world, this.mpos.set(x, origin.getY(), z), quad);
     }
 
-    private <T> int getInterpolatedVertexColor(QuadColorizer<T> colorizer, BlockRenderView world, T state,
-                                               BlockPos origin, QuadView quad, int vertexIdx) {
+    private <T> int getInterpolatedVertexColor(BlockRenderView world, BlockPos origin, T state,
+                                               QuadView quad, int vertexIdx, QuadColorizer<T> resolver) {
         final float x = quad.x(vertexIdx);
         final float z = quad.z(vertexIdx);
 
@@ -57,10 +51,10 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
         final int originZ = origin.getZ() + intZ;
 
         // Retrieve the color values for each neighbor
-        final int c1 = this.getBlockColor(colorizer, world, state, origin, originX, originZ, quad.colorIndex());
-        final int c2 = this.getBlockColor(colorizer, world, state, origin, originX, originZ + 1, quad.colorIndex());
-        final int c3 = this.getBlockColor(colorizer, world, state, origin, originX + 1, originZ, quad.colorIndex());
-        final int c4 = this.getBlockColor(colorizer, world, state, origin, originX + 1, originZ + 1, quad.colorIndex());
+        final int c1 = this.getBlockColor(world, origin, state, originX, originZ, quad, resolver);
+        final int c2 = this.getBlockColor(world, origin, state, originX, originZ + 1, quad, resolver);
+        final int c3 = this.getBlockColor(world, origin, state, originX + 1, originZ, quad, resolver);
+        final int c4 = this.getBlockColor(world, origin, state, originX + 1, originZ + 1, quad, resolver);
 
         final int result;
 

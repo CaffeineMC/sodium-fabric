@@ -18,9 +18,8 @@ package me.jellysquid.mods.sodium.render.renderer;
 
 import me.jellysquid.mods.sodium.model.light.QuadLighter;
 import me.jellysquid.mods.sodium.model.light.data.QuadLightData;
-import me.jellysquid.mods.sodium.model.quad.QuadColorizer;
-import me.jellysquid.mods.sodium.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.interop.fabric.material.RenderMaterialValue;
+import me.jellysquid.mods.sodium.model.quad.blender.BiomeBlender;
 import me.jellysquid.mods.sodium.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.util.DirectionUtil;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
@@ -53,10 +52,13 @@ public abstract class AbstractRenderer<T extends BlockRenderInfo> {
 
     protected static final int DEFAULT_TEXTURE_INDEX = 0;
 
-    protected final BiomeColorBlender biomeColorBlender = BiomeColorBlender.create(MinecraftClient.getInstance());
     protected final T blockInfo;
     protected final QuadLighter lighter;
     protected final QuadTransform transform;
+
+    private final int[] cachedColorOutputs = new int[4];
+
+    private final BiomeBlender biomeBlender = BiomeBlender.create(MinecraftClient.getInstance());
 
     AbstractRenderer(T blockInfo, QuadLighter lighter, QuadTransform transform) {
         this.blockInfo = blockInfo;
@@ -69,11 +71,11 @@ public abstract class AbstractRenderer<T extends BlockRenderInfo> {
             return;
         }
 
-        final QuadColorizer<BlockState> colorProvider = this.blockInfo.getColorProvider();
-        final int[] colors = this.biomeColorBlender.getColors(this.blockInfo.blockView, this.blockInfo.blockPos, quad, colorProvider, this.blockInfo.blockState);
+        this.biomeBlender.getColors(this.blockInfo.blockView, this.blockInfo.blockState, this.blockInfo.blockPos, quad,
+                this.blockInfo.getColorProvider(), this.cachedColorOutputs);
 
         for (int i = 0; i < 4; i++) {
-            quad.spriteColor(i, DEFAULT_TEXTURE_INDEX, ColorARGB.mulRGBA(colors[i], quad.spriteColor(i, DEFAULT_TEXTURE_INDEX)));
+            quad.spriteColor(i, DEFAULT_TEXTURE_INDEX, ColorARGB.mulRGBA(this.cachedColorOutputs[i], quad.spriteColor(i, DEFAULT_TEXTURE_INDEX)));
         }
     }
 
