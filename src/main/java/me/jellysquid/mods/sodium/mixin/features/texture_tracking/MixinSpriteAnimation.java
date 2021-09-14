@@ -20,7 +20,7 @@ public class MixinSpriteAnimation {
     private void preTick(CallbackInfo ci) {
         SpriteExtended parent = (SpriteExtended) this.parent;
 
-        boolean onDemand = SodiumClientMod.options().advanced.animateOnlyVisibleTextures;
+        boolean onDemand = SodiumClientMod.options().performance.animateOnlyVisibleTextures;
 
         if (onDemand && !parent.isActive()) {
             ci.cancel();
