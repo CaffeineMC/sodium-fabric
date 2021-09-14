@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.renderer;
 
 import com.google.common.collect.Lists;
-import me.jellysquid.mods.sodium.SodiumClient;
 import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.render.chunk.ChunkRenderList;
@@ -19,7 +18,9 @@ import me.jellysquid.mods.thingl.buffer.BufferUsage;
 import me.jellysquid.mods.thingl.buffer.MutableBuffer;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.lists.TessellationCommandList;
-import me.jellysquid.mods.thingl.tessellation.*;
+import me.jellysquid.mods.thingl.tessellation.IndexType;
+import me.jellysquid.mods.thingl.tessellation.PrimitiveType;
+import me.jellysquid.mods.thingl.tessellation.Tessellation;
 import me.jellysquid.mods.thingl.tessellation.binding.ElementBufferBinding;
 import me.jellysquid.mods.thingl.tessellation.binding.VertexBufferBinding;
 import me.jellysquid.mods.thingl.util.ElementRange;
@@ -36,7 +37,6 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final VertexAttributeBinding[] vertexAttributeBindings;
 
     private final MutableBuffer chunkInfoBuffer;
-    private final boolean isBlockFaceCullingEnabled = SodiumClient.options().advanced.useBlockFaceCulling;
 
     public RegionChunkRenderer(RenderDevice device, ChunkVertexType vertexType, float detailDistance) {
         super(device, vertexType, detailDistance);

@@ -101,16 +101,16 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private boolean needsUpdate;
 
-    private boolean useFogCulling;
-    private boolean useOcclusionCulling;
-
     private double fogRenderCutoff;
 
     private FrustumIntersection frustum;
 
     private int currentFrame = 0;
     private final double detailFarPlane;
-    private final boolean useBlockFaceCulling;
+
+    private boolean useFogCulling;
+    private boolean useOcclusionCulling;
+    private boolean useBlockFaceCulling;
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, RenderDevice device) {
         this.worldRenderer = worldRenderer;
@@ -133,7 +133,6 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         this.detailFarPlane = getDetailFarPlane(detailDistance);
         this.chunkRenderer = new RegionChunkRenderer(SodiumRender.DEVICE, ModelVertexType.INSTANCE, detailDistance);
-        this.useBlockFaceCulling = SodiumClient.options().advanced.useBlockFaceCulling;
     }
 
     private static double getDetailFarPlane(float detailDistance) {
@@ -172,11 +171,15 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         this.useFogCulling = false;
 
-        if (SodiumClient.options().advanced.useFogOcclusion) {
+        this.useBlockFaceCulling = SodiumClient.options().performance.useBlockFaceCulling;
+        this.useFogCulling = SodiumClient.options().performance.useFogOcclusion;
+
+        if (this.useFogCulling) {
             float dist = RenderSystem.getShaderFogEnd() + FOG_PLANE_OFFSET;
 
-            if (dist != 0.0f) {
-                this.useFogCulling = true;
+            if (dist == 0.0f) {
+                this.fogRenderCutoff = Double.POSITIVE_INFINITY;
+            } else {
                 this.fogRenderCutoff = Math.max(FOG_PLANE_MIN_DISTANCE, dist * dist);
             }
         }

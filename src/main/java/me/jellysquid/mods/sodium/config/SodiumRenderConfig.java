@@ -19,18 +19,22 @@ import java.nio.file.StandardCopyOption;
 public class SodiumRenderConfig {
     public final QualitySettings quality = new QualitySettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
+    public final PerformanceSettings performance = new PerformanceSettings();
     public final NotificationSettings notifications = new NotificationSettings();
 
     private Path configPath;
 
-    public static class AdvancedSettings {
-        public ArenaMemoryAllocator arenaMemoryAllocator = null;
-
+    public static class PerformanceSettings {
         public boolean animateOnlyVisibleTextures = true;
         public boolean useEntityCulling = true;
         public boolean useParticleCulling = true;
         public boolean useFogOcclusion = true;
         public boolean useBlockFaceCulling = true;
+    }
+
+    public static class AdvancedSettings {
+        public ArenaMemoryAllocator arenaMemoryAllocator = null;
+
         public boolean allowDirectMemoryAccess = true;
         public boolean enableMemoryTracing = false;
         public boolean useAdvancedStagingBuffers = true;

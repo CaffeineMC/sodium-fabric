@@ -147,7 +147,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     public void updateChunks(Camera camera, int frame, boolean spectator) {
         NativeBuffer.reclaim(false);
 
-        this.useEntityCulling = SodiumClient.options().advanced.useEntityCulling;
+        this.useEntityCulling = SodiumClient.options().performance.useEntityCulling;
 
         if (this.client.options.viewDistance != this.renderDistance) {
             this.reload();

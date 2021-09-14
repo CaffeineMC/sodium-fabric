@@ -49,6 +49,7 @@ public class SodiumConfigScreen extends Screen {
 
         this.pages.add(SodiumConfigScreenPages.general());
         this.pages.add(SodiumConfigScreenPages.quality());
+        this.pages.add(SodiumConfigScreenPages.performance());
         this.pages.add(SodiumConfigScreenPages.advanced());
     }
 
@@ -258,6 +259,8 @@ public class SodiumConfigScreen extends Screen {
 
         if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
             client.worldRenderer.reload();
+        } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
+            client.worldRenderer.scheduleTerrainUpdate();
         }
 
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
