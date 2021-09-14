@@ -338,14 +338,6 @@ public class SodiumConfigScreenPages {
                         .setBinding((opts, value) -> opts.advanced.allowDirectMemoryAccess = value, opts -> opts.advanced.allowDirectMemoryAccess)
                         .build()
                 )
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(new TranslatableText("sodium.options.enable_memory_tracing.name"))
-                        .setTooltip(new TranslatableText("sodium.options.enable_memory_tracing.tooltip"))
-                        .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.LOW)
-                        .setBinding((opts, value) -> opts.advanced.enableMemoryTracing = value, opts -> opts.advanced.enableMemoryTracing)
-                        .build()
-                )
                 .build());
 
         return new OptionPage(new TranslatableText("sodium.options.pages.advanced"), ImmutableList.copyOf(groups));
