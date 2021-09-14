@@ -13,10 +13,10 @@ import java.nio.ByteBuffer;
 
 public class MappedStagingBuffer implements StagingBuffer {
     private static final EnumBitField<BufferStorageFlags> STORAGE_FLAGS =
-            EnumBitField.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.CLIENT_STORAGE, BufferStorageFlags.MAP_WRITE, BufferStorageFlags.COHERENT);
+            EnumBitField.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.CLIENT_STORAGE, BufferStorageFlags.MAP_WRITE);
 
     private static final EnumBitField<BufferMapFlags> MAP_FLAGS =
-            EnumBitField.of(BufferMapFlags.PERSISTENT, BufferMapFlags.INVALIDATE_BUFFER, BufferMapFlags.WRITE, BufferMapFlags.COHERENT);
+            EnumBitField.of(BufferMapFlags.PERSISTENT, BufferMapFlags.INVALIDATE_BUFFER, BufferMapFlags.WRITE, BufferMapFlags.EXPLICIT_FLUSH);
 
     private final FallbackStagingBuffer fallbackStagingBuffer;
 
@@ -25,7 +25,8 @@ public class MappedStagingBuffer implements StagingBuffer {
     private final PriorityQueue<CopyCommand> pendingCopies = new ObjectArrayFIFOQueue<>();
     private final PriorityQueue<FencedMemoryRegion> fencedRegions = new ObjectArrayFIFOQueue<>();
 
-    private int head = 0;
+    private int start = 0;
+    private int pos = 0;
 
     private final int capacity;
     private int remaining;
@@ -59,19 +60,19 @@ public class MappedStagingBuffer implements StagingBuffer {
             return;
         }
 
-        int remaining = this.capacity - this.head;
+        int remaining = this.capacity - this.pos;
 
         // Split the transfer in two if we have enough available memory at the end and start of the buffer
         if (length > remaining) {
             int split = length - remaining;
 
-            this.addTransfer(data.slice(0, remaining), dst, this.head, writeOffset);
+            this.addTransfer(data.slice(0, remaining), dst, this.pos, writeOffset);
             this.addTransfer(data.slice(remaining, split), dst, 0, writeOffset + remaining);
 
-            this.head = split;
+            this.pos = split;
         } else {
-            this.addTransfer(data, dst, this.head, writeOffset);
-            this.head += length;
+            this.addTransfer(data, dst, this.pos, writeOffset);
+            this.pos += length;
         }
 
         this.remaining -= length;
@@ -90,6 +91,13 @@ public class MappedStagingBuffer implements StagingBuffer {
 
         int bytes = 0;
 
+        if (this.pos < this.start) {
+            this.device.flushMappedRange(this.mappedBuffer.map, this.start, this.capacity - this.start);
+            this.device.flushMappedRange(this.mappedBuffer.map, 0, this.pos);
+        } else {
+            this.device.flushMappedRange(this.mappedBuffer.map, this.start, this.pos - this.start);
+        }
+
         while (!this.pendingCopies.isEmpty()) {
             CopyCommand command = this.pendingCopies.dequeue();
             this.device.copyBufferSubData(this.mappedBuffer.buffer, command.buffer, command.readOffset, command.writeOffset, command.bytes);
@@ -98,6 +106,7 @@ public class MappedStagingBuffer implements StagingBuffer {
         }
 
         this.fencedRegions.enqueue(new FencedMemoryRegion(this.device.createFence(), bytes));
+        this.start = this.pos;
     }
 
     @Override
