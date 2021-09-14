@@ -25,6 +25,8 @@ public class SodiumRenderConfig {
     private Path configPath;
 
     public static class PerformanceSettings {
+        public int chunkBuilderThreads = 0;
+
         public boolean animateOnlyVisibleTextures = true;
         public boolean useEntityCulling = true;
         public boolean useParticleCulling = true;

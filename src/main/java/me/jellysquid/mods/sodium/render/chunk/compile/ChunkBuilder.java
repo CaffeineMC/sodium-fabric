@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.SodiumClient;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.render.renderer.TerrainRenderContext;
@@ -39,7 +40,7 @@ public class ChunkBuilder {
 
     public ChunkBuilder(ChunkVertexType vertexType) {
         this.vertexType = vertexType;
-        this.limitThreads = getOptimalThreadCount();
+        this.limitThreads = getThreadCount();
     }
 
     /**
@@ -167,11 +168,20 @@ public class ChunkBuilder {
     }
 
     /**
-     * Returns the "optimal" number of threads to be used for chunk build tasks. This is always at least one thread,
-     * but can be up to the number of available processor threads on the system.
+     * Returns the "optimal" number of threads to be used for chunk build tasks. This will always return at least one
+     * thread.
      */
     private static int getOptimalThreadCount() {
-        return Math.max(1, Runtime.getRuntime().availableProcessors());
+        return Math.max(1 + (getMaxThreadCount() / 3), getMaxThreadCount() - 6);
+    }
+
+    private static int getThreadCount() {
+        int requested = SodiumClient.options().performance.chunkBuilderThreads;
+        return requested == 0 ? getOptimalThreadCount() : Math.min(requested, getMaxThreadCount());
+    }
+
+    private static int getMaxThreadCount() {
+        return Runtime.getRuntime().availableProcessors();
     }
 
     public CompletableFuture<Void> scheduleDeferred(ChunkRenderBuildTask task) {

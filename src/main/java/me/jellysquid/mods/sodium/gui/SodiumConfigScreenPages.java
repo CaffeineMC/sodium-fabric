@@ -222,6 +222,20 @@ public class SodiumConfigScreenPages {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(int.class, sodiumOpts)
+                        .setName(new LiteralText("Chunk Update Threads"))
+                        .setTooltip(new LiteralText("Specifies the number of threads to use for chunk building. Using more threads can speed up chunk " +
+                                "loading and updates, but may negatively impact frame times."))
+                        .setControl(o -> new SliderControl(o, 0, Runtime.getRuntime().availableProcessors(), 1, ControlValueFormatter.quantityOrDisabled("threads", "Default")))
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.performance.chunkBuilderThreads = value, opts -> opts.performance.chunkBuilderThreads)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build()
+                )
+                .build()
+        );
+
+        groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(new TranslatableText("sodium.options.use_block_face_culling.name"))
                         .setTooltip(new TranslatableText("sodium.options.use_block_face_culling.tooltip"))
