@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.render.renderer.TerrainRenderContext;
 import me.jellysquid.mods.sodium.util.collections.QueueDrainingIterator;
 import me.jellysquid.mods.sodium.util.task.CancellationSource;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -172,7 +173,7 @@ public class ChunkBuilder {
      * thread.
      */
     private static int getOptimalThreadCount() {
-        return Math.max(1 + (getMaxThreadCount() / 3), getMaxThreadCount() - 6);
+        return MathHelper.clamp(Math.max(getMaxThreadCount() / 3, getMaxThreadCount() - 6), 1, 10);
     }
 
     private static int getThreadCount() {
