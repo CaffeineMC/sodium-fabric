@@ -26,6 +26,7 @@ public class SodiumRenderConfig {
 
     public static class PerformanceSettings {
         public int chunkBuilderThreads = 0;
+        public boolean alwaysDeferChunkUpdates = false;
 
         public boolean animateOnlyVisibleTextures = true;
         public boolean useEntityCulling = true;

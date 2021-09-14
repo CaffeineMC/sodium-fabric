@@ -232,6 +232,15 @@ public class SodiumConfigScreenPages {
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(new LiteralText("Always Defer Chunk Updates"))
+                        .setTooltip(new LiteralText("If enabled, rendering will never wait for chunk updates to finish, even if they are important. This can " +
+                                "greatly improve frame rates in some scenarios, but could also create significant visual lag in the world."))
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.performance.alwaysDeferChunkUpdates = value, opts -> opts.performance.alwaysDeferChunkUpdates)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
+                        .build())
                 .build()
         );
 

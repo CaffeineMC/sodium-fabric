@@ -56,7 +56,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     /**
      * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
      */
-    private static final double NEARBY_CHUNK_DISTANCE = Math.pow(48, 2.0);
+    private static final double NEARBY_CHUNK_DISTANCE = Math.pow(32, 2.0);
 
     /**
      * The minimum distance the culling plane can be from the player's camera. This helps to prevent mathematical
@@ -111,6 +111,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     private boolean useFogCulling;
     private boolean useOcclusionCulling;
     private boolean useBlockFaceCulling;
+    private boolean alwaysDeferChunkUpdates;
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, RenderDevice device) {
         this.worldRenderer = worldRenderer;
@@ -169,10 +170,11 @@ public class RenderSectionManager implements ChunkStatusListener {
         this.cameraY = (float) cameraPos.y;
         this.cameraZ = (float) cameraPos.z;
 
-        this.useFogCulling = false;
+        var options = SodiumClient.options();
 
-        this.useBlockFaceCulling = SodiumClient.options().performance.useBlockFaceCulling;
-        this.useFogCulling = SodiumClient.options().performance.useFogOcclusion;
+        this.useBlockFaceCulling = options.performance.useBlockFaceCulling;
+        this.useFogCulling = options.performance.useFogOcclusion;
+        this.alwaysDeferChunkUpdates = options.performance.alwaysDeferChunkUpdates;
 
         if (this.useFogCulling) {
             float dist = RenderSystem.getShaderFogEnd() + FOG_PLANE_OFFSET;
@@ -465,7 +467,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         RenderSection section = this.sections.get(ChunkSectionPos.asLong(x, y, z));
 
         if (section != null && section.isBuilt()) {
-            if (important || this.isChunkPrioritized(section)) {
+            if (!this.alwaysDeferChunkUpdates && (important || this.isChunkPrioritized(section))) {
                 section.markForUpdate(ChunkUpdateType.IMPORTANT_REBUILD);
             } else {
                 section.markForUpdate(ChunkUpdateType.REBUILD);
