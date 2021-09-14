@@ -11,6 +11,7 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.common.util.collections.WorkStealingFutureDrain;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
@@ -33,7 +34,6 @@ import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import me.jellysquid.mods.sodium.common.util.collections.FutureQueueDrainingIterator;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
@@ -324,7 +324,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     }
 
     public void updateChunks() {
-        PriorityQueue<CompletableFuture<ChunkBuildResult>> blockingFutures = this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD);
+        var blockingFutures = this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD);
 
         this.submitRebuildTasks(ChunkUpdateType.INITIAL_BUILD);
         this.submitRebuildTasks(ChunkUpdateType.REBUILD);
@@ -334,16 +334,16 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         if (!blockingFutures.isEmpty()) {
             this.needsUpdate = true;
-            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), new FutureQueueDrainingIterator<>(blockingFutures));
+            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), new WorkStealingFutureDrain<>(blockingFutures, this.builder::stealTask));
         }
 
         this.regions.cleanup();
     }
 
-    private PriorityQueue<CompletableFuture<ChunkBuildResult>> submitRebuildTasks(ChunkUpdateType filterType) {
+    private LinkedList<CompletableFuture<ChunkBuildResult>> submitRebuildTasks(ChunkUpdateType filterType) {
         int budget = filterType.isImportant() ? Integer.MAX_VALUE : this.builder.getSchedulingBudget();
 
-        PriorityQueue<CompletableFuture<ChunkBuildResult>> immediateFutures = new ObjectArrayFIFOQueue<>();
+        LinkedList<CompletableFuture<ChunkBuildResult>> immediateFutures = new LinkedList<>();
         PriorityQueue<RenderSection> queue = this.rebuildQueues.get(filterType);
 
         while (budget > 0 && !queue.isEmpty()) {
@@ -364,7 +364,7 @@ public class RenderSectionManager implements ChunkStatusListener {
 
             if (filterType.isImportant()) {
                 CompletableFuture<ChunkBuildResult> immediateFuture = this.builder.schedule(task);
-                immediateFutures.enqueue(immediateFuture);
+                immediateFutures.add(immediateFuture);
 
                 future = immediateFuture;
             } else {
