@@ -51,7 +51,7 @@ public class WorkStealingFutureDrain<T> implements Iterator<T> {
                 }
             }
 
-            if (!this.workStealFunction.getAsBoolean()) {
+            if (shouldStealWork && !this.workStealFunction.getAsBoolean()) {
                 shouldStealWork = false;
             }
         }
