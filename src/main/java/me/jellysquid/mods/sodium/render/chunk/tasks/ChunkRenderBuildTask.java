@@ -25,10 +25,4 @@ public abstract class ChunkRenderBuildTask {
      *         if the task was cancelled.
      */
     public abstract ChunkBuildResult performBuild(TerrainRenderContext context, CancellationSource cancellationSource);
-
-    /**
-     * Called on the main render thread when the task's execution returns. The implementation should release any
-     * resources it's still holding onto at this point.
-     */
-    public abstract void releaseResources();
 }

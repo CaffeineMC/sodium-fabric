@@ -12,17 +12,13 @@ import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChunkBuilder {
-    /**
-     * The maximum number of jobs that can be queued for a given worker thread.
-     */
-    private static final int TASK_QUEUE_LIMIT_PER_WORKER = 2;
-
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
     private final Deque<WrappedTask> buildQueue = new ConcurrentLinkedDeque<>();
@@ -38,6 +34,7 @@ public class ChunkBuilder {
     private final ChunkVertexType vertexType;
 
     private final Queue<ChunkBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
+    private final ThreadLocal<ChunkBuildContext> localContexts = new ThreadLocal<>();
 
     public ChunkBuilder(ChunkVertexType vertexType) {
         this.vertexType = vertexType;
@@ -66,7 +63,7 @@ public class ChunkBuilder {
         }
 
         for (int i = 0; i < this.limitThreads; i++) {
-            TerrainRenderContext context = new TerrainRenderContext(this.world, this.vertexType);
+            ChunkBuildContext context = new ChunkBuildContext(this.world, this.vertexType);
             WorkerRunnable worker = new WorkerRunnable(context);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
@@ -113,7 +110,6 @@ public class ChunkBuilder {
         // Delete any queued tasks and resources attached to them
         for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
-            job.task.releaseResources();
         }
 
         // Delete any results in the deferred queue
@@ -194,14 +190,90 @@ public class ChunkBuilder {
         return new QueueDrainingIterator<>(this.deferredResultQueue);
     }
 
+    /**
+     * "Steals" a task on the queue and allows the currently calling thread to execute it using locally-allocated
+     * resources instead. While this function returns true, the caller should continually execute it so that additional
+     * tasks can be processed.
+     *
+     * @return True if it was able to steal a task, otherwise false
+     */
+    public boolean stealTask() {
+        WrappedTask task = this.getNextJob(false);
+
+        if (task == null) {
+            return false;
+        }
+
+        ChunkBuildContext context = this.localContexts.get();
+
+        if (context == null) {
+            this.localContexts.set(context = new ChunkBuildContext(this.world, this.vertexType));
+        }
+
+        try {
+            processJob(task, context);
+        } finally {
+            context.release();
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns the next task which this worker can work on or blocks until one becomes available. If no tasks are
+     * currently available and {@param block} is true, it will wait on the {@link ChunkBuilder#jobNotifier} field
+     * until it is notified of an incoming task.
+     */
+    private WrappedTask getNextJob(boolean block) {
+        WrappedTask job = ChunkBuilder.this.buildQueue.poll();
+
+        if (job == null && block) {
+            synchronized (ChunkBuilder.this.jobNotifier) {
+                try {
+                    ChunkBuilder.this.jobNotifier.wait();
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+
+        return job;
+    }
+
+    private static void processJob(WrappedTask job, ChunkBuildContext context) {
+        if (job.isCancelled()) {
+            return;
+        }
+
+        ChunkBuildResult result;
+
+        try {
+            // Perform the build task with this worker's local resources and obtain the result
+            result = job.task.performBuild(context.terrainRenderer, job);
+        } catch (Exception e) {
+            // Propagate any exception from chunk building
+            job.future.completeExceptionally(e);
+            e.printStackTrace();
+            return;
+        }
+
+        // The result can be null if the task is cancelled
+        if (result != null) {
+            // Notify the future that the result is now available
+            job.future.complete(result);
+        } else if (!job.isCancelled()) {
+            // If the job wasn't cancelled and no result was produced, we've hit a bug
+            job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
+        }
+    }
+
     private class WorkerRunnable implements Runnable {
         private final AtomicBoolean running = ChunkBuilder.this.running;
 
         // Making this thread-local provides a small boost to performance by avoiding the overhead in synchronizing
         // caches between different CPU cores
-        private final TerrainRenderContext context;
+        private final ChunkBuildContext context;
 
-        public WorkerRunnable(TerrainRenderContext context) {
+        public WorkerRunnable(ChunkBuildContext context) {
             this.context = context;
         }
 
@@ -209,63 +281,18 @@ public class ChunkBuilder {
         public void run() {
             // Run until the chunk builder shuts down
             while (this.running.get()) {
-                WrappedTask job = this.getNextJob();
+                WrappedTask job = ChunkBuilder.this.getNextJob(true);
 
                 if (job == null) {
                     continue;
                 }
 
-                this.processJob(job);
-            }
-        }
-
-        private void processJob(WrappedTask job) {
-            ChunkBuildResult result;
-
-            try {
-                if (job.isCancelled()) {
-                    return;
-                }
-
-                // Perform the build task with this worker's local resources and obtain the result
-                result = job.task.performBuild(this.context, job);
-            } catch (Exception e) {
-                // Propagate any exception from chunk building
-                job.future.completeExceptionally(e);
-                e.printStackTrace();
-                return;
-            } finally {
-                this.context.release();
-                job.task.releaseResources();
-            }
-
-            // The result can be null if the task is cancelled
-            if (result != null) {
-                // Notify the future that the result is now available
-                job.future.complete(result);
-            } else if (!job.isCancelled()) {
-                // If the job wasn't cancelled and no result was produced, we've hit a bug
-                job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
-            }
-        }
-
-        /**
-         * Returns the next task which this worker can work on or blocks until one becomes available. If no tasks are
-         * currently available, it will wait on {@link ChunkBuilder#jobNotifier} field until notified.
-         */
-        private WrappedTask getNextJob() {
-            WrappedTask job = ChunkBuilder.this.buildQueue.poll();
-
-            if (job == null) {
-                synchronized (ChunkBuilder.this.jobNotifier) {
-                    try {
-                        ChunkBuilder.this.jobNotifier.wait();
-                    } catch (InterruptedException ignored) {
-                    }
+                try {
+                    processJob(job, this.context);
+                } finally {
+                    this.context.release();
                 }
             }
-
-            return job;
         }
     }
 
