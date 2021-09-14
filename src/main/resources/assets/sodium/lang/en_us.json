@@ -5,6 +5,7 @@
   "sodium.option_impact.extreme": "Extreme",
   "sodium.option_impact.varies": "Varies",
   "sodium.options.pages.quality": "Quality",
+  "sodium.options.pages.performance": "Performance",
   "sodium.options.pages.advanced": "Advanced",
   "sodium.options.view_distance.tooltip": "The render distance controls how far away terrain will be rendered. Lower distances mean that less terrain will be rendered, improving frame rates.",
   "sodium.options.brightness.tooltip": "Controls the brightness (gamma) of the game.",
