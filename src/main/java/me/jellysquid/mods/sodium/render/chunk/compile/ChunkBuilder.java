@@ -49,7 +49,7 @@ public class ChunkBuilder {
      * spawn more tasks than the budget allows, it will block until resources become available.
      */
     public int getSchedulingBudget() {
-        return Math.max(0, (this.limitThreads * TASK_QUEUE_LIMIT_PER_WORKER) - this.buildQueue.size() - this.deferredResultQueue.size());
+        return Math.max(0, this.limitThreads - this.buildQueue.size());
     }
 
     /**
