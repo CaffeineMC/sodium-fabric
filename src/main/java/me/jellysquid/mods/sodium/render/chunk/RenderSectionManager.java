@@ -375,10 +375,9 @@ public class RenderSectionManager implements ChunkStatusListener {
                 continue;
             }
 
+            // Sections can move between update queues, but they won't be removed from the queue they were
+            // previously in to save CPU cycles. We just filter any changed entries here instead.
             if (section.getPendingUpdate() != filterType) {
-                SodiumClient.logger().warn("{} changed update type to {} while in queue for {}, skipping",
-                        section, section.getPendingUpdate(), filterType);
-
                 continue;
             }
 
