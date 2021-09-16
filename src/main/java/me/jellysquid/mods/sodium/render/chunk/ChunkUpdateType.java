@@ -6,6 +6,7 @@ public enum ChunkUpdateType {
     REBUILD(false),
     IMPORTANT_REBUILD(true);
 
+    public static final int COUNT = ChunkUpdateType.values().length;
     private final boolean important;
 
     ChunkUpdateType(boolean important) {

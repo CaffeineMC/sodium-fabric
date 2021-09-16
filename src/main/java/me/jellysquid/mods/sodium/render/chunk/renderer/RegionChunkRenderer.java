@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.render.chunk.renderer;
 
 import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadFacingBits;
 import me.jellysquid.mods.sodium.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.render.chunk.ChunkRenderList;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
@@ -30,7 +31,6 @@ import org.lwjgl.system.MemoryStack;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final MultiDrawBatch[] batches;
@@ -97,17 +97,19 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 programInterface.setProjectionMatrix(matrices.projection());
                 programInterface.setDrawUniforms(this.chunkInfoBuffer);
 
-                for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, pass.isTranslucent())) {
+                for (Map.Entry<RenderRegion, List<ChunkRenderList.Entry>> entry : sortedRegions(list, pass.isTranslucent())) {
                     RenderRegion region = entry.getKey();
-                    List<RenderSection> regionSections = entry.getValue();
+                    List<ChunkRenderList.Entry> regionSections = entry.getValue();
 
-                    if (!this.buildDrawBatches(regionSections, pass, camera)) {
+                    var storage = region.getStorage(pass);
+
+                    if (storage == null || !this.buildDrawBatches(regionSections, pass, camera)) {
                         continue;
                     }
 
                     this.setModelMatrixUniforms(programInterface, matrices, region, camera);
 
-                    programCommands.useTessellation(this.createTessellationForRegion(device, Objects.requireNonNull(region.getStorage(pass))), this::executeDrawBatches);
+                    programCommands.useTessellation(this.createTessellationForRegion(device, storage), this::executeDrawBatches);
                 }
             });
         });
@@ -115,12 +117,15 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         super.end();
     }
 
-    private boolean buildDrawBatches(List<RenderSection> sections, BlockRenderPass pass, ChunkCameraContext camera) {
+    private boolean buildDrawBatches(List<ChunkRenderList.Entry> sections, BlockRenderPass pass, ChunkCameraContext camera) {
         for (MultiDrawBatch batch : this.batches) {
             batch.begin();
         }
 
-        for (RenderSection render : sortedChunks(sections, pass.isTranslucent())) {
+        for (ChunkRenderList.Entry entry : sortedChunks(sections, pass.isTranslucent())) {
+            RenderSection render = entry.section();
+            int visibility = entry.visibility();
+
             ChunkGraphicsState state = render.getGraphicsState(pass);
 
             if (state == null) {
@@ -134,7 +139,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                     .getOffset() / this.vertexFormat.getStride();
 
             for (int faceIndex = 0; faceIndex < ModelQuadFacing.COUNT; faceIndex++) {
-                if (render.isFaceVisible(faceIndex)) {
+                if ((visibility & ModelQuadFacingBits.bitfield(faceIndex)) != 0) {
                     this.addDrawCall(state.getModelFace(faceIndex), indexOffset, baseVertex);
                 }
             }
@@ -204,11 +209,11 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         this.device.deleteBuffer(this.chunkInfoBuffer);
     }
 
-    private static Iterable<Map.Entry<RenderRegion, List<RenderSection>>> sortedRegions(ChunkRenderList list, boolean translucent) {
-        return list.sorted(translucent);
+    private static Iterable<Map.Entry<RenderRegion, List<ChunkRenderList.Entry>>> sortedRegions(ChunkRenderList list, boolean translucent) {
+        return list.sortedSectionsByRegion(translucent);
     }
 
-    private static Iterable<RenderSection> sortedChunks(List<RenderSection> chunks, boolean translucent) {
+    private static Iterable<ChunkRenderList.Entry> sortedChunks(List<ChunkRenderList.Entry> chunks, boolean translucent) {
         return translucent ? Lists.reverse(chunks) : chunks;
     }
 

@@ -1,21 +1,15 @@
 package me.jellysquid.mods.sodium.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
-import me.jellysquid.mods.sodium.model.quad.properties.ModelQuadFacingBits;
-import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.render.chunk.renderer.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.util.DirectionUtil;
-import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Direction;
+import org.joml.FrustumIntersection;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -25,47 +19,32 @@ import java.util.concurrent.CompletableFuture;
  * data about the render in the chunk visibility graph.
  */
 public class RenderSection {
-    private final SodiumWorldRenderer worldRenderer;
+    private final RenderSectionManager manager;
+
+    public final int id;
+    
     private final int chunkX, chunkY, chunkZ;
 
     private final Map<BlockRenderPass, ChunkGraphicsState> graphicsStates;
     private final RenderRegion region;
-    private final ChunkGraphInfo graphInfo;
-
-    private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<?> rebuildTask = null;
 
-    private ChunkUpdateType pendingUpdate;
-
     private boolean tickable;
     private boolean disposed;
 
-    private int lastAcceptedBuildTime = -1;
-    private int builtDetailLevel = -1;
-    private int faceVisibility;
+    public RenderSection(RenderSectionManager manager, int id, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
+        this.manager = manager;
 
-    public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
-        this.worldRenderer = worldRenderer;
+        this.id = id;
         this.region = region;
 
         this.chunkX = chunkX;
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
 
-        this.graphInfo = new ChunkGraphInfo(this);
-
         this.graphicsStates = new Reference2ObjectArrayMap<>();
-    }
-
-
-    public RenderSection getAdjacent(Direction dir) {
-        return this.adjacent[dir.ordinal()];
-    }
-
-    public void setAdjacentNode(Direction dir, RenderSection node) {
-        this.adjacent[dir.ordinal()] = node;
     }
 
     /**
@@ -109,9 +88,9 @@ public class RenderSection {
             throw new NullPointerException("Mesh information must not be null");
         }
 
-        this.worldRenderer.onChunkRenderUpdated(this.chunkX, this.chunkY, this.chunkZ, this.data, info);
-        this.data = info;
+        this.manager.onOcclusionDataUpdated(this, info.getOcclusionData());
 
+        this.data = info;
         this.tickable = !info.getAnimatedSprites().isEmpty();
     }
 
@@ -226,21 +205,12 @@ public class RenderSection {
         return this.chunkZ;
     }
 
-    public void updateFaceVisibility(float cameraX, float cameraY, float cameraZ, int forced) {
-        this.faceVisibility = this.data.getBounds()
-                .calculateVisibility(cameraX, cameraY, cameraZ) | forced;
-    }
-
-    public boolean isFaceVisible(int faceIndex) {
-        return (this.faceVisibility & ModelQuadFacingBits.bitfield(faceIndex)) != 0;
-    }
-
     public ChunkGraphicsState getGraphicsState(BlockRenderPass pass) {
         return this.graphicsStates.get(pass);
     }
 
     public boolean isTickable() {
-        return this.tickable && this.builtDetailLevel == 0;
+        return this.tickable;
     }
 
     public RenderRegion getRegion() {
@@ -257,52 +227,15 @@ public class RenderSection {
                 this.chunkX, this.chunkY, this.chunkZ);
     }
 
-    public ChunkGraphInfo getGraphInfo() {
-        return this.graphInfo;
-    }
-
-    public void setOcclusionData(ChunkOcclusionData occlusionData) {
-        this.graphInfo.setOcclusionData(occlusionData);
-    }
-
-    public ChunkUpdateType getPendingUpdate() {
-        return this.pendingUpdate;
-    }
-
-    public void markForUpdate(ChunkUpdateType type) {
-        if (this.pendingUpdate == null || type.ordinal() > this.pendingUpdate.ordinal()) {
-            this.pendingUpdate = type;
-        }
-    }
-
-    public void onBuildSubmitted(CompletableFuture<?> task) {
-        if (this.rebuildTask != null) {
-            this.rebuildTask.cancel(false);
-        }
-
-        this.rebuildTask = task;
-        this.pendingUpdate = null;
-    }
-
     public boolean isBuilt() {
         return this.data != ChunkRenderData.ABSENT;
     }
 
-    public boolean canAcceptBuildResults(ChunkBuildResult result) {
-        return !this.isDisposed() && result.buildTime > this.lastAcceptedBuildTime;
-    }
+    public boolean isCulledByFrustum(FrustumIntersection frustum) {
+        float x = this.getOriginX();
+        float y = this.getOriginY();
+        float z = this.getOriginZ();
 
-    public void onBuildFinished(ChunkBuildResult result) {
-        this.setData(result.data);
-        this.lastAcceptedBuildTime = result.buildTime;
-        this.builtDetailLevel = result.detailLevel;
-    }
-
-    public int getBuiltDetailLevel() {
-        return this.builtDetailLevel;
-    }
-
-    public boolean isRebuilding() {
-        return this.rebuildTask != null && this.rebuildTask.isDone();
+        return !frustum.testAab(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
     }
 }

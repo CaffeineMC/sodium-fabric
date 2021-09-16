@@ -9,7 +9,6 @@ import me.jellysquid.mods.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
-import org.joml.FrustumIntersection;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -31,33 +30,26 @@ public class RenderRegion {
 
     public static final int REGION_SIZE = REGION_WIDTH * REGION_HEIGHT * REGION_LENGTH;
 
-    private static final int REGION_EXCESS = 8;
-
     static {
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_WIDTH));
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_HEIGHT));
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_LENGTH));
     }
 
-    private final RenderRegionManager manager;
-
     private final Set<RenderSection> chunks = new ObjectOpenHashSet<>();
     private final Map<BlockRenderPass, RenderRegionStorage> storage = new Reference2ObjectArrayMap<>();
 
     private final int x, y, z;
 
-    private RenderRegionVisibility visibility;
-
-    public RenderRegion(RenderRegionManager manager, int x, int y, int z) {
-        this.manager = manager;
+    public RenderRegion(int x, int y, int z) {
 
         this.x = x;
         this.y = y;
         this.z = z;
     }
 
-    public static RenderRegion createRegionForChunk(RenderRegionManager manager, int x, int y, int z) {
-        return new RenderRegion(manager, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
+    public static RenderRegion createRegionForChunk(int x, int y, int z) {
+        return new RenderRegion(x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
     public RenderRegionStorage initStorage(BlockRenderPass pass) {
@@ -117,28 +109,6 @@ public class RenderRegion {
 
     public int getChunkCount() {
         return this.chunks.size();
-    }
-
-    public void updateVisibility(FrustumIntersection frustum) {
-        int x = this.getOriginX();
-        int y = this.getOriginY();
-        int z = this.getOriginZ();
-
-        // HACK: Regions need to be slightly larger than their real volume
-        // Otherwise, the first node in the iteration graph might be incorrectly culled when the camera
-        // is at the extreme end of a region
-        int visflag = frustum.intersectAab(x - REGION_EXCESS, y - REGION_EXCESS, z - REGION_EXCESS,
-                x + (REGION_WIDTH << 4) + REGION_EXCESS, y + (REGION_HEIGHT << 4) + REGION_EXCESS, z + (REGION_LENGTH << 4) + REGION_EXCESS);
-
-        this.visibility = switch (visflag) {
-            case FrustumIntersection.INSIDE -> RenderRegionVisibility.INSIDE;
-            case FrustumIntersection.INTERSECT -> RenderRegionVisibility.INTERSECT;
-            default -> RenderRegionVisibility.OUTSIDE;
-        };
-    }
-
-    public RenderRegionVisibility getVisibility() {
-        return this.visibility;
     }
 
     public static short getChunkIndex(int x, int y, int z) {

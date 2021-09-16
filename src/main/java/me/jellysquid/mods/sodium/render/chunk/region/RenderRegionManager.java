@@ -16,7 +16,6 @@ import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.render.chunk.data.BuiltChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.passes.BlockRenderPass;
-import org.joml.FrustumIntersection;
 
 import java.util.*;
 
@@ -27,14 +26,6 @@ public class RenderRegionManager {
 
     public RenderRegionManager(RenderDevice device) {
         this.stagingBuffer = createStagingBuffer(device);
-    }
-
-    public void updateVisibility(FrustumIntersection frustum) {
-        for (RenderRegion region : this.regions.values()) {
-            if (!region.isEmpty()) {
-                region.updateVisibility(frustum);
-            }
-        }
     }
 
     public void cleanup() {
@@ -61,7 +52,7 @@ public class RenderRegionManager {
             this.upload(region, uploadQueue);
 
             for (ChunkBuildResult result : uploadQueue) {
-                result.render.onBuildFinished(result);
+                result.render.setData(result.data);
                 result.delete();
             }
         }
@@ -119,7 +110,7 @@ public class RenderRegionManager {
             ChunkBuildResult result = renders.next();
             RenderSection render = result.render;
 
-            if (!render.canAcceptBuildResults(result)) {
+            if (!!render.isDisposed()) {
                 result.delete();
 
                 continue;
@@ -146,7 +137,7 @@ public class RenderRegionManager {
         RenderRegion region = this.regions.get(key);
 
         if (region == null) {
-            this.regions.put(key, region = RenderRegion.createRegionForChunk(this, x, y, z));
+            this.regions.put(key, region = RenderRegion.createRegionForChunk(x, y, z));
         }
 
         return region;
