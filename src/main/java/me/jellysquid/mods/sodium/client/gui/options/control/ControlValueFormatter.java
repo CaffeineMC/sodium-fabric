@@ -23,19 +23,15 @@ public interface ControlValueFormatter {
         };
     }
 
-    static ControlValueFormatter chunks(){
-        return (v) -> new TranslatableText("options.chunks", v).getString();
-    }
-
     static ControlValueFormatter biomeBlend() {
         return (v) -> (v == 0) ? new TranslatableText("gui.none").getString() : new TranslatableText("sodium.options.biome_blend.value", v).getString();
     }
 
-    static ControlValueFormatter preRenderedFrames() {
-        return (v) -> new TranslatableText("sodium.options.max_pre_rendered_frames.value", v).getString();
-    }
-
     String format(int value);
+
+    static ControlValueFormatter translateVariable(String key) {
+        return (v) -> new TranslatableText(key, v).getString();
+    }
 
     static ControlValueFormatter percentage() {
         return (v) -> v + "%";
