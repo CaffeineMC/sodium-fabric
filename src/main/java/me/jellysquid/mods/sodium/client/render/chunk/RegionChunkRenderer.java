@@ -192,8 +192,10 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         for (int i = 0; i < this.batches.length; i++) {
             MultiDrawBatch batch = this.batches[i];
 
-            try (DrawCommandList drawCommandList = commandList.beginTessellating(tessellation)) {
-                drawCommandList.multiDrawElementsBaseVertex(batch.getPointerBuffer(), batch.getCountBuffer(), batch.getBaseVertexBuffer(), GlIndexType.VALUES[i]);
+            if (!batch.isEmpty()) {
+                try (DrawCommandList drawCommandList = commandList.beginTessellating(tessellation)) {
+                    drawCommandList.multiDrawElementsBaseVertex(batch.getPointerBuffer(), batch.getCountBuffer(), batch.getBaseVertexBuffer(), GlIndexType.VALUES[i]);
+                }
             }
         }
     }
