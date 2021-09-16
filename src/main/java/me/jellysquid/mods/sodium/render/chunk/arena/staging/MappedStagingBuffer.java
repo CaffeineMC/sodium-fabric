@@ -10,6 +10,8 @@ import me.jellysquid.mods.thingl.sync.Fence;
 import me.jellysquid.mods.thingl.util.EnumBitField;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MappedStagingBuffer implements StagingBuffer {
     private static final EnumBitField<BufferStorageFlags> STORAGE_FLAGS =
@@ -89,8 +91,6 @@ public class MappedStagingBuffer implements StagingBuffer {
             return;
         }
 
-        int bytes = 0;
-
         if (this.pos < this.start) {
             this.device.flushMappedRange(this.mappedBuffer.map, this.start, this.capacity - this.start);
             this.device.flushMappedRange(this.mappedBuffer.map, 0, this.pos);
@@ -98,15 +98,39 @@ public class MappedStagingBuffer implements StagingBuffer {
             this.device.flushMappedRange(this.mappedBuffer.map, this.start, this.pos - this.start);
         }
 
-        while (!this.pendingCopies.isEmpty()) {
-            CopyCommand command = this.pendingCopies.dequeue();
-            this.device.copyBufferSubData(this.mappedBuffer.buffer, command.buffer, command.readOffset, command.writeOffset, command.bytes);
+        int bytes = 0;
 
+        for (CopyCommand command : consolidateCopies(this.pendingCopies)) {
             bytes += command.bytes;
+
+            this.device.copyBufferSubData(this.mappedBuffer.buffer, command.buffer, command.readOffset, command.writeOffset, command.bytes);
         }
 
         this.fencedRegions.enqueue(new FencedMemoryRegion(this.device.createFence(), bytes));
+
         this.start = this.pos;
+    }
+
+    private static List<CopyCommand> consolidateCopies(PriorityQueue<CopyCommand> queue) {
+        List<CopyCommand> merged = new ArrayList<>();
+        CopyCommand last = null;
+
+        while (!queue.isEmpty()) {
+            CopyCommand command = queue.dequeue();
+
+            if (last != null) {
+                if (last.buffer == command.buffer &&
+                        last.writeOffset + last.bytes == command.writeOffset &&
+                        last.readOffset + last.bytes == command.readOffset) {
+                    last.bytes += command.bytes;
+                    continue;
+                }
+            }
+
+            merged.add(last = new CopyCommand(command));
+        }
+
+        return merged;
     }
 
     @Override
@@ -133,7 +157,26 @@ public class MappedStagingBuffer implements StagingBuffer {
         }
     }
 
-    private record CopyCommand(Buffer buffer, long readOffset, long writeOffset, long bytes) {
+    private static final class CopyCommand {
+        private final Buffer buffer;
+        private final long readOffset;
+        private final long writeOffset;
+
+        private long bytes;
+
+        private CopyCommand(Buffer buffer, long readOffset, long writeOffset, long bytes) {
+            this.buffer = buffer;
+            this.readOffset = readOffset;
+            this.writeOffset = writeOffset;
+            this.bytes = bytes;
+        }
+
+        public CopyCommand(CopyCommand command) {
+            this.buffer = command.buffer;
+            this.writeOffset = command.writeOffset;
+            this.readOffset = command.readOffset;
+            this.bytes = command.bytes;
+        }
     }
 
     private class MappedBuffer {
