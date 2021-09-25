@@ -27,6 +27,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionVisibili
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
+import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.client.level.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.level.ClientChunkManagerExtended;
@@ -87,7 +88,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     private final ObjectList<RenderSection> tickableChunks = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
-    private final Map<BlockRenderPass, ChunkRenderer> chunkRendererMap = new EnumMap<>(BlockRenderPass.class);
+    private final RegionChunkRenderer chunkRenderer;
 
     private final SodiumLevelRenderer levelRenderer;
     private final ClientLevel level;
@@ -108,10 +109,8 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private int currentFrame = 0;
 
-    public RenderSectionManager(SodiumLevelRenderer levelRenderer, BlockRenderPassManager renderPassManager, ClientLevel level, int renderDistance) {
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            this.chunkRendererMap.put(pass, new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT));
-        }
+    public RenderSectionManager(SodiumLevelRenderer levelRenderer, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance, CommandList commandList) {
+        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT);
 
         this.levelRenderer = levelRenderer;
         this.level = level;
@@ -122,7 +121,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
 
-        this.regions = new RenderRegionManager();
+        this.regions = new RenderRegionManager(commandList);
         this.sectionCache = new ClonedChunkSectionCache(this.level);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
@@ -302,8 +301,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRendererMap.get(pass)
-                .render(matrixStack, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRenderer.render(matrixStack, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
 
         commandList.flush();
     }
@@ -424,10 +422,7 @@ public class RenderSectionManager implements ChunkStatusListener {
             this.regions.delete(commandList);
         }
 
-        for (ChunkRenderer renderer : this.chunkRendererMap.values()) {
-            renderer.delete();
-        }
-
+        this.chunkRenderer.delete();
         this.builder.stopWorkers();
     }
 
@@ -613,7 +608,33 @@ public class RenderSectionManager implements ChunkStatusListener {
         return this.sections.get(SectionPos.asLong(x, y, z));
     }
 
-    public Collection<RenderRegion> getRegions() {
-        return this.regions.getLoadedRegions();
+    public Collection<String> getDebugStrings() {
+        List<String> list = new ArrayList<>();
+
+        Iterator<RenderRegion.RenderRegionArenas> it = this.regions.getLoadedRegions()
+                .stream()
+                .map(RenderRegion::getArenas)
+                .filter(Objects::nonNull)
+                .iterator();
+
+        int count = 0;
+
+        long deviceUsed = 0;
+        long deviceAllocated = 0;
+
+        while (it.hasNext()) {
+            RenderRegion.RenderRegionArenas arena = it.next();
+            deviceUsed += arena.getDeviceUsedMemory();
+            deviceAllocated += arena.getDeviceAllocatedMemory();
+
+            count++;
+        }
+
+        list.add(String.format("Chunk arena allocator: %s", SodiumClientMod.options().advanced.arenaMemoryAllocator.name()));
+        list.add(String.format("Device buffer objects: %d", count));
+        list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
+        list.add(String.format("Staging buffer: %s", this.regions.getStagingBuffer().toString()));
+        return list;
     }
+
 }

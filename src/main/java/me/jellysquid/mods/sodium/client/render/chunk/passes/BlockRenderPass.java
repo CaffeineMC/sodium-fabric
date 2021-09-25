@@ -1,41 +1,47 @@
 package me.jellysquid.mods.sodium.client.render.chunk.passes;
 
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.render.RenderLayer;
 
 // TODO: Move away from using an enum, make this extensible
 public enum BlockRenderPass {
-    SOLID(RenderType.solid(), false),
-    CUTOUT(RenderType.cutout(), false),
-    CUTOUT_MIPPED(RenderType.cutoutMipped(), false),
-    TRANSLUCENT(RenderType.translucent(), true),
-    TRIPWIRE(RenderType.tripwire(), true);
+    SOLID(RenderLayer.getSolid(), false, 0.0f),
+    CUTOUT(RenderLayer.getCutout(), false, 0.1f),
+    CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false, 0.5f),
+    TRANSLUCENT(RenderLayer.getTranslucent(), true, 0.0f),
+    TRIPWIRE(RenderLayer.getTripwire(), true, 0.1f);
 
     public static final BlockRenderPass[] VALUES = BlockRenderPass.values();
     public static final int COUNT = VALUES.length;
 
-    private final RenderType layer;
+    private final RenderLayer layer;
     private final boolean translucent;
+    private final float alphaCutoff;
 
-    BlockRenderPass(RenderType layer, boolean translucent) {
+    BlockRenderPass(RenderLayer layer, boolean translucent, float alphaCutoff) {
         this.layer = layer;
         this.translucent = translucent;
+        this.alphaCutoff = alphaCutoff;
     }
 
     public boolean isTranslucent() {
         return this.translucent;
     }
 
-    public RenderType getLayer() {
+    public RenderLayer getLayer() {
         return this.layer;
     }
 
     @Deprecated
     public void endDrawing() {
-        this.layer.clearRenderState();
+        this.layer.endDrawing();
     }
 
     @Deprecated
     public void startDrawing() {
-        this.layer.setupRenderState();
+        this.layer.startDrawing();
+    }
+
+    public float getAlphaCutoff() {
+        return this.alphaCutoff;
     }
 }

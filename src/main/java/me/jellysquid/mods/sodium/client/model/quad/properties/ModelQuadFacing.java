@@ -12,6 +12,8 @@ public enum ModelQuadFacing {
     UNASSIGNED;
 
     public static final ModelQuadFacing[] VALUES = ModelQuadFacing.values();
+    public static final ModelQuadFacing[] DIRECTIONS = new ModelQuadFacing[] { UP, DOWN, EAST, WEST, SOUTH, NORTH };
+
     public static final int COUNT = VALUES.length;
 
     public static ModelQuadFacing fromDirection(Direction dir) {

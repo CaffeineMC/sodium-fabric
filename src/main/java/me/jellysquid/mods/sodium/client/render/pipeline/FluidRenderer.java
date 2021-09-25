@@ -77,7 +77,7 @@ public class FluidRenderer {
             BlockPos pos = this.scratchPos.set(x, y, z);
             BlockState blockState = world.getBlockState(pos);
             VoxelShape shape = blockState.getOcclusionShape(world, pos);
-            if (Shapes.blockOccudes(Shapes.block(), shape, dir.getOpposite())) {
+            if (blockState.isOpaque() && VoxelShapes.blockOccudes(VoxelShapes.fullCube(), shape, dir.getOpposite())) {
                 return false; // Fluid is in waterlogged block that self occludes
             }
         }

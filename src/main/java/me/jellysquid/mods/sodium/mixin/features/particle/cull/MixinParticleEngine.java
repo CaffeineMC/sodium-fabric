@@ -45,8 +45,10 @@ public class MixinParticleEngine {
             return null;
         }
 
-        // If culling isn't enabled, simply return the queue as-is
-        if (!this.useCulling) {
+        SodiumLevelRenderer renderer = SodiumLevelRenderer.instanceNullable();
+
+        // If culling isn't enabled or available, simply return the queue as-is
+        if (renderer == null || !this.useCulling) {
             return (V) queue;
         }
 
@@ -54,13 +56,11 @@ public class MixinParticleEngine {
         Queue<Particle> filtered = this.cachedQueue;
         filtered.clear();
 
-        SodiumLevelRenderer levelRenderer = SodiumLevelRenderer.getInstance();
-
         for (Particle particle : queue) {
             AABB box = particle.getBoundingBox();
 
             // Hack: Grow the particle's bounding box in order to work around mis-behaved particles
-            if (!levelRenderer.isBoxVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
+            if (!renderer.isBoxVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
                 continue;
             }
 

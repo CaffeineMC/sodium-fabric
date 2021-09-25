@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.*;
 import me.jellysquid.mods.sodium.client.gl.functions.DeviceFunctions;
 import me.jellysquid.mods.sodium.client.gl.state.GlStateTracker;
+import me.jellysquid.mods.sodium.client.gl.sync.GlFence;
 import me.jellysquid.mods.sodium.client.gl.tessellation.*;
 import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
 import org.lwjgl.PointerBuffer;
@@ -35,7 +36,7 @@ public class GLRenderDevice implements RenderDevice {
             return;
         }
 
-        this.stateTracker.clearRestoreState();
+        this.stateTracker.push();
         this.isActive = true;
     }
 
@@ -45,7 +46,7 @@ public class GLRenderDevice implements RenderDevice {
             return;
         }
 
-        this.stateTracker.applyRestoreState();
+        this.stateTracker.pop();
         this.isActive = false;
     }
 
@@ -222,6 +223,11 @@ public class GLRenderDevice implements RenderDevice {
 
             this.bindBuffer(GlBufferTarget.COPY_READ_BUFFER, buffer);
             GL32C.glFlushMappedBufferRange(GlBufferTarget.COPY_READ_BUFFER.getTargetParameter(), offset, length);
+        }
+
+        @Override
+        public GlFence createFence() {
+            return new GlFence(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
         }
 
         private void checkMapDisposed(GlBufferMapping map) {

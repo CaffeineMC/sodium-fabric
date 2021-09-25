@@ -2,6 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.systems.RenderSystem;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
@@ -14,6 +16,7 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.gl.util.MultiDrawBatch;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuad;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
@@ -21,12 +24,12 @@ import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
-import org.lwjgl.opengl.GL20C;
-import org.lwjgl.opengl.GL32C;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +38,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final GlVertexAttributeBinding[] vertexAttributeBindings;
 
     private final GlMutableBuffer chunkInfoBuffer;
+    private final boolean isBlockFaceCullingEnabled = SodiumClientMod.options().advanced.useBlockFaceCulling;
 
     public RegionChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         super(device, vertexType);
@@ -88,9 +92,12 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     public void render(PoseStack matrixStack, CommandList commandList,
                        ChunkRenderList list, BlockRenderPass pass,
                        ChunkCameraContext camera) {
-        super.begin(pass, matrixStack);
+        super.begin(pass);
 
-        this.bindDrawParameters();
+        ChunkShaderInterface shader = this.activeProgram.getInterface();
+
+        shader.setProjectionMatrix(RenderSystem.getProjectionMatrix());
+        shader.setDrawUniforms(this.chunkInfoBuffer);
 
         for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, pass.isTranslucent())) {
             RenderRegion region = entry.getKey();
@@ -100,19 +107,13 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            pushCameraTranslation(region, camera);
+            this.setModelMatrixUniforms(shader, matrixStack, region, camera);
 
             GlTessellation tessellation = this.createTessellationForRegion(commandList, region.getArenas(), pass);
             executeDrawBatches(commandList, tessellation);
         }
         
         super.end();
-    }
-
-    // TODO: move into CommandList
-    private void bindDrawParameters() {
-        GL32C.glBindBufferBase(GL32C.GL_UNIFORM_BUFFER, 0, this.chunkInfoBuffer.handle());
-        GL32C.glUniformBlockBinding(this.activeProgram.handle(), this.activeProgram.uboDrawParametersIndex, 0);
     }
 
     private boolean buildDrawBatches(List<RenderSection> sections, BlockRenderPass pass, ChunkCameraContext camera) {
@@ -137,28 +138,34 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
             this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
 
-            if (camera.posY > bounds.y1) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
-            }
+            if (this.isBlockFaceCullingEnabled) {
+                if (camera.posY > bounds.y1) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
+                }
 
-            if (camera.posY < bounds.y2) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.DOWN), indexOffset, baseVertex);
-            }
+                if (camera.posY < bounds.y2) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.DOWN), indexOffset, baseVertex);
+                }
 
-            if (camera.posX > bounds.x1) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.EAST), indexOffset, baseVertex);
-            }
+                if (camera.posX > bounds.x1) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.EAST), indexOffset, baseVertex);
+                }
 
-            if (camera.posX < bounds.x2) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.WEST), indexOffset, baseVertex);
-            }
+                if (camera.posX < bounds.x2) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.WEST), indexOffset, baseVertex);
+                }
 
-            if (camera.posZ > bounds.z1) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
-            }
+                if (camera.posZ > bounds.z1) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
+                }
 
-            if (camera.posZ < bounds.z2) {
-                this.addDrawCall(state.getModelPart(ModelQuadFacing.NORTH), indexOffset, baseVertex);
+                if (camera.posZ < bounds.z2) {
+                    this.addDrawCall(state.getModelPart(ModelQuadFacing.NORTH), indexOffset, baseVertex);
+                }
+            } else {
+                for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
+                    this.addDrawCall(state.getModelPart(facing), indexOffset, baseVertex);
+                }
             }
         }
 
@@ -193,15 +200,17 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
-    private void pushCameraTranslation(RenderRegion region, ChunkCameraContext camera) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            FloatBuffer fb = stack.mallocFloat(3);
-            fb.put(0, getCameraTranslation(region.getOriginX(), camera.blockX, camera.deltaX));
-            fb.put(1, getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY));
-            fb.put(2, getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ));
+    private void setModelMatrixUniforms(ChunkShaderInterface shader, MatrixStack matrixStack, RenderRegion region, ChunkCameraContext camera) {
+        float x = getCameraTranslation(region.getOriginX(), camera.blockX, camera.deltaX);
+        float y = getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY);
+        float z = getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ);
 
-            GL20C.glUniform3fv(this.activeProgram.uCameraTranslation, fb);
-        }
+        Matrix4f matrix = matrixStack.peek()
+                .getModel()
+                .copy();
+        matrix.multiplyByTranslation(x, y, z);
+
+        shader.setModelViewMatrix(matrix);
     }
 
     private void addDrawCall(ElementRange part, long baseIndexPointer, int baseVertexIndex) {

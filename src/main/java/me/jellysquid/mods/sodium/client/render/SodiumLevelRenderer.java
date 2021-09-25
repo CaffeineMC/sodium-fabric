@@ -7,11 +7,12 @@ import com.mojang.blaze3d.vertex.VertexMultiConsumer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.device.CommandList;
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheShared;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
@@ -63,8 +64,27 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
     /**
      * @return The SodiumLevelRenderer based on the current dimension
      */
-    public static SodiumLevelRenderer getInstance() {
-        return ((LevelRendererExtended) Minecraft.getInstance().levelRenderer).getSodiumLevelRenderer();
+    public static SodiumLevelRenderer instance() {
+        var instance = instanceNullable();
+
+        if (instance == null) {
+            throw new IllegalStateException("No renderer attached to active world");
+        }
+
+        return instance;
+    }
+
+    /**
+     * @return The SodiumWorldRenderer based on the current dimension, or null if none is attached
+     */
+    public static SodiumLevelRenderer instanceNullable() {
+        var world = MinecraftClient.getInstance().worldRenderer;
+
+        if (world instanceof WorldRendererExtended) {
+            return ((WorldRendererExtended) world).getSodiumWorldRenderer();
+        }
+
+        return null;
     }
 
     public SodiumLevelRenderer(Minecraft minecraft) {
@@ -93,7 +113,9 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
 
         ChunkRenderCacheShared.createRenderContext(this.level);
 
-        this.initRenderer();
+        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
+            this.initRenderer(commandList);
+        }
 
         ((ClientChunkManagerExtended) level.getChunkSource()).setListener(this);
     }
@@ -211,10 +233,12 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
             return;
         }
 
-        this.initRenderer();
+        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
+            this.initRenderer(commandList);
+        }
     }
 
-    private void initRenderer() {
+    private void initRenderer(CommandList commandList) {
         if (this.renderSectionManager != null) {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
@@ -224,7 +248,7 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
 
         this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
 
-        this.renderSectionManager = new RenderSectionManager(this, this.renderPassManager, this.level, this.renderDistance);
+        this.renderSectionManager = new RenderSectionManager(this, this.renderPassManager, this.level, this.renderDistance, commandList);
         this.renderSectionManager.loadChunks();
     }
 
@@ -309,6 +333,11 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
             return true;
         }
 
+        // Ensure entities with outlines or nametags are always visible
+        if (this.client.hasOutline(entity) || entity.shouldRenderName()) {
+            return true;
+        }
+
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
     }
 
@@ -376,35 +405,6 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
     }
 
     public Collection<String> getMemoryDebugStrings() {
-        List<String> list = new ArrayList<>();
-
-        Iterator<RenderRegion.RenderRegionArenas> it = this.renderSectionManager.getRegions()
-                .stream()
-                .map(RenderRegion::getArenas)
-                .filter(Objects::nonNull)
-                .iterator();
-
-        int count = 0;
-
-        long deviceUsed = 0;
-        long deviceAllocated = 0;
-
-        while (it.hasNext()) {
-            RenderRegion.RenderRegionArenas arena = it.next();
-            deviceUsed += arena.getDeviceUsedMemory();
-            deviceAllocated += arena.getDeviceAllocatedMemory();
-
-            count++;
-        }
-
-        list.add(String.format("Chunk arena allocator: %s", SodiumClientMod.options().advanced.arenaMemoryAllocator.name()));
-        list.add(String.format("Device buffer objects: %d", count));
-        list.add(String.format("Device memory: %d/%d MiB", toMib(deviceUsed), toMib(deviceAllocated)));
-
-        return list;
-    }
-
-    private static long toMib(long x) {
-        return x / 1024L / 1024L;
+        return this.renderSectionManager.getDebugStrings();
     }
 }

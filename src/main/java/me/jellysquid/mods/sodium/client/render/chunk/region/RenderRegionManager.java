@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.render.chunk.region;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.PendingUpload;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.FallbackStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
@@ -11,9 +10,7 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
@@ -25,7 +22,11 @@ import java.util.*;
 public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
 
-    private StagingBuffer stagingBuffer;
+    private final StagingBuffer stagingBuffer;
+
+    public RenderRegionManager(CommandList commandList) {
+        this.stagingBuffer = createStagingBuffer(commandList);
+    }
 
     public void updateVisibility(FrustumExtended frustum) {
         for (RenderRegion region : this.regions.values()) {
@@ -36,31 +37,25 @@ public class RenderRegionManager {
     }
 
     public void cleanup() {
+        this.stagingBuffer.flip();
+
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
-            this.cleanup(commandList);
-        }
-    }
+            Iterator<RenderRegion> it = this.regions.values()
+                    .iterator();
 
-    public void cleanup(CommandList commandList) {
-        Iterator<RenderRegion> it = this.regions.values()
-                .iterator();
+            while (it.hasNext()) {
+                RenderRegion region = it.next();
 
-        while (it.hasNext()) {
-            RenderRegion region = it.next();
+                if (region.isEmpty()) {
+                    region.deleteResources(commandList);
 
-            if (region.isEmpty()) {
-                region.deleteResources(commandList);
-
-                it.remove();
+                    it.remove();
+                }
             }
         }
     }
 
     public void upload(CommandList commandList, Iterator<ChunkBuildResult> queue) {
-        if (this.stagingBuffer != null) {
-            this.stagingBuffer.flip();
-        }
-
         for (Map.Entry<RenderRegion, List<ChunkBuildResult>> entry : this.setupUploadBatches(queue).entrySet()) {
             RenderRegion region = entry.getKey();
             List<ChunkBuildResult> uploadQueue = entry.getValue();
@@ -138,7 +133,10 @@ public class RenderRegionManager {
             RenderRegion region = this.regions.get(RenderRegion.getRegionKeyForChunk(render.getChunkX(), render.getChunkY(), render.getChunkZ()));
 
             if (region == null) {
-                throw new NullPointerException("Couldn't find region for chunk: " + render);
+                // Discard the result if the region is no longer loaded
+                result.delete();
+
+                continue;
             }
 
             List<ChunkBuildResult> uploadQueue = map.computeIfAbsent(region, k -> new ArrayList<>());
@@ -172,14 +170,13 @@ public class RenderRegionManager {
         return this.regions.values();
     }
 
-    protected RenderRegion.RenderRegionArenas createRegionArenas(CommandList commandList) {
-        if (this.stagingBuffer == null) {
-            this.stagingBuffer = createStagingBuffer(commandList);
-        }
-
-        return new RenderRegion.RenderRegionArenas(commandList, this.stagingBuffer);
+    public StagingBuffer getStagingBuffer() {
+        return this.stagingBuffer;
     }
 
+    protected RenderRegion.RenderRegionArenas createRegionArenas(CommandList commandList) {
+        return new RenderRegion.RenderRegionArenas(commandList, this.stagingBuffer);
+    }
 
     private static StagingBuffer createStagingBuffer(CommandList commandList) {
         if (SodiumClientMod.options().advanced.useAdvancedStagingBuffers && MappedStagingBuffer.isSupported(RenderDevice.INSTANCE)) {

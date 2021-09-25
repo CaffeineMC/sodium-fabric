@@ -36,6 +36,8 @@ public class RenderRegion {
 
     public static final int REGION_SIZE = REGION_WIDTH * REGION_HEIGHT * REGION_LENGTH;
 
+    private static final int REGION_EXCESS = 8;
+
     static {
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_WIDTH));
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_HEIGHT));
@@ -125,8 +127,11 @@ public class RenderRegion {
         int y = this.getOriginY();
         int z = this.getOriginZ();
 
-        this.visibility = frustum.aabbTest(x, y, z,
-                x + (REGION_WIDTH << 4), y + (REGION_HEIGHT << 4), z + (REGION_LENGTH << 4));
+        // HACK: Regions need to be slightly larger than their real volume
+        // Otherwise, the first node in the iteration graph might be incorrectly culled when the camera
+        // is at the extreme end of a region
+        this.visibility = frustum.aabbTest(x - REGION_EXCESS, y - REGION_EXCESS, z - REGION_EXCESS,
+                x + (REGION_WIDTH << 4) + REGION_EXCESS, y + (REGION_HEIGHT << 4) + REGION_EXCESS, z + (REGION_LENGTH << 4) + REGION_EXCESS);
     }
 
     public RenderRegionVisibility getVisibility() {

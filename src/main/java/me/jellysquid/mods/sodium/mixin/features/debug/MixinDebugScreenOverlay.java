@@ -28,7 +28,11 @@ public abstract class MixinDebugScreenOverlay {
         strings.add("Sodium Renderer");
         strings.add(ChatFormatting.UNDERLINE + getFormattedVersionText());
 
-        strings.addAll(SodiumLevelRenderer.getInstance().getMemoryDebugStrings());
+        var renderer = SodiumLevelRenderer.instanceNullable();
+
+        if (renderer != null) {
+            strings.addAll(renderer.getMemoryDebugStrings());
+        }
 
         for (int i = 0; i < strings.size(); i++) {
             String str = strings.get(i);

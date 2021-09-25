@@ -2,46 +2,46 @@ package me.jellysquid.mods.sodium.client.gl.arena.staging;
 
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.buffer.*;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.functions.BufferStorageFunctions;
+import me.jellysquid.mods.sodium.client.gl.sync.GlFence;
 import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
+import me.jellysquid.mods.sodium.client.util.MathUtil;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 public class MappedStagingBuffer implements StagingBuffer {
-    private static final int BUFFER_SIZE = 1024 * 1024 * 16; // 16 MB
-
     private static final EnumBitField<GlBufferStorageFlags> STORAGE_FLAGS =
-            EnumBitField.of(GlBufferStorageFlags.PERSISTENT, GlBufferStorageFlags.CLIENT_STORAGE, GlBufferStorageFlags.MAP_WRITE);
+            EnumBitField.of(GlBufferStorageFlags.PERSISTENT, GlBufferStorageFlags.CLIENT_STORAGE, GlBufferStorageFlags.MAP_WRITE, GlBufferStorageFlags.COHERENT);
 
     private static final EnumBitField<GlBufferMapFlags> MAP_FLAGS =
-            EnumBitField.of(GlBufferMapFlags.PERSISTENT, GlBufferMapFlags.INVALIDATE_BUFFER, GlBufferMapFlags.WRITE, GlBufferMapFlags.EXPLICIT_FLUSH);
+            EnumBitField.of(GlBufferMapFlags.PERSISTENT, GlBufferMapFlags.INVALIDATE_BUFFER, GlBufferMapFlags.WRITE, GlBufferMapFlags.COHERENT);
 
     private final FallbackStagingBuffer fallbackStagingBuffer;
 
-    private final MappedBuffer[] buffers = new MappedBuffer[SodiumClientMod.options().advanced.maxPreRenderedFrames + 1];
-
+    private final MappedBuffer mappedBuffer;
     private final PriorityQueue<CopyCommand> pendingCopies = new ObjectArrayFIFOQueue<>();
+    private final PriorityQueue<FencedMemoryRegion> fencedRegions = new ObjectArrayFIFOQueue<>();
 
-    private int writeOffset;
+    private int head = 0;
 
-    private MappedBuffer currentBuffer;
-    private int currentBufferIdx;
+    private final int capacity;
+    private int remaining;
 
     public MappedStagingBuffer(CommandList commandList) {
-        for (int i = 0; i < this.buffers.length; i++) {
-            GlImmutableBuffer buffer = commandList.createImmutableBuffer(BUFFER_SIZE, STORAGE_FLAGS);
-            GlBufferMapping map = commandList.mapBuffer(buffer, 0, BUFFER_SIZE, MAP_FLAGS);
+        this(commandList, 1024 * 1024 * 16 /* 16 MB */);
+    }
 
-            this.buffers[i] = new MappedBuffer(buffer, map);
-        }
+    public MappedStagingBuffer(CommandList commandList, int capacity) {
+        GlImmutableBuffer buffer = commandList.createImmutableBuffer(capacity, STORAGE_FLAGS);
+        GlBufferMapping map = commandList.mapBuffer(buffer, 0, capacity, MAP_FLAGS);
 
+        this.mappedBuffer = new MappedBuffer(buffer, map);
         this.fallbackStagingBuffer = new FallbackStagingBuffer(commandList);
-        this.currentBuffer = this.buffers[this.currentBufferIdx];
+        this.capacity = capacity;
+        this.remaining = this.capacity;
     }
 
     public static boolean isSupported(RenderDevice instance) {
@@ -50,47 +50,74 @@ public class MappedStagingBuffer implements StagingBuffer {
 
     @Override
     public void enqueueCopy(CommandList commandList, ByteBuffer data, GlBuffer dst, long writeOffset) {
-        if (this.writeOffset + data.remaining() > BUFFER_SIZE) {
+        int length = data.remaining();
+
+        if (length > this.remaining) {
             this.fallbackStagingBuffer.enqueueCopy(commandList, data, dst, writeOffset);
+
             return;
         }
 
-        int offset = this.writeOffset;
+        int remaining = this.capacity - this.head;
 
-        this.currentBuffer.getMap()
-                .write(data, offset);
-        this.writeOffset += data.remaining();
+        // Split the transfer in two if we have enough available memory at the end and start of the buffer
+        if (length > remaining) {
+            int split = length - remaining;
 
-        this.pendingCopies.enqueue(new CopyCommand(dst, offset, writeOffset, data.remaining()));
+            this.addTransfer(data.slice(0, remaining), dst, this.head, writeOffset);
+            this.addTransfer(data.slice(remaining, split), dst, 0, writeOffset + remaining);
+
+            this.head = split;
+        } else {
+            this.addTransfer(data, dst, this.head, writeOffset);
+            this.head += length;
+        }
+
+        this.remaining -= length;
+    }
+
+    private void addTransfer(ByteBuffer data, GlBuffer dst, long readOffset, long writeOffset) {
+        this.mappedBuffer.map().write(data, (int) readOffset);
+        this.pendingCopies.enqueue(new CopyCommand(dst, readOffset, writeOffset, data.remaining()));
     }
 
     @Override
     public void flush(CommandList commandList) {
-        commandList.flushMappedRange(this.currentBuffer.getMap(), 0, this.writeOffset);
+        if (this.pendingCopies.isEmpty()) {
+            return;
+        }
+
+        int bytes = 0;
 
         while (!this.pendingCopies.isEmpty()) {
             CopyCommand command = this.pendingCopies.dequeue();
-            commandList.copyBufferSubData(this.currentBuffer.getBufferObject(), command.buffer, command.readOffset, command.writeOffset, command.bytes);
+            commandList.copyBufferSubData(this.mappedBuffer.buffer(), command.buffer, command.readOffset, command.writeOffset, command.bytes);
+
+            bytes += command.bytes;
         }
+
+        this.fencedRegions.enqueue(new FencedMemoryRegion(commandList.createFence(), bytes));
     }
 
     @Override
     public void delete(CommandList commandList) {
-        for (MappedBuffer buffer : this.buffers) {
-            buffer.delete(commandList);
-        }
-
-        Arrays.fill(this.buffers, null);
-
+        this.mappedBuffer.delete(commandList);
         this.fallbackStagingBuffer.delete(commandList);
         this.pendingCopies.clear();
     }
 
     @Override
     public void flip() {
-        this.currentBufferIdx = (this.currentBufferIdx + 1) % this.buffers.length;
-        this.currentBuffer = this.buffers[this.currentBufferIdx];
-        this.writeOffset = 0;
+        while (!this.fencedRegions.isEmpty()) {
+            FencedMemoryRegion fencedRegion = this.fencedRegions.first();
+
+            if (!fencedRegion.fence().isCompleted()) {
+                break;
+            }
+
+            this.fencedRegions.dequeue();
+            this.remaining += fencedRegion.length();
+        }
     }
 
     private record CopyCommand(GlBuffer buffer, long readOffset, long writeOffset, long bytes) {
@@ -102,13 +129,14 @@ public class MappedStagingBuffer implements StagingBuffer {
             commandList.unmap(this.map);
             commandList.deleteBuffer(this.buffer);
         }
+    }
 
-        public GlBufferMapping getMap() {
-            return this.map;
-        }
+    private record FencedMemoryRegion(GlFence fence, int length) {
 
-        public GlBuffer getBufferObject() {
-            return this.buffer;
-        }
+    }
+
+    @Override
+    public String toString() {
+        return "Mapped (%s/%s MiB)".formatted(MathUtil.toMib(this.remaining), MathUtil.toMib(this.capacity));
     }
 }

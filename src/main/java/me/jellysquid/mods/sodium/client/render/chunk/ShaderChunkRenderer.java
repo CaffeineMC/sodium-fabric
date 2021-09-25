@@ -9,21 +9,21 @@ import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkProgram;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderOptions;
 import net.minecraft.resources.ResourceLocation;
 import java.util.Map;
 
 public abstract class ShaderChunkRenderer implements ChunkRenderer {
-    private final Map<BlockRenderPass, Map<ChunkShaderOptions, ChunkProgram>> programs = new Object2ObjectOpenHashMap<>();
+    private final Map<ChunkShaderOptions, GlProgram<ChunkShaderInterface>> programs = new Object2ObjectOpenHashMap<>();
 
     protected final ChunkVertexType vertexType;
     protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
 
     protected final RenderDevice device;
 
-    protected ChunkProgram activeProgram;
+    protected GlProgram<ChunkShaderInterface> activeProgram;
 
     public ShaderChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         this.device = device;
@@ -31,34 +31,17 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         this.vertexFormat = vertexType.getCustomVertexFormat();
     }
 
-    // TODO: Generalize shader options
-    protected ChunkProgram compileProgram(BlockRenderPass pass, ChunkShaderOptions options) {
-        Map<ChunkShaderOptions, ChunkProgram> programs = this.programs.get(pass);
-
-        if (programs == null) {
-            this.programs.put(pass, programs = new Object2ObjectOpenHashMap<>());
-        }
-
-        ChunkProgram program = programs.get(options);
+    protected GlProgram<ChunkShaderInterface> compileProgram(ChunkShaderOptions options) {
+        GlProgram<ChunkShaderInterface> program = this.programs.get(options);
 
         if (program == null) {
-            programs.put(options, program = this.createShader(this.device, getShaderName(pass), options));
+            this.programs.put(options, program = this.createShader("blocks/block_layer_opaque", options));
         }
 
         return program;
     }
 
-    // TODO: Define these in the render pass itself
-    protected String getShaderName(BlockRenderPass pass) {
-        return switch (pass) {
-            case CUTOUT -> "blocks/block_layer_cutout";
-            case CUTOUT_MIPPED -> "blocks/block_layer_cutout_mipped";
-            case TRANSLUCENT, TRIPWIRE -> "blocks/block_layer_translucent";
-            default -> "blocks/block_layer_solid";
-        };
-    }
-
-    private ChunkProgram createShader(RenderDevice device, String path, ChunkShaderOptions options) {
+    private GlProgram<ChunkShaderInterface> createShader(String path, ChunkShaderOptions options) {
         ShaderConstants constants = options.constants();
 
         GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX,
@@ -76,19 +59,20 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
                     .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE)
                     .bindAttribute("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
                     .bindFragmentData("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
-                    .build((name) -> new ChunkProgram(device, name, options));
+                    .link((shader) -> new ChunkShaderInterface(shader, options));
         } finally {
             vertShader.delete();
             fragShader.delete();
         }
     }
 
-    protected void begin(BlockRenderPass pass, PoseStack matrixStack) {
-        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH);
+    protected void begin(BlockRenderPass pass) {
+        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass);
 
-        this.activeProgram = this.compileProgram(pass, options);
+        this.activeProgram = this.compileProgram(options);
         this.activeProgram.bind();
-        this.activeProgram.setup(matrixStack, this.vertexType);
+        this.activeProgram.getInterface()
+                .setup(this.vertexType);
     }
 
     protected void end() {
@@ -99,8 +83,6 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     @Override
     public void delete() {
         this.programs.values()
-                .stream()
-                .flatMap(i -> i.values().stream())
                 .forEach(GlProgram::delete);
         this.programs.clear();
     }
