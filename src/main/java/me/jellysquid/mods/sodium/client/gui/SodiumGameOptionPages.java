@@ -13,12 +13,8 @@ import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.TickBoxControl;
 import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
-import net.minecraft.client.AmbientOcclusionStatus;
-import net.minecraft.client.AttackIndicatorStatus;
-import net.minecraft.client.GraphicsStatus;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.*;
 import net.minecraft.client.Option;
-import net.minecraft.client.ParticleStatus;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.TranslatableComponent;
@@ -132,20 +128,20 @@ public class SodiumGameOptionPages {
                 .build());
 
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(CloudRenderMode.class, vanillaOpts)
-                        .setName(new TranslatableText("sodium.options.clouds_quality.name"))
-                        .setTooltip(new TranslatableText("sodium.options.clouds_quality.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class, new Text[] { new TranslatableText("options.off"), new TranslatableText("options.clouds.fast"), new TranslatableText("options.clouds.fancy") }))
+                .add(OptionImpl.createBuilder(CloudStatus.class, vanillaOpts)
+                        .setName(new TranslatableComponent("sodium.options.clouds_quality.name"))
+                        .setTooltip(new TranslatableComponent("sodium.options.clouds_quality.tooltip"))
+                        .setControl(option -> new CyclingControl<>(option, CloudStatus.class, new Component[] { new TranslatableComponent("options.off"), new TranslatableComponent("options.clouds.fast"), new TranslatableComponent("options.clouds.fancy") }))
                         .setBinding((opts, value) -> {
-                            opts.cloudRenderMode = value;
+                            opts.renderClouds = value;
 
-                            if (MinecraftClient.isFabulousGraphicsOrBetter()) {
-                                Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
-                                if (framebuffer != null) {
-                                    framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
+                            if (Minecraft.useShaderTransparency()) {
+                                RenderTarget renderTarget = Minecraft.getInstance().levelRenderer.getCloudsTarget();
+                                if (renderTarget != null) {
+                                    renderTarget.clear(Minecraft.ON_OSX);
                                 }
                             }
-                        }, opts -> opts.cloudRenderMode)
+                        }, opts -> opts.renderClouds)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
@@ -223,8 +219,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(SodiumGameOptions.ArenaMemoryAllocator.class, sodiumOpts)
-                        .setName(new TranslatableText("sodium.options.chunk_memory_allocator.name"))
-                        .setTooltip(new TranslatableText("sodium.options.chunk_memory_allocator.tooltip"))
+                        .setName(new TranslatableComponent("sodium.options.chunk_memory_allocator.name"))
+                        .setTooltip(new TranslatableComponent("sodium.options.chunk_memory_allocator.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.ArenaMemoryAllocator.class))
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.advanced.arenaMemoryAllocator = value, opts -> opts.advanced.arenaMemoryAllocator)
@@ -232,8 +228,8 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(new TranslatableText("sodium.options.use_persistent_mapping.name"))
-                        .setTooltip(new TranslatableText("sodium.options.use_persistent_mapping.tooltip"))
+                        .setName(new TranslatableComponent("sodium.options.use_persistent_mapping.name"))
+                        .setTooltip(new TranslatableComponent("sodium.options.use_persistent_mapping.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setEnabled(MappedStagingBuffer.isSupported(RenderDevice.INSTANCE))

@@ -78,10 +78,10 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
      * @return The SodiumWorldRenderer based on the current dimension, or null if none is attached
      */
     public static SodiumLevelRenderer instanceNullable() {
-        var world = MinecraftClient.getInstance().worldRenderer;
+        var world = Minecraft.getInstance().levelRenderer;
 
-        if (world instanceof WorldRendererExtended) {
-            return ((WorldRendererExtended) world).getSodiumWorldRenderer();
+        if (world instanceof LevelRendererExtended) {
+            return ((LevelRendererExtended) world).getSodiumLevelRenderer();
         }
 
         return null;
@@ -334,7 +334,7 @@ public class SodiumLevelRenderer implements ChunkStatusListener {
         }
 
         // Ensure entities with outlines or nametags are always visible
-        if (this.client.hasOutline(entity) || entity.shouldRenderName()) {
+        if (this.minecraft.shouldEntityAppearGlowing(entity) || entity.shouldShowName()) {
             return true;
         }
 

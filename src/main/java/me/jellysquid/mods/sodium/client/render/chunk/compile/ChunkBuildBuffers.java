@@ -15,7 +15,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.core.Vec3i;
+
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
@@ -53,7 +53,7 @@ public class ChunkBuildBuffers {
             }
 
             this.vertexBuffers[pass.ordinal()] = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(),
-                    pass.getLayer().bufferSize());
+                    pass.getType().bufferSize());
         }
     }
 

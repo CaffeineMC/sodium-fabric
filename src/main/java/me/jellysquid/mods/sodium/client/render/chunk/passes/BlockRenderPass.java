@@ -1,24 +1,24 @@
 package me.jellysquid.mods.sodium.client.render.chunk.passes;
 
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.renderer.RenderType;
 
 // TODO: Move away from using an enum, make this extensible
 public enum BlockRenderPass {
-    SOLID(RenderLayer.getSolid(), false, 0.0f),
-    CUTOUT(RenderLayer.getCutout(), false, 0.1f),
-    CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false, 0.5f),
-    TRANSLUCENT(RenderLayer.getTranslucent(), true, 0.0f),
-    TRIPWIRE(RenderLayer.getTripwire(), true, 0.1f);
+    SOLID(RenderType.solid(), false, 0.0f),
+    CUTOUT(RenderType.cutout(), false, 0.1f),
+    CUTOUT_MIPPED(RenderType.cutoutMipped(), false, 0.5f),
+    TRANSLUCENT(RenderType.translucent(), true, 0.0f),
+    TRIPWIRE(RenderType.tripwire(), true, 0.1f);
 
     public static final BlockRenderPass[] VALUES = BlockRenderPass.values();
     public static final int COUNT = VALUES.length;
 
-    private final RenderLayer layer;
+    private final RenderType type;
     private final boolean translucent;
     private final float alphaCutoff;
 
-    BlockRenderPass(RenderLayer layer, boolean translucent, float alphaCutoff) {
-        this.layer = layer;
+    BlockRenderPass(RenderType type, boolean translucent, float alphaCutoff) {
+        this.type = type;
         this.translucent = translucent;
         this.alphaCutoff = alphaCutoff;
     }
@@ -27,18 +27,18 @@ public enum BlockRenderPass {
         return this.translucent;
     }
 
-    public RenderLayer getLayer() {
-        return this.layer;
+    public RenderType getType() {
+        return this.type;
     }
 
     @Deprecated
     public void endDrawing() {
-        this.layer.endDrawing();
+        this.type.clearRenderState();
     }
 
     @Deprecated
     public void startDrawing() {
-        this.layer.startDrawing();
+        this.type.setupRenderState();
     }
 
     public float getAlphaCutoff() {

@@ -5,10 +5,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.option.GraphicsMode;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.client.GraphicsStatus;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import java.io.FileReader;
 import java.io.IOException;

@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.RunArgs;
+import net.minecraft.client.main.GameConfig;
 import org.lwjgl.opengl.GL32C;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,10 +16,10 @@ public class MixinMinecraft {
     private final LongArrayFIFOQueue fences = new LongArrayFIFOQueue();
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void postInit(RunArgs args, CallbackInfo ci) {
+    private void postInit(GameConfig gameConfig, CallbackInfo ci) {
         if (SodiumClientMod.options().isReadOnly()) {
-            var parent = MinecraftClient.getInstance().currentScreen;
-            MinecraftClient.getInstance().openScreen(new ConfigCorruptedScreen(() -> parent));
+            var parent = Minecraft.getInstance().screen;
+            Minecraft.getInstance().setScreen(new ConfigCorruptedScreen(() -> parent));
         }
     }
 

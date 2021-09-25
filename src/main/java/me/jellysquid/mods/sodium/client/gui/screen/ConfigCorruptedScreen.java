@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.client.gui.screen;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,17 +26,17 @@ public class ConfigCorruptedScreen extends Screen {
         More information about the error can be found in the log file.
         """;
 
-    private static final List<Text> TEXT_BODY = Arrays.stream(TEXT_BODY_RAW.split("\n"))
-            .map(LiteralText::new)
+    private static final List<Component> TEXT_BODY = Arrays.stream(TEXT_BODY_RAW.split("\n"))
+            .map(TextComponent::new)
             .collect(Collectors.toList());
 
-    private static final Text TEXT_BUTTON_RESTORE_DEFAULTS = new LiteralText("Restore defaults");
-    private static final Text TEXT_BUTTON_CLOSE_GAME = new LiteralText("Close game");
+    private static final Component TEXT_BUTTON_RESTORE_DEFAULTS = new TextComponent("Restore defaults");
+    private static final Component TEXT_BUTTON_CLOSE_GAME = new TextComponent("Close game");
 
     private final Supplier<Screen> child;
 
     public ConfigCorruptedScreen(Supplier<Screen> child) {
-        super(new LiteralText("Config corruption detected"));
+        super(new TextComponent("Config corruption detected"));
 
         this.child = child;
     }
@@ -45,31 +45,31 @@ public class ConfigCorruptedScreen extends Screen {
     protected void init() {
         super.init();
 
-        this.addDrawableChild(new ButtonWidget(32, this.height - 40, 174, 20, TEXT_BUTTON_RESTORE_DEFAULTS, (btn) -> {
+        this.addRenderableOnly(new Button(32, this.height - 40, 174, 20, TEXT_BUTTON_RESTORE_DEFAULTS, (btn) -> {
             SodiumClientMod.restoreDefaultOptions();
-            MinecraftClient.getInstance().openScreen(this.child.get());
+            Minecraft.getInstance().setScreen(this.child.get());
         }));
 
-        this.addDrawableChild(new ButtonWidget(this.width - 174 - 32, this.height - 40, 174, 20, TEXT_BUTTON_CLOSE_GAME, (btn) -> {
-            MinecraftClient.getInstance().scheduleStop();
+        this.addRenderableWidget(new Button(this.width - 174 - 32, this.height - 40, 174, 20, TEXT_BUTTON_CLOSE_GAME, (btn) -> {
+            Minecraft.getInstance().stop();
         }));
     }
 
     @Override
-    public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-        this.renderBackground(matrices);
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+        this.renderBackground(poseStack);
 
-        super.render(matrices, mouseX, mouseY, delta);
+        super.render(poseStack, mouseX, mouseY, delta);
 
-        drawTextWithShadow(matrices, this.textRenderer, new LiteralText("Sodium Renderer"), 32, 32, 0xffffff);
-        drawTextWithShadow(matrices, this.textRenderer, new LiteralText("Could not load configuration file"), 32, 48, 0xff0000);
+        drawString(poseStack, this.font, new TextComponent("Sodium Renderer"), 32, 32, 0xffffff);
+        drawString(poseStack, this.font, new TextComponent("Could not load configuration file"), 32, 48, 0xff0000);
 
         for (int i = 0; i < TEXT_BODY.size(); i++) {
-            if (TEXT_BODY.get(i).asString().isEmpty()) {
+            if (TEXT_BODY.get(i).getString().isEmpty()) {
                 continue;
             }
 
-            drawTextWithShadow(matrices, this.textRenderer, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
+            drawString(poseStack, this.font, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
         }
     }
 }
