@@ -8,14 +8,16 @@ import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.util.collection.EmptyPaletteStorage;
 import net.minecraft.util.collection.PackedIntegerArray;
+import net.minecraft.util.collection.PaletteStorage;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.registry.BuiltinRegistries;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.*;
 
 import java.util.Arrays;
@@ -24,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClonedChunkSection {
     private static final LightType[] LIGHT_TYPES = LightType.values();
-    private static final ChunkSection EMPTY_SECTION = new ChunkSection(0);
+    private static final ChunkSection EMPTY_SECTION = new ChunkSection(0, BuiltinRegistries.BIOME);
 
     private final AtomicInteger referenceCount = new AtomicInteger(0);
     private final ClonedChunkSectionCache backingCache;
@@ -36,10 +38,10 @@ public class ClonedChunkSection {
 
     private ChunkSectionPos pos;
 
-    private PackedIntegerArray blockStateData;
+    private PaletteStorage blockStateData;
     private ClonedPalette<BlockState> blockStatePalette;
 
-    private BiomeArray biomeData;
+    private PalettedContainer<Biome> biomeData;
 
     ClonedChunkSection(ClonedChunkSectionCache backingCache) {
         this.backingCache = backingCache;
@@ -57,7 +59,7 @@ public class ClonedChunkSection {
 
         ChunkSection section = getChunkSection(world, chunk, pos);
 
-        if (ChunkSection.isEmpty(section)) {
+        if (section == null || section.isEmpty()) {
             section = EMPTY_SECTION;
         }
 
@@ -65,7 +67,7 @@ public class ClonedChunkSection {
 
         this.copyBlockData(section);
         this.copyLightData(world);
-        this.copyBiomeData(chunk);
+        this.copyBiomeData(section);
         this.copyBlockEntities(chunk, pos);
     }
 
@@ -83,6 +85,7 @@ public class ClonedChunkSection {
     }
 
     private void copyBlockData(ChunkSection section) {
+
         PalettedContainerExtended<BlockState> container = PalettedContainerExtended.cast(section.getContainer());
 
         this.blockStateData = copyBlockData(container);
@@ -97,8 +100,8 @@ public class ClonedChunkSection {
         }
     }
 
-    private void copyBiomeData(Chunk chunk) {
-        this.biomeData = chunk.getBiomeArray();
+    private void copyBiomeData(ChunkSection chunk) {
+        this.biomeData = chunk.method_38294();
     }
 
     public int getLightLevel(LightType type, int x, int y, int z) {
@@ -138,7 +141,7 @@ public class ClonedChunkSection {
     }
 
     public Biome getBiomeForNoiseGen(int x, int y, int z) {
-        return this.biomeData.getBiomeForNoiseGen(x, y, z);
+        return this.biomeData.get(x, y, z);
     }
 
     public BlockEntity getBlockEntity(int x, int y, int z) {
@@ -149,7 +152,7 @@ public class ClonedChunkSection {
         return this.renderAttachments.get(BlockPos.asLong(x, y, z));
     }
 
-    public PackedIntegerArray getBlockData() {
+    public PaletteStorage getBlockData() {
         return this.blockStateData;
     }
 
@@ -168,10 +171,10 @@ public class ClonedChunkSection {
             return new ClonedPaletteFallback<>(Block.STATE_IDS);
         }
 
-        BlockState[] array = new BlockState[1 << container.getPaletteSize()];
+        BlockState[] array = new BlockState[palette.getSize()];
 
         for (int i = 0; i < array.length; i++) {
-            array[i] = palette.getByIndex(i);
+            array[i] = palette.get(i);
 
             if (array[i] == null) {
                 break;
@@ -181,11 +184,14 @@ public class ClonedChunkSection {
         return new ClonedPalleteArray<>(array, container.getDefaultValue());
     }
 
-    private static PackedIntegerArray copyBlockData(PalettedContainerExtended<BlockState> container) {
-        PackedIntegerArray array = container.getDataArray();
-        long[] storage = array.getStorage();
+    private static PaletteStorage copyBlockData(PalettedContainerExtended<BlockState> container) {
+        PaletteStorage array = container.getDataArray();
+        long[] storage = array.getData();
 
-        return new PackedIntegerArray(container.getPaletteSize(), array.getSize(), storage.clone());
+        if (container.getPaletteSize() == 0) {
+            return new EmptyPaletteStorage(container.getPaletteContainerSize());
+        }
+        return new PackedIntegerArray(container.getPaletteSize(), container.getPaletteContainerSize(), storage.clone());
     }
 
     private static ChunkSection getChunkSection(World world, Chunk chunk, ChunkSectionPos pos) {

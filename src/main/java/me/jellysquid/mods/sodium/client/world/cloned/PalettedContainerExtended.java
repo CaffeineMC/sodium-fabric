@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.world.cloned;
 
-import net.minecraft.util.collection.PackedIntegerArray;
+import net.minecraft.util.collection.PaletteStorage;
 import net.minecraft.world.chunk.Palette;
 import net.minecraft.world.chunk.PalettedContainer;
 
@@ -10,11 +10,13 @@ public interface PalettedContainerExtended<T> {
         return (PalettedContainerExtended<T>) container;
     }
 
-    PackedIntegerArray getDataArray();
+    PaletteStorage getDataArray();
 
     Palette<T> getPalette();
 
     T getDefaultValue();
 
     int getPaletteSize();
+
+    int getPaletteContainerSize();
 }

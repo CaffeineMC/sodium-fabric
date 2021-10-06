@@ -19,7 +19,7 @@ public class MixinMinecraftClient {
     private void postInit(RunArgs args, CallbackInfo ci) {
         if (SodiumClientMod.options().isReadOnly()) {
             var parent = MinecraftClient.getInstance().currentScreen;
-            MinecraftClient.getInstance().openScreen(new ConfigCorruptedScreen(() -> parent));
+            MinecraftClient.getInstance().setScreen(new ConfigCorruptedScreen(() -> parent));
         }
     }
 

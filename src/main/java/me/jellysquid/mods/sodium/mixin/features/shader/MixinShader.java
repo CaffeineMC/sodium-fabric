@@ -16,7 +16,7 @@ public class MixinShader {
         this.uniformLocationCache.defaultReturnValue(-1);
     }
 
-    @Redirect(method = "upload", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gl/GlUniform;getUniformLocation(ILjava/lang/CharSequence;)I"))
+    @Redirect(method = "bind", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gl/GlUniform;getUniformLocation(ILjava/lang/CharSequence;)I"))
     private int redirectGetUniformLocation(int program, CharSequence name) {
         int id = this.uniformLocationCache.computeIfAbsent(name, (key) -> GlUniform.getUniformLocation(program, key));
 

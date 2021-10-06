@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.8-SNAPSHOT'
+    id 'fabric-loom' version '0.10.26'
     id 'org.ajoberstar.grgit' version '4.1.0'
 }
 
@@ -43,9 +43,9 @@ if (project.use_third_party_mods) {
     dependencies {
         // DataBreaker applies a number of patches to eliminate the loading of data fixers
         // This greatly reduces the amount of time needed to start the game, but is generally unsafe in production
-        modRuntime ("supercoder79:databreaker:${project.databreaker_version}") {
-            transitive = false
-        }
+        //modRuntime ("supercoder79:databreaker:${project.databreaker_version}") {
+        //    transitive = false
+        //}
     }
 }
 

@@ -265,7 +265,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         Chunk chunk = this.world.getChunk(x, z);
         ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
 
-        if (ChunkSection.isEmpty(section)) {
+        if (section.isEmpty()) {
             render.setData(ChunkRenderData.EMPTY);
         } else {
             render.markForUpdate(ChunkUpdateType.INITIAL_BUILD);

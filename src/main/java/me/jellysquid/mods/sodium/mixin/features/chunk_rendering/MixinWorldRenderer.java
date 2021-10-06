@@ -24,6 +24,8 @@ import java.util.SortedSet;
 
 @Mixin(WorldRenderer.class)
 public abstract class MixinWorldRenderer implements WorldRendererExtended {
+    private int frame;
+
     @Shadow
     @Final
     private BufferBuilderStorage bufferBuilders;
@@ -39,7 +41,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
         return renderer;
     }
 
-    @Redirect(method = "reload()V", at = @At(value = "FIELD", target = "Lnet/minecraft/client/option/GameOptions;viewDistance:I", ordinal = 1))
+    @Redirect(method = "reload()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/GameOptions;getViewDistance()I", ordinal = 1))
     private int nullifyBuiltChunkStorage(GameOptions options) {
         // Do not allow any resources to be allocated
         return 0;
@@ -104,8 +106,9 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
      * @author JellySquid
      */
     @Overwrite
-    private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
+    private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, boolean spectator) {
         RenderDevice.enterManagedCode();
+        frame++;
 
         try {
             this.renderer.updateChunks(camera, frustum, hasForcedFrustum, frame, spectator);
