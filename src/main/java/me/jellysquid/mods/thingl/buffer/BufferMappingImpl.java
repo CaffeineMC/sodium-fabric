@@ -1,5 +1,6 @@
 package me.jellysquid.mods.thingl.buffer;
 
+import me.jellysquid.mods.thingl.util.EnumBitField;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -7,17 +8,24 @@ import java.nio.ByteBuffer;
 public class BufferMappingImpl implements BufferMapping {
     private final BufferImpl buffer;
     private final ByteBuffer map;
+    private final EnumBitField<BufferMapFlags> flags;
 
     protected boolean disposed;
 
-    public BufferMappingImpl(BufferImpl buffer, ByteBuffer map) {
+    public BufferMappingImpl(BufferImpl buffer, ByteBuffer map, EnumBitField<BufferMapFlags> flags) {
         this.buffer = buffer;
         this.map = map;
+        this.flags = flags;
     }
 
     @Override
-    public void write(ByteBuffer data, int writeOffset) {
-        MemoryUtil.memCopy(MemoryUtil.memAddress(data), MemoryUtil.memAddress(this.map, writeOffset), data.remaining());
+    public ByteBuffer getPointer() {
+        return this.map;
+    }
+
+    @Override
+    public EnumBitField<BufferMapFlags> getFlags() {
+        return this.flags;
     }
 
     public BufferImpl getBufferObject() {
@@ -32,13 +40,10 @@ public class BufferMappingImpl implements BufferMapping {
         return this.disposed;
     }
 
-    public ByteBuffer getMemoryBuffer() {
-        return this.map;
-    }
-
     public void checkDisposed() {
         if (this.isDisposed()) {
             throw new IllegalStateException("Buffer mapping is already disposed");
         }
     }
+
 }

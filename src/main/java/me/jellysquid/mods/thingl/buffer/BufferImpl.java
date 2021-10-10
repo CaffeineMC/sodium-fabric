@@ -68,7 +68,7 @@ public abstract class BufferImpl extends GlObject implements Buffer {
             throw new RuntimeException("Failed to map buffer");
         }
 
-        BufferMappingImpl mapping = new BufferMappingImpl(this, buf);
+        BufferMappingImpl mapping = new BufferMappingImpl(this, buf, flags);
 
         this.setActiveMapping(mapping);
 

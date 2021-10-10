@@ -2,12 +2,14 @@ package me.jellysquid.mods.sodium.render.chunk.arena.staging;
 
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.util.MathUtil;
 import me.jellysquid.mods.thingl.buffer.*;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.functions.BufferStorageFunctions;
 import me.jellysquid.mods.thingl.sync.Fence;
 import me.jellysquid.mods.thingl.util.EnumBitField;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -68,8 +70,17 @@ public class MappedStagingBuffer implements StagingBuffer {
         if (length > remaining) {
             int split = length - remaining;
 
-            this.addTransfer(data.slice(0, remaining), dst, this.pos, writeOffset);
-            this.addTransfer(data.slice(remaining, split), dst, 0, writeOffset + remaining);
+            ByteBuffer firstSectionSrc, secondSectionSrc;
+            if (SodiumRender.isDirectMemoryAccessEnabled()) {
+                firstSectionSrc = MemoryUtil.memSlice(data, 0, remaining);
+                secondSectionSrc = MemoryUtil.memSlice(data, remaining, split);
+            } else {
+                firstSectionSrc = data.slice(0, remaining);
+                secondSectionSrc = data.slice(remaining, split);
+            }
+
+            this.addTransfer(firstSectionSrc, dst, this.pos, writeOffset);
+            this.addTransfer(secondSectionSrc, dst, 0, writeOffset + remaining);
 
             this.pos = split;
         } else {
@@ -81,7 +92,12 @@ public class MappedStagingBuffer implements StagingBuffer {
     }
 
     private void addTransfer(ByteBuffer data, Buffer dst, long readOffset, long writeOffset) {
-        this.mappedBuffer.map.write(data, (int) readOffset);
+        ByteBuffer mappedBufferPointer = this.mappedBuffer.map.getPointer();
+        if (SodiumRender.isDirectMemoryAccessEnabled()) {
+            MemoryUtil.memCopy(MemoryUtil.memAddress(data), MemoryUtil.memAddress(mappedBufferPointer, (int) readOffset), data.remaining()); // is this meant to use readOffset?
+        } else {
+            mappedBufferPointer.put((int) readOffset, data, data.position(), data.remaining());
+        }
         this.pendingCopies.enqueue(new CopyCommand(dst, readOffset, writeOffset, data.remaining()));
     }
 
