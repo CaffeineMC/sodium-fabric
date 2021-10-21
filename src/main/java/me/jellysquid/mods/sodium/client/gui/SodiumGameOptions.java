@@ -43,7 +43,7 @@ public class SodiumGameOptions {
         public boolean useEntityCulling = true;
         public boolean useParticleCulling = true;
         public boolean useFogOcclusion = true;
-        public boolean useBlockFaceCulling = true;
+        public BlockFaceCulling useBlockFaceCulling = BlockFaceCulling.MIN;
         public boolean allowDirectMemoryAccess = true;
         public boolean enableMemoryTracing = false;
         public boolean useAdvancedStagingBuffers = true;
@@ -74,6 +74,28 @@ public class SodiumGameOptions {
 
         @Override
         public Text getLocalizedName() {
+            return this.name;
+        }
+    }
+
+
+    public enum BlockFaceCulling implements TextProvider {
+        DISABLE("Disabled"),
+        MIN("Minimum"),
+        MAX("Maximum");
+
+        private final String name;
+
+        BlockFaceCulling(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public Text getLocalizedName() {
+            return new LiteralText(this.name);
+        }
+
+        public String getName() {
             return this.name;
         }
     }

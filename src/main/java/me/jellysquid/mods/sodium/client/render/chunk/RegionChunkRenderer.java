@@ -15,6 +15,8 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.gl.util.MultiDrawBatch;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuad;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
@@ -36,7 +38,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final GlVertexAttributeBinding[] vertexAttributeBindings;
 
     private final GlMutableBuffer chunkInfoBuffer;
-    private final boolean isBlockFaceCullingEnabled = SodiumClientMod.options().advanced.useBlockFaceCulling;
+    private final SodiumGameOptions.BlockFaceCulling blockFaceCullLevel = SodiumClientMod.options().advanced.useBlockFaceCulling;
 
     public RegionChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         super(device, vertexType);
@@ -136,7 +138,13 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
             this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
 
-            if (this.isBlockFaceCullingEnabled) {
+            // Min will not cull block faces of transparent blocks as these can be set to have faces in resource packs
+            if (this.blockFaceCullLevel == SodiumGameOptions.BlockFaceCulling.DISABLE ||
+                    this.blockFaceCullLevel == SodiumGameOptions.BlockFaceCulling.MIN && pass.getAlphaCutoff() != 0) {
+                for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
+                    this.addDrawCall(state.getModelPart(facing), indexOffset, baseVertex);}
+            // Max
+            } else{
                 if (camera.posY > bounds.y1) {
                     this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
                 }
@@ -159,10 +167,6 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
                 if (camera.posZ < bounds.z2) {
                     this.addDrawCall(state.getModelPart(ModelQuadFacing.NORTH), indexOffset, baseVertex);
-                }
-            } else {
-                for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
-                    this.addDrawCall(state.getModelPart(facing), indexOffset, baseVertex);
                 }
             }
         }

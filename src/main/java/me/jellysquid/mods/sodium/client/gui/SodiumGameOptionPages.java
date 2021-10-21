@@ -250,10 +250,10 @@ public class SodiumGameOptionPages {
                 .build());
 
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                .add(OptionImpl.createBuilder(SodiumGameOptions.BlockFaceCulling.class, sodiumOpts)
                         .setName(new TranslatableText("sodium.options.use_block_face_culling.name"))
                         .setTooltip(new TranslatableText("sodium.options.use_block_face_culling.tooltip"))
-                        .setControl(TickBoxControl::new)
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.BlockFaceCulling.class))
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.advanced.useBlockFaceCulling = value, opts -> opts.advanced.useBlockFaceCulling)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
