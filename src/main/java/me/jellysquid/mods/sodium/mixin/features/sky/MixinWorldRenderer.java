@@ -50,7 +50,7 @@ public class MixinWorldRenderer {
 
         boolean isSubmersed = camera.getSubmersionType() != CameraSubmersionType.NONE;
         boolean hasBlindness = cameraEntity instanceof LivingEntity entity && entity.hasStatusEffect(StatusEffects.BLINDNESS);
-        boolean useThickFog = this.client.world.getSkyProperties().useThickFog(MathHelper.floor(cameraPosition.getX()),
+        boolean useThickFog = this.client.world.getDimensionEffects().useThickFog(MathHelper.floor(cameraPosition.getX()),
                 MathHelper.floor(cameraPosition.getY())) || this.client.inGameHud.getBossBarHud().shouldThickenFog();
 
         if (isSubmersed || hasBlindness || useThickFog) {

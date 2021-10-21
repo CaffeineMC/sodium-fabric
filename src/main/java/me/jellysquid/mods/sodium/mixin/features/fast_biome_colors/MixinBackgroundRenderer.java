@@ -19,6 +19,6 @@ public class MixinBackgroundRenderer {
 
         return FastCubicSampler.sampleColor(pos,
                 (x, y, z) -> world.getBiomeAccess().getBiomeForNoiseGen(x, y, z).getFogColor(),
-                (v) -> world.getSkyProperties().adjustFogColor(v, u));
+                (v) -> world.getDimensionEffects().adjustFogColor(v, u));
     }
 }

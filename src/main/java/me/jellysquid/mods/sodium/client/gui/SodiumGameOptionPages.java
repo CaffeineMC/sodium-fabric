@@ -198,6 +198,13 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.quality.enableVignette = value, opts -> opts.quality.enableVignette)
                         .setImpact(OptionImpact.LOW)
                         .build())
+                .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
+                        .setName(new TranslatableText("options.autosaveIndicator"))
+                        .setTooltip(new TranslatableText("sodium.options.autosaveIndicator.tooltip"))
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.field_35426 /* Autosave indicator*/ = value, opts -> opts.field_35426)
+                        .setImpact(OptionImpact.LOW)
+                        .build())
                 .build());
 
 

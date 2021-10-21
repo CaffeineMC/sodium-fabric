@@ -86,7 +86,7 @@ public class ClonedChunkSection {
 
     private void copyBlockData(ChunkSection section) {
 
-        PalettedContainerExtended<BlockState> container = PalettedContainerExtended.cast(section.getContainer());
+        PalettedContainerExtended<BlockState> container = PalettedContainerExtended.cast(section.getBlockStateContainer());
 
         this.blockStateData = copyBlockData(container);
         this.blockStatePalette = copyPalette(container);
@@ -101,7 +101,7 @@ public class ClonedChunkSection {
     }
 
     private void copyBiomeData(ChunkSection chunk) {
-        this.biomeData = chunk.method_38294();
+        this.biomeData = chunk.getBiomeContainer();
     }
 
     public int getLightLevel(LightType type, int x, int y, int z) {
