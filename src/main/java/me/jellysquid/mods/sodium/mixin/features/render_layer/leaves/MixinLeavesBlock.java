@@ -8,8 +8,8 @@ import net.minecraft.block.Material;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.Direction;
 import org.spongepowered.asm.mixin.Mixin;
-
-@Mixin(LeavesBlock.class)
+// set priority to 100 so other mods can take over this mixin like cull leaves
+@Mixin(value = LeavesBlock.class, priority = 100)
 public class MixinLeavesBlock extends Block {
     public MixinLeavesBlock() {
         super(Settings.of(Material.AIR));
