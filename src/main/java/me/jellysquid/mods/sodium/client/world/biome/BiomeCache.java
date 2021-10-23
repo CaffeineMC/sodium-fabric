@@ -8,6 +8,7 @@ import net.minecraft.world.biome.source.BiomeAccess;
 
 import java.util.Arrays;
 
+// This class is unused due to 1.18 changes breaking it majorly, it will have to be looked into if this can be salvaged.
 public class BiomeCache {
     private final BiomeAccess type;
     private final World world;

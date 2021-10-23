@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.world.cloned.PackedIntegerArrayExtended;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeCache;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeColorCache;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSection;
@@ -12,7 +11,6 @@ import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.collection.PaletteStorage;
 import net.minecraft.util.math.*;
 import net.minecraft.world.BlockRenderView;
@@ -71,9 +69,6 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
 
     // Local section copies. Read-only.
     private ClonedChunkSection[] sections;
-
-    // Biome caches for each chunk section
-    private final BiomeCache[] biomeCaches;
 
     // The biome blend caches for each color resolver type
     // This map is always re-initialized, but the caches themselves are taken from an object pool
@@ -138,7 +133,6 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
 
         this.sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
         this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][];
-        this.biomeCaches = new BiomeCache[SECTION_TABLE_ARRAY_SIZE];
 
         for (int x = 0; x < SECTION_LENGTH; x++) {
             for (int y = 0; y < SECTION_LENGTH; y++) {
@@ -319,14 +313,6 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
      * Gets or computes the biome at the given global coordinates.
      */
     public Biome getBiome(int x, int y, int z) {
-        //todo: I have no idea how the biome cache will work in 1.18
-        /*int relX = x - this.baseX;
-        int relY = y - this.baseY;
-        int relZ = z - this.baseZ;
-
-        return this.biomeCaches[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                .getBiome(this, x, relY >> 4, z);*/
-
         return this.world.getBiome(new BlockPos(x, y, z));
     }
 
