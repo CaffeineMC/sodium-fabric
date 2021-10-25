@@ -139,7 +139,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
 
             // Min excludes Cutout Mipped from block face culling. Block models can enable faces that are normally culled
-            // Dont know of any packs that do this for glass so cant test that or stained glass, the latter is probs broken by #38 anyway
+            // Don't know of any packs that do this for glass or stained-glass
             if (this.blockFaceCullLevel == SodiumGameOptions.BlockFaceCulling.DISABLE ||
                     this.blockFaceCullLevel == SodiumGameOptions.BlockFaceCulling.MIN && pass == BlockRenderPass.CUTOUT_MIPPED) {
                 for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
