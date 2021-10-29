@@ -242,6 +242,22 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_ASSET_RELOAD)
                         .build())
+                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
+                        .setName(new TranslatableText("options.screenEffectScale"))
+                        .setTooltip(new TranslatableText("options.screenEffectScale.tooltip"))
+                        .setControl(option -> new SliderControl(option, 0, 100, 1, ControlValueFormatter.percentageOff()))
+                        .setBinding((opts, value) -> opts.distortionEffectScale = value * 0.01F, (opts) -> Math.round(opts.distortionEffectScale / 0.01F))
+                        .setImpact(OptionImpact.LOW)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
+                        .setName(new TranslatableText("options.fovEffectScale"))
+                        .setTooltip(new TranslatableText("options.fovEffectScale.tooltip"))
+                        .setControl(option -> new SliderControl(option, 0, 100, 1, ControlValueFormatter.percentageOff()))
+                        .setBinding((opts, value) -> opts.fovEffectScale = value * 0.01F, (opts) -> Math.round(opts.fovEffectScale / 0.01F))
+                        .setImpact(OptionImpact.LOW)
+                        .build()
+                )
                 .build());
 
 

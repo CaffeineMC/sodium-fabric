@@ -51,6 +51,10 @@ public interface ControlValueFormatter {
         return (v) -> v + "%";
     }
 
+    static ControlValueFormatter percentageOff(){
+        return (v) -> (v > 0) ? v + "%" : new TranslatableText("options.off").getString();
+    }
+
     static ControlValueFormatter multiplier() {
         return (v) -> v + "x";
     }
