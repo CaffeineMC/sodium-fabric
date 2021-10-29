@@ -17,7 +17,6 @@ import net.minecraft.client.option.Option;
 import net.minecraft.client.option.*;
 import net.minecraft.client.util.VideoMode;
 import net.minecraft.client.util.Window;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
@@ -28,7 +27,7 @@ import java.util.Optional;
 public class SodiumGameOptionPages {
     private static final SodiumOptionsStorage sodiumOpts = new SodiumOptionsStorage();
     private static final MinecraftOptionsStorage vanillaOpts = new MinecraftOptionsStorage();
-
+    private static final Window window = MinecraftClient.getInstance().getWindow();
     public static OptionPage general() {
         List<OptionGroup> groups = new ArrayList<>();
 
@@ -82,21 +81,21 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(new TranslatableText("options.fullscreen.resolution"))
                         .setTooltip(new TranslatableText("sodium.options.fullscreen.resolution.tooltip"))
-                        .setControl(option -> new SliderControl(option, 0, MinecraftClient.getInstance().getWindow().getMonitor() != null ? MinecraftClient.getInstance().getWindow().getMonitor().getVideoModeCount() : 0, 1, ControlValueFormatter.resolution()))
+                        .setControl(option -> new SliderControl(option, 0, window.getMonitor() != null ? window.getMonitor().getVideoModeCount() : 0, 1, ControlValueFormatter.resolution()))
                         .setBinding((options, value) -> {
-                            if (MinecraftClient.getInstance().getWindow().getMonitor() != null) {
+                            if (window.getMonitor() != null) {
                                 if (value == 0) {
-                                    MinecraftClient.getInstance().getWindow().setVideoMode(Optional.empty());
+                                    window.setVideoMode(Optional.empty());
                                 } else {
-                                    MinecraftClient.getInstance().getWindow().setVideoMode(Optional.of(MinecraftClient.getInstance().getWindow().getMonitor().getVideoMode(value - 1)));
+                                    window.setVideoMode(Optional.of(window.getMonitor().getVideoMode(value - 1)));
                                 }
                             }
                         }, options -> {
-                            if (MinecraftClient.getInstance().getWindow().getMonitor() == null) {
+                            if (window.getMonitor() == null) {
                                 return 0;
                             } else {
-                                Optional<VideoMode> optional = MinecraftClient.getInstance().getWindow().getVideoMode();
-                                return optional.map((videoMode) -> MinecraftClient.getInstance().getWindow().getMonitor().findClosestVideoModeIndex(videoMode) + 1).orElse(0);
+                                Optional<VideoMode> optional = window.getVideoMode();
+                                return optional.map((videoMode) -> window.getMonitor().findClosestVideoModeIndex(videoMode) + 1).orElse(0);
                             }
                         })
                         .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
