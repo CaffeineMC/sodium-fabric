@@ -27,6 +27,8 @@ public class SliderControl implements Control<Integer> {
         this.mode = mode;
     }
 
+
+
     @Override
     public ControlElement<Integer> createElement(Dim2i dim) {
         return new Button(this.option, dim, this.min, this.max, this.interval, this.mode);

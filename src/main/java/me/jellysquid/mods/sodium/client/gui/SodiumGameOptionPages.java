@@ -15,6 +15,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.Option;
 import net.minecraft.client.option.*;
+import net.minecraft.client.util.VideoMode;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -22,6 +23,7 @@ import net.minecraft.text.TranslatableText;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class SodiumGameOptionPages {
     private static final SodiumOptionsStorage sodiumOpts = new SodiumOptionsStorage();
@@ -76,6 +78,29 @@ public class SodiumGameOptionPages {
                                 opts.fullscreen = window.isFullscreen();
                             }
                         }, (opts) -> opts.fullscreen)
+                        .build())
+                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
+                        .setName(new TranslatableText("options.fullscreen.resolution"))
+                        .setTooltip(new TranslatableText("sodium.options.fullscreen.resolution.tooltip"))
+                        .setControl(option -> new SliderControl(option, 0, MinecraftClient.getInstance().getWindow().getMonitor() != null ? MinecraftClient.getInstance().getWindow().getMonitor().getVideoModeCount() : 0, 1, ControlValueFormatter.resolution()))
+                        .setBinding((options, value) -> {
+                            if (MinecraftClient.getInstance().getWindow().getMonitor() != null) {
+                                if (value == 0) {
+                                    MinecraftClient.getInstance().getWindow().setVideoMode(Optional.empty());
+                                } else {
+                                    MinecraftClient.getInstance().getWindow().setVideoMode(Optional.of(MinecraftClient.getInstance().getWindow().getMonitor().getVideoMode(value - 1)));
+                                }
+                            }
+                        }, options -> {
+                            if (MinecraftClient.getInstance().getWindow().getMonitor() == null) {
+                                return 0;
+                            } else {
+                                Optional<VideoMode> optional = MinecraftClient.getInstance().getWindow().getVideoMode();
+                                return optional.map((videoMode) -> MinecraftClient.getInstance().getWindow().getMonitor().findClosestVideoModeIndex(videoMode) + 1).orElse(0);
+                            }
+                        })
+                        .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
+                        .setImpact(OptionImpact.HIGH)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName(new TranslatableText("options.vsync"))
