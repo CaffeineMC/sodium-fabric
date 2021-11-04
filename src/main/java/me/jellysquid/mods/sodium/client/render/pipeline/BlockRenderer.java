@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.pipeline;
 
+import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -8,8 +9,9 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuffers;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -18,7 +20,6 @@ import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
@@ -53,7 +54,7 @@ public class BlockRenderer {
         this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
     }
 
-    public boolean renderModel(BlockRenderView world, BlockState state, BlockPos pos, BakedModel model, ChunkModelBuffers buffers, boolean cull, long seed) {
+    public boolean renderModel(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, BakedModel model, ChunkModelBuilder buffers, boolean cull, long seed) {
         LightPipeline lighter = this.lighters.getLighter(this.getLightingMode(state, model));
         Vec3d offset = state.getModelOffset(world, pos);
 
@@ -69,7 +70,7 @@ public class BlockRenderer {
             }
 
             if (!cull || this.occlusionCache.shouldDrawSide(state, world, pos, dir)) {
-                this.renderQuadList(world, state, pos, lighter, offset, buffers, sided, ModelQuadFacing.fromDirection(dir));
+                this.renderQuadList(world, state, pos, origin, lighter, offset, buffers, sided, ModelQuadFacing.fromDirection(dir));
 
                 rendered = true;
             }
@@ -80,7 +81,7 @@ public class BlockRenderer {
         List<BakedQuad> all = model.getQuads(state, null, this.random);
 
         if (!all.isEmpty()) {
-            this.renderQuadList(world, state, pos, lighter, offset, buffers, all, ModelQuadFacing.UNASSIGNED);
+            this.renderQuadList(world, state, pos, origin, lighter, offset, buffers, all, ModelQuadFacing.UNASSIGNED);
 
             rendered = true;
         }
@@ -88,14 +89,14 @@ public class BlockRenderer {
         return rendered;
     }
 
-    private void renderQuadList(BlockRenderView world, BlockState state, BlockPos pos, LightPipeline lighter, Vec3d offset,
-                                ChunkModelBuffers buffers, List<BakedQuad> quads, ModelQuadFacing facing) {
-        BlockColorProvider colorizer = null;
+    private void renderQuadList(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, LightPipeline lighter, Vec3d offset,
+                                ChunkModelBuilder buffers, List<BakedQuad> quads, ModelQuadFacing facing) {
+        ModelQuadColorProvider<BlockState> colorizer = null;
 
-        ModelVertexSink sink = buffers.getSink(facing);
-        sink.ensureCapacity(quads.size() * 4);
+        ModelVertexSink vertices = buffers.getVertexSink();
+        vertices.ensureCapacity(quads.size() * 4);
 
-        ChunkRenderData.Builder renderData = buffers.getRenderData();
+        IndexBufferBuilder indices = buffers.getIndexBufferBuilder(facing);
 
         // This is a very hot allocation, iterate over it manually
         // noinspection ForLoopReplaceableByForEach
@@ -109,45 +110,48 @@ public class BlockRenderer {
                 colorizer = this.blockColors.getColorProvider(state);
             }
 
-            this.renderQuad(world, state, pos, sink, offset, colorizer, quad, light, renderData);
+            this.renderQuad(world, state, pos, origin, vertices, indices, offset, colorizer, quad, light, buffers);
         }
 
-        sink.flush();
+        vertices.flush();
     }
 
-    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, ModelVertexSink sink, Vec3d offset,
-                            BlockColorProvider colorProvider, BakedQuad bakedQuad, QuadLightData light, ChunkRenderData.Builder renderData) {
+    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, ModelVertexSink vertices, IndexBufferBuilder indices, Vec3d blockOffset,
+                            ModelQuadColorProvider<BlockState> colorProvider, BakedQuad bakedQuad, QuadLightData light, ChunkModelBuilder model) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
-
-        ModelQuadOrientation order = ModelQuadOrientation.orient(light.br);
+        ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(light.br);
 
         int[] colors = null;
 
         if (bakedQuad.hasColor()) {
-            colors = this.biomeColorBlender.getColors(colorProvider, world, state, pos, src);
+            colors = this.biomeColorBlender.getColors(world, pos, src, colorProvider, state);
         }
 
-        for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
-            int srcIndex = order.getVertexIndex(dstIndex);
+        int vertexStart = vertices.getVertexCount();
 
-            float x = src.getX(srcIndex) + (float) offset.getX();
-            float y = src.getY(srcIndex) + (float) offset.getY();
-            float z = src.getZ(srcIndex) + (float) offset.getZ();
+        for (int i = 0; i < 4; i++) {
+            int j = orientation.getVertexIndex(i);
 
-            int color = ColorABGR.mul(colors != null ? colors[srcIndex] : 0xFFFFFFFF, light.br[srcIndex]);
+            float x = src.getX(j) + (float) blockOffset.getX();
+            float y = src.getY(j) + (float) blockOffset.getY();
+            float z = src.getZ(j) + (float) blockOffset.getZ();
 
-            float u = src.getTexU(srcIndex);
-            float v = src.getTexV(srcIndex);
+            int color = ColorABGR.mul(colors != null ? colors[j] : 0xFFFFFFFF, light.br[j]);
 
-            int lm = light.lm[srcIndex];
+            float u = src.getTexU(j);
+            float v = src.getTexV(j);
 
-            sink.writeQuad(x, y, z, color, u, v, lm);
+            int lm = light.lm[j];
+
+            vertices.writeVertex(origin, x, y, z, color, u, v, lm, model.getChunkId());
         }
+
+        indices.add(vertexStart, ModelQuadWinding.CLOCKWISE);
 
         Sprite sprite = src.getSprite();
 
         if (sprite != null) {
-            renderData.addSprite(sprite);
+            model.addSprite(sprite);
         }
     }
 

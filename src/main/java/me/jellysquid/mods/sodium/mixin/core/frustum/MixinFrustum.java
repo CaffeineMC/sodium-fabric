@@ -1,9 +1,10 @@
 package me.jellysquid.mods.sodium.mixin.core.frustum;
 
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionVisibility;
 import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import net.minecraft.client.render.Frustum;
-import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,44 +36,43 @@ public class MixinFrustum implements FrustumExtended {
         vec.normalize();
 
         switch (index) {
-            case 0:
+            case 0 -> {
                 this.nxX = vec.getX();
                 this.nxY = vec.getY();
                 this.nxZ = vec.getZ();
                 this.nxW = vec.getW();
-                break;
-            case 1:
+            }
+            case 1 -> {
                 this.pxX = vec.getX();
                 this.pxY = vec.getY();
                 this.pxZ = vec.getZ();
                 this.pxW = vec.getW();
-                break;
-            case 2:
+            }
+            case 2 -> {
                 this.nyX = vec.getX();
                 this.nyY = vec.getY();
                 this.nyZ = vec.getZ();
                 this.nyW = vec.getW();
-                break;
-            case 3:
+            }
+            case 3 -> {
                 this.pyX = vec.getX();
                 this.pyY = vec.getY();
                 this.pyZ = vec.getZ();
                 this.pyW = vec.getW();
-                break;
-            case 4:
+            }
+            case 4 -> {
                 this.nzX = vec.getX();
                 this.nzY = vec.getY();
                 this.nzZ = vec.getZ();
                 this.nzW = vec.getW();
-                break;
-            case 5:
+            }
+            case 5 -> {
                 this.pzX = vec.getX();
                 this.pzY = vec.getY();
                 this.pzZ = vec.getZ();
                 this.pzW = vec.getW();
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid index");
+            }
+            default -> throw new IllegalArgumentException("Invalid index");
         }
     }
 
@@ -94,5 +94,37 @@ public class MixinFrustum implements FrustumExtended {
                 this.pyX * (this.pyX < 0 ? minX : maxX) + this.pyY * (this.pyY < 0 ? minY : maxY) + this.pyZ * (this.pyZ < 0 ? minZ : maxZ) >= -this.pyW &&
                 this.nzX * (this.nzX < 0 ? minX : maxX) + this.nzY * (this.nzY < 0 ? minY : maxY) + this.nzZ * (this.nzZ < 0 ? minZ : maxZ) >= -this.nzW &&
                 this.pzX * (this.pzX < 0 ? minX : maxX) + this.pzY * (this.pzY < 0 ? minY : maxY) + this.pzZ * (this.pzZ < 0 ? minZ : maxZ) >= -this.pzW;
+    }
+
+    @Override
+    public RenderRegionVisibility aabbTest(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        return this.aabbTest0(minX - this.xF, minY - this.yF, minZ - this.zF,
+                maxX - this.xF, maxY - this.yF, maxZ - this.zF);
+    }
+
+    private RenderRegionVisibility aabbTest0(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        boolean inside = true;
+
+        if (nxX * (nxX < 0 ? minX : maxX) + nxY * (nxY < 0 ? minY : maxY) + nxZ * (nxZ < 0 ? minZ : maxZ) >= -nxW) {
+            inside &= nxX * (nxX < 0 ? maxX : minX) + nxY * (nxY < 0 ? maxY : minY) + nxZ * (nxZ < 0 ? maxZ : minZ) >= -nxW;
+            if (pxX * (pxX < 0 ? minX : maxX) + pxY * (pxY < 0 ? minY : maxY) + pxZ * (pxZ < 0 ? minZ : maxZ) >= -pxW) {
+                inside &= pxX * (pxX < 0 ? maxX : minX) + pxY * (pxY < 0 ? maxY : minY) + pxZ * (pxZ < 0 ? maxZ : minZ) >= -pxW;
+                if (nyX * (nyX < 0 ? minX : maxX) + nyY * (nyY < 0 ? minY : maxY) + nyZ * (nyZ < 0 ? minZ : maxZ) >= -nyW) {
+                    inside &= nyX * (nyX < 0 ? maxX : minX) + nyY * (nyY < 0 ? maxY : minY) + nyZ * (nyZ < 0 ? maxZ : minZ) >= -nyW;
+                    if (pyX * (pyX < 0 ? minX : maxX) + pyY * (pyY < 0 ? minY : maxY) + pyZ * (pyZ < 0 ? minZ : maxZ) >= -pyW) {
+                        inside &= pyX * (pyX < 0 ? maxX : minX) + pyY * (pyY < 0 ? maxY : minY) + pyZ * (pyZ < 0 ? maxZ : minZ) >= -pyW;
+                        if (nzX * (nzX < 0 ? minX : maxX) + nzY * (nzY < 0 ? minY : maxY) + nzZ * (nzZ < 0 ? minZ : maxZ) >= -nzW) {
+                            inside &= nzX * (nzX < 0 ? maxX : minX) + nzY * (nzY < 0 ? maxY : minY) + nzZ * (nzZ < 0 ? maxZ : minZ) >= -nzW;
+                            if (pzX * (pzX < 0 ? minX : maxX) + pzY * (pzY < 0 ? minY : maxY) + pzZ * (pzZ < 0 ? minZ : maxZ) >= -pzW) {
+                                inside &= pzX * (pzX < 0 ? maxX : minX) + pzY * (pzY < 0 ? maxY : minY) + pzZ * (pzZ < 0 ? maxZ : minZ) >= -pzW;
+                                return inside ? RenderRegionVisibility.FULLY_VISIBLE : RenderRegionVisibility.VISIBLE;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return RenderRegionVisibility.CULLED;
     }
 }

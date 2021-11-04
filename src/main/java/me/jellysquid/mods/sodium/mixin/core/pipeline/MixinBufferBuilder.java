@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.attribute.BufferVertexFormat;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
 import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.client.model.vertex.type.BlittableVertexType;
 import me.jellysquid.mods.sodium.client.model.vertex.type.VertexType;
-import me.jellysquid.mods.sodium.client.util.UnsafeUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
@@ -95,7 +95,7 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
         BlittableVertexType<T> blittable = factory.asBlittable();
 
         if (blittable != null && blittable.getBufferVertexFormat() == this.getVertexFormat())  {
-            return blittable.createBufferWriter(this, UnsafeUtil.isAvailable());
+            return blittable.createBufferWriter(this, SodiumClientMod.isDirectMemoryAccessEnabled());
         }
 
         return factory.createFallbackWriter((VertexConsumer) this);

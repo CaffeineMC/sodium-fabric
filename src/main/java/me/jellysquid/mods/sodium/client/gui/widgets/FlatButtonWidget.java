@@ -3,17 +3,18 @@ package me.jellysquid.mods.sodium.client.gui.widgets;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.Text;
 
 public class FlatButtonWidget extends AbstractWidget implements Drawable {
     private final Dim2i dim;
-    private final String label;
+    private final Text label;
     private final Runnable action;
 
     private boolean selected;
     private boolean enabled = true;
     private boolean visible = true;
 
-    public FlatButtonWidget(Dim2i dim, String label, Runnable action) {
+    public FlatButtonWidget(Dim2i dim, Text label, Runnable action) {
         this.dim = dim;
         this.label = label;
         this.action = action;
@@ -32,11 +33,11 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
 
         int strWidth = this.font.getWidth(this.label);
 
-        this.drawRect(this.dim.getOriginX(), this.dim.getOriginY(), this.dim.getLimitX(), this.dim.getLimitY(), backgroundColor);
+        this.drawRect(this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), backgroundColor);
         this.drawString(matrixStack, this.label, this.dim.getCenterX() - (strWidth / 2), this.dim.getCenterY() - 4, textColor);
 
         if (this.enabled && this.selected) {
-            this.drawRect(this.dim.getOriginX(), this.dim.getLimitY() - 1, this.dim.getLimitX(), this.dim.getLimitY(), 0xFF94E4D3);
+            this.drawRect(this.dim.x(), this.dim.getLimitY() - 1, this.dim.getLimitX(), this.dim.getLimitY(), 0xFF94E4D3);
         }
     }
 

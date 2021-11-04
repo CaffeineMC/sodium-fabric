@@ -10,19 +10,20 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuffers;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
+import net.fabricmc.fabric.impl.client.rendering.fluid.FluidRenderHandlerRegistryImpl;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.StainedGlassBlock;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.color.block.BlockColorProvider;
-import net.minecraft.client.color.world.BiomeColors;
-import net.minecraft.client.render.block.BlockModels;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.fluid.Fluid;
@@ -35,17 +36,15 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockRenderView;
+import org.jetbrains.annotations.Nullable;
 
 public class FluidRenderer {
-    private static final BlockColorProvider FLUID_COLOR_PROVIDER = (state, world, pos, tintIndex) -> {
-        if (world == null) return 0xFFFFFFFF;
-        return BiomeColors.getWaterColor(world, pos);
-    };
+    // TODO: allow this to be changed by vertex format
+    // TODO: move fluid rendering to a separate render pass and control glPolygonOffset and glDepthFunc to fix this properly
+    private static final float EPSILON = 0.001f;
 
     private final BlockPos.Mutable scratchPos = new BlockPos.Mutable();
 
-    private final Sprite[] lavaSprites = new Sprite[2];
-    private final Sprite[] waterSprites = new Sprite[2];
     private final Sprite waterOverlaySprite;
 
     private final ModelQuadViewMutable quad = new ModelQuad();
@@ -53,18 +52,13 @@ public class FluidRenderer {
     private final LightPipelineProvider lighters;
     private final BiomeColorBlender biomeColorBlender;
 
+    // Cached wrapper type that adapts FluidRenderHandler to support QuadColorProvider<FluidState>
+    private final FabricFluidColorizerAdapter fabricColorProviderAdapter = new FabricFluidColorizerAdapter();
+
     private final QuadLightData quadLightData = new QuadLightData();
     private final int[] quadColors = new int[4];
 
-    public FluidRenderer(MinecraftClient client, LightPipelineProvider lighters, BiomeColorBlender biomeColorBlender) {
-        BlockModels models = client.getBakedModelManager().getBlockModels();
-
-        this.lavaSprites[0] = models.getModel(Blocks.LAVA.getDefaultState()).getSprite();
-        this.lavaSprites[1] = ModelLoader.LAVA_FLOW.getSprite();
-
-        this.waterSprites[0] = models.getModel(Blocks.WATER.getDefaultState()).getSprite();
-        this.waterSprites[1] = ModelLoader.WATER_FLOW.getSprite();
-
+    public FluidRenderer(LightPipelineProvider lighters, BiomeColorBlender biomeColorBlender) {
         this.waterOverlaySprite = ModelLoader.WATER_OVERLAY.getSprite();
 
         int normal = Norm3b.pack(0.0f, 1.0f, 0.0f);
@@ -77,8 +71,18 @@ public class FluidRenderer {
         this.biomeColorBlender = biomeColorBlender;
     }
 
-    private boolean isFluidExposed(BlockRenderView world, int x, int y, int z, Fluid fluid) {
-        BlockPos pos = this.scratchPos.set(x, y, z);
+    private boolean isFluidExposed(BlockRenderView world, int x, int y, int z, Direction dir, Fluid fluid) {
+        // Up direction is hard to test since it doesnt fill the block
+        if(dir != Direction.UP) {
+            BlockPos pos = this.scratchPos.set(x, y, z);
+            BlockState blockState = world.getBlockState(pos);
+            VoxelShape shape = blockState.getCullingShape(world, pos);
+            if (blockState.isOpaque() && VoxelShapes.isSideCovered(VoxelShapes.fullCube(), shape, dir.getOpposite())) {
+                return false; // Fluid is in waterlogged block that self occludes
+            }
+        }
+
+        BlockPos pos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
         return !world.getFluidState(pos).getFluid().matchesType(fluid);
     }
 
@@ -105,27 +109,31 @@ public class FluidRenderer {
         return true;
     }
 
-    public boolean render(BlockRenderView world, FluidState fluidState, BlockPos pos, ChunkModelBuffers buffers) {
+    public boolean render(BlockRenderView world, FluidState fluidState, BlockPos pos, BlockPos offset, ChunkModelBuilder buffers) {
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();
 
         Fluid fluid = fluidState.getFluid();
 
-        boolean sfUp = this.isFluidExposed(world, posX, posY + 1, posZ, fluid);
-        boolean sfDown = this.isFluidExposed(world, posX, posY - 1, posZ, fluid) &&
+        boolean sfUp = this.isFluidExposed(world, posX, posY, posZ, Direction.UP, fluid);
+        boolean sfDown = this.isFluidExposed(world, posX, posY, posZ, Direction.DOWN, fluid) &&
                 this.isSideExposed(world, posX, posY, posZ, Direction.DOWN, 0.8888889F);
-        boolean sfNorth = this.isFluidExposed(world, posX, posY, posZ - 1, fluid);
-        boolean sfSouth = this.isFluidExposed(world, posX, posY, posZ + 1, fluid);
-        boolean sfWest = this.isFluidExposed(world, posX - 1, posY, posZ, fluid);
-        boolean sfEast = this.isFluidExposed(world, posX + 1, posY, posZ, fluid);
+        boolean sfNorth = this.isFluidExposed(world, posX, posY, posZ, Direction.NORTH, fluid);
+        boolean sfSouth = this.isFluidExposed(world, posX, posY, posZ, Direction.SOUTH, fluid);
+        boolean sfWest = this.isFluidExposed(world, posX, posY, posZ, Direction.WEST, fluid);
+        boolean sfEast = this.isFluidExposed(world, posX, posY, posZ, Direction.EAST, fluid);
 
         if (!sfUp && !sfDown && !sfEast && !sfWest && !sfNorth && !sfSouth) {
             return false;
         }
 
-        boolean lava = fluidState.isIn(FluidTags.LAVA);
-        Sprite[] sprites = lava ? this.lavaSprites : this.waterSprites;
+        boolean isWater = fluidState.isIn(FluidTags.WATER);
+
+        FluidRenderHandler handler = FluidRenderHandlerRegistryImpl.INSTANCE.getOverride(fluidState.getFluid());
+        ModelQuadColorProvider<FluidState> colorizer = this.createColorProviderAdapter(handler);
+
+        Sprite[] sprites = handler.getFluidSprites(world, pos, fluidState);
 
         boolean rendered = false;
 
@@ -134,20 +142,20 @@ public class FluidRenderer {
         float h3 = this.getCornerHeight(world, posX + 1, posY, posZ + 1, fluidState.getFluid());
         float h4 = this.getCornerHeight(world, posX + 1, posY, posZ, fluidState.getFluid());
 
-        float yOffset = sfDown ? 0.001F : 0.0F;
+        float yOffset = sfDown ? EPSILON : 0.0F;
 
         final ModelQuadViewMutable quad = this.quad;
 
-        LightMode lightMode = !lava && MinecraftClient.isAmbientOcclusionEnabled() ? LightMode.SMOOTH : LightMode.FLAT;
+        LightMode lightMode = isWater && MinecraftClient.isAmbientOcclusionEnabled() ? LightMode.SMOOTH : LightMode.FLAT;
         LightPipeline lighter = this.lighters.getLighter(lightMode);
 
         quad.setFlags(0);
 
         if (sfUp && this.isSideExposed(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
-            h1 -= 0.001F;
-            h2 -= 0.001F;
-            h3 -= 0.001F;
-            h4 -= 0.001F;
+            h1 -= EPSILON;
+            h2 -= EPSILON;
+            h3 -= EPSILON;
+            h4 -= EPSILON;
 
             Vec3d velocity = fluidState.getVelocity(world, pos);
 
@@ -205,16 +213,16 @@ public class FluidRenderer {
             this.setVertex(quad, 2, 1.0F, h3, 1.0F, u3, v3);
             this.setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
 
-            this.calculateQuadColors(quad, world, pos, lighter, Direction.UP, 1.0F, !lava);
-            this.flushQuad(buffers, quad, facing, false);
+            this.calculateQuadColors(quad, world, pos, lighter, Direction.UP, 1.0F, colorizer, fluidState);
+
+            int vertexStart = this.writeVertices(buffers, offset, quad);
+
+            buffers.getIndexBufferBuilder(facing)
+                    .add(vertexStart, ModelQuadWinding.CLOCKWISE);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.setVertex(quad, 3, 0.0f, h1, 0.0f, u1, v1);
-                this.setVertex(quad, 2, 0.0f, h2, 1.0F, u2, v2);
-                this.setVertex(quad, 1, 1.0F, h3, 1.0F, u3, v3);
-                this.setVertex(quad, 0, 1.0F, h4, 0.0f, u4, v4);
-
-                this.flushQuad(buffers, quad, ModelQuadFacing.DOWN, true);
+                buffers.getIndexBufferBuilder(ModelQuadFacing.DOWN)
+                        .add(vertexStart, ModelQuadWinding.COUNTERCLOCKWISE);
             }
 
             rendered = true;
@@ -234,8 +242,12 @@ public class FluidRenderer {
             this.setVertex(quad, 2, 1.0F, yOffset, 0.0f, maxU, minV);
             this.setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
-            this.calculateQuadColors(quad, world, pos, lighter, Direction.DOWN, 1.0F, !lava);
-            this.flushQuad(buffers, quad, ModelQuadFacing.DOWN, false);
+            this.calculateQuadColors(quad, world, pos, lighter, Direction.DOWN, 1.0F, colorizer, fluidState);
+
+            int vertexStart = this.writeVertices(buffers, offset, quad);
+
+            buffers.getIndexBufferBuilder(ModelQuadFacing.DOWN)
+                    .add(vertexStart, ModelQuadWinding.CLOCKWISE);
 
             rendered = true;
         }
@@ -260,7 +272,7 @@ public class FluidRenderer {
                     c2 = h4;
                     x1 = 0.0f;
                     x2 = 1.0F;
-                    z1 = 0.001f;
+                    z1 = EPSILON;
                     z2 = z1;
                     break;
                 case SOUTH:
@@ -272,7 +284,7 @@ public class FluidRenderer {
                     c2 = h2;
                     x1 = 1.0F;
                     x2 = 0.0f;
-                    z1 = 0.999f;
+                    z1 = 1.0f - EPSILON;
                     z2 = z1;
                     break;
                 case WEST:
@@ -282,7 +294,7 @@ public class FluidRenderer {
 
                     c1 = h2;
                     c2 = h1;
-                    x1 = 0.001f;
+                    x1 = EPSILON;
                     x2 = x1;
                     z1 = 1.0F;
                     z2 = 0.0f;
@@ -294,7 +306,7 @@ public class FluidRenderer {
 
                     c1 = h4;
                     c2 = h3;
-                    x1 = 0.999f;
+                    x1 = 1.0f - EPSILON;
                     x2 = x1;
                     z1 = 0.0f;
                     z2 = 1.0F;
@@ -310,7 +322,7 @@ public class FluidRenderer {
 
                 Sprite sprite = sprites[1];
 
-                if (!lava) {
+                if (isWater) {
                     BlockPos posAdj = this.scratchPos.set(adjX, adjY, adjZ);
                     Block block = world.getBlockState(posAdj).getBlock();
 
@@ -334,16 +346,18 @@ public class FluidRenderer {
 
                 float br = dir.getAxis() == Direction.Axis.Z ? 0.8F : 0.6F;
 
-                this.calculateQuadColors(quad, world, pos, lighter, dir, br, !lava);
-                this.flushQuad(buffers, quad, ModelQuadFacing.fromDirection(dir), false);
+                ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
+
+                this.calculateQuadColors(quad, world, pos, lighter, dir, br, colorizer, fluidState);
+
+                int vertexStart = this.writeVertices(buffers, offset, quad);
+
+                buffers.getIndexBufferBuilder(facing)
+                        .add(vertexStart, ModelQuadWinding.CLOCKWISE);
 
                 if (sprite != this.waterOverlaySprite) {
-                    this.setVertex(quad, 0, x1, c1, z1, u1, v1);
-                    this.setVertex(quad, 1, x1, yOffset, z1, u1, v3);
-                    this.setVertex(quad, 2, x2, yOffset, z2, u2, v3);
-                    this.setVertex(quad, 3, x2, c2, z2, u2, v2);
-
-                    this.flushQuad(buffers, quad, ModelQuadFacing.fromDirection(dir), true);
+                    buffers.getIndexBufferBuilder(facing.getOpposite())
+                            .add(vertexStart, ModelQuadWinding.COUNTERCLOCKWISE);
                 }
 
                 rendered = true;
@@ -353,59 +367,55 @@ public class FluidRenderer {
         return rendered;
     }
 
-    private void calculateQuadColors(ModelQuadView quad, BlockRenderView world,  BlockPos pos, LightPipeline lighter, Direction dir, float brightness, boolean colorized) {
+    private ModelQuadColorProvider<FluidState> createColorProviderAdapter(FluidRenderHandler handler) {
+        FabricFluidColorizerAdapter adapter = this.fabricColorProviderAdapter;
+        adapter.setHandler(handler);
+
+        return adapter;
+    }
+
+    private void calculateQuadColors(ModelQuadView quad, BlockRenderView world, BlockPos pos, LightPipeline lighter, Direction dir, float brightness,
+                                     ModelQuadColorProvider<FluidState> handler, FluidState fluidState) {
         QuadLightData light = this.quadLightData;
         lighter.calculate(quad, pos, light, dir, false);
 
-        int[] biomeColors = null;
-
-        if (colorized) {
-            biomeColors = this.biomeColorBlender.getColors(FLUID_COLOR_PROVIDER, world, Blocks.WATER.getDefaultState(), pos, quad);
-        }
+        int[] biomeColors = this.biomeColorBlender.getColors(world, pos, quad, handler, fluidState);
 
         for (int i = 0; i < 4; i++) {
             this.quadColors[i] = ColorABGR.mul(biomeColors != null ? biomeColors[i] : 0xFFFFFFFF, light.br[i] * brightness);
         }
     }
 
-    private void flushQuad(ChunkModelBuffers buffers, ModelQuadView quad, ModelQuadFacing facing, boolean flip) {
-        int vertexIdx, lightOrder;
+    private int writeVertices(ChunkModelBuilder builder, BlockPos offset, ModelQuadView quad) {
+        ModelVertexSink vertices = builder.getVertexSink();
+        vertices.ensureCapacity(4);
 
-        if (flip) {
-            vertexIdx = 3;
-            lightOrder = -1;
-        } else {
-            vertexIdx = 0;
-            lightOrder = 1;
-        }
-
-        ModelVertexSink sink = buffers.getSink(facing);
-        sink.ensureCapacity(4);
+        int vertexStart = vertices.getVertexCount();
 
         for (int i = 0; i < 4; i++) {
             float x = quad.getX(i);
             float y = quad.getY(i);
             float z = quad.getZ(i);
 
-            int color = this.quadColors[vertexIdx];
+            int color = this.quadColors[i];
 
             float u = quad.getTexU(i);
             float v = quad.getTexV(i);
 
-            int light = this.quadLightData.lm[vertexIdx];
+            int light = this.quadLightData.lm[i];
 
-            sink.writeQuad(x, y, z, color, u, v, light);
-
-            vertexIdx += lightOrder;
+            vertices.writeVertex(offset, x, y, z, color, u, v, light, builder.getChunkId());
         }
+
+        vertices.flush();
 
         Sprite sprite = quad.getSprite();
 
         if (sprite != null) {
-            buffers.getRenderData().addSprite(sprite);
+            builder.addSprite(sprite);
         }
 
-        sink.flush();
+        return vertexStart;
     }
 
     private void setVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {
@@ -449,5 +459,22 @@ public class FluidRenderer {
         }
 
         return totalHeight / (float) samples;
+    }
+
+    private static class FabricFluidColorizerAdapter implements ModelQuadColorProvider<FluidState> {
+        private FluidRenderHandler handler;
+
+        public void setHandler(FluidRenderHandler handler) {
+            this.handler = handler;
+        }
+
+        @Override
+        public int getColor(FluidState state, @Nullable BlockRenderView world, @Nullable BlockPos pos, int tintIndex) {
+            if (this.handler == null) {
+                return -1;
+            }
+
+            return this.handler.getFluidColor(world, pos, state);
+        }
     }
 }

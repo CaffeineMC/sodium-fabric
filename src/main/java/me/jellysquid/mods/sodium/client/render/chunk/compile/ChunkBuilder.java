@@ -1,37 +1,23 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
-import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
-import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
-import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderContext;
+import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
-import me.jellysquid.mods.sodium.client.world.ClientWorldExtended;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeCacheManager;
-import me.jellysquid.mods.sodium.common.util.collections.DequeDrain;
-import me.jellysquid.mods.sodium.common.util.pool.ObjectPool;
+import me.jellysquid.mods.sodium.common.util.collections.QueueDrainingIterator;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.math.Vector3d;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ChunkBuilder<T extends ChunkGraphicsState> {
+public class ChunkBuilder {
     /**
      * The maximum number of jobs that can be queued for a given worker thread.
      */
@@ -39,30 +25,24 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
-    private final Deque<WrappedTask<T>> buildQueue = new ConcurrentLinkedDeque<>();
-    private final Deque<ChunkBuildResult<T>> uploadQueue = new ConcurrentLinkedDeque<>();
+    private final Deque<WrappedTask> buildQueue = new ConcurrentLinkedDeque<>();
 
     private final Object jobNotifier = new Object();
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
-    private final ObjectPool<WorldSlice> pool;
-
     private World world;
-    private Vector3d cameraPosition;
-    private BiomeCacheManager biomeCacheManager;
     private BlockRenderPassManager renderPassManager;
 
     private final int limitThreads;
     private final ChunkVertexType vertexType;
-    private final ChunkRenderBackend<T> backend;
 
-    public ChunkBuilder(ChunkVertexType vertexType, ChunkRenderBackend<T> backend) {
+    private final Queue<ChunkBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
+
+    public ChunkBuilder(ChunkVertexType vertexType) {
         this.vertexType = vertexType;
-        this.backend = backend;
         this.limitThreads = getOptimalThreadCount();
-        this.pool = new ObjectPool<>(this.getSchedulingBudget(), WorldSlice::new);
     }
 
     /**
@@ -70,7 +50,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
      * spawn more tasks than the budget allows, it will block until resources become available.
      */
     public int getSchedulingBudget() {
-        return Math.max(0, (this.limitThreads * TASK_QUEUE_LIMIT_PER_WORKER) - this.buildQueue.size());
+        return Math.max(0, (this.limitThreads * TASK_QUEUE_LIMIT_PER_WORKER) - this.buildQueue.size() - this.deferredResultQueue.size());
     }
 
     /**
@@ -90,7 +70,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         for (int i = 0; i < this.limitThreads; i++) {
             ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.vertexType, this.renderPassManager);
-            ChunkRenderContext pipeline = new ChunkRenderContext(client);
+            ChunkRenderCacheLocal pipeline = new ChunkRenderCacheLocal(client, this.world);
 
             WorkerRunnable worker = new WorkerRunnable(buffers, pipeline);
 
@@ -135,40 +115,29 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         this.threads.clear();
 
-        // Drop any pending work queues and cancel futures
-        this.uploadQueue.clear();
-
-        for (WrappedTask<?> job : this.buildQueue) {
+        // Delete any queued tasks and resources attached to them
+        for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
+            job.task.releaseResources();
+        }
+
+        // Delete any results in the deferred queue
+        while (!this.deferredResultQueue.isEmpty()) {
+            this.deferredResultQueue.remove()
+                    .delete();
         }
 
         this.buildQueue.clear();
 
         this.world = null;
-        this.biomeCacheManager = null;
-        this.pool.reset();
     }
 
-    /**
-     * Processes all pending build task uploads using the chunk render backend.
-     */
-    // TODO: Limit the amount of time this can take per frame
-    public boolean performPendingUploads() {
-        if (this.uploadQueue.isEmpty()) {
-            return false;
-        }
-
-        this.backend.upload(new DequeDrain<>(this.uploadQueue));
-
-        return true;
-    }
-
-    public CompletableFuture<ChunkBuildResult<T>> schedule(ChunkRenderBuildTask<T> task) {
+    public CompletableFuture<ChunkBuildResult> schedule(ChunkRenderBuildTask task) {
         if (!this.running.get()) {
             throw new IllegalStateException("Executor is stopped");
         }
 
-        WrappedTask<T> job = new WrappedTask<>(task);
+        WrappedTask job = new WrappedTask(task);
 
         this.buildQueue.add(job);
 
@@ -177,20 +146,6 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         }
 
         return job.future;
-    }
-
-    /**
-     * Sets the current camera position of the player used for task prioritization.
-     */
-    public void setCameraPosition(double x, double y, double z) {
-        this.cameraPosition = new Vector3d(x, y, z);
-    }
-
-    /**
-     * Returns the current camera position of the player used for task prioritization.
-     */
-    public Vector3d getCameraPosition() {
-        return this.cameraPosition;
     }
 
     /**
@@ -216,7 +171,6 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         this.world = world;
         this.renderPassManager = renderPassManager;
-        this.biomeCacheManager = new BiomeCacheManager(world.getDimension().getBiomeAccessType(), ((ClientWorldExtended) world).getBiomeSeed());
 
         this.startWorkers();
     }
@@ -229,92 +183,13 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         return Math.max(1, Runtime.getRuntime().availableProcessors());
     }
 
-    /**
-     * Creates a {@link WorldSlice} around the given chunk section. If the chunk section is empty, null is returned.
-     * @param pos The position of the chunk section
-     * @return A world slice containing the section's context for rendering, or null if it has none
-     */
-    public WorldSlice createWorldSlice(ChunkSectionPos pos) {
-        WorldChunk[] chunks = WorldSlice.createChunkSlice(this.world, pos);
-
-        if (chunks == null) {
-            return null;
-        }
-
-        WorldSlice slice = this.pool.allocate();
-        slice.init(this, this.world, pos, chunks);
-
-        return slice;
+    public CompletableFuture<Void> scheduleDeferred(ChunkRenderBuildTask task) {
+        return this.schedule(task)
+                .thenAccept(this.deferredResultQueue::add);
     }
 
-    /**
-     * Releases a world slice from a build task back to this builder's object pool.
-     * @param slice The chunk slice to release
-     */
-    public void releaseWorldSlice(WorldSlice slice) {
-        this.pool.release(slice);
-    }
-
-    /**
-     * Returns the global biome cache for this world
-     */
-    public BiomeCacheManager getBiomeCacheManager() {
-        return this.biomeCacheManager;
-    }
-
-    /**
-     * Called after a chunk's status is changed in the world (i.e. after a load or unload.) This is used to reset any
-     * caches which depend on its data and to release any pooled resources attached to it.
-     * @param x The x-position of the chunk
-     * @param z The z-position of the chunk
-     */
-    public void onChunkStatusChanged(int x, int z) {
-        this.biomeCacheManager.dropCachesForChunk(x, z);
-    }
-
-    /**
-     * Creates a rebuild task and defers it to the work queue. When the task is completed, it will be moved onto the
-     * completed uploads queued which will then be drained during the next available synchronization point with the
-     * main thread.
-     * @param render The render to rebuild
-     */
-    public void deferRebuild(ChunkRenderContainer<T> render) {
-        this.scheduleRebuildTaskAsync(render)
-                .thenAccept(this::enqueueUpload);
-    }
-
-
-    /**
-     * Enqueues the build task result to the pending result queue to be later processed during the next available
-     * synchronization point on the main thread.
-     * @param result The build task's result
-     */
-    private void enqueueUpload(ChunkBuildResult<T> result) {
-        this.uploadQueue.add(result);
-    }
-
-    /**
-     * Schedules the rebuild task asynchronously on the worker pool, returning a future wrapping the task.
-     * @param render The render to rebuild
-     */
-    public CompletableFuture<ChunkBuildResult<T>> scheduleRebuildTaskAsync(ChunkRenderContainer<T> render) {
-        return this.schedule(this.createRebuildTask(render));
-    }
-
-    /**
-     * Creates a task to rebuild the geometry of a {@link ChunkRenderContainer}.
-     * @param render The render to rebuild
-     */
-    private ChunkRenderBuildTask<T> createRebuildTask(ChunkRenderContainer<T> render) {
-        render.cancelRebuildTask();
-
-        WorldSlice slice = this.createWorldSlice(render.getChunkPos());
-
-        if (slice == null) {
-            return new ChunkRenderEmptyBuildTask<>(render);
-        } else {
-            return new ChunkRenderRebuildTask<>(this, render, slice, render.getRenderOrigin());
-        }
+    public Iterator<ChunkBuildResult> createDeferredBuildResultDrain() {
+        return new QueueDrainingIterator<>(this.deferredResultQueue);
     }
 
     private class WorkerRunnable implements Runnable {
@@ -325,46 +200,54 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
         // Making this thread-local provides a small boost to performance by avoiding the overhead in synchronizing
         // caches between different CPU cores
-        private final ChunkRenderContext pipeline;
+        private final ChunkRenderCacheLocal cache;
 
-        public WorkerRunnable(ChunkBuildBuffers bufferCache, ChunkRenderContext pipeline) {
+        public WorkerRunnable(ChunkBuildBuffers bufferCache, ChunkRenderCacheLocal cache) {
             this.bufferCache = bufferCache;
-            this.pipeline = pipeline;
+            this.cache = cache;
         }
 
         @Override
         public void run() {
             // Run until the chunk builder shuts down
             while (this.running.get()) {
-                WrappedTask<T> job = this.getNextJob();
+                WrappedTask job = this.getNextJob();
 
-                // If the job is null or no longer valid, keep searching for a task
-                if (job == null || job.isCancelled()) {
+                if (job == null) {
                     continue;
                 }
 
-                ChunkBuildResult<T> result;
+                this.processJob(job);
+            }
 
-                try {
-                    // Perform the build task with this worker's local resources and obtain the result
-                    result = job.task.performBuild(this.pipeline, this.bufferCache, job);
-                } catch (Exception e) {
-                    // Propagate any exception from chunk building
-                    job.future.completeExceptionally(e);
-                    continue;
-                } finally {
-                    // After the task has executed, it's safe to release any resources attached to the task
-                    job.task.releaseResources();
+            this.bufferCache.destroy();
+        }
+
+        private void processJob(WrappedTask job) {
+            ChunkBuildResult result;
+
+            try {
+                if (job.isCancelled()) {
+                    return;
                 }
 
-                // The result can be null if the task is cancelled
-                if (result != null) {
-                    // Notify the future that the result is now available
-                    job.future.complete(result);
-                } else if (!job.isCancelled()) {
-                    // If the job wasn't cancelled and no result was produced, we've hit a bug
-                    job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
-                }
+                // Perform the build task with this worker's local resources and obtain the result
+                result = job.task.performBuild(this.cache, this.bufferCache, job);
+            } catch (Exception e) {
+                // Propagate any exception from chunk building
+                job.future.completeExceptionally(e);
+                return;
+            } finally {
+                job.task.releaseResources();
+            }
+
+            // The result can be null if the task is cancelled
+            if (result != null) {
+                // Notify the future that the result is now available
+                job.future.complete(result);
+            } else if (!job.isCancelled()) {
+                // If the job wasn't cancelled and no result was produced, we've hit a bug
+                job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
             }
         }
 
@@ -372,8 +255,8 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
          * Returns the next task which this worker can work on or blocks until one becomes available. If no tasks are
          * currently available, it will wait on {@link ChunkBuilder#jobNotifier} field until notified.
          */
-        private WrappedTask<T> getNextJob() {
-            WrappedTask<T> job = ChunkBuilder.this.buildQueue.poll();
+        private WrappedTask getNextJob() {
+            WrappedTask job = ChunkBuilder.this.buildQueue.poll();
 
             if (job == null) {
                 synchronized (ChunkBuilder.this.jobNotifier) {
@@ -388,11 +271,11 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         }
     }
 
-    private static class WrappedTask<T extends ChunkGraphicsState> implements CancellationSource {
-        private final ChunkRenderBuildTask<T> task;
-        private final CompletableFuture<ChunkBuildResult<T>> future;
+    private static class WrappedTask implements CancellationSource {
+        private final ChunkRenderBuildTask task;
+        private final CompletableFuture<ChunkBuildResult> future;
 
-        private WrappedTask(ChunkRenderBuildTask<T> task) {
+        private WrappedTask(ChunkRenderBuildTask task) {
             this.task = task;
             this.future = new CompletableFuture<>();
         }

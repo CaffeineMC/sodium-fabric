@@ -12,24 +12,30 @@ public enum ModelQuadFacing {
     UNASSIGNED;
 
     public static final ModelQuadFacing[] VALUES = ModelQuadFacing.values();
+    public static final ModelQuadFacing[] DIRECTIONS = new ModelQuadFacing[] { UP, DOWN, EAST, WEST, SOUTH, NORTH };
+
     public static final int COUNT = VALUES.length;
 
     public static ModelQuadFacing fromDirection(Direction dir) {
-        switch (dir) {
-            case DOWN:
-                return DOWN;
-            case UP:
-                return UP;
-            case NORTH:
-                return NORTH;
-            case SOUTH:
-                return SOUTH;
-            case WEST:
-                return WEST;
-            case EAST:
-                return EAST;
-            default:
-                return UNASSIGNED;
-        }
+        return switch (dir) {
+            case DOWN -> DOWN;
+            case UP -> UP;
+            case NORTH -> NORTH;
+            case SOUTH -> SOUTH;
+            case WEST -> WEST;
+            case EAST -> EAST;
+        };
+    }
+
+    public ModelQuadFacing getOpposite() {
+        return switch (this) {
+            case UP -> DOWN;
+            case DOWN -> UP;
+            case EAST -> WEST;
+            case WEST -> EAST;
+            case SOUTH -> NORTH;
+            case NORTH -> SOUTH;
+            default -> UNASSIGNED;
+        };
     }
 }

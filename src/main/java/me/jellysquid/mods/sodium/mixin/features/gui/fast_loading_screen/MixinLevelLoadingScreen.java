@@ -10,13 +10,10 @@ import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import net.minecraft.client.gui.WorldGenerationProgressTracker;
 import net.minecraft.client.gui.screen.LevelLoadingScreen;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.world.chunk.ChunkStatus;
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.*;
 
 /**
@@ -53,6 +50,8 @@ public class MixinLevelLoadingScreen {
                     .forEach(entry -> STATUS_TO_COLOR_FAST.put(entry.getKey(), ColorARGB.toABGR(entry.getIntValue(), 0xFF)));
         }
 
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
         Matrix4f matrix = matrixStack.peek().getModel();
 
         Tessellator tessellator = Tessellator.getInstance();
@@ -62,7 +61,7 @@ public class MixinLevelLoadingScreen {
         RenderSystem.defaultBlendFunc();
         
         BufferBuilder buffer = tessellator.getBuffer();
-        buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
+        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
         BasicScreenQuadVertexSink sink = VertexDrain.of(buffer).createSink(VanillaVertexTypes.BASIC_SCREEN_QUADS);
 

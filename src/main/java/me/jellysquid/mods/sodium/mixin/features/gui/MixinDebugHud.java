@@ -9,7 +9,6 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Matrix4f;
 import org.apache.commons.lang3.Validate;
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -28,7 +27,7 @@ public abstract class MixinDebugHud {
 
     @Shadow
     @Final
-    private TextRenderer fontRenderer;
+    private TextRenderer textRenderer;
 
     private List<String> capturedList = null;
 
@@ -69,13 +68,13 @@ public abstract class MixinDebugHud {
 
             if (!Strings.isNullOrEmpty(string)) {
                 int height = 9;
-                int width = this.fontRenderer.getWidth(string);
+                int width = this.textRenderer.getWidth(string);
 
                 float x1 = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
                 float y1 = 2 + (height * i);
 
-                this.fontRenderer.draw(string, x1, y1, 0xe0e0e0, false, modelMatrix, immediate,
-                        false, 0, 15728880, this.fontRenderer.isRightToLeft());
+                this.textRenderer.draw(string, x1, y1, 0xe0e0e0, false, modelMatrix, immediate,
+                        false, 0, 15728880, this.textRenderer.isRightToLeft());
             }
         }
 
@@ -95,7 +94,9 @@ public abstract class MixinDebugHud {
         float k = (float) (color & 255) / 255.0F;
 
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
-        bufferBuilder.begin(GL11.GL_QUADS, VertexFormats.POSITION_COLOR);
+        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         Matrix4f matrix = matrixStack.peek()
                 .getModel();
@@ -108,7 +109,7 @@ public abstract class MixinDebugHud {
             }
 
             int height = 9;
-            int width = this.fontRenderer.getWidth(string);
+            int width = this.textRenderer.getWidth(string);
 
             int x = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
             int y = 2 + height * i;

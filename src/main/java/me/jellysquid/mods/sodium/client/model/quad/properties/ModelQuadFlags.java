@@ -51,40 +51,20 @@ public class ModelQuadFlags {
             maxZ = Math.max(maxZ, z);
         }
 
-        boolean partial = false, aligned = false;
+        boolean aligned = switch (face) {
+            case DOWN -> minY == maxY && minY < 0.0001f;
+            case UP -> minY == maxY && maxY > 0.9999F;
+            case NORTH -> minZ == maxZ && minZ < 0.0001f;
+            case SOUTH -> minZ == maxZ && maxZ > 0.9999F;
+            case WEST -> minX == maxX && minX < 0.0001f;
+            case EAST -> minX == maxX && maxX > 0.9999F;
+        };
 
-        switch (face) {
-            case DOWN:
-                aligned = minY == maxY && minY < 0.0001f;
-                break;
-            case UP:
-                aligned = minY == maxY && maxY > 0.9999F;
-                break;
-            case NORTH:
-                aligned = minZ == maxZ && minZ < 0.0001f;
-                break;
-            case SOUTH:
-                aligned = minZ == maxZ && maxZ > 0.9999F;
-                break;
-            case WEST:
-                aligned = minX == maxX && minX < 0.0001f;
-                break;
-            case EAST:
-                aligned = minX == maxX && maxX > 0.9999F;
-                break;
-        }
-
-        switch (face.getAxis()) {
-            case X:
-                partial = minY >= 0.0001f || minZ >= 0.0001f || maxY <= 0.9999F || maxZ <= 0.9999F;
-                break;
-            case Y:
-                partial = minX >= 0.0001f || minZ >= 0.0001f || maxX <= 0.9999F || maxZ <= 0.9999F;
-                break;
-            case Z:
-                partial = minX >= 0.0001f || minY >= 0.0001f || maxX <= 0.9999F || maxY <= 0.9999F;
-                break;
-        }
+        boolean partial = switch (face.getAxis()) {
+            case X -> minY >= 0.0001f || minZ >= 0.0001f || maxY <= 0.9999F || maxZ <= 0.9999F;
+            case Y -> minX >= 0.0001f || minZ >= 0.0001f || maxX <= 0.9999F || maxZ <= 0.9999F;
+            case Z -> minX >= 0.0001f || minY >= 0.0001f || maxX <= 0.9999F || maxY <= 0.9999F;
+        };
 
         int flags = 0;
 

@@ -1,4 +1,4 @@
-![Project icon](https://git-assets.jellysquid.me/hotlink-ok/sodium/icon-rounded-128px.png)
+<img src="src/main/resources/assets/sodium/icon.png" width="128">
 
 # Sodium (for Fabric)
 ![GitHub license](https://img.shields.io/github/license/CaffeineMC/sodium-fabric.svg)
@@ -8,10 +8,10 @@
 Sodium is a free and open-source optimization mod for the Minecraft client that improves frame rates, reduces
 micro-stutter, and fixes graphical issues in Minecraft. 
 
-:warning: Sodium has had a lot of time to shape up lately, but the mod is still alpha software. You may run into small
+:warning: Sodium has had a lot of time to shape up lately, but the mod is still alpha software. You may run into minor
 graphical issues or crashes while using it. Additionally, the
 [Fabric Rendering API](https://fabricmc.net/wiki/documentation:rendering) is not yet supported, which may cause crashes
-and other issues with a number of mods.
+and other issues with some mods.
 
 ---
 
@@ -34,7 +34,7 @@ Usually, releases will be made available on GitHub slightly sooner than other lo
 
 #### Bleeding-edge builds (unstable)
 
-[![GitHub build status](https://img.shields.io/github/workflow/status/CaffeineMC/sodium-fabric/gradle-ci/1.16.x/dev)](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml)
+[![GitHub build status](https://img.shields.io/github/workflow/status/CaffeineMC/sodium-fabric/gradle-ci/1.17.x/dev)](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml)
 
 If you are a player who is looking to get your hands on the latest **bleeding-edge changes for testing**, consider
 taking a look at the automated builds produced through our [GitHub Actions workflow](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml?query=event%3Apush).
@@ -54,18 +54,13 @@ If you are using the CurseForge client, you can continue to find downloads throu
 [CurseForge page](https://www.curseforge.com/minecraft/mc-mods/sodium). Unless you are using the CurseForge
 client, you should prefer the downloads linked on our Modrinth or GitHub release pages above.
 
-The CurseForge client does not natively support Fabric modding, so you will need to install
-[Jumploader](https://www.curseforge.com/minecraft/mc-mods/jumploader) in order to set up your Fabric environment. Due to
-the extra complexity and startup overhead this workaround adds, we generally do not recommend using this method unless
-you have an existing setup with it.
-
 ---
 
 ### Reporting Issues
 
 You can report bugs and crashes by opening an issue on our [issue tracker](https://github.com/CaffeineMC/sodium-fabric/issues).
 Before opening a new issue, use the search tool to make sure that your issue has not already been reported and ensure
-that you have completely filled out the issue template. Issues which are duplicates or do not contain the necessary
+that you have completely filled out the issue template. Issues that are duplicates or do not contain the necessary
 information to triage and debug may be closed. 
 
 Please note that while the issue tracker is open to feature requests, development is primarily focused on

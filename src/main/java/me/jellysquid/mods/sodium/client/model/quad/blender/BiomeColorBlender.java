@@ -1,8 +1,7 @@
 package me.jellysquid.mods.sodium.client.model.quad.blender;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.color.block.BlockColorProvider;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
 
@@ -12,13 +11,12 @@ public interface BiomeColorBlender {
      * The array returned by this method may be re-used in subsequent calls in order to reduce memory allocations, and
      * as such, the contents of an array returned by this method is undefined after a subsequent call.
      *
-     * @param colorizer The color sampling source
      * @param world The world to sample biomes (and as a result, colors) from
-     * @param state The block state being rendered
      * @param origin The position of the block being rendered
      * @param quad The quad which will be colorized
+     * @param colorizer The color sampling source
+     * @param state The block state being rendered
      * @return An array of integer colors in ABGR format
      */
-    int[] getColors(BlockColorProvider colorizer, BlockRenderView world, BlockState state, BlockPos origin,
-                    ModelQuadView quad);
+    <T> int[] getColors(BlockRenderView world, BlockPos origin, ModelQuadView quad, ModelQuadColorProvider<T> colorizer, T state);
 }

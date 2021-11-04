@@ -6,7 +6,6 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.client.particle.ParticleTextureSheet;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
@@ -30,20 +29,12 @@ public class MixinParticleManager {
     private Map<ParticleTextureSheet, Queue<Particle>> particles;
 
     private final Queue<Particle> cachedQueue = new ArrayDeque<>();
-
-    private Frustum cullingFrustum;
+    private boolean useCulling;
 
     @Inject(method = "renderParticles", at = @At("HEAD"))
     private void preRenderParticles(MatrixStack matrixStack, VertexConsumerProvider.Immediate immediate, LightmapTextureManager lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
-        Frustum frustum = SodiumWorldRenderer.getInstance().getFrustum();
-        boolean useCulling = SodiumClientMod.options().advanced.useParticleCulling;
-
         // Setup the frustum state before rendering particles
-        if (useCulling && frustum != null) {
-            this.cullingFrustum = frustum;
-        } else {
-            this.cullingFrustum = null;
-        }
+        this.useCulling = SodiumClientMod.options().advanced.useParticleCulling;
     }
 
     @SuppressWarnings({ "SuspiciousMethodCalls", "unchecked" })
@@ -55,8 +46,10 @@ public class MixinParticleManager {
             return null;
         }
 
-        // If the frustum isn't available (whether disabled or some other issue arose), simply return the queue as-is
-        if (this.cullingFrustum == null) {
+        SodiumWorldRenderer renderer = SodiumWorldRenderer.instanceNullable();
+
+        // If culling isn't enabled or available, simply return the queue as-is
+        if (renderer == null || !this.useCulling) {
             return (V) queue;
         }
 
@@ -68,9 +61,11 @@ public class MixinParticleManager {
             Box box = particle.getBoundingBox();
 
             // Hack: Grow the particle's bounding box in order to work around mis-behaved particles
-            if (this.cullingFrustum.isVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
-                filtered.add(particle);
+            if (!renderer.isBoxVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
+                continue;
             }
+
+            filtered.add(particle);
         }
 
         return (V) filtered;

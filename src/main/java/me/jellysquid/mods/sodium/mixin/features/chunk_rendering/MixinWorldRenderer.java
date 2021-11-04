@@ -1,9 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -21,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.SortedSet;
 
 @Mixin(WorldRenderer.class)
-public abstract class MixinWorldRenderer {
+public abstract class MixinWorldRenderer implements WorldRendererExtended {
     @Shadow
     @Final
     private BufferBuilderStorage bufferBuilders;
@@ -32,7 +34,12 @@ public abstract class MixinWorldRenderer {
 
     private SodiumWorldRenderer renderer;
 
-    @Redirect(method = "reload", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;viewDistance:I", ordinal = 1))
+    @Override
+    public SodiumWorldRenderer getSodiumWorldRenderer() {
+        return renderer;
+    }
+
+    @Redirect(method = "reload()V", at = @At(value = "FIELD", target = "Lnet/minecraft/client/option/GameOptions;viewDistance:I", ordinal = 1))
     private int nullifyBuiltChunkStorage(GameOptions options) {
         // Do not allow any resources to be allocated
         return 0;
@@ -40,12 +47,18 @@ public abstract class MixinWorldRenderer {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(MinecraftClient client, BufferBuilderStorage bufferBuilders, CallbackInfo ci) {
-        this.renderer = SodiumWorldRenderer.create();
+        this.renderer = new SodiumWorldRenderer(client);
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))
     private void onWorldChanged(ClientWorld world, CallbackInfo ci) {
-        this.renderer.setWorld(world);
+        RenderDevice.enterManagedCode();
+
+        try {
+            this.renderer.setWorld(world);
+        } finally {
+            RenderDevice.exitManagedCode();
+        }
     }
 
     /**
@@ -76,8 +89,14 @@ public abstract class MixinWorldRenderer {
      * @author JellySquid
      */
     @Overwrite
-    private void renderLayer(RenderLayer renderLayer, MatrixStack matrixStack, double d, double e, double f) {
-        this.renderer.drawChunkLayer(renderLayer, matrixStack, d, e, f);
+    private void renderLayer(RenderLayer renderLayer, MatrixStack matrices, double x, double y, double z, Matrix4f matrix) {
+        RenderDevice.enterManagedCode();
+
+        try {
+            this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
+        } finally {
+            RenderDevice.exitManagedCode();
+        }
     }
 
     /**
@@ -86,7 +105,13 @@ public abstract class MixinWorldRenderer {
      */
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
-        this.renderer.updateChunks(camera, frustum, hasForcedFrustum, frame, spectator);
+        RenderDevice.enterManagedCode();
+
+        try {
+            this.renderer.updateChunks(camera, frustum, hasForcedFrustum, frame, spectator);
+        } finally {
+            RenderDevice.exitManagedCode();
+        }
     }
 
     /**
@@ -125,9 +150,15 @@ public abstract class MixinWorldRenderer {
         this.renderer.scheduleRebuildForChunk(x, y, z, important);
     }
 
-    @Inject(method = "reload", at = @At("RETURN"))
+    @Inject(method = "reload()V", at = @At("RETURN"))
     private void onReload(CallbackInfo ci) {
-        this.renderer.reload();
+        RenderDevice.enterManagedCode();
+
+        try {
+            this.renderer.reload();
+        } finally {
+            RenderDevice.exitManagedCode();
+        }
     }
 
     @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/WorldRenderer;noCullingBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))

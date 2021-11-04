@@ -6,7 +6,6 @@ import org.apache.commons.io.IOUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 public class ShaderLoader {
     /**
@@ -20,22 +19,12 @@ public class ShaderLoader {
      * @return An OpenGL shader object compiled with the given user defines
      */
     public static GlShader loadShader(ShaderType type, Identifier name, ShaderConstants constants) {
-        return new GlShader(type, name, getShaderSource(getShaderPath(name)), constants);
+        return new GlShader(type, name, ShaderParser.parseShader(getShaderSource(name), constants));
     }
 
-    /**
-     * Use {@link ShaderLoader#loadShader(ShaderType, Identifier, ShaderConstants)} instead. This will be removed.
-     */
-    @Deprecated
-    public static GlShader loadShader(ShaderType type, Identifier name, List<String> constants) {
-        return new GlShader(type, name, getShaderSource(getShaderPath(name)), ShaderConstants.fromStringList(constants));
-    }
+    public static String getShaderSource(Identifier name) {
+        String path = String.format("/assets/%s/shaders/%s", name.getNamespace(), name.getPath());
 
-    private static String getShaderPath(Identifier name) {
-        return String.format("/assets/%s/shaders/%s", name.getNamespace(), name.getPath());
-    }
-
-    private static String getShaderSource(String path) {
         try (InputStream in = ShaderLoader.class.getResourceAsStream(path)) {
             if (in == null) {
                 throw new RuntimeException("Shader not found: " + path);
@@ -43,7 +32,7 @@ public class ShaderLoader {
 
             return IOUtils.toString(in, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new RuntimeException("Could not read shader sources", e);
+            throw new RuntimeException("Failed to read shader source for " + path, e);
         }
     }
 }

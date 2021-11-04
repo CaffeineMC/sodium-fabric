@@ -3,134 +3,99 @@ package me.jellysquid.mods.sodium.client.gui;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.gl20.GL20ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.gl30.GL30ChunkRenderBackend;
-import me.jellysquid.mods.sodium.client.render.chunk.backends.gl43.GL43ChunkRenderBackend;
-import net.minecraft.client.options.GraphicsMode;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.stream.Stream;
+import java.nio.file.StandardCopyOption;
 
 public class SodiumGameOptions {
+    private static final String DEFAULT_FILE_NAME = "sodium-options.json";
+
     public final QualitySettings quality = new QualitySettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
+    public final NotificationSettings notifications = new NotificationSettings();
+
+    private boolean readOnly;
 
     private Path configPath;
 
-    public void notifyListeners() {
-        SodiumClientMod.onConfigChanged(this);
+    public static SodiumGameOptions defaults() {
+        var options = new SodiumGameOptions();
+        options.configPath = getConfigPath(DEFAULT_FILE_NAME);
+        options.sanitize();
+
+        return options;
     }
 
     public static class AdvancedSettings {
-        public ChunkRendererBackendOption chunkRendererBackend = ChunkRendererBackendOption.BEST;
+        public ArenaMemoryAllocator arenaMemoryAllocator = null;
+
         public boolean animateOnlyVisibleTextures = true;
-        public boolean useAdvancedEntityCulling = true;
+        public boolean useEntityCulling = true;
         public boolean useParticleCulling = true;
         public boolean useFogOcclusion = true;
-        public boolean useCompactVertexFormat = true;
-        public boolean useChunkFaceCulling = true;
-        public boolean useMemoryIntrinsics = true;
-        public boolean disableDriverBlacklist = false;
+        public boolean useBlockFaceCulling = true;
+        public boolean allowDirectMemoryAccess = true;
+        public boolean enableMemoryTracing = false;
+        public boolean useAdvancedStagingBuffers = true;
+
+        public int maxPreRenderedFrames = 3;
     }
 
     public static class QualitySettings {
-        public GraphicsQuality cloudQuality = GraphicsQuality.DEFAULT;
         public GraphicsQuality weatherQuality = GraphicsQuality.DEFAULT;
+        public GraphicsQuality leavesQuality = GraphicsQuality.DEFAULT;
 
         public boolean enableVignette = true;
-        public boolean enableClouds = true;
-
-        public LightingQuality smoothLighting = LightingQuality.HIGH;
     }
 
-    public enum ChunkRendererBackendOption implements TextProvider {
-        GL43("Multidraw (GL 4.3)", GL43ChunkRenderBackend::isSupported),
-        GL30("Oneshot (GL 3.0)", GL30ChunkRenderBackend::isSupported),
-        GL20("Oneshot (GL 2.0)", GL20ChunkRenderBackend::isSupported);
+    public static class NotificationSettings {
+        public boolean hideDonationButton = false;
+    }
 
-        public static final ChunkRendererBackendOption BEST = pickBestBackend();
+    public enum ArenaMemoryAllocator implements TextProvider {
+        ASYNC("sodium.options.chunk_memory_allocator.async"),
+        SWAP("sodium.options.chunk_memory_allocator.swap");
 
-        private final String name;
-        private final SupportCheck supportedFunc;
+        private final Text name;
 
-        ChunkRendererBackendOption(String name, SupportCheck supportedFunc) {
-            this.name = name;
-            this.supportedFunc = supportedFunc;
+        ArenaMemoryAllocator(String name) {
+            this.name = new TranslatableText(name);
         }
 
         @Override
-        public String getLocalizedName() {
+        public Text getLocalizedName() {
             return this.name;
-        }
-
-        public boolean isSupported(boolean disableBlacklist) {
-            return this.supportedFunc.isSupported(disableBlacklist);
-        }
-
-        public static ChunkRendererBackendOption[] getAvailableOptions(boolean disableBlacklist) {
-            return streamAvailableOptions(disableBlacklist)
-                    .toArray(ChunkRendererBackendOption[]::new);
-        }
-
-        public static Stream<ChunkRendererBackendOption> streamAvailableOptions(boolean disableBlacklist) {
-            return Arrays.stream(ChunkRendererBackendOption.values())
-                    .filter((o) -> o.isSupported(disableBlacklist));
-        }
-
-        private static ChunkRendererBackendOption pickBestBackend() {
-            return streamAvailableOptions(false)
-                    .findFirst()
-                    .orElseThrow(IllegalStateException::new);
-        }
-
-        private interface SupportCheck {
-            boolean isSupported(boolean disableBlacklist);
         }
     }
 
     public enum GraphicsQuality implements TextProvider {
-        DEFAULT("Default"),
-        FANCY("Fancy"),
-        FAST("Fast");
+        DEFAULT("generator.default"),
+        FANCY("options.clouds.fancy"),
+        FAST("options.clouds.fast");
 
-        private final String name;
+        private final Text name;
 
         GraphicsQuality(String name) {
-            this.name = name;
+            this.name = new TranslatableText(name);
         }
 
         @Override
-        public String getLocalizedName() {
+        public Text getLocalizedName() {
             return this.name;
         }
 
         public boolean isFancy(GraphicsMode graphicsMode) {
             return (this == FANCY) || (this == DEFAULT && (graphicsMode == GraphicsMode.FANCY || graphicsMode == GraphicsMode.FABULOUS));
-        }
-    }
-
-    public enum LightingQuality implements TextProvider {
-        HIGH("High"),
-        LOW("Low"),
-        OFF("Off");
-
-        private final String name;
-
-        LightingQuality(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getLocalizedName() {
-            return this.name;
         }
     }
 
@@ -140,7 +105,12 @@ public class SodiumGameOptions {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
 
-    public static SodiumGameOptions load(Path path) {
+    public static SodiumGameOptions load() {
+        return load(DEFAULT_FILE_NAME);
+    }
+
+    public static SodiumGameOptions load(String name) {
+        Path path = getConfigPath(name);
         SodiumGameOptions config;
 
         if (Files.exists(path)) {
@@ -149,13 +119,12 @@ public class SodiumGameOptions {
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse config", e);
             }
-
-            config.sanitize();
         } else {
             config = new SodiumGameOptions();
         }
 
         config.configPath = path;
+        config.sanitize();
 
         try {
             config.writeChanges();
@@ -167,12 +136,22 @@ public class SodiumGameOptions {
     }
 
     private void sanitize() {
-        if (this.advanced.chunkRendererBackend == null) {
-            this.advanced.chunkRendererBackend = ChunkRendererBackendOption.BEST;
+        if (this.advanced.arenaMemoryAllocator == null) {
+            this.advanced.arenaMemoryAllocator = ArenaMemoryAllocator.ASYNC;
         }
     }
 
+    private static Path getConfigPath(String name) {
+        return FabricLoader.getInstance()
+                .getConfigDir()
+                .resolve(name);
+    }
+
     public void writeChanges() throws IOException {
+        if (this.isReadOnly()) {
+            throw new IllegalStateException("Config file is read-only");
+        }
+
         Path dir = this.configPath.getParent();
 
         if (!Files.exists(dir)) {
@@ -181,7 +160,25 @@ public class SodiumGameOptions {
             throw new IOException("Not a directory: " + dir);
         }
 
-        Files.write(this.configPath, GSON.toJson(this)
-                .getBytes(StandardCharsets.UTF_8));
+        // Use a temporary location next to the config's final destination
+        Path tempPath = this.configPath.resolveSibling(this.configPath.getFileName() + ".tmp");
+
+        // Write the file to our temporary location
+        Files.writeString(tempPath, GSON.toJson(this));
+
+        // Atomically replace the old config file (if it exists) with the temporary file
+        Files.move(tempPath, this.configPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    public boolean isReadOnly() {
+        return this.readOnly;
+    }
+
+    public void setReadOnly() {
+        this.readOnly = true;
+    }
+
+    public String getFileName() {
+        return this.configPath.getFileName().toString();
     }
 }

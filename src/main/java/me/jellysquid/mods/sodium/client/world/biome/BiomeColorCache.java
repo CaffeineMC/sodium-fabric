@@ -10,6 +10,8 @@ import net.minecraft.world.level.ColorResolver;
 import java.util.Arrays;
 
 public class BiomeColorCache {
+    private static final int BLENDED_COLORS_DIM = 16 + 2 * 2;
+
     private final ColorResolver resolver;
     private final WorldSlice slice;
 
@@ -19,6 +21,11 @@ public class BiomeColorCache {
     private final int radius;
     private final int dim;
     private final int minX, minZ;
+
+    private final int height;
+
+    private final int blendedColorsMinX;
+    private final int blendedColorsMinZ;
 
     public BiomeColorCache(ColorResolver resolver, WorldSlice slice) {
         this.resolver = resolver;
@@ -30,20 +37,24 @@ public class BiomeColorCache {
         this.minX = origin.getMinX() - (this.radius + 2);
         this.minZ = origin.getMinZ() - (this.radius + 2);
 
+        this.height = origin.getMinY();
         this.dim = 16 + ((this.radius + 2) * 2);
 
+        this.blendedColorsMinX = origin.getMinX() - 2;
+        this.blendedColorsMinZ = origin.getMinZ() - 2;
+
         this.cache = new int[this.dim * this.dim];
-        this.blendedColors = new int[this.dim * this.dim];
+        this.blendedColors = new int[BLENDED_COLORS_DIM * BLENDED_COLORS_DIM];
 
         Arrays.fill(this.cache, -1);
         Arrays.fill(this.blendedColors, -1);
     }
 
     public int getBlendedColor(BlockPos pos) {
-        int x2 = pos.getX() - this.minX;
-        int z2 = pos.getZ() - this.minZ;
+        int x2 = pos.getX() - this.blendedColorsMinX;
+        int z2 = pos.getZ() - this.blendedColorsMinZ;
 
-        int index = (x2 * this.dim) + z2;
+        int index = (x2 * BLENDED_COLORS_DIM) + z2;
         int color = this.blendedColors[index];
 
         if (color == -1) {
@@ -96,6 +107,6 @@ public class BiomeColorCache {
     }
 
     private int calculateColor(int x, int z) {
-        return this.resolver.getColor(this.slice.getCachedBiome(x, z), x, z);
+        return this.resolver.getColor(this.slice.getBiome(x, this.height, z), x, z);
     }
 }
