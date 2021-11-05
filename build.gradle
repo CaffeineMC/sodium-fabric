@@ -27,12 +27,18 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation 'net.caffeinemc:CaffeineConfig:1.0.0'
+    include 'net.caffeinemc:CaffeineConfig:1.0.0'
 
     // Fabric API
     modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
+}
+
+repositories {
+    mavenLocal()
 }
 
 if (project.use_third_party_mods) {

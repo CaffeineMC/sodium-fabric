@@ -32,7 +32,8 @@
   "depends": {
     "fabricloader": ">=0.8.0",
     "fabric-rendering-data-attachment-v1": ">=0.1",
-    "fabric-rendering-fluids-v1": ">=0.1"
+    "fabric-rendering-fluids-v1": ">=0.1",
+    "caffeineconfig": ">=1.0.0"
   },
   "breaks": {
     "optifabric": "*",
