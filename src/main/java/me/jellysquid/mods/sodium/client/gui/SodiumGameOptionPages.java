@@ -202,7 +202,7 @@ public class SodiumGameOptionPages {
                         .setName(new TranslatableText("options.autosaveIndicator"))
                         .setTooltip(new TranslatableText("sodium.options.autosaveIndicator.tooltip"))
                         .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.field_35426 /* Autosave indicator*/ = value, opts -> opts.field_35426)
+                        .setBinding((opts, value) -> opts.showAutosaveIndicator /* Autosave indicator*/ = value, opts -> opts.showAutosaveIndicator)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .build());

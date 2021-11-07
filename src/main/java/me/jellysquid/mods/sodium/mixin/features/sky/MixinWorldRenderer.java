@@ -40,9 +40,9 @@ public class MixinWorldRenderer {
      * outside of water, so the fog should also be covering the sun and sky.</p>
      * 
      * <p>When updating Sodium to new releases of the game, please check for new
-     * ways the fog can be reduced in {@link BackgroundRenderer#applyFog()}.</p>
+     * ways the fog can be reduced in {@link BackgroundRenderer#applyFog(Camera, BackgroundRenderer.FogType, float, boolean)}.</p>
      */
-    @Inject(method = "renderSky", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "renderSky(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/util/math/Matrix4f;FLjava/lang/Runnable;)V", at = @At("HEAD"), cancellable = true)
     private void preRenderSky(MatrixStack matrices, Matrix4f matrix4f, float tickDelta, Runnable runnable, CallbackInfo callbackInfo) {
         Camera camera = this.client.gameRenderer.getCamera();
         Vec3d cameraPosition = camera.getPos();

@@ -26,8 +26,8 @@ public class MixinWorldRenderer {
     public static void drawBox(MatrixStack matrices, VertexConsumer vertexConsumer, double x1, double y1, double z1,
                                double x2, double y2, double z2, float red, float green, float blue, float alpha,
                                float xAxisRed, float yAxisGreen, float zAxisBlue) {
-        Matrix4f model = matrices.peek().getModel();
-        Matrix3f normal = matrices.peek().getNormal();
+        Matrix4f position = matrices.peek().getPositionMatrix();
+        Matrix3f normal = matrices.peek().getNormalMatrix();
 
         float x1f = (float) x1;
         float y1f = (float) y1;
@@ -38,40 +38,40 @@ public class MixinWorldRenderer {
 
         int color = ColorABGR.pack(red, green, blue, alpha);
 
-        Matrix4fExtended modelExt = MatrixUtil.getExtendedMatrix(model);
+        Matrix4fExtended positionExt = MatrixUtil.getExtendedMatrix(position);
         Matrix3fExtended normalExt = MatrixUtil.getExtendedMatrix(normal);
 
-        float v1x = modelExt.transformVecX(x1f, y1f, z1f);
-        float v1y = modelExt.transformVecY(x1f, y1f, z1f);
-        float v1z = modelExt.transformVecZ(x1f, y1f, z1f);
+        float v1x = positionExt.transformVecX(x1f, y1f, z1f);
+        float v1y = positionExt.transformVecY(x1f, y1f, z1f);
+        float v1z = positionExt.transformVecZ(x1f, y1f, z1f);
         
-        float v2x = modelExt.transformVecX(x2f, y1f, z1f);
-        float v2y = modelExt.transformVecY(x2f, y1f, z1f);
-        float v2z = modelExt.transformVecZ(x2f, y1f, z1f);
+        float v2x = positionExt.transformVecX(x2f, y1f, z1f);
+        float v2y = positionExt.transformVecY(x2f, y1f, z1f);
+        float v2z = positionExt.transformVecZ(x2f, y1f, z1f);
         
-        float v3x = modelExt.transformVecX(x1f, y2f, z1f);
-        float v3y = modelExt.transformVecY(x1f, y2f, z1f);
-        float v3z = modelExt.transformVecZ(x1f, y2f, z1f);
+        float v3x = positionExt.transformVecX(x1f, y2f, z1f);
+        float v3y = positionExt.transformVecY(x1f, y2f, z1f);
+        float v3z = positionExt.transformVecZ(x1f, y2f, z1f);
         
-        float v4x = modelExt.transformVecX(x1f, y1f, z2f);
-        float v4y = modelExt.transformVecY(x1f, y1f, z2f);
-        float v4z = modelExt.transformVecZ(x1f, y1f, z2f);
+        float v4x = positionExt.transformVecX(x1f, y1f, z2f);
+        float v4y = positionExt.transformVecY(x1f, y1f, z2f);
+        float v4z = positionExt.transformVecZ(x1f, y1f, z2f);
         
-        float v5x = modelExt.transformVecX(x2f, y2f, z1f);
-        float v5y = modelExt.transformVecY(x2f, y2f, z1f);
-        float v5z = modelExt.transformVecZ(x2f, y2f, z1f);
+        float v5x = positionExt.transformVecX(x2f, y2f, z1f);
+        float v5y = positionExt.transformVecY(x2f, y2f, z1f);
+        float v5z = positionExt.transformVecZ(x2f, y2f, z1f);
         
-        float v6x = modelExt.transformVecX(x1f, y2f, z2f);
-        float v6y = modelExt.transformVecY(x1f, y2f, z2f);
-        float v6z = modelExt.transformVecZ(x1f, y2f, z2f);
+        float v6x = positionExt.transformVecX(x1f, y2f, z2f);
+        float v6y = positionExt.transformVecY(x1f, y2f, z2f);
+        float v6z = positionExt.transformVecZ(x1f, y2f, z2f);
         
-        float v7x = modelExt.transformVecX(x2f, y1f, z2f);
-        float v7y = modelExt.transformVecY(x2f, y1f, z2f);
-        float v7z = modelExt.transformVecZ(x2f, y1f, z2f);
+        float v7x = positionExt.transformVecX(x2f, y1f, z2f);
+        float v7y = positionExt.transformVecY(x2f, y1f, z2f);
+        float v7z = positionExt.transformVecZ(x2f, y1f, z2f);
         
-        float v8x = modelExt.transformVecX(x2f, y2f, z2f);
-        float v8y = modelExt.transformVecY(x2f, y2f, z2f);
-        float v8z = modelExt.transformVecZ(x2f, y2f, z2f);
+        float v8x = positionExt.transformVecX(x2f, y2f, z2f);
+        float v8y = positionExt.transformVecY(x2f, y2f, z2f);
+        float v8z = positionExt.transformVecZ(x2f, y2f, z2f);
 
         LineVertexSink lines = VertexDrain.of(vertexConsumer)
                 .createSink(VanillaVertexTypes.LINES);

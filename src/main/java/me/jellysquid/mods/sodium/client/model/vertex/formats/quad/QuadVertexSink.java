@@ -31,13 +31,13 @@ public interface QuadVertexSink extends VertexSink {
      * @param matrices The matrices to transform the vertex's position and normal vectors by
      */
     default void writeQuad(MatrixStack.Entry matrices, float x, float y, float z, int color, float u, float v, int light, int overlay, int normal) {
-        Matrix4fExtended modelMatrix = MatrixUtil.getExtendedMatrix(matrices.getModel());
+        Matrix4fExtended modelMatrix = MatrixUtil.getExtendedMatrix(matrices.getPositionMatrix());
 
         float x2 = modelMatrix.transformVecX(x, y, z);
         float y2 = modelMatrix.transformVecY(x, y, z);
         float z2 = modelMatrix.transformVecZ(x, y, z);
 
-        int norm = MatrixUtil.transformPackedNormal(normal, matrices.getNormal());
+        int norm = MatrixUtil.transformPackedNormal(normal, matrices.getNormalMatrix());
 
         this.writeQuad(x2, y2, z2, color, u, v, light, overlay, norm);
     }
