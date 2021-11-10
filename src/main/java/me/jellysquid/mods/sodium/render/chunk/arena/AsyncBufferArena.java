@@ -79,7 +79,7 @@ public class AsyncBufferArena implements GlBufferArena {
         for (int i = 0; i < usedSegments.size(); i++) {
             GlBufferSegment s = usedSegments.get(i);
 
-            if (currentCopyCommand == null || currentCopyCommand.writeOffset + currentCopyCommand.length != s.getOffset() || !s.isUploaded()) {
+            if (currentCopyCommand == null || currentCopyCommand.readOffset + currentCopyCommand.length != s.getOffset() || !s.isUploaded()) {
                 if (currentCopyCommand != null) {
                     pendingCopies.add(currentCopyCommand);
                 }
