@@ -15,6 +15,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.Option;
 import net.minecraft.client.option.*;
+import net.minecraft.client.render.ChunkBuilderMode;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -38,6 +39,22 @@ public class SodiumGameOptionPages {
                         .setBinding((options, value) -> options.viewDistance = value, options -> options.viewDistance)
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
+                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
+                        .setName(new TranslatableText("options.simulationDistance"))
+                        .setTooltip(new TranslatableText("sodium.options.simulation_distance.tooltip"))
+                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.quantity("Chunks")))
+                        .setBinding((options, value) -> options.simulationDistance = value,  options -> options.simulationDistance)
+                        .setImpact(OptionImpact.HIGH)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
+                .add(OptionImpl.createBuilder(ChunkBuilderMode.class, vanillaOpts)
+                        .setName(new TranslatableText("options.prioritizeChunkUpdates"))
+                        .setTooltip(new TranslatableText("sodium.options.chunk_builder_mode.tooltip"))
+                        .setControl(option -> new CyclingControl<>(option, ChunkBuilderMode.class, new Text[] { new TranslatableText("options.prioritizeChunkUpdates.none"), new TranslatableText("options.prioritizeChunkUpdates.byPlayer"), new TranslatableText("options.prioritizeChunkUpdates.nearby") }))
+                        .setBinding((opts, value) -> opts.chunkBuilderMode = value, opts -> opts.chunkBuilderMode)
+                        .setImpact(OptionImpact.MEDIUM)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(new TranslatableText("options.gamma"))
@@ -200,7 +217,7 @@ public class SodiumGameOptionPages {
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName(new TranslatableText("options.autosaveIndicator"))
-                        .setTooltip(new TranslatableText("sodium.options.autosaveIndicator.tooltip"))
+                        .setTooltip(new TranslatableText("sodium.options.autosave_indicator.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> opts.showAutosaveIndicator /* Autosave indicator*/ = value, opts -> opts.showAutosaveIndicator)
                         .setImpact(OptionImpact.LOW)
