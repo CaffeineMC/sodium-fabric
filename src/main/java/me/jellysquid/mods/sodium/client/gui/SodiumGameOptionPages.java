@@ -230,18 +230,6 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.quality.enableVignette = value, opts -> opts.quality.enableVignette)
                         .setImpact(OptionImpact.LOW)
                         .build())
-                .build());
-
-
-        groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
-                        .setName(new TranslatableText("options.mipmapLevels"))
-                        .setTooltip(new TranslatableText("sodium.options.mipmap_levels.tooltip"))
-                        .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.multiplier()))
-                        .setBinding((opts, value) -> opts.mipmapLevels = value, opts -> opts.mipmapLevels)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setFlags(OptionFlag.REQUIRES_ASSET_RELOAD)
-                        .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(new TranslatableText("options.screenEffectScale"))
                         .setTooltip(new TranslatableText("options.screenEffectScale.tooltip"))
@@ -258,6 +246,18 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.LOW)
                         .build()
                 )
+                .build());
+
+
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
+                        .setName(new TranslatableText("options.mipmapLevels"))
+                        .setTooltip(new TranslatableText("sodium.options.mipmap_levels.tooltip"))
+                        .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.multiplier()))
+                        .setBinding((opts, value) -> opts.mipmapLevels = value, opts -> opts.mipmapLevels)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setFlags(OptionFlag.REQUIRES_ASSET_RELOAD)
+                        .build())
                 .build());
 
 
