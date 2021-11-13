@@ -98,7 +98,7 @@ public class SodiumGameOptionPages {
                                 return optional.map((videoMode) -> window.getMonitor().findClosestVideoModeIndex(videoMode) + 1).orElse(0);
                             }
                         })
-                        .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
+                        .setFlags(OptionFlag.REQUIRES_VIDEO_MODE_RELOAD)
                         .setImpact(OptionImpact.HIGH)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)

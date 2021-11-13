@@ -264,6 +264,10 @@ public class SodiumOptionsGUI extends Screen {
             client.reloadResourcesConcurrently();
         }
 
+        if (flags.contains(OptionFlag.REQUIRES_VIDEO_MODE_RELOAD)) {
+            client.getWindow().applyVideoMode();
+        }
+
         for (OptionStorage<?> storage : dirtyStorages) {
             storage.save();
         }
