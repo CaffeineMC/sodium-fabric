@@ -81,7 +81,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(new TranslatableText("options.fullscreen.resolution"))
                         .setTooltip(new TranslatableText("sodium.options.fullscreen.resolution.tooltip"))
-                        .setControl(option -> new SliderControl(option, 0, window.getMonitor() != null ? window.getMonitor().getVideoModeCount() : 0, 1, ControlValueFormatter.resolution()))
+                        .setControl(option -> new SliderControl(option, 0, window.getMonitor() != null ? window.getMonitor().getVideoModeCount() : 0, 1, ControlValueFormatter.resolution(), true))
                         .setBinding((options, value) -> {
                             if (window.getMonitor() != null) {
                                 if (value == 0) {
