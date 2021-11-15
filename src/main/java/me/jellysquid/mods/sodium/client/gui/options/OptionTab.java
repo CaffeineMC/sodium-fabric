@@ -2,10 +2,10 @@ package me.jellysquid.mods.sodium.client.gui.options;
 
 import net.minecraft.text.Text;
 
-public class OptionPage {
+public class OptionTab {
     private final Text name;
 
-    public OptionPage(Text name) {
+    public OptionTab(Text name) {
         this.name = name;
     }
 

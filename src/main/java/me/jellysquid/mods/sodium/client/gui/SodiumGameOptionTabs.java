@@ -11,8 +11,8 @@ import me.jellysquid.mods.sodium.client.gui.options.OptionFlag;
 import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
 import me.jellysquid.mods.sodium.client.gui.options.OptionImpact;
 import me.jellysquid.mods.sodium.client.gui.options.OptionImpl;
-import me.jellysquid.mods.sodium.client.gui.options.OptionPageButton;
-import me.jellysquid.mods.sodium.client.gui.options.OptionPagePage;
+import me.jellysquid.mods.sodium.client.gui.options.OptionTabButton;
+import me.jellysquid.mods.sodium.client.gui.options.OptionTabPage;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
 import me.jellysquid.mods.sodium.client.gui.options.control.CyclingControl;
@@ -33,11 +33,11 @@ import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
-public class SodiumGameOptionPages {
+public class SodiumGameOptionTabs {
     private static final SodiumOptionsStorage sodiumOpts = new SodiumOptionsStorage();
     private static final MinecraftOptionsStorage vanillaOpts = new MinecraftOptionsStorage();
 
-    public static OptionPagePage general() {
+    public static OptionTabPage general() {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
@@ -120,10 +120,10 @@ public class SodiumGameOptionPages {
                         .build())
                 .build());
 
-        return new OptionPagePage(new TranslatableText("stat.generalButton"), ImmutableList.copyOf(groups));
+        return new OptionTabPage(new TranslatableText("stat.generalButton"), ImmutableList.copyOf(groups));
     }
 
-    public static OptionPagePage quality() {
+    public static OptionTabPage quality() {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
@@ -231,10 +231,10 @@ public class SodiumGameOptionPages {
                 .build());
 
 
-        return new OptionPagePage(new TranslatableText("sodium.options.pages.quality"), ImmutableList.copyOf(groups));
+        return new OptionTabPage(new TranslatableText("sodium.options.pages.quality"), ImmutableList.copyOf(groups));
     }
 
-    public static OptionPagePage advanced() {
+    public static OptionTabPage advanced() {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
@@ -335,11 +335,11 @@ public class SodiumGameOptionPages {
                 )
                 .build());
 
-        return new OptionPagePage(new TranslatableText("sodium.options.pages.advanced"), ImmutableList.copyOf(groups));
+        return new OptionTabPage(new TranslatableText("sodium.options.pages.advanced"), ImmutableList.copyOf(groups));
     }
 
-    public static OptionPageButton vanilla() {
-        return new OptionPageButton(new TranslatableText("sodium.options.pages.vanilla"), ()->{
+    public static OptionTabButton vanilla() {
+        return new OptionTabButton(new TranslatableText("sodium.options.pages.vanilla"), ()->{
                 MinecraftClient.getInstance().openScreen(new VideoOptionsScreen(MinecraftClient.getInstance().currentScreen, MinecraftClient.getInstance().options));
         });
     }

@@ -14,9 +14,9 @@ import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.options.OptionFlag;
 import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
 import me.jellysquid.mods.sodium.client.gui.options.OptionImpact;
-import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
-import me.jellysquid.mods.sodium.client.gui.options.OptionPageButton;
-import me.jellysquid.mods.sodium.client.gui.options.OptionPagePage;
+import me.jellysquid.mods.sodium.client.gui.options.OptionTab;
+import me.jellysquid.mods.sodium.client.gui.options.OptionTabButton;
+import me.jellysquid.mods.sodium.client.gui.options.OptionTabPage;
 import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
@@ -34,13 +34,12 @@ import net.minecraft.util.Language;
 import net.minecraft.util.Util;
 
 public class SodiumOptionsGUI extends Screen {
-    private final List<OptionPage> pages = new ArrayList<>();
+    private final List<OptionTab> tabs = new ArrayList<>();
+    private OptionTabPage currentPage;
 
     private final List<ControlElement<?>> controls = new ArrayList<>();
 
     private final Screen prevScreen;
-
-    private OptionPagePage currentPage;
 
     private FlatButtonWidget applyButton, closeButton, undoButton;
     private FlatButtonWidget donateButton, hideDonateButton;
@@ -53,17 +52,17 @@ public class SodiumOptionsGUI extends Screen {
 
         this.prevScreen = prevScreen;
 
-        this.pages.add(SodiumGameOptionPages.general());
-        this.pages.add(SodiumGameOptionPages.quality());
-        this.pages.add(SodiumGameOptionPages.advanced());
-        this.pages.add(SodiumGameOptionPages.vanilla());
+        this.tabs.add(SodiumGameOptionTabs.general());
+        this.tabs.add(SodiumGameOptionTabs.quality());
+        this.tabs.add(SodiumGameOptionTabs.advanced());
+        this.tabs.add(SodiumGameOptionTabs.vanilla());
     }
 
-    public void setPage(OptionPage page) {
-        if(page instanceof OptionPageButton){
-            ((OptionPageButton)page).execute();
+    public void setPage(OptionTab page) {
+        if(page instanceof OptionTabButton){
+            ((OptionTabButton)page).execute();
         }else{
-            this.currentPage = (OptionPagePage)page;
+            this.currentPage = (OptionTabPage)page;
             this.rebuildGUI();
         }
     }
@@ -81,12 +80,16 @@ public class SodiumOptionsGUI extends Screen {
         this.clearChildren();
 
         if (this.currentPage == null) {
-            if (this.pages.isEmpty()) {
+            if (this.tabs.isEmpty()) {
                 throw new IllegalStateException("No pages are available?!");
             }
 
             // Just use the first page for now
-            this.currentPage = (OptionPagePage)this.pages.get(0);
+            for (OptionTab tab : this.tabs) {
+                if (tab instanceof OptionTabPage) {
+                    this.currentPage = (OptionTabPage)tab;
+                }
+            }
         }
 
         this.rebuildGUIPages();
@@ -131,7 +134,7 @@ public class SodiumOptionsGUI extends Screen {
         int x = 6;
         int y = 6;
 
-        for (OptionPage page : this.pages) {
+        for (OptionTab page : this.tabs) {
             int width = 12 + this.textRenderer.getWidth(page.getName());
 
             FlatButtonWidget button = new FlatButtonWidget(new Dim2i(x, y, width, 18), page.getName(), () -> this.setPage(page));
@@ -188,9 +191,9 @@ public class SodiumOptionsGUI extends Screen {
         boolean hasChanges = this.getAllOptions()
                 .anyMatch(Option::hasChanged);
 
-        for (OptionPage page : this.pages) {
-            if(page instanceof OptionPagePage){
-                for (Option<?> option : ((OptionPagePage)page).getOptions()) {
+        for (OptionTab page : this.tabs) {
+            if(page instanceof OptionTabPage){
+                for (Option<?> option : ((OptionTabPage)page).getOptions()) {
                     if (option.hasChanged()) {
                         hasChanges = true;
                     }
@@ -207,13 +210,13 @@ public class SodiumOptionsGUI extends Screen {
     }
 
     private Stream<Option<?>> getAllOptions() {
-        return this.pages.stream()
-                .flatMap(s -> {
-                    if(s instanceof OptionPageButton){
-                        return null;
-                    }
-                    return ((OptionPagePage)s).getOptions().stream();
-                });
+        return this.tabs.stream()
+            .flatMap(s -> {
+                if(s instanceof OptionTabButton){
+                    return null;
+                }
+                return ((OptionTabPage)s).getOptions().stream();
+            });
     }
 
     private Stream<ControlElement<?>> getActiveControls() {
