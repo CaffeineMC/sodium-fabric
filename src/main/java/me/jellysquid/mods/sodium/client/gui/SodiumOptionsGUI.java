@@ -1,7 +1,22 @@
 package me.jellysquid.mods.sodium.client.gui;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Stream;
+
+import org.lwjgl.glfw.GLFW;
+
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gui.options.*;
+import me.jellysquid.mods.sodium.client.gui.options.Option;
+import me.jellysquid.mods.sodium.client.gui.options.OptionFlag;
+import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
+import me.jellysquid.mods.sodium.client.gui.options.OptionImpact;
+import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
+import me.jellysquid.mods.sodium.client.gui.options.OptionPageButton;
+import me.jellysquid.mods.sodium.client.gui.options.OptionPagePage;
 import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
@@ -17,14 +32,6 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Language;
 import net.minecraft.util.Util;
-import org.lwjgl.glfw.GLFW;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.stream.Stream;
 
 public class SodiumOptionsGUI extends Screen {
     private final List<OptionPage> pages = new ArrayList<>();
@@ -33,7 +40,7 @@ public class SodiumOptionsGUI extends Screen {
 
     private final Screen prevScreen;
 
-    private OptionPage currentPage;
+    private OptionPagePage currentPage;
 
     private FlatButtonWidget applyButton, closeButton, undoButton;
     private FlatButtonWidget donateButton, hideDonateButton;
@@ -49,12 +56,16 @@ public class SodiumOptionsGUI extends Screen {
         this.pages.add(SodiumGameOptionPages.general());
         this.pages.add(SodiumGameOptionPages.quality());
         this.pages.add(SodiumGameOptionPages.advanced());
+        this.pages.add(SodiumGameOptionPages.vanilla());
     }
 
     public void setPage(OptionPage page) {
-        this.currentPage = page;
-
-        this.rebuildGUI();
+        if(page instanceof OptionPageButton){
+            ((OptionPageButton)page).execute();
+        }else{
+            this.currentPage = (OptionPagePage)page;
+            this.rebuildGUI();
+        }
     }
 
     @Override
@@ -75,7 +86,7 @@ public class SodiumOptionsGUI extends Screen {
             }
 
             // Just use the first page for now
-            this.currentPage = this.pages.get(0);
+            this.currentPage = (OptionPagePage)this.pages.get(0);
         }
 
         this.rebuildGUIPages();
@@ -178,9 +189,11 @@ public class SodiumOptionsGUI extends Screen {
                 .anyMatch(Option::hasChanged);
 
         for (OptionPage page : this.pages) {
-            for (Option<?> option : page.getOptions()) {
-                if (option.hasChanged()) {
-                    hasChanges = true;
+            if(page instanceof OptionPagePage){
+                for (Option<?> option : ((OptionPagePage)page).getOptions()) {
+                    if (option.hasChanged()) {
+                        hasChanges = true;
+                    }
                 }
             }
         }
@@ -195,7 +208,12 @@ public class SodiumOptionsGUI extends Screen {
 
     private Stream<Option<?>> getAllOptions() {
         return this.pages.stream()
-                .flatMap(s -> s.getOptions().stream());
+                .flatMap(s -> {
+                    if(s instanceof OptionPageButton){
+                        return null;
+                    }
+                    return ((OptionPagePage)s).getOptions().stream();
+                });
     }
 
     private Stream<ControlElement<?>> getActiveControls() {

@@ -1,9 +1,18 @@
 package me.jellysquid.mods.sodium.client.gui;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
+
 import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gui.options.*;
+import me.jellysquid.mods.sodium.client.gui.options.OptionFlag;
+import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
+import me.jellysquid.mods.sodium.client.gui.options.OptionImpact;
+import me.jellysquid.mods.sodium.client.gui.options.OptionImpl;
+import me.jellysquid.mods.sodium.client.gui.options.OptionPageButton;
+import me.jellysquid.mods.sodium.client.gui.options.OptionPagePage;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlValueFormatter;
 import me.jellysquid.mods.sodium.client.gui.options.control.CyclingControl;
@@ -13,21 +22,22 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStor
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
+import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
+import net.minecraft.client.option.AoMode;
+import net.minecraft.client.option.AttackIndicator;
+import net.minecraft.client.option.CloudRenderMode;
+import net.minecraft.client.option.GraphicsMode;
 import net.minecraft.client.option.Option;
-import net.minecraft.client.option.*;
+import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.client.util.Window;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class SodiumGameOptionPages {
     private static final SodiumOptionsStorage sodiumOpts = new SodiumOptionsStorage();
     private static final MinecraftOptionsStorage vanillaOpts = new MinecraftOptionsStorage();
 
-    public static OptionPage general() {
+    public static OptionPagePage general() {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
@@ -110,10 +120,10 @@ public class SodiumGameOptionPages {
                         .build())
                 .build());
 
-        return new OptionPage(new TranslatableText("stat.generalButton"), ImmutableList.copyOf(groups));
+        return new OptionPagePage(new TranslatableText("stat.generalButton"), ImmutableList.copyOf(groups));
     }
 
-    public static OptionPage quality() {
+    public static OptionPagePage quality() {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
@@ -221,10 +231,10 @@ public class SodiumGameOptionPages {
                 .build());
 
 
-        return new OptionPage(new TranslatableText("sodium.options.pages.quality"), ImmutableList.copyOf(groups));
+        return new OptionPagePage(new TranslatableText("sodium.options.pages.quality"), ImmutableList.copyOf(groups));
     }
 
-    public static OptionPage advanced() {
+    public static OptionPagePage advanced() {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
@@ -325,6 +335,12 @@ public class SodiumGameOptionPages {
                 )
                 .build());
 
-        return new OptionPage(new TranslatableText("sodium.options.pages.advanced"), ImmutableList.copyOf(groups));
+        return new OptionPagePage(new TranslatableText("sodium.options.pages.advanced"), ImmutableList.copyOf(groups));
+    }
+
+    public static OptionPageButton vanilla() {
+        return new OptionPageButton(new TranslatableText("sodium.options.pages.vanilla"), ()->{
+                MinecraftClient.getInstance().openScreen(new VideoOptionsScreen(MinecraftClient.getInstance().currentScreen, MinecraftClient.getInstance().options));
+        });
     }
 }
