@@ -35,7 +35,7 @@ import net.minecraft.util.Util;
 
 public class SodiumOptionsGUI extends Screen {
     private final List<OptionTab> tabs = new ArrayList<>();
-    private OptionTabPage currentPage;
+    private OptionTabPage currentTab;
 
     private final List<ControlElement<?>> controls = new ArrayList<>();
 
@@ -58,11 +58,11 @@ public class SodiumOptionsGUI extends Screen {
         this.tabs.add(SodiumGameOptionTabs.vanilla());
     }
 
-    public void setPage(OptionTab page) {
-        if(page instanceof OptionTabButton){
-            ((OptionTabButton)page).execute();
+    public void activateTab(OptionTab tab) {
+        if(tab instanceof OptionTabButton){
+            ((OptionTabButton)tab).execute();
         }else{
-            this.currentPage = (OptionTabPage)page;
+            this.currentTab = (OptionTabPage)tab;
             this.rebuildGUI();
         }
     }
@@ -79,20 +79,20 @@ public class SodiumOptionsGUI extends Screen {
 
         this.clearChildren();
 
-        if (this.currentPage == null) {
+        if (this.currentTab == null) {
             if (this.tabs.isEmpty()) {
-                throw new IllegalStateException("No pages are available?!");
+                throw new IllegalStateException("No tab pages are available?!");
             }
 
             // Just use the first page for now
             for (OptionTab tab : this.tabs) {
                 if (tab instanceof OptionTabPage) {
-                    this.currentPage = (OptionTabPage)tab;
+                    this.currentTab = (OptionTabPage)tab;
                 }
             }
         }
 
-        this.rebuildGUIPages();
+        this.rebuildGUITabs();
         this.rebuildGUIOptions();
 
         this.undoButton = new FlatButtonWidget(new Dim2i(this.width - 211, this.height - 30, 65, 20), new TranslatableText("sodium.options.buttons.undo"), this::undoChanges);
@@ -130,15 +130,15 @@ public class SodiumOptionsGUI extends Screen {
         this.setDonationButtonVisibility(false);
     }
 
-    private void rebuildGUIPages() {
+    private void rebuildGUITabs() {
         int x = 6;
         int y = 6;
 
-        for (OptionTab page : this.tabs) {
-            int width = 12 + this.textRenderer.getWidth(page.getName());
+        for (OptionTab tab : this.tabs) {
+            int width = 12 + this.textRenderer.getWidth(tab.getName());
 
-            FlatButtonWidget button = new FlatButtonWidget(new Dim2i(x, y, width, 18), page.getName(), () -> this.setPage(page));
-            button.setSelected(this.currentPage == page);
+            FlatButtonWidget button = new FlatButtonWidget(new Dim2i(x, y, width, 18), tab.getName(), () -> this.activateTab(tab));
+            button.setSelected(this.currentTab == tab);
 
             x += width + 6;
 
@@ -150,7 +150,7 @@ public class SodiumOptionsGUI extends Screen {
         int x = 6;
         int y = 28;
 
-        for (OptionGroup group : this.currentPage.getGroups()) {
+        for (OptionGroup group : this.currentTab.getGroups()) {
             // Add each option's control element
             for (Option<?> option : group.getOptions()) {
                 Control<?> control = option.getControl();
