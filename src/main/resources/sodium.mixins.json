@@ -72,5 +72,9 @@
     "features.texture_tracking.MixinSpriteAtlasTexture",
     "features.texture_tracking.MixinSpriteBillboardParticle",
     "features.texture_updates.MixinSpriteInterpolated"
+  ],
+  "mixins": [
+    "features.entity.instancing.MixinMatrixStack",
+    "features.entity.instancing.MixinModelPart"
   ]
 }
