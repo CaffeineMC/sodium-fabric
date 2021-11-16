@@ -74,7 +74,10 @@
     "features.texture_updates.MixinSpriteInterpolated"
   ],
   "mixins": [
+    "features.entity.instancing.MixinBufferBuilder",
     "features.entity.instancing.MixinMatrixStack",
-    "features.entity.instancing.MixinModelPart"
+    "features.entity.instancing.MixinModelPart",
+    "features.entity.instancing.MixinRenderPhase",
+    "features.entity.instancing.MixinRenderPhaseShader"
   ]
 }

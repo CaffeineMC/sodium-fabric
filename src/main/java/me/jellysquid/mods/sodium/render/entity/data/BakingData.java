@@ -164,7 +164,7 @@ public class BakingData implements Closeable, Iterable<Map<RenderLayer, Map<VboB
         // index buffer: everything else
         String transparencyName = multiPhaseParameters.getTransparency().toString();
         return !transparencyName.equals("no_transparency")
-                && !(transparencyName.equals("additive_transparency") && multiPhaseParameters.getWriteMaskState().equals(RenderPhaseAccessor.getColorMask()));
+                && !(transparencyName.equals("additive_transparency") && multiPhaseParameters.getWriteMaskState().equals(MixinRenderPhase.getColorMask()));
     }
 
 }
