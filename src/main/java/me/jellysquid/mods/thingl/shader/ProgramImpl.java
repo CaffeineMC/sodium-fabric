@@ -3,8 +3,8 @@ package me.jellysquid.mods.thingl.shader;
 import com.mojang.blaze3d.platform.GlStateManager;
 import me.jellysquid.mods.thingl.GlObject;
 import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
-import me.jellysquid.mods.thingl.shader.uniform.Uniform;
 import me.jellysquid.mods.thingl.shader.uniform.GlUniformBlock;
+import me.jellysquid.mods.thingl.shader.uniform.Uniform;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL20C;
@@ -33,6 +33,11 @@ public class ProgramImpl<T> extends GlObject implements Program<T> {
         }
 
         GL20C.glLinkProgram(program);
+
+        //Always detach shaders according to https://www.khronos.org/opengl/wiki/Shader_Compilation#Cleanup
+        for (Shader shader : shaders) {
+            GL20C.glDetachShader(program, ((ShaderImpl) shader).handle());
+        }
 
         String log = GL20C.glGetProgramInfoLog(program);
 
