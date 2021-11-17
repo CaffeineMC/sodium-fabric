@@ -9,7 +9,7 @@ import net.minecraft.client.render.SpriteTexturedVertexConsumer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 
-public class GlobalModelUtils {
+public class BakedModelUtils {
 
     public static final long MODEL_STRUCT_SIZE = 4 * Float.BYTES + 2 * Integer.BYTES + 2 * Integer.BYTES + 3 * Float.BYTES + Integer.BYTES;
     public static final long PART_STRUCT_SIZE = 16 * Float.BYTES + 12 * Float.BYTES;

@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.entity.instancing;
 
 import me.jellysquid.mods.sodium.interop.vanilla.consumer.SmartBufferBuilderWrapper;
 import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixStackExtended;
-import me.jellysquid.mods.sodium.render.entity.GlobalModelUtils;
+import me.jellysquid.mods.sodium.render.entity.BakedModelUtils;
 import me.jellysquid.mods.sodium.render.entity.data.InstanceBatch;
 import me.jellysquid.mods.sodium.render.entity.part.BakeablePart;
 import net.minecraft.client.MinecraftClient;
@@ -183,7 +183,7 @@ public abstract class MixinModelPart implements BakeablePart {
                         // this will never be null because the check for smart render only passes if this isn't null
                         //noinspection ConstantConditions
                         smartBufferBuilderWrapper.setId(this.getId());
-                        this.renderCuboids(GlobalModelUtils.IDENTITY_STACK_ENTRY, vertexConsumer, light, overlay, red, green, blue, alpha);
+                        this.renderCuboids(BakedModelUtils.IDENTITY_STACK_ENTRY, vertexConsumer, light, overlay, red, green, blue, alpha);
                     }
                 } else {
                     this.renderCuboids(matrices.peek(), vertexConsumer, light, overlay, red, green, blue, alpha);

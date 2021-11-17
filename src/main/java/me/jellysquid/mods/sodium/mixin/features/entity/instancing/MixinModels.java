@@ -6,14 +6,11 @@
 
 package me.jellysquid.mods.sodium.mixin.features.entity.instancing;
 
-import graphics.kiln.bakedminecraftmodels.BakedMinecraftModelsRenderLayerManager;
-import graphics.kiln.bakedminecraftmodels.access.BatchContainer;
-import graphics.kiln.bakedminecraftmodels.access.RenderLayerContainer;
-import graphics.kiln.bakedminecraftmodels.data.InstanceBatch;
-import graphics.kiln.bakedminecraftmodels.model.GlobalModelUtils;
-import graphics.kiln.bakedminecraftmodels.model.VboBackedModel;
+import me.jellysquid.mods.sodium.interop.vanilla.layer.BufferBuilderExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixStackExtended;
 import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
-import me.jellysquid.mods.sodium.render.entity.GlobalModelUtils;
+import me.jellysquid.mods.sodium.render.entity.BakedModelRenderLayerManager;
+import me.jellysquid.mods.sodium.render.entity.BakedModelUtils;
 import me.jellysquid.mods.sodium.render.entity.data.InstanceBatch;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
@@ -106,17 +103,17 @@ public class MixinModels implements VboBackedModel {
 
     @Inject(method = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;IIFFFF)V", at = @At("HEAD"))
     private void updateCurrentPass(MatrixStack matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
-        if (!bmm$childBakeable() && GlobalModelUtils.getNestedBufferBuilder(vertexConsumer) instanceof RenderLayerContainer renderLayerContainer) {
-            RenderLayer convertedRenderLayer = BakedMinecraftModelsRenderLayerManager.tryDeriveSmartRenderLayer(renderLayerContainer.getRenderLayer());
+        if (!bmm$childBakeable() && BakedModelUtils.getNestedBufferBuilder(vertexConsumer) instanceof BufferBuilderExtended bufferBuilderExtended) {
+            RenderLayer convertedRenderLayer = BakedModelRenderLayerManager.tryDeriveSmartRenderLayer(bufferBuilderExtended.getRenderLayer());
             bmm$currentPassBakeable = convertedRenderLayer != null && MinecraftClient.getInstance().getWindow() != null;
             if (bmm$currentPassBakeable) {
                 bmm$drawMode = convertedRenderLayer.getDrawMode();
                 bmm$vertexFormat = convertedRenderLayer.getVertexFormat();
                 bmm$baseMatrix = matrices.peek();
 
-                BatchContainer batchContainer = (BatchContainer) matrices;
-                bmm$previousStoredBatch = batchContainer.getBatch();
-                batchContainer.setBatch(GlobalModelUtils.bakingData.getOrCreateInstanceBatch(convertedRenderLayer, this));
+                MatrixStackExtended matrixStackExtended = (MatrixStackExtended) matrices;
+                bmm$previousStoredBatch = matrixStackExtended.getBatch();
+                matrixStackExtended.setBatch(BakedModelUtils.bakingData.getOrCreateInstanceBatch(convertedRenderLayer, this));
             }
         }
     }
@@ -126,8 +123,8 @@ public class MixinModels implements VboBackedModel {
         if (getBakedVertices() != null && bmm$currentPassBakeable) {
             return null;
         } else if (bmm$currentPassBakeable) {
-            GlobalModelUtils.VBO_BUFFER_BUILDER.begin(bmm$drawMode, bmm$vertexFormat); // FIXME: not thread safe, could use a lock around it but may freeze program if nested model
-            return GlobalModelUtils.VBO_BUFFER_BUILDER;
+            BakedModelUtils.VBO_BUFFER_BUILDER.begin(bmm$drawMode, bmm$vertexFormat); // FIXME: not thread safe, could use a lock around it but may freeze program if nested model
+            return BakedModelUtils.VBO_BUFFER_BUILDER;
         } else {
             return existingConsumer;
         }
@@ -136,29 +133,29 @@ public class MixinModels implements VboBackedModel {
     @Inject(method = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;IIFFFF)V", at = @At("TAIL"))
     private void createVbo(MatrixStack matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
         if (getBakedVertices() == null && bmm$currentPassBakeable) {
-            bmm$vertexCount = GlobalModelUtils.VBO_BUFFER_BUILDER.getVertexCount();
-            GlobalModelUtils.VBO_BUFFER_BUILDER.end();
-            bmm$primitivePositions = GlobalModelUtils.VBO_BUFFER_BUILDER.getPrimitivePositions();
-            bmm$primitivePartIds = GlobalModelUtils.VBO_BUFFER_BUILDER.getPrimitivePartIds();
+            bmm$vertexCount = BakedModelUtils.VBO_BUFFER_BUILDER.getVertexCount();
+            BakedModelUtils.VBO_BUFFER_BUILDER.end();
+            bmm$primitivePositions = BakedModelUtils.VBO_BUFFER_BUILDER.getPrimitivePositions();
+            bmm$primitivePartIds = BakedModelUtils.VBO_BUFFER_BUILDER.getPrimitivePartIds();
             bmm$bakedVertices = new VertexBuffer();
-            getBakedVertices().upload(GlobalModelUtils.VBO_BUFFER_BUILDER.getInternalBufferBuilder());
-            GlobalModelUtils.bakingData.addCloseable(bmm$bakedVertices);
-            GlobalModelUtils.VBO_BUFFER_BUILDER.clear();
+            getBakedVertices().upload(BakedModelUtils.VBO_BUFFER_BUILDER.getInternalBufferBuilder());
+            BakedModelUtils.bakingData.addCloseable(bmm$bakedVertices);
+            BakedModelUtils.VBO_BUFFER_BUILDER.clear();
         }
     }
 
     @Inject(method = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;IIFFFF)V", at = @At("TAIL"))
     private void setModelInstanceData(MatrixStack matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
         if (bmm$currentPassBakeable) {
-            BatchContainer batchContainer = (BatchContainer) matrices;
-            batchContainer.getBatch().addInstance(bmm$baseMatrix, red, green, blue, alpha, overlay, light);
+            MatrixStackExtended matrixStackExtended = (MatrixStackExtended) matrices;
+            matrixStackExtended.getBatch().addInstance(bmm$baseMatrix, red, green, blue, alpha, overlay, light);
 
             bmm$currentPassBakeable = false; // we want this to be false by default when we start at the top again
             // reset variables that we don't need until next run
             bmm$drawMode = null;
             bmm$vertexFormat = null;
             bmm$baseMatrix = null;
-            batchContainer.setBatch(bmm$previousStoredBatch);
+            matrixStackExtended.setBatch(bmm$previousStoredBatch);
             bmm$previousStoredBatch = null;
         }
     }

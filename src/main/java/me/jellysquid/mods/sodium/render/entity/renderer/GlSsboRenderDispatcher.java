@@ -7,7 +7,7 @@ import me.jellysquid.mods.sodium.SodiumClient;
 import me.jellysquid.mods.sodium.interop.vanilla.buffer.VertexBufferAccessor;
 import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
 import me.jellysquid.mods.sodium.render.entity.DebugInfo;
-import me.jellysquid.mods.sodium.render.entity.GlobalModelUtils;
+import me.jellysquid.mods.sodium.render.entity.BakedModelUtils;
 import me.jellysquid.mods.sodium.render.entity.buffer.SectionedPersistentBuffer;
 import me.jellysquid.mods.sodium.render.entity.buffer.SectionedSyncObjects;
 import me.jellysquid.mods.sodium.render.entity.data.InstanceBatch;
@@ -60,7 +60,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
 
     @SuppressWarnings("ConstantConditions")
     public void renderQueues() {
-        if (GlobalModelUtils.bakingData.isEmptyShallow()) return;
+        if (BakedModelUtils.bakingData.isEmptyShallow()) return;
 
         long currentPartSyncObject = syncObjects.getCurrentSyncObject();
 
@@ -71,7 +71,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
             }
         }
 
-        GlobalModelUtils.bakingData.writeData();
+        BakedModelUtils.bakingData.writeData();
 
         long partSectionStartPos = partPersistentSsbo.getCurrentSection() * partPersistentSsbo.getSectionSize();
         long modelSectionStartPos = modelPersistentSsbo.getCurrentSection() * modelPersistentSsbo.getSectionSize();
@@ -105,7 +105,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
         VertexBuffer currentVertexBuffer = null;
         BufferRenderer.unbindAll();
 
-        for (Map<RenderLayer, Map<VboBackedModel, InstanceBatch>> perOrderedSectionData : GlobalModelUtils.bakingData) {
+        for (Map<RenderLayer, Map<VboBackedModel, InstanceBatch>> perOrderedSectionData : BakedModelUtils.bakingData) {
 
             for (Map.Entry<RenderLayer, Map<VboBackedModel, InstanceBatch>> perRenderLayerData : perOrderedSectionData.entrySet()) {
                 RenderLayer nextRenderLayer = perRenderLayerData.getKey();
@@ -216,7 +216,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
                     currentDebugInfo.instances += instanceCount;
                     currentDebugInfo.sets++;
 
-                    GlobalModelUtils.bakingData.recycleInstanceBatch(instanceBatch);
+                    BakedModelUtils.bakingData.recycleInstanceBatch(instanceBatch);
                 }
             }
         }
@@ -235,7 +235,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
         syncObjects.setCurrentSyncObject(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
         syncObjects.nextSection();
 
-        GlobalModelUtils.bakingData.reset();
+        BakedModelUtils.bakingData.reset();
     }
 
     /**

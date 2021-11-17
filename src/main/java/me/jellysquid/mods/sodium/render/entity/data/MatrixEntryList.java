@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.render.entity.data;
 
 import java.util.Arrays;
 
-import me.jellysquid.mods.sodium.render.entity.GlobalModelUtils;
+import me.jellysquid.mods.sodium.render.entity.BakedModelUtils;
 import me.jellysquid.mods.sodium.render.entity.buffer.SectionedPersistentBuffer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Matrix3f;
@@ -95,23 +95,23 @@ public class MatrixEntryList {
      */
     public long writeToBuffer(SectionedPersistentBuffer buffer, MatrixStack.Entry baseMatrixEntry) {
         int matrixCount = getLargestPartId() + 1;
-        long positionOffset = buffer.getPositionOffset().getAndAdd(matrixCount * GlobalModelUtils.PART_STRUCT_SIZE);
+        long positionOffset = buffer.getPositionOffset().getAndAdd(matrixCount * BakedModelUtils.PART_STRUCT_SIZE);
         long pointer = buffer.getSectionedPointer() + positionOffset;
 
         for (int idx = 0; idx < elementArray.length; idx++) {
             if (elementWrittenArray[idx]) {
                 MatrixStack.Entry matrixEntry = elementArray[idx];
                 if (matrixEntry != null) {
-                    writeMatrixEntry(pointer + idx * GlobalModelUtils.PART_STRUCT_SIZE, matrixEntry);
+                    writeMatrixEntry(pointer + idx * BakedModelUtils.PART_STRUCT_SIZE, matrixEntry);
                 } else {
-                    writeNullEntry(pointer + idx * GlobalModelUtils.PART_STRUCT_SIZE);
+                    writeNullEntry(pointer + idx * BakedModelUtils.PART_STRUCT_SIZE);
                 }
             } else {
-                writeMatrixEntry(pointer + idx * GlobalModelUtils.PART_STRUCT_SIZE, baseMatrixEntry);
+                writeMatrixEntry(pointer + idx * BakedModelUtils.PART_STRUCT_SIZE, baseMatrixEntry);
             }
         }
 
-        return positionOffset / GlobalModelUtils.PART_STRUCT_SIZE;
+        return positionOffset / BakedModelUtils.PART_STRUCT_SIZE;
     }
 
     private static void writeMatrixEntry(long pointer, MatrixStack.Entry matrixEntry) {
@@ -149,6 +149,6 @@ public class MatrixEntryList {
     }
 
     private static void writeNullEntry(long pointer) {
-        MemoryUtil.memSet(pointer, 0, GlobalModelUtils.PART_STRUCT_SIZE);
+        MemoryUtil.memSet(pointer, 0, BakedModelUtils.PART_STRUCT_SIZE);
     }
 }

@@ -81,12 +81,11 @@
     "features.texture_tracking.MixinSpriteAnimation",
     "features.texture_tracking.MixinSpriteAtlasTexture",
     "features.texture_tracking.MixinSpriteBillboardParticle",
-    "features.texture_updates.MixinSpriteInterpolated"
-  ],
-  "mixins": [
+    "features.texture_updates.MixinSpriteInterpolated",
     "features.entity.instancing.MixinGameRenderer",
     "features.entity.instancing.MixinGlUniform",
     "features.entity.instancing.MixinModels",
-    "features.entity.instancing.MixinWorldRenderer"
+    "features.entity.instancing.MixinWorldRenderer",
+    "features.entity.instancing.MixinModelPartData"
   ]
 }
