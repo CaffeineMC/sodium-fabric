@@ -6,7 +6,6 @@ import com.google.gson.GsonBuilder;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.GraphicsMode;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
@@ -54,6 +53,7 @@ public class SodiumGameOptions {
         public boolean allowDirectMemoryAccess = true;
         public boolean enableMemoryTracing = false;
         public boolean useAdvancedStagingBuffers = true;
+        public boolean useTranslucentFaceSorting = true;
 
         public int cpuRenderAheadLimit = 3;
     }
