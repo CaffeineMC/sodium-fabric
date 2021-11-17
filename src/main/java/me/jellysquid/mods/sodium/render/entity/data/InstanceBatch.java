@@ -1,7 +1,11 @@
 package me.jellysquid.mods.sodium.render.entity.data;
 
 import it.unimi.dsi.fastutil.ints.IntArrays;
+
+import java.util.List;
+
 import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
+import me.jellysquid.mods.sodium.render.entity.buffer.SectionedPersistentBuffer;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.util.math.MatrixStack;
@@ -12,8 +16,8 @@ import java.util.ArrayList;
 
 public class InstanceBatch {
 
-    private final List<graphics.kiln.bakedminecraftmodels.data.PerInstanceData> instances;
-    private final graphics.kiln.bakedminecraftmodels.data.MatrixEntryList matrices;
+    private final List<PerInstanceData> instances;
+    private final MatrixEntryList matrices;
 
     private VboBackedModel model;
     private boolean indexed;
@@ -25,7 +29,7 @@ public class InstanceBatch {
 
     public InstanceBatch(VboBackedModel model, boolean indexed, int initialSize, SectionedPersistentBuffer partBuffer) {
         this.instances = new ArrayList<>(initialSize);
-        this.matrices = new graphics.kiln.bakedminecraftmodels.data.MatrixEntryList(initialSize);
+        this.matrices = new MatrixEntryList(initialSize);
         this.model = model;
         this.indexed = indexed;
         this.partBuffer = partBuffer;
@@ -48,12 +52,12 @@ public class InstanceBatch {
         return indexed;
     }
 
-    public graphics.kiln.bakedminecraftmodels.data.MatrixEntryList getMatrices() {
+    public MatrixEntryList getMatrices() {
         return matrices;
     }
 
     public void writeInstancesToBuffer(SectionedPersistentBuffer buffer) {
-        for (graphics.kiln.bakedminecraftmodels.data.PerInstanceData perInstanceData : instances) {
+        for (PerInstanceData perInstanceData : instances) {
             perInstanceData.writeToBuffer(buffer);
         }
     }
@@ -149,7 +153,7 @@ public class InstanceBatch {
 
 //        int skippedPrimitivesEnd = primitiveIndices == null ? 0 : (primitiveIndices.length - skippedPrimitivesStart) / 2;
         int skippedPrimitivesEnd = 0;
-        instances.add(new graphics.kiln.bakedminecraftmodels.data.PerInstanceData(partIndex, red, green, blue, alpha, overlayX, overlayY, lightX, lightY, primitiveIndices, skippedPrimitivesStart, skippedPrimitivesEnd));
+        instances.add(new PerInstanceData(partIndex, red, green, blue, alpha, overlayX, overlayY, lightX, lightY, primitiveIndices, skippedPrimitivesStart, skippedPrimitivesEnd));
     }
 
     public int size() {
@@ -168,9 +172,9 @@ public class InstanceBatch {
         // sectioned pointer also has to be aligned
         long ptr = buffer.getSectionedPointer() + indexStartingPos;
 
-        graphics.kiln.bakedminecraftmodels.data.IndexWriter indexWriter = getIndexFunction(indexType, drawMode);
+        IndexWriter indexWriter = getIndexFunction(indexType, drawMode);
         int lastIndex = 0;
-        for (graphics.kiln.bakedminecraftmodels.data.PerInstanceData instanceData : instances) {
+        for (PerInstanceData instanceData : instances) {
             int[] primitiveIndices = instanceData.primitiveIndices();
             int skippedPrimitivesStart = instanceData.skippedPrimitivesStart();
             int skippedPrimitivesEnd = instanceData.skippedPrimitivesEnd();
@@ -186,8 +190,8 @@ public class InstanceBatch {
     }
 
     // The Cool Way(tm) to do index writing
-    private static graphics.kiln.bakedminecraftmodels.data.IndexWriter getIndexFunction(VertexFormat.IntType indexType, VertexFormat.DrawMode drawMode) {
-        graphics.kiln.bakedminecraftmodels.data.IndexWriter function;
+    private static IndexWriter getIndexFunction(VertexFormat.IntType indexType, VertexFormat.DrawMode drawMode) {
+        IndexWriter function;
         switch (indexType) {
             case BYTE -> {
                 switch (drawMode) {

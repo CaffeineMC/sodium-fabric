@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.instancing;
 
+import me.jellysquid.mods.sodium.interop.vanilla.consumer.SmartBufferBuilderWrapper;
 import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixStackExtended;
 import me.jellysquid.mods.sodium.render.entity.GlobalModelUtils;
 import me.jellysquid.mods.sodium.render.entity.data.InstanceBatch;

@@ -3,9 +3,12 @@ package me.jellysquid.mods.sodium.render.entity.data;
 import com.google.common.collect.Iterators;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.interop.vanilla.buffer.VertexBufferAccessor;
+import me.jellysquid.mods.sodium.interop.vanilla.layer.MultiPhaseAccessor;
 import me.jellysquid.mods.sodium.interop.vanilla.layer.MultiPhaseParametersAccessor;
 import me.jellysquid.mods.sodium.interop.vanilla.layer.RenderPhaseAccessor;
 import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
+import me.jellysquid.mods.sodium.render.entity.buffer.SectionedPersistentBuffer;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderPhase;
 
@@ -52,7 +55,7 @@ public class BakingData implements Closeable, Iterable<Map<RenderLayer, Map<VboB
     public InstanceBatch getOrCreateInstanceBatch(RenderLayer renderLayer, VboBackedModel model) {
         Map<RenderLayer, Map<VboBackedModel, InstanceBatch>> renderSection;
         // we still use linked maps in here to try to preserve patterns for things that rely on rendering in order not based on transparency.
-        MultiPhaseParametersAccessor multiPhaseParameters = (MultiPhaseParametersAccessor) (Object) ((MultiPhaseRenderPassAccessor) renderLayer).getPhases();
+        MultiPhaseParametersAccessor multiPhaseParameters = (MultiPhaseParametersAccessor) (Object) ((MultiPhaseAccessor) renderLayer).getPhases();
         RenderPhase.Transparency currentTransparency = multiPhaseParameters.getTransparency();
         if (!(currentTransparency instanceof RenderPhaseAccessor currentTransparencyAccessor) || currentTransparencyAccessor.getName().equals("no_transparency")) {
             renderSection = opaqueSection;

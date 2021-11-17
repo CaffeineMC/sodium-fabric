@@ -2,6 +2,8 @@ package me.jellysquid.mods.sodium.render.entity.data;
 
 import java.util.Arrays;
 
+import me.jellysquid.mods.sodium.render.entity.GlobalModelUtils;
+import me.jellysquid.mods.sodium.render.entity.buffer.SectionedPersistentBuffer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Matrix3f;
 import net.minecraft.util.math.Matrix4f;

@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.render.entity.data;
 
-import graphics.kiln.bakedminecraftmodels.model.GlobalModelUtils;
-import graphics.kiln.bakedminecraftmodels.ssbo.SectionedPersistentBuffer;
+import me.jellysquid.mods.sodium.render.entity.GlobalModelUtils;
+import me.jellysquid.mods.sodium.render.entity.buffer.SectionedPersistentBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 public record PerInstanceData(long partArrayIndex, float red, float green, float blue, float alpha, int overlayX,

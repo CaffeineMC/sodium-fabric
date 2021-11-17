@@ -1,21 +1,16 @@
-
-
 package me.jellysquid.mods.sodium.render.entity.renderer;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import graphics.kiln.bakedminecraftmodels.BakedMinecraftModels;
-import graphics.kiln.bakedminecraftmodels.data.InstanceBatch;
-import graphics.kiln.bakedminecraftmodels.debug.DebugInfo;
-import graphics.kiln.bakedminecraftmodels.mixin.buffer.VertexBufferAccessor;
-import graphics.kiln.bakedminecraftmodels.model.GlobalModelUtils;
-import graphics.kiln.bakedminecraftmodels.model.InstancedRenderDispatcher;
-import graphics.kiln.bakedminecraftmodels.model.VboBackedModel;
-import graphics.kiln.bakedminecraftmodels.ssbo.SectionedPersistentBuffer;
-import graphics.kiln.bakedminecraftmodels.ssbo.SectionedSyncObjects;
 
-import java.util.Map;
-
+import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.interop.vanilla.buffer.VertexBufferAccessor;
+import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
+import me.jellysquid.mods.sodium.render.entity.DebugInfo;
+import me.jellysquid.mods.sodium.render.entity.GlobalModelUtils;
+import me.jellysquid.mods.sodium.render.entity.buffer.SectionedPersistentBuffer;
+import me.jellysquid.mods.sodium.render.entity.buffer.SectionedSyncObjects;
+import me.jellysquid.mods.sodium.render.entity.data.InstanceBatch;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.GlUniform;
 import net.minecraft.client.gl.VertexBuffer;
@@ -26,6 +21,8 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.util.Window;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.MemoryUtil;
+
+import java.util.Map;
 
 public class GlSsboRenderDispatcher implements RenderDispatcher {
 
@@ -70,7 +67,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
         if (currentPartSyncObject != MemoryUtil.NULL) {
             int waitResult = GL32C.glClientWaitSync(currentPartSyncObject, GL32C.GL_SYNC_FLUSH_COMMANDS_BIT, 10000000); // 10 seconds
             if (waitResult == GL32C.GL_WAIT_FAILED || waitResult == GL32C.GL_TIMEOUT_EXPIRED) {
-                BakedMinecraftModels.LOGGER.error("OpenGL sync failed, err code: " + waitResult);
+                SodiumClient.logger().error("OpenGL sync failed, err code: " + waitResult);
             }
         }
 
@@ -127,7 +124,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
                     VboBackedModel model = perModelData.getKey();
                     VertexBuffer nextVertexBuffer = model.getBakedVertices();
                     VertexBufferAccessor vertexBufferAccessor = (VertexBufferAccessor) nextVertexBuffer;
-                    int vertexCount = vertexBufferAccessor.getVertexCount();
+                    int vertexCount = vertexBufferAccessor.getIndexCount();
                     if (vertexCount <= 0) continue;
 
                     InstanceBatch instanceBatch = perModelData.getValue();
@@ -204,13 +201,13 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
                         drawSortedFakeInstanced(instanceBatch, shader, vertexBufferAccessor, model.getVertexCount(), translucencySectionStartPos);
                     } else {
                         RenderSystem.setupShaderLights(shader);
-                        shader.bind();
+                        shader.upload(); // should be bind
                         if (instanceCount > 1) {
-                            GL31C.glDrawElementsInstanced(drawMode.mode, vertexCount, vertexBufferAccessor.getVertexFormat().count, MemoryUtil.NULL, instanceCount);
+                            GL31C.glDrawElementsInstanced(drawMode.mode, vertexCount, vertexBufferAccessor.getIndexType().count, MemoryUtil.NULL, instanceCount);
                         } else {
-                            GL11.glDrawElements(drawMode.mode, vertexCount, vertexBufferAccessor.getVertexFormat().count, MemoryUtil.NULL);
+                            GL11.glDrawElements(drawMode.mode, vertexCount, vertexBufferAccessor.getIndexType().count, MemoryUtil.NULL);
                         }
-                        shader.unbind();
+                        shader.bind(); // should be unbind
                     }
 
                     instanceOffset += instanceCount;
@@ -262,11 +259,11 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
         // (from burger) probably not
 
         RenderSystem.setupShaderLights(shader);
-        shader.bind();
+        shader.upload(); // should be bind
         VertexFormat.DrawMode drawMode = vba.getDrawMode();
         VertexFormat.IntType indexType = batch.getIndexType();
         GL11.glDrawElements(drawMode.mode, batch.getIndexCount(), indexType.count, sectionStartPos + batch.getIndexStartingPos());
-        shader.unbind();
+        shader.bind(); // should be unbind
 
         // TODO Unbind EBO?
         // (from burger) the next thing that comes across will replace the binding, so it's probably not needed
