@@ -86,6 +86,8 @@ accessible class net/minecraft/client/render/RenderPhase$Texturing
 accessible class net/minecraft/client/render/RenderPhase$WriteMaskState
 accessible class net/minecraft/client/render/RenderPhase$LineWidth
 
+accessible field net/minecraft/client/render/RenderPhase COLOR_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
+
 extendable class net/minecraft/client/render/RenderLayer$MultiPhase
 accessible class net/minecraft/client/render/RenderLayer$MultiPhaseParameters
 accessible class net/minecraft/client/render/RenderLayer$MultiPhaseParameters$Builder
