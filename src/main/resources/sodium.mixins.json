@@ -74,12 +74,15 @@
     "features.texture_updates.MixinSpriteInterpolated"
   ],
   "mixins": [
+    "features.entity.instancing.BufferBufferMixin",
     "features.entity.instancing.MixinBufferBuilder",
     "features.entity.instancing.MixinMatrixStack",
     "features.entity.instancing.MixinModelPart",
+    "features.entity.instancing.MixinMultiPhase",
     "features.entity.instancing.MixinMultiPhaseParameters",
     "features.entity.instancing.MixinRenderLayer",
     "features.entity.instancing.MixinRenderPhase",
-    "features.entity.instancing.MixinRenderPhaseShader"
+    "features.entity.instancing.MixinRenderPhaseShader",
+    "features.entity.instancing.MixinSpriteTexturedVertexConsumer"
   ]
 }

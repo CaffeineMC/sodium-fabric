@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.render.entity;
 
+import me.jellysquid.mods.sodium.interop.vanilla.consumer.SmartBufferBuilderWrapper;
+import me.jellysquid.mods.sodium.interop.vanilla.consumer.SpriteTexturedVertexConsumerAccessor;
 import me.jellysquid.mods.sodium.render.entity.data.BakingData;
 import me.jellysquid.mods.sodium.render.entity.renderer.GlSsboRenderDispatcher;
 import net.minecraft.client.render.BufferBuilder;

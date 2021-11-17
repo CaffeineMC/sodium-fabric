@@ -1,14 +1,7 @@
-/*
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */
-
 package me.jellysquid.mods.sodium.render.entity.data;
 
-import graphics.kiln.bakedminecraftmodels.model.VboBackedModel;
-import graphics.kiln.bakedminecraftmodels.ssbo.SectionedPersistentBuffer;
 import it.unimi.dsi.fastutil.ints.IntArrays;
+import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.util.math.MatrixStack;
@@ -16,7 +9,6 @@ import net.minecraft.util.math.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class InstanceBatch {
 
@@ -69,8 +61,8 @@ public class InstanceBatch {
     public void addInstance(MatrixStack.Entry baseMatrixEntry, float red, float green, float blue, float alpha, int overlay, int light) {
         int overlayX = overlay & 0xFFFF;
         int overlayY = overlay >> 16 & 0xFFFF;
-        int lightX = light & (LightmapTextureManager.MAX_BLOCK_LIGHT_COORDINATE | 0xFF0F);
-        int lightY = light >> 16 & (LightmapTextureManager.MAX_BLOCK_LIGHT_COORDINATE | 0xFF0F);
+        int lightX = light & (LightmapTextureManager.field_32769 | 0xFF0F);
+        int lightY = light >> 16 & (LightmapTextureManager.field_32769 | 0xFF0F);
 
         // this can happen if the model didn't render any modelparts,
         // in which case it makes sense to not try to render it anyway.

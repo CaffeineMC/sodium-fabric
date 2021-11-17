@@ -1,14 +1,10 @@
-/*
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */
-
 package me.jellysquid.mods.sodium.render.entity.data;
 
 import com.google.common.collect.Iterators;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.interop.vanilla.layer.MultiPhaseParametersAccessor;
+import me.jellysquid.mods.sodium.interop.vanilla.layer.RenderPhaseAccessor;
 import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderPhase;
