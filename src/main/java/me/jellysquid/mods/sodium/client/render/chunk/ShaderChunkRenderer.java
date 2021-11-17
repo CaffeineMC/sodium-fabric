@@ -2,21 +2,19 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
-import me.jellysquid.mods.sodium.client.gl.shader.*;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.gl.shader.*;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderOptions;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.*;
 import net.minecraft.util.Identifier;
 
 import java.util.Map;
 
 public abstract class ShaderChunkRenderer implements ChunkRenderer {
     private final Map<ChunkShaderOptions, GlProgram<ChunkShaderInterface>> programs = new Object2ObjectOpenHashMap<>();
+    private final Map<ChunkShaderOptions, GlProgram<ComputeShaderInterface>> computes = new Object2ObjectOpenHashMap<>();
 
     protected final ChunkVertexType vertexType;
     protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
@@ -24,6 +22,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     protected final RenderDevice device;
 
     protected GlProgram<ChunkShaderInterface> activeProgram;
+    protected GlProgram<ComputeShaderInterface> activeComputeProgram;
 
     public ShaderChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         this.device = device;
@@ -41,12 +40,31 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         return program;
     }
 
+    protected GlProgram<ComputeShaderInterface> compileComputeProgram(ChunkShaderOptions options) {
+        GlProgram<ComputeShaderInterface> compute = this.computes.get(options);
+
+        if (compute == null) {
+            GlShader shader = ShaderLoader.loadShader(ShaderType.COMPUTE,
+                    new Identifier("sodium", "blocks/block_layer_translucent_compute.glsl"), options.constants());
+
+            try {
+                this.computes.put(options,
+                        compute = GlProgram.builder(new Identifier("sodium", "chunk_shader_compute"))
+                                .attachShader(shader)
+                                .link(ComputeShaderInterface::new));
+            } finally {
+                shader.delete();
+            }
+        }
+        return compute;
+    }
+
     private GlProgram<ChunkShaderInterface> createShader(String path, ChunkShaderOptions options) {
         ShaderConstants constants = options.constants();
 
         GlShader vertShader = ShaderLoader.loadShader(ShaderType.VERTEX,
                 new Identifier("sodium", path + ".vsh"), constants);
-        
+
         GlShader fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT,
                 new Identifier("sodium", path + ".fsh"), constants);
 
@@ -69,6 +87,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     protected void begin(BlockRenderPass pass) {
         ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass, this.vertexType);
 
+        this.activeComputeProgram = null;
         this.activeProgram = this.compileProgram(options);
         this.activeProgram.bind();
         this.activeProgram.getInterface()
@@ -80,11 +99,28 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         this.activeProgram = null;
     }
 
+    protected void beginCompute(BlockRenderPass pass) {
+        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass, this.vertexType);
+
+        this.activeProgram = null;
+        this.activeComputeProgram = this.compileComputeProgram(options);
+        this.activeComputeProgram.bind();
+        this.activeComputeProgram.getInterface()
+                .setup(this.vertexType);
+    }
+
+    protected void endCompute() {
+        this.activeComputeProgram.unbind();
+        this.activeComputeProgram = null;
+    }
+
     @Override
     public void delete() {
         this.programs.values()
                 .forEach(GlProgram::delete);
         this.programs.clear();
+        this.computes.values().forEach(GlProgram::delete);
+        this.computes.clear();
     }
 
     @Override

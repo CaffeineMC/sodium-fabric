@@ -2,9 +2,9 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
@@ -307,6 +307,7 @@ public class RenderSection {
     public void onBuildFinished(ChunkBuildResult result) {
         this.setData(result.data);
         this.lastAcceptedBuildTime = result.buildTime;
+        region.setNeedsTranslucencyCompute(true);
     }
 
     public int getChunkId() {

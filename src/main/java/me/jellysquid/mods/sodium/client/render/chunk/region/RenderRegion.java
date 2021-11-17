@@ -52,6 +52,8 @@ public class RenderRegion {
 
     private Frustum.Visibility visibility;
 
+    private boolean needsTranslucencyCompute = false;
+
     public RenderRegion(RenderRegionManager manager, int x, int y, int z) {
         this.manager = manager;
 
@@ -135,6 +137,14 @@ public class RenderRegion {
 
     public Frustum.Visibility getVisibility() {
         return this.visibility;
+    }
+
+    public void setNeedsTranslucencyCompute(boolean compute) {
+        this.needsTranslucencyCompute = compute;
+    }
+
+    public boolean getNeedsTranslucencyCompute() {
+        return this.needsTranslucencyCompute;
     }
 
     public static int getChunkIndex(int x, int y, int z) {

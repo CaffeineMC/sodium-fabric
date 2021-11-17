@@ -20,7 +20,10 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.ComputeShaderInterface;
+import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -35,6 +38,10 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     private final GlMutableBuffer chunkInfoBuffer;
     private final boolean isBlockFaceCullingEnabled = SodiumClientMod.options().performance.useBlockFaceCulling;
+
+    private double lastComputeUpdateX = 0;
+    private double lastComputeUpdateY = 0;
+    private double lastComputeUpdateZ = 0;
 
     public RegionChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         super(device, vertexType);
@@ -62,6 +69,69 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     public void render(ChunkRenderMatrices matrices, CommandList commandList,
                        ChunkRenderList list, BlockRenderPass pass,
                        ChunkCameraContext camera) {
+        if(pass.isTranslucent() && SodiumClientMod.options().advanced.useTranslucentFaceSorting) {
+            super.beginCompute(pass);
+
+            boolean fullRebuild = false;
+            if (activeComputeProgram != null) {
+                ComputeShaderInterface compute = activeComputeProgram.getInterface();
+
+                double cameraX = camera.blockX + camera.deltaX;
+                double cameraY = camera.blockY + camera.deltaY;
+                double cameraZ = camera.blockZ + camera.deltaZ;
+
+                //If we have moved set all chunks as needing compute
+                double dx = cameraX - lastComputeUpdateX;
+                double dy = cameraY - lastComputeUpdateY;
+                double dz = cameraZ - lastComputeUpdateZ;
+                if(dx * dx + dy * dy + dz * dz > 1.0D) {
+                    lastComputeUpdateX = cameraX;
+                    lastComputeUpdateY = cameraY;
+                    lastComputeUpdateZ = cameraZ;
+                    fullRebuild = true;
+                }
+
+                compute.setDrawUniforms(this.chunkInfoBuffer);
+
+                boolean runCompute = true;
+                //We want compute to run beginning with the closest chunks
+                for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, false)) {
+                    RenderRegion region = entry.getKey();
+                    List<RenderSection> regionSections = entry.getValue();
+
+                    if(fullRebuild) {
+                        region.setNeedsTranslucencyCompute(true);
+                        if(!runCompute) {
+                            continue;
+                        }
+                    }
+
+                    if (region.getNeedsTranslucencyCompute() && !regionSections.isEmpty()) {
+                        if (!buildDrawBatch(regionSections, pass, camera)) {
+                            continue;
+                        }
+                        float x = getCameraTranslation(region.getOriginX(), camera.blockX, camera.deltaX);
+                        float y = getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY);
+                        float z = getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ);
+
+                        Matrix4f matrix = this.cachedModelViewMatrix;
+                        matrix.set(matrices.modelView());
+                        matrix.translate(x, y, z);
+
+                        compute.setModelViewMatrix(matrix);
+
+                        RenderRegion.RenderRegionArenas arenas = region.getArenas();
+                        runCompute = compute.execute(commandList, batch, arenas);
+                        region.setNeedsTranslucencyCompute(false);
+                    }
+                    if(!runCompute && !fullRebuild) {
+                        break;
+                    }
+                }
+            }
+            super.endCompute();
+        }
+
         super.begin(pass);
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();
@@ -80,7 +150,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             this.setModelMatrixUniforms(shader, matrices, region, camera);
             this.executeDrawBatches(commandList, this.createTessellationForRegion(commandList, region.getArenas(), pass));
         }
-        
+
         super.end();
     }
 
@@ -104,7 +174,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
             this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
 
-            if (this.isBlockFaceCullingEnabled) {
+            if (this.isBlockFaceCullingEnabled && !(pass.isTranslucent() && SodiumClientMod.options().advanced.useTranslucentFaceSorting)) {
                 if (camera.posY > bounds.y1) {
                     this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
                 }
