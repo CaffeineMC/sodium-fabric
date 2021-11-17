@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
@@ -21,10 +20,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
-import org.joml.Matrix4f;
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -34,7 +30,7 @@ import java.util.Map;
 public class RegionChunkRenderer extends ShaderChunkRenderer {
     private static final ByteBuffer DRAW_INFO_BUFFER = createChunkInfoBuffer();
 
-    private final MultiDrawBatch[] batches;
+    private final MultiDrawBatch batch;
     private final GlVertexAttributeBinding[] vertexAttributeBindings;
 
     private final GlMutableBuffer chunkInfoBuffer;
@@ -59,11 +55,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             commandList.uploadData(this.chunkInfoBuffer, DRAW_INFO_BUFFER, GlBufferUsage.STATIC_DRAW);
         }
 
-        this.batches = new MultiDrawBatch[GlIndexType.VALUES.length];
-
-        for (int i = 0; i < this.batches.length; i++) {
-            this.batches[i] = MultiDrawBatch.create(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
-        }
+        this.batch = MultiDrawBatch.create(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
     }
 
     @Override
@@ -81,7 +73,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             RenderRegion region = entry.getKey();
             List<RenderSection> regionSections = entry.getValue();
 
-            if (!this.buildDrawBatches(regionSections, pass, camera)) {
+            if (!this.buildDrawBatch(regionSections, pass, camera)) {
                 continue;
             }
 
@@ -92,10 +84,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         super.end();
     }
 
-    private boolean buildDrawBatches(List<RenderSection> sections, BlockRenderPass pass, ChunkCameraContext camera) {
-        for (MultiDrawBatch batch : this.batches) {
-            batch.begin();
-        }
+    private boolean buildDrawBatch(List<RenderSection> sections, BlockRenderPass pass, ChunkCameraContext camera) {
+        batch.begin();
 
         for (RenderSection render : sortedChunks(sections, pass.isTranslucent())) {
             ChunkGraphicsState state = render.getGraphicsState(pass);
@@ -145,15 +135,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             }
         }
 
-        boolean nonEmpty = false;
-
-        for (MultiDrawBatch batch : this.batches) {
-            batch.end();
-
-            nonEmpty |= !batch.isEmpty();
-        }
-
-        return nonEmpty;
+        batch.end();
+        return !batch.isEmpty();
     }
 
     private GlTessellation createTessellationForRegion(CommandList commandList, RenderRegion.RenderRegionArenas arenas, BlockRenderPass pass) {
@@ -167,14 +150,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     }
 
     private void executeDrawBatches(CommandList commandList, GlTessellation tessellation) {
-        for (int i = 0; i < this.batches.length; i++) {
-            MultiDrawBatch batch = this.batches[i];
-
-            if (!batch.isEmpty()) {
-                try (DrawCommandList drawCommandList = commandList.beginTessellating(tessellation)) {
-                    drawCommandList.multiDrawElementsBaseVertex(batch.getPointerBuffer(), batch.getCountBuffer(), batch.getBaseVertexBuffer(), GlIndexType.VALUES[i]);
-                }
-            }
+        try (DrawCommandList drawCommandList = commandList.beginTessellating(tessellation)) {
+            drawCommandList.multiDrawElementsBaseVertex(batch.getPointerBuffer(), batch.getCountBuffer(), batch.getBaseVertexBuffer(), GlIndexType.UNSIGNED_INT);
         }
     }
 
@@ -194,7 +171,6 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     private void addDrawCall(ElementRange part, long baseIndexPointer, int baseVertexIndex) {
         if (part != null) {
-            MultiDrawBatch batch = this.batches[part.indexType().ordinal()];
             batch.add(baseIndexPointer + part.elementPointer(), part.elementCount(), baseVertexIndex + part.baseVertex());
         }
     }
@@ -210,9 +186,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     public void delete() {
         super.delete();
 
-        for (MultiDrawBatch batch : this.batches) {
-            batch.delete();
-        }
+        batch.delete();
 
         RenderDevice.INSTANCE.createCommandList()
                 .deleteBuffer(this.chunkInfoBuffer);
