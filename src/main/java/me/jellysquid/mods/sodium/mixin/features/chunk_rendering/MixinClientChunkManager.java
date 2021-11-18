@@ -37,8 +37,8 @@ public abstract class MixinClientChunkManager implements ClientChunkManagerExten
 
     private ChunkStatusListener listener;
 
-    @Inject(method = "loadChunkFromPacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;resetChunkColor(Lnet/minecraft/util/math/ChunkPos;)V", shift = At.Shift.AFTER))
-    private void afterLoadChunkFromPacket(int x, int z, PacketByteBuf packetByteBuf, NbtCompound nbtCompound, Consumer<ChunkData.BlockEntityVisitor> consumer, CallbackInfoReturnable<@Nullable WorldChunk> cir) {
+    @Override
+    public void afterLightChunk(int x, int z) {
         if (this.listener != null && this.loadedChunks.add(ChunkPos.toLong(x, z))) {
             this.listener.onChunkAdded(x, z);
         }
