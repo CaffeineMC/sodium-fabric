@@ -6,12 +6,15 @@
 
 package me.jellysquid.mods.sodium.mixin.features.entity.instancing;
 
+import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.interop.vanilla.layer.BufferBuilderExtended;
 import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixStackExtended;
 import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
 import me.jellysquid.mods.sodium.render.entity.BakedModelRenderLayerManager;
 import me.jellysquid.mods.sodium.render.entity.BakedModelUtils;
 import me.jellysquid.mods.sodium.render.entity.data.InstanceBatch;
+import me.jellysquid.mods.sodium.render.entity.renderer.GlSsboRenderDispatcher;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.RenderLayer;
@@ -103,7 +106,10 @@ public class MixinModels implements VboBackedModel {
 
     @Inject(method = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;IIFFFF)V", at = @At("HEAD"))
     private void updateCurrentPass(MatrixStack matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
-        if (!bmm$childBakeable() && BakedModelUtils.getNestedBufferBuilder(vertexConsumer) instanceof BufferBuilderExtended bufferBuilderExtended) {
+        if (SodiumClient.options().performance.useModelInstancing &&
+                GlSsboRenderDispatcher.isSupported(SodiumRender.DEVICE) &&
+                !bmm$childBakeable() &&
+                BakedModelUtils.getNestedBufferBuilder(vertexConsumer) instanceof BufferBuilderExtended bufferBuilderExtended) {
             RenderLayer convertedRenderLayer = BakedModelRenderLayerManager.tryDeriveSmartRenderLayer(bufferBuilderExtended.getRenderLayer());
             bmm$currentPassBakeable = convertedRenderLayer != null && MinecraftClient.getInstance().getWindow() != null;
             if (bmm$currentPassBakeable) {

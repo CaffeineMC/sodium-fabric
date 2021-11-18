@@ -275,7 +275,7 @@ public class SodiumConfigScreenPages {
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(new LiteralText("Use Model Instancing"))
-                        .setTooltip(new LiteralText("If enabled, supported models will be pack into VBOs and instanced. " +
+                        .setTooltip(new LiteralText("If enabled, supported models will be packed into VBOs and instanced. " +
                                 "This removes unnecessary uploads to the GPU by only sending transformations for existing vertices. " +
                                 "This also removes many unnecessary draw calls by packing many similar entities into batches. " +
                                 "This can drastically improve framerate when many entities are visible." +
