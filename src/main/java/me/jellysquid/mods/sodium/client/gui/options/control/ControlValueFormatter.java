@@ -8,7 +8,7 @@ public interface ControlValueFormatter {
     }
 
     static ControlValueFormatter fpsLimit() {
-        return (v) -> (v == 260) ? new TranslatableText("options.framerateLimit.max").getString() : new TranslatableText("options.framerate", v).getString();
+        return (v) -> (v == 260) ? new TranslatableComponent("options.framerateLimit.max").getString() : new TranslatableComponent("options.framerate", v).getString();
     }
 
     static ControlValueFormatter brightness() {
@@ -24,13 +24,13 @@ public interface ControlValueFormatter {
     }
 
     static ControlValueFormatter biomeBlend() {
-        return (v) -> (v == 0) ? new TranslatableText("gui.none").getString() : new TranslatableText("sodium.options.biome_blend.value", v).getString();
+        return (v) -> (v == 0) ? new TranslatableComponent("gui.none").getString() : new TranslatableComponent("sodium.options.biome_blend.value", v).getString();
     }
 
     String format(int value);
 
     static ControlValueFormatter translateVariable(String key) {
-        return (v) -> new TranslatableText(key, v).getString();
+        return (v) -> new TranslatableComponent(key, v).getString();
     }
 
     static ControlValueFormatter percentage() {

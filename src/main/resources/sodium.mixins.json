@@ -54,7 +54,7 @@
     "features.particle.cull.MixinParticleEngine",
     "features.particle.fast_render.MixinSingleQuadParticle",
     "features.render_layer.MixinItemBlockRenderTypes",
-    "features.render_layer.leaves.MixinRenderLayers",
+    "features.render_layer.leaves.MixinItemBlockRenderTypes",
     "features.shader.MixinShaderInstance",
     "features.sky.MixinLevelRenderer",
     "features.texture_tracking.MixinTextureAtlasSprite",

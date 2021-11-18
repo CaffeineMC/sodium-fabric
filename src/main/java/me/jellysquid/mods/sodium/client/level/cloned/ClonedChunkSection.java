@@ -1,6 +1,9 @@
 package me.jellysquid.mods.sodium.client.level.cloned;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectMaps;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.level.cloned.palette.ClonedPalette;
 import me.jellysquid.mods.sodium.client.level.cloned.palette.ClonedPaletteFallback;
 import me.jellysquid.mods.sodium.client.level.cloned.palette.ClonedPalleteArray;
@@ -8,7 +11,6 @@ import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.BitStorage;
-import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
@@ -126,7 +128,7 @@ public class ClonedChunkSection {
             BlockEntity entity = entry.getValue();
 
             if (box.isInside(pos)) {
-                this.blockEntities.put(ChunkSectionPos.packLocal(pos), entity);
+                this.blockEntities.put(SectionPos.sectionRelativePos(pos), entity);
             }
         }
 

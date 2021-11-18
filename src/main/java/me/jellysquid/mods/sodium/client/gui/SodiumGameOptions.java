@@ -66,10 +66,10 @@ public class SodiumGameOptions {
         ASYNC("sodium.options.chunk_memory_allocator.async"),
         SWAP("sodium.options.chunk_memory_allocator.swap");
 
-        private final Text name;
+        private final Component name;
 
         ArenaMemoryAllocator(String name) {
-            this.name = new TranslatableText(name);
+            this.name = new TranslatableComponent(name);
         }
 
         @Override
