@@ -8,10 +8,10 @@
 Sodium is a free and open-source optimization mod for the Minecraft client that improves frame rates, reduces
 micro-stutter, and fixes graphical issues in Minecraft. 
 
-:warning: Sodium has had a lot of time to shape up lately, but the mod is still alpha software. You may run into small
+:warning: Sodium has had a lot of time to shape up lately, but the mod is still alpha software. You may run into minor
 graphical issues or crashes while using it. Additionally, the
 [Fabric Rendering API](https://fabricmc.net/wiki/documentation:rendering) is not yet supported, which may cause crashes
-and other issues with a number of mods.
+and other issues with some mods.
 
 ---
 
@@ -60,7 +60,7 @@ client, you should prefer the downloads linked on our Modrinth or GitHub release
 
 You can report bugs and crashes by opening an issue on our [issue tracker](https://github.com/CaffeineMC/sodium-fabric/issues).
 Before opening a new issue, use the search tool to make sure that your issue has not already been reported and ensure
-that you have completely filled out the issue template. Issues which are duplicates or do not contain the necessary
+that you have completely filled out the issue template. Issues that are duplicates or do not contain the necessary
 information to triage and debug may be closed. 
 
 Please note that while the issue tracker is open to feature requests, development is primarily focused on

@@ -53,6 +53,8 @@ public class SodiumGameOptions {
 
     public static class QualitySettings {
         public GraphicsQuality weatherQuality = GraphicsQuality.DEFAULT;
+        public GraphicsQuality leavesQuality = GraphicsQuality.DEFAULT;
+
         public boolean enableVignette = true;
     }
 
@@ -61,21 +63,17 @@ public class SodiumGameOptions {
     }
 
     public enum ArenaMemoryAllocator implements TextProvider {
-        ASYNC("Async"),
-        SWAP("Swap");
+        ASYNC("sodium.options.chunk_memory_allocator.async"),
+        SWAP("sodium.options.chunk_memory_allocator.swap");
 
-        private final String name;
+        private final Text name;
 
         ArenaMemoryAllocator(String name) {
-            this.name = name;
+            this.name = new TranslatableText(name);
         }
 
         @Override
         public Component getLocalizedName() {
-            return new TextComponent(this.name);
-        }
-
-        public String getName() {
             return this.name;
         }
     }
