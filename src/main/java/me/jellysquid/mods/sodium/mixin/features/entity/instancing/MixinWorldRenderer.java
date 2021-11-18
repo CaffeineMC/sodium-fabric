@@ -1,6 +1,10 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.instancing;
 
+import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.render.entity.BakedModelUtils;
+import me.jellysquid.mods.sodium.render.entity.data.BakingData;
+import me.jellysquid.mods.sodium.render.entity.renderer.GlSsboRenderDispatcher;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -24,12 +28,14 @@ public class MixinWorldRenderer {
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;drawCurrentLayer()V", shift = At.Shift.BEFORE))
     private void renderQueues(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
         this.world.getProfiler().push("renderInstances");
-        BakedModelUtils.INSTANCED_RENDER_DISPATCHER.renderQueues();
+        if (SodiumClient.options().performance.useModelInstancing && GlSsboRenderDispatcher.isSupported(SodiumRender.DEVICE)) {
+            BakedModelUtils.getInstancedRenderDispatcher().renderQueues();
+        }
         this.world.getProfiler().pop();
     }
 
     @Inject(method = "close", at = @At("HEAD"))
-    private void closeVertexBuffers(CallbackInfo ci) {
-        BakedModelUtils.bakingData.close();
+    private void closeInstancingResources(CallbackInfo ci) {
+        BakedModelUtils.close();
     }
 }

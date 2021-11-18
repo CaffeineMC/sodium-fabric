@@ -2,8 +2,10 @@ package me.jellysquid.mods.sodium.render.entity.buffer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.lwjgl.opengl.GL15;
+
 // TODO: abstract this but still use long for getPointer
-public class SectionedPersistentBuffer {
+public class SectionedPersistentBuffer implements AutoCloseable {
     private final long pointer;
     private final int name;
     private final int sectionCount;
@@ -47,4 +49,8 @@ public class SectionedPersistentBuffer {
         return positionOffset;
     }
 
+    @Override
+    public void close() {
+        GL15.glDeleteBuffers(name);
+    }
 }

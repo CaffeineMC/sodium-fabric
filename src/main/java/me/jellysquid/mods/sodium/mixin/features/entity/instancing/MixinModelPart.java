@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.instancing;
 
-import me.jellysquid.mods.sodium.interop.vanilla.consumer.SmartBufferBuilderWrapper;
+import me.jellysquid.mods.sodium.interop.vanilla.consumer.ModelVboBufferBuilder;
 import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixStackExtended;
 import me.jellysquid.mods.sodium.render.entity.BakedModelUtils;
 import me.jellysquid.mods.sodium.render.entity.data.InstanceBatch;
@@ -56,7 +56,6 @@ public abstract class MixinModelPart implements BakeablePart {
         return bmm$id;
     }
 
-    // potential loops unrolled for performance
     @SuppressWarnings("DuplicatedCode")
     @Inject(method = "rotate", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;translate(DDD)V", shift = At.Shift.AFTER), cancellable = true)
     public void setSsboRotation(MatrixStack matrices, CallbackInfo ci) {
@@ -166,11 +165,11 @@ public abstract class MixinModelPart implements BakeablePart {
     public void render(MatrixStack matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
         if (!this.cuboids.isEmpty() || !this.children.isEmpty()) {
             boolean rotateOnly = vertexConsumer == null;
-            SmartBufferBuilderWrapper smartBufferBuilderWrapper = null;
-            if (vertexConsumer instanceof SmartBufferBuilderWrapper converted) {
-                smartBufferBuilderWrapper = converted;
+            ModelVboBufferBuilder modelVboBufferBuilder = null;
+            if (vertexConsumer instanceof ModelVboBufferBuilder converted) {
+                modelVboBufferBuilder = converted;
             }
-            bmm$usingSmartRenderer = (rotateOnly || smartBufferBuilderWrapper != null) && MinecraftClient.getInstance().getWindow() != null;
+            bmm$usingSmartRenderer = (rotateOnly || modelVboBufferBuilder != null) && MinecraftClient.getInstance().getWindow() != null;
 
             // force render when constructing the vbo
             if (this.visible || (!rotateOnly && bmm$usingSmartRenderer)) {
@@ -182,7 +181,7 @@ public abstract class MixinModelPart implements BakeablePart {
                     if (!rotateOnly) {
                         // this will never be null because the check for smart render only passes if this isn't null
                         //noinspection ConstantConditions
-                        smartBufferBuilderWrapper.setId(this.getId());
+                        modelVboBufferBuilder.setId(this.getId());
                         this.renderCuboids(BakedModelUtils.IDENTITY_STACK_ENTRY, vertexConsumer, light, overlay, red, green, blue, alpha);
                     }
                 } else {

@@ -113,7 +113,7 @@ public class MixinModels implements VboBackedModel {
 
                 MatrixStackExtended matrixStackExtended = (MatrixStackExtended) matrices;
                 bmm$previousStoredBatch = matrixStackExtended.getBatch();
-                matrixStackExtended.setBatch(BakedModelUtils.bakingData.getOrCreateInstanceBatch(convertedRenderLayer, this));
+                matrixStackExtended.setBatch(BakedModelUtils.getBakingData().getOrCreateInstanceBatch(convertedRenderLayer, this));
             }
         }
     }
@@ -123,8 +123,8 @@ public class MixinModels implements VboBackedModel {
         if (getBakedVertices() != null && bmm$currentPassBakeable) {
             return null;
         } else if (bmm$currentPassBakeable) {
-            BakedModelUtils.VBO_BUFFER_BUILDER.begin(bmm$drawMode, bmm$vertexFormat); // FIXME: not thread safe, could use a lock around it but may freeze program if nested model
-            return BakedModelUtils.VBO_BUFFER_BUILDER;
+            BakedModelUtils.getModelVboBufferBuilder().begin(bmm$drawMode, bmm$vertexFormat); // FIXME: not thread safe, could use a lock around it but may freeze program if nested model
+            return BakedModelUtils.getModelVboBufferBuilder();
         } else {
             return existingConsumer;
         }
@@ -133,14 +133,14 @@ public class MixinModels implements VboBackedModel {
     @Inject(method = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;IIFFFF)V", at = @At("TAIL"))
     private void createVbo(MatrixStack matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
         if (getBakedVertices() == null && bmm$currentPassBakeable) {
-            bmm$vertexCount = BakedModelUtils.VBO_BUFFER_BUILDER.getVertexCount();
-            BakedModelUtils.VBO_BUFFER_BUILDER.end();
-            bmm$primitivePositions = BakedModelUtils.VBO_BUFFER_BUILDER.getPrimitivePositions();
-            bmm$primitivePartIds = BakedModelUtils.VBO_BUFFER_BUILDER.getPrimitivePartIds();
+            bmm$vertexCount = BakedModelUtils.getModelVboBufferBuilder().getVertexCount();
+            BakedModelUtils.getModelVboBufferBuilder().end();
+            bmm$primitivePositions = BakedModelUtils.getModelVboBufferBuilder().getPrimitivePositions();
+            bmm$primitivePartIds = BakedModelUtils.getModelVboBufferBuilder().getPrimitivePartIds();
             bmm$bakedVertices = new VertexBuffer();
-            getBakedVertices().upload(BakedModelUtils.VBO_BUFFER_BUILDER.getInternalBufferBuilder());
-            BakedModelUtils.bakingData.addCloseable(bmm$bakedVertices);
-            BakedModelUtils.VBO_BUFFER_BUILDER.clear();
+            getBakedVertices().upload(BakedModelUtils.getModelVboBufferBuilder().getInternalBufferBuilder());
+            BakedModelUtils.getBakingData().addCloseable(bmm$bakedVertices);
+            BakedModelUtils.getModelVboBufferBuilder().clear();
         }
     }
 

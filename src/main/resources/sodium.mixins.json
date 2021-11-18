@@ -40,8 +40,12 @@
     "features.entity.fast_render.MixinCuboid",
     "features.entity.fast_render.MixinModelPart",
     "features.entity.instancing.MixinBufferBuilder",
+    "features.entity.instancing.MixinGameRenderer",
+    "features.entity.instancing.MixinGlUniform",
     "features.entity.instancing.MixinMatrixStack",
     "features.entity.instancing.MixinModelPart",
+    "features.entity.instancing.MixinModelPartData",
+    "features.entity.instancing.MixinModels",
     "features.entity.instancing.MixinMultiPhase",
     "features.entity.instancing.MixinMultiPhaseParameters",
     "features.entity.instancing.MixinRenderLayer",
@@ -49,6 +53,8 @@
     "features.entity.instancing.MixinRenderPhaseShader",
     "features.entity.instancing.MixinSpriteTexturedVertexConsumer",
     "features.entity.instancing.MixinVertexBuffer",
+    "features.entity.instancing.MixinVertexConsumerProviderImmediate",
+    "features.entity.instancing.MixinWorldRenderer",
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinBlock",
     "features.fast_biome_colors.MixinClientWorld",
@@ -81,11 +87,6 @@
     "features.texture_tracking.MixinSpriteAnimation",
     "features.texture_tracking.MixinSpriteAtlasTexture",
     "features.texture_tracking.MixinSpriteBillboardParticle",
-    "features.texture_updates.MixinSpriteInterpolated",
-    "features.entity.instancing.MixinGameRenderer",
-    "features.entity.instancing.MixinGlUniform",
-    "features.entity.instancing.MixinModels",
-    "features.entity.instancing.MixinWorldRenderer",
-    "features.entity.instancing.MixinModelPartData"
+    "features.texture_updates.MixinSpriteInterpolated"
   ]
 }

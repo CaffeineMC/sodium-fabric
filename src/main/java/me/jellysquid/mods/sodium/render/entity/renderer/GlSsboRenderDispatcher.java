@@ -11,6 +11,8 @@ import me.jellysquid.mods.sodium.render.entity.BakedModelUtils;
 import me.jellysquid.mods.sodium.render.entity.buffer.SectionedPersistentBuffer;
 import me.jellysquid.mods.sodium.render.entity.buffer.SectionedSyncObjects;
 import me.jellysquid.mods.sodium.render.entity.data.InstanceBatch;
+import me.jellysquid.mods.thingl.device.RenderDevice;
+import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.GlUniform;
 import net.minecraft.client.gl.VertexBuffer;
@@ -24,7 +26,7 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.util.Map;
 
-public class GlSsboRenderDispatcher implements RenderDispatcher {
+public class GlSsboRenderDispatcher implements RenderDispatcher, AutoCloseable {
 
     public static final int BUFFER_CREATION_FLAGS = GL30C.GL_MAP_WRITE_BIT | ARBBufferStorage.GL_MAP_PERSISTENT_BIT;
     public static final int BUFFER_MAP_FLAGS = GL30C.GL_MAP_WRITE_BIT | GL30C.GL_MAP_FLUSH_EXPLICIT_BIT | ARBBufferStorage.GL_MAP_PERSISTENT_BIT;
@@ -58,9 +60,28 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
         );
     }
 
+    public void close() {
+        partPersistentSsbo.close();
+        modelPersistentSsbo.close();
+        translucencyPersistentEbo.close();
+        syncObjects.close();
+    }
+
+    public static boolean isSupported(RenderDevice renderDevice) {
+        if (renderDevice instanceof RenderDeviceImpl renderDeviceImpl) {
+            GLCapabilities capabilities = renderDeviceImpl.getCapabilities();
+            return capabilities.OpenGL44 ||
+                    capabilities.GL_ARB_buffer_storage &&
+                            capabilities.GL_ARB_shader_storage_buffer_object &&
+                            capabilities.GL_ARB_shading_language_packing;
+        }
+
+        return false;
+    }
+
     @SuppressWarnings("ConstantConditions")
     public void renderQueues() {
-        if (BakedModelUtils.bakingData.isEmptyShallow()) return;
+        if (BakedModelUtils.getBakingData().isEmptyShallow()) return;
 
         long currentPartSyncObject = syncObjects.getCurrentSyncObject();
 
@@ -71,7 +92,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
             }
         }
 
-        BakedModelUtils.bakingData.writeData();
+        BakedModelUtils.getBakingData().writeData();
 
         long partSectionStartPos = partPersistentSsbo.getCurrentSection() * partPersistentSsbo.getSectionSize();
         long modelSectionStartPos = modelPersistentSsbo.getCurrentSection() * modelPersistentSsbo.getSectionSize();
@@ -105,7 +126,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
         VertexBuffer currentVertexBuffer = null;
         BufferRenderer.unbindAll();
 
-        for (Map<RenderLayer, Map<VboBackedModel, InstanceBatch>> perOrderedSectionData : BakedModelUtils.bakingData) {
+        for (Map<RenderLayer, Map<VboBackedModel, InstanceBatch>> perOrderedSectionData : BakedModelUtils.getBakingData()) {
 
             for (Map.Entry<RenderLayer, Map<VboBackedModel, InstanceBatch>> perRenderLayerData : perOrderedSectionData.entrySet()) {
                 RenderLayer nextRenderLayer = perRenderLayerData.getKey();
@@ -216,7 +237,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
                     currentDebugInfo.instances += instanceCount;
                     currentDebugInfo.sets++;
 
-                    BakedModelUtils.bakingData.recycleInstanceBatch(instanceBatch);
+                    BakedModelUtils.getBakingData().recycleInstanceBatch(instanceBatch);
                 }
             }
         }
@@ -235,7 +256,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher {
         syncObjects.setCurrentSyncObject(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
         syncObjects.nextSection();
 
-        BakedModelUtils.bakingData.reset();
+        BakedModelUtils.getBakingData().reset();
     }
 
     /**

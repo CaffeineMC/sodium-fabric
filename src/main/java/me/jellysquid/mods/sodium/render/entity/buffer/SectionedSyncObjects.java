@@ -1,6 +1,9 @@
 package me.jellysquid.mods.sodium.render.entity.buffer;
 
-public class SectionedSyncObjects {
+import org.lwjgl.opengl.GL32C;
+import org.lwjgl.system.MemoryUtil;
+
+public class SectionedSyncObjects implements AutoCloseable {
     private final long[] syncObjects;
 
     private int currentSection = 0;
@@ -20,5 +23,14 @@ public class SectionedSyncObjects {
     public void nextSection() {
         currentSection++;
         currentSection %= syncObjects.length;
+    }
+
+    @Override
+    public void close() {
+        for (long syncObject : syncObjects) {
+            if (syncObject != MemoryUtil.NULL) {
+                GL32C.glDeleteSync(syncObject);
+            }
+        }
     }
 }
