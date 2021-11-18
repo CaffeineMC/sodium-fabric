@@ -87,6 +87,9 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     // The chunk origin of this slice
     private ChunkSectionPos origin;
 
+    // Used for getBiome, created here to avoid unneeded allocations
+    private BlockPos.Mutable biomePos = new BlockPos.Mutable();
+
     public static ChunkRenderContext prepare(World world, ChunkSectionPos origin, ClonedChunkSectionCache sectionCache) {
         WorldChunk chunk = world.getChunk(origin.getX(), origin.getZ());
         ChunkSection section = chunk.getSectionArray()[world.sectionCoordToIndex(origin.getY())];
@@ -313,7 +316,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
      * Gets or computes the biome at the given global coordinates.
      */
     public Biome getBiome(int x, int y, int z) {
-        return this.world.getBiome(new BlockPos.Mutable().set(x, y, z));
+        return this.world.getBiome(biomePos.set(x, y, z));
     }
 
     public ChunkSectionPos getOrigin() {
