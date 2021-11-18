@@ -8,6 +8,7 @@ package me.jellysquid.mods.sodium.mixin.features.entity.instancing;
 
 import me.jellysquid.mods.sodium.SodiumClient;
 import me.jellysquid.mods.sodium.SodiumRender;
+import me.jellysquid.mods.sodium.interop.vanilla.consumer.ModelVboBufferBuilder;
 import me.jellysquid.mods.sodium.interop.vanilla.layer.BufferBuilderExtended;
 import me.jellysquid.mods.sodium.interop.vanilla.matrix.MatrixStackExtended;
 import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
@@ -129,8 +130,9 @@ public class MixinModels implements VboBackedModel {
         if (getBakedVertices() != null && bmm$currentPassBakeable) {
             return null;
         } else if (bmm$currentPassBakeable) {
-            BakedModelUtils.getModelVboBufferBuilder().begin(bmm$drawMode, bmm$vertexFormat); // FIXME: not thread safe, could use a lock around it but may freeze program if nested model
-            return BakedModelUtils.getModelVboBufferBuilder();
+            ModelVboBufferBuilder modelVboBufferBuilder = BakedModelUtils.getModelVboBufferBuilder();
+            modelVboBufferBuilder.begin(bmm$drawMode, bmm$vertexFormat); // FIXME: not thread safe, could use a lock around it but may freeze program if nested model
+            return modelVboBufferBuilder;
         } else {
             return existingConsumer;
         }
@@ -139,14 +141,15 @@ public class MixinModels implements VboBackedModel {
     @Inject(method = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;IIFFFF)V", at = @At("TAIL"))
     private void createVbo(MatrixStack matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
         if (getBakedVertices() == null && bmm$currentPassBakeable) {
-            bmm$vertexCount = BakedModelUtils.getModelVboBufferBuilder().getVertexCount();
-            BakedModelUtils.getModelVboBufferBuilder().end();
-            bmm$primitivePositions = BakedModelUtils.getModelVboBufferBuilder().getPrimitivePositions();
-            bmm$primitivePartIds = BakedModelUtils.getModelVboBufferBuilder().getPrimitivePartIds();
+            ModelVboBufferBuilder modelVboBufferBuilder = BakedModelUtils.getModelVboBufferBuilder();
+            bmm$vertexCount = modelVboBufferBuilder.getVertexCount();
+            modelVboBufferBuilder.end();
+            bmm$primitivePositions = modelVboBufferBuilder.getPrimitivePositions();
+            bmm$primitivePartIds = modelVboBufferBuilder.getPrimitivePartIds();
             bmm$bakedVertices = new VertexBuffer();
-            getBakedVertices().upload(BakedModelUtils.getModelVboBufferBuilder().getInternalBufferBuilder());
+            getBakedVertices().upload(modelVboBufferBuilder.getInternalBufferBuilder());
             BakedModelUtils.getBakingData().addCloseable(bmm$bakedVertices);
-            BakedModelUtils.getModelVboBufferBuilder().clear();
+            modelVboBufferBuilder.clear();
         }
     }
 
