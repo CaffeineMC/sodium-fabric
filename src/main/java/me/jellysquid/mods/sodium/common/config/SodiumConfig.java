@@ -188,7 +188,10 @@ public class SodiumConfig {
                 LOGGER.warn("Could not write default configuration file", e);
             }
 
-            return new SodiumConfig();
+            SodiumConfig config = new SodiumConfig();
+            config.applyModOverrides();
+
+            return config;
         }
 
         Properties props = new Properties();
