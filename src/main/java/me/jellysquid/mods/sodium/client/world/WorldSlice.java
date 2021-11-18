@@ -313,7 +313,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
      * Gets or computes the biome at the given global coordinates.
      */
     public Biome getBiome(int x, int y, int z) {
-        return this.world.getBiome(new BlockPos(x, y, z));
+        return this.world.getBiome(new BlockPos.Mutable().set(x, y, z));
     }
 
     public ChunkSectionPos getOrigin() {
