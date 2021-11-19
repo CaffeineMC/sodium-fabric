@@ -33,7 +33,7 @@ public abstract class MixinClientWorld implements ClientWorldExtended {
         this.biomeSeed = seed;
     }
 
-    @Inject(method = "method_39849", at = @At("HEAD"))
+    @Inject(method = "markChunkRenderability", at = @At("HEAD"))
     public void setupChunk(int x, int z, CallbackInfo ci) {
         ((ClientChunkManagerExtended) this.getChunkManager()).afterLightChunk(x, z);
     }

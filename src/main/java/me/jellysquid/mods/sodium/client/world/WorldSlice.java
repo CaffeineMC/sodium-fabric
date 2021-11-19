@@ -88,7 +88,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     private ChunkSectionPos origin;
 
     // Used for getBiome, created here to avoid unneeded allocations
-    private BlockPos.Mutable biomePos = new BlockPos.Mutable();
+    private final BlockPos.Mutable biomePos = new BlockPos.Mutable();
 
     public static ChunkRenderContext prepare(World world, ChunkSectionPos origin, ClonedChunkSectionCache sectionCache) {
         WorldChunk chunk = world.getChunk(origin.getX(), origin.getZ());
