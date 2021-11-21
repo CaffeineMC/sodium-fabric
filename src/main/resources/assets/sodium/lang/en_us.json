@@ -29,7 +29,7 @@
   "sodium.options.entity_shadows.tooltip": "If enabled, basic shadows will be rendered beneath mobs and other entities.",
   "sodium.options.vignette.name": "Vignette",
   "sodium.options.vignette.tooltip": "If enabled, a vignette effect will be rendered on the player's view. This is very unlikely to make a difference to frame rates unless you are fill-rate limited.",
-  "sodium.options.autosave_indicator.tooltip": "If enabled, shows an \"Saving world\" indicator on the bottom right of your screen when auto-saving.",
+  "sodium.options.autosave_indicator.tooltip": "If enabled, shows a \"Saving world\" indicator on the bottom right of your screen when auto-saving.",
   "sodium.options.mipmap_levels.tooltip": "Controls the number of mipmaps which will be used for block model textures. Higher values provide better rendering of blocks in the distance, but may adversely affect performance with many animated textures.",
   "sodium.options.use_block_face_culling.name": "Use Block Face Culling",
   "sodium.options.use_block_face_culling.tooltip": "If enabled, only the sides of blocks which are facing the camera will be submitted for rendering. This can eliminate a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU. Some resource packs may have issues with this option, so try disabling it if you're seeing holes in blocks.",

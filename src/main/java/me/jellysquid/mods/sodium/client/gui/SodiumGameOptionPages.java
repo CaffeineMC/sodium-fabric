@@ -39,7 +39,6 @@ public class SodiumGameOptionPages {
                         .setBinding((options, value) -> options.viewDistance = value, options -> options.viewDistance)
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(new TranslatableText("options.simulationDistance"))
@@ -220,7 +219,7 @@ public class SodiumGameOptionPages {
                         .setName(new TranslatableText("options.autosaveIndicator"))
                         .setTooltip(new TranslatableText("sodium.options.autosave_indicator.tooltip"))
                         .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.showAutosaveIndicator /* Autosave indicator*/ = value, opts -> opts.showAutosaveIndicator)
+                        .setBinding((opts, value) -> opts.showAutosaveIndicator = value, opts -> opts.showAutosaveIndicator)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .build());
