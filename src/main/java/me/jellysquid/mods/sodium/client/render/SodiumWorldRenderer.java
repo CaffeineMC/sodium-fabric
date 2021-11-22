@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
@@ -49,6 +50,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     private double lastCameraX, lastCameraY, lastCameraZ;
     private double lastCameraPitch, lastCameraYaw;
+    private float lastFogDistance;
 
     private boolean useEntityCulling;
 
@@ -178,9 +180,10 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         Vec3d pos = camera.getPos();
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
+        float fogDistance = RenderSystem.getShaderFogEnd();
 
         boolean dirty = pos.x != this.lastCameraX || pos.y != this.lastCameraY || pos.z != this.lastCameraZ ||
-                pitch != this.lastCameraPitch || yaw != this.lastCameraYaw;
+                pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
 
         if (dirty) {
             this.renderSectionManager.markGraphDirty();
@@ -191,6 +194,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         this.lastCameraZ = pos.z;
         this.lastCameraPitch = pitch;
         this.lastCameraYaw = yaw;
+        this.lastFogDistance = fogDistance;
 
         profiler.swap("chunk_update");
 
