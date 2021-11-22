@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.mixin.features.debug;
 
-import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
@@ -9,10 +8,11 @@ import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
+import java.util.List;
 
 @Mixin(DebugHud.class)
 public abstract class MixinDebugHud {
@@ -21,30 +21,21 @@ public abstract class MixinDebugHud {
         throw new UnsupportedOperationException();
     }
 
-    @Redirect(method = "getRightText", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/Lists;newArrayList([Ljava/lang/Object;)Ljava/util/ArrayList;", remap = false), require = 0)
-    private ArrayList<String> redirectRightTextEarly(Object[] elements) {
-        ArrayList<String> strings = Lists.newArrayList((String[]) elements);
-        strings.add("");
-        strings.add("Sodium Renderer");
-        strings.add(Formatting.UNDERLINE + getFormattedVersionText());
+    @Inject(method = "getRightText", at = @At("RETURN"), cancellable = true)
+    private void injectRightTextReturn(CallbackInfoReturnable<List<String>> cir) {
+        List<String> strings = cir.getReturnValue();
+        strings.add(3, getNativeMemoryString());
+        strings.add(10, "");
+        strings.add(11, "Sodium Renderer");
+        strings.add(12, Formatting.UNDERLINE + getFormattedVersionText());
 
         var renderer = SodiumWorldRenderer.instanceNullable();
 
         if (renderer != null) {
-            strings.addAll(renderer.getMemoryDebugStrings());
+            strings.addAll(13, renderer.getMemoryDebugStrings());
         }
 
-        for (int i = 0; i < strings.size(); i++) {
-            String str = strings.get(i);
-
-            if (str.startsWith("Allocated:")) {
-                strings.add(i + 1, getNativeMemoryString());
-
-                break;
-            }
-        }
-
-        return strings;
+        cir.setReturnValue(strings);
     }
 
     private static String getFormattedVersionText() {
