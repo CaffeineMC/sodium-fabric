@@ -25,7 +25,7 @@ public class MixinMinecraftClient {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void preRender(boolean tick, CallbackInfo ci) {
-        while (this.fences.size() > SodiumClientMod.options().advanced.maxPreRenderedFrames) {
+        while (this.fences.size() > SodiumClientMod.options().advanced.cpuRenderAheadLimit) {
             var fence = this.fences.dequeueLong();
             GL32C.glClientWaitSync(fence, GL32C.GL_SYNC_FLUSH_COMMANDS_BIT, Long.MAX_VALUE);
             GL32C.glDeleteSync(fence);
