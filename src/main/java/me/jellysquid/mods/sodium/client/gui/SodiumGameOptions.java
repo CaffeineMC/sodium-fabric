@@ -55,7 +55,7 @@ public class SodiumGameOptions {
         public boolean enableMemoryTracing = false;
         public boolean useAdvancedStagingBuffers = true;
 
-        public int maxPreRenderedFrames = 3;
+        public int cpuRenderAheadLimit = 3;
     }
 
     public static class QualitySettings {

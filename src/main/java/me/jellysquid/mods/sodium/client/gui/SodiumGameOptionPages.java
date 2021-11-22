@@ -229,9 +229,8 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, sodiumOpts)
-                        .setName(new LiteralText("Chunk Update Threads"))
-                        .setTooltip(new LiteralText("Specifies the number of threads to use for chunk building. Using more threads can speed up chunk " +
-                                "loading and updates, but may negatively impact frame times."))
+                        .setName(new TranslatableText("sodium.options.chunk_update_threads.name"))
+                        .setTooltip(new TranslatableText("sodium.options.chunk_update_threads.tooltip"))
                         .setControl(o -> new SliderControl(o, 0, Runtime.getRuntime().availableProcessors(), 1, ControlValueFormatter.quantityOrDisabled("threads", "Default")))
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.chunkBuilderThreads = value, opts -> opts.performance.chunkBuilderThreads)
@@ -239,9 +238,8 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(new LiteralText("Always Defer Chunk Updates"))
-                        .setTooltip(new LiteralText("If enabled, rendering will never wait for chunk updates to finish, even if they are important. This can " +
-                                "greatly improve frame rates in some scenarios, but could also create significant visual lag in the world."))
+                        .setName(new TranslatableText("sodium.options.always_defer_chunk_updates.name"))
+                        .setTooltip(new LiteralText("sodium.options.always_defer_chunk_updates.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.alwaysDeferChunkUpdates = value, opts -> opts.performance.alwaysDeferChunkUpdates)
@@ -326,10 +324,10 @@ public class SodiumGameOptionPages {
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, sodiumOpts)
-                        .setName(new TranslatableText("sodium.options.max_pre_rendered_frames.name"))
-                        .setTooltip(new TranslatableText("sodium.options.max_pre_rendered_frames.tooltip"))
-                        .setControl(opt -> new SliderControl(opt, 0, 9, 1, ControlValueFormatter.translateVariable("sodium.options.max_pre_rendered_frames.value")))
-                        .setBinding((opts, value) -> opts.advanced.maxPreRenderedFrames = value, opts -> opts.advanced.maxPreRenderedFrames)
+                        .setName(new TranslatableText("sodium.options.cpu_render_ahead_limit.name"))
+                        .setTooltip(new TranslatableText("sodium.options.cpu_render_ahead_limit.tooltip"))
+                        .setControl(opt -> new SliderControl(opt, 0, 9, 1, ControlValueFormatter.translateVariable("sodium.options.cpu_render_ahead_limit.value")))
+                        .setBinding((opts, value) -> opts.advanced.cpuRenderAheadLimit = value, opts -> opts.advanced.cpuRenderAheadLimit)
                         .build()
                 )
                 .build());
