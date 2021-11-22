@@ -10,12 +10,12 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import org.joml.FrustumIntersection;
 
 import java.util.*;
 
@@ -28,7 +28,7 @@ public class RenderRegionManager {
         this.stagingBuffer = createStagingBuffer(commandList);
     }
 
-    public void updateVisibility(FrustumIntersection frustum) {
+    public void updateVisibility(Frustum frustum) {
         for (RenderRegion region : this.regions.values()) {
             if (!region.isEmpty()) {
                 region.updateVisibility(frustum);

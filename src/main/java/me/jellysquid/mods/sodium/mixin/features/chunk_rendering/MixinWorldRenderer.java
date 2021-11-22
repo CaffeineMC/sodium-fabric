@@ -13,7 +13,6 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
-import org.joml.FrustumIntersection;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -108,7 +107,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
         modelViewMatrix.mul(JomlHelper.copy(matrices.peek().getModel()));
         modelViewMatrix.translate((float) -pos.getX(), (float) -pos.getY(), (float) -pos.getZ());
 
-        this.renderer.setCullingFrustum(new FrustumIntersection(modelViewMatrix, false));
+        this.renderer.setModelViewProjectionMatrix(modelViewMatrix);
     }
 
     /**

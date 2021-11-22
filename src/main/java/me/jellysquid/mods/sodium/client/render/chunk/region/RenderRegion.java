@@ -8,13 +8,13 @@ import me.jellysquid.mods.sodium.client.gl.arena.SwapBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
-import org.joml.FrustumIntersection;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -50,7 +50,7 @@ public class RenderRegion {
 
     private final int x, y, z;
 
-    private RenderRegionVisibility visibility;
+    private Frustum.Visibility visibility;
 
     public RenderRegion(RenderRegionManager manager, int x, int y, int z) {
         this.manager = manager;
@@ -121,7 +121,7 @@ public class RenderRegion {
         return this.chunks.size();
     }
 
-    public void updateVisibility(FrustumIntersection frustum) {
+    public void updateVisibility(Frustum frustum) {
         int x = this.getOriginX();
         int y = this.getOriginY();
         int z = this.getOriginZ();
@@ -129,17 +129,11 @@ public class RenderRegion {
         // HACK: Regions need to be slightly larger than their real volume
         // Otherwise, the first node in the iteration graph might be incorrectly culled when the camera
         // is at the extreme end of a region
-        int visflag = frustum.intersectAab(x - REGION_EXCESS, y - REGION_EXCESS, z - REGION_EXCESS,
+        this.visibility = frustum.testBox(x - REGION_EXCESS, y - REGION_EXCESS, z - REGION_EXCESS,
                 x + (REGION_WIDTH << 4) + REGION_EXCESS, y + (REGION_HEIGHT << 4) + REGION_EXCESS, z + (REGION_LENGTH << 4) + REGION_EXCESS);
-
-        this.visibility = switch (visflag) {
-            case FrustumIntersection.INSIDE -> RenderRegionVisibility.INSIDE;
-            case FrustumIntersection.INTERSECT -> RenderRegionVisibility.INTERSECT;
-            default -> RenderRegionVisibility.OUTSIDE;
-        };
     }
 
-    public RenderRegionVisibility getVisibility() {
+    public Frustum.Visibility getVisibility() {
         return this.visibility;
     }
 

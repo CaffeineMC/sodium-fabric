@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheShared;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
+import me.jellysquid.mods.sodium.client.util.frustum.CameraFrustum;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
@@ -31,8 +32,11 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 import org.joml.FrustumIntersection;
+import org.joml.Matrix4f;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Set;
+import java.util.SortedSet;
 
 /**
  * Provides an extension to vanilla's {@link WorldRenderer}.
@@ -50,9 +54,9 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
-    private FrustumIntersection cullingFrustum;
     private RenderSectionManager renderSectionManager;
     private BlockRenderPassManager renderPassManager;
+    private Matrix4f modelViewProjectionMatrix;
 
     /**
      * @return The SodiumWorldRenderer based on the current dimension
@@ -195,7 +199,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         if (this.renderSectionManager.isGraphDirty()) {
             profiler.swap("chunk_graph_rebuild");
 
-            this.renderSectionManager.update(camera, this.cullingFrustum, frame, spectator);
+            this.renderSectionManager.update(camera, new CameraFrustum(this.modelViewProjectionMatrix), frame, spectator);
         }
 
         profiler.swap("visible_chunk_tick");
@@ -392,7 +396,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         return this.renderSectionManager.getDebugStrings();
     }
 
-    public void setCullingFrustum(FrustumIntersection frustum) {
-        this.cullingFrustum = frustum;
+    public void setModelViewProjectionMatrix(Matrix4f matrix) {
+        this.modelViewProjectionMatrix = matrix;
     }
 }
