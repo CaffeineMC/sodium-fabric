@@ -13,7 +13,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheShared;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import me.jellysquid.mods.sodium.client.util.frustum.CameraFrustum;
+import me.jellysquid.mods.sodium.client.util.frustum.FrustumAdapter;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
@@ -32,7 +33,6 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
-import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 
 import java.util.Collection;
@@ -58,7 +58,6 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     private RenderSectionManager renderSectionManager;
     private BlockRenderPassManager renderPassManager;
-    private Matrix4f modelViewProjectionMatrix;
 
     /**
      * @return The SodiumWorldRenderer based on the current dimension
@@ -159,7 +158,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
     /**
      * Called prior to any chunk rendering in order to update necessary state.
      */
-    public void updateChunks(Camera camera, int frame, boolean spectator) {
+    public void updateChunks(Camera camera, Frustum frustum, int frame, boolean spectator) {
         NativeBuffer.reclaim(false);
 
         this.useEntityCulling = SodiumClientMod.options().performance.useEntityCulling;
@@ -203,7 +202,7 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
         if (this.renderSectionManager.isGraphDirty()) {
             profiler.swap("chunk_graph_rebuild");
 
-            this.renderSectionManager.update(camera, new CameraFrustum(this.modelViewProjectionMatrix), frame, spectator);
+            this.renderSectionManager.update(camera, frustum, frame, spectator);
         }
 
         profiler.swap("visible_chunk_tick");
@@ -398,9 +397,5 @@ public class SodiumWorldRenderer implements ChunkStatusListener {
 
     public Collection<String> getMemoryDebugStrings() {
         return this.renderSectionManager.getDebugStrings();
-    }
-
-    public void setModelViewProjectionMatrix(Matrix4f matrix) {
-        this.modelViewProjectionMatrix = matrix;
     }
 }
