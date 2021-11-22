@@ -1,18 +1,24 @@
 package me.jellysquid.mods.sodium.client.util.frustum;
 
+import me.jellysquid.mods.sodium.client.util.math.JomlHelper;
+import net.minecraft.util.math.Vec3d;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 
 /**
- * Default frustum implementation which extracts planes from a model-view-projection matrix.
+ * Default frustum implementation which extracts the matrices from the Minecraft frustum class.
  */
-public class CameraFrustum implements Frustum {
+public class FrustumAdapter implements Frustum {
     private final FrustumIntersection intersection;
 
-    /**
-     * @param matrix The model-view-projection matrix of the camera
-     */
-    public CameraFrustum(Matrix4f matrix) {
+    public FrustumAdapter(FrustumAccessor accessor) {
+        Matrix4f matrix = new Matrix4f();
+        matrix.set(JomlHelper.copy(accessor.getProjectionMatrix()));
+        matrix.mul(JomlHelper.copy(accessor.getModelViewMatrix()));
+
+        Vec3d pos = accessor.getPosition();
+        matrix.translate((float) -pos.x, (float) -pos.y, (float) -pos.z);
+
         this.intersection = new FrustumIntersection(matrix, false);
     }
 

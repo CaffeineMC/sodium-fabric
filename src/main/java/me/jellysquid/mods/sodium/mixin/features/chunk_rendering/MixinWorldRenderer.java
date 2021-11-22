@@ -3,6 +3,8 @@ package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.util.frustum.FrustumAccessor;
+import me.jellysquid.mods.sodium.client.util.frustum.FrustumAdapter;
 import me.jellysquid.mods.sodium.client.util.math.JomlHelper;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import net.minecraft.client.MinecraftClient;
@@ -101,25 +103,16 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
         }
     }
 
-    @Inject(method = "setupFrustum", at = @At("RETURN"))
-    private void setupFrustum(MatrixStack matrices, Vec3d pos, Matrix4f projectionMatrix, CallbackInfo ci) {
-        org.joml.Matrix4f modelViewMatrix = JomlHelper.copy(projectionMatrix);
-        modelViewMatrix.mul(JomlHelper.copy(matrices.peek().getModel()));
-        modelViewMatrix.translate((float) -pos.getX(), (float) -pos.getY(), (float) -pos.getZ());
-
-        this.renderer.setModelViewProjectionMatrix(modelViewMatrix);
-    }
-
     /**
      * @reason Redirect the terrain setup phase to our renderer
      * @author JellySquid
      */
     @Overwrite
-    private void setupTerrain(Camera camera, Frustum _frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
+    private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator) {
         RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.updateChunks(camera, frame, spectator);
+            this.renderer.updateChunks(camera, new FrustumAdapter((FrustumAccessor) frustum), frame, spectator);
         } finally {
             RenderDevice.exitManagedCode();
         }
