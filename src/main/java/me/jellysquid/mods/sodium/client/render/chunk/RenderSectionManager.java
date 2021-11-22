@@ -11,7 +11,6 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.common.util.collections.WorkStealingFutureDrain;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
@@ -23,17 +22,18 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionVisibility;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import me.jellysquid.mods.sodium.common.util.collections.WorkStealingFutureDrain;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
@@ -41,7 +41,6 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
-import org.joml.FrustumIntersection;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -100,7 +99,7 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private double fogRenderCutoff;
 
-    private FrustumIntersection frustum;
+    private Frustum frustum;
 
     private int currentFrame = 0;
     private boolean alwaysDeferChunkUpdates;
@@ -137,7 +136,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         }
     }
 
-    public void update(Camera camera, FrustumIntersection frustum, int frame, boolean spectator) {
+    public void update(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.resetLists();
 
         this.regions.updateVisibility(frustum);
@@ -171,7 +170,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         }
     }
 
-    private void iterateChunks(Camera camera, FrustumIntersection frustum, int frame, boolean spectator) {
+    private void iterateChunks(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.initSearch(camera, frustum, frame, spectator);
 
         ChunkGraphIterationQueue queue = this.iterationQueue;
@@ -482,7 +481,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         return this.useOcclusionCulling && from != null && !node.isVisibleThrough(from, to);
     }
 
-    private void initSearch(Camera camera, FrustumIntersection frustum, int frame, boolean spectator) {
+    private void initSearch(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.currentFrame = frame;
         this.frustum = frustum;
         this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
@@ -552,11 +551,11 @@ public class RenderSectionManager implements ChunkStatusListener {
             return;
         }
 
-        RenderRegionVisibility parentVisibility = parent.getRegion().getVisibility();
+        Frustum.Visibility parentVisibility = parent.getRegion().getVisibility();
 
-        if (parentVisibility == RenderRegionVisibility.OUTSIDE) {
+        if (parentVisibility == Frustum.Visibility.OUTSIDE) {
             return;
-        } else if (parentVisibility == RenderRegionVisibility.INTERSECT && info.isCulledByFrustum(this.frustum)) {
+        } else if (parentVisibility == Frustum.Visibility.INTERSECT && info.isCulledByFrustum(this.frustum)) {
             return;
         }
 
