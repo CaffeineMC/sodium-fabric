@@ -14,6 +14,8 @@ out float v_FragDistance;
 #endif
 
 void main() {
+    _vert_init();
+
     vec4 position = u_ModelViewMatrix * vec4(_draw_translation + _vert_position, 1.0);
 
 #ifdef USE_FOG
