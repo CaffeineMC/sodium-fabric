@@ -239,7 +239,7 @@ public class SodiumGameOptionPages {
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(new TranslatableText("sodium.options.always_defer_chunk_updates.name"))
-                        .setTooltip(new LiteralText("sodium.options.always_defer_chunk_updates.tooltip"))
+                        .setTooltip(new TranslatableText("sodium.options.always_defer_chunk_updates.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.alwaysDeferChunkUpdates = value, opts -> opts.performance.alwaysDeferChunkUpdates)
