@@ -3,10 +3,10 @@ accessWidener v1 named
 accessible class net/minecraft/client/model/ModelPart$Vertex
 accessible class net/minecraft/client/model/ModelPart$Quad
 accessible class net/minecraft/client/texture/Sprite$Interpolation
-accessible class net/minecraft/client/world/ClientWorld$BlockParticle
 accessible class net/minecraft/client/texture/Sprite$Animation
+accessible class net/minecraft/world/chunk/PalettedContainer$Data
+accessible class net/minecraft/world/chunk/PalettedContainer$DataProvider
 
-accessible method net/minecraft/client/texture/Sprite$Interpolation apply ()V
 accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
 
 accessible field net/minecraft/client/option/CyclingOption setter Lnet/minecraft/client/option/CyclingOption$Setter;

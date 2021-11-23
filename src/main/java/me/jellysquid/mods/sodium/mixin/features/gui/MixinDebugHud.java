@@ -61,7 +61,7 @@ public abstract class MixinDebugHud {
     private void renderStrings(MatrixStack matrixStack, List<String> list, boolean right) {
         VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
 
-        Matrix4f modelMatrix = matrixStack.peek().getModel();
+        Matrix4f modelMatrix = matrixStack.peek().getPositionMatrix();
 
         for (int i = 0; i < list.size(); ++i) {
             String string = list.get(i);
@@ -99,7 +99,7 @@ public abstract class MixinDebugHud {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         Matrix4f matrix = matrixStack.peek()
-                .getModel();
+                .getPositionMatrix();
 
         for (int i = 0; i < list.size(); ++i) {
             String string = list.get(i);

@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.world.cloned.PackedIntegerArrayExtended;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeCache;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeColorCache;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSection;
@@ -12,7 +11,7 @@ import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.util.collection.PackedIntegerArray;
+import net.minecraft.util.collection.PaletteStorage;
 import net.minecraft.util.math.*;
 import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.LightType;
@@ -71,9 +70,6 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     // Local section copies. Read-only.
     private ClonedChunkSection[] sections;
 
-    // Biome caches for each chunk section
-    private final BiomeCache[] biomeCaches;
-
     // The biome blend caches for each color resolver type
     // This map is always re-initialized, but the caches themselves are taken from an object pool
     private final Map<ColorResolver, BiomeColorCache> biomeColorCaches = new Reference2ObjectOpenHashMap<>();
@@ -91,6 +87,9 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     // The chunk origin of this slice
     private ChunkSectionPos origin;
 
+    // Mutable position for use in getBiome(), to avoid allocations
+    private BlockPos.Mutable biomePos = new BlockPos.Mutable();
+
     public static ChunkRenderContext prepare(World world, ChunkSectionPos origin, ClonedChunkSectionCache sectionCache) {
         WorldChunk chunk = world.getChunk(origin.getX(), origin.getZ());
         ChunkSection section = chunk.getSectionArray()[world.sectionCoordToIndex(origin.getY())];
@@ -98,7 +97,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
         // If the chunk section is absent or empty, simply terminate now. There will never be anything in this chunk
         // section to render, so we need to signal that a chunk render task shouldn't created. This saves a considerable
         // amount of time in queueing instant build tasks and greatly accelerates how quickly the world can be loaded.
-        if (ChunkSection.isEmpty(section)) {
+        if (section.isEmpty()) {
             return null;
         }
 
@@ -137,7 +136,6 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
 
         this.sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
         this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][];
-        this.biomeCaches = new BiomeCache[SECTION_TABLE_ARRAY_SIZE];
 
         for (int x = 0; x < SECTION_LENGTH; x++) {
             for (int y = 0; y < SECTION_LENGTH; y++) {
@@ -145,7 +143,6 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
                     int i = getLocalSectionIndex(x, y, z);
 
                     this.blockStatesArrays[i] = new BlockState[SECTION_BLOCK_COUNT];
-                    this.biomeCaches[i] = new BiomeCache(this.world);
                 }
             }
         }
@@ -169,8 +166,6 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
                 for (int z = 0; z < SECTION_LENGTH; z++) {
                     int idx = getLocalSectionIndex(x, y, z);
 
-                    this.biomeCaches[idx].reset();
-
                     this.unpackBlockData(this.blockStatesArrays[idx], this.sections[idx], context.getVolume());
                 }
             }
@@ -186,7 +181,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     }
 
     private void unpackBlockDataR(BlockState[] states, ClonedChunkSection section, BlockBox box) {
-        PackedIntegerArray intArray = section.getBlockData();
+        PaletteStorage intArray = section.getBlockData();
         ClonedPalette<BlockState> palette = section.getBlockPalette();
 
         ChunkSectionPos pos = section.getPosition();
@@ -321,12 +316,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
      * Gets or computes the biome at the given global coordinates.
      */
     public Biome getBiome(int x, int y, int z) {
-        int relX = x - this.baseX;
-        int relY = y - this.baseY;
-        int relZ = z - this.baseZ;
-
-        return this.biomeCaches[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                .getBiome(this, x, relY >> 4, z);
+        return this.world.getBiome(biomePos.set(x, y, z));
     }
 
     public ChunkSectionPos getOrigin() {
