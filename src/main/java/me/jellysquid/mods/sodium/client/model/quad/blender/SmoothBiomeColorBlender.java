@@ -34,59 +34,69 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
     private <T> int getVertexColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state, BlockPos origin,
                                    ModelQuadView quad, int vertexIdx) {
         final int x = origin.getX() + (int) quad.getX(vertexIdx);
+        final int y = origin.getY() + (int) quad.getY(vertexIdx);
         final int z = origin.getZ() + (int) quad.getZ(vertexIdx);
 
-        final int color = this.getBlockColor(colorizer, world, state, origin, x, z, quad.getColorIndex());
+        final int color = this.getBlockColor(colorizer, world, state, x, y, z, quad.getColorIndex());
 
         return ColorARGB.toABGR(color);
     }
 
-    private <T> int getBlockColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state, BlockPos origin,
-                                  int x, int z, int colorIdx) {
-        return colorizer.getColor(state, world, this.mpos.set(x, origin.getY(), z), colorIdx);
+    private <T> int getBlockColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state,
+                                  int x, int y, int z, int colorIdx) {
+        return colorizer.getColor(state, world, this.mpos.set(x, y, z), colorIdx);
     }
 
     private <T> int getInterpolatedVertexColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state,
                                                BlockPos origin, ModelQuadView quad, int vertexIdx) {
         final float x = quad.getX(vertexIdx);
+        final float y = quad.getY(vertexIdx);
         final float z = quad.getZ(vertexIdx);
 
         final int intX = (int) x;
+        final int intY = (int) y;
         final int intZ = (int) z;
 
         // Integer component of position vector
         final int originX = origin.getX() + intX;
+        final int originY = origin.getY() + intY;
         final int originZ = origin.getZ() + intZ;
 
         // Retrieve the color values for each neighbor
-        final int c1 = this.getBlockColor(colorizer, world, state, origin, originX, originZ, quad.getColorIndex());
-        final int c2 = this.getBlockColor(colorizer, world, state, origin, originX, originZ + 1, quad.getColorIndex());
-        final int c3 = this.getBlockColor(colorizer, world, state, origin, originX + 1, originZ, quad.getColorIndex());
-        final int c4 = this.getBlockColor(colorizer, world, state, origin, originX + 1, originZ + 1, quad.getColorIndex());
+        final int c000 = this.getBlockColor(colorizer, world, state, originX, originY, originZ, quad.getColorIndex());
+        final int c001 = this.getBlockColor(colorizer, world, state, originX, originY, originZ + 1, quad.getColorIndex());
+        final int c100 = this.getBlockColor(colorizer, world, state, originX + 1, originY, originZ, quad.getColorIndex());
+        final int c101 = this.getBlockColor(colorizer, world, state, originX + 1, originY, originZ + 1, quad.getColorIndex());
 
-        final int result;
+        final int c010 = this.getBlockColor(colorizer, world, state, originX, originY + 1, originZ, quad.getColorIndex());
+        final int c011 = this.getBlockColor(colorizer, world, state, originX, originY + 1, originZ + 1, quad.getColorIndex());
+        final int c110 = this.getBlockColor(colorizer, world, state, originX + 1, originY + 1, originZ, quad.getColorIndex());
+        final int c111 = this.getBlockColor(colorizer, world, state, originX + 1, originY + 1, originZ + 1, quad.getColorIndex());
 
-        // All the colors are the same, so the results of interpolation will be useless.
-        if (c1 == c2 && c2 == c3 && c3 == c4) {
-            result = c1;
-        } else {
-            // Fraction component of position vector
-            final float fracX = x - intX;
-            final float fracZ = z - intZ;
+        // Fraction component of position vector
+        final float fracX = x - intX;
+        final float fracY = y - intY;
+        final float fracZ = z - intZ;
 
-            int z1 = ColorMixer.getStartRatio(fracZ);
-            int z2 = ColorMixer.getEndRatio(fracZ);
+        int dx1 = ColorMixer.getStartRatio(fracX);
+        int dx2 = ColorMixer.getEndRatio(fracX);
 
-            int r1 = ColorMixer.mixARGB(c1, c2, z1, z2);
-            int r2 = ColorMixer.mixARGB(c3, c4, z1, z2);
+        int dy1 = ColorMixer.getStartRatio(fracY);
+        int dy2 = ColorMixer.getEndRatio(fracY);
 
-            int x1 = ColorMixer.getStartRatio(fracX);
-            int x2 = ColorMixer.getEndRatio(fracX);
+        int dz1 = ColorMixer.getStartRatio(fracZ);
+        int dz2 = ColorMixer.getEndRatio(fracZ);
 
-            result = ColorMixer.mixARGB(r1, r2, x1, x2);
-        }
+        int c00 = ColorMixer.mixARGB(c000, c001, dz1, dz2);
+        int c01 = ColorMixer.mixARGB(c100, c101, dz1, dz2);
+        int c10 = ColorMixer.mixARGB(c010, c011, dz1, dz2);
+        int c11 = ColorMixer.mixARGB(c110, c111, dz1, dz2);
 
-        return ColorARGB.toABGR(result);
+        int c0 = ColorMixer.mixARGB(c00, c01, dy1, dy2);
+        int c1 = ColorMixer.mixARGB(c10, c11, dy1, dy2);
+
+        int c = ColorMixer.mixARGB(c0, c1, dx1, dx2);
+
+        return ColorARGB.toABGR(c);
     }
-
 }
