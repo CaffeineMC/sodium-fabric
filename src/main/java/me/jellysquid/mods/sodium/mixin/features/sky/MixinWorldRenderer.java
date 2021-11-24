@@ -42,7 +42,7 @@ public class MixinWorldRenderer {
      * <p>When updating Sodium to new releases of the game, please check for new
      * ways the fog can be reduced in {@link BackgroundRenderer#applyFog()}.</p>
      */
-    @Inject(method = "renderSky", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "renderSky(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/util/math/Matrix4f;FLjava/lang/Runnable;)V", at = @At("HEAD"), cancellable = true)
     private void preRenderSky(MatrixStack matrices, Matrix4f matrix4f, float tickDelta, Runnable runnable, CallbackInfo callbackInfo) {
         Camera camera = this.client.gameRenderer.getCamera();
         Vec3d cameraPosition = camera.getPos();
@@ -50,7 +50,7 @@ public class MixinWorldRenderer {
 
         boolean isSubmersed = camera.getSubmersionType() != CameraSubmersionType.NONE;
         boolean hasBlindness = cameraEntity instanceof LivingEntity entity && entity.hasStatusEffect(StatusEffects.BLINDNESS);
-        boolean useThickFog = this.client.world.getSkyProperties().useThickFog(MathHelper.floor(cameraPosition.getX()),
+        boolean useThickFog = this.client.world.getDimensionEffects().useThickFog(MathHelper.floor(cameraPosition.getX()),
                 MathHelper.floor(cameraPosition.getY())) || this.client.inGameHud.getBossBarHud().shouldThickenFog();
 
         if (isSubmersed || hasBlindness || useThickFog) {
