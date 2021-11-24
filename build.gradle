@@ -38,20 +38,6 @@ dependencies {
     modIncludeImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
 }
 
-if (project.use_third_party_mods) {
-    repositories {
-        maven { url = "https://maven.gegy.dev" }
-    }
-
-    dependencies {
-        // DataBreaker applies a number of patches to eliminate the loading of data fixers
-        // This greatly reduces the amount of time needed to start the game, but is generally unsafe in production
-        modRuntime ("supercoder79:databreaker:${project.databreaker_version}") {
-            transitive = false
-        }
-    }
-}
-
 processResources {
     inputs.property "version", project.version
 
