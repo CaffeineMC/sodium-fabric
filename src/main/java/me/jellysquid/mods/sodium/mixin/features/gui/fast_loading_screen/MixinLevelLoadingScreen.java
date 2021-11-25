@@ -52,7 +52,7 @@ public class MixinLevelLoadingScreen {
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        Matrix4f matrix = matrixStack.peek().getPositionMatrix();
+        Matrix4f matrix = matrixStack.peek().getModel();
 
         Tessellator tessellator = Tessellator.getInstance();
 

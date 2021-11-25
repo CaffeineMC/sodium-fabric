@@ -37,8 +37,8 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
 
         ModelQuadView quadView = (ModelQuadView) quad;
 
-        Matrix4f positionMatrix = matrices.getPositionMatrix();
-        Matrix3f normalMatrix = matrices.getNormalMatrix();
+        Matrix4f modelMatrix = matrices.getModel();
+        Matrix3f normalMatrix = matrices.getNormal();
 
         int norm = MatrixUtil.computeNormal(normalMatrix, quad.getFace());
 
@@ -79,7 +79,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
             int color = ColorABGR.pack(fR, fG, fB, 1.0F);
 
             Vector4f pos = new Vector4f(x, y, z, 1.0F);
-            pos.transform(positionMatrix);
+            pos.transform(modelMatrix);
 
             drain.writeQuad(pos.getX(), pos.getY(), pos.getZ(), color, u, v, light[i], overlay, norm);
         }
