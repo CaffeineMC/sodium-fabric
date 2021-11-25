@@ -7,12 +7,12 @@ public interface ChunkVertexType extends BlittableVertexType<ModelVertexSink>, C
     /**
      * @return The scale to be applied to vertex coordinates
      */
-    float getModelScale();
+    float getPositionScale();
 
     /**
      * @return The translation to be applied to vertex coordinates
      */
-    float getModelOffset();
+    float getPositionOffset();
 
     /**
      * @return The scale to be applied to texture coordinates

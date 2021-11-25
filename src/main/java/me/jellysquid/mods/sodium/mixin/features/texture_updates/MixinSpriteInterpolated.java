@@ -4,10 +4,10 @@ import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.Sprite;
 import org.lwjgl.system.MemoryUtil;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Sprite.Interpolation.class)
 public class MixinSpriteInterpolated {
@@ -15,10 +15,19 @@ public class MixinSpriteInterpolated {
     @Final
     private NativeImage[] images;
 
-    @Shadow(aliases = "field_21757")
+    @Unique
     private Sprite parent;
 
     private static final int STRIDE = 4;
+
+    /**
+     * @author IMS
+     * @reason Replace fragile Shadow
+     */
+    @Inject(method = "<init>", at = @At("RETURN"))
+    public void assignParent(Sprite parent, Sprite.Info info, int maxLevel, CallbackInfo ci) {
+        this.parent = parent;
+    }
 
     /**
      * @author JellySquid
