@@ -48,7 +48,6 @@ public class SodiumOptionsGUI extends Screen {
 
         this.pages.add(SodiumGameOptionPages.general());
         this.pages.add(SodiumGameOptionPages.quality());
-        this.pages.add(SodiumGameOptionPages.performance());
         this.pages.add(SodiumGameOptionPages.advanced());
     }
 
@@ -258,8 +257,6 @@ public class SodiumOptionsGUI extends Screen {
 
         if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
             client.worldRenderer.reload();
-        } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
-            client.worldRenderer.scheduleTerrainUpdate();
         }
 
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
@@ -285,7 +282,7 @@ public class SodiumOptionsGUI extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-            MinecraftClient.getInstance().setScreen(new VideoOptionsScreen(this.prevScreen, MinecraftClient.getInstance().options));
+            MinecraftClient.getInstance().openScreen(new VideoOptionsScreen(this.prevScreen, MinecraftClient.getInstance().options));
 
             return true;
         }
@@ -300,6 +297,6 @@ public class SodiumOptionsGUI extends Screen {
 
     @Override
     public void onClose() {
-        this.client.setScreen(this.prevScreen);
+        this.client.openScreen(this.prevScreen);
     }
 }

@@ -11,14 +11,13 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.collection.PackedIntegerArray;
-import net.minecraft.util.collection.PaletteStorage;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.registry.BuiltinRegistries;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.*;
 
 import java.util.Arrays;
@@ -27,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClonedChunkSection {
     private static final LightType[] LIGHT_TYPES = LightType.values();
-    private static final ChunkSection EMPTY_SECTION = new ChunkSection(0, BuiltinRegistries.BIOME);
+    private static final ChunkSection EMPTY_SECTION = new ChunkSection(0);
 
     private final AtomicInteger referenceCount = new AtomicInteger(0);
     private final ClonedChunkSectionCache backingCache;
@@ -42,7 +41,7 @@ public class ClonedChunkSection {
     private PackedIntegerArray blockStateData;
     private ClonedPalette<BlockState> blockStatePalette;
 
-    private PalettedContainer<Biome> biomeData;
+    private BiomeArray biomeData;
 
     ClonedChunkSection(ClonedChunkSectionCache backingCache) {
         this.backingCache = backingCache;
@@ -60,7 +59,7 @@ public class ClonedChunkSection {
 
         ChunkSection section = getChunkSection(world, chunk, pos);
 
-        if (section == null || section.isEmpty()) {
+        if (ChunkSection.isEmpty(section)) {
             section = EMPTY_SECTION;
         }
 
@@ -68,7 +67,7 @@ public class ClonedChunkSection {
 
         this.copyBlockData(section);
         this.copyLightData(world);
-        this.copyBiomeData(section);
+        this.copyBiomeData(chunk);
         this.copyBlockEntities(chunk, pos);
     }
 
@@ -86,7 +85,7 @@ public class ClonedChunkSection {
     }
 
     private void copyBlockData(ChunkSection section) {
-        PalettedContainer.Data<BlockState> container = PalettedContainerAccessor.getData(section.getBlockStateContainer());
+        PalettedContainerExtended<BlockState> container = PalettedContainerExtended.cast(section.getContainer());
 
         this.blockStateData = copyBlockData(container);
         this.blockStatePalette = copyPalette(container);
@@ -96,12 +95,12 @@ public class ClonedChunkSection {
         for (LightType type : LIGHT_TYPES) {
             this.lightDataArrays[type.ordinal()] = world.getLightingProvider()
                     .get(type)
-                    .getLightSection(this.pos);
+                    .getLightSection(pos);
         }
     }
 
-    private void copyBiomeData(ChunkSection section) {
-        this.biomeData = section.getBiomeContainer();
+    private void copyBiomeData(Chunk chunk) {
+        this.biomeData = chunk.getBiomeArray();
     }
 
     public int getLightLevel(LightType type, int x, int y, int z) {
@@ -140,7 +139,7 @@ public class ClonedChunkSection {
     }
 
     public Biome getBiomeForNoiseGen(int x, int y, int z) {
-        return this.biomeData.get(x, y, z);
+        return this.biomeData.getBiomeForNoiseGen(x, y, z);
     }
 
     public BlockEntity getBlockEntity(int x, int y, int z) {
@@ -163,33 +162,31 @@ public class ClonedChunkSection {
         return this.pos;
     }
 
-    private static ClonedPalette<BlockState> copyPalette(PalettedContainer.Data<BlockState> container) {
-        Palette<BlockState> palette = container.palette();
+    private static ClonedPalette<BlockState> copyPalette(PalettedContainerExtended<BlockState> container) {
+        Palette<BlockState> palette = container.getPalette();
 
         if (palette instanceof IdListPalette) {
             return new ClonedPaletteFallback<>(Block.STATE_IDS);
         }
 
-        BlockState[] array = new BlockState[container.palette().getSize()];
+        BlockState[] array = new BlockState[1 << container.getPaletteSize()];
 
         for (int i = 0; i < array.length; i++) {
-            array[i] = palette.get(i);
+            array[i] = palette.getByIndex(i);
+
+            if (array[i] == null) {
+                break;
+            }
         }
 
-        return new ClonedPalleteArray<>(array);
+        return new ClonedPalleteArray<>(array, container.getDefaultValue());
     }
 
-    private static PackedIntegerArray copyBlockData(PalettedContainer.Data<BlockState> container) {
-        var storage = container.storage();
-        var data = storage.getData();
-        var bits = container.configuration().bits();
+    private static PackedIntegerArray copyBlockData(PalettedContainerExtended<BlockState> container) {
+        PackedIntegerArray array = container.getDataArray();
+        long[] storage = array.getStorage();
 
-        if (bits == 0) {
-            // TODO: avoid this allocation
-            return new PackedIntegerArray(1, storage.getSize());
-        }
-
-        return new PackedIntegerArray(bits, storage.getSize(), data.clone());
+        return new PackedIntegerArray(container.getPaletteSize(), array.getSize(), storage.clone());
     }
 
     private static ChunkSection getChunkSection(World world, Chunk chunk, ChunkSectionPos pos) {

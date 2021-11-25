@@ -41,10 +41,6 @@ public interface ControlValueFormatter {
         return (v) -> v + "x";
     }
 
-    static ControlValueFormatter quantityOrDisabled(String name, String disableText) {
-        return (v) -> v == 0 ? disableText : v + " " + name;
-    }
-
     static ControlValueFormatter number() {
         return String::valueOf;
     }

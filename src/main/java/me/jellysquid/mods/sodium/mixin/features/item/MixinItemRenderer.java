@@ -32,7 +32,7 @@ public class MixinItemRenderer {
 
     @Shadow
     @Final
-    private ItemColors colors;
+    private ItemColors colorMap;
 
     /**
      * @reason Avoid allocations
@@ -76,7 +76,7 @@ public class MixinItemRenderer {
 
             if (!stack.isEmpty() && bakedQuad.hasColor()) {
                 if (colorProvider == null) {
-                    colorProvider = ((ItemColorsExtended) this.colors).getColorProvider(stack);
+                    colorProvider = ((ItemColorsExtended) this.colorMap).getColorProvider(stack);
                 }
 
                 color = ColorARGB.toABGR((colorProvider.getColor(stack, bakedQuad.getColorIndex())), 255);

@@ -1,10 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
-public class ChunkShaderBindingPoints {
-    public static final int ATTRIBUTE_POSITION_ID = 1;
-    public static final int ATTRIBUTE_COLOR = 2;
-    public static final int ATTRIBUTE_BLOCK_TEXTURE = 3;
-    public static final int ATTRIBUTE_LIGHT_TEXTURE = 4;
+import me.jellysquid.mods.sodium.client.gl.shader.ShaderBindingPoint;
 
-    public static final int FRAG_COLOR = 0;
+public class ChunkShaderBindingPoints {
+    public static final ShaderBindingPoint ATTRIBUTE_POSITION_ID = new ShaderBindingPoint(1);
+    public static final ShaderBindingPoint ATTRIBUTE_COLOR = new ShaderBindingPoint(2);
+
+    public static final ShaderBindingPoint ATTRIBUTE_BLOCK_TEXTURE = new ShaderBindingPoint(3);
+    public static final ShaderBindingPoint ATTRIBUTE_LIGHT_TEXTURE = new ShaderBindingPoint(4);
+
+    public static final ShaderBindingPoint FRAG_COLOR = new ShaderBindingPoint(0);
 }

@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.Direction;
@@ -68,12 +68,12 @@ public class ChunkGraphInfo {
         this.cullingState = 0;
     }
 
-    public boolean isCulledByFrustum(Frustum frustum) {
+    public boolean isCulledByFrustum(FrustumExtended frustum) {
         float x = this.getOriginX();
         float y = this.getOriginY();
         float z = this.getOriginZ();
 
-        return !frustum.isBoxVisible(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
+        return !frustum.fastAabbTest(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
     }
 
     /**

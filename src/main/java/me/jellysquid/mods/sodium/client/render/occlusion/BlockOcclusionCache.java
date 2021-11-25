@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.render.occlusion;
 
 import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.SideShapeType;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -46,12 +45,7 @@ public class BlockOcclusionCache {
             }
 
             if (selfShape.isEmpty()) {
-                if (adjShape.isEmpty()){
-                    return true; //example: top face of potted plants if top slab is placed above
-                }
-                else if (!adjState.isSideSolid(view,pos,facing.getOpposite(), SideShapeType.FULL)){
-                    return true; //example: face of potted plants rendered if top stair placed above
-                }
+                return true;
             }
 
             return this.calculate(selfShape, adjShape);

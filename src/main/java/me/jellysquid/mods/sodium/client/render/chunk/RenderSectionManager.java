@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
@@ -21,19 +22,23 @@ import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionVisibility;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
+import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
+import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import me.jellysquid.mods.sodium.common.util.collections.WorkStealingFutureDrain;
+import me.jellysquid.mods.sodium.common.util.collections.FutureQueueDrainingIterator;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.Chunk;
@@ -42,11 +47,11 @@ import net.minecraft.world.chunk.ChunkSection;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-public class RenderSectionManager {
+public class RenderSectionManager implements ChunkStatusListener {
     /**
      * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
      */
-    private static final double NEARBY_CHUNK_DISTANCE = Math.pow(32, 2.0);
+    private static final double NEARBY_CHUNK_DISTANCE = Math.pow(48, 2.0);
 
     /**
      * The minimum distance the culling plane can be from the player's camera. This helps to prevent mathematical
@@ -71,6 +76,8 @@ public class RenderSectionManager {
 
     private final Map<ChunkUpdateType, PriorityQueue<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
 
+    private final ChunkAdjacencyMap adjacencyMap = new ChunkAdjacencyMap();
+
     private final ChunkRenderList chunkRenderList = new ChunkRenderList();
     private final ChunkGraphIterationQueue iterationQueue = new ChunkGraphIterationQueue();
 
@@ -94,12 +101,9 @@ public class RenderSectionManager {
 
     private double fogRenderCutoff;
 
-    private Frustum frustum;
+    private FrustumExtended frustum;
 
     private int currentFrame = 0;
-    private boolean alwaysDeferChunkUpdates;
-
-    private final ChunkTracker tracker;
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT);
@@ -119,16 +123,21 @@ public class RenderSectionManager {
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
             this.rebuildQueues.put(type, new ObjectArrayFIFOQueue<>());
         }
-
-        this.tracker = this.worldRenderer.getChunkTracker();
     }
 
-    public void reloadChunks(ChunkTracker tracker) {
-        tracker.getChunks(ChunkStatus.FLAG_HAS_BLOCK_DATA)
-                .forEach(pos -> this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
+    public void loadChunks() {
+        LongIterator it = ((ClientChunkManagerExtended) this.world.getChunkManager())
+                .getLoadedChunks()
+                .iterator();
+
+        while (it.hasNext()) {
+            long pos = it.nextLong();
+
+            this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos));
+        }
     }
 
-    public void update(Camera camera, Frustum frustum, int frame, boolean spectator) {
+    public void update(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
         this.resetLists();
 
         this.regions.updateVisibility(frustum);
@@ -146,23 +155,19 @@ public class RenderSectionManager {
         this.cameraY = (float) cameraPos.y;
         this.cameraZ = (float) cameraPos.z;
 
-        var options = SodiumClientMod.options();
+        this.useFogCulling = false;
 
-        this.useFogCulling = options.performance.useFogOcclusion;
-        this.alwaysDeferChunkUpdates = options.performance.alwaysDeferChunkUpdates;
-
-        if (this.useFogCulling) {
+        if (SodiumClientMod.options().advanced.useFogOcclusion) {
             float dist = RenderSystem.getShaderFogEnd() + FOG_PLANE_OFFSET;
 
-            if (dist == 0.0f) {
-                this.fogRenderCutoff = Double.POSITIVE_INFINITY;
-            } else {
+            if (dist != 0.0f) {
+                this.useFogCulling = true;
                 this.fogRenderCutoff = Math.max(FOG_PLANE_MIN_DISTANCE, dist * dist);
             }
         }
     }
 
-    private void iterateChunks(Camera camera, Frustum frustum, int frame, boolean spectator) {
+    private void iterateChunks(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
         this.initSearch(camera, frustum, frame, spectator);
 
         ChunkGraphIterationQueue queue = this.iterationQueue;
@@ -188,7 +193,7 @@ public class RenderSectionManager {
     }
 
     private void schedulePendingUpdates(RenderSection section) {
-        if (section.getPendingUpdate() == null || !this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
+        if (section.getPendingUpdate() == null || !this.adjacencyMap.hasNeighbors(section.getChunkX(), section.getChunkZ())) {
             return;
         }
 
@@ -231,13 +236,19 @@ public class RenderSectionManager {
         return this.visibleBlockEntities;
     }
 
+    @Override
     public void onChunkAdded(int x, int z) {
+        this.adjacencyMap.onChunkLoaded(x, z);
+
         for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
             this.needsUpdate |= this.loadSection(x, y, z);
         }
     }
 
+    @Override
     public void onChunkRemoved(int x, int z) {
+        this.adjacencyMap.onChunkUnloaded(x, z);
+
         for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
             this.needsUpdate |= this.unloadSection(x, y, z);
         }
@@ -254,7 +265,7 @@ public class RenderSectionManager {
         Chunk chunk = this.world.getChunk(x, z);
         ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
 
-        if (section.isEmpty()) {
+        if (ChunkSection.isEmpty(section)) {
             render.setData(ChunkRenderData.EMPTY);
         } else {
             render.markForUpdate(ChunkUpdateType.INITIAL_BUILD);
@@ -269,7 +280,7 @@ public class RenderSectionManager {
         RenderSection chunk = this.sections.remove(ChunkSectionPos.asLong(x, y, z));
 
         if (chunk == null) {
-            throw new IllegalStateException("Chunk is not loaded: " + ChunkSectionPos.from(x, y, z));
+            throw new IllegalStateException("Chunk is not loaded: " + ChunkSectionPos.asLong(x, y, z));
         }
 
         chunk.delete();
@@ -282,11 +293,11 @@ public class RenderSectionManager {
         return true;
     }
 
-    public void renderLayer(ChunkRenderMatrices matrices, BlockRenderPass pass, double x, double y, double z) {
+    public void renderLayer(MatrixStack matrixStack, BlockRenderPass pass, double x, double y, double z) {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRenderer.render(matrices, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRenderer.render(matrixStack, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
 
         commandList.flush();
     }
@@ -309,7 +320,7 @@ public class RenderSectionManager {
     }
 
     public void updateChunks() {
-        var blockingFutures = this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD);
+        PriorityQueue<CompletableFuture<ChunkBuildResult>> blockingFutures = this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD);
 
         this.submitRebuildTasks(ChunkUpdateType.INITIAL_BUILD);
         this.submitRebuildTasks(ChunkUpdateType.REBUILD);
@@ -319,16 +330,16 @@ public class RenderSectionManager {
 
         if (!blockingFutures.isEmpty()) {
             this.needsUpdate = true;
-            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), new WorkStealingFutureDrain<>(blockingFutures, this.builder::stealTask));
+            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), new FutureQueueDrainingIterator<>(blockingFutures));
         }
 
         this.regions.cleanup();
     }
 
-    private LinkedList<CompletableFuture<ChunkBuildResult>> submitRebuildTasks(ChunkUpdateType filterType) {
+    private PriorityQueue<CompletableFuture<ChunkBuildResult>> submitRebuildTasks(ChunkUpdateType filterType) {
         int budget = filterType.isImportant() ? Integer.MAX_VALUE : this.builder.getSchedulingBudget();
 
-        LinkedList<CompletableFuture<ChunkBuildResult>> immediateFutures = new LinkedList<>();
+        PriorityQueue<CompletableFuture<ChunkBuildResult>> immediateFutures = new ObjectArrayFIFOQueue<>();
         PriorityQueue<RenderSection> queue = this.rebuildQueues.get(filterType);
 
         while (budget > 0 && !queue.isEmpty()) {
@@ -338,9 +349,10 @@ public class RenderSectionManager {
                 continue;
             }
 
-            // Sections can move between update queues, but they won't be removed from the queue they were
-            // previously in to save CPU cycles. We just filter any changed entries here instead.
             if (section.getPendingUpdate() != filterType) {
+                SodiumClientMod.logger().warn("{} changed update type to {} while in queue for {}, skipping",
+                        section, section.getPendingUpdate(), filterType);
+
                 continue;
             }
 
@@ -349,7 +361,7 @@ public class RenderSectionManager {
 
             if (filterType.isImportant()) {
                 CompletableFuture<ChunkBuildResult> immediateFuture = this.builder.schedule(task);
-                immediateFutures.add(immediateFuture);
+                immediateFutures.enqueue(immediateFuture);
 
                 future = immediateFuture;
             } else {
@@ -430,7 +442,7 @@ public class RenderSectionManager {
         RenderSection section = this.sections.get(ChunkSectionPos.asLong(x, y, z));
 
         if (section != null && section.isBuilt()) {
-            if (!this.alwaysDeferChunkUpdates && (important || this.isChunkPrioritized(section))) {
+            if (important || this.isChunkPrioritized(section)) {
                 section.markForUpdate(ChunkUpdateType.IMPORTANT_REBUILD);
             } else {
                 section.markForUpdate(ChunkUpdateType.REBUILD);
@@ -467,7 +479,7 @@ public class RenderSectionManager {
         return this.useOcclusionCulling && from != null && !node.isVisibleThrough(from, to);
     }
 
-    private void initSearch(Camera camera, Frustum frustum, int frame, boolean spectator) {
+    private void initSearch(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
         this.currentFrame = frame;
         this.frustum = frustum;
         this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
@@ -537,11 +549,11 @@ public class RenderSectionManager {
             return;
         }
 
-        Frustum.Visibility parentVisibility = parent.getRegion().getVisibility();
+        RenderRegionVisibility parentVisibility = parent.getRegion().getVisibility();
 
-        if (parentVisibility == Frustum.Visibility.OUTSIDE) {
+        if (parentVisibility == RenderRegionVisibility.CULLED) {
             return;
-        } else if (parentVisibility == Frustum.Visibility.INTERSECT && info.isCulledByFrustum(this.frustum)) {
+        } else if (parentVisibility == RenderRegionVisibility.VISIBLE && info.isCulledByFrustum(this.frustum)) {
             return;
         }
 
@@ -620,4 +632,5 @@ public class RenderSectionManager {
         list.add(String.format("Staging buffer: %s", this.regions.getStagingBuffer().toString()));
         return list;
     }
+
 }

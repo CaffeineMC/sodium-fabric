@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Shadow;
 public class MixinPackedIntegerArray implements PackedIntegerArrayExtended {
     @Shadow
     @Final
-    private long[] data;
+    private long[] storage;
 
     @Shadow
     @Final
@@ -33,7 +33,7 @@ public class MixinPackedIntegerArray implements PackedIntegerArrayExtended {
     public <T> void copyUsingPalette(T[] out, ClonedPalette<T> palette) {
         int idx = 0;
 
-        for (long word : this.data) {
+        for (long word : this.storage) {
             long l = word;
 
             for (int j = 0; j < this.elementsPerLong; ++j) {

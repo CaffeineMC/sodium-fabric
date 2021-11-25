@@ -34,8 +34,8 @@ public class MixinModelPart {
      */
     @Overwrite
     private void renderCuboids(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
-        Matrix3fExtended normalExt = MatrixUtil.getExtendedMatrix(matrices.getNormalMatrix());
-        Matrix4fExtended positionExt = MatrixUtil.getExtendedMatrix(matrices.getPositionMatrix());
+        Matrix3fExtended normalExt = MatrixUtil.getExtendedMatrix(matrices.getNormal());
+        Matrix4fExtended modelExt = MatrixUtil.getExtendedMatrix(matrices.getModel());
 
         QuadVertexSink drain = VertexDrain.of(vertexConsumer).createSink(VanillaVertexTypes.QUADS);
         drain.ensureCapacity(this.cuboids.size() * 6 * 4);
@@ -57,9 +57,9 @@ public class MixinModelPart {
                     float y1 = pos.getY() * NORM;
                     float z1 = pos.getZ() * NORM;
 
-                    float x2 = positionExt.transformVecX(x1, y1, z1);
-                    float y2 = positionExt.transformVecY(x1, y1, z1);
-                    float z2 = positionExt.transformVecZ(x1, y1, z1);
+                    float x2 = modelExt.transformVecX(x1, y1, z1);
+                    float y2 = modelExt.transformVecY(x1, y1, z1);
+                    float z2 = modelExt.transformVecZ(x1, y1, z1);
 
                     drain.writeQuad(x2, y2, z2, color, vertex.u, vertex.v, light, overlay, norm);
                 }

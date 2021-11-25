@@ -19,27 +19,19 @@ public class MixinMinecraftClient {
     private void postInit(RunArgs args, CallbackInfo ci) {
         if (SodiumClientMod.options().isReadOnly()) {
             var parent = MinecraftClient.getInstance().currentScreen;
-            MinecraftClient.getInstance().setScreen(new ConfigCorruptedScreen(() -> parent));
+            MinecraftClient.getInstance().openScreen(new ConfigCorruptedScreen(() -> parent));
         }
     }
 
     @Inject(method = "render", at = @At("HEAD"))
     private void preRender(boolean tick, CallbackInfo ci) {
-        while (this.fences.size() > SodiumClientMod.options().advanced.cpuRenderAheadLimit) {
-            var fence = this.fences.dequeueLong();
-            GL32C.glClientWaitSync(fence, GL32C.GL_SYNC_FLUSH_COMMANDS_BIT, Long.MAX_VALUE);
-            GL32C.glDeleteSync(fence);
+        while (this.fences.size() > SodiumClientMod.options().advanced.maxPreRenderedFrames) {
+            GL32C.glClientWaitSync(this.fences.dequeueLong(), GL32C.GL_SYNC_FLUSH_COMMANDS_BIT, Long.MAX_VALUE);
         }
     }
 
     @Inject(method = "render", at = @At("RETURN"))
     private void postRender(boolean tick, CallbackInfo ci) {
-        var fence = GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-
-        if (fence == 0) {
-            throw new RuntimeException("Failed to create fence object");
-        }
-
-        this.fences.enqueue(fence);
+        this.fences.enqueue(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
     }
 }

@@ -8,11 +8,11 @@ import me.jellysquid.mods.sodium.client.gl.arena.SwapBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
@@ -50,7 +50,7 @@ public class RenderRegion {
 
     private final int x, y, z;
 
-    private Frustum.Visibility visibility;
+    private RenderRegionVisibility visibility;
 
     public RenderRegion(RenderRegionManager manager, int x, int y, int z) {
         this.manager = manager;
@@ -121,7 +121,7 @@ public class RenderRegion {
         return this.chunks.size();
     }
 
-    public void updateVisibility(Frustum frustum) {
+    public void updateVisibility(FrustumExtended frustum) {
         int x = this.getOriginX();
         int y = this.getOriginY();
         int z = this.getOriginZ();
@@ -129,11 +129,11 @@ public class RenderRegion {
         // HACK: Regions need to be slightly larger than their real volume
         // Otherwise, the first node in the iteration graph might be incorrectly culled when the camera
         // is at the extreme end of a region
-        this.visibility = frustum.testBox(x - REGION_EXCESS, y - REGION_EXCESS, z - REGION_EXCESS,
+        this.visibility = frustum.aabbTest(x - REGION_EXCESS, y - REGION_EXCESS, z - REGION_EXCESS,
                 x + (REGION_WIDTH << 4) + REGION_EXCESS, y + (REGION_HEIGHT << 4) + REGION_EXCESS, z + (REGION_LENGTH << 4) + REGION_EXCESS);
     }
 
-    public Frustum.Visibility getVisibility() {
+    public RenderRegionVisibility getVisibility() {
         return this.visibility;
     }
 
