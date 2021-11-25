@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.util.frustum.FrustumAdapter;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
@@ -108,7 +109,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
         RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.updateChunks(camera, frustum, hasForcedFrustum, frame, spectator);
+            this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), frame, spectator);
         } finally {
             RenderDevice.exitManagedCode();
         }

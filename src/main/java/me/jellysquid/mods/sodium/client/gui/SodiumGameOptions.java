@@ -22,6 +22,7 @@ public class SodiumGameOptions {
 
     public final QualitySettings quality = new QualitySettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
+    public final PerformanceSettings performance = new PerformanceSettings();
     public final NotificationSettings notifications = new NotificationSettings();
 
     private boolean readOnly;
@@ -36,19 +37,25 @@ public class SodiumGameOptions {
         return options;
     }
 
-    public static class AdvancedSettings {
-        public ArenaMemoryAllocator arenaMemoryAllocator = null;
+    public static class PerformanceSettings {
+        public int chunkBuilderThreads = 0;
+        public boolean alwaysDeferChunkUpdates = false;
 
         public boolean animateOnlyVisibleTextures = true;
         public boolean useEntityCulling = true;
         public boolean useParticleCulling = true;
         public boolean useFogOcclusion = true;
         public boolean useBlockFaceCulling = true;
+    }
+
+    public static class AdvancedSettings {
+        public ArenaMemoryAllocator arenaMemoryAllocator = null;
+
         public boolean allowDirectMemoryAccess = true;
         public boolean enableMemoryTracing = false;
         public boolean useAdvancedStagingBuffers = true;
 
-        public int maxPreRenderedFrames = 3;
+        public int cpuRenderAheadLimit = 3;
     }
 
     public static class QualitySettings {

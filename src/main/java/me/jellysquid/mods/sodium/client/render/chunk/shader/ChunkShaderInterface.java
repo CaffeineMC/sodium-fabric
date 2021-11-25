@@ -7,17 +7,13 @@ import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformFloat;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformInt;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformMatrix4f;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
-import net.minecraft.util.math.Matrix4f;
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL32C;
 
 /**
  * A forward-rendering shader program for chunks.
  */
 public class ChunkShaderInterface {
-    private final GlUniformFloat uniformModelScale;
-    private final GlUniformFloat uniformModelOffset;
-    private final GlUniformFloat uniformTextureScale;
-
     private final GlUniformInt uniformBlockTex;
     private final GlUniformInt uniformLightTex;
 
@@ -36,10 +32,6 @@ public class ChunkShaderInterface {
         this.uniformBlockTex = context.bindUniform("u_BlockTex", GlUniformInt::new);
         this.uniformLightTex = context.bindUniform("u_LightTex", GlUniformInt::new);
 
-        this.uniformModelScale = context.bindUniform("u_ModelScale", GlUniformFloat::new);
-        this.uniformModelOffset = context.bindUniform("u_ModelOffset", GlUniformFloat::new);
-        this.uniformTextureScale = context.bindUniform("u_TextureScale", GlUniformFloat::new);
-
         this.uniformBlockDrawParameters = context.bindUniformBlock("ubo_DrawParameters", 0);
 
         this.fogShader = options.fog().getFactory().apply(context);
@@ -55,10 +47,6 @@ public class ChunkShaderInterface {
         this.uniformBlockTex.setInt(0);
         this.uniformLightTex.setInt(2);
 
-        this.uniformModelScale.setFloat(vertexType.getModelScale());
-        this.uniformModelOffset.setFloat(vertexType.getModelOffset());
-        this.uniformTextureScale.setFloat(vertexType.getTextureScale());
-        
         this.fogShader.setup();
     }
 

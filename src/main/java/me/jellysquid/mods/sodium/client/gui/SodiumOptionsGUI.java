@@ -48,6 +48,7 @@ public class SodiumOptionsGUI extends Screen {
 
         this.pages.add(SodiumGameOptionPages.general());
         this.pages.add(SodiumGameOptionPages.quality());
+        this.pages.add(SodiumGameOptionPages.performance());
         this.pages.add(SodiumGameOptionPages.advanced());
     }
 
@@ -257,6 +258,8 @@ public class SodiumOptionsGUI extends Screen {
 
         if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
             client.worldRenderer.reload();
+        } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
+            client.worldRenderer.scheduleTerrainUpdate();
         }
 
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
