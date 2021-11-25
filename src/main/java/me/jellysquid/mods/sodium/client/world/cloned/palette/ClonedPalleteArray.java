@@ -1,22 +1,17 @@
 package me.jellysquid.mods.sodium.client.world.cloned.palette;
 
+import org.apache.commons.lang3.Validate;
+
 public class ClonedPalleteArray<K> implements ClonedPalette<K> {
     private final K[] array;
-    private final K defaultValue;
 
-    public ClonedPalleteArray(K[] array, K defaultValue) {
+    public ClonedPalleteArray(K[] array) {
         this.array = array;
-        this.defaultValue = defaultValue;
     }
 
     @Override
     public K get(int id) {
-        K value = this.array[id];
-
-        if (value == null) {
-            return this.defaultValue;
-        }
-
-        return value;
+        // TODO: Remove this check?
+        return Validate.notNull(this.array[id]);
     }
 }

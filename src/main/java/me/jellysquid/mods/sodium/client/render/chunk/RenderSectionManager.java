@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
@@ -27,8 +26,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuild
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
-import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
-import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
@@ -45,7 +42,7 @@ import net.minecraft.world.chunk.ChunkSection;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-public class RenderSectionManager implements ChunkStatusListener {
+public class RenderSectionManager {
     /**
      * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
      */
@@ -73,8 +70,6 @@ public class RenderSectionManager implements ChunkStatusListener {
     private final Long2ReferenceMap<RenderSection> sections = new Long2ReferenceOpenHashMap<>();
 
     private final Map<ChunkUpdateType, PriorityQueue<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
-
-    private final ChunkAdjacencyMap adjacencyMap = new ChunkAdjacencyMap();
 
     private final ChunkRenderList chunkRenderList = new ChunkRenderList();
     private final ChunkGraphIterationQueue iterationQueue = new ChunkGraphIterationQueue();
@@ -104,6 +99,8 @@ public class RenderSectionManager implements ChunkStatusListener {
     private int currentFrame = 0;
     private boolean alwaysDeferChunkUpdates;
 
+    private final ChunkTracker tracker;
+
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT);
 
@@ -122,18 +119,13 @@ public class RenderSectionManager implements ChunkStatusListener {
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
             this.rebuildQueues.put(type, new ObjectArrayFIFOQueue<>());
         }
+
+        this.tracker = this.worldRenderer.getChunkTracker();
     }
 
-    public void loadChunks() {
-        LongIterator it = ((ClientChunkManagerExtended) this.world.getChunkManager())
-                .getLoadedChunks()
-                .iterator();
-
-        while (it.hasNext()) {
-            long pos = it.nextLong();
-
-            this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos));
-        }
+    public void reloadChunks(ChunkTracker tracker) {
+        tracker.getChunks(ChunkStatus.FLAG_HAS_BLOCK_DATA)
+                .forEach(pos -> this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
     }
 
     public void update(Camera camera, Frustum frustum, int frame, boolean spectator) {
@@ -196,7 +188,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     }
 
     private void schedulePendingUpdates(RenderSection section) {
-        if (section.getPendingUpdate() == null || !this.adjacencyMap.hasNeighbors(section.getChunkX(), section.getChunkZ())) {
+        if (section.getPendingUpdate() == null || !this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
             return;
         }
 
@@ -239,19 +231,13 @@ public class RenderSectionManager implements ChunkStatusListener {
         return this.visibleBlockEntities;
     }
 
-    @Override
     public void onChunkAdded(int x, int z) {
-        this.adjacencyMap.onChunkLoaded(x, z);
-
         for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
             this.needsUpdate |= this.loadSection(x, y, z);
         }
     }
 
-    @Override
     public void onChunkRemoved(int x, int z) {
-        this.adjacencyMap.onChunkUnloaded(x, z);
-
         for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
             this.needsUpdate |= this.unloadSection(x, y, z);
         }
@@ -268,7 +254,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         Chunk chunk = this.world.getChunk(x, z);
         ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
 
-        if (ChunkSection.isEmpty(section)) {
+        if (section.isEmpty()) {
             render.setData(ChunkRenderData.EMPTY);
         } else {
             render.markForUpdate(ChunkUpdateType.INITIAL_BUILD);
@@ -283,7 +269,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         RenderSection chunk = this.sections.remove(ChunkSectionPos.asLong(x, y, z));
 
         if (chunk == null) {
-            throw new IllegalStateException("Chunk is not loaded: " + ChunkSectionPos.asLong(x, y, z));
+            throw new IllegalStateException("Chunk is not loaded: " + ChunkSectionPos.from(x, y, z));
         }
 
         chunk.delete();
@@ -634,5 +620,4 @@ public class RenderSectionManager implements ChunkStatusListener {
         list.add(String.format("Staging buffer: %s", this.regions.getStagingBuffer().toString()));
         return list;
     }
-
 }
