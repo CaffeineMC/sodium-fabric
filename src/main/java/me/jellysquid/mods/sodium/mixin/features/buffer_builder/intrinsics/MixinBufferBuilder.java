@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
+import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorSpecies;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
@@ -46,37 +48,46 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
                 .createSink(VanillaVertexTypes.QUADS);
         drain.ensureCapacity(4);
 
+        VectorSpecies<Float> SPECIES = FloatVector.SPECIES_128;
         for (int i = 0; i < 4; i++) {
             float x = quadView.getX(i);
             float y = quadView.getY(i);
             float z = quadView.getZ(i);
 
-            float fR;
-            float fG;
-            float fB;
+            float[] f;
 
             float brightness = brightnessTable[i];
 
             if (colorize) {
                 int color = quadView.getColor(i);
 
-                float oR = ColorU8.normalize(ColorABGR.unpackRed(color));
-                float oG = ColorU8.normalize(ColorABGR.unpackGreen(color));
-                float oB = ColorU8.normalize(ColorABGR.unpackBlue(color));
-
-                fR = oR * brightness * r;
-                fG = oG * brightness * g;
-                fB = oB * brightness * b;
+                f = FloatVector.fromArray(
+                        SPECIES,
+                        new float[] {
+                                ColorU8.normalize(ColorABGR.unpackRed(color)),
+                                ColorU8.normalize(ColorABGR.unpackGreen(color)),
+                                ColorU8.normalize(ColorABGR.unpackBlue(color)),
+                                0
+                        },
+                        0
+                ).mul(brightness).mul(
+                        SPECIES.fromArray(
+                                new float[]{r, g, b, 0},
+                                0
+                        )
+                ).toArray();
             } else {
-                fR = brightness * r;
-                fG = brightness * g;
-                fB = brightness * b;
+                f = FloatVector.fromArray(
+                        SPECIES,
+                        new float[]{r, g, b, 0},
+                        0
+                ).mul(brightness).toArray();
             }
 
             float u = quadView.getTexU(i);
             float v = quadView.getTexV(i);
 
-            int color = ColorABGR.pack(fR, fG, fB, 1.0F);
+            int color = ColorABGR.pack(f[0], f[1], f[2], 1.0F);
 
             Vector4f pos = new Vector4f(x, y, z, 1.0F);
             pos.transform(modelMatrix);

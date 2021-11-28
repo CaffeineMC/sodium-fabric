@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.light.smooth;
 
+import jdk.incubator.vector.FloatVector;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess;
 import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
@@ -88,9 +89,16 @@ public class SmoothLightPipeline implements LightPipeline {
         float brightness = this.lightCache.getWorld().getBrightness(face, shade);
         float[] br = out.br;
 
-        for (int i = 0; i < br.length; i++) {
-            br[i] *= brightness;
-        }
+//        for (int i = 0; i < br.length; i++) {
+//            br[i] *= brightness;
+//        }
+
+        // What's the use of this? br is never accessed after multiplying it by brightness.
+        br = FloatVector.fromArray(
+                FloatVector.SPECIES_128,
+                br,
+                0
+        ).mul(brightness).toArray();
     }
 
     private void applyComplex(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, Direction dir, QuadLightData out, int flags) {

@@ -1,5 +1,8 @@
 package me.jellysquid.mods.sodium.client.util.color;
 
+import jdk.incubator.vector.IntVector;
+import jdk.incubator.vector.VectorOperators;
+
 /**
  * Provides some utilities for packing and unpacking color components from packed integer colors in ARGB format. This
  * packed format is used by most of Minecraft, but special care must be taken to pack it into ABGR format before passing
@@ -18,7 +21,17 @@ public class ColorARGB implements ColorU8 {
      * @param a The alpha component of the color
      */
     public static int pack(int r, int g, int b, int a) {
-        return (a & 0xFF) << 24 | (r & 0xFF) << 16 | (g & 0xFF) << 8 | (b & 0xFF);
+        return IntVector.fromArray(
+                IntVector.SPECIES_128,
+                new int[]{a, r, g, b},
+                0
+        ).lanewise(VectorOperators.AND, 0xFF)
+                .lanewise(VectorOperators.LSHL, IntVector.fromArray(
+                        IntVector.SPECIES_128,
+                        new int[]{24, 16, 8, 0},
+                        0
+                )).reduceLanes(VectorOperators.OR);
+//        return (a & 0xFF) << 24 | (r & 0xFF) << 16 | (g & 0xFF) << 8 | (b & 0xFF);
     }
 
     /**
