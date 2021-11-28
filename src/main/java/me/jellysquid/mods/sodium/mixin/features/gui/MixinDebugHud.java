@@ -2,6 +2,8 @@ package me.jellysquid.mods.sodium.mixin.features.gui;
 
 import com.google.common.base.Strings;
 import com.mojang.blaze3d.systems.RenderSystem;
+import jdk.incubator.vector.IntVector;
+import jdk.incubator.vector.VectorOperators;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.hud.DebugHud;
@@ -88,10 +90,22 @@ public abstract class MixinDebugHud {
 
         int color = 0x90505050;
 
-        float f = (float) (color >> 24 & 255) / 255.0F;
-        float g = (float) (color >> 16 & 255) / 255.0F;
-        float h = (float) (color >> 8 & 255) / 255.0F;
-        float k = (float) (color & 255) / 255.0F;
+//        float f = (float) (color >> 24 & 255) / 255.0F;
+//        float g = (float) (color >> 16 & 255) / 255.0F;
+//        float h = (float) (color >> 8 & 255) / 255.0F;
+//        float k = (float) (color & 255) / 255.0F;
+        float[] c = IntVector.fromArray(
+                IntVector.SPECIES_128,
+                new int[]{color, color, color, color},
+                0
+        ).lanewise(
+                VectorOperators.ASHR,
+                IntVector.fromArray(
+                        IntVector.SPECIES_128,
+                        new int[]{24, 16, 8, 0},
+                        0
+                )
+        ).convert(VectorOperators.I2F, 0).reinterpretAsFloats().div(255.0F).toArray();
 
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
         bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
@@ -119,10 +133,10 @@ public abstract class MixinDebugHud {
             float x2 = x + width + 1;
             float y2 = y + height - 1;
 
-            bufferBuilder.vertex(matrix, x1, y2, 0.0F).color(g, h, k, f).next();
-            bufferBuilder.vertex(matrix, x2, y2, 0.0F).color(g, h, k, f).next();
-            bufferBuilder.vertex(matrix, x2, y1, 0.0F).color(g, h, k, f).next();
-            bufferBuilder.vertex(matrix, x1, y1, 0.0F).color(g, h, k, f).next();
+            bufferBuilder.vertex(matrix, x1, y2, 0.0F).color(c[1], c[2], c[3], c[0]).next();
+            bufferBuilder.vertex(matrix, x2, y2, 0.0F).color(c[1], c[2], c[3], c[0]).next();
+            bufferBuilder.vertex(matrix, x2, y1, 0.0F).color(c[1], c[2], c[3], c[0]).next();
+            bufferBuilder.vertex(matrix, x1, y1, 0.0F).color(c[1], c[2], c[3], c[0]).next();
         }
 
         bufferBuilder.end();

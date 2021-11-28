@@ -113,13 +113,12 @@ public class MixinMatrix3f implements Matrix3fExtended {
                 SPECIES,
                 new float[]{this.a01, this.a01, this.a11, this.a11, this.a21, this.a21, 0,0},
                 0
-        ).mul(
+        ).fma(
                 FloatVector.fromArray(
                         SPECIES,
                         new float[]{ta11, ta12, ta11, ta12, ta11, ta12, 0,0},
                         0
-                )
-        ).add(
+                ),
                 FloatVector.fromArray(
                         SPECIES,
                         new float[]{this.a02, this.a02, this.a12, this.a12, this.a22, this.a22, 0,0},
@@ -160,12 +159,11 @@ public class MixinMatrix3f implements Matrix3fExtended {
                 SPECIES,
                 new float[]{this.a00, this.a00, this.a10, this.a10, this.a20, this.a20, 0,0},
                 0
-        ).mul(
+        ).fma(
                 SPECIES.fromArray(
                         new float[]{ta00, ta02, ta00, ta02, ta00, ta02, 0,0},
                         0
-                )
-        ).add(
+                ),
                 SPECIES.fromArray(
                         new float[]{this.a02, this.a02, this.a12, this.a12, this.a22, this.a22, 0,0},
                         0
@@ -204,12 +202,11 @@ public class MixinMatrix3f implements Matrix3fExtended {
                 SPECIES,
                 new float[]{this.a00, this.a00, this.a10, this.a10, this.a20, this.a20, 0,0},
                 0
-        ).mul(
+        ).fma(
                 SPECIES.fromArray(
                         new float[]{ta00, ta01, ta00, ta01, ta00, ta01, 0,0},
                         0
-                )
-        ).add(
+                ),
                 SPECIES.fromArray(
                         new float[]{this.a01, this.a01, this.a11, this.a11, this.a21, this.a21, 0,0},
                         0
@@ -262,29 +259,28 @@ public class MixinMatrix3f implements Matrix3fExtended {
                 SPECIES,
                 new float[]{this.a00, this.a00, this.a00, this.a10, this.a10, this.a10, this.a20, this.a20},
                 0
-        ).mul(
+        ).fma(
                 SPECIES.fromArray(
                         new float[]{ta00, ta01, ta02, ta00, ta01, ta02, ta00, ta01},
                         0
-                )
-        ).add(
-                SPECIES.fromArray(
+                ),
+                FloatVector.fromArray(
+                        SPECIES,
                         new float[]{this.a01, this.a01, this.a01, this.a11, this.a11, this.a11, this.a21, this.a21},
                         0
-                ).mul(
+                ).fma(
                         SPECIES.fromArray(
                                 new float[]{ta10, ta11, ta12, ta10, ta11, ta12, ta10, ta11},
                                 0
-                        )
-                )
-        ).add(
-                SPECIES.fromArray(
-                        new float[]{this.a02, this.a02, this.a02, this.a12, this.a12, this.a12, this.a22, this.a22},
-                        0
-                ).mul(
+                        ),
                         SPECIES.fromArray(
-                                new float[]{ta20, ta21, ta22, ta20, ta21, ta22, ta20, ta21},
+                                new float[]{this.a02, this.a02, this.a02, this.a12, this.a12, this.a12, this.a22, this.a22},
                                 0
+                        ).mul(
+                                SPECIES.fromArray(
+                                        new float[]{ta20, ta21, ta22, ta20, ta21, ta22, ta20, ta21},
+                                        0
+                                )
                         )
                 )
         ).toArray();

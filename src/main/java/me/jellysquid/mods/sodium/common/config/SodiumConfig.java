@@ -56,6 +56,7 @@ public class SodiumConfig {
         this.addMixinRule("features.world_ticking", true);
         this.addMixinRule("features.fast_biome_colors", true);
         this.addMixinRule("features.shader", true);
+        this.addMixinRule("features.vectorization", true);
     }
 
     /**
