@@ -14,10 +14,12 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 @Mixin(MultipartBakedModel.class)
 public class MixinMultipartBakedModel {
-    private final Map<BlockState, List<BakedModel>> stateCacheFast = new Reference2ReferenceOpenHashMap<>();
+    private static final Supplier<Map<BlockState, List<BakedModel>>> STATE_CACHE_CREATOR = Reference2ReferenceOpenHashMap::new;
+    private Map<BlockState, List<BakedModel>> stateCacheFast = STATE_CACHE_CREATOR.get();
 
     @Shadow
     @Final
@@ -33,7 +35,13 @@ public class MixinMultipartBakedModel {
             return Collections.emptyList();
         }
 
+        // DashLoader fix as its using Unsafe.allocateInstance()
+        if(stateCacheFast == null) stateCacheFast = STATE_CACHE_CREATOR.get();
+
         List<BakedModel> models;
+
+        // stateCacheFast will only change if DashLoader is present.
+        // Which in that case it would still be final in practice as it would only be initialized once.
 
         // FIXME: Synchronization-hack because getQuads must be thread-safe
         // Vanilla is actually affected by the exact same issue safety issue, but crashes seem rare in practice
