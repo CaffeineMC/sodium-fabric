@@ -36,7 +36,9 @@ public class MixinMultipartBakedModel {
         }
 
         // DashLoader fix as its using Unsafe.allocateInstance()
-        if(stateCacheFast == null) stateCacheFast = STATE_CACHE_CREATOR.get();
+        if(this.stateCacheFast == null)  {
+            this.stateCacheFast = STATE_CACHE_CREATOR.get();
+        }
 
         List<BakedModel> models;
 

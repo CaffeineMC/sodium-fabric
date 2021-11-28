@@ -23,7 +23,9 @@ public class MixinShader {
     @Redirect(method = "upload", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gl/GlUniform;getUniformLocation(ILjava/lang/CharSequence;)I"))
     private int redirectGetUniformLocation(int program, CharSequence name) {
         // DashLoader fix as its using Unsafe.allocateInstance()
-        if(uniformLocationCache == null) uniformLocationCache = UNIFORM_CACHE_CREATOR.get();
+        if(this.uniformLocationCache == null) {
+            this.uniformLocationCache = UNIFORM_CACHE_CREATOR.get();
+        }
 
         int id = this.uniformLocationCache.computeIfAbsent(name, (key) -> GlUniform.getUniformLocation(program, key));
 
