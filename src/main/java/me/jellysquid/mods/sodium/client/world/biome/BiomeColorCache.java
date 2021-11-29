@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
-import jdk.incubator.vector.IntVector;
-import jdk.incubator.vector.VectorSpecies;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.client.MinecraftClient;
@@ -74,8 +72,9 @@ public class BiomeColorCache {
         int diameter = (this.radius * 2) + 1;
         int area = diameter * diameter;
 
-        VectorSpecies<Integer> SPECIES = IntVector.SPECIES_128;
-        IntVector c = (IntVector) SPECIES.zero();
+        int r = 0;
+        int g = 0;
+        int b = 0;
 
         int minX = posX - this.radius;
         int minZ = posZ - this.radius;
@@ -87,17 +86,13 @@ public class BiomeColorCache {
             for (int z2 = minZ; z2 <= maxZ; z2++) {
                 int color = this.getColor(x2, z2);
 
-                c.add(
-                        SPECIES.fromArray(
-                                new int[]{ColorARGB.unpackRed(color), ColorARGB.unpackGreen(color), ColorARGB.unpackBlue(color)},
-                                0
-                        )
-                );
+                r += ColorARGB.unpackRed(color);
+                g += ColorARGB.unpackGreen(color);
+                b += ColorARGB.unpackBlue(color);
             }
         }
 
-        int[] ca = c.div(area).toArray();
-        return ColorARGB.pack(ca[0], ca[1], ca[2], 255);
+        return ColorARGB.pack(r / area, g / area, b / area, 255);
     }
 
     private int getColor(int x, int z) {
