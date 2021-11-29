@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.vectorization;
 
 import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Quaternion;
@@ -94,30 +95,14 @@ public class MixinQuaternion {
      * @reason Use Vector API
      */
     @Overwrite
-    public void conjugate() {
-        float[] q = FloatVector.fromArray(
-                S_128,
-                new float[]{this.x, this.y, this.z, 0},
-                0
-        ).neg().toArray();
-
-        this.x = q[0];
-        this.y = q[1];
-        this.z = q[2];
-    }
-
-    /**
-     * @author Vonr
-     * @reason Use Vector API
-     */
-    @Overwrite
     public void normalize() {
-        float f = this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w;
-        float[] q = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 S_128,
                 new float[]{this.x, this.y, this.z, this.w},
                 0
-        ).mul((f > 1.0E-6F) ? MathHelper.fastInverseSqrt(f) : 0).toArray();
+        );
+        float f = v.mul(v).reduceLanes(VectorOperators.ADD);
+        float[] q = v.mul((f > 1.0E-6F) ? MathHelper.fastInverseSqrt(f) : 0).toArray();
 
         this.x = q[0];
         this.y = q[1];
