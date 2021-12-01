@@ -19,6 +19,7 @@ import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.impl.client.rendering.fluid.FluidRenderHandlerRegistryImpl;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SideShapeType;
 import net.minecraft.client.MinecraftClient;
@@ -321,10 +322,10 @@ public class FluidRenderer {
                     BlockPos adjPos = this.scratchPos.set(adjX, adjY, adjZ);
                     BlockState adjBlock = world.getBlockState(adjPos);
 
-                    if (!adjBlock.isOpaque() && !adjBlock.isAir()) {
-                        // ice, glass, stained glass, tinted glass
+                    if (!adjBlock.isOpaque() && adjBlock.getRenderType() != BlockRenderType.INVISIBLE) {
+                        // should ignore invisible blocks, barriers, light blocks
+                        // use static water when adjacent block is ice, glass, stained glass, tinted glass
                         sprite = this.waterOverlaySprite;
-
                     }
                 }
 
