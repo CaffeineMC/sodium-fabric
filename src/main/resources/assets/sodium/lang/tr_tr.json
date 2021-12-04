@@ -17,7 +17,7 @@
   "sodium.options.view_bobbing.tooltip": "Eğer aktifse, oyuncunun görüşü harekete dayalı olarak değişir. Hareket hassaslığına sahip oyuncular bunu devredışı bırakabilir.",
   "sodium.options.attack_indicator.tooltip": "Saldırı Belirticisinin nerede görünteleneceğinin belirtir.",
   "sodium.options.autosave_indicator.tooltip": "Eğer Aktifse, dünya diske kaydolurken bir işaret ikonu ortaya çıkar.",
-  "sodium.options.graphics_quality.tooltip": "Varsayılan ayarı eski özellikleri desteklemek içindir. Eğer Ana Ayar \"Default\" ise, aşağıdaki ayarlarda bunu kullanıcaktır.",
+  "sodium.options.graphics_quality.tooltip": "Varsayılan ayarı eski özellikleri desteklemek içindir. Eğer aşağıdaki ayarlar \"Varsayılan\" ise, ana ayarı kullanıcaklardır.",
   "sodium.options.clouds_quality.tooltip": "Gökyüzündeki bulutların kalitesini kontrol eder.",
   "sodium.options.weather_quality.tooltip": "Yağmur ve kar efektlerinin kalitesini kontrol eder.",
   "sodium.options.leaves_quality.name": "Yaprak Kalitesi",
