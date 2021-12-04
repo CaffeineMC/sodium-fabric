@@ -62,6 +62,5 @@
   "sodium.options.always_defer_chunk_updates.tooltip": "Eğer Aktifse, gerekli olsalar bile chunk güncellemelerini beklemez. Bazı durumlarda fps'i artırabilir, ama dünyada görüntesel lag oluşturabilir.",
   "sodium.options.buttons.undo": "Geri Al",
   "sodium.options.buttons.apply": "Uygula",
-  "sodium.options.buttons.donate": "Bize Kahve Al"
-  "sodium.data.translator.github": "BulutCorbaci"
+  "sodium.options.buttons.donate": "Bize Bir Kahve Al:)"
 }
