@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.client.model.quad.blender;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockRenderView;
 
 public class SmoothBiomeColorBlender implements BiomeColorBlender {
@@ -17,29 +17,11 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
     public <T> int[] getColors(BlockRenderView world, BlockPos origin, ModelQuadView quad, ModelQuadColorProvider<T> colorizer, T state) {
         final int[] colors = this.cachedRet;
 
-        boolean aligned = ModelQuadFlags.contains(quad.getFlags(), ModelQuadFlags.IS_ALIGNED);
-
         for (int i = 0; i < 4; i++) {
-            // If the vertex is aligned to the block grid, we do not need to interpolate
-            if (aligned) {
-                colors[i] = this.getVertexColor(colorizer, world, state, origin, quad, i);
-            } else {
-                colors[i] = this.getInterpolatedVertexColor(colorizer, world, state, origin, quad, i);
-            }
+            colors[i] = this.getInterpolatedVertexColor(colorizer, world, state, origin, quad, i);
         }
 
         return colors;
-    }
-
-    private <T> int getVertexColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state, BlockPos origin,
-                                   ModelQuadView quad, int vertexIdx) {
-        final int x = origin.getX() + (int) quad.getX(vertexIdx);
-        final int y = origin.getY() + (int) quad.getY(vertexIdx);
-        final int z = origin.getZ() + (int) quad.getZ(vertexIdx);
-
-        final int color = this.getBlockColor(colorizer, world, state, x, y, z, quad.getColorIndex());
-
-        return ColorARGB.toABGR(color);
     }
 
     private <T> int getBlockColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state,
@@ -49,13 +31,19 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
 
     private <T> int getInterpolatedVertexColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state,
                                                BlockPos origin, ModelQuadView quad, int vertexIdx) {
-        final float x = quad.getX(vertexIdx);
-        final float y = quad.getY(vertexIdx);
-        final float z = quad.getZ(vertexIdx);
+        // Clamp positions to the range -1.0f to +2.0f to prevent crashes with badly behaved
+        // block models and mods causing out-of-bounds array accesses in BiomeColorCache.
+        // Offset the position by -0.5f after clamping to align smooth blending with flat blending.
+        final float x = MathHelper.clamp(quad.getX(vertexIdx), -1.0f, 2.0f) - 0.5f;
+        final float y = MathHelper.clamp(quad.getY(vertexIdx), -1.0f, 2.0f) - 0.5f;
+        final float z = MathHelper.clamp(quad.getZ(vertexIdx), -1.0f, 2.0f) - 0.5f;
 
-        final int intX = (int) x;
-        final int intY = (int) y;
-        final int intZ = (int) z;
+        // Floor the positions here to always get the largest integer below the input
+        // as negative values by default round toward zero when casting to an integer.
+        // Which would cause negative ratios to be calculated in the interpolation later on.
+        final int intX = (int) Math.floor(x);
+        final int intY = (int) Math.floor(y);
+        final int intZ = (int) Math.floor(z);
 
         // Integer component of position vector
         final int originX = origin.getX() + intX;

@@ -10,15 +10,22 @@ import net.minecraft.world.level.ColorResolver;
 import java.util.Arrays;
 
 public class BiomeColorCache {
-    private static final int BLENDED_COLORS_DIM = 16 + 2 * 2;
+    // The maximum distance a vertex is allowed to reach beyond its origin when sampling blended biome colours.
+    // The default value of 2 should suffice for complex models without degrading quality.
+    private static final int MODEL_RADIUS = 2;
+
+    private static final int BLENDED_COLORS_DIM = 16 + (MODEL_RADIUS * 2);
 
     private final ColorResolver resolver;
     private final WorldSlice slice;
 
-    private final int[] blendedColors;
     private final int[] cache;
+    private final int[] firstPassColors;
+    private final int[] secondPassColors;
+    private final int[] blendedColors;
 
     private final int radius;
+    private final int diameter;
     private final int dim;
 
     private final int minX, minY, minZ;
@@ -34,29 +41,40 @@ public class BiomeColorCache {
 
         ChunkSectionPos origin = this.slice.getOrigin();
 
-        this.minX = origin.getMinX() - (this.radius + 2);
-        this.minY = origin.getMinY() - (this.radius + 2);
-        this.minZ = origin.getMinZ() - (this.radius + 2);
+        this.minX = origin.getMinX() - (this.radius + MODEL_RADIUS);
+        this.minY = origin.getMinY() - (this.radius + MODEL_RADIUS);
+        this.minZ = origin.getMinZ() - (this.radius + MODEL_RADIUS);
 
-        this.dim = 16 + ((this.radius + 2) * 2);
+        this.dim = 16 + ((this.radius + MODEL_RADIUS) * 2);
 
-        this.blendedColorsMinX = origin.getMinX() - 2;
-        this.blendedColorsMinY = origin.getMinY() - 2;
-        this.blendedColorsMinZ = origin.getMinZ() - 2;
+        this.blendedColorsMinX = origin.getMinX() - MODEL_RADIUS;
+        this.blendedColorsMinY = origin.getMinY() - MODEL_RADIUS;
+        this.blendedColorsMinZ = origin.getMinZ() - MODEL_RADIUS;
 
         this.cache = new int[this.dim * this.dim * this.dim];
+        this.firstPassColors = new int[this.dim * this.dim * BLENDED_COLORS_DIM];
+        this.secondPassColors = new int[this.dim * BLENDED_COLORS_DIM * BLENDED_COLORS_DIM];
         this.blendedColors = new int[BLENDED_COLORS_DIM * BLENDED_COLORS_DIM * BLENDED_COLORS_DIM];
 
+        // We only need to calculate the diameter as we divide after blending along each axis.
+        // This does result in a minor loss of accuracy compared to dividing the accumulated colour of the entire area,
+        // but the results are indistinguishable to the human eye.
+        this.diameter = (this.radius * 2) + 1;
+
         Arrays.fill(this.cache, -1);
+        Arrays.fill(this.firstPassColors, -1);
+        Arrays.fill(this.secondPassColors, -1);
         Arrays.fill(this.blendedColors, -1);
     }
 
     public int getBlendedColor(BlockPos pos) {
+
+        // Colours have been blended on all axis.
         int x2 = pos.getX() - this.blendedColorsMinX;
         int y2 = pos.getY() - this.blendedColorsMinY;
         int z2 = pos.getZ() - this.blendedColorsMinZ;
 
-        int index = (y2 * BLENDED_COLORS_DIM * BLENDED_COLORS_DIM) + (x2 * BLENDED_COLORS_DIM) + z2;
+        int index = (((y2 * BLENDED_COLORS_DIM) + x2) * BLENDED_COLORS_DIM) + z2;
         int color = this.blendedColors[index];
 
         if (color == -1) {
@@ -71,38 +89,110 @@ public class BiomeColorCache {
             return this.getColor(posX, posY, posZ);
         }
 
-        int diameter = (this.radius * 2) + 1;
-        int area = diameter * diameter * diameter;
+        int r = 0;
+        int g = 0;
+        int b = 0;
+
+        int minY = posY - this.radius;
+
+        int maxY = posY + this.radius;
+
+        // Blend across the Y axis using colours blended across both the X axis and Z axis.
+        for (int y2 = minY; y2 <= maxY; y2++) {
+            int color = this.getSecondPassBlendedColor(posX, y2, posZ);
+
+            r += ColorARGB.unpackRed(color);
+            g += ColorARGB.unpackGreen(color);
+            b += ColorARGB.unpackBlue(color);
+        }
+
+        return ColorARGB.pack(r / this.diameter,g / this.diameter, b / this.diameter, 255);
+    }
+
+    private int getSecondPassBlendedColor(int x, int y, int z) {
+
+        // Colours have not been blended on the Y axis
+        int x2 = x - this.blendedColorsMinX;
+        int y2 = y - this.minY;
+        int z2 = z - this.blendedColorsMinZ;
+
+        int index = (((y2 * BLENDED_COLORS_DIM) + x2) * BLENDED_COLORS_DIM) + z2;
+        int color = this.secondPassColors[index];
+
+        if (color == -1) {
+            this.secondPassColors[index] = color = this.calculateSecondPassBlendedColor(x, y, z);
+        }
+
+        return color;
+    }
+
+    private int calculateSecondPassBlendedColor(int posX, int posY, int posZ) {
 
         int r = 0;
         int g = 0;
         int b = 0;
 
         int minX = posX - this.radius;
-        int minY = posY - this.radius;
-        int minZ = posZ - this.radius;
 
         int maxX = posX + this.radius;
-        int maxY = posY + this.radius;
-        int maxZ = posZ + this.radius;
 
+        // Blend across the X axis using colours blended across the Z axis.
         for (int x2 = minX; x2 <= maxX; x2++) {
-            for (int y2 = minY; y2 <= maxY; y2++) {
-                for (int z2 = minZ; z2 <= maxZ; z2++) {
-                    int color = this.getColor(x2, y2, z2);
+            int color = this.getFirstPassBlendedColor(x2, posY, posZ);
 
-                    r += ColorARGB.unpackRed(color);
-                    g += ColorARGB.unpackGreen(color);
-                    b += ColorARGB.unpackBlue(color);
-                }
-            }
+            r += ColorARGB.unpackRed(color);
+            g += ColorARGB.unpackGreen(color);
+            b += ColorARGB.unpackBlue(color);
         }
 
-        return ColorARGB.pack(r / area, g / area, b / area, 255);
+        return ColorARGB.pack(r / this.diameter, g / this.diameter, b / this.diameter, 255);
+    }
+
+    private int getFirstPassBlendedColor(int x, int y, int z) {
+
+        // Colours have not been blended on the X and Y axis.
+        int x2 = x - this.minX;
+        int y2 = y - this.minY;
+        int z2 = z - this.blendedColorsMinZ;
+
+        int index = (((y2 * this.dim) + x2) * BLENDED_COLORS_DIM) + z2;
+        int color = this.firstPassColors[index];
+
+        if (color == -1) {
+            this.firstPassColors[index] = color = this.calculateFirstPassBlendedColor(x, y, z);
+        }
+
+        return color;
+    }
+    private int calculateFirstPassBlendedColor(int posX, int posY, int posZ) {
+
+        int r = 0;
+        int g = 0;
+        int b = 0;
+
+        int minZ = posZ - this.radius;
+
+        int maxZ = posZ + this.radius;
+
+        // Blend across the Z axis using colours that have not been blended.
+        for (int z2 = minZ; z2 <= maxZ; z2++) {
+            int color = this.getColor(posX, posY, z2);
+
+            r += ColorARGB.unpackRed(color);
+            g += ColorARGB.unpackGreen(color);
+            b += ColorARGB.unpackBlue(color);
+        }
+
+        return ColorARGB.pack(r / this.diameter, g / this.diameter, b / this.diameter, 255);
     }
 
     private int getColor(int x, int y, int z) {
-        int index = ((y - this.minY) * this.dim * this.dim) + ((x - this.minX) * this.dim) + (z - this.minZ);
+
+        int x2 = x - this.minX;
+        int y2 = y - this.minY;
+        int z2 = z - this.minZ;
+
+        int index = (((y2 * this.dim) + x2) * this.dim) + z2;
         int color = this.cache[index];
 
         if (color == -1) {
