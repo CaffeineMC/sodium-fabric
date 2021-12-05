@@ -50,7 +50,7 @@ we will expect that this is the case. Caveat emptor.
 
 If you are interested in developing the Vector API branch for Sodium, you can clone the project normally but you will need to add
 
-`--enable-preview --add-modules jdk.incubator.vector`
+`--add-modules jdk.incubator.vector`
 
 to your runClient configuration if you are using an IDE like IntelliJ.
 If you are running the client from the command line, you do not have to do anything special as the build.gradle already adds these arguments for you.
