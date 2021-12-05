@@ -12,71 +12,74 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(Matrix4f.class)
 public class MixinMatrix4f implements Matrix4fExtended {
     @Shadow
-    protected float a00;
+    public float a00;
 
     @Shadow
-    protected float a01;
+    public float a01;
 
     @Shadow
-    protected float a02;
+    public float a02;
 
     @Shadow
-    protected float a03;
+    public float a03;
 
     @Shadow
-    protected float a10;
+    public float a10;
 
     @Shadow
-    protected float a11;
+    public float a11;
 
     @Shadow
-    protected float a12;
+    public float a12;
 
     @Shadow
-    protected float a13;
+    public float a13;
 
     @Shadow
-    protected float a20;
+    public float a20;
 
     @Shadow
-    protected float a21;
+    public float a21;
 
     @Shadow
-    protected float a22;
+    public float a22;
 
     @Shadow
-    protected float a23;
+    public float a23;
 
     @Shadow
-    protected float a30;
+    public float a30;
 
     @Shadow
-    protected float a31;
+    public float a31;
 
     @Shadow
-    protected float a32;
+    public float a32;
 
     @Shadow
-    protected float a33;
+    public float a33;
 
     @Override
     public void translate(float x, float y, float z) {
         VectorSpecies<Float> SPECIES = FloatVector.SPECIES_128;
-        float[] a = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 SPECIES,
                 new float[]{this.a00, this.a10, this.a20, this.a30},
                 0
-        ).mul(x).add(
+        ).fma(
+                FloatVector.broadcast(SPECIES, x),
                 FloatVector.fromArray(
                         SPECIES,
                         new float[]{this.a01, this.a11, this.a21, this.a31},
                         0
-                ).mul(y).add(
+                ).fma(
+                        FloatVector.broadcast(SPECIES, y),
                         FloatVector.fromArray(
                                 SPECIES,
                                 new float[]{this.a02, this.a12, this.a22, this.a32},
                                 0
-                        ).mul(z).add(
+                        ).fma(
+                                FloatVector.broadcast(SPECIES, z),
                                 FloatVector.fromArray(
                                         SPECIES,
                                         new float[]{this.a03, this.a13, this.a23, this.a33},
@@ -84,12 +87,12 @@ public class MixinMatrix4f implements Matrix4fExtended {
                                 )
                         )
                 )
-        ).toArray();
+        );
 
-        this.a03 = a[0];
-        this.a13 = a[1];
-        this.a23 = a[2];
-        this.a33 = a[3];
+        this.a03 = v.lane(0);
+        this.a13 = v.lane(1);
+        this.a23 = v.lane(2);
+        this.a33 = v.lane(3);
     }
 
     @Override
@@ -178,7 +181,7 @@ public class MixinMatrix4f implements Matrix4fExtended {
         float ta12 = 2.0F * -xw;
 
         VectorSpecies<Float> SPECIES = FloatVector.SPECIES_256;
-        float[] a = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 SPECIES,
                 new float[]{this.a01, this.a01, this.a11, this.a11, this.a21, this.a21, this.a31, this.a31},
                 0
@@ -196,16 +199,16 @@ public class MixinMatrix4f implements Matrix4fExtended {
                                 0
                         )
                 )
-        ).toArray();
+        );
 
-        this.a01 = a[0];
-        this.a02 = a[1];
-        this.a11 = a[2];
-        this.a12 = a[3];
-        this.a21 = a[4];
-        this.a22 = a[5];
-        this.a31 = a[6];
-        this.a32 = a[7];
+        this.a01 = v.lane(0);
+        this.a02 = v.lane(1);
+        this.a11 = v.lane(2);
+        this.a12 = v.lane(3);
+        this.a21 = v.lane(4);
+        this.a22 = v.lane(5);
+        this.a31 = v.lane(6);
+        this.a32 = v.lane(7);
     }
 
     private void rotateY(Quaternion quaternion) {
@@ -220,7 +223,7 @@ public class MixinMatrix4f implements Matrix4fExtended {
         float ta02 = 2.0F * yw;
 
         VectorSpecies<Float> SPECIES = FloatVector.SPECIES_256;
-        float[] a = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 SPECIES,
                 new float[]{this.a00, this.a00, this.a10, this.a10, this.a20, this.a20, this.a30, this.a30},
                 0
@@ -238,16 +241,16 @@ public class MixinMatrix4f implements Matrix4fExtended {
                                 0
                         )
                 )
-        ).toArray();
+        );
 
-        this.a00 = a[0];
-        this.a02 = a[1];
-        this.a10 = a[2];
-        this.a12 = a[3];
-        this.a20 = a[4];
-        this.a22 = a[5];
-        this.a30 = a[6];
-        this.a32 = a[7];
+        this.a00 = v.lane(0);
+        this.a02 = v.lane(1);
+        this.a10 = v.lane(2);
+        this.a12 = v.lane(3);
+        this.a20 = v.lane(4);
+        this.a22 = v.lane(5);
+        this.a30 = v.lane(6);
+        this.a32 = v.lane(7);
     }
 
     private void rotateZ(Quaternion quaternion) {
@@ -262,7 +265,7 @@ public class MixinMatrix4f implements Matrix4fExtended {
         float ta01 = 2.0F * -zw;
 
         VectorSpecies<Float> SPECIES = FloatVector.SPECIES_256;
-        float[] a = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 SPECIES,
                 new float[]{this.a00, this.a00, this.a10, this.a10, this.a20, this.a20, this.a30, this.a30},
                 0
@@ -280,16 +283,16 @@ public class MixinMatrix4f implements Matrix4fExtended {
                                 0
                         )
                 )
-        ).toArray();
+        );
 
-        this.a00 = a[0];
-        this.a01 = a[1];
-        this.a10 = a[2];
-        this.a11 = a[3];
-        this.a20 = a[4];
-        this.a21 = a[5];
-        this.a30 = a[6];
-        this.a31 = a[7];
+        this.a00 = v.lane(0);
+        this.a01 = v.lane(1);
+        this.a10 = v.lane(2);
+        this.a11 = v.lane(3);
+        this.a20 = v.lane(4);
+        this.a21 = v.lane(5);
+        this.a30 = v.lane(6);
+        this.a31 = v.lane(7);
     }
 
     private void rotateXYZ(Quaternion quaternion) {

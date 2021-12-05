@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.core.matrix;
 
 import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.math.Matrix3fExtended;
@@ -109,7 +108,7 @@ public class MixinMatrix3f implements Matrix3fExtended {
         float ta12 = 2.0F * -xw;
 
         VectorSpecies<Float> SPECIES = FloatVector.SPECIES_256;
-        float[] a = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 SPECIES,
                 new float[]{this.a01, this.a01, this.a11, this.a11, this.a21, this.a21, 0,0},
                 0
@@ -130,14 +129,14 @@ public class MixinMatrix3f implements Matrix3fExtended {
                                 0
                         )
                 )
-        ).toArray();
+        );
 
-        this.a01 = a[0];
-        this.a02 = a[1];
-        this.a11 = a[2];
-        this.a12 = a[3];
-        this.a21 = a[4];
-        this.a22 = a[5];
+        this.a01 = v.lane(0);
+        this.a02 = v.lane(1);
+        this.a11 = v.lane(2);
+        this.a12 = v.lane(3);
+        this.a21 = v.lane(4);
+        this.a22 = v.lane(5);
     }
 
     private void rotateY(Quaternion quaternion) {
@@ -155,7 +154,7 @@ public class MixinMatrix3f implements Matrix3fExtended {
         float ta02 = 2.0F * (+yw);
 
         VectorSpecies<Float> SPECIES = FloatVector.SPECIES_256;
-        float[] a = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 SPECIES,
                 new float[]{this.a00, this.a00, this.a10, this.a10, this.a20, this.a20, 0,0},
                 0
@@ -173,14 +172,14 @@ public class MixinMatrix3f implements Matrix3fExtended {
                                 0
                         )
                 )
-        ).toArray();
+        );
 
-        this.a00 = a[0];
-        this.a02 = a[1];
-        this.a10 = a[2];
-        this.a12 = a[3];
-        this.a20 = a[4];
-        this.a22 = a[5];
+        this.a00 = v.lane(0);
+        this.a02 = v.lane(1);
+        this.a10 = v.lane(2);
+        this.a12 = v.lane(3);
+        this.a20 = v.lane(4);
+        this.a22 = v.lane(5);
     }
 
     private void rotateZ(Quaternion quaternion) {
@@ -198,7 +197,7 @@ public class MixinMatrix3f implements Matrix3fExtended {
         float ta01 = 2.0F * (0.0F - zw);
 
         VectorSpecies<Float> SPECIES = FloatVector.SPECIES_256;
-        float[] a = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 SPECIES,
                 new float[]{this.a00, this.a00, this.a10, this.a10, this.a20, this.a20, 0,0},
                 0
@@ -216,14 +215,14 @@ public class MixinMatrix3f implements Matrix3fExtended {
                                 0
                         )
                 )
-        ).toArray();
+        );
 
-        this.a00 = a[0];
-        this.a01 = a[1];
-        this.a10 = a[2];
-        this.a11 = a[3];
-        this.a20 = a[4];
-        this.a21 = a[5];
+        this.a00 = v.lane(0);
+        this.a01 = v.lane(1);
+        this.a10 = v.lane(2);
+        this.a11 = v.lane(3);
+        this.a20 = v.lane(4);
+        this.a21 = v.lane(5);
     }
 
     private void rotateXYZ(Quaternion quaternion) {
@@ -255,7 +254,7 @@ public class MixinMatrix3f implements Matrix3fExtended {
         float ta12 = 2.0F * (yz - xw);
 
         VectorSpecies<Float> SPECIES = FloatVector.SPECIES_256;
-        float[] a = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 SPECIES,
                 new float[]{this.a00, this.a00, this.a00, this.a10, this.a10, this.a10, this.a20, this.a20},
                 0
@@ -283,17 +282,17 @@ public class MixinMatrix3f implements Matrix3fExtended {
                                 )
                         )
                 )
-        ).toArray();
+        );
         float a22 = this.a20 * ta02 + this.a21 * ta12 + this.a22 * ta22;
 
-        this.a00 = a[0];
-        this.a01 = a[1];
-        this.a02 = a[2];
-        this.a10 = a[3];
-        this.a11 = a[4];
-        this.a12 = a[5];
-        this.a20 = a[6];
-        this.a21 = a[7];
+        this.a00 = v.lane(0);
+        this.a01 = v.lane(1);
+        this.a02 = v.lane(2);
+        this.a10 = v.lane(3);
+        this.a11 = v.lane(4);
+        this.a12 = v.lane(5);
+        this.a20 = v.lane(6);
+        this.a21 = v.lane(7);
         this.a22 = a22;
     }
 

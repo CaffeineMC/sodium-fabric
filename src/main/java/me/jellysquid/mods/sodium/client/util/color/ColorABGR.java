@@ -41,12 +41,12 @@ public class ColorABGR implements ColorU8 {
      * @see ColorABGR#pack(int, int, int, int)
      */
     public static int pack(float r, float g, float b, float a) {
-        float[] c = FloatVector.fromArray(
+        IntVector v = FloatVector.fromArray(
             FloatVector.SPECIES_128,
             new float[]{r, g, b, a},
             0
-        ).mul(COMPONENT_RANGE).toArray();
-        return pack((int) c[0], (int) c[1], (int) c[2], (int) c[3]);
+        ).mul(COMPONENT_RANGE).convert(VectorOperators.F2I, 0).reinterpretAsInts();
+        return pack(v.lane(0), v.lane(1), v.lane(2), v.lane(3));
     }
 
     /**

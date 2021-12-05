@@ -33,43 +33,42 @@ public class MixinQuaternion {
      */
     @Overwrite
     public void hamiltonProduct(Quaternion other) {
-        float f = this.x;
-        float g = this.y;
-        float h = this.z;
-        float i = this.w;
         float j = other.getX();
         float k = other.getY();
         float l = other.getZ();
         float m = other.getW();
 
-        float[] q = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 S_128,
                 new float[]{j, k, l, m},
                 0
-        ).mul(i).add(
+        ).fma(
+                FloatVector.broadcast(S_128, this.w),
                 FloatVector.fromArray(
                         S_128,
                         new float[]{m, -l, k, -j},
                         0
-                ).mul(f)
-        ).add(
-                FloatVector.fromArray(
-                        S_128,
-                        new float[]{l, m, -j, -k},
-                        0
-                ).mul(g)
-        ).add(
-                FloatVector.fromArray(
-                        S_128,
-                        new float[]{-k, j, m, -l},
-                        0
-                ).mul(h)
-        ).toArray();
+                ).fma(
+                        FloatVector.broadcast(S_128, this.x),
+                        FloatVector.fromArray(
+                                S_128,
+                                new float[]{l, m, -j, -k},
+                                0
+                        ).fma(
+                                FloatVector.broadcast(S_128, this.y),
+                                FloatVector.fromArray(
+                                        S_128,
+                                        new float[]{-k, j, m, -l},
+                                        0
+                                ).mul(this.z)
+                        )
+                )
+        );
 
-        this.x = q[0];
-        this.y = q[1];
-        this.z = q[2];
-        this.w = q[3];
+        this.x = v.lane(0);
+        this.y = v.lane(1);
+        this.z = v.lane(2);
+        this.w = v.lane(3);
     }
 
     /**
@@ -78,16 +77,16 @@ public class MixinQuaternion {
      */
     @Overwrite
     public void scale(float scale) {
-        float[] q = FloatVector.fromArray(
+        FloatVector v = FloatVector.fromArray(
                 S_128,
                 new float[]{this.x, this.y, this.z, this.w},
                 0
-        ).mul(scale).toArray();
+        ).mul(scale);
 
-        this.x = q[0];
-        this.y = q[1];
-        this.z = q[2];
-        this.w = q[3];
+        this.x = v.lane(0);
+        this.y = v.lane(1);
+        this.z = v.lane(2);
+        this.w = v.lane(3);
     }
 
     /**
@@ -102,11 +101,18 @@ public class MixinQuaternion {
                 0
         );
         float f = v.mul(v).reduceLanes(VectorOperators.ADD);
-        float[] q = v.mul((f > 1.0E-6F) ? MathHelper.fastInverseSqrt(f) : 0).toArray();
+        if (f < 1.0E-6F) {
+            FloatVector v2 = v.mul(MathHelper.fastInverseSqrt(f));
+            this.x = v2.lane(0);
+            this.y = v2.lane(1);
+            this.z = v2.lane(2);
+            this.w = v2.lane(3);
+            return;
+        }
 
-        this.x = q[0];
-        this.y = q[1];
-        this.z = q[2];
-        this.w = q[3];
+        this.x = 0;
+        this.y = 0;
+        this.z = 0;
+        this.w = 0;
     }
 }

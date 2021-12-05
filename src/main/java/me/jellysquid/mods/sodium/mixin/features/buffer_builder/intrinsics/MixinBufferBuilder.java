@@ -54,14 +54,14 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
             float y = quadView.getY(i);
             float z = quadView.getZ(i);
 
-            float[] f;
+            FloatVector c;
 
             float brightness = brightnessTable[i];
 
             if (colorize) {
                 int color = quadView.getColor(i);
 
-                f = FloatVector.fromArray(
+                c = FloatVector.fromArray(
                         SPECIES,
                         new float[] {
                                 ColorU8.normalize(ColorABGR.unpackRed(color)),
@@ -75,19 +75,19 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
                                 new float[]{r, g, b, 0},
                                 0
                         )
-                ).toArray();
+                );
             } else {
-                f = FloatVector.fromArray(
+                c = FloatVector.fromArray(
                         SPECIES,
                         new float[]{r, g, b, 0},
                         0
-                ).mul(brightness).toArray();
+                ).mul(brightness);
             }
 
             float u = quadView.getTexU(i);
             float v = quadView.getTexV(i);
 
-            int color = ColorABGR.pack(f[0], f[1], f[2], 1.0F);
+            int color = ColorABGR.pack(c.lane(0), c.lane(1), c.lane(2), 1.0F);
 
             Vector4f pos = new Vector4f(x, y, z, 1.0F);
             pos.transform(modelMatrix);

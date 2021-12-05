@@ -99,8 +99,8 @@ public class BiomeColorCache {
             }
         }
 
-        int[] ca = c.div(area).toArray();
-        return ColorARGB.pack(ca[0], ca[1], ca[2], 255);
+        c = c.div(area);
+        return ColorARGB.pack(c.lane(0), c.lane(1), c.lane(2), 255);
     }
 
     private int getColor(int x, int z) {

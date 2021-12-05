@@ -33,6 +33,48 @@ public class MixinVector4f {
      * @reason Use Vector API
      */
     @Overwrite
+    public void multiply(float value) {
+        FloatVector v = FloatVector.fromArray(
+                S_128,
+                new float[]{this.x, this.y, this.z, this.w},
+                0
+        ).mul(value);
+
+        this.x = v.lane(0);
+        this.y = v.lane(1);
+        this.z = v.lane(2);
+        this.w = v.lane(3);
+    }
+
+    /**
+     * @author Vonr
+     * @reason Use Vector API
+     */
+    @Overwrite
+    public void add(float x, float y, float z, float w) {
+        FloatVector v = FloatVector.fromArray(
+                S_128,
+                new float[]{this.x, this.y, this.z, this.w},
+                0
+        ).add(
+                FloatVector.fromArray(
+                        S_128,
+                        new float[]{x, y, z, w},
+                        0
+                )
+        );
+
+        this.x = v.lane(0);
+        this.y = v.lane(1);
+        this.z = v.lane(2);
+        this.w = v.lane(3);
+    }
+
+    /**
+     * @author Vonr
+     * @reason Use Vector API
+     */
+    @Overwrite
     public float dotProduct(Vector4f other) {
         return FloatVector.fromArray(
                 S_128,
@@ -62,14 +104,32 @@ public class MixinVector4f {
         if (f < 1.0E-5F) {
             return false;
         } else {
-            float[] q = v.mul(MathHelper.fastInverseSqrt(f)).toArray();
+            FloatVector v2 = v.mul(MathHelper.fastInverseSqrt(f));
 
-            this.x = q[0];
-            this.y = q[1];
-            this.z = q[2];
-            this.w = q[3];
+            this.x = v2.lane(0);
+            this.y = v2.lane(1);
+            this.z = v2.lane(2);
+            this.w = v2.lane(3);
             return true;
         }
+    }
+
+    /**
+     * @author Vonr
+     * @reason Use Vector API
+     */
+    @Overwrite
+    public void normalizeProjectiveCoordinates() {
+        FloatVector v = FloatVector.fromArray(
+                S_128,
+                new float[]{this.x, this.y, this.z, 0},
+                0
+        ).div(w);
+
+        this.x = v.lane(0);
+        this.y = v.lane(1);
+        this.z = v.lane(2);
+        this.w = 1.0F;
     }
 
     /**
