@@ -19,7 +19,7 @@ void main() {
     vec4 position = u_ModelViewMatrix * vec4(_draw_translation + _vert_position, 1.0);
 
 #ifdef USE_FOG
-    v_FragDistance = length(position);
+    v_FragDistance = cylindrical_distance(position);
 #endif
 
     // Transform the vertex position into model-view-projection space
