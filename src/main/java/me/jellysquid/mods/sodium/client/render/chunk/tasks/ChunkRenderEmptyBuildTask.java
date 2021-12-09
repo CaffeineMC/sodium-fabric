@@ -1,10 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
+import me.jellysquid.mods.sodium.client.gl.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 
 import java.util.Collections;
@@ -25,12 +24,7 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
     }
 
     @Override
-    public ChunkBuildResult performBuild(ChunkRenderCacheLocal cache, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
+    public ChunkBuildResult performBuild(ChunkBuildContext context, CancellationSource cancellationSource) {
         return new ChunkBuildResult(this.render, ChunkRenderData.EMPTY, Collections.emptyMap(), this.frame);
-    }
-
-    @Override
-    public void releaseResources() {
-
     }
 }

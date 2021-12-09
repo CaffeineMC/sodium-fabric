@@ -8,6 +8,8 @@ import net.fabricmc.loader.api.ModContainer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+
 public class SodiumClientMod implements ClientModInitializer {
     private static SodiumGameOptions CONFIG;
     private static Logger LOGGER;
@@ -24,12 +26,15 @@ public class SodiumClientMod implements ClientModInitializer {
                 .getVersion()
                 .getFriendlyString();
 
+        LOGGER = LogManager.getLogger("Sodium");
+        CONFIG = loadConfig();
+
         FlawlessFrames.onClientInitialization();
     }
 
     public static SodiumGameOptions options() {
         if (CONFIG == null) {
-            CONFIG = loadConfig();
+            throw new IllegalStateException("Config not yet available");
         }
 
         return CONFIG;
@@ -37,14 +42,34 @@ public class SodiumClientMod implements ClientModInitializer {
 
     public static Logger logger() {
         if (LOGGER == null) {
-            LOGGER = LogManager.getLogger("Sodium");
+            throw new IllegalStateException("Logger not yet available");
         }
 
         return LOGGER;
     }
 
     private static SodiumGameOptions loadConfig() {
-        return SodiumGameOptions.load(FabricLoader.getInstance().getConfigDir().resolve("sodium-options.json"));
+        try {
+            return SodiumGameOptions.load();
+        } catch (Exception e) {
+            LOGGER.error("Failed to load configuration file", e);
+            LOGGER.error("Using default configuration file in read-only mode");
+
+            var config = new SodiumGameOptions();
+            config.setReadOnly();
+
+            return config;
+        }
+    }
+
+    public static void restoreDefaultOptions() {
+        CONFIG = SodiumGameOptions.defaults();
+
+        try {
+            CONFIG.writeChanges();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write config file", e);
+        }
     }
 
     public static String getVersion() {

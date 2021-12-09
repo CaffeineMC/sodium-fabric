@@ -28,7 +28,11 @@ public abstract class MixinDebugHud {
         strings.add("Sodium Renderer");
         strings.add(Formatting.UNDERLINE + getFormattedVersionText());
 
-        strings.addAll(SodiumWorldRenderer.getInstance().getMemoryDebugStrings());
+        var renderer = SodiumWorldRenderer.instanceNullable();
+
+        if (renderer != null) {
+            strings.addAll(renderer.getMemoryDebugStrings());
+        }
 
         for (int i = 0; i < strings.size(); i++) {
             String str = strings.get(i);

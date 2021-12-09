@@ -1,13 +1,14 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gl.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
-import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.common.util.collections.QueueDrainingIterator;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,11 +19,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChunkBuilder {
-    /**
-     * The maximum number of jobs that can be queued for a given worker thread.
-     */
-    private static final int TASK_QUEUE_LIMIT_PER_WORKER = 2;
-
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
     private final Deque<WrappedTask> buildQueue = new ConcurrentLinkedDeque<>();
@@ -43,10 +39,11 @@ public class ChunkBuilder {
     private final ChunkVertexType vertexType;
 
     private final Queue<ChunkBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
+    private final ThreadLocal<ChunkBuildContext> localContexts = new ThreadLocal<>();
 
     public ChunkBuilder(ChunkVertexType vertexType) {
         this.vertexType = vertexType;
-        this.limitThreads = getOptimalThreadCount();
+        this.limitThreads = getThreadCount();
     }
 
     /**
@@ -54,7 +51,7 @@ public class ChunkBuilder {
      * spawn more tasks than the budget allows, it will block until resources become available.
      */
     public int getSchedulingBudget() {
-        return Math.max(0, (this.limitThreads * TASK_QUEUE_LIMIT_PER_WORKER) - this.buildQueue.size() - this.deferredResultQueue.size());
+        return Math.max(0, this.limitThreads - this.buildQueue.size());
     }
 
     /**
@@ -70,13 +67,9 @@ public class ChunkBuilder {
             throw new IllegalStateException("Threads are still alive while in the STOPPED state");
         }
 
-        MinecraftClient client = MinecraftClient.getInstance();
-
         for (int i = 0; i < this.limitThreads; i++) {
-            ChunkBuildBuffers buffers = new ChunkBuildBuffers(this.vertexType, this.renderPassManager);
-            ChunkRenderCacheLocal pipeline = new ChunkRenderCacheLocal(client, this.world);
-
-            WorkerRunnable worker = new WorkerRunnable(buffers, pipeline);
+            ChunkBuildContext context = new ChunkBuildContext(this.world, this.vertexType, this.renderPassManager);
+            WorkerRunnable worker = new WorkerRunnable(context);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
             thread.setPriority(Math.max(0, Thread.NORM_PRIORITY - 2));
@@ -122,7 +115,6 @@ public class ChunkBuilder {
         // Delete any queued tasks and resources attached to them
         for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
-            job.task.releaseResources();
         }
 
         // Delete any results in the deferred queue
@@ -192,11 +184,20 @@ public class ChunkBuilder {
     }
 
     /**
-     * Returns the "optimal" number of threads to be used for chunk build tasks. This is always at least one thread,
-     * but can be up to the number of available processor threads on the system.
+     * Returns the "optimal" number of threads to be used for chunk build tasks. This will always return at least one
+     * thread.
      */
     private static int getOptimalThreadCount() {
-        return Math.max(1, Runtime.getRuntime().availableProcessors());
+        return MathHelper.clamp(Math.max(getMaxThreadCount() / 3, getMaxThreadCount() - 6), 1, 10);
+    }
+
+    private static int getThreadCount() {
+        int requested = SodiumClientMod.options().performance.chunkBuilderThreads;
+        return requested == 0 ? getOptimalThreadCount() : Math.min(requested, getMaxThreadCount());
+    }
+
+    private static int getMaxThreadCount() {
+        return Runtime.getRuntime().availableProcessors();
     }
 
     public CompletableFuture<Void> scheduleDeferred(ChunkRenderBuildTask task) {
@@ -208,85 +209,112 @@ public class ChunkBuilder {
         return new QueueDrainingIterator<>(this.deferredResultQueue);
     }
 
+    /**
+     * "Steals" a task on the queue and allows the currently calling thread to execute it using locally-allocated
+     * resources instead. While this function returns true, the caller should continually execute it so that additional
+     * tasks can be processed.
+     *
+     * @return True if it was able to steal a task, otherwise false
+     */
+    public boolean stealTask() {
+        WrappedTask task = this.getNextJob(false);
+
+        if (task == null) {
+            return false;
+        }
+
+        ChunkBuildContext context = this.localContexts.get();
+
+        if (context == null) {
+            this.localContexts.set(context = new ChunkBuildContext(this.world, this.vertexType, this.renderPassManager));
+        }
+
+        try {
+            processJob(task, context);
+        } finally {
+            context.release();
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns the next task which this worker can work on or blocks until one becomes available. If no tasks are
+     * currently available and {@param block} is true, it will wait on the {@link ChunkBuilder#jobNotifier} field
+     * until it is notified of an incoming task.
+     */
+    private WrappedTask getNextJob(boolean block) {
+        WrappedTask job = ChunkBuilder.this.buildQueue.poll();
+
+        if (job == null && block) {
+            synchronized (ChunkBuilder.this.jobNotifier) {
+                ChunkBuilder.this.idleThreads++;
+                try {
+                    ChunkBuilder.this.jobNotifier.wait();
+                } catch (InterruptedException ignored) {
+                } finally {
+                    ChunkBuilder.this.idleThreads--;
+                }
+            }
+        }
+
+        return job;
+    }
+
+    private static void processJob(WrappedTask job, ChunkBuildContext context) {
+        if (job.isCancelled()) {
+            return;
+        }
+
+        ChunkBuildResult result;
+
+        try {
+            // Perform the build task with this worker's local resources and obtain the result
+            result = job.task.performBuild(context, job);
+        } catch (Exception e) {
+            // Propagate any exception from chunk building
+            job.future.completeExceptionally(e);
+            e.printStackTrace();
+            return;
+        }
+
+        // The result can be null if the task is cancelled
+        if (result != null) {
+            // Notify the future that the result is now available
+            job.future.complete(result);
+        } else if (!job.isCancelled()) {
+            // If the job wasn't cancelled and no result was produced, we've hit a bug
+            job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
+        }
+    }
+
     private class WorkerRunnable implements Runnable {
         private final AtomicBoolean running = ChunkBuilder.this.running;
 
-        // The re-useable build buffers used by this worker for building chunk meshes
-        private final ChunkBuildBuffers bufferCache;
-
         // Making this thread-local provides a small boost to performance by avoiding the overhead in synchronizing
         // caches between different CPU cores
-        private final ChunkRenderCacheLocal cache;
+        private final ChunkBuildContext context;
 
-        public WorkerRunnable(ChunkBuildBuffers bufferCache, ChunkRenderCacheLocal cache) {
-            this.bufferCache = bufferCache;
-            this.cache = cache;
+        public WorkerRunnable(ChunkBuildContext context) {
+            this.context = context;
         }
 
         @Override
         public void run() {
             // Run until the chunk builder shuts down
             while (this.running.get()) {
-                WrappedTask job = this.getNextJob();
+                WrappedTask job = ChunkBuilder.this.getNextJob(true);
 
                 if (job == null) {
                     continue;
                 }
 
-                this.processJob(job);
-            }
-
-            this.bufferCache.destroy();
-        }
-
-        private void processJob(WrappedTask job) {
-            ChunkBuildResult result;
-
-            try {
-                if (job.isCancelled()) {
-                    return;
-                }
-
-                // Perform the build task with this worker's local resources and obtain the result
-                result = job.task.performBuild(this.cache, this.bufferCache, job);
-            } catch (Exception e) {
-                // Propagate any exception from chunk building
-                job.future.completeExceptionally(e);
-                return;
-            } finally {
-                job.task.releaseResources();
-            }
-
-            // The result can be null if the task is cancelled
-            if (result != null) {
-                // Notify the future that the result is now available
-                job.future.complete(result);
-            } else if (!job.isCancelled()) {
-                // If the job wasn't cancelled and no result was produced, we've hit a bug
-                job.future.completeExceptionally(new RuntimeException("No result was produced by the task"));
-            }
-        }
-
-        /**
-         * Returns the next task which this worker can work on or blocks until one becomes available. If no tasks are
-         * currently available, it will wait on {@link ChunkBuilder#jobNotifier} field until notified.
-         */
-        private WrappedTask getNextJob() {
-            WrappedTask job = ChunkBuilder.this.buildQueue.poll();
-
-            if (job == null) {
-                synchronized (ChunkBuilder.this.jobNotifier) {
-                    ChunkBuilder.this.idleThreads++;
-                    try {
-                        ChunkBuilder.this.jobNotifier.wait();
-                    } catch (InterruptedException ignored) {
-                    } finally {
-                        ChunkBuilder.this.idleThreads--;
-                    }
+                try {
+                    processJob(job, this.context);
+                } finally {
+                    this.context.release();
                 }
             }
-
-            return job;
         }
     }
 
