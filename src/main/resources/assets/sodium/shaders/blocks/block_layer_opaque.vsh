@@ -13,17 +13,20 @@ out vec2 v_LightCoord;
 out float v_FragDistance;
 #endif
 
+uniform vec3 u_RegionOffset;
+
 void main() {
     _vert_init();
 
-    vec4 position = u_ModelViewMatrix * vec4(_draw_translation + _vert_position, 1.0);
+    // Transform the chunk-local vertex position into world model space
+    vec3 position = u_RegionOffset + _draw_translation + _vert_position;
 
 #ifdef USE_FOG
     v_FragDistance = length(position);
 #endif
 
     // Transform the vertex position into model-view-projection space
-    gl_Position = u_ProjectionMatrix * position;
+    gl_Position = u_ProjectionMatrix * u_ModelViewMatrix * vec4(position, 1.0);
 
     // Pass the color and texture coordinates to the fragment shader
     v_Color = _vert_color;
