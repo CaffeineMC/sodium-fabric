@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.world.cloned;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectMaps;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPaletteFallback;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalleteArray;
@@ -29,8 +31,8 @@ public class ClonedChunkSection {
     private final AtomicInteger referenceCount = new AtomicInteger(0);
     private final ClonedChunkSectionCache backingCache;
 
-    private final Long2ObjectOpenHashMap<BlockEntity> blockEntities;
-    private final Long2ObjectOpenHashMap<Object> renderAttachments;
+    private final Short2ObjectMap<BlockEntity> blockEntities;
+    private final Short2ObjectMap<Object> renderAttachments;
 
     private final ChunkNibbleArray[] lightDataArrays;
 
@@ -43,8 +45,8 @@ public class ClonedChunkSection {
 
     ClonedChunkSection(ClonedChunkSectionCache backingCache) {
         this.backingCache = backingCache;
-        this.blockEntities = new Long2ObjectOpenHashMap<>();
-        this.renderAttachments = new Long2ObjectOpenHashMap<>();
+        this.blockEntities = new Short2ObjectOpenHashMap<>();
+        this.renderAttachments = new Short2ObjectOpenHashMap<>();
         this.lightDataArrays = new ChunkNibbleArray[LIGHT_TYPES.length];
     }
 
@@ -115,25 +117,24 @@ public class ClonedChunkSection {
         BlockBox box = new BlockBox(chunkCoord.getMinX(), chunkCoord.getMinY(), chunkCoord.getMinZ(),
                 chunkCoord.getMaxX(), chunkCoord.getMaxY(), chunkCoord.getMaxZ());
 
-        this.blockEntities.clear();
-
+        // Copy the block entities from the chunk into our cloned section
         for (Map.Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities().entrySet()) {
             BlockPos pos = entry.getKey();
             BlockEntity entity = entry.getValue();
 
             if (box.contains(pos)) {
-                this.addBlockEntity(pos, entity);
+                this.blockEntities.put(ChunkSectionPos.packLocal(pos), entity);
             }
         }
-    }
 
-    private void addBlockEntity(BlockPos pos, BlockEntity entity) {
-        long key = BlockPos.asLong(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
-
-        this.blockEntities.put(key, entity);
-
-        if (entity instanceof RenderAttachmentBlockEntity) {
-            this.renderAttachments.put(key, ((RenderAttachmentBlockEntity) entity).getRenderAttachmentData());
+        // Retrieve any render attachments after we have copied all block entities, as this will call into the code of
+        // other mods. This could potentially result in the chunk being modified, which would cause problems if we
+        // were iterating over any data in that chunk.
+        // See https://github.com/CaffeineMC/sodium-fabric/issues/942 for more info.
+        for (Short2ObjectMap.Entry<BlockEntity> entry : Short2ObjectMaps.fastIterable(this.blockEntities)) {
+            if (entry.getValue() instanceof RenderAttachmentBlockEntity entity) {
+                this.renderAttachments.put(entry.getShortKey(), entity.getRenderAttachmentData());
+            }
         }
     }
 
@@ -142,11 +143,11 @@ public class ClonedChunkSection {
     }
 
     public BlockEntity getBlockEntity(int x, int y, int z) {
-        return this.blockEntities.get(BlockPos.asLong(x, y, z));
+        return this.blockEntities.get(packLocal(x, y, z));
     }
 
     public Object getBlockEntityRenderAttachment(int x, int y, int z) {
-        return this.renderAttachments.get(BlockPos.asLong(x, y, z));
+        return this.renderAttachments.get(packLocal(x, y, z));
     }
 
     public PackedIntegerArray getBlockData() {
@@ -208,5 +209,15 @@ public class ClonedChunkSection {
 
     public ClonedChunkSectionCache getBackingCache() {
         return this.backingCache;
+    }
+
+    /**
+     * @param x The local x-coordinate
+     * @param y The local y-coordinate
+     * @param z The local z-coordinate
+     * @return An index which can be used to key entities or blocks within a chunk
+     */
+    private static short packLocal(int x, int y, int z) {
+        return (short) (x << 8 | z << 4 | y);
     }
 }

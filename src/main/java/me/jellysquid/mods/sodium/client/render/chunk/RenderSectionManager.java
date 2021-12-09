@@ -15,28 +15,28 @@ import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionVisibility;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
-import me.jellysquid.mods.sodium.client.util.math.FrustumExtended;
+import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.ClientChunkManagerExtended;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import me.jellysquid.mods.sodium.common.util.collections.FutureQueueDrainingIterator;
+import me.jellysquid.mods.sodium.common.util.collections.WorkStealingFutureDrain;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.Chunk;
@@ -49,7 +49,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     /**
      * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
      */
-    private static final double NEARBY_CHUNK_DISTANCE = Math.pow(48, 2.0);
+    private static final double NEARBY_CHUNK_DISTANCE = Math.pow(32, 2.0);
 
     /**
      * The minimum distance the culling plane can be from the player's camera. This helps to prevent mathematical
@@ -66,7 +66,6 @@ public class RenderSectionManager implements ChunkStatusListener {
     private static final float FOG_PLANE_OFFSET = 12.0f;
 
     private final ChunkBuilder builder;
-    private final ChunkRenderer chunkRenderer;
 
     private final RenderRegionManager regions;
     private final ClonedChunkSectionCache sectionCache;
@@ -83,6 +82,8 @@ public class RenderSectionManager implements ChunkStatusListener {
     private final ObjectList<RenderSection> tickableChunks = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
+    private final RegionChunkRenderer chunkRenderer;
+
     private final SodiumWorldRenderer worldRenderer;
     private final ClientWorld world;
 
@@ -98,22 +99,24 @@ public class RenderSectionManager implements ChunkStatusListener {
 
     private double fogRenderCutoff;
 
-    private FrustumExtended frustum;
+    private Frustum frustum;
 
     private int currentFrame = 0;
+    private boolean alwaysDeferChunkUpdates;
 
-    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ChunkRenderer chunkRenderer, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
-        this.chunkRenderer = chunkRenderer;
+    public RenderSectionManager(SodiumWorldRenderer worldRenderer, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance, CommandList commandList) {
+        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT);
+
         this.worldRenderer = worldRenderer;
         this.world = world;
 
-        this.builder = new ChunkBuilder(chunkRenderer.getVertexType());
+        this.builder = new ChunkBuilder(ChunkModelVertexFormats.DEFAULT);
         this.builder.init(world, renderPassManager);
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
 
-        this.regions = new RenderRegionManager(this.chunkRenderer);
+        this.regions = new RenderRegionManager(commandList);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
@@ -133,7 +136,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         }
     }
 
-    public void update(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
+    public void update(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.resetLists();
 
         this.regions.updateVisibility(frustum);
@@ -151,19 +154,23 @@ public class RenderSectionManager implements ChunkStatusListener {
         this.cameraY = (float) cameraPos.y;
         this.cameraZ = (float) cameraPos.z;
 
-        this.useFogCulling = false;
+        var options = SodiumClientMod.options();
 
-        if (SodiumClientMod.options().advanced.useFogOcclusion) {
+        this.useFogCulling = options.performance.useFogOcclusion;
+        this.alwaysDeferChunkUpdates = options.performance.alwaysDeferChunkUpdates;
+
+        if (this.useFogCulling) {
             float dist = RenderSystem.getShaderFogEnd() + FOG_PLANE_OFFSET;
 
-            if (dist != 0.0f) {
-                this.useFogCulling = true;
+            if (dist == 0.0f) {
+                this.fogRenderCutoff = Double.POSITIVE_INFINITY;
+            } else {
                 this.fogRenderCutoff = Math.max(FOG_PLANE_MIN_DISTANCE, dist * dist);
             }
         }
     }
 
-    private void iterateChunks(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
+    private void iterateChunks(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.initSearch(camera, frustum, frame, spectator);
 
         ChunkGraphIterationQueue queue = this.iterationQueue;
@@ -289,11 +296,11 @@ public class RenderSectionManager implements ChunkStatusListener {
         return true;
     }
 
-    public void renderLayer(MatrixStack matrixStack, BlockRenderPass pass, double x, double y, double z) {
+    public void renderLayer(ChunkRenderMatrices matrices, BlockRenderPass pass, double x, double y, double z) {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRenderer.render(matrixStack, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRenderer.render(matrices, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
 
         commandList.flush();
     }
@@ -327,7 +334,7 @@ public class RenderSectionManager implements ChunkStatusListener {
     }
 
     private void updateChunks(boolean allImmediately) {
-        PriorityQueue<CompletableFuture<ChunkBuildResult>> blockingFutures = new ObjectArrayFIFOQueue<>();
+        var blockingFutures = new LinkedList<CompletableFuture<ChunkBuildResult>>();
 
         this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD, blockingFutures);
         this.submitRebuildTasks(ChunkUpdateType.INITIAL_BUILD, allImmediately ? blockingFutures : null);
@@ -338,13 +345,13 @@ public class RenderSectionManager implements ChunkStatusListener {
 
         if (!blockingFutures.isEmpty()) {
             this.needsUpdate = true;
-            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), new FutureQueueDrainingIterator<>(blockingFutures));
+            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), new WorkStealingFutureDrain<>(blockingFutures, this.builder::stealTask));
         }
 
         this.regions.cleanup();
     }
 
-    private void submitRebuildTasks(ChunkUpdateType filterType, PriorityQueue<CompletableFuture<ChunkBuildResult>> immediateFutures) {
+    private void submitRebuildTasks(ChunkUpdateType filterType, LinkedList<CompletableFuture<ChunkBuildResult>> immediateFutures) {
         int budget = immediateFutures != null ? Integer.MAX_VALUE : this.builder.getSchedulingBudget();
 
         PriorityQueue<RenderSection> queue = this.rebuildQueues.get(filterType);
@@ -356,10 +363,9 @@ public class RenderSectionManager implements ChunkStatusListener {
                 continue;
             }
 
+            // Sections can move between update queues, but they won't be removed from the queue they were
+            // previously in to save CPU cycles. We just filter any changed entries here instead.
             if (section.getPendingUpdate() != filterType) {
-                SodiumClientMod.logger().warn("{} changed update type to {} while in queue for {}, skipping",
-                        section, section.getPendingUpdate(), filterType);
-
                 continue;
             }
 
@@ -368,7 +374,7 @@ public class RenderSectionManager implements ChunkStatusListener {
 
             if (immediateFutures != null) {
                 CompletableFuture<ChunkBuildResult> immediateFuture = this.builder.schedule(task);
-                immediateFutures.enqueue(immediateFuture);
+                immediateFutures.add(immediateFuture);
 
                 future = immediateFuture;
             } else {
@@ -455,6 +461,7 @@ public class RenderSectionManager implements ChunkStatusListener {
             this.regions.delete(commandList);
         }
 
+        this.chunkRenderer.delete();
         this.builder.stopWorkers();
     }
 
@@ -478,7 +485,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         RenderSection section = this.sections.get(ChunkSectionPos.asLong(x, y, z));
 
         if (section != null && section.isBuilt()) {
-            if (important || this.isChunkPrioritized(section)) {
+            if (!this.alwaysDeferChunkUpdates && (important || this.isChunkPrioritized(section))) {
                 section.markForUpdate(ChunkUpdateType.IMPORTANT_REBUILD);
             } else {
                 section.markForUpdate(ChunkUpdateType.REBUILD);
@@ -515,7 +522,7 @@ public class RenderSectionManager implements ChunkStatusListener {
         return this.useOcclusionCulling && from != null && !node.isVisibleThrough(from, to);
     }
 
-    private void initSearch(Camera camera, FrustumExtended frustum, int frame, boolean spectator) {
+    private void initSearch(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.currentFrame = frame;
         this.frustum = frustum;
         this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
@@ -585,11 +592,11 @@ public class RenderSectionManager implements ChunkStatusListener {
             return;
         }
 
-        RenderRegionVisibility parentVisibility = parent.getRegion().getVisibility();
+        Frustum.Visibility parentVisibility = parent.getRegion().getVisibility();
 
-        if (parentVisibility == RenderRegionVisibility.CULLED) {
+        if (parentVisibility == Frustum.Visibility.OUTSIDE) {
             return;
-        } else if (parentVisibility == RenderRegionVisibility.VISIBLE && info.isCulledByFrustum(this.frustum)) {
+        } else if (parentVisibility == Frustum.Visibility.INTERSECT && info.isCulledByFrustum(this.frustum)) {
             return;
         }
 
@@ -640,7 +647,33 @@ public class RenderSectionManager implements ChunkStatusListener {
         return this.sections.get(ChunkSectionPos.asLong(x, y, z));
     }
 
-    public Collection<RenderRegion> getRegions() {
-        return this.regions.getLoadedRegions();
+    public Collection<String> getDebugStrings() {
+        List<String> list = new ArrayList<>();
+
+        Iterator<RenderRegion.RenderRegionArenas> it = this.regions.getLoadedRegions()
+                .stream()
+                .map(RenderRegion::getArenas)
+                .filter(Objects::nonNull)
+                .iterator();
+
+        int count = 0;
+
+        long deviceUsed = 0;
+        long deviceAllocated = 0;
+
+        while (it.hasNext()) {
+            RenderRegion.RenderRegionArenas arena = it.next();
+            deviceUsed += arena.getDeviceUsedMemory();
+            deviceAllocated += arena.getDeviceAllocatedMemory();
+
+            count++;
+        }
+
+        list.add(String.format("Chunk arena allocator: %s", SodiumClientMod.options().advanced.arenaMemoryAllocator.name()));
+        list.add(String.format("Device buffer objects: %d", count));
+        list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
+        list.add(String.format("Staging buffer: %s", this.regions.getStagingBuffer().toString()));
+        return list;
     }
+
 }

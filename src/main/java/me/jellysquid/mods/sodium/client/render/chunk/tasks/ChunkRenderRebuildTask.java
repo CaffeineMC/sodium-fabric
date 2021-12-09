@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
+import me.jellysquid.mods.sodium.client.gl.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
@@ -7,7 +8,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -23,7 +23,6 @@ import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -37,28 +36,26 @@ import java.util.Map;
  */
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
     private final RenderSection render;
-    private final ChunkRenderContext context;
+    private final ChunkRenderContext renderContext;
     private final int frame;
 
-    public ChunkRenderRebuildTask(RenderSection render, ChunkRenderContext context, int frame) {
+    public ChunkRenderRebuildTask(RenderSection render, ChunkRenderContext renderContext, int frame) {
         this.render = render;
-        this.context = context;
+        this.renderContext = renderContext;
         this.frame = frame;
     }
 
     @Override
-    public ChunkBuildResult performBuild(ChunkRenderCacheLocal cache, ChunkBuildBuffers buffers, CancellationSource cancellationSource) {
+    public ChunkBuildResult performBuild(ChunkBuildContext buildContext, CancellationSource cancellationSource) {
         ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
-        buffers.init(renderData, new Vec3i(
-                this.render.getChunkX() & (RenderRegion.REGION_WIDTH - 1),
-                this.render.getChunkY() & (RenderRegion.REGION_HEIGHT - 1),
-                this.render.getChunkZ() & (RenderRegion.REGION_LENGTH - 1)
-        ));
+        ChunkBuildBuffers buffers = buildContext.buffers;
+        buffers.init(renderData, this.render.getChunkId());
 
-        cache.init(this.context);
+        ChunkRenderCacheLocal cache = buildContext.cache;
+        cache.init(this.renderContext);
 
         WorldSlice slice = cache.getWorldSlice();
 
@@ -152,10 +149,5 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
 
         return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
-    }
-
-    @Override
-    public void releaseResources() {
-        this.context.releaseResources();
     }
 }

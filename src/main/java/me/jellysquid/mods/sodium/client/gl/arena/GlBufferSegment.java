@@ -5,13 +5,13 @@ public class GlBufferSegment {
 
     private boolean free = false;
 
-    private long offset;
-    private long length;
+    private int offset;
+    private int length;
 
     private GlBufferSegment next;
     private GlBufferSegment prev;
 
-    public GlBufferSegment(GlBufferArena arena, long offset, long length) {
+    public GlBufferSegment(GlBufferArena arena, int offset, int length) {
         this.arena = arena;
         this.offset = offset;
         this.length = length;
@@ -21,15 +21,15 @@ public class GlBufferSegment {
         this.arena.free(this);
     }
 
-    protected long getEnd() {
+    protected int getEnd() {
         return this.offset + this.length;
     }
 
-    public long getLength() {
+    public int getLength() {
         return this.length;
     }
 
-    protected void setLength(long len) {
+    protected void setLength(int len) {
         if (len <= 0) {
             throw new IllegalArgumentException("len <= 0");
         }
@@ -37,11 +37,11 @@ public class GlBufferSegment {
         this.length = len;
     }
 
-    public long getOffset() {
+    public int getOffset() {
         return this.offset;
     }
 
-    protected void setOffset(long offset) {
+    protected void setOffset(int offset) {
         if (offset < 0) {
             throw new IllegalArgumentException("start < 0");
         }

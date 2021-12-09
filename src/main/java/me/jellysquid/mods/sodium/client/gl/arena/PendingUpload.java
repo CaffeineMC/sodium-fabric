@@ -29,4 +29,8 @@ public class PendingUpload {
 
         return this.result;
     }
+
+    public int getLength() {
+        return this.data.getLength();
+    }
 }
