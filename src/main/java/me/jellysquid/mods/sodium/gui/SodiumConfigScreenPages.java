@@ -12,8 +12,7 @@ import me.jellysquid.mods.sodium.gui.options.SliderControl;
 import me.jellysquid.mods.sodium.gui.options.TickBoxControl;
 import me.jellysquid.mods.sodium.config.render.storage.MinecraftOptionsStorage;
 import me.jellysquid.mods.sodium.config.render.storage.SodiumOptionsStorage;
-import me.jellysquid.mods.sodium.render.entity.renderer.GlSsboRenderDispatcher;
-import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
+import me.jellysquid.mods.sodium.render.entity.renderer.InstancedEntityRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.Option;
@@ -282,7 +281,7 @@ public class SodiumConfigScreenPages {
                                 "\n\nRequires OpenGL 4.4 or ARB_shader_storage_buffer_object, ARB_shading_language_packing, and ARB_buffer_storage."))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
-                        .setEnabled(GlSsboRenderDispatcher.isSupported(SodiumRender.DEVICE))
+                        .setEnabled(InstancedEntityRenderer.isSupported(SodiumRender.DEVICE))
                         .setBinding((opts, value) -> opts.performance.useModelInstancing = value, opts -> opts.performance.useModelInstancing)
                         .build()
                 )

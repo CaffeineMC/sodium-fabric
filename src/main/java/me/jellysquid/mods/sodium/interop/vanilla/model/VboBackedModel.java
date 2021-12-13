@@ -1,9 +1,9 @@
 package me.jellysquid.mods.sodium.interop.vanilla.model;
 
-import net.minecraft.client.gl.VertexBuffer;
+import me.jellysquid.mods.thingl.tessellation.Tessellation;
 
 public interface VboBackedModel {
-    VertexBuffer getBakedVertices();
+    Tessellation getBakedVertices();
 
     int getVertexCount();
 

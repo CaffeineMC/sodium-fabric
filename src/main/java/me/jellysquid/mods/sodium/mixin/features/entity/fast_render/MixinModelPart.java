@@ -8,7 +8,7 @@ import me.jellysquid.mods.sodium.interop.vanilla.matrix.Matrix4fUtil;
 import me.jellysquid.mods.sodium.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.model.vertex.formats.ModelQuadVertexSink;
-import me.jellysquid.mods.sodium.render.entity.renderer.GlSsboRenderDispatcher;
+import me.jellysquid.mods.sodium.render.entity.renderer.InstancedEntityRenderer;
 import me.jellysquid.mods.sodium.util.color.ColorABGR;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumer;
@@ -40,7 +40,7 @@ public class MixinModelPart {
     @Inject(method = "renderCuboids", at = @At("HEAD"), cancellable = true)
     private void renderCuboids(MatrixStack.Entry entry, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
         // skip if instancing is enabled
-        if (!SodiumClient.options().performance.useModelInstancing || !GlSsboRenderDispatcher.isSupported(SodiumRender.DEVICE)) {
+        if (!SodiumClient.options().performance.useModelInstancing || !InstancedEntityRenderer.isSupported(SodiumRender.DEVICE)) {
             Matrix3f normalMatrix = entry.getNormal();
             Matrix4f modelMatrix = entry.getModel();
 

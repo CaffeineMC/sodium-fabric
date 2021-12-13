@@ -34,10 +34,11 @@ public class BakingData implements Closeable, Iterable<Map<RenderLayer, Map<VboB
     private final Deque<Map<RenderLayer, Map<VboBackedModel, InstanceBatch>>> orderedTransparencySections;
 
     private final Set<AutoCloseable> closeables;
+    private final Deque<InstanceBatch> batchPool;
+
     private final SectionedPersistentBuffer modelPersistentSsbo;
     private final SectionedPersistentBuffer partPersistentSsbo;
     private final SectionedPersistentBuffer translucencyPersistentEbo;
-    private final Deque<InstanceBatch> batchPool;
 
     private RenderPhase.Transparency previousTransparency;
 

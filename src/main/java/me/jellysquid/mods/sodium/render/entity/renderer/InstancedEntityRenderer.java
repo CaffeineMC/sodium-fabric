@@ -2,21 +2,19 @@ package me.jellysquid.mods.sodium.render.entity.renderer;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-
 import me.jellysquid.mods.sodium.SodiumClient;
 import me.jellysquid.mods.sodium.interop.vanilla.buffer.VertexBufferAccessor;
 import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
 import me.jellysquid.mods.sodium.render.entity.DebugInfo;
-import me.jellysquid.mods.sodium.render.entity.BakedModelUtils;
 import me.jellysquid.mods.sodium.render.entity.buffer.SectionedPersistentBuffer;
 import me.jellysquid.mods.sodium.render.entity.buffer.SectionedSyncObjects;
 import me.jellysquid.mods.sodium.render.entity.data.BakingData;
 import me.jellysquid.mods.sodium.render.entity.data.InstanceBatch;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
+import me.jellysquid.mods.thingl.tessellation.TessellationImpl;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.GlUniform;
-import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.BufferRenderer;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.Shader;
@@ -27,7 +25,7 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.util.Map;
 
-public class GlSsboRenderDispatcher implements RenderDispatcher, AutoCloseable {
+public class InstancedEntityRenderer implements EntityRenderer, AutoCloseable {
 
     public static final int BUFFER_CREATION_FLAGS = GL30C.GL_MAP_WRITE_BIT | ARBBufferStorage.GL_MAP_PERSISTENT_BIT;
     public static final int BUFFER_MAP_FLAGS = GL30C.GL_MAP_WRITE_BIT | GL30C.GL_MAP_FLUSH_EXPLICIT_BIT | ARBBufferStorage.GL_MAP_PERSISTENT_BIT;
@@ -41,7 +39,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher, AutoCloseable {
     public final SectionedPersistentBuffer translucencyPersistentEbo;
     public final SectionedSyncObjects syncObjects;
 
-    public GlSsboRenderDispatcher() {
+    public InstancedEntityRenderer() {
         partPersistentSsbo = createPersistentBuffer(ARBShaderStorageBufferObject.GL_SHADER_STORAGE_BUFFER, PART_PBO_SIZE);
         modelPersistentSsbo = createPersistentBuffer(ARBShaderStorageBufferObject.GL_SHADER_STORAGE_BUFFER, MODEL_PBO_SIZE);
         translucencyPersistentEbo = createPersistentBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, TRANSLUCENT_EBO_SIZE);
@@ -81,8 +79,8 @@ public class GlSsboRenderDispatcher implements RenderDispatcher, AutoCloseable {
     }
 
     @SuppressWarnings("ConstantConditions")
-    public void renderQueues() {
-        BakingData bakingData = BakedModelUtils.getBakingData();
+    @Override
+    public void render(RenderDevice device, BakingData bakingData) {
         if (bakingData.isEmptyShallow()) return;
 
         long currentPartSyncObject = syncObjects.getCurrentSyncObject();
@@ -125,7 +123,7 @@ public class GlSsboRenderDispatcher implements RenderDispatcher, AutoCloseable {
         int instanceOffset = 0;
 
         RenderLayer currentRenderLayer = null;
-        VertexBuffer currentVertexBuffer = null;
+        TessellationImpl currentTesselation = null;
         BufferRenderer.unbindAll();
 
         for (Map<RenderLayer, Map<VboBackedModel, InstanceBatch>> perOrderedSectionData : bakingData) {
@@ -145,26 +143,25 @@ public class GlSsboRenderDispatcher implements RenderDispatcher, AutoCloseable {
 
                 for (Map.Entry<VboBackedModel, InstanceBatch> perModelData : perRenderLayerData.getValue().entrySet()) {
                     VboBackedModel model = perModelData.getKey();
-                    VertexBuffer nextVertexBuffer = model.getBakedVertices();
-                    VertexBufferAccessor vertexBufferAccessor = (VertexBufferAccessor) nextVertexBuffer;
-                    int vertexCount = vertexBufferAccessor.getIndexCount();
+                    TessellationImpl nextTesselation = (TessellationImpl) model.getBakedVertices();
+                    int vertexCount = nextTesselation.getIndexCount();
                     if (vertexCount <= 0) continue;
 
                     InstanceBatch instanceBatch = perModelData.getValue();
                     boolean isIndexed = instanceBatch.isIndexed();
 
-                    boolean firstVbo = currentVertexBuffer == null;
-                    if (firstVbo || !currentVertexBuffer.equals(nextVertexBuffer)) {
+                    boolean firstVbo = currentTesselation == null;
+                    if (firstVbo || !currentTesselation.equals(nextTesselation)) {
                         if (!firstVbo) {
-                            currentVertexBuffer.getElementFormat().endDrawing();
+                            currentTesselation.getElementFormat().endDrawing();
                         }
-                        currentVertexBuffer = nextVertexBuffer;
+                        currentTesselation = nextTesselation;
                         vertexBufferAccessor.invokeBindVertexArray();
                         if (isIndexed) {
                             GL30C.glBindBufferBase(ARBShaderStorageBufferObject.GL_SHADER_STORAGE_BUFFER, 3, vertexBufferAccessor.getVertexBufferId());
                         } else {
                             vertexBufferAccessor.invokeBind();
-                            currentVertexBuffer.getElementFormat().startDrawing();
+                            currentTesselation.getElementFormat().startDrawing();
                         }
                     }
 
@@ -244,8 +241,8 @@ public class GlSsboRenderDispatcher implements RenderDispatcher, AutoCloseable {
             }
         }
 
-        if (currentVertexBuffer != null) {
-            currentVertexBuffer.getElementFormat().endDrawing();
+        if (currentTesselation != null) {
+            currentTesselation.getElementFormat().endDrawing();
         }
 
         if (currentRenderLayer != null) {

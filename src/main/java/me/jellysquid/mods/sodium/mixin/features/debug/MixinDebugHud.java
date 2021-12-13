@@ -9,20 +9,17 @@ import me.jellysquid.mods.sodium.SodiumClient;
 import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.render.entity.DebugInfo;
-import me.jellysquid.mods.sodium.render.entity.renderer.GlSsboRenderDispatcher;
+import me.jellysquid.mods.sodium.render.entity.renderer.InstancedEntityRenderer;
 import me.jellysquid.mods.thingl.util.NativeBuffer;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
-
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(DebugHud.class)
 public abstract class MixinDebugHud {
@@ -56,7 +53,7 @@ public abstract class MixinDebugHud {
             }
         }
 
-        if (SodiumClient.options().performance.useModelInstancing && GlSsboRenderDispatcher.isSupported(SodiumRender.DEVICE)) {
+        if (SodiumClient.options().performance.useModelInstancing && InstancedEntityRenderer.isSupported(SodiumRender.DEVICE)) {
             strings.add("");
             strings.add("Model Info:");
 

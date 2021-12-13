@@ -3,8 +3,7 @@ package me.jellysquid.mods.sodium.mixin.features.entity.instancing;
 import me.jellysquid.mods.sodium.SodiumClient;
 import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.render.entity.BakedModelUtils;
-import me.jellysquid.mods.sodium.render.entity.data.BakingData;
-import me.jellysquid.mods.sodium.render.entity.renderer.GlSsboRenderDispatcher;
+import me.jellysquid.mods.sodium.render.entity.renderer.InstancedEntityRenderer;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -28,8 +27,8 @@ public class MixinWorldRenderer {
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/VertexConsumerProvider$Immediate;drawCurrentLayer()V", shift = At.Shift.BEFORE))
     private void renderQueues(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
         this.world.getProfiler().push("renderInstances");
-        if (SodiumClient.options().performance.useModelInstancing && GlSsboRenderDispatcher.isSupported(SodiumRender.DEVICE)) {
-            BakedModelUtils.getInstancedRenderDispatcher().renderQueues();
+        if (SodiumClient.options().performance.useModelInstancing && InstancedEntityRenderer.isSupported(SodiumRender.DEVICE)) {
+            BakedModelUtils.getInstancedRenderDispatcher().render();
         }
         this.world.getProfiler().pop();
     }

@@ -5,15 +5,15 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import java.text.DecimalFormat;
 import java.util.Map;
 
-import me.jellysquid.mods.sodium.render.entity.renderer.GlSsboRenderDispatcher;
+import me.jellysquid.mods.sodium.render.entity.renderer.InstancedEntityRenderer;
 
 public class DebugInfo {
     public static final Map<String, ModelDebugInfo> modelToDebugInfoMap = new Object2ObjectOpenHashMap<>();
 
     public static final DecimalFormat sizeFormatter = new DecimalFormat("0.00");
-    public static final String PART_BUFFER_SUFFIX = " / " + getSizeReadable(GlSsboRenderDispatcher.PART_PBO_SIZE) + " (x" + GlSsboRenderDispatcher.BUFFER_SECTIONS + " Buffered)";
-    public static final String MODEL_BUFFER_SUFFIX = " / " + getSizeReadable(GlSsboRenderDispatcher.MODEL_PBO_SIZE) + " (x" + GlSsboRenderDispatcher.BUFFER_SECTIONS + " Buffered)";
-    public static final String TRANSLUCENCY_EBO_SUFFIX = " / " + getSizeReadable(GlSsboRenderDispatcher.TRANSLUCENT_EBO_SIZE) + " (x" + GlSsboRenderDispatcher.BUFFER_SECTIONS + " Buffered)";
+    public static final String PART_BUFFER_SUFFIX = " / " + getSizeReadable(InstancedEntityRenderer.PART_PBO_SIZE) + " (x" + InstancedEntityRenderer.BUFFER_SECTIONS + " Buffered)";
+    public static final String MODEL_BUFFER_SUFFIX = " / " + getSizeReadable(InstancedEntityRenderer.MODEL_PBO_SIZE) + " (x" + InstancedEntityRenderer.BUFFER_SECTIONS + " Buffered)";
+    public static final String TRANSLUCENCY_EBO_SUFFIX = " / " + getSizeReadable(InstancedEntityRenderer.TRANSLUCENT_EBO_SIZE) + " (x" + InstancedEntityRenderer.BUFFER_SECTIONS + " Buffered)";
     public static long currentPartBufferSize;
     public static long currentModelBufferSize;
     public static long currentTranslucencyEboSize;
