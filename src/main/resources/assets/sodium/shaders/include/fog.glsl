@@ -7,7 +7,7 @@ vec4 _linearFog(vec4 fragColor, float fragDistance, vec4 fogColor, float fogStar
     return result;
 }
 float _cylindrical_distance(vec3 pos) {
-    float distXZ = length(vec3(pos.x, 1.0, pos.z));
+    float distXZ = length(vec3(pos.x, 0.0, pos.z));
     float distY = length(vec3(0.0, pos.y, 0.0));
     return max(distXZ, distY);
 }
