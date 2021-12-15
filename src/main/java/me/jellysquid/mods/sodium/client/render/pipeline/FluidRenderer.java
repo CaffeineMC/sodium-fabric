@@ -20,7 +20,9 @@ import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.impl.client.rendering.fluid.FluidRenderHandlerRegistryImpl;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.SideShapeType;
+import net.minecraft.block.TransparentBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.texture.Sprite;
@@ -321,10 +323,10 @@ public class FluidRenderer {
                     BlockPos adjPos = this.scratchPos.set(adjX, adjY, adjZ);
                     BlockState adjBlock = world.getBlockState(adjPos);
 
-                    if (!adjBlock.isOpaque() && !adjBlock.isAir()) {
-                        // ice, glass, stained glass, tinted glass
+                    if (adjBlock.getBlock() instanceof TransparentBlock || adjBlock.getBlock() instanceof LeavesBlock){
+                        // From testing static water seems to only be used on transparent blocks or leaves.
+                        // The texture change is subtle. use a resource pack with modified water_overlay.png to confirm behaviour.
                         sprite = this.waterOverlaySprite;
-
                     }
                 }
 
