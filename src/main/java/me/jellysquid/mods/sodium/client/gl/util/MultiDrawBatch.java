@@ -23,11 +23,9 @@ public interface MultiDrawBatch {
 
     IntBuffer getBaseVertexBuffer();
 
-    void begin();
+    void reset();
 
     void add(long pointer, int count, int baseVertex);
-
-    void end();
 
     void delete();
 
@@ -48,21 +46,21 @@ public interface MultiDrawBatch {
 
         @Override
         public PointerBuffer getPointerBuffer() {
-            return this.bufPointer;
+            return this.bufPointer.limit(this.count);
         }
 
         @Override
         public IntBuffer getCountBuffer() {
-            return this.bufCount;
+            return this.bufCount.limit(this.count);
         }
 
         @Override
         public IntBuffer getBaseVertexBuffer() {
-            return this.bufBaseVertex;
+            return this.bufBaseVertex.limit(this.count);
         }
 
         @Override
-        public void begin() {
+        public void reset() {
             this.bufPointer.clear();
             this.bufCount.clear();
             this.bufBaseVertex.clear();
@@ -77,13 +75,6 @@ public interface MultiDrawBatch {
             this.bufPointer.put(i, pointer);
             this.bufCount.put(i, count);
             this.bufBaseVertex.put(i, baseVertex);
-        }
-
-        @Override
-        public void end() {
-            this.bufPointer.limit(this.count);
-            this.bufCount.limit(this.count);
-            this.bufBaseVertex.limit(this.count);
         }
 
         @Override
@@ -143,7 +134,7 @@ public interface MultiDrawBatch {
         }
 
         @Override
-        public void begin() {
+        public void reset() {
             this.count = 0;
 
             this.resetPointers();
@@ -165,11 +156,6 @@ public interface MultiDrawBatch {
             this.bufBaseVertexAddr += 4;
 
             this.count++;
-        }
-
-        @Override
-        public void end() {
-
         }
 
         @Override

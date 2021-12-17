@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
@@ -14,13 +15,14 @@ import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayer;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayerManager;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.ChunkMeshType;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionStorage;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
@@ -77,7 +79,7 @@ public class RenderSectionManager {
     private final ObjectList<RenderSection> tickableChunks = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
-    private final RegionChunkRenderer chunkRenderer;
+    private final Map<ChunkMeshType<?>, ChunkRenderer> chunkRenderer;
 
     private final SodiumWorldRenderer worldRenderer;
     private final ClientWorld world;
@@ -101,19 +103,19 @@ public class RenderSectionManager {
 
     private final ChunkTracker tracker;
 
-    public RenderSectionManager(SodiumWorldRenderer worldRenderer, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance, CommandList commandList) {
-        this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT);
+    public RenderSectionManager(SodiumWorldRenderer worldRenderer, BlockRenderLayerManager renderLayers, ClientWorld world, int renderDistance, CommandList commandList) {
+        this.chunkRenderer = createChunkRenderers();
 
         this.worldRenderer = worldRenderer;
         this.world = world;
 
-        this.builder = new ChunkBuilder(ChunkModelVertexFormats.DEFAULT);
-        this.builder.init(world, renderPassManager);
+        this.builder = new ChunkBuilder();
+        this.builder.init(world, renderLayers);
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
 
-        this.regions = new RenderRegionManager(commandList);
+        this.regions = new RenderRegionManager(commandList, renderLayers);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
@@ -121,6 +123,14 @@ public class RenderSectionManager {
         }
 
         this.tracker = this.worldRenderer.getChunkTracker();
+    }
+
+    private static Map<ChunkMeshType<?>, ChunkRenderer> createChunkRenderers() {
+        Reference2ReferenceOpenHashMap<ChunkMeshType<?>, ChunkRenderer> map = new Reference2ReferenceOpenHashMap<>();
+        map.put(ChunkMeshType.CUBE, new RegionChunkRenderer.CubeRenderer(RenderDevice.INSTANCE));
+        map.put(ChunkMeshType.MODEL, new RegionChunkRenderer.ModelRenderer(RenderDevice.INSTANCE));
+
+        return map;
     }
 
     public void reloadChunks(ChunkTracker tracker) {
@@ -282,11 +292,12 @@ public class RenderSectionManager {
         return true;
     }
 
-    public void renderLayer(ChunkRenderMatrices matrices, BlockRenderPass pass, double x, double y, double z) {
+    public void renderLayer(ChunkRenderMatrices matrices, ChunkMeshType<?> meshType, BlockRenderLayer renderLayer, double x, double y, double z) {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRenderer.render(matrices, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
+        ChunkRenderer chunkRenderer = this.chunkRenderer.get(meshType);
+        chunkRenderer.render(matrices, commandList, this.chunkRenderList, renderLayer, new ChunkCameraContext(x, y, z));
 
         commandList.flush();
     }
@@ -406,7 +417,10 @@ public class RenderSectionManager {
             this.regions.delete(commandList);
         }
 
-        this.chunkRenderer.delete();
+        for (ChunkRenderer chunkRenderer : this.chunkRenderer.values()) {
+            chunkRenderer.delete();
+        }
+
         this.builder.stopWorkers();
     }
 
@@ -595,9 +609,9 @@ public class RenderSectionManager {
     public Collection<String> getDebugStrings() {
         List<String> list = new ArrayList<>();
 
-        Iterator<RenderRegion.RenderRegionArenas> it = this.regions.getLoadedRegions()
+        Iterator<RenderRegionStorage<?>> it = this.regions.getLoadedRegions()
                 .stream()
-                .map(RenderRegion::getArenas)
+                .flatMap(region -> region.getAllMeshStorage().stream())
                 .filter(Objects::nonNull)
                 .iterator();
 
@@ -607,7 +621,7 @@ public class RenderSectionManager {
         long deviceAllocated = 0;
 
         while (it.hasNext()) {
-            RenderRegion.RenderRegionArenas arena = it.next();
+            RenderRegionStorage<?> arena = it.next();
             deviceUsed += arena.getDeviceUsedMemory();
             deviceAllocated += arena.getDeviceAllocatedMemory();
 

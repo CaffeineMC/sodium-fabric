@@ -1,9 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
-import me.jellysquid.mods.sodium.client.gl.shader.uniform.*;
-import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
+import me.jellysquid.mods.sodium.client.gl.shader.GlShaderStorageBlock;
+import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformBlock;
+import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformInt;
+import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformMatrix4f;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL32C;
 
@@ -16,27 +18,21 @@ public class ChunkShaderInterface {
 
     private final GlUniformMatrix4f uniformModelViewMatrix;
     private final GlUniformMatrix4f uniformProjectionMatrix;
-    private final GlUniformFloat3v uniformRegionOffset;
-
-    private final GlUniformBlock uniformBlockDrawParameters;
 
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
 
-    public ChunkShaderInterface(ShaderBindingContext context, ChunkShaderOptions options) {
+    protected ChunkShaderInterface(ShaderBindingContext context, ChunkShaderOptions options) {
         this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new);
         this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", GlUniformMatrix4f::new);
-        this.uniformRegionOffset = context.bindUniform("u_RegionOffset", GlUniformFloat3v::new);
 
         this.uniformBlockTex = context.bindUniform("u_BlockTex", GlUniformInt::new);
         this.uniformLightTex = context.bindUniform("u_LightTex", GlUniformInt::new);
 
-        this.uniformBlockDrawParameters = context.bindUniformBlock("ubo_DrawParameters", 0);
-
         this.fogShader = options.fog().getFactory().apply(context);
     }
 
-    public void setup(ChunkVertexType vertexType) {
+    public void setup() {
         RenderSystem.activeTexture(GL32C.GL_TEXTURE0);
         RenderSystem.bindTexture(RenderSystem.getShaderTexture(0));
 
@@ -57,11 +53,52 @@ public class ChunkShaderInterface {
         this.uniformModelViewMatrix.set(matrix);
     }
 
-    public void setDrawUniforms(GlMutableBuffer buffer) {
-        this.uniformBlockDrawParameters.bindBuffer(buffer);
+    public static class Model extends ChunkShaderInterface {
+        private final GlUniformBlock instanceUniforms;
+
+        private final GlShaderStorageBlock storageVertices;
+
+        public Model(ShaderBindingContext context, ChunkShaderOptions options) {
+            super(context, options);
+
+            this.instanceUniforms = context.bindUniformBlock("ubo_InstanceUniforms", 0);
+
+            this.storageVertices = context.bindShaderStorageBlock("ssbo_Vertices", 0);
+        }
+
+        public void setInstanceUniforms(GlBuffer buffer) {
+            this.instanceUniforms.bindBuffer(buffer);
+        }
+
+        public void setVertexStorage(GlBuffer buffer) {
+            this.storageVertices.bindBuffer(buffer);
+        }
     }
 
-    public void setRegionOffset(float x, float y, float z) {
-        this.uniformRegionOffset.set(x, y, z);
+    public static class Cube extends ChunkShaderInterface {
+        private final GlUniformBlock instanceUniforms;
+
+        private final GlShaderStorageBlock storageQuads;
+        private final GlShaderStorageBlock storageVertices;
+
+        public Cube(ShaderBindingContext context, ChunkShaderOptions options) {
+            super(context, options);
+
+            this.instanceUniforms = context.bindUniformBlock("ubo_InstanceUniforms", 0);
+
+            this.storageQuads = context.bindShaderStorageBlock("ssbo_Quads", 0);
+            this.storageVertices = context.bindShaderStorageBlock("ssbo_Vertices", 1);
+        }
+
+        public void setInstanceUniforms(GlBuffer buffer) {
+            this.instanceUniforms.bindBuffer(buffer);
+        }
+
+        public void setStorageQuads(GlBuffer buffer) {
+            this.storageQuads.bindBuffer(buffer);
+        }
+        public void setStorageVertices(GlBuffer buffer) {
+            this.storageVertices.bindBuffer(buffer);
+        }
     }
 }

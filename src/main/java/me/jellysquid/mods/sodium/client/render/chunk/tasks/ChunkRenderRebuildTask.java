@@ -4,10 +4,9 @@ import me.jellysquid.mods.sodium.client.gl.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayer;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -23,9 +22,6 @@ import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
-
-import java.util.EnumMap;
-import java.util.Map;
 
 /**
  * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
@@ -52,7 +48,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
         ChunkBuildBuffers buffers = buildContext.buffers;
-        buffers.init(renderData, this.render.getChunkId());
+        buffers.reset();
 
         ChunkRenderCacheLocal cache = buildContext.cache;
         cache.init(this.renderContext);
@@ -96,7 +92,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                         long seed = blockState.getRenderingSeed(blockPos);
 
-                        if (cache.getBlockRenderer().renderModel(slice, blockState, blockPos, offset, model, buffers.get(layer), true, seed)) {
+                        if (cache.getBlockRenderer().renderBlock(slice, blockState, blockPos, offset, model, buffers, layer, true, seed)) {
                             rendered = true;
                         }
                     }
@@ -104,9 +100,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     FluidState fluidState = blockState.getFluidState();
 
                     if (!fluidState.isEmpty()) {
-                        RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
-
-                        if (cache.getFluidRenderer().render(slice, fluidState, blockPos, offset, buffers.get(layer))) {
+                        if (cache.getFluidRenderer().renderFluid(slice, fluidState, blockPos, offset, buffers)) {
                             rendered = true;
                         }
                     }
@@ -135,18 +129,14 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        Map<BlockRenderPass, ChunkMeshData> meshes = new EnumMap<>(BlockRenderPass.class);
-
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            ChunkMeshData mesh = buffers.createMesh(pass);
-
-            if (mesh != null) {
-                meshes.put(pass, mesh);
-            }
-        }
+        var meshes = buffers.createMeshes();
 
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
+
+        for (var layer : meshes.keySet()) {
+            renderData.addLayer(layer);
+        }
 
         return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
     }

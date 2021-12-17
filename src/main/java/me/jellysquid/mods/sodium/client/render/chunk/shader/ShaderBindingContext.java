@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
+import me.jellysquid.mods.sodium.client.gl.shader.GlShaderStorageBlock;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniform;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformBlock;
 
@@ -9,4 +10,6 @@ public interface ShaderBindingContext {
     <U extends GlUniform<?>> U bindUniform(String name, IntFunction<U> factory);
 
     GlUniformBlock bindUniformBlock(String name, int bindingPoint);
+
+    GlShaderStorageBlock bindShaderStorageBlock(String name, int bindingPoint);
 }

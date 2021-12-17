@@ -16,7 +16,7 @@ public interface BiomeColorBlender {
      * @param quad The quad which will be colorized
      * @param colorizer The color sampling source
      * @param state The block state being rendered
-     * @return An array of integer colors in ABGR format
+     * @return An array of integer colors in RGBA format
      */
     <T> int[] getColors(BlockRenderView world, BlockPos origin, ModelQuadView quad, ModelQuadColorProvider<T> colorizer, T state);
 }

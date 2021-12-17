@@ -1,22 +1,18 @@
 package me.jellysquid.mods.sodium.client.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.arena.AsyncBufferArena;
-import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
-import me.jellysquid.mods.sodium.client.gl.arena.SwapBufferArena;
-import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayerManager;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.ChunkMeshType;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
-import java.util.EnumMap;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,7 +42,8 @@ public class RenderRegion {
     private final RenderRegionManager manager;
 
     private final Set<RenderSection> chunks = new ObjectOpenHashSet<>();
-    private RenderRegionArenas arenas;
+
+    private final Map<ChunkMeshType<?>, RenderRegionStorage<?>> storage = new Reference2ReferenceOpenHashMap<>();
 
     private final int x, y, z;
 
@@ -64,15 +61,21 @@ public class RenderRegion {
         return new RenderRegion(manager, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
-    public RenderRegionArenas getArenas() {
-        return this.arenas;
+    public Collection<RenderRegionStorage<?>> getAllMeshStorage() {
+        return this.storage.values();
+    }
+
+    @SuppressWarnings("unchecked")
+    public <E extends Enum<E> & ChunkMeshType.StorageBufferTarget> RenderRegionStorage<E> getMeshStorage(ChunkMeshType<E> type) {
+        return (RenderRegionStorage<E>) this.storage.get(type);
     }
 
     public void deleteResources(CommandList commandList) {
-        if (this.arenas != null) {
-            this.arenas.delete(commandList);
-            this.arenas = null;
+        for (RenderRegionStorage<?> arenas : this.storage.values()) {
+            arenas.delete(commandList);
         }
+
+        this.storage.clear();
     }
 
     public static long getRegionKeyForChunk(int x, int y, int z) {
@@ -91,14 +94,15 @@ public class RenderRegion {
         return this.z << REGION_LENGTH_SH << 4;
     }
 
-    public RenderRegionArenas getOrCreateArenas(CommandList commandList) {
-        RenderRegionArenas arenas = this.arenas;
+    @SuppressWarnings("unchecked")
+    public <E extends Enum<E> & ChunkMeshType.StorageBufferTarget> RenderRegionStorage<E> getOrCreateStorage(ChunkMeshType<E> meshType, CommandList commandList) {
+        RenderRegionStorage<E> storage = (RenderRegionStorage<E>) this.storage.get(meshType);
 
-        if (arenas == null) {
-            this.arenas = (arenas = this.manager.createRegionArenas(commandList));
+        if (storage == null) {
+            this.storage.put(meshType, storage = this.manager.createRegionStorage(meshType, commandList));
         }
 
-        return arenas;
+        return storage;
     }
 
     public void addChunk(RenderSection chunk) {
@@ -138,63 +142,14 @@ public class RenderRegion {
     }
 
     public static int getChunkIndex(int x, int y, int z) {
-        return (x * RenderRegion.REGION_LENGTH * RenderRegion.REGION_HEIGHT) + (y * RenderRegion.REGION_LENGTH) + z;
+        return ((x & RenderRegion.REGION_WIDTH_M) * RenderRegion.REGION_LENGTH * RenderRegion.REGION_HEIGHT) +
+                ((y & RenderRegion.REGION_HEIGHT_M) * RenderRegion.REGION_LENGTH) +
+                (z & RenderRegion.REGION_LENGTH_M);
     }
 
-    public static class RenderRegionArenas {
-        public final GlBufferArena vertexBuffers;
-        public final GlBufferArena indexBuffers;
-
-        public final Map<BlockRenderPass, GlTessellation> tessellations = new EnumMap<>(BlockRenderPass.class);
-
-        public RenderRegionArenas(CommandList commandList, StagingBuffer stagingBuffer) {
-            int expectedVertexCount = REGION_SIZE * 756;
-            int expectedIndexCount = (expectedVertexCount / 4) * 6;
-
-            this.vertexBuffers = createArena(commandList, expectedVertexCount * ChunkModelVertexFormats.DEFAULT.getBufferVertexFormat().getStride(), stagingBuffer);
-            this.indexBuffers = createArena(commandList, expectedIndexCount * 4, stagingBuffer);
-        }
-
-        public void delete(CommandList commandList) {
-            this.deleteTessellations(commandList);
-
-            this.vertexBuffers.delete(commandList);
-            this.indexBuffers.delete(commandList);
-        }
-
-        public void deleteTessellations(CommandList commandList) {
-            for (GlTessellation tessellation : this.tessellations.values()) {
-                commandList.deleteTessellation(tessellation);
-            }
-
-            this.tessellations.clear();
-        }
-
-        public void setTessellation(BlockRenderPass pass, GlTessellation tessellation) {
-            this.tessellations.put(pass, tessellation);
-        }
-
-        public GlTessellation getTessellation(BlockRenderPass pass) {
-            return this.tessellations.get(pass);
-        }
-
-        public boolean isEmpty() {
-            return this.vertexBuffers.isEmpty() && this.indexBuffers.isEmpty();
-        }
-
-        public long getDeviceUsedMemory() {
-            return this.vertexBuffers.getDeviceUsedMemory() + this.indexBuffers.getDeviceUsedMemory();
-        }
-
-        public long getDeviceAllocatedMemory() {
-            return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
-        }
-
-        private static GlBufferArena createArena(CommandList commandList, int initialCapacity, StagingBuffer stagingBuffer) {
-            return switch (SodiumClientMod.options().advanced.arenaMemoryAllocator) {
-                case ASYNC -> new AsyncBufferArena(commandList, initialCapacity, stagingBuffer);
-                case SWAP -> new SwapBufferArena(commandList);
-            };
+    public void deleteChunkState(int index) {
+        for (RenderRegionStorage<?> storage : this.storage.values()) {
+            storage.deleteChunkState(index);
         }
     }
 }

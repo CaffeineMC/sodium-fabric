@@ -1,25 +1,20 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
-import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
-import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.model.vertex.buffer.VertexBufferBuilder;
-import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.BakedChunkModelBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.chunk.format.*;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayer;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayerManager;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.ChunkMeshType;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.client.render.RenderLayer;
 
-import java.util.Arrays;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * A collection of temporary buffers for each worker thread which will be used to build chunk meshes for given render
@@ -27,61 +22,46 @@ import java.util.Objects;
  * shrink a buffer.
  */
 public class ChunkBuildBuffers {
-    private final ChunkModelBuilder[] delegates;
+    private final Map<BlockRenderLayer, Map<ChunkMeshType<?>, ChunkMeshBuilderDelegate<?>>> meshBuilders;
+    private final BlockRenderLayerManager renderLayers;
 
-    private final VertexBufferBuilder[] vertexBuffers;
-    private final IndexBufferBuilder[][] indexBuffers;
+    public ChunkBuildBuffers(BlockRenderLayerManager renderLayers) {
+        this.renderLayers = renderLayers;
 
-    private final ChunkVertexType vertexType;
+        this.meshBuilders = new Reference2ReferenceOpenHashMap<>();
 
-    private final BlockRenderPassManager renderPassManager;
+        for (BlockRenderLayer renderLayer : renderLayers.getRenderLayers()) {
+            Map<ChunkMeshType<?>, ChunkMeshBuilderDelegate<?>> meshBuilders = new Reference2ReferenceOpenHashMap<>();
+            meshBuilders.put(ChunkMeshType.MODEL, this.createMeshBuilders(ChunkMeshType.MODEL));
+            meshBuilders.put(ChunkMeshType.CUBE, this.createMeshBuilders(ChunkMeshType.CUBE));
 
-    public ChunkBuildBuffers(ChunkVertexType vertexType, BlockRenderPassManager renderPassManager) {
-        this.vertexType = vertexType;
-        this.renderPassManager = renderPassManager;
-
-        this.delegates = new ChunkModelBuilder[BlockRenderPass.COUNT];
-
-        this.vertexBuffers = new VertexBufferBuilder[BlockRenderPass.COUNT];
-        this.indexBuffers = new IndexBufferBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
-
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-            IndexBufferBuilder[] indexBuffers = this.indexBuffers[pass.ordinal()];
-
-            for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
-                indexBuffers[facing] = new IndexBufferBuilder(1024);
-            }
-
-            this.vertexBuffers[pass.ordinal()] = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(),
-                    pass.getLayer().getExpectedBufferSize());
+            this.meshBuilders.put(renderLayer, meshBuilders);
         }
     }
 
-    public void init(ChunkRenderData.Builder renderData, int chunkId) {
-        for (VertexBufferBuilder vertexBuffer : this.vertexBuffers) {
-            vertexBuffer.start();
+    private <E extends ChunkMeshType.StorageBufferTarget> ChunkMeshBuilderDelegate<?> createMeshBuilders(ChunkMeshType<E> meshType) {
+        EnumMap<ModelQuadFacing, ChunkMeshBuilder<E>> builders = new EnumMap<>(ModelQuadFacing.class);
+
+        for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+            builders.put(facing, meshType.createMeshBuilder());
         }
 
-        for (IndexBufferBuilder[] indexBuffers : this.indexBuffers) {
-            for (IndexBufferBuilder indexBuffer : indexBuffers) {
-                indexBuffer.start();
+        return new ChunkMeshBuilderDelegate<>(builders);
+    }
+
+    public void reset() {
+        for (BlockRenderLayer pass : this.renderLayers.getRenderLayers()) {
+            var sinks = this.meshBuilders.get(pass);
+
+            for (var sink : sinks.values()) {
+                sink.reset();
             }
-        }
-
-        for (int i = 0; i < this.delegates.length; i++) {
-            ModelVertexSink vertexSink = this.vertexType.createBufferWriter(this.vertexBuffers[i]);
-            IndexBufferBuilder[] indexBuffers = this.indexBuffers[i];
-
-            this.delegates[i] = new BakedChunkModelBuilder(indexBuffers, vertexSink, renderData, chunkId);
         }
     }
 
-    /**
-     * Return the {@link ChunkModelBuilder} for the given {@link RenderLayer} as mapped by the
-     * {@link BlockRenderPassManager} for this render context.
-     */
-    public ChunkModelBuilder get(RenderLayer layer) {
-        return this.delegates[this.renderPassManager.getRenderPassId(layer)];
+    public ChunkMeshBuilderDelegate<?> get(RenderLayer renderLayer, ChunkMeshType<?> meshType) {
+        return this.meshBuilders.get(this.renderLayers.getAdapter(renderLayer))
+                .get(meshType);
     }
 
     /**
@@ -89,48 +69,104 @@ public class ChunkBuildBuffers {
      * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
      * times to return multiple copies.
      */
-    public ChunkMeshData createMesh(BlockRenderPass pass) {
-        NativeBuffer vertexBuffer = this.vertexBuffers[pass.ordinal()].pop();
+    public Map<ChunkMeshType<?>, ChunkMesh> createMeshes(BlockRenderLayer layer) {
+        var builders = this.meshBuilders.get(layer);
+        var meshes = new Reference2ReferenceOpenHashMap<ChunkMeshType<?>, ChunkMesh>();
 
-        if (vertexBuffer == null) {
+        this.tryAddMesh(meshes, ChunkMeshType.CUBE, builders.get(ChunkMeshType.CUBE));
+        this.tryAddMesh(meshes, ChunkMeshType.MODEL, builders.get(ChunkMeshType.MODEL));
+
+        return meshes;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <E extends Enum<E> & ChunkMeshType.StorageBufferTarget> void tryAddMesh(Map<ChunkMeshType<?>, ChunkMesh> output,
+                                                                                    ChunkMeshType<E> meshType,
+                                                                                    ChunkMeshBuilderDelegate<?> delegate) {
+        var mesh = this.createMesh(meshType, (ChunkMeshBuilderDelegate<E>) delegate);
+
+        if (mesh != null) {
+            output.put(meshType, mesh);
+        }
+    }
+
+    private <E extends Enum<E> & ChunkMeshType.StorageBufferTarget> ChunkMesh createMesh(ChunkMeshType<E> meshType, ChunkMeshBuilderDelegate<E> delegate) {
+        Map<ModelQuadFacing, MeshRange> meshRanges = new EnumMap<>(ModelQuadFacing.class);
+        int totalPrimitiveCount = 0;
+
+        for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+            var sink = delegate.getSink(facing);
+
+            if (!sink.isEmpty()) {
+                meshRanges.put(facing, new MeshRange(totalPrimitiveCount, sink.getPrimitiveCount()));
+                totalPrimitiveCount += sink.getPrimitiveCount();
+            }
+        }
+
+        if (totalPrimitiveCount == 0) {
             return null;
         }
 
-        IndexBufferBuilder.Result[] indexBuffers = Arrays.stream(this.indexBuffers[pass.ordinal()])
-                .map(IndexBufferBuilder::pop)
-                .toArray(IndexBufferBuilder.Result[]::new);
+        Map<E, NativeBuffer> meshBuffers = new EnumMap<>(meshType.getStorageType());
 
-        NativeBuffer indexBuffer = new NativeBuffer(Arrays.stream(indexBuffers)
-                .filter(Objects::nonNull)
-                .mapToInt(IndexBufferBuilder.Result::getByteSize)
-                .sum());
+        for (E target : meshType.getStorageType().getEnumConstants()) {
+            var buffers = new ArrayList<ByteBuffer>();
 
-        int indexPointer = 0;
+            for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
+                var sink = delegate.getSink(facing);
 
-        Map<ModelQuadFacing, ElementRange> ranges = new EnumMap<>(ModelQuadFacing.class);
+                if (sink.isEmpty()) {
+                    continue;
+                }
 
-        for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
-            IndexBufferBuilder.Result indices = indexBuffers[facing.ordinal()];
-
-            if (indices == null) {
-                continue;
+                buffers.add(sink.getBuffer(target));
             }
 
-            ranges.put(facing,
-                    new ElementRange(indexPointer, indices.getCount(), indices.getFormat(), indices.getBaseVertex()));
-
-            indexPointer = indices.writeTo(indexPointer, indexBuffer.getDirectBuffer());
+            meshBuffers.put(target, mergeBuffers(buffers));
         }
 
-        IndexedVertexData vertexData = new IndexedVertexData(this.vertexType.getCustomVertexFormat(),
-                vertexBuffer, indexBuffer);
+        return new ChunkMesh(new ChunkMeshBuffers<>(meshBuffers), meshRanges);
+    }
 
-        return new ChunkMeshData(vertexData, ranges);
+    private static NativeBuffer mergeBuffers(Collection<ByteBuffer> buffers) {
+        var size = buffers.stream()
+                .mapToInt(Buffer::remaining)
+                .sum();
+
+        var mergedBuffer = NativeBuffer.create(size);
+        var offset = 0;
+
+        for (ByteBuffer buffer : buffers) {
+            mergedBuffer.getDirectBuffer()
+                    .put(offset, buffer, 0, buffer.remaining());
+
+            offset += buffer.remaining();
+        }
+
+        return mergedBuffer;
     }
 
     public void destroy() {
-        for (VertexBufferBuilder builder : this.vertexBuffers) {
-            builder.destroy();
+        for (var entry : this.meshBuilders.entrySet()) {
+            var builders = entry.getValue();
+
+            for (var builder : builders.values()) {
+                builder.destroy();
+            }
         }
+    }
+
+    public Map<BlockRenderLayer, Map<ChunkMeshType<?>, ChunkMesh>> createMeshes() {
+        Map<BlockRenderLayer, Map<ChunkMeshType<?>, ChunkMesh>> collection = new Reference2ReferenceOpenHashMap<>();
+
+        for (BlockRenderLayer layer : this.meshBuilders.keySet()) {
+            Map<ChunkMeshType<?>, ChunkMesh> meshes = this.createMeshes(layer);
+
+            if (!meshes.isEmpty()) {
+                collection.put(layer, meshes);
+            }
+        }
+
+        return collection;
     }
 }

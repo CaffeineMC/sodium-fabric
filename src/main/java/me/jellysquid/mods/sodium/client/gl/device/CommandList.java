@@ -20,6 +20,7 @@ public interface CommandList extends AutoCloseable {
     void bindVertexArray(GlVertexArray array);
 
     void uploadData(GlMutableBuffer glBuffer, ByteBuffer byteBuffer, GlBufferUsage usage);
+    void uploadData(GlMutableBuffer glBuffer, ByteBuffer byteBuffer, int offset);
 
     void copyBufferSubData(GlBuffer src, GlBuffer dst, long readOffset, long writeOffset, long bytes);
 

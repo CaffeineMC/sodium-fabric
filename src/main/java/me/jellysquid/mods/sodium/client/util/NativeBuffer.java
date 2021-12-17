@@ -38,6 +38,10 @@ public class NativeBuffer {
         return dst;
     }
 
+    public static NativeBuffer create(int size) {
+        return new NativeBuffer(size);
+    }
+
     public ByteBuffer getDirectBuffer() {
         this.ref.checkFreed();
 

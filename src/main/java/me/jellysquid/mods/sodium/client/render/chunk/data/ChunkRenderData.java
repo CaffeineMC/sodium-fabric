@@ -2,6 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayer;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
@@ -65,6 +67,7 @@ public class ChunkRenderData {
     public static class Builder {
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> blockEntities = new ArrayList<>();
+        private final Set<BlockRenderLayer> visibleLayers = new ReferenceOpenHashSet<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
         private ChunkOcclusionData occlusionData;
@@ -98,6 +101,10 @@ public class ChunkRenderData {
             (cull ? this.blockEntities : this.globalBlockEntities).add(entity);
         }
 
+        public void addLayer(BlockRenderLayer layer) {
+            this.visibleLayers.add(layer);
+        }
+
         public ChunkRenderData build() {
             ChunkRenderData data = new ChunkRenderData();
             data.globalBlockEntities = this.globalBlockEntities;
@@ -105,7 +112,7 @@ public class ChunkRenderData {
             data.occlusionData = this.occlusionData;
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
-            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty();
+            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.visibleLayers.isEmpty();
 
             return data;
         }

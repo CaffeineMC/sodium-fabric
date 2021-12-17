@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.device;
 
+import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlIndexType;
 import org.lwjgl.PointerBuffer;
 

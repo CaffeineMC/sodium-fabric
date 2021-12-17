@@ -2,8 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.compile.ChunkBuildContext;
-import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayerManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.common.util.collections.QueueDrainingIterator;
@@ -29,16 +28,14 @@ public class ChunkBuilder {
     private final List<Thread> threads = new ArrayList<>();
 
     private World world;
-    private BlockRenderPassManager renderPassManager;
+    private BlockRenderLayerManager renderPassManager;
 
     private final int limitThreads;
-    private final ChunkVertexType vertexType;
 
     private final Queue<ChunkBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
     private final ThreadLocal<ChunkBuildContext> localContexts = new ThreadLocal<>();
 
-    public ChunkBuilder(ChunkVertexType vertexType) {
-        this.vertexType = vertexType;
+    public ChunkBuilder() {
         this.limitThreads = getThreadCount();
     }
 
@@ -64,7 +61,7 @@ public class ChunkBuilder {
         }
 
         for (int i = 0; i < this.limitThreads; i++) {
-            ChunkBuildContext context = new ChunkBuildContext(this.world, this.vertexType, this.renderPassManager);
+            ChunkBuildContext context = new ChunkBuildContext(this.world, this.renderPassManager);
             WorkerRunnable worker = new WorkerRunnable(context);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
@@ -154,7 +151,7 @@ public class ChunkBuilder {
      * @param world The world instance
      * @param renderPassManager The render pass manager used for the world
      */
-    public void init(ClientWorld world, BlockRenderPassManager renderPassManager) {
+    public void init(ClientWorld world, BlockRenderLayerManager renderPassManager) {
         if (world == null) {
             throw new NullPointerException("World is null");
         }
@@ -210,14 +207,10 @@ public class ChunkBuilder {
         ChunkBuildContext context = this.localContexts.get();
 
         if (context == null) {
-            this.localContexts.set(context = new ChunkBuildContext(this.world, this.vertexType, this.renderPassManager));
+            this.localContexts.set(context = new ChunkBuildContext(this.world, this.renderPassManager));
         }
 
-        try {
-            processJob(task, context);
-        } finally {
-            context.release();
-        }
+        processJob(task, context);
 
         return true;
     }
@@ -290,11 +283,7 @@ public class ChunkBuilder {
                     continue;
                 }
 
-                try {
-                    processJob(job, this.context);
-                } finally {
-                    this.context.release();
-                }
+                processJob(job, this.context);
             }
         }
     }

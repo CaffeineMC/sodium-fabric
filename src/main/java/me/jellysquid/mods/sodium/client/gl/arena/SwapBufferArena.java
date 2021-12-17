@@ -9,10 +9,7 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class SwapBufferArena implements GlBufferArena {
     private final Reference2ObjectMap<GlBufferSegment, StashedData> active = new Reference2ObjectOpenHashMap<>();
@@ -73,11 +70,8 @@ public class SwapBufferArena implements GlBufferArena {
     }
 
     @Override
-    public boolean upload(CommandList commandList, Stream<PendingUpload> stream) {
-        List<PendingUpload> uploads = stream.collect(Collectors.toList());
-
-        int totalBytes = uploads.stream().mapToInt(PendingUpload::getLength).sum() +
-                this.active.values().stream().mapToInt(i -> i.size).sum();
+    public GlBufferSegment upload(CommandList commandList, ByteBuffer buf) {
+        int totalBytes = this.active.values().stream().mapToInt(i -> i.size).sum() + buf.remaining();
 
         ByteBuffer buffer = MemoryUtil.memAlloc(totalBytes);
 
@@ -98,25 +92,18 @@ public class SwapBufferArena implements GlBufferArena {
             }
         }
 
-        for (PendingUpload upload : uploads) {
-            ByteBuffer payload = upload.getDataBuffer().getDirectBuffer();
+        GlBufferSegment seg = new GlBufferSegment(this, writePointer, buf.remaining());
 
-            GlBufferSegment seg = new GlBufferSegment(this, writePointer, payload.remaining());
-            upload.setResult(seg);
+        this.used += seg.getLength();
 
-            this.used += seg.getLength();
+        MemoryUtil.memCopy(
+                MemoryUtil.memAddress(buf),
+                MemoryUtil.memAddress(buffer, seg.getOffset()),
+                seg.getLength()
+        );
 
-            MemoryUtil.memCopy(
-                    MemoryUtil.memAddress(payload),
-                    MemoryUtil.memAddress(buffer, seg.getOffset()),
-                    seg.getLength()
-            );
-
-            writePointer += seg.getLength();
-
-            StashedData stashedData = new StashedData(payload);
-            this.active.put(seg, stashedData);
-        }
+        StashedData stashedData = new StashedData(buf);
+        this.active.put(seg, stashedData);
 
         commandList.uploadData(this.stagingBuffer, buffer, GlBufferUsage.STREAM_COPY);
         commandList.allocateStorage(this.deviceBuffer, buffer.remaining(), GlBufferUsage.STATIC_DRAW);
@@ -125,8 +112,9 @@ public class SwapBufferArena implements GlBufferArena {
 
         MemoryUtil.memFree(buffer);
 
-        return true;
+        return seg;
     }
+
 
     private static class StashedData {
         public ByteBuffer buf;

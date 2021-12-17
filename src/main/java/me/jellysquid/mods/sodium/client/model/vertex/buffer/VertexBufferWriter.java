@@ -52,9 +52,4 @@ public abstract class VertexBufferWriter implements VertexSink {
      * should update any pointers
      */
     protected abstract void onBufferStorageChanged();
-
-    @Override
-    public int getVertexCount() {
-        return this.vertexCountFlushed + this.vertexCount;
-    }
 }

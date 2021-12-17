@@ -24,6 +24,15 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
         return colors;
     }
 
+    private <T> int getVertexColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state, BlockPos origin,
+                                   ModelQuadView quad, int vertexIdx) {
+        final int x = origin.getX() + (int) quad.getX(vertexIdx);
+        final int y = origin.getY() + (int) quad.getY(vertexIdx);
+        final int z = origin.getZ() + (int) quad.getZ(vertexIdx);
+
+        return this.getBlockColor(colorizer, world, state, x, y, z, quad.getColorIndex());
+    }
+
     private <T> int getBlockColor(ModelQuadColorProvider<T> colorizer, BlockRenderView world, T state,
                                   int x, int y, int z, int colorIdx) {
         return colorizer.getColor(state, world, this.mpos.set(x, y, z), colorIdx);
@@ -83,8 +92,6 @@ public class SmoothBiomeColorBlender implements BiomeColorBlender {
         int c0 = ColorMixer.mixARGB(c00, c01, dy1, dy2);
         int c1 = ColorMixer.mixARGB(c10, c11, dy1, dy2);
 
-        int c = ColorMixer.mixARGB(c0, c1, dx1, dx2);
-
-        return ColorARGB.toABGR(c);
+        return ColorMixer.mixARGB(c0, c1, dx1, dx2);
     }
 }

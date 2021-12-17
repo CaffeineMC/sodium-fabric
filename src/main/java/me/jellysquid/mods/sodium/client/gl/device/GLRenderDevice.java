@@ -89,6 +89,12 @@ public class GLRenderDevice implements RenderDevice {
         }
 
         @Override
+        public void uploadData(GlMutableBuffer glBuffer, ByteBuffer byteBuffer, int offset) {
+            this.bindBuffer(GlBufferTarget.ARRAY_BUFFER, glBuffer);
+            GL20C.glBufferSubData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), offset, byteBuffer);
+        }
+
+        @Override
         public void copyBufferSubData(GlBuffer src, GlBuffer dst, long readOffset, long writeOffset, long bytes) {
             this.bindBuffer(GlBufferTarget.COPY_READ_BUFFER, src);
             this.bindBuffer(GlBufferTarget.COPY_WRITE_BUFFER, dst);
@@ -230,7 +236,7 @@ public class GLRenderDevice implements RenderDevice {
             return new GlFence(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
         }
 
-        private void checkMapDisposed(GlBufferMapping map) {
+        private static void checkMapDisposed(GlBufferMapping map) {
             if (map.isDisposed()) {
                 throw new IllegalStateException("Buffer mapping is already disposed");
             }

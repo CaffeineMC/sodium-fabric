@@ -9,10 +9,7 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 // TODO: handle alignment
 // TODO: handle element vs pointers
@@ -46,6 +43,8 @@ public class AsyncBufferArena implements GlBufferArena {
     }
 
     private void resize(CommandList commandList, int newCapacity) {
+        this.stagingBuffer.flush(commandList);
+
         if (this.used > newCapacity) {
             throw new UnsupportedOperationException("New capacity must be larger than used size");
         }
@@ -121,7 +120,6 @@ public class AsyncBufferArena implements GlBufferArena {
         GlMutableBuffer dstBufferObj = commandList.createMutableBuffer();
 
         commandList.allocateStorage(dstBufferObj, capacity, BUFFER_USAGE);
-
 
         for (PendingBufferCopyCommand cmd : list) {
             commandList.copyBufferSubData(srcBufferObj, dstBufferObj,
@@ -260,64 +258,38 @@ public class AsyncBufferArena implements GlBufferArena {
     }
 
     @Override
-    public boolean upload(CommandList commandList, Stream<PendingUpload> stream) {
-        // Record the buffer object before we start any work
-        // If the arena needs to re-allocate a buffer, this will allow us to check and return an appropriate flag
-        GlBuffer buffer = this.arenaBuffer;
+    public GlBufferSegment upload(CommandList commandList, ByteBuffer data) {
+        GlBufferSegment result = this.tryUpload(commandList, data);
 
-        // A linked list is used as we'll be randomly removing elements and want O(1) performance
-        List<PendingUpload> queue = stream.collect(Collectors.toCollection(LinkedList::new));
-
-        // Try to upload all of the data into free segments first
-        this.tryUploads(commandList, queue);
-
-        // If we weren't able to upload some buffers, they will have been left behind in the queue
-        if (!queue.isEmpty()) {
-            // Calculate the amount of memory needed for the remaining uploads
-            int remainingElements = queue.stream()
-                    .mapToInt(upload -> upload.getDataBuffer().getLength())
-                    .sum();
-
-            // Ask the arena to grow to accommodate the remaining uploads
-            // This will force a re-allocation and compaction, which will leave us a continuous free segment
-            // for the remaining uploads
-            this.ensureCapacity(commandList, remainingElements);
-
-            // Try again to upload any buffers that failed last time
-            this.tryUploads(commandList, queue);
-
-            // If we still had failures, something has gone wrong
-            if (!queue.isEmpty()) {
-                throw new RuntimeException("Failed to upload all buffers");
-            }
+        if (result != null) {
+            return result;
         }
 
-        return this.arenaBuffer != buffer;
+        this.ensureCapacity(commandList, data.remaining());
+
+        result = this.tryUpload(commandList, data);
+
+        if (result == null) {
+            throw new RuntimeException("Couldn't upload data");
+        }
+
+        return result;
     }
 
-    private void tryUploads(CommandList commandList, List<PendingUpload> queue) {
-        queue.removeIf(upload -> this.tryUpload(commandList, upload));
-        this.stagingBuffer.flush(commandList);
-    }
-
-    private boolean tryUpload(CommandList commandList, PendingUpload upload) {
-        ByteBuffer data = upload.getDataBuffer()
-                .getDirectBuffer();
-
+    private GlBufferSegment tryUpload(CommandList commandList, ByteBuffer data) {
         int elementCount = data.remaining();
 
         GlBufferSegment dst = this.alloc(elementCount);
 
         if (dst == null) {
-            return false;
+            return null;
         }
 
         // Copy the data into our staging buffer, then copy it into the arena's buffer
         this.stagingBuffer.enqueueCopy(commandList, data, this.arenaBuffer, dst.getOffset());
+        this.stagingBuffer.flush(commandList);
 
-        upload.setResult(dst);
-
-        return true;
+        return dst;
     }
 
     public void ensureCapacity(CommandList commandList, int elementCount) {

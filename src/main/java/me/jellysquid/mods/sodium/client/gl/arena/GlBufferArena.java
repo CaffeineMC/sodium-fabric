@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.client.gl.arena;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 
-import java.util.stream.Stream;
+import java.nio.ByteBuffer;
 
 public interface GlBufferArena {
     int getDeviceUsedMemory();
@@ -18,5 +18,5 @@ public interface GlBufferArena {
 
     GlBuffer getBufferObject();
 
-    boolean upload(CommandList commandList, Stream<PendingUpload> stream);
+    GlBufferSegment upload(CommandList commandList, ByteBuffer data);
 }

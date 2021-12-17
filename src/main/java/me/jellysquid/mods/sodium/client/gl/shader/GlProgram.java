@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL32C;
+import org.lwjgl.opengl.GL43C;
 
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -63,15 +64,28 @@ public class GlProgram<T> extends GlObject implements ShaderBindingContext {
 
     @Override
     public GlUniformBlock bindUniformBlock(String name, int bindingPoint) {
-        int index = GL32C.glGetUniformBlockIndex(this.handle(), name);
-
-        if (index < 0) {
-            throw new NullPointerException("No uniform block exists with name: " + name);
-        }
-
-        GL32C.glUniformBlockBinding(this.handle(), index, bindingPoint);
+//        int index = GL32C.glGetUniformBlockIndex(this.handle(), name);
+//
+//        if (index < 0) {
+//            throw new NullPointerException("No uniform block exists with name: " + name);
+//        }
+//
+//        GL32C.glUniformBlockBinding(this.handle(), index, bindingPoint);
 
         return new GlUniformBlock(bindingPoint);
+    }
+
+    @Override
+    public GlShaderStorageBlock bindShaderStorageBlock(String name, int bindingPoint) {
+//        int index = GL43C.glGetUniformBlockIndex(this.handle(), name);
+//
+//        if (index < 0) {
+//            throw new NullPointerException("No uniform block exists with name: " + name);
+//        }
+//
+//        GL32C.glUniformBlockBinding(this.handle(), index, bindingPoint);
+
+        return new GlShaderStorageBlock(bindingPoint);
     }
 
     public static class Builder {

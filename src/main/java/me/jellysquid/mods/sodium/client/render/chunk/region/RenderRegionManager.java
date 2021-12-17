@@ -3,19 +3,20 @@ package me.jellysquid.mods.sodium.client.render.chunk.region;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.arena.PendingUpload;
+import me.jellysquid.mods.sodium.client.gl.arena.GlBufferSegment;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.FallbackStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
-import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMesh;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayer;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayerManager;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.ChunkMeshType;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 
 import java.util.*;
 
@@ -23,9 +24,11 @@ public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
 
     private final StagingBuffer stagingBuffer;
+    private final BlockRenderLayerManager renderLayers;
 
-    public RenderRegionManager(CommandList commandList) {
+    public RenderRegionManager(CommandList commandList, BlockRenderLayerManager renderLayers) {
         this.stagingBuffer = createStagingBuffer(commandList);
+        this.renderLayers = renderLayers;
     }
 
     public void updateVisibility(Frustum frustum) {
@@ -71,50 +74,42 @@ public class RenderRegionManager {
     }
 
     private void upload(CommandList commandList, RenderRegion region, List<ChunkBuildResult> results) {
-        List<PendingSectionUpload> sectionUploads = new ArrayList<>();
-
         for (ChunkBuildResult result : results) {
-            for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-                ChunkGraphicsState graphics = result.render.setGraphicsState(pass, null);
+            result.render.deleteGraphicsState();
 
-                // De-allocate all storage for data we're about to replace
-                // This will allow it to be cheaply re-allocated just below
-                if (graphics != null) {
-                    graphics.delete();
-                }
+            for (var layerEntry : result.getMeshes()) {
+                var layer = layerEntry.getKey();
+                var meshes = layerEntry.getValue();
 
-                ChunkMeshData meshData = result.getMesh(pass);
-
-                if (meshData != null) {
-                    IndexedVertexData vertexData = meshData.getVertexData();
-
-                    sectionUploads.add(new PendingSectionUpload(result.render, meshData, pass,
-                            new PendingUpload(vertexData.vertexBuffer()),
-                            new PendingUpload(vertexData.indexBuffer())));
-                }
+                this.uploadMesh(commandList, region, ChunkMeshType.MODEL, layer, meshes.get(ChunkMeshType.MODEL), result.render);
+                this.uploadMesh(commandList, region, ChunkMeshType.CUBE, layer, meshes.get(ChunkMeshType.CUBE), result.render);
             }
         }
+    }
 
-        // If we have nothing to upload, abort!
-        if (sectionUploads.isEmpty()) {
+    private <E extends Enum<E> & ChunkMeshType.StorageBufferTarget> void uploadMesh(CommandList commandList, RenderRegion region, ChunkMeshType<E> meshType,
+                                                                                    BlockRenderLayer renderLayer, ChunkMesh mesh, RenderSection section) {
+        if (mesh == null) {
             return;
         }
 
-        RenderRegion.RenderRegionArenas arenas = region.getOrCreateArenas(commandList);
+        var storage = region.getOrCreateStorage(meshType, commandList);
 
-        boolean bufferChanged = arenas.vertexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.vertexUpload));
-        bufferChanged |= arenas.indexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.indicesUpload));
+        var meshBuffers = mesh.buffers();
+        var uploadedBuffers = new EnumMap<E, GlBufferSegment>(meshType.getStorageType());
 
-        // If any of the buffers changed, the tessellation will need to be updated
-        // Once invalidated the tessellation will be re-created on the next attempted use
-        if (bufferChanged) {
-            arenas.deleteTessellations(commandList);
+        for (var buffer : meshBuffers.getStorageBuffers()) {
+            @SuppressWarnings("unchecked")
+            var target = (E) buffer.getKey();
+            var payload = buffer.getValue();
+
+            var segment = storage.getArena(target)
+                    .upload(commandList, payload.getDirectBuffer());
+
+            uploadedBuffers.put(target, segment);
         }
 
-        // Collect the upload results
-        for (PendingSectionUpload upload : sectionUploads) {
-            upload.section.setGraphicsState(upload.pass, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
-        }
+        storage.setChunkState(section.getLocalIndex(), renderLayer, new ChunkGraphicsState<>(uploadedBuffers, mesh.parts()));
     }
 
     private Map<RenderRegion, List<ChunkBuildResult>> setupUploadBatches(Iterator<ChunkBuildResult> renders) {
@@ -174,8 +169,8 @@ public class RenderRegionManager {
         return this.stagingBuffer;
     }
 
-    protected RenderRegion.RenderRegionArenas createRegionArenas(CommandList commandList) {
-        return new RenderRegion.RenderRegionArenas(commandList, this.stagingBuffer);
+    protected <E extends Enum<E> & ChunkMeshType.StorageBufferTarget> RenderRegionStorage<E> createRegionStorage(ChunkMeshType<E> meshType, CommandList commandList) {
+        return new RenderRegionStorage<>(meshType, commandList, this.stagingBuffer, this.renderLayers);
     }
 
     private static StagingBuffer createStagingBuffer(CommandList commandList) {
@@ -186,7 +181,4 @@ public class RenderRegionManager {
         return new FallbackStagingBuffer(commandList);
     }
 
-    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, BlockRenderPass pass,
-                                        PendingUpload vertexUpload, PendingUpload indicesUpload) {
-    }
 }

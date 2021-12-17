@@ -10,8 +10,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayer;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderLayerManager;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.ChunkMeshType;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheShared;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
@@ -51,7 +52,7 @@ public class SodiumWorldRenderer {
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
     private RenderSectionManager renderSectionManager;
-    private BlockRenderPassManager renderPassManager;
+    private BlockRenderLayerManager renderPassManager;
     private ChunkTracker chunkTracker;
 
     /**
@@ -214,12 +215,20 @@ public class SodiumWorldRenderer {
      * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
     public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
-        BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
-        pass.startDrawing();
+        var layer = this.renderPassManager.getAdapter(renderLayer);
 
-        this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), pass, x, y, z);
+        this.drawChunkLayer(ChunkMeshType.CUBE, layer, matrixStack, x, y, z);
+        this.drawChunkLayer(ChunkMeshType.MODEL, layer, matrixStack, x, y, z);
+    }
 
-        pass.endDrawing();
+    public void drawChunkLayer(ChunkMeshType<?> meshType, BlockRenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
+        renderLayer.renderLayer()
+                .startDrawing();
+
+        this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), meshType, renderLayer, x, y, z);
+
+        renderLayer.renderLayer()
+                .endDrawing();
     }
 
     public void reload() {
@@ -240,7 +249,7 @@ public class SodiumWorldRenderer {
 
         this.renderDistance = this.client.options.viewDistance;
 
-        this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
+        this.renderPassManager = BlockRenderLayerManager.createDefaultMappings();
 
         this.renderSectionManager = new RenderSectionManager(this, this.renderPassManager, this.world, this.renderDistance, commandList);
         this.renderSectionManager.reloadChunks(this.chunkTracker);
