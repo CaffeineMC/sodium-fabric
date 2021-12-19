@@ -52,7 +52,6 @@ public abstract class RegionChunkRenderer<T extends ChunkShaderInterface, E exte
 
         try (CommandList commandList = device.createCommandList()) {
             this.instanceUniformBuffer = commandList.createMutableBuffer();
-            commandList.allocateStorage(this.instanceUniformBuffer, RenderRegion.REGION_SIZE * 32, GlBufferUsage.STREAM_DRAW);
         }
 
         this.sequenceIndexBuffer = new SequenceIndexBuffer(device, 16384);
@@ -206,7 +205,7 @@ public abstract class RegionChunkRenderer<T extends ChunkShaderInterface, E exte
 
         @Override
         protected void renderRegion(CommandList commandList, ChunkShaderInterface.Cube shader, RenderRegionStorage<CubeBufferTarget> storage) {
-            commandList.uploadData(this.instanceUniformBuffer, this.instanceUniformBufferBuilder.window(), 0);
+            commandList.uploadData(this.instanceUniformBuffer, this.instanceUniformBufferBuilder.window(), GlBufferUsage.STATIC_DRAW);
 
             shader.setStorageQuads(storage.getBuffer(CubeBufferTarget.QUADS));
             shader.setStorageVertices(storage.getBuffer(CubeBufferTarget.VERTICES));
@@ -252,7 +251,7 @@ public abstract class RegionChunkRenderer<T extends ChunkShaderInterface, E exte
 
         @Override
         protected void renderRegion(CommandList commandList, ChunkShaderInterface.Model shader, RenderRegionStorage<ModelBufferTarget> storage) {
-            commandList.uploadData(this.instanceUniformBuffer, this.instanceUniformBufferBuilder.window(), 0);
+            commandList.uploadData(this.instanceUniformBuffer, this.instanceUniformBufferBuilder.window(), GlBufferUsage.STATIC_DRAW);
 
             shader.setVertexStorage(storage.getBuffer(ModelBufferTarget.VERTICES));
 
