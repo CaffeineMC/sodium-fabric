@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.render.entity;
 
 import me.jellysquid.mods.sodium.interop.vanilla.consumer.ModelVboBufferBuilder;
 import me.jellysquid.mods.sodium.interop.vanilla.consumer.SpriteTexturedVertexConsumerAccessor;
-import me.jellysquid.mods.sodium.render.entity.data.BakingData;
+import me.jellysquid.mods.sodium.render.entity.data.ModelBakingData;
 import me.jellysquid.mods.sodium.render.entity.renderer.InstancedEntityRenderer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.SpriteTexturedVertexConsumer;
@@ -18,7 +18,7 @@ public class BakedModelUtils {
     // FIXME: not thread safe, but making one per instance is slow
     private static ModelVboBufferBuilder MODEL_VBO_BUFFER_BUILDER;
     private static InstancedEntityRenderer INSTANCED_RENDER_DISPATCHER;
-    private static BakingData BAKING_DATA;
+    private static ModelBakingData BAKING_DATA;
 
     public static ModelVboBufferBuilder getModelVboBufferBuilder() {
         if (MODEL_VBO_BUFFER_BUILDER == null) {
@@ -34,10 +34,10 @@ public class BakedModelUtils {
         return INSTANCED_RENDER_DISPATCHER;
     }
 
-    public static BakingData getBakingData() {
+    public static ModelBakingData getBakingData() {
         if (BAKING_DATA == null) {
             InstancedEntityRenderer instancedRenderDispatcher = getInstancedRenderDispatcher();
-            BAKING_DATA = new BakingData(instancedRenderDispatcher.modelPersistentSsbo, instancedRenderDispatcher.partPersistentSsbo, instancedRenderDispatcher.translucencyPersistentEbo);
+            BAKING_DATA = new ModelBakingData(instancedRenderDispatcher.modelPersistentSsbo, instancedRenderDispatcher.partPersistentSsbo, instancedRenderDispatcher.translucencyPersistentEbo);
         }
         return BAKING_DATA;
     }

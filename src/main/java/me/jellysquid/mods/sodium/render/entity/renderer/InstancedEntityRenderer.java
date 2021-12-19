@@ -8,7 +8,7 @@ import me.jellysquid.mods.sodium.interop.vanilla.model.VboBackedModel;
 import me.jellysquid.mods.sodium.render.entity.DebugInfo;
 import me.jellysquid.mods.sodium.render.entity.buffer.SectionedPersistentBuffer;
 import me.jellysquid.mods.sodium.render.entity.buffer.SectionedSyncObjects;
-import me.jellysquid.mods.sodium.render.entity.data.BakingData;
+import me.jellysquid.mods.sodium.render.entity.data.ModelBakingData;
 import me.jellysquid.mods.sodium.render.entity.data.InstanceBatch;
 import me.jellysquid.mods.thingl.device.RenderDevice;
 import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
@@ -25,7 +25,7 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.util.Map;
 
-public class InstancedEntityRenderer implements EntityRenderer, AutoCloseable {
+public class InstancedEntityRenderer implements EntityRenderer {
 
     public static final int BUFFER_CREATION_FLAGS = GL30C.GL_MAP_WRITE_BIT | ARBBufferStorage.GL_MAP_PERSISTENT_BIT;
     public static final int BUFFER_MAP_FLAGS = GL30C.GL_MAP_WRITE_BIT | GL30C.GL_MAP_FLUSH_EXPLICIT_BIT | ARBBufferStorage.GL_MAP_PERSISTENT_BIT;
@@ -80,8 +80,8 @@ public class InstancedEntityRenderer implements EntityRenderer, AutoCloseable {
 
     @SuppressWarnings("ConstantConditions")
     @Override
-    public void render(RenderDevice device, BakingData bakingData) {
-        if (bakingData.isEmptyShallow()) return;
+    public void render(RenderDevice device, ModelBakingData modelBakingData) {
+        if (modelBakingData.isEmptyShallow()) return;
 
         long currentPartSyncObject = syncObjects.getCurrentSyncObject();
 
@@ -92,7 +92,7 @@ public class InstancedEntityRenderer implements EntityRenderer, AutoCloseable {
             }
         }
 
-        bakingData.writeData();
+        modelBakingData.writeData();
 
         long partSectionStartPos = partPersistentSsbo.getCurrentSection() * partPersistentSsbo.getSectionSize();
         long modelSectionStartPos = modelPersistentSsbo.getCurrentSection() * modelPersistentSsbo.getSectionSize();
@@ -126,7 +126,7 @@ public class InstancedEntityRenderer implements EntityRenderer, AutoCloseable {
         TessellationImpl currentTesselation = null;
         BufferRenderer.unbindAll();
 
-        for (Map<RenderLayer, Map<VboBackedModel, InstanceBatch>> perOrderedSectionData : bakingData) {
+        for (Map<RenderLayer, Map<VboBackedModel, InstanceBatch>> perOrderedSectionData : modelBakingData) {
 
             for (Map.Entry<RenderLayer, Map<VboBackedModel, InstanceBatch>> perRenderLayerData : perOrderedSectionData.entrySet()) {
                 RenderLayer nextRenderLayer = perRenderLayerData.getKey();
@@ -236,7 +236,7 @@ public class InstancedEntityRenderer implements EntityRenderer, AutoCloseable {
                     currentDebugInfo.instances += instanceCount;
                     currentDebugInfo.sets++;
 
-                    bakingData.recycleInstanceBatch(instanceBatch);
+                    modelBakingData.recycleInstanceBatch(instanceBatch);
                 }
             }
         }
@@ -255,7 +255,7 @@ public class InstancedEntityRenderer implements EntityRenderer, AutoCloseable {
         syncObjects.setCurrentSyncObject(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
         syncObjects.nextSection();
 
-        bakingData.reset();
+        modelBakingData.reset();
     }
 
     /**

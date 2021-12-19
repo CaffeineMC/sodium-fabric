@@ -2,7 +2,6 @@ package me.jellysquid.mods.thingl.buffer;
 
 import me.jellysquid.mods.thingl.GlObject;
 import me.jellysquid.mods.thingl.device.RenderDeviceImpl;
-import me.jellysquid.mods.thingl.functions.DirectStateAccessFunctions;
 import me.jellysquid.mods.thingl.util.EnumBitField;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL32C;

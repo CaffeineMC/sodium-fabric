@@ -15,7 +15,7 @@ import net.minecraft.client.render.RenderPhase;
 import java.io.Closeable;
 import java.util.*;
 
-public class BakingData implements Closeable, Iterable<Map<RenderLayer, Map<VboBackedModel, InstanceBatch>>> {
+public class ModelBakingData implements Closeable, Iterable<Map<RenderLayer, Map<VboBackedModel, InstanceBatch>>> {
 
     private static final int INITIAL_BATCH_CAPACITY = 16;
 
@@ -42,7 +42,7 @@ public class BakingData implements Closeable, Iterable<Map<RenderLayer, Map<VboB
 
     private RenderPhase.Transparency previousTransparency;
 
-    public BakingData(SectionedPersistentBuffer modelPersistentSsbo, SectionedPersistentBuffer partPersistentSsbo, SectionedPersistentBuffer translucencyPersistentEbo) {
+    public ModelBakingData(SectionedPersistentBuffer modelPersistentSsbo, SectionedPersistentBuffer partPersistentSsbo, SectionedPersistentBuffer translucencyPersistentEbo) {
         this.modelPersistentSsbo = modelPersistentSsbo;
         this.partPersistentSsbo = partPersistentSsbo;
         this.translucencyPersistentEbo = translucencyPersistentEbo;
