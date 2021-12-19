@@ -61,31 +61,6 @@ public class XoRoShiRoRandom extends Random {
         return (int) this.nextLong(n);
     }
 
-    private long nextLong(final long n) {
-        if (n <= 0) {
-            throw new IllegalArgumentException("illegal bound " + n + " (must be positive)");
-        }
-
-        long t = this.nextLong();
-
-        final long nMinus1 = n - 1;
-
-        // Shortcut for powers of two--high bits
-        if ((n & nMinus1) == 0) {
-            return (t >>> Long.numberOfLeadingZeros(nMinus1)) & nMinus1;
-        }
-
-        // Rejection-based algorithm to get uniform integers in the general case
-        long u = t >>> 1;
-
-        while (u + nMinus1 - (t = u % n) < 0) {
-            u = this.nextLong() >>> 1;
-        }
-
-        return t;
-
-    }
-
     @Override
     public double nextDouble() {
         return Double.longBitsToDouble(0x3FFL << 52 | this.nextLong() >>> 12) - 1.0;

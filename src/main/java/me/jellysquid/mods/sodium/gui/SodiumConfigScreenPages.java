@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.gui.options.SliderControl;
 import me.jellysquid.mods.sodium.gui.options.TickBoxControl;
 import me.jellysquid.mods.sodium.config.render.storage.MinecraftOptionsStorage;
 import me.jellysquid.mods.sodium.config.render.storage.SodiumOptionsStorage;
+import me.jellysquid.mods.sodium.render.entity.renderer.InstancedEntityRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.Option;
@@ -269,6 +270,19 @@ public class SodiumConfigScreenPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.useEntityCulling = value, opts -> opts.performance.useEntityCulling)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(new LiteralText("Use Model Instancing"))
+                        .setTooltip(new LiteralText("If enabled, supported models will be packed into VBOs and instanced. " +
+                                "This removes unnecessary uploads to the GPU by only sending transformations for existing vertices. " +
+                                "This also removes many unnecessary draw calls by packing many similar entities into batches. " +
+                                "This can drastically improve framerate when many entities are visible." +
+                                "\n\nRequires OpenGL 4.4 or ARB_shader_storage_buffer_object, ARB_shading_language_packing, and ARB_buffer_storage."))
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.HIGH)
+                        .setEnabled(InstancedEntityRenderer.isSupported(SodiumRender.DEVICE))
+                        .setBinding((opts, value) -> opts.performance.useModelInstancing = value, opts -> opts.performance.useModelInstancing)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)

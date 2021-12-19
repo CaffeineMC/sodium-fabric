@@ -71,3 +71,27 @@ accessible field net/minecraft/util/math/Matrix3f a21 F
 accessible field net/minecraft/util/math/Matrix3f a22 F
 
 accessible field net/minecraft/state/State owner Ljava/lang/Object;
+
+accessible class net/minecraft/client/render/RenderPhase$TextureBase
+accessible class net/minecraft/client/render/RenderPhase$TextureBase
+accessible class net/minecraft/client/render/RenderPhase$Shader
+accessible class net/minecraft/client/render/RenderPhase$Transparency
+accessible class net/minecraft/client/render/RenderPhase$DepthTest
+accessible class net/minecraft/client/render/RenderPhase$Cull
+accessible class net/minecraft/client/render/RenderPhase$Lightmap
+accessible class net/minecraft/client/render/RenderPhase$Overlay
+accessible class net/minecraft/client/render/RenderPhase$Layering
+accessible class net/minecraft/client/render/RenderPhase$Target
+accessible class net/minecraft/client/render/RenderPhase$Texturing
+accessible class net/minecraft/client/render/RenderPhase$WriteMaskState
+accessible class net/minecraft/client/render/RenderPhase$LineWidth
+
+accessible field net/minecraft/client/render/RenderPhase COLOR_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
+
+extendable class net/minecraft/client/render/RenderLayer$MultiPhase
+accessible class net/minecraft/client/render/RenderLayer$MultiPhaseParameters
+accessible class net/minecraft/client/render/RenderLayer$MultiPhaseParameters$Builder
+accessible class net/minecraft/client/render/RenderLayer$OutlineMode
+accessible class net/minecraft/client/render/RenderLayer
+
+accessible method net/minecraft/client/render/RenderLayer$MultiPhase <init> (Ljava/lang/String;Lnet/minecraft/client/render/VertexFormat;Lnet/minecraft/client/render/VertexFormat$DrawMode;IZZLnet/minecraft/client/render/RenderLayer$MultiPhaseParameters;)V

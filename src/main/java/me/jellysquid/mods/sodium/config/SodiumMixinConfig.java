@@ -38,6 +38,7 @@ public class SodiumMixinConfig {
         this.addMixinRule("features.debug", true);
         this.addMixinRule("features.entity", true);
         this.addMixinRule("features.entity.fast_render", true);
+        this.addMixinRule("features.entity.instancing", true);
         this.addMixinRule("features.entity.smooth_lighting", true);
         this.addMixinRule("features.font", true);
         this.addMixinRule("features.gui", true);
@@ -51,6 +52,7 @@ public class SodiumMixinConfig {
         this.addMixinRule("features.particle.cull", true);
         this.addMixinRule("features.particle.fast_render", true);
         this.addMixinRule("features.render_layer", true);
+        this.addMixinRule("features.skip_empty_draw", true);
         this.addMixinRule("features.sky", true);
         this.addMixinRule("features.texture_tracking", true);
         this.addMixinRule("features.texture_updates", true);

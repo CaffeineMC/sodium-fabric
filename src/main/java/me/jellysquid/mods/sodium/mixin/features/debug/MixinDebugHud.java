@@ -1,8 +1,15 @@
 package me.jellysquid.mods.sodium.mixin.features.debug;
 
 import com.google.common.collect.Lists;
+
+import java.util.List;
+import java.util.Map;
+
 import me.jellysquid.mods.sodium.SodiumClient;
+import me.jellysquid.mods.sodium.SodiumRender;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.render.entity.DebugInfo;
+import me.jellysquid.mods.sodium.render.entity.renderer.InstancedEntityRenderer;
 import me.jellysquid.mods.thingl.util.NativeBuffer;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.util.Formatting;
@@ -31,6 +38,8 @@ public abstract class MixinDebugHud {
         var renderer = SodiumWorldRenderer.instanceNullable();
 
         if (renderer != null) {
+            strings.add("");
+            strings.add("World Info:");
             strings.addAll(renderer.getMemoryDebugStrings());
         }
 
@@ -42,6 +51,32 @@ public abstract class MixinDebugHud {
 
                 break;
             }
+        }
+
+        if (SodiumClient.options().performance.useModelInstancing && InstancedEntityRenderer.isSupported(SodiumRender.DEVICE)) {
+            strings.add("");
+            strings.add("Model Info:");
+
+            strings.add("Model Buffer: " + DebugInfo.getSizeReadable(DebugInfo.currentModelBufferSize) + DebugInfo.MODEL_BUFFER_SUFFIX);
+            strings.add("Part Buffer: " + DebugInfo.getSizeReadable(DebugInfo.currentPartBufferSize) + DebugInfo.PART_BUFFER_SUFFIX);
+            strings.add("Translucent Index Buffer: " + DebugInfo.getSizeReadable(DebugInfo.currentTranslucencyEboSize) + DebugInfo.TRANSLUCENCY_EBO_SUFFIX);
+
+            int totalInstances = 0;
+            int totalSets = 0;
+            List<String> tempStrings = new ArrayList<>();
+            for (Map.Entry<String, DebugInfo.ModelDebugInfo> entry : DebugInfo.modelToDebugInfoMap.entrySet()) {
+                DebugInfo.ModelDebugInfo modelDebugInfo = entry.getValue();
+                tempStrings.add(entry.getKey() + ": " + modelDebugInfo.instances + " Instances / " + modelDebugInfo.sets + " Sets");
+                totalInstances += modelDebugInfo.instances;
+                totalSets += modelDebugInfo.sets;
+            }
+            strings.add("Total: " + totalInstances + " Instances / " + totalSets + " Sets");
+            strings.addAll(tempStrings);
+
+            DebugInfo.currentModelBufferSize = 0;
+            DebugInfo.currentPartBufferSize = 0;
+            DebugInfo.currentTranslucencyEboSize = 0;
+            DebugInfo.modelToDebugInfoMap.clear();
         }
 
         return strings;
