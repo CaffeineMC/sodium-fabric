@@ -35,8 +35,11 @@ uint _get_vertex_index() {
 }
 
 uint _get_instance_index() {
-    return (uint(gl_VertexID) & 0xFF000000u >> 1) >> 24u;
-    // AMD drivers for devices past polaris want the mask shifted by 1. or it will just corrupt everything
+    return ((uint(gl_VertexID)+1u) & 0xFF000000u) >> 24u;
+    // AMD drivers issue for devices on windows and above polaris. shifting vertexID normally by 24u causes corrupt, anyother value
+    // is broken but not garbage. adding 1u makes the world render pretty well, except for the crate at x-65 z106 seed:5457330753028660597
+    // shifting right by 1 on the mask had similar behaviour but some chunks were erratic
+    // i do not know why either of these worked
 }
 
 #import <sodium:include/fog.glsl>
