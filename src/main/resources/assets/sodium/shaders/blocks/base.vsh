@@ -35,7 +35,8 @@ uint _get_vertex_index() {
 }
 
 uint _get_instance_index() {
-    return (uint(gl_VertexID) & 0xFF000000u) >> 24u;
+    return (uint(gl_VertexID) & 0xFF000000u >> 1) >> 24u;
+    // AMD drivers for devices past polaris want the mask shifted by 1. or it will just corrupt everything
 }
 
 #import <sodium:include/fog.glsl>
