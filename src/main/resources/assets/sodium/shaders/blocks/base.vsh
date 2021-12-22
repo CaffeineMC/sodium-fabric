@@ -35,11 +35,17 @@ uint _get_vertex_index() {
 }
 
 uint _get_instance_index() {
-    return ((uint(gl_VertexID)+1u) & 0xFF000000u) >> 24u;
-    // AMD drivers issue for devices on windows and above polaris. shifting vertexID normally by 24u causes corrupt, anyother value
-    // is broken but not garbage. adding 1u makes the world render pretty well, except for the crate at x-65 z106 seed:5457330753028660597
-    // shifting right by 1 on the mask had similar behaviour but some chunks were erratic
-    // i do not know why either of these worked
+    return (uint(uint(gl_VertexID)) & uint(0xFF000000u)) << uint(1u) >> uint(25u);
+    // return (uint(double(gl_VertexID)) & uint(0xFF000000u)) >> uint(24u);
+    // seems to be logically identical to above
+    // return (uint(uint(gl_VertexID)+1u) & uint(0xFF000000u)) >> uint(24u);
+    // totally diffrent, less glitchy/erratic, dont exactly get why tho and surely this has other issues
+
+    // im guessing theres two issues. shifting by 24 seems to corrupt the instance id, if i was to guess, maybe a padding issue?
+    // as casting gl vertex to double also fixes this the same way as shifting so im assume the cast adds bits on the right
+    // amd using floats for gl_VertexID seems to also corrupt certian ids as i assume multiple vertecies
+    // can share the same ID https://www.reddit.com/r/GraphicsProgramming/comments/igosn8/gl_vertexid_skips_id_8388608_223/
+    // just adding 1 to vertex id gave best results only a hand full of chunks are corrupt and dont render
 }
 
 #import <sodium:include/fog.glsl>
