@@ -35,17 +35,21 @@ uint _get_vertex_index() {
 }
 
 uint _get_instance_index() {
-    return (uint(uint(gl_VertexID)) & uint(0xFF000000u)) << uint(1u) >> uint(25u);
-    // return (uint(double(gl_VertexID)) & uint(0xFF000000u)) >> uint(24u);
-    // seems to be logically identical to above
-    // return (uint(uint(gl_VertexID)+1u) & uint(0xFF000000u)) >> uint(24u);
-    // totally diffrent, less glitchy/erratic, dont exactly get why tho and surely this has other issues
+    return (uint(uint(gl_VertexID)) & uint(0xFF000000u)) >> uint(24u);
+    // reverted back to original code
+    // A: return (uint(uint(gl_VertexID)) & uint(0xFF000000u)) << uint(1u) >> uint(25u);
+    // B: return (uint(double(gl_VertexID)) & uint(0xFF000000u)) >> uint(24u);
+    // C: return (uint(uint(gl_VertexID)+1u) & uint(0xFF000000u)) >> uint(24u);
+    // D: return (uint((uint(gl_VertexID)) & uint(0xFF000000u)) | 0x00000001u ) >> uint(24u);
 
-    // im guessing theres two issues. shifting by 24 seems to corrupt the instance id, if i was to guess, maybe a padding issue?
-    // as casting gl vertex to double also fixes this the same way as shifting so im assume the cast adds bits on the right
-    // amd using floats for gl_VertexID seems to also corrupt certian ids as i assume multiple vertecies
-    // can share the same ID https://www.reddit.com/r/GraphicsProgramming/comments/igosn8/gl_vertexid_skips_id_8388608_223/
-    // just adding 1 to vertex id gave best results only a hand full of chunks are corrupt and dont render
+    // shifting by 24u seems to corrupt the instance id for some reason. doing weird things
+    // prior to shifting makes amd drivers more happy but makes nvidia throw a fit.
+    // all changes here & their issues show up on nvidia gpus too. A&B chunks eventually corrupt and flicker
+    // C&D certian cluster of chunks wont load. im assuming D is the same aswell for nvidia but its untested.
+    // its hard to tell but it seems these cluster of chunks dont load with the original code for amd either
+    // so i really have no clue why nvidia is managing to match that behaviour.
+
+    // see also: https://www.reddit.com/r/GraphicsProgramming/comments/igosn8/gl_vertexid_skips_id_8388608_223/
 }
 
 #import <sodium:include/fog.glsl>
