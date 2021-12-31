@@ -7,12 +7,15 @@ import java.nio.IntBuffer;
 
 public class GlFence {
     private final long id;
+    private boolean disposed;
 
     public GlFence(long id) {
         this.id = id;
     }
 
     public boolean isCompleted() {
+        this.checkDisposed();
+
         int result;
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -28,10 +31,23 @@ public class GlFence {
     }
 
     public void sync() {
+        this.checkDisposed();
         this.sync(Long.MAX_VALUE);
     }
 
     public void sync(long timeout) {
+        this.checkDisposed();
         GL32C.glWaitSync(this.id, GL32C.GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
+    }
+
+    public void delete() {
+        GL32C.glDeleteSync(this.id);
+        this.disposed = true;
+    }
+
+    private void checkDisposed() {
+        if (this.disposed) {
+            throw new IllegalStateException("Fence object has been disposed");
+        }
     }
 }
