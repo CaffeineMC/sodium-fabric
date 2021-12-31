@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.client.render.pipeline.context;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.client.model.light.cache.HashLightDataCache;
-import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
+import me.jellysquid.mods.sodium.client.model.quad.blender.ColorBlender;
 import me.jellysquid.mods.sodium.client.render.pipeline.BlockRenderer;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderCache;
 import net.minecraft.client.MinecraftClient;
@@ -22,10 +22,10 @@ public class ChunkRenderCacheShared extends ChunkRenderCache {
 
         this.lightCache = new HashLightDataCache(world);
 
-        BiomeColorBlender biomeColorBlender = this.createBiomeColorBlender();
+        ColorBlender colorBlender = this.createBiomeColorBlender();
         LightPipelineProvider lightPipelineProvider = new LightPipelineProvider(this.lightCache);
 
-        this.blockRenderer = new BlockRenderer(client, lightPipelineProvider, biomeColorBlender);
+        this.blockRenderer = new BlockRenderer(client, lightPipelineProvider, colorBlender);
     }
 
     public BlockRenderer getBlockRenderer() {

@@ -1,15 +1,15 @@
 package me.jellysquid.mods.sodium.client.world;
 
-import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.client.world.cloned.PackedIntegerArrayExtended;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeColorCache;
+import me.jellysquid.mods.sodium.client.world.biome.BlockColorCache;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSection;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
+import me.jellysquid.mods.sodium.client.world.cloned.PackedIntegerArrayExtended;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.*;
@@ -18,12 +18,12 @@ import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeAccess;
-import net.minecraft.world.chunk.*;
+import net.minecraft.world.biome.source.BiomeCoords;
+import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.ColorResolver;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
 
 /**
  * Takes a slice of world state (block states, biome and light data arrays) and copies the data for use in off-thread
@@ -35,12 +35,12 @@ import java.util.Map;
  *
  * Object pooling should be used to avoid huge allocations as this class contains many large arrays.
  */
-public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderAttachedBlockView {
-    // The number of blocks on each axis in a section.
-    private static final int SECTION_BLOCK_LENGTH = 16;
-
+public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     // The number of blocks in a section.
-    private static final int SECTION_BLOCK_COUNT = SECTION_BLOCK_LENGTH * SECTION_BLOCK_LENGTH * SECTION_BLOCK_LENGTH;
+    private static final int SECTION_BLOCK_COUNT = 16 * 16 * 16;
+
+    // The number of biomes in a section.
+    private static final int SECTION_BIOME_COUNT = 4 * 4 * 4;
 
     // The radius of blocks around the origin chunk that should be copied.
     private static final int NEIGHBOR_BLOCK_RADIUS = 2;
@@ -58,28 +58,32 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     // The number of bits needed for each X/Y/Z component in a lookup table.
     private static final int TABLE_BITS = Integer.bitCount(TABLE_LENGTH - 1);
 
+    // The number of bits needed for each X/Y/Z block coordinate.
+    private static final int BLOCK_BITS = 4;
+
+    // The number of bits needed for each X/Y/Z biome coordinate.
+    private static final int BIOME_BITS = 2;
+
     // The array size for the section lookup table.
     private static final int SECTION_TABLE_ARRAY_SIZE = TABLE_LENGTH * TABLE_LENGTH * TABLE_LENGTH;
 
     // The world this slice has copied data from
     private final World world;
 
+    // The accessor used for fetching biome data from the slice
+    private final BiomeAccess biomeAccess;
+
     // Local Section->BlockState table.
     private final BlockState[][] blockStatesArrays;
+
+    // Local Section->Biome table.
+    private final Biome[][] biomeArrays;
 
     // Local section copies. Read-only.
     private ClonedChunkSection[] sections;
 
-    // The biome blend caches for each color resolver type
-    // This map is always re-initialized, but the caches themselves are taken from an object pool
-    private final Map<ColorResolver, BiomeColorCache> biomeColorCaches = new Reference2ObjectOpenHashMap<>();
-
-    // The previously accessed and cached color resolver, used in conjunction with the cached color cache field
-    private ColorResolver prevColorResolver;
-
-    // The cached lookup result for the previously accessed color resolver to avoid excess hash table accesses
-    // for vertex color blending
-    private BiomeColorCache prevColorCache;
+    // The biome blend cache
+    private BlockColorCache biomeColors;
 
     // The starting point from which this slice captures blocks
     private int baseX, baseY, baseZ;
@@ -131,26 +135,17 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     public WorldSlice(World world) {
         this.world = world;
 
-        this.sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
-        this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][];
+        this.biomeAccess = new BiomeAccess(this::getStoredBiome, ((BiomeSeedProvider) this.world).getBiomeSeed());
 
-        for (int x = 0; x < SECTION_LENGTH; x++) {
-            for (int y = 0; y < SECTION_LENGTH; y++) {
-                for (int z = 0; z < SECTION_LENGTH; z++) {
-                    this.blockStatesArrays[getLocalSectionIndex(x, y, z)] = new BlockState[SECTION_BLOCK_COUNT];
-                }
-            }
-        }
+        this.sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
+        this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][SECTION_BLOCK_COUNT];
+        this.biomeArrays = new Biome[SECTION_TABLE_ARRAY_SIZE][SECTION_BIOME_COUNT];
+
     }
 
     public void copyData(ChunkRenderContext context) {
         this.origin = context.getOrigin();
         this.sections = context.getSections();
-
-        this.prevColorCache = null;
-        this.prevColorResolver = null;
-
-        this.biomeColorCaches.clear();
 
         this.baseX = (this.origin.getX() - NEIGHBOR_CHUNK_RADIUS) << 4;
         this.baseY = (this.origin.getY() - NEIGHBOR_CHUNK_RADIUS) << 4;
@@ -161,9 +156,12 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
                 for (int z = 0; z < SECTION_LENGTH; z++) {
                     int idx = getLocalSectionIndex(x, y, z);
                     this.unpackBlockData(this.blockStatesArrays[idx], this.sections[idx], context.getVolume());
+                    this.unpackBiomeData(this.biomeArrays[idx], this.sections[idx]);
                 }
             }
         }
+
+        this.biomeColors = new BlockColorCache(this, MinecraftClient.getInstance().options.biomeBlendRadius);
     }
 
     private void unpackBlockData(BlockState[] states, ClonedChunkSection section, BlockBox box) {
@@ -204,6 +202,16 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
     private void unpackBlockData(BlockState[] states, ClonedChunkSection section) {
         ((PackedIntegerArrayExtended) section.getBlockData())
                 .copyUsingPalette(states, section.getBlockPalette());
+    }
+
+    private void unpackBiomeData(Biome[] biomes, ClonedChunkSection section) {
+        for (int x = 0; x < 4; x++) {
+            for (int y = 0; y < 4; y++) {
+                for (int z = 0; z < 4; z++) {
+                    biomes[getLocalBiomeIndex(x, y, z)] = section.getBiome(x, y, z);
+                }
+            }
+        }
     }
 
     @Override
@@ -252,22 +260,7 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
 
     @Override
     public int getColor(BlockPos pos, ColorResolver resolver) {
-        BiomeColorCache cache;
-
-        if (this.prevColorResolver == resolver) {
-            cache = this.prevColorCache;
-        } else {
-            cache = this.biomeColorCaches.get(resolver);
-
-            if (cache == null) {
-                this.biomeColorCaches.put(resolver, cache = new BiomeColorCache(resolver, this));
-            }
-
-            this.prevColorResolver = resolver;
-            this.prevColorCache = cache;
-        }
-
-        return cache.getBlendedColor(pos);
+        return this.biomeColors.getColor(resolver, pos.getX(), pos.getY(), pos.getZ());
     }
 
     @Override
@@ -280,55 +273,8 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
                 .getLightLevel(type, relX & 15, relY & 15, relZ & 15);
     }
 
-    @Override
-    public int getBaseLightLevel(BlockPos pos, int ambientDarkness) {
-        return 0;
-    }
-
-    @Override
-    public boolean isSkyVisible(BlockPos pos) {
-        return false;
-    }
-
-    @Override
-    public Biome getBiomeForNoiseGen(int x, int y, int z) {
-        int x2 = (x >> 2) - (this.baseX >> 4);
-        int z2 = (z >> 2) - (this.baseZ >> 4);
-
-        // Coordinates are in biome space!
-        // [VanillaCopy] WorldView#getBiomeForNoiseGen(int, int, int)
-        ClonedChunkSection section = this.sections[getLocalChunkIndex(x2, z2)];
-
-        if (section != null ) {
-            return section.getBiomeForNoiseGen(x, y, z);
-        }
-
-        return this.world.getGeneratorStoredBiome(x, y, z);
-    }
-
-    /**
-     * Gets or computes the biome at the given global coordinates.
-     */
-    public Biome getBiome(int x, int y, int z) {
-        // TODO: remove allocation
-        return this.world.getBiome(new BlockPos(x, y, z));
-    }
-
     public ChunkSectionPos getOrigin() {
         return this.origin;
-    }
-
-    // [VanillaCopy] PalettedContainer#toIndex
-    public static int getLocalBlockIndex(int x, int y, int z) {
-        return y << 8 | z << 4 | x;
-    }
-
-    public static int getLocalSectionIndex(int x, int y, int z) {
-        return y << TABLE_BITS << TABLE_BITS | z << TABLE_BITS | x;
-    }
-
-    public static int getLocalChunkIndex(int x, int z) {
-        return z << TABLE_BITS | x;
     }
 
     @Override
@@ -349,5 +295,31 @@ public class WorldSlice implements BlockRenderView, BiomeAccess.Storage, RenderA
 
         return this.sections[WorldSlice.getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
                 .getBlockEntityRenderAttachment(relX & 15, relY & 15, relZ & 15);
+    }
+
+    // Coordinates are in biome space!
+    private Biome getStoredBiome(int biomeX, int biomeY, int biomeZ) {
+        int chunkX = (BiomeCoords.toBlock(biomeX) - this.baseX) >> 4;
+        int chunkY = (BiomeCoords.toBlock(biomeY) - this.baseY) >> 4;
+        int chunkZ = (BiomeCoords.toBlock(biomeZ) - this.baseZ) >> 4;
+
+        return this.biomeArrays[getLocalSectionIndex(chunkX, chunkY, chunkZ)]
+                [getLocalBiomeIndex(biomeX & 3, biomeY & 3, biomeZ & 3)];
+    }
+
+    public BiomeAccess getBiomeAccess() {
+        return this.biomeAccess;
+    }
+
+    private static int getLocalBiomeIndex(int x, int y, int z) {
+        return y << BIOME_BITS << BIOME_BITS | z << BIOME_BITS | x;
+    }
+
+    public static int getLocalBlockIndex(int x, int y, int z) {
+        return y << BLOCK_BITS << BLOCK_BITS | z << BLOCK_BITS | x;
+    }
+
+    public static int getLocalSectionIndex(int x, int y, int z) {
+        return y << TABLE_BITS << TABLE_BITS | z << TABLE_BITS | x;
     }
 }
