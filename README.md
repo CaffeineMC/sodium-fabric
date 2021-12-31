@@ -19,7 +19,7 @@ and other issues with some mods.
 
 ### Manual installation (recommended)
 
-You will need Fabric Loader 0.10.x or newer installed in your game in order to load Sodium. If you haven't installed
+You will need Fabric Loader 0.12.x or newer installed in your game in order to load Sodium. If you haven't installed
 Fabric mods before, you can find a variety of community guides for doing so [here](https://fabricmc.net/wiki/install).
 
 #### Stable releases
@@ -86,9 +86,9 @@ projects. The basic overview is provided here for those familiar.
 
 #### Requirements
 
-- JRE 8 or newer (for running Gradle)
-- JDK 8 (optional)
-  - If you neither have JDK 8 available on your shell's path or installed through a supported package manager (such as
+- JRE 17 or newer (for running Gradle)
+- JDK 17 (optional)
+  - If you neither have JDK 17 available on your shell's path or installed through a supported package manager (such as
 [SDKMAN](https://sdkman.io)), Gradle will automatically download a suitable toolchain from the [AdoptOpenJDK project](https://adoptopenjdk.net/)
 and use it to compile the project. For more information on what package managers are supported and how you can
 customize this behavior on a system-wide level, please see [Gradle's Toolchain user guide](https://docs.gradle.org/current/userguide/toolchains.html).
