@@ -6,11 +6,11 @@ import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
+import me.jellysquid.mods.sodium.client.model.quad.blender.ColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
+import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
@@ -39,14 +39,14 @@ public class BlockRenderer {
 
     private final QuadLightData cachedQuadLightData = new QuadLightData();
 
-    private final BiomeColorBlender biomeColorBlender;
+    private final ColorBlender colorBlender;
     private final LightPipelineProvider lighters;
 
     private final boolean useAmbientOcclusion;
 
-    public BlockRenderer(MinecraftClient client, LightPipelineProvider lighters, BiomeColorBlender biomeColorBlender) {
+    public BlockRenderer(MinecraftClient client, LightPipelineProvider lighters, ColorBlender colorBlender) {
         this.blockColors = (BlockColorsExtended) client.getBlockColors();
-        this.biomeColorBlender = biomeColorBlender;
+        this.colorBlender = colorBlender;
 
         this.lighters = lighters;
 
@@ -91,7 +91,7 @@ public class BlockRenderer {
 
     private void renderQuadList(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, LightPipeline lighter, Vec3d offset,
                                 ChunkModelBuilder buffers, List<BakedQuad> quads, ModelQuadFacing facing) {
-        ModelQuadColorProvider<BlockState> colorizer = null;
+        ColorSampler<BlockState> colorizer = null;
 
         ModelVertexSink vertices = buffers.getVertexSink();
         vertices.ensureCapacity(quads.size() * 4);
@@ -117,14 +117,14 @@ public class BlockRenderer {
     }
 
     private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, ModelVertexSink vertices, IndexBufferBuilder indices, Vec3d blockOffset,
-                            ModelQuadColorProvider<BlockState> colorProvider, BakedQuad bakedQuad, QuadLightData light, ChunkModelBuilder model) {
+                            ColorSampler<BlockState> colorSampler, BakedQuad bakedQuad, QuadLightData light, ChunkModelBuilder model) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
         ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(light.br);
 
         int[] colors = null;
 
         if (bakedQuad.hasColor()) {
-            colors = this.biomeColorBlender.getColors(world, pos, src, colorProvider, state);
+            colors = this.colorBlender.getColors(world, pos, src, colorSampler, state);
         }
 
         int vertexStart = vertices.getVertexCount();

@@ -11,7 +11,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.collection.PackedIntegerArray;
-import net.minecraft.util.collection.PaletteStorage;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -139,7 +138,7 @@ public class ClonedChunkSection {
         }
     }
 
-    public Biome getBiomeForNoiseGen(int x, int y, int z) {
+    public Biome getBiome(int x, int y, int z) {
         return this.biomeData.get(x, y, z);
     }
 
