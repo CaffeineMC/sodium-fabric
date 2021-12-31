@@ -19,7 +19,7 @@ and other issues with some mods.
 
 ### Manual installation (recommended)
 
-You will need Fabric Loader 0.12.x or newer installed in your game in order to load Sodium. If you haven't installed
+You will need Fabric Loader 0.12.2 or newer installed in your game in order to load Sodium. If you haven't installed
 Fabric mods before, you can find a variety of community guides for doing so [here](https://fabricmc.net/wiki/install).
 
 #### Stable releases
