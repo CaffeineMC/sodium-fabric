@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.immediate;
 
-import com.google.common.base.Suppliers;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -11,12 +10,10 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttribute;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gl.sync.GlFence;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlIndexType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
-import me.jellysquid.mods.sodium.client.render.immediate.stream.BufferHandle;
 import me.jellysquid.mods.sodium.client.render.immediate.stream.FallbackStreamingBuffer;
 import me.jellysquid.mods.sodium.client.render.immediate.stream.MappedStreamingBuffer;
 import me.jellysquid.mods.sodium.client.render.immediate.stream.StreamingBuffer;
@@ -30,7 +27,6 @@ import org.apache.commons.lang3.Validate;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.function.Supplier;
 
 public class RenderImmediate {
     private static RenderImmediate INSTANCE;
@@ -80,10 +76,7 @@ public class RenderImmediate {
         var vertexData = buffer.slice(0, vertexBytes);
         var vertexStride = vertexFormat.getVertexSize();
 
-        BufferHandle vertices = this.vertexBuffer.write(commandList, vertexData, vertexStride);
-        int baseVertex = vertices.getElementOffset();
-
-        BufferHandle elements;
+        int baseVertex = this.vertexBuffer.write(commandList, vertexData, vertexStride);
         int baseElement;
 
         VertexFormat.IntType usedElementFormat;
@@ -92,7 +85,6 @@ public class RenderImmediate {
             usedElementFormat = VertexFormat.IntType.INT;
             tessellation = this.prepareDefaultTessellation(commandList, vertexFormat, IndexSequenceType.map(drawMode), vertexCount);
 
-            elements = null;
             baseElement = 0;
         } else {
             var elementData = buffer.slice(vertexBytes, elementCount * elementFormat.size);
@@ -100,8 +92,7 @@ public class RenderImmediate {
             usedElementFormat = elementFormat;
             tessellation = this.prepareCustomTessellation(commandList, vertexFormat);
 
-            elements = this.elementBuffer.write(commandList, elementData, 1);
-            baseElement = elements.getElementOffset();
+            baseElement = this.elementBuffer.write(commandList, elementData, elementFormat.size);
         }
 
         Shader shader = RenderSystem.getShader();
@@ -164,18 +155,11 @@ public class RenderImmediate {
         shader.bind();
 
         try (var drawCommandList = commandList.beginTessellating(tessellation)) {
-            drawCommandList.drawElementsBaseVertex(getPrimitiveType(drawMode), getElementType(usedElementFormat), baseElement, baseVertex, elementCount);
+            drawCommandList.drawElementsBaseVertex(getPrimitiveType(drawMode), getElementType(usedElementFormat),
+                    (long) baseElement * elementFormat.size, baseVertex, elementCount);
         }
 
         shader.unbind();
-
-        Supplier<GlFence> fence = Suppliers.memoize(commandList::createFence);
-
-        if (elements != null) {
-            elements.finish(fence);
-        }
-
-        vertices.finish(fence);
     }
 
     private static GlIndexType getElementType(VertexFormat.IntType format) {
@@ -275,6 +259,27 @@ public class RenderImmediate {
         }
 
         INSTANCE = null;
+    }
+
+    public static void flush() {
+        if (INSTANCE == null) {
+            return;
+        }
+
+        RenderDevice.enterManagedCode();
+
+        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
+            INSTANCE.flush(commandList);
+        } finally {
+            RenderDevice.exitManagedCode();
+        }
+
+        INSTANCE = null;
+    }
+
+    private void flush(CommandList commandList) {
+        this.vertexBuffer.flush(commandList);
+        this.elementBuffer.flush(commandList);
     }
 
     private void delete(CommandList commandList) {

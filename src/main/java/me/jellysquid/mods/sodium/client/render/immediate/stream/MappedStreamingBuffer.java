@@ -16,18 +16,22 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     private final GlImmutableBuffer buffer;
     private final GlBufferMapping mapping;
 
-    private final Deque<Handle> lockedRegions = new ArrayDeque<>();
+    private final Deque<Region> regions = new ArrayDeque<>();
 
     private int pos = 0;
 
     private final int capacity;
     private int remaining;
 
+    private int mark;
+    private int queued;
+
     public MappedStreamingBuffer(CommandList commandList, int capacity) {
         this.buffer = commandList.createImmutableBuffer(capacity, EnumBitField.of(GlBufferStorageFlags.PERSISTENT, GlBufferStorageFlags.CLIENT_STORAGE, GlBufferStorageFlags.COHERENT, GlBufferStorageFlags.MAP_WRITE));
         this.mapping = commandList.mapBuffer(this.buffer, 0, capacity, EnumBitField.of(GlBufferMapFlags.PERSISTENT, GlBufferMapFlags.WRITE, GlBufferMapFlags.COHERENT, GlBufferMapFlags.INVALIDATE_BUFFER, GlBufferMapFlags.UNSYNCHRONIZED));
         this.capacity = capacity;
         this.remaining = this.capacity;
+        this.mark = 0;
     }
 
     public static boolean isSupported(RenderDevice device) {
@@ -35,21 +39,18 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     }
 
     @Override
-    public BufferHandle write(CommandList commandList, ByteBuffer data, int alignment) {
-        var last = this.lockedRegions.peekLast();
-
-        if (last != null && last.fence == null) {
-            throw new IllegalStateException("Previous handle was not finished");
-        }
-
+    public int write(CommandList commandList, ByteBuffer data, int alignment) {
         int length = data.remaining();
 
+        // We can't service allocations which are larger than the buffer itself
         if (length > this.capacity) {
-            throw new OutOfMemoryError();
+            throw new OutOfMemoryError("data.remaining() > capacity");
         }
 
+        // Align the pointer so that we can return element offsets from this buffer
         int pos = MathHelper.roundUpToMultiple(this.pos, alignment);
 
+        // Wrap the pointer around to zero if there's not enough space in the buffer
         if (pos + length > this.capacity) {
             this.pos = 0;
             this.remaining = 0;
@@ -57,29 +58,30 @@ public class MappedStreamingBuffer implements StreamingBuffer {
             pos = 0;
         }
 
+        // Reclaim memory regions until we have enough memory to service the request
         while (length > this.remaining) {
-            if (this.lockedRegions.isEmpty()) {
-                this.remaining = this.capacity - this.pos;
-                break;
-            }
-
-            var handle = this.lockedRegions.remove();
-            handle.fence.sync();
-
-            this.remaining += handle.getLength();
+            this.reclaim();
         }
 
         this.mapping.write(data, pos);
         this.pos = pos + length;
 
         this.remaining -= length;
+        this.queued += length;
 
-        var region = new Handle(pos, alignment, length);
-        this.lockedRegions.add(region);
-
-        return region;
+        return pos / alignment;
     }
 
+    private void reclaim() {
+        if (this.regions.isEmpty()) {
+            this.remaining = this.capacity - this.pos;
+        } else {
+            var handle = this.regions.remove();
+            handle.fence.sync();
+
+            this.remaining += handle.length;
+        }
+    }
 
     @Override
     public GlBuffer getBuffer() {
@@ -87,31 +89,38 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     }
 
     @Override
+    public void flush(CommandList commandList) {
+        if (this.mark + this.queued > this.capacity) {
+            this.insertFence(commandList, this.mark, this.capacity - this.mark);
+            this.insertFence(commandList, 0, this.mark);
+        } else {
+            this.insertFence(commandList, this.mark, this.queued);
+        }
+
+        this.queued = 0;
+        this.mark = this.pos;
+    }
+
+    private void insertFence(CommandList commandList, int offset, int length) {
+        var fence = commandList.createFence();
+        var region = new Region(offset, length, fence);
+
+        this.regions.add(region);
+    }
+
+    @Override
     public void delete(CommandList commandList) {
         commandList.unmap(this.mapping);
 
-        while (!this.lockedRegions.isEmpty()) {
-            var region = this.lockedRegions.remove();
+        while (!this.regions.isEmpty()) {
+            var region = this.regions.remove();
             region.fence.sync();
         }
 
         commandList.deleteBuffer(this.buffer);
     }
 
-    private static class Handle extends AbstractBufferHandle {
-        private GlFence fence;
+    private record Region(int offset, int length, GlFence fence) {
 
-        public Handle(int offset, int stride, int length) {
-            super(offset, stride, length);
-        }
-
-        @Override
-        public void finish(Supplier<GlFence> fence) {
-            if (this.fence != null) {
-                throw new IllegalStateException("Handle has already been finished");
-            }
-
-            this.fence = fence.get();
-        }
     }
 }

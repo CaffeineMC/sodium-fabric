@@ -6,9 +6,11 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import java.nio.ByteBuffer;
 
 public interface StreamingBuffer {
-    BufferHandle write(CommandList commandList, ByteBuffer data, int alignment);
+    int write(CommandList commandList, ByteBuffer data, int alignment);
 
     GlBuffer getBuffer();
+
+    void flush(CommandList commandList);
 
     void delete(CommandList commandList);
 }

@@ -17,10 +17,10 @@ public class FallbackStreamingBuffer implements StreamingBuffer {
     }
 
     @Override
-    public BufferHandle write(CommandList commandList, ByteBuffer data, int alignment) {
+    public int write(CommandList commandList, ByteBuffer data, int alignment) {
         commandList.uploadData(this.buffer, data, GlBufferUsage.DYNAMIC_DRAW);
 
-        return new Handle(0, alignment, data.remaining());
+        return 0;
     }
 
     @Override
@@ -29,18 +29,12 @@ public class FallbackStreamingBuffer implements StreamingBuffer {
     }
 
     @Override
-    public void delete(CommandList commandList) {
-        commandList.deleteBuffer(this.buffer);
+    public void flush(CommandList commandList) {
+        commandList.uploadData(this.buffer, null, GlBufferUsage.DYNAMIC_DRAW);
     }
 
-    private static class Handle extends AbstractBufferHandle {
-        Handle(int offset, int stride, int length) {
-            super(offset, stride, length);
-        }
-
-        @Override
-        public void finish(Supplier<GlFence> fence) {
-
-        }
+    @Override
+    public void delete(CommandList commandList) {
+        commandList.deleteBuffer(this.buffer);
     }
 }
