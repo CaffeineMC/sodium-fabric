@@ -11,7 +11,7 @@ public class SequenceIndexBuffer {
     private final SequenceBuilder builder;
     private final GlMutableBuffer buffer;
 
-    private int size;
+    private int maxVertices;
 
     public SequenceIndexBuffer(CommandList commandList, SequenceBuilder builder) {
         this.builder = builder;
@@ -19,13 +19,13 @@ public class SequenceIndexBuffer {
     }
 
     public void ensureCapacity(CommandList commandList, int vertexCount) {
-        if (this.size < vertexCount) {
+        if (vertexCount > this.maxVertices) {
             this.grow(commandList, this.getNextSize(vertexCount));
         }
     }
 
     private int getNextSize(int vertexCount) {
-        return Math.max(this.size * 2, vertexCount + 2048);
+        return Math.max(this.maxVertices * 2, vertexCount + 2048);
     }
 
     private void grow(CommandList commandList, int vertexCount) {
@@ -49,7 +49,7 @@ public class SequenceIndexBuffer {
 
         commandList.unmap(mapping);
 
-        this.size = vertexCount;
+        this.maxVertices = vertexCount;
     }
 
     public GlBuffer getBuffer() {
