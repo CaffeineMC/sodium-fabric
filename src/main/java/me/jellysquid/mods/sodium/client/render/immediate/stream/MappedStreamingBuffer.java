@@ -10,7 +10,6 @@ import net.minecraft.util.math.MathHelper;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.function.Supplier;
 
 public class MappedStreamingBuffer implements StreamingBuffer {
     private final GlImmutableBuffer buffer;
@@ -52,10 +51,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
 
         // Wrap the pointer around to zero if there's not enough space in the buffer
         if (pos + length > this.capacity) {
-            this.pos = 0;
-            this.remaining = 0;
-
-            pos = 0;
+            pos = this.wrap(commandList, alignment);
         }
 
         // Reclaim memory regions until we have enough memory to service the request
@@ -70,6 +66,21 @@ public class MappedStreamingBuffer implements StreamingBuffer {
         this.queued += length;
 
         return pos / alignment;
+    }
+
+    private int wrap(CommandList commandList, int alignment) {
+        // When we wrap around, we need to ensure any memory behind us has a fence created
+        if (this.queued > 0) {
+            this.insertFence(commandList, this.mark, this.queued);
+        }
+
+        this.mark = 0;
+        this.queued = 0;
+        this.pos = 0;
+        this.remaining = 0;
+
+        // Position is always zero when wrapping around, so the alignment doesn't matter
+        return 0;
     }
 
     private void reclaim() {
@@ -90,6 +101,12 @@ public class MappedStreamingBuffer implements StreamingBuffer {
 
     @Override
     public void flush(CommandList commandList) {
+        // No data to flush
+        if (this.queued <= 0) {
+            return;
+        }
+
+        // If we wrapped around since the last flush, then fence both the head and tail of the buffer
         if (this.mark + this.queued > this.capacity) {
             this.insertFence(commandList, this.mark, this.capacity - this.mark);
             this.insertFence(commandList, 0, this.mark);
