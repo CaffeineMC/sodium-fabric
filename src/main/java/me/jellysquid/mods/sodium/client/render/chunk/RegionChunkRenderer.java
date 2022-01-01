@@ -170,7 +170,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
             if (!batch.isEmpty()) {
                 try (DrawCommandList drawCommandList = commandList.beginTessellating(tessellation)) {
-                    drawCommandList.multiDrawElementsBaseVertex(batch.getPointerBuffer(), batch.getCountBuffer(), batch.getBaseVertexBuffer(), GlIndexType.VALUES[i]);
+                    drawCommandList.multiDrawElementsBaseVertex(batch.getPointerBuffer(), batch.getCountBuffer(), batch.getBaseVertexBuffer(), GlIndexType.VALUES[i], GlPrimitiveType.TRIANGLES);
                 }
             }
         }
@@ -192,7 +192,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     }
 
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.RenderRegionArenas arenas) {
-        return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
+        return commandList.createTessellation(new TessellationBinding[] {
                 TessellationBinding.forVertexBuffer(arenas.vertexBuffers.getBufferObject(), this.vertexAttributeBindings),
                 TessellationBinding.forElementBuffer(arenas.indexBuffers.getBufferObject())
         });

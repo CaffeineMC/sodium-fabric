@@ -8,6 +8,7 @@ public class GlVertexAttribute {
     private final int stride;
 
     private final boolean normalized;
+    private final boolean intType;
 
     /**
      * @param format The format used
@@ -17,16 +18,17 @@ public class GlVertexAttribute {
      * @param pointer The offset to the first component in the attribute
      */
     public GlVertexAttribute(GlVertexAttributeFormat format, int count, boolean normalized, int pointer, int stride) {
-        this(format.typeId(), format.size() * count, count, normalized, pointer, stride);
+        this(format.typeId(), format.size() * count, count, normalized, pointer, stride, false);
     }
 
-    protected GlVertexAttribute(int format, int size, int count, boolean normalized, int pointer, int stride) {
+    public GlVertexAttribute(int format, int size, int count, boolean normalized, int pointer, int stride, boolean intType) {
         this.format = format;
         this.size = size;
         this.count = count;
         this.normalized = normalized;
         this.pointer = pointer;
         this.stride = stride;
+        this.intType = intType;
     }
 
     public int getSize() {
@@ -51,5 +53,9 @@ public class GlVertexAttribute {
 
     public int getStride() {
         return this.stride;
+    }
+
+    public boolean isIntType() {
+        return this.intType;
     }
 }

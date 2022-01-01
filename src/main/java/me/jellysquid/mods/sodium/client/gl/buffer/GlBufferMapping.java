@@ -16,7 +16,7 @@ public class GlBufferMapping {
     }
 
     public void write(ByteBuffer data, int writeOffset) {
-        MemoryUtil.memCopy(MemoryUtil.memAddress(data), MemoryUtil.memAddress(this.map, writeOffset), data.remaining());
+        this.map.put(writeOffset, data, 0, data.remaining());
     }
 
     public GlBuffer getBufferObject() {

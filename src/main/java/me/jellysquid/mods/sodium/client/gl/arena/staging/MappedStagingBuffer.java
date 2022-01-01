@@ -145,11 +145,9 @@ public class MappedStagingBuffer implements StagingBuffer {
             var region = this.fencedRegions.first();
             var fence = region.fence();
 
-            if (!fence.isCompleted()) {
+            if (!fence.poll()) {
                 break;
             }
-
-            fence.delete();
 
             this.fencedRegions.dequeue();
             this.remaining += region.length();
