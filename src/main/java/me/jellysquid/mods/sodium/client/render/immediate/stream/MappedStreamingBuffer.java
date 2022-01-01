@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.immediate.stream;
 import me.jellysquid.mods.sodium.client.gl.buffer.*;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.gl.functions.BufferStorageFunctions;
 import me.jellysquid.mods.sodium.client.gl.sync.GlFence;
 import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
 import net.minecraft.util.math.MathHelper;
@@ -34,7 +35,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     }
 
     public static boolean isSupported(RenderDevice device) {
-        return device.getDeviceFunctions().getBufferStorageFunctions() != null;
+        return device.getDeviceFunctions().getBufferStorageFunctions() != BufferStorageFunctions.NONE;
     }
 
     @Override
