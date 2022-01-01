@@ -16,7 +16,6 @@ import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.Option;
 import net.minecraft.client.option.*;
 import net.minecraft.client.util.Window;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
@@ -330,7 +329,7 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setEnabled(MappedStagingBuffer.isSupported(RenderDevice.INSTANCE))
-                        .setBinding((opts, value) -> opts.advanced.useAdvancedStagingBuffers = value, opts -> opts.advanced.useAdvancedStagingBuffers)
+                        .setBinding((opts, value) -> opts.advanced.allowPersistentMemoryMapping = value, opts -> opts.advanced.allowPersistentMemoryMapping)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )

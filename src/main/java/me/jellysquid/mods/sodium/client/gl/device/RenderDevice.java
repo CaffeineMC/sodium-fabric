@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gl.device;
 
 import me.jellysquid.mods.sodium.client.gl.functions.DeviceFunctions;
+import me.jellysquid.mods.sodium.client.gl.state.GlStateTracker;
 import org.lwjgl.opengl.GLCapabilities;
 
 public interface RenderDevice {
@@ -18,6 +19,8 @@ public interface RenderDevice {
 
     void makeActive();
     void makeInactive();
+
+    GlStateTracker getStateTracker();
 
     GLCapabilities getCapabilities();
 

@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
+import me.jellysquid.mods.sodium.client.render.immediate.RenderImmediate;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -258,6 +259,7 @@ public class SodiumOptionsGUI extends Screen {
 
         if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
             client.worldRenderer.reload();
+            RenderImmediate.reset();
         } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
             client.worldRenderer.scheduleTerrainUpdate();
         }

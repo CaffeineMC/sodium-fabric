@@ -51,7 +51,7 @@
   "sodium.options.enable_memory_tracing.tooltip": "Debugging feature. If enabled, stack traces will be collected alongside memory allocations to help improve diagnostic information when memory leaks are detected.",
   "sodium.options.performance_impact_string": "Performance Impact: %s",
   "sodium.options.use_persistent_mapping.name": "Use Persistent Mapping",
-  "sodium.options.use_persistent_mapping.tooltip": "If enabled, a small amount of memory will be persistently mapped as a staging buffer for chunk uploading, helping to reduce CPU overhead and frame time instability when loading or updating chunks.\n\nRequires OpenGL 4.4 or ARB_buffer_storage.",
+  "sodium.options.use_persistent_mapping.tooltip": "If enabled, a small amount of memory will be persistently mapped for speeding up chunk updates and entity rendering.\n\nRequires OpenGL 4.4 or ARB_buffer_storage.",
   "sodium.options.chunk_memory_allocator.name": "Chunk Memory Allocator",
   "sodium.options.chunk_memory_allocator.tooltip": "Selects the memory allocator that will be used for chunk rendering.\n- ASYNC: Fastest option, works well with most modern graphics drivers.\n- SWAP: Fallback option for older graphics drivers. May increase memory usage significantly.",
   "sodium.options.chunk_memory_allocator.async": "Async",

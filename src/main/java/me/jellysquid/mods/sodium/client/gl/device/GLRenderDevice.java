@@ -51,6 +51,11 @@ public class GLRenderDevice implements RenderDevice {
     }
 
     @Override
+    public GlStateTracker getStateTracker() {
+        return this.stateTracker;
+    }
+
+    @Override
     public GLCapabilities getCapabilities() {
         return GL.getCapabilities();
     }
@@ -84,8 +89,13 @@ public class GLRenderDevice implements RenderDevice {
         public void uploadData(GlMutableBuffer glBuffer, ByteBuffer byteBuffer, GlBufferUsage usage) {
             this.bindBuffer(GlBufferTarget.ARRAY_BUFFER, glBuffer);
 
-            GL20C.glBufferData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), byteBuffer, usage.getId());
-            glBuffer.setSize(byteBuffer.remaining());
+            if (byteBuffer != null) {
+                GL20C.glBufferData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), byteBuffer, usage.getId());
+                glBuffer.setSize(byteBuffer.remaining());
+            } else {
+                GL20C.glBufferData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), 0L, usage.getId());
+                glBuffer.setSize(0L);
+            }
         }
 
         @Override
@@ -98,7 +108,7 @@ public class GLRenderDevice implements RenderDevice {
 
         @Override
         public void bindBuffer(GlBufferTarget target, GlBuffer buffer) {
-            if (this.stateTracker.makeBufferActive(target, buffer)) {
+            if (this.stateTracker.makeBufferActive(target, buffer.handle())) {
                 GL20C.glBindBuffer(target.getTargetParameter(), buffer.handle());
             }
         }
@@ -204,7 +214,7 @@ public class GLRenderDevice implements RenderDevice {
 
         @Override
         public void unmap(GlBufferMapping map) {
-            checkMapDisposed(map);
+            this.checkMapDisposed(map);
 
             GlBuffer buffer = map.getBufferObject();
 
@@ -217,7 +227,7 @@ public class GLRenderDevice implements RenderDevice {
 
         @Override
         public void flushMappedRange(GlBufferMapping map, int offset, int length) {
-            checkMapDisposed(map);
+            this.checkMapDisposed(map);
 
             GlBuffer buffer = map.getBufferObject();
 
@@ -253,8 +263,8 @@ public class GLRenderDevice implements RenderDevice {
         }
 
         @Override
-        public GlTessellation createTessellation(GlPrimitiveType primitiveType, TessellationBinding[] bindings) {
-            GlVertexArrayTessellation tessellation = new GlVertexArrayTessellation(new GlVertexArray(), primitiveType, bindings);
+        public GlTessellation createTessellation(TessellationBinding[] bindings) {
+            GlVertexArrayTessellation tessellation = new GlVertexArrayTessellation(new GlVertexArray(), bindings);
             tessellation.init(this);
 
             return tessellation;
@@ -267,9 +277,18 @@ public class GLRenderDevice implements RenderDevice {
         }
 
         @Override
-        public void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex, GlIndexType indexType) {
-            GlPrimitiveType primitiveType = GLRenderDevice.this.activeTessellation.getPrimitiveType();
+        public void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex, GlIndexType indexType, GlPrimitiveType primitiveType) {
             GL32C.glMultiDrawElementsBaseVertex(primitiveType.getId(), count, indexType.getFormatId(), pointer, baseVertex);
+        }
+
+        @Override
+        public void drawElements(GlPrimitiveType primitiveType, GlIndexType indexType, long pointer, int count) {
+            GL32C.glDrawElements(primitiveType.getId(), count, indexType.getFormatId(), pointer);
+        }
+
+        @Override
+        public void drawElementsBaseVertex(GlPrimitiveType primitiveType, GlIndexType elementType, long elementPointer, int baseVertex, int elementCount) {
+            GL32C.glDrawElementsBaseVertex(primitiveType.getId(), elementCount, elementType.getFormatId(), elementPointer, baseVertex);
         }
 
         @Override

@@ -2,52 +2,57 @@ package me.jellysquid.mods.sodium.client.gl.sync;
 
 import org.lwjgl.opengl.GL32C;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.IntBuffer;
 
 public class GlFence {
     private final long id;
-    private boolean disposed;
+    private boolean signaled;
 
     public GlFence(long id) {
         this.id = id;
     }
 
-    public boolean isCompleted() {
-        this.checkDisposed();
+    /**
+     * Polls the signaled state of the fence.
+     * @return True if the fence has been signaled, otherwise false
+     */
+    public boolean poll() {
+        if (!this.signaled) {
+            this.poll0();
+        }
 
+        return this.signaled;
+    }
+
+    private void poll0() {
         int result;
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            IntBuffer count = stack.callocInt(1);
-            result = GL32C.glGetSynci(this.id, GL32C.GL_SYNC_STATUS, count);
+            IntBuffer values = stack.callocInt(1);
+            GL32C.nglGetSynciv(this.id, GL32C.GL_SYNC_STATUS, 1, MemoryUtil.NULL, MemoryUtil.memAddress(values));
 
-            if (count.get(0) != 1) {
-                throw new RuntimeException("glGetSync returned more than one value");
-            }
+            result = values.get(0);
         }
 
-        return result == GL32C.GL_SIGNALED;
+        if (result == GL32C.GL_SIGNALED) {
+            GL32C.glDeleteSync(this.id);
+            this.signaled = true;
+        }
     }
 
+    /**
+     * Performs a blocking wait until the fence to be signaled.
+     */
     public void sync() {
-        this.checkDisposed();
-        this.sync(Long.MAX_VALUE);
-    }
-
-    public void sync(long timeout) {
-        this.checkDisposed();
-        GL32C.glWaitSync(this.id, GL32C.GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
-    }
-
-    public void delete() {
-        GL32C.glDeleteSync(this.id);
-        this.disposed = true;
-    }
-
-    private void checkDisposed() {
-        if (this.disposed) {
-            throw new IllegalStateException("Fence object has been disposed");
+        if (this.signaled) {
+            return;
         }
+
+        GL32C.glWaitSync(this.id, 0, GL32C.GL_TIMEOUT_IGNORED);
+        GL32C.glDeleteSync(this.id);
+
+        this.signaled = true;
     }
 }

@@ -39,6 +39,7 @@
     "features.entity.fast_render.MixinModelPart",
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinClientWorld",
+    "features.fast_render.MixinBufferRenderer",
     "features.gui.MixinDebugHud",
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
     "features.gui.font.MixinGlyphRenderer",
