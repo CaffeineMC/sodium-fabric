@@ -90,7 +90,7 @@ public class RenderImmediate {
 
         if (useDefaultElementBuffer) {
             usedElementFormat = VertexFormat.IntType.INT;
-            tessellation = this.prepareDefaultTessellation(commandList, vertexFormat, IndexSequenceType.map(drawMode), elementCount);
+            tessellation = this.prepareDefaultTessellation(commandList, vertexFormat, IndexSequenceType.map(drawMode), vertexCount);
 
             elements = null;
             baseElement = 0;
@@ -186,9 +186,9 @@ public class RenderImmediate {
         return GlPrimitiveType.BY_FORMAT.get(drawMode.mode);
     }
 
-    private GlTessellation prepareDefaultTessellation(CommandList commandList, VertexFormat vertexFormat, IndexSequenceType sequenceType, int sequenceLength) {
+    private GlTessellation prepareDefaultTessellation(CommandList commandList, VertexFormat vertexFormat, IndexSequenceType sequenceType, int vertexCount) {
         var sequenceBufferBuilder = this.defaultElementBuffers.get(sequenceType);
-        sequenceBufferBuilder.ensureCapacity(commandList, sequenceLength);
+        sequenceBufferBuilder.ensureCapacity(commandList, vertexCount);
 
         var key = Pair.of(vertexFormat, sequenceType);
         var tessellation = this.defaultTessellations.get(key);
