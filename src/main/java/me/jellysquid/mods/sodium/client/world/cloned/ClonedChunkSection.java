@@ -60,7 +60,7 @@ public class ClonedChunkSection {
 
         ChunkSection section = getChunkSection(world, chunk, pos);
 
-        if (section == null || section.isEmpty()) {
+        if (section == null) {
             section = EMPTY_SECTION;
         }
 
