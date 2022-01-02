@@ -1,20 +1,17 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
 import me.jellysquid.mods.sodium.client.gl.GlObject;
-import org.lwjgl.opengl.GL20C;
 
-public abstract class GlBuffer extends GlObject {
-    private GlBufferMapping activeMapping;
+public class GlBuffer extends GlObject {
+    private final long capacity;
 
-    protected GlBuffer() {
-        this.setHandle(GL20C.glGenBuffers());
+    public GlBuffer(long capacity, int handle) {
+        this.setHandle(handle);
+
+        this.capacity = capacity;
     }
 
-    public GlBufferMapping getActiveMapping() {
-        return this.activeMapping;
-    }
-
-    public void setActiveMapping(GlBufferMapping mapping) {
-        this.activeMapping = mapping;
+    public long getCapacity() {
+        return this.capacity;
     }
 }

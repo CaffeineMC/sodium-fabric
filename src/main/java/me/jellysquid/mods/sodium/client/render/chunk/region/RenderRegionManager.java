@@ -4,12 +4,11 @@ import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.arena.PendingUpload;
-import me.jellysquid.mods.sodium.client.gl.arena.staging.FallbackStagingBuffer;
-import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
-import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.render.immediate.stream.MappedStreamingBuffer;
+import me.jellysquid.mods.sodium.client.render.immediate.stream.StreamingBuffer;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
@@ -22,10 +21,10 @@ import java.util.*;
 public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
 
-    private final StagingBuffer stagingBuffer;
+    private final StreamingBuffer streamingBuffer;
 
     public RenderRegionManager(CommandList commandList) {
-        this.stagingBuffer = createStagingBuffer(commandList);
+        this.streamingBuffer = createStagingBuffer(commandList);
     }
 
     public void updateVisibility(Frustum frustum) {
@@ -37,9 +36,9 @@ public class RenderRegionManager {
     }
 
     public void cleanup() {
-        this.stagingBuffer.flip();
-
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
+            this.streamingBuffer.flush(commandList);
+
             Iterator<RenderRegion> it = this.regions.values()
                     .iterator();
 
@@ -102,14 +101,8 @@ public class RenderRegionManager {
 
         RenderRegion.RenderRegionArenas arenas = region.getOrCreateArenas(commandList);
 
-        boolean bufferChanged = arenas.vertexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.vertexUpload));
-        bufferChanged |= arenas.indexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.indicesUpload));
-
-        // If any of the buffers changed, the tessellation will need to be updated
-        // Once invalidated the tessellation will be re-created on the next attempted use
-        if (bufferChanged) {
-            arenas.deleteTessellations(commandList);
-        }
+        arenas.vertexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.vertexUpload));
+        arenas.indexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.indicesUpload));
 
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
@@ -163,27 +156,23 @@ public class RenderRegionManager {
         }
 
         this.regions.clear();
-        this.stagingBuffer.delete(commandList);
+        this.streamingBuffer.delete(commandList);
     }
 
     public Collection<RenderRegion> getLoadedRegions() {
         return this.regions.values();
     }
 
-    public StagingBuffer getStagingBuffer() {
-        return this.stagingBuffer;
+    public StreamingBuffer getStreamingBuffer() {
+        return this.streamingBuffer;
     }
 
     protected RenderRegion.RenderRegionArenas createRegionArenas(CommandList commandList) {
-        return new RenderRegion.RenderRegionArenas(commandList, this.stagingBuffer);
+        return new RenderRegion.RenderRegionArenas(commandList, this.streamingBuffer);
     }
 
-    private static StagingBuffer createStagingBuffer(CommandList commandList) {
-        if (SodiumClientMod.options().advanced.allowPersistentMemoryMapping && MappedStagingBuffer.isSupported(RenderDevice.INSTANCE)) {
-            return new MappedStagingBuffer(commandList);
-        }
-
-        return new FallbackStagingBuffer(commandList);
+    private static StreamingBuffer createStagingBuffer(CommandList commandList) {
+        return new MappedStreamingBuffer(commandList, 16 * 1024 * 1024);
     }
 
     private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, BlockRenderPass pass,

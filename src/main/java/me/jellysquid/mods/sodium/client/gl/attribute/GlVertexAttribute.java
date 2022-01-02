@@ -35,7 +35,7 @@ public class GlVertexAttribute {
         return this.size;
     }
 
-    public int getPointer() {
+    public int getOffset() {
         return this.pointer;
     }
 

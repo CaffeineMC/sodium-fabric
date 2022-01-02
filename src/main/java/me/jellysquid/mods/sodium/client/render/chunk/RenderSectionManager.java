@@ -614,10 +614,9 @@ public class RenderSectionManager {
             count++;
         }
 
-        list.add(String.format("Chunk arena allocator: %s", SodiumClientMod.options().advanced.arenaMemoryAllocator.name()));
         list.add(String.format("Device buffer objects: %d", count));
         list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
-        list.add(String.format("Staging buffer: %s", this.regions.getStagingBuffer().toString()));
+        list.add(String.format("Staging buffer: %s", this.regions.getStreamingBuffer().toString()));
         return list;
     }
 }

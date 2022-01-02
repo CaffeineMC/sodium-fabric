@@ -1,10 +1,8 @@
 package me.jellysquid.mods.sodium.client.gl.arena;
 
-import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
-import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
-import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
+import me.jellysquid.mods.sodium.client.render.immediate.stream.StreamingBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -19,30 +17,28 @@ import java.util.stream.Stream;
 public class AsyncBufferArena implements GlBufferArena {
     static final boolean CHECK_ASSERTIONS = false;
 
-    private static final GlBufferUsage BUFFER_USAGE = GlBufferUsage.STATIC_DRAW;
-
     private final int resizeIncrement;
 
-    private final StagingBuffer stagingBuffer;
-    private GlMutableBuffer arenaBuffer;
+    private final StreamingBuffer stagingBuffer;
+    private GlBuffer arenaBuffer;
 
     private GlBufferSegment head;
 
     private int capacity;
     private int used;
+    private final int stride;
 
-    public AsyncBufferArena(CommandList commands, int initialCapacity, StagingBuffer stagingBuffer) {
+    public AsyncBufferArena(CommandList commands, int initialCapacity, int stride, StreamingBuffer stagingBuffer) {
         this.resizeIncrement = initialCapacity / 16;
         this.capacity = initialCapacity;
 
         this.head = new GlBufferSegment(this, 0, initialCapacity);
         this.head.setFree(true);
 
-        this.arenaBuffer = commands.createMutableBuffer();
-
-        commands.allocateStorage(this.arenaBuffer, initialCapacity, BUFFER_USAGE);
-
+        this.arenaBuffer = commands.createBuffer(initialCapacity);
         this.stagingBuffer = stagingBuffer;
+
+        this.stride = stride;
     }
 
     private void resize(CommandList commandList, int newCapacity) {
@@ -117,11 +113,8 @@ public class AsyncBufferArena implements GlBufferArena {
     }
 
     private void transferSegments(CommandList commandList, Collection<PendingBufferCopyCommand> list, int capacity) {
-        GlMutableBuffer srcBufferObj = this.arenaBuffer;
-        GlMutableBuffer dstBufferObj = commandList.createMutableBuffer();
-
-        commandList.allocateStorage(dstBufferObj, capacity, BUFFER_USAGE);
-
+        GlBuffer srcBufferObj = this.arenaBuffer;
+        GlBuffer dstBufferObj = commandList.createBuffer(capacity);
 
         for (PendingBufferCopyCommand cmd : list) {
             commandList.copyBufferSubData(srcBufferObj, dstBufferObj,
@@ -260,11 +253,7 @@ public class AsyncBufferArena implements GlBufferArena {
     }
 
     @Override
-    public boolean upload(CommandList commandList, Stream<PendingUpload> stream) {
-        // Record the buffer object before we start any work
-        // If the arena needs to re-allocate a buffer, this will allow us to check and return an appropriate flag
-        GlBuffer buffer = this.arenaBuffer;
-
+    public void upload(CommandList commandList, Stream<PendingUpload> stream) {
         // A linked list is used as we'll be randomly removing elements and want O(1) performance
         List<PendingUpload> queue = stream.collect(Collectors.toCollection(LinkedList::new));
 
@@ -291,8 +280,6 @@ public class AsyncBufferArena implements GlBufferArena {
                 throw new RuntimeException("Failed to upload all buffers");
             }
         }
-
-        return this.arenaBuffer != buffer;
     }
 
     private void tryUploads(CommandList commandList, List<PendingUpload> queue) {
@@ -304,17 +291,19 @@ public class AsyncBufferArena implements GlBufferArena {
         ByteBuffer data = upload.getDataBuffer()
                 .getDirectBuffer();
 
-        int elementCount = data.remaining();
+        int length = data.remaining();
 
-        GlBufferSegment dst = this.alloc(elementCount);
+        GlBufferSegment dst = this.alloc(length);
 
         if (dst == null) {
             return false;
         }
 
         // Copy the data into our staging buffer, then copy it into the arena's buffer
-        this.stagingBuffer.enqueueCopy(commandList, data, this.arenaBuffer, dst.getOffset());
+        var readOffset = this.stagingBuffer.write(commandList, data, 1);
+        var writeOffset = dst.getOffset();
 
+        commandList.copyBufferSubData(this.stagingBuffer.getBuffer(), this.arenaBuffer, readOffset, writeOffset, length);
         upload.setResult(dst);
 
         return true;

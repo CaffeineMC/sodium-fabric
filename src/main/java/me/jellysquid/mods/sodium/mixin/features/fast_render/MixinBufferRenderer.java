@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.mixin.features.fast_render;
 
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.immediate.RenderImmediate;
 import net.minecraft.client.render.BufferRenderer;
 import net.minecraft.client.render.VertexFormat;
@@ -17,13 +16,7 @@ public class MixinBufferRenderer {
     private static void sodium$draw(ByteBuffer buffer, VertexFormat.DrawMode drawMode, VertexFormat vertexFormat, int count, VertexFormat.IntType elementFormat, int vertexCount, boolean textured, CallbackInfo ci) {
         ci.cancel();
 
-        RenderDevice.enterManagedCode();
-
-        try {
-            RenderImmediate.getInstance()
-                    .draw(buffer, drawMode, vertexFormat, count, elementFormat, vertexCount, textured);
-        } finally {
-            RenderDevice.exitManagedCode();
-        }
+        RenderImmediate.getInstance()
+                .draw(buffer, drawMode, vertexFormat, count, elementFormat, vertexCount, textured);
     }
 }

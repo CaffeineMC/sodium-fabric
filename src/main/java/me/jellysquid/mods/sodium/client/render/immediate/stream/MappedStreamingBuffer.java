@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.render.immediate.stream;
 import me.jellysquid.mods.sodium.client.gl.buffer.*;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gl.functions.BufferStorageFunctions;
 import me.jellysquid.mods.sodium.client.gl.sync.GlFence;
 import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
 import net.minecraft.util.math.MathHelper;
@@ -13,8 +12,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 public class MappedStreamingBuffer implements StreamingBuffer {
-    private final GlImmutableBuffer buffer;
-    private final GlBufferMapping mapping;
+    private final GlMappedBuffer buffer;
 
     private final Deque<Region> regions = new ArrayDeque<>();
 
@@ -27,15 +25,12 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     private int queued;
 
     public MappedStreamingBuffer(CommandList commandList, int capacity) {
-        this.buffer = commandList.createImmutableBuffer(capacity, EnumBitField.of(GlBufferStorageFlags.PERSISTENT, GlBufferStorageFlags.CLIENT_STORAGE, GlBufferStorageFlags.COHERENT, GlBufferStorageFlags.MAP_WRITE));
-        this.mapping = commandList.mapBuffer(this.buffer, 0, capacity, EnumBitField.of(GlBufferMapFlags.PERSISTENT, GlBufferMapFlags.WRITE, GlBufferMapFlags.COHERENT, GlBufferMapFlags.INVALIDATE_BUFFER, GlBufferMapFlags.UNSYNCHRONIZED));
+        this.buffer = commandList.createMappedBuffer(capacity,
+                EnumBitField.of(GlBufferStorageFlags.PERSISTENT, GlBufferStorageFlags.CLIENT_STORAGE, GlBufferStorageFlags.COHERENT, GlBufferStorageFlags.MAP_WRITE),
+                EnumBitField.of(GlBufferMapFlags.PERSISTENT, GlBufferMapFlags.WRITE, GlBufferMapFlags.COHERENT, GlBufferMapFlags.INVALIDATE_BUFFER, GlBufferMapFlags.UNSYNCHRONIZED));
         this.capacity = capacity;
         this.remaining = this.capacity;
         this.mark = 0;
-    }
-
-    public static boolean isSupported(RenderDevice device) {
-        return device.getDeviceFunctions().getBufferStorageFunctions() != BufferStorageFunctions.NONE;
     }
 
     @Override
@@ -60,7 +55,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
             this.reclaim();
         }
 
-        this.mapping.write(data, pos);
+        this.buffer.write(data, pos);
         this.pos = pos + length;
 
         this.remaining -= length;
@@ -128,8 +123,6 @@ public class MappedStreamingBuffer implements StreamingBuffer {
 
     @Override
     public void delete(CommandList commandList) {
-        commandList.unmap(this.mapping);
-
         while (!this.regions.isEmpty()) {
             var region = this.regions.remove();
             region.fence.sync();

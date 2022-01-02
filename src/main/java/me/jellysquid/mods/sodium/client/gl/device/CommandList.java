@@ -1,53 +1,54 @@
 package me.jellysquid.mods.sodium.client.gl.device;
 
-import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.*;
 import me.jellysquid.mods.sodium.client.gl.sync.GlFence;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
+import me.jellysquid.mods.sodium.client.gl.array.VertexArray;
+import me.jellysquid.mods.sodium.client.gl.array.VertexArrayCommandList;
+import me.jellysquid.mods.sodium.client.gl.array.VertexArrayDescription;
 import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 public interface CommandList extends AutoCloseable {
-    GlMutableBuffer createMutableBuffer();
+    EnumBitField<GlBufferStorageFlags> DEFAULT_STORAGE_FLAGS = EnumBitField.empty(GlBufferStorageFlags.class);
 
-    GlImmutableBuffer createImmutableBuffer(long bufferSize, EnumBitField<GlBufferStorageFlags> flags);
+    GlBuffer createBuffer(ByteBuffer data, EnumBitField<GlBufferStorageFlags> flags);
 
-    GlTessellation createTessellation(TessellationBinding[] bindings);
+    default GlBuffer createBuffer(ByteBuffer data) {
+        return this.createBuffer(data, DEFAULT_STORAGE_FLAGS);
+    }
 
-    void bindVertexArray(GlVertexArray array);
+    GlBuffer createBuffer(long capacity, EnumBitField<GlBufferStorageFlags> flags);
 
-    void uploadData(GlMutableBuffer glBuffer, ByteBuffer byteBuffer, GlBufferUsage usage);
+    default GlBuffer createBuffer(long capacity) {
+        return this.createBuffer(capacity, DEFAULT_STORAGE_FLAGS);
+    }
+
+    GlBuffer createBuffer(long capacity, Consumer<ByteBuffer> data, EnumBitField<GlBufferStorageFlags> flags);
+
+    default GlBuffer createBuffer(long capacity, Consumer<ByteBuffer> data) {
+        return this.createBuffer(capacity, data, DEFAULT_STORAGE_FLAGS);
+    }
+
+    GlMappedBuffer createMappedBuffer(long capacity, EnumBitField<GlBufferStorageFlags> storageFlags, EnumBitField<GlBufferMapFlags> mapFlags);
+
+    <T extends Enum<T>> VertexArray<T> createVertexArray(VertexArrayDescription<T> desc);
+
+    <T extends Enum<T>> void useVertexArray(VertexArray<T> array, Consumer<VertexArrayCommandList<T>> consumer);
+
+    void deleteVertexArray(VertexArray<?> array);
 
     void copyBufferSubData(GlBuffer src, GlBuffer dst, long readOffset, long writeOffset, long bytes);
 
-    void bindBuffer(GlBufferTarget target, GlBuffer buffer);
-
-    void unbindVertexArray();
-
-    void allocateStorage(GlMutableBuffer buffer, long bufferSize, GlBufferUsage usage);
-
     void deleteBuffer(GlBuffer buffer);
 
-    void deleteVertexArray(GlVertexArray vertexArray);
-
     void flush();
-
-    DrawCommandList beginTessellating(GlTessellation tessellation);
-
-    void deleteTessellation(GlTessellation tessellation);
 
     @Override
     default void close() {
         this.flush();
     }
-
-    GlBufferMapping mapBuffer(GlBuffer buffer, long offset, long length, EnumBitField<GlBufferMapFlags> flags);
-
-    void unmap(GlBufferMapping map);
-
-    void flushMappedRange(GlBufferMapping map, int offset, int length);
 
     GlFence createFence();
 }

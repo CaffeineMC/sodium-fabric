@@ -1,9 +1,8 @@
-package me.jellysquid.mods.sodium.client.gl.tessellation;
+package me.jellysquid.mods.sodium.client.gl.array;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.model.light.cache.ArrayLightDataCache;
 import org.lwjgl.opengl.GL32C;
 
 public enum GlIndexType {

@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.model;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntIterator;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlIndexType;
+import me.jellysquid.mods.sodium.client.gl.array.GlIndexType;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
 
 import java.nio.ByteBuffer;

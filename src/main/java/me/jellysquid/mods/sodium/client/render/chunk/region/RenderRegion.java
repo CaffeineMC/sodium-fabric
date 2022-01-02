@@ -1,23 +1,17 @@
 package me.jellysquid.mods.sodium.client.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.arena.AsyncBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
-import me.jellysquid.mods.sodium.client.gl.arena.SwapBufferArena;
-import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.immediate.stream.StreamingBuffer;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.Set;
 
 public class RenderRegion {
@@ -145,37 +139,17 @@ public class RenderRegion {
         public final GlBufferArena vertexBuffers;
         public final GlBufferArena indexBuffers;
 
-        public final Map<BlockRenderPass, GlTessellation> tessellations = new EnumMap<>(BlockRenderPass.class);
-
-        public RenderRegionArenas(CommandList commandList, StagingBuffer stagingBuffer) {
+        public RenderRegionArenas(CommandList commandList, StreamingBuffer stagingBuffer) {
             int expectedVertexCount = REGION_SIZE * 756;
             int expectedIndexCount = (expectedVertexCount / 4) * 6;
 
-            this.vertexBuffers = createArena(commandList, expectedVertexCount * ChunkModelVertexFormats.DEFAULT.getBufferVertexFormat().getStride(), stagingBuffer);
-            this.indexBuffers = createArena(commandList, expectedIndexCount * 4, stagingBuffer);
+            this.vertexBuffers = createArena(commandList, expectedVertexCount, ChunkModelVertexFormats.DEFAULT.getBufferVertexFormat().getStride(), stagingBuffer);
+            this.indexBuffers = createArena(commandList, expectedIndexCount, 4, stagingBuffer);
         }
 
         public void delete(CommandList commandList) {
-            this.deleteTessellations(commandList);
-
             this.vertexBuffers.delete(commandList);
             this.indexBuffers.delete(commandList);
-        }
-
-        public void deleteTessellations(CommandList commandList) {
-            for (GlTessellation tessellation : this.tessellations.values()) {
-                commandList.deleteTessellation(tessellation);
-            }
-
-            this.tessellations.clear();
-        }
-
-        public void setTessellation(BlockRenderPass pass, GlTessellation tessellation) {
-            this.tessellations.put(pass, tessellation);
-        }
-
-        public GlTessellation getTessellation(BlockRenderPass pass) {
-            return this.tessellations.get(pass);
         }
 
         public boolean isEmpty() {
@@ -190,11 +164,8 @@ public class RenderRegion {
             return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
         }
 
-        private static GlBufferArena createArena(CommandList commandList, int initialCapacity, StagingBuffer stagingBuffer) {
-            return switch (SodiumClientMod.options().advanced.arenaMemoryAllocator) {
-                case ASYNC -> new AsyncBufferArena(commandList, initialCapacity, stagingBuffer);
-                case SWAP -> new SwapBufferArena(commandList);
-            };
+        private static GlBufferArena createArena(CommandList commandList, int initialCapacity, int stride, StreamingBuffer stagingBuffer) {
+            return new AsyncBufferArena(commandList, initialCapacity * stride, stride, stagingBuffer);
         }
     }
 }

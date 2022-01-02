@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import com.google.common.collect.ImmutableList;
-import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.binding.compat.VanillaBooleanOptionBinding;
@@ -310,28 +309,6 @@ public class SodiumGameOptionPages {
 
     public static OptionPage advanced() {
         List<OptionGroup> groups = new ArrayList<>();
-
-        groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(SodiumGameOptions.ArenaMemoryAllocator.class, sodiumOpts)
-                        .setName(Text.translatable("sodium.options.chunk_memory_allocator.name"))
-                        .setTooltip(Text.translatable("sodium.options.chunk_memory_allocator.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.ArenaMemoryAllocator.class))
-                        .setImpact(OptionImpact.HIGH)
-                        .setBinding((opts, value) -> opts.advanced.arenaMemoryAllocator = value, opts -> opts.advanced.arenaMemoryAllocator)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build()
-                )
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(Text.translatable("sodium.options.use_persistent_mapping.name"))
-                        .setTooltip(Text.translatable("sodium.options.use_persistent_mapping.tooltip"))
-                        .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.MEDIUM)
-                        .setEnabled(MappedStagingBuffer.isSupported(RenderDevice.INSTANCE))
-                        .setBinding((opts, value) -> opts.advanced.allowPersistentMemoryMapping = value, opts -> opts.advanced.allowPersistentMemoryMapping)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build()
-                )
-                .build());
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, sodiumOpts)

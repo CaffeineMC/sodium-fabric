@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.gl.tessellation;
+package me.jellysquid.mods.sodium.client.gl.array;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
