@@ -44,10 +44,10 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     // The number of biomes in a section.
     private static final int SECTION_BIOME_COUNT = 4 * 4 * 4;
 
-    // The radius of blocks around the origin chunk that should be copied.
+    // The radius of blocks around the origin chunk section that should be copied.
     private static final int NEIGHBOR_BLOCK_RADIUS = 2;
 
-    // The radius of sections around the origin chunk that should be copied.
+    // The radius of sections around the origin chunk section that should be copied.
     private static final int NEIGHBOR_SECTION_RADIUS = ChunkSectionPos.getSectionCoord(MathHelper.roundUpToMultiple(NEIGHBOR_BLOCK_RADIUS, 16));
 
     // The number of sections on each axis of this slice.
@@ -90,7 +90,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     // The starting point from which this slice captures chunk sections
     private int offsetSectionX, offsetSectionY, offsetSectionZ;
 
-    // The chunk origin of this slice
+    // The origin of this slice in section-coordinate space
     private ChunkSectionPos origin;
 
     public WorldSlice(World world) {
@@ -127,15 +127,15 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
         final int minSectionY = origin.getY() - NEIGHBOR_SECTION_RADIUS;
         final int minSectionZ = origin.getZ() - NEIGHBOR_SECTION_RADIUS;
 
-        final int maxChunkX = origin.getX() + NEIGHBOR_SECTION_RADIUS;
-        final int maxChunkY = origin.getY() + NEIGHBOR_SECTION_RADIUS;
-        final int maxChunkZ = origin.getZ() + NEIGHBOR_SECTION_RADIUS;
+        final int maxSectionX = origin.getX() + NEIGHBOR_SECTION_RADIUS;
+        final int maxSectionY = origin.getY() + NEIGHBOR_SECTION_RADIUS;
+        final int maxSectionZ = origin.getZ() + NEIGHBOR_SECTION_RADIUS;
 
         ClonedChunkSection[] sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
 
-        for (int sectionX = minSectionX; sectionX <= maxChunkX; sectionX++) {
-            for (int sectionZ = minSectionZ; sectionZ <= maxChunkZ; sectionZ++) {
-                for (int sectionY = minSectionY; sectionY <= maxChunkY; sectionY++) {
+        for (int sectionX = minSectionX; sectionX <= maxSectionX; sectionX++) {
+            for (int sectionZ = minSectionZ; sectionZ <= maxSectionZ; sectionZ++) {
+                for (int sectionY = minSectionY; sectionY <= maxSectionY; sectionY++) {
                     sections[packSectionIndex(sectionX - minSectionX, sectionY - minSectionY, sectionZ - minSectionZ)] =
                             sectionCache.acquire(sectionX, sectionY, sectionZ);
                 }
