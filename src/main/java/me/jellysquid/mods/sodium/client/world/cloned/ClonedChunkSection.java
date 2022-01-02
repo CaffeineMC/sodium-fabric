@@ -26,7 +26,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClonedChunkSection {
     private static final LightType[] LIGHT_TYPES = LightType.values();
+
+    @Deprecated
     private static final ChunkSection EMPTY_SECTION = new ChunkSection(0, BuiltinRegistries.BIOME);
+
+    private static final int PACKED_BLOCK_BITS = 4;
 
     private final AtomicInteger referenceCount = new AtomicInteger(0);
     private final ClonedChunkSectionCache backingCache;
@@ -42,6 +46,7 @@ public class ClonedChunkSection {
     private ClonedPalette<BlockState> blockStatePalette;
 
     private PalettedContainer<Biome> biomeData;
+    private boolean isEmpty = true;
 
     ClonedChunkSection(ClonedChunkSectionCache backingCache) {
         this.backingCache = backingCache;
@@ -69,6 +74,8 @@ public class ClonedChunkSection {
         this.copyLightData(world);
         this.copyBiomeData(section);
         this.copyBlockEntities(chunk, pos);
+
+        this.isEmpty = section.isEmpty();
     }
 
     private void reset(ChunkSectionPos pos) {
@@ -113,9 +120,9 @@ public class ClonedChunkSection {
         return 0;
     }
 
-    private void copyBlockEntities(WorldChunk chunk, ChunkSectionPos chunkCoord) {
-        BlockBox box = new BlockBox(chunkCoord.getMinX(), chunkCoord.getMinY(), chunkCoord.getMinZ(),
-                chunkCoord.getMaxX(), chunkCoord.getMaxY(), chunkCoord.getMaxZ());
+    private void copyBlockEntities(WorldChunk chunk, ChunkSectionPos sectionCoord) {
+        BlockBox box = new BlockBox(sectionCoord.getMinX(), sectionCoord.getMinY(), sectionCoord.getMinZ(),
+                sectionCoord.getMaxX(), sectionCoord.getMaxY(), sectionCoord.getMaxZ());
 
         // Copy the block entities from the chunk into our cloned section
         for (Map.Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities().entrySet()) {
@@ -214,12 +221,20 @@ public class ClonedChunkSection {
     }
 
     /**
-     * @param x The local x-coordinate
-     * @param y The local y-coordinate
-     * @param z The local z-coordinate
-     * @return An index which can be used to key entities or blocks within a chunk
+     * @param localBlockX The local block x-coordinate
+     * @param localBlockY The local block y-coordinate
+     * @param localBlockZ The local block z-coordinate
+     * @return A packed index which can be used to access entities or blocks within a section
      */
-    private static short packLocal(int x, int y, int z) {
-        return (short) (x << 8 | z << 4 | y);
+    private static short packLocal(int localBlockX, int localBlockY, int localBlockZ) {
+        return (short) (localBlockX << PACKED_BLOCK_BITS << PACKED_BLOCK_BITS | localBlockZ << PACKED_BLOCK_BITS | localBlockY);
+    }
+
+    public BlockState getBlockState(int blockIdx) {
+        return this.blockStatePalette.get(this.blockStateData.get(blockIdx));
+    }
+
+    public boolean isEmpty() {
+        return this.isEmpty;
     }
 }
