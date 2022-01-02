@@ -53,13 +53,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
 
     @Inject(method = "setWorld", at = @At("RETURN"))
     private void onWorldChanged(ClientWorld world, CallbackInfo ci) {
-        RenderDevice.enterManagedCode();
-
-        try {
-            this.renderer.setWorld(world);
-        } finally {
-            RenderDevice.exitManagedCode();
-        }
+        this.renderer.setWorld(world);
     }
 
     /**
@@ -91,13 +85,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
      */
     @Overwrite
     private void renderLayer(RenderLayer renderLayer, MatrixStack matrices, double x, double y, double z, Matrix4f matrix) {
-        RenderDevice.enterManagedCode();
-
-        try {
-            this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
-        } finally {
-            RenderDevice.exitManagedCode();
-        }
+        this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
     }
 
     /**
@@ -106,13 +94,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
      */
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, boolean spectator) {
-        RenderDevice.enterManagedCode();
-
-        try {
-            this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), this.frame++, spectator);
-        } finally {
-            RenderDevice.exitManagedCode();
-        }
+        this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), this.frame++, spectator);
     }
 
     /**
@@ -153,13 +135,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
 
     @Inject(method = "reload()V", at = @At("RETURN"))
     private void onReload(CallbackInfo ci) {
-        RenderDevice.enterManagedCode();
-
-        try {
-            this.renderer.reload();
-        } finally {
-            RenderDevice.exitManagedCode();
-        }
+        this.renderer.reload();
     }
 
     @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/WorldRenderer;noCullingBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))

@@ -18,5 +18,5 @@ public interface GlBufferArena {
 
     GlBuffer getBufferObject();
 
-    boolean upload(CommandList commandList, Stream<PendingUpload> stream);
+    void upload(CommandList commandList, Stream<PendingUpload> stream);
 }

@@ -32,6 +32,10 @@ public class EnumBitField<T extends Enum<T> & EnumBit> {
         return new EnumBitField<>(set);
     }
 
+    public static <T extends Enum<T> & EnumBit> EnumBitField<T> empty(Class<T> type) {
+        return new EnumBitField<>(EnumSet.noneOf(type));
+    }
+
     public int getBitField() {
         return this.bitfield;
     }

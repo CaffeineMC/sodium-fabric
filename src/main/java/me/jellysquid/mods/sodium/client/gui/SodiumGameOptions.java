@@ -48,10 +48,7 @@ public class SodiumGameOptions {
     }
 
     public static class AdvancedSettings {
-        public ArenaMemoryAllocator arenaMemoryAllocator = null;
-
         public boolean allowDirectMemoryAccess = true;
-        public boolean allowPersistentMemoryMapping = true;
 
         public boolean enableMemoryTracing = false;
 
@@ -67,22 +64,6 @@ public class SodiumGameOptions {
 
     public static class NotificationSettings {
         public boolean hideDonationButton = false;
-    }
-
-    public enum ArenaMemoryAllocator implements TextProvider {
-        ASYNC("sodium.options.chunk_memory_allocator.async"),
-        SWAP("sodium.options.chunk_memory_allocator.swap");
-
-        private final Text name;
-
-        ArenaMemoryAllocator(String name) {
-            this.name = new TranslatableText(name);
-        }
-
-        @Override
-        public Text getLocalizedName() {
-            return this.name;
-        }
     }
 
     public enum GraphicsQuality implements TextProvider {
@@ -143,9 +124,8 @@ public class SodiumGameOptions {
     }
 
     private void sanitize() {
-        if (this.advanced.arenaMemoryAllocator == null) {
-            this.advanced.arenaMemoryAllocator = ArenaMemoryAllocator.ASYNC;
-        }
+
+
     }
 
     private static Path getConfigPath(String name) {

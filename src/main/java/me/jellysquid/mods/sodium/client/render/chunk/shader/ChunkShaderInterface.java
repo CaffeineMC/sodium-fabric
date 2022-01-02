@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.*;
 import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
 import org.joml.Matrix4f;
@@ -57,7 +57,7 @@ public class ChunkShaderInterface {
         this.uniformModelViewMatrix.set(matrix);
     }
 
-    public void setDrawUniforms(GlMutableBuffer buffer) {
+    public void setDrawUniforms(GlBuffer buffer) {
         this.uniformBlockDrawParameters.bindBuffer(buffer);
     }
 

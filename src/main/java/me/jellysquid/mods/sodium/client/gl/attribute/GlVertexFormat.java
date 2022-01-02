@@ -74,11 +74,11 @@ public class GlVertexFormat<T extends Enum<T>> implements BufferVertexFormat {
          * @throws IllegalStateException If an attribute is already bound to the generic type
          */
         private Builder<T> addElement(T type, GlVertexAttribute attribute) {
-            if (attribute.getPointer() >= this.stride) {
+            if (attribute.getOffset() >= this.stride) {
                 throw new IllegalArgumentException("Element starts outside vertex format");
             }
 
-            if (attribute.getPointer() + attribute.getSize() > this.stride) {
+            if (attribute.getOffset() + attribute.getSize() > this.stride) {
                 throw new IllegalArgumentException("Element extends outside vertex format");
             }
 
@@ -102,7 +102,7 @@ public class GlVertexFormat<T extends Enum<T>> implements BufferVertexFormat {
                     throw new NullPointerException("Generic attribute not assigned to enumeration " + key.name());
                 }
 
-                size = Math.max(size, attribute.getPointer() + attribute.getSize());
+                size = Math.max(size, attribute.getOffset() + attribute.getSize());
             }
 
             // The stride must be large enough to cover all attributes. This still allows for additional padding
