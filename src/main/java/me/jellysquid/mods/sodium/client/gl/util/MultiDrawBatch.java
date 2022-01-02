@@ -88,9 +88,9 @@ public interface MultiDrawBatch {
 
         @Override
         public void delete() {
-            MemoryUtilHelper.memFree(this.bufPointer);
-            MemoryUtilHelper.memFree(this.bufCount);
-            MemoryUtilHelper.memFree(this.bufBaseVertex);
+            MemoryUtil.memFree(this.bufPointer);
+            MemoryUtil.memFree(this.bufCount);
+            MemoryUtil.memFree(this.bufBaseVertex);
         }
 
         @Override
@@ -174,9 +174,9 @@ public interface MultiDrawBatch {
 
         @Override
         public void delete() {
-            MemoryUtilHelper.memFree(this.bufPointer);
-            MemoryUtilHelper.memFree(this.bufCount);
-            MemoryUtilHelper.memFree(this.bufBaseVertex);
+            MemoryUtil.memFree(this.bufPointer);
+            MemoryUtil.memFree(this.bufCount);
+            MemoryUtil.memFree(this.bufBaseVertex);
         }
 
         @Override
