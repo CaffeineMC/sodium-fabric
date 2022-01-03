@@ -40,7 +40,7 @@ public class ChunkShaderInterface {
         this.fogShader = options.fog().getFactory().apply(context);
     }
 
-    public void setup(TerrainVertexType vertexType) {
+    public void setup() {
         RenderSystem.activeTexture(GL32C.GL_TEXTURE0);
         RenderSystem.bindTexture(RenderSystem.getShaderTexture(0));
 

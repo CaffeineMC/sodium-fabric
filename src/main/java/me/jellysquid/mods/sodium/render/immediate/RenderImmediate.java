@@ -11,6 +11,7 @@ import me.jellysquid.mods.sodium.opengl.attribute.VertexAttribute;
 import me.jellysquid.mods.sodium.opengl.attribute.VertexAttributeBinding;
 import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
+import me.jellysquid.mods.sodium.opengl.shader.Program;
 import me.jellysquid.mods.sodium.opengl.types.IntType;
 import me.jellysquid.mods.sodium.opengl.types.PrimitiveType;
 import me.jellysquid.mods.sodium.render.sequence.IndexSequenceType;
@@ -148,14 +149,16 @@ public class RenderImmediate {
         // Uniforms must be updated before binding shader
         shader.bind();
 
-        this.device.useVertexArray(vertexArray, (drawCommandList) -> {
-            drawCommandList.bindVertexBuffers(vertexArray.createResourceSet(
-                    Map.of(BufferTarget.VERTICES, new VertexArrayBuffer(this.vertexBuffer.getBuffer(), vertexFormat.getVertexSize()))
-            ));
-            drawCommandList.bindElementBuffer(elementBuffer);
+        this.device.useProgram(new VanillaProgram(shader), (programCommandList, programInterface) -> {
+            programCommandList.useVertexArray(vertexArray, (drawCommandList) -> {
+                drawCommandList.bindVertexBuffers(vertexArray.createResourceSet(
+                        Map.of(BufferTarget.VERTICES, new VertexArrayBuffer(this.vertexBuffer.getBuffer(), vertexFormat.getVertexSize()))
+                ));
+                drawCommandList.bindElementBuffer(elementBuffer);
 
-            drawCommandList.drawElementsBaseVertex(getPrimitiveType(drawMode), usedElementFormat,
-                    (long) elementPointer * elementFormat.size, baseVertex, elementCount);
+                drawCommandList.drawElementsBaseVertex(getPrimitiveType(drawMode), usedElementFormat,
+                        (long) elementPointer * elementFormat.size, baseVertex, elementCount);
+            });
         });
 
         shader.unbind();
@@ -263,5 +266,27 @@ public class RenderImmediate {
 
     private enum BufferTarget {
         VERTICES
+    }
+
+    private record VanillaProgram(Shader shader) implements Program<Shader> {
+        @Override
+        public Shader getInterface() {
+            return this.shader;
+        }
+
+        @Override
+        public int handle() {
+            return this.shader.getProgramRef();
+        }
+
+        @Override
+        public void bindResources() {
+            this.shader.bind();
+        }
+
+        @Override
+        public void unbindResources() {
+            this.shader.unbind();
+        }
     }
 }

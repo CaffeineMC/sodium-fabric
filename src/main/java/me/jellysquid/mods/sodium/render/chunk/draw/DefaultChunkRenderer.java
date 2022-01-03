@@ -73,29 +73,25 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     public void render(ChunkRenderMatrices matrices, RenderDevice device,
                        ChunkRenderList list, ChunkRenderPass pass,
                        ChunkCameraContext camera) {
-        super.begin(pass);
+        this.beginRendering(pass, (programCommandList, programInterface) -> {
+            programInterface.setProjectionMatrix(matrices.projection());
+            programInterface.setModelViewMatrix(matrices.modelView());
+            programInterface.setDrawUniforms(this.chunkInfoBuffer);
 
-        ChunkShaderInterface shader = this.activeProgram.getInterface();
-        shader.setProjectionMatrix(matrices.projection());
-        shader.setModelViewMatrix(matrices.modelView());
+            programCommandList.useVertexArray(this.vertexArray, (drawCommandList) -> {
+                for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, pass.isTranslucent())) {
+                    RenderRegion region = entry.getKey();
+                    List<RenderSection> regionSections = entry.getValue();
 
-        shader.setDrawUniforms(this.chunkInfoBuffer);
+                    if (!this.buildDrawBatches(regionSections, pass, camera)) {
+                        continue;
+                    }
 
-        device.useVertexArray(this.vertexArray, (drawCommandList) -> {
-            for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, pass.isTranslucent())) {
-                RenderRegion region = entry.getKey();
-                List<RenderSection> regionSections = entry.getValue();
-
-                if (!this.buildDrawBatches(regionSections, pass, camera)) {
-                    continue;
+                    this.setModelMatrixUniforms(programInterface, region, camera);
+                    this.executeDrawBatches(drawCommandList, region.getArenas());
                 }
-
-                this.setModelMatrixUniforms(shader, region, camera);
-                this.executeDrawBatches(drawCommandList, region.getArenas());
-            }
+            });
         });
-        
-        super.end();
     }
 
     private boolean buildDrawBatches(List<RenderSection> sections, ChunkRenderPass pass, ChunkCameraContext camera) {

@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.opengl.buffer;
 
-import me.jellysquid.mods.sodium.opengl.GlObject;
+import me.jellysquid.mods.sodium.opengl.ManagedObject;
 
-public class BufferImpl extends GlObject implements Buffer {
+public class BufferImpl extends ManagedObject implements Buffer {
     private final long capacity;
 
     public BufferImpl(long capacity, int handle) {
