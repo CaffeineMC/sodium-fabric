@@ -8,7 +8,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.SodiumClientMod;
-import me.jellysquid.mods.sodium.opengl.device.CommandList;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.TerrainBuildResult;
@@ -28,14 +27,12 @@ import me.jellysquid.mods.sodium.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.TerrainBuildTask;
-import me.jellysquid.mods.sodium.render.world.ChunkStatus;
-import me.jellysquid.mods.sodium.render.world.ChunkTracker;
-import me.jellysquid.mods.sodium.render.world.ChunkUpdateType;
+import me.jellysquid.mods.sodium.world.ChunkStatus;
+import me.jellysquid.mods.sodium.world.ChunkTracker;
 import me.jellysquid.mods.sodium.util.MathUtil;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.Frustum;
-import me.jellysquid.mods.sodium.render.chunk.compile.WorldSlice;
-import me.jellysquid.mods.sodium.render.chunk.compile.WorldSliceData;
-import me.jellysquid.mods.sodium.world.cloned.ClonedChunkSectionCache;
+import me.jellysquid.mods.sodium.world.slice.WorldSliceData;
+import me.jellysquid.mods.sodium.world.slice.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.util.DirectionUtil;
 import me.jellysquid.mods.sodium.util.tasks.WorkStealingFutureDrain;
 import net.minecraft.block.entity.BlockEntity;
@@ -107,9 +104,11 @@ public class RenderSectionManager {
     private boolean alwaysDeferChunkUpdates;
 
     private final ChunkTracker tracker;
+    private final RenderDevice device;
 
-    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ChunkRenderPassManager renderPassManager, ClientWorld world, int renderDistance, CommandList commandList) {
-        this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, TerrainVertexFormats.STANDARD);
+    public RenderSectionManager(RenderDevice device, SodiumWorldRenderer worldRenderer, ChunkRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
+        this.device = device;
+        this.chunkRenderer = new DefaultChunkRenderer(device, TerrainVertexFormats.STANDARD);
 
         this.worldRenderer = worldRenderer;
         this.world = world;
@@ -120,7 +119,7 @@ public class RenderSectionManager {
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
 
-        this.regions = new RenderRegionManager(commandList);
+        this.regions = new RenderRegionManager(device);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
@@ -290,12 +289,7 @@ public class RenderSectionManager {
     }
 
     public void renderLayer(ChunkRenderMatrices matrices, ChunkRenderPass pass, double x, double y, double z) {
-        RenderDevice device = RenderDevice.INSTANCE;
-        CommandList commandList = device.createCommandList();
-
-        this.chunkRenderer.render(matrices, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
-
-        commandList.flush();
+        this.chunkRenderer.render(matrices, this.device, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
     }
 
     public void tickVisibleRenders() {
@@ -326,7 +320,7 @@ public class RenderSectionManager {
 
         if (!blockingFutures.isEmpty()) {
             this.needsUpdate = true;
-            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), new WorkStealingFutureDrain<>(blockingFutures, this.builder::stealTask));
+            this.regions.upload(new WorkStealingFutureDrain<>(blockingFutures, this.builder::stealTask));
         }
 
         this.regions.cleanup();
@@ -378,13 +372,13 @@ public class RenderSectionManager {
             return false;
         }
 
-        this.regions.upload(RenderDevice.INSTANCE.createCommandList(), it);
+        this.regions.upload(it);
 
         return true;
     }
 
     public AbstractBuilderTask createTerrainBuildTask(RenderSection render) {
-        WorldSliceData data = WorldSlice.prepare(this.world, render.getChunkPos(), this.sectionCache);
+        WorldSliceData data = WorldSliceData.prepare(this.world, render.getChunkPos(), this.sectionCache);
         int frame = this.currentFrame;
 
         if (data == null) {
@@ -409,10 +403,7 @@ public class RenderSectionManager {
     public void destroy() {
         this.resetLists();
 
-        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
-            this.regions.delete(commandList);
-        }
-
+        this.regions.delete();
         this.chunkRenderer.delete();
         this.builder.stopWorkers();
     }

@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.render.chunk.arena.AsyncBufferArena;
-import me.jellysquid.mods.sodium.render.chunk.arena.GlBufferArena;
-import me.jellysquid.mods.sodium.opengl.device.CommandList;
-import me.jellysquid.mods.sodium.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexFormats;
-import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
-import me.jellysquid.mods.sodium.util.MathUtil;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.Frustum;
+import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
+import me.jellysquid.mods.sodium.render.arena.AsyncBufferArena;
+import me.jellysquid.mods.sodium.render.arena.GlBufferArena;
+import me.jellysquid.mods.sodium.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
+import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexFormats;
+import me.jellysquid.mods.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
@@ -62,9 +62,9 @@ public class RenderRegion {
         return this.arenas;
     }
 
-    public void deleteResources(CommandList commandList) {
+    public void deleteResources() {
         if (this.arenas != null) {
-            this.arenas.delete(commandList);
+            this.arenas.delete();
             this.arenas = null;
         }
     }
@@ -85,11 +85,11 @@ public class RenderRegion {
         return this.z << REGION_LENGTH_SH << 4;
     }
 
-    public RenderRegionArenas getOrCreateArenas(CommandList commandList) {
+    public RenderRegionArenas getOrCreateArenas() {
         RenderRegionArenas arenas = this.arenas;
 
         if (arenas == null) {
-            this.arenas = (arenas = this.manager.createRegionArenas(commandList));
+            this.arenas = (arenas = this.manager.createRegionArenas());
         }
 
         return arenas;
@@ -139,17 +139,17 @@ public class RenderRegion {
         public final GlBufferArena vertexBuffers;
         public final GlBufferArena indexBuffers;
 
-        public RenderRegionArenas(CommandList commandList, StreamingBuffer stagingBuffer) {
+        public RenderRegionArenas(RenderDevice device, StreamingBuffer stagingBuffer) {
             int expectedVertexCount = REGION_SIZE * 756;
             int expectedIndexCount = (expectedVertexCount / 4) * 6;
 
-            this.vertexBuffers = createArena(commandList, expectedVertexCount, TerrainVertexFormats.STANDARD.getBufferVertexFormat().getStride(), stagingBuffer);
-            this.indexBuffers = createArena(commandList, expectedIndexCount, 4, stagingBuffer);
+            this.vertexBuffers = createArena(device, expectedVertexCount, TerrainVertexFormats.STANDARD.getBufferVertexFormat().getStride(), stagingBuffer);
+            this.indexBuffers = createArena(device, expectedIndexCount, 4, stagingBuffer);
         }
 
-        public void delete(CommandList commandList) {
-            this.vertexBuffers.delete(commandList);
-            this.indexBuffers.delete(commandList);
+        public void delete() {
+            this.vertexBuffers.delete();
+            this.indexBuffers.delete();
         }
 
         public boolean isEmpty() {
@@ -164,8 +164,8 @@ public class RenderRegion {
             return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
         }
 
-        private static GlBufferArena createArena(CommandList commandList, int initialCapacity, int stride, StreamingBuffer stagingBuffer) {
-            return new AsyncBufferArena(commandList, initialCapacity * stride, stride, stagingBuffer);
+        private static GlBufferArena createArena(RenderDevice device, int initialCapacity, int stride, StreamingBuffer stagingBuffer) {
+            return new AsyncBufferArena(device, initialCapacity * stride, stride, stagingBuffer);
         }
     }
 }

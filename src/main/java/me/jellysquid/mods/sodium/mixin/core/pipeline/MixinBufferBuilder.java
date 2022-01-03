@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
 import me.jellysquid.mods.sodium.SodiumClientMod;
-import me.jellysquid.mods.sodium.opengl.attribute.BufferVertexFormat;
+import me.jellysquid.mods.sodium.render.vertex.type.BufferVertexFormat;
 import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.render.vertex.VertexSink;
 import me.jellysquid.mods.sodium.render.vertex.buffer.VertexBufferView;

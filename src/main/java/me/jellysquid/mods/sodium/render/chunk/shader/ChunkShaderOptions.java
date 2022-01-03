@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.shader;
 
-import me.jellysquid.mods.sodium.opengl.shader.ShaderConstants;
+import me.jellysquid.mods.sodium.opengl.shader.parser.ShaderConstants;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 

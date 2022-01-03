@@ -1,12 +1,9 @@
 package me.jellysquid.mods.sodium.render.stream;
 
-import me.jellysquid.mods.sodium.opengl.device.CommandList;
-import me.jellysquid.mods.sodium.opengl.sync.GlFence;
+import me.jellysquid.mods.sodium.opengl.buffer.*;
+import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
+import me.jellysquid.mods.sodium.opengl.sync.Fence;
 import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
-import me.jellysquid.mods.sodium.opengl.buffer.GlBuffer;
-import me.jellysquid.mods.sodium.opengl.buffer.GlBufferMapFlags;
-import me.jellysquid.mods.sodium.opengl.buffer.GlBufferStorageFlags;
-import me.jellysquid.mods.sodium.opengl.buffer.GlMappedBuffer;
 import net.minecraft.util.math.MathHelper;
 
 import java.nio.ByteBuffer;
@@ -14,7 +11,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 public class MappedStreamingBuffer implements StreamingBuffer {
-    private final GlMappedBuffer buffer;
+    private final RenderDevice device;
+    private final MappedBuffer buffer;
 
     private final Deque<Region> regions = new ArrayDeque<>();
 
@@ -26,17 +24,18 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     private int mark;
     private int queued;
 
-    public MappedStreamingBuffer(CommandList commandList, int capacity) {
-        this.buffer = commandList.createMappedBuffer(capacity,
-                EnumBitField.of(GlBufferStorageFlags.PERSISTENT, GlBufferStorageFlags.CLIENT_STORAGE, GlBufferStorageFlags.COHERENT, GlBufferStorageFlags.MAP_WRITE),
-                EnumBitField.of(GlBufferMapFlags.PERSISTENT, GlBufferMapFlags.WRITE, GlBufferMapFlags.COHERENT, GlBufferMapFlags.INVALIDATE_BUFFER, GlBufferMapFlags.UNSYNCHRONIZED));
+    public MappedStreamingBuffer(RenderDevice device, int capacity) {
+        this.device = device;
+        this.buffer = device.createMappedBuffer(capacity,
+                EnumBitField.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.CLIENT_STORAGE, BufferStorageFlags.COHERENT, BufferStorageFlags.MAP_WRITE),
+                EnumBitField.of(BufferMapFlags.PERSISTENT, BufferMapFlags.WRITE, BufferMapFlags.COHERENT, BufferMapFlags.INVALIDATE_BUFFER, BufferMapFlags.UNSYNCHRONIZED));
         this.capacity = capacity;
         this.remaining = this.capacity;
         this.mark = 0;
     }
 
     @Override
-    public int write(CommandList commandList, ByteBuffer data, int alignment) {
+    public int write(ByteBuffer data, int alignment) {
         int length = data.remaining();
 
         // We can't service allocations which are larger than the buffer itself
@@ -49,7 +48,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
 
         // Wrap the pointer around to zero if there's not enough space in the buffer
         if (pos + length > this.capacity) {
-            pos = this.wrap(commandList, alignment);
+            pos = this.wrap(alignment);
         }
 
         // Reclaim memory regions until we have enough memory to service the request
@@ -66,10 +65,10 @@ public class MappedStreamingBuffer implements StreamingBuffer {
         return pos / alignment;
     }
 
-    private int wrap(CommandList commandList, int alignment) {
+    private int wrap(int alignment) {
         // When we wrap around, we need to ensure any memory behind us has a fence created
         if (this.queued > 0) {
-            this.insertFence(commandList, this.mark, this.queued);
+            this.insertFence(this.mark, this.queued);
         }
 
         this.mark = 0;
@@ -93,12 +92,12 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     }
 
     @Override
-    public GlBuffer getBuffer() {
+    public Buffer getBuffer() {
         return this.buffer;
     }
 
     @Override
-    public void flush(CommandList commandList) {
+    public void flush() {
         // No data to flush
         if (this.queued <= 0) {
             return;
@@ -106,34 +105,34 @@ public class MappedStreamingBuffer implements StreamingBuffer {
 
         // If we wrapped around since the last flush, then fence both the head and tail of the buffer
         if (this.mark + this.queued > this.capacity) {
-            this.insertFence(commandList, this.mark, this.capacity - this.mark);
-            this.insertFence(commandList, 0, this.mark);
+            this.insertFence(this.mark, this.capacity - this.mark);
+            this.insertFence(0, this.mark);
         } else {
-            this.insertFence(commandList, this.mark, this.queued);
+            this.insertFence(this.mark, this.queued);
         }
 
         this.queued = 0;
         this.mark = this.pos;
     }
 
-    private void insertFence(CommandList commandList, int offset, int length) {
-        var fence = commandList.createFence();
+    private void insertFence(int offset, int length) {
+        var fence = this.device.createFence();
         var region = new Region(offset, length, fence);
 
         this.regions.add(region);
     }
 
     @Override
-    public void delete(CommandList commandList) {
+    public void delete() {
         while (!this.regions.isEmpty()) {
             var region = this.regions.remove();
             region.fence.sync();
         }
 
-        commandList.deleteBuffer(this.buffer);
+        this.device.deleteBuffer(this.buffer);
     }
 
-    private record Region(int offset, int length, GlFence fence) {
+    private record Region(int offset, int length, Fence fence) {
 
     }
 }

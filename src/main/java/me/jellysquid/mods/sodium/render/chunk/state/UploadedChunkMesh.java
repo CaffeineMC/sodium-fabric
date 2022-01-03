@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.render.chunk.state;
 
-import me.jellysquid.mods.sodium.render.chunk.arena.GlBufferSegment;
-import me.jellysquid.mods.sodium.render.chunk.buffer.ElementRange;
+import me.jellysquid.mods.sodium.render.arena.GlBufferSegment;
+import me.jellysquid.mods.sodium.render.buffer.ElementRange;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import org.apache.commons.lang3.Validate;
 

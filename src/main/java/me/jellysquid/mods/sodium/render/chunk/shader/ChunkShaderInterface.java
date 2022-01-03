@@ -1,9 +1,12 @@
 package me.jellysquid.mods.sodium.render.chunk.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.jellysquid.mods.sodium.opengl.buffer.GlBuffer;
+import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
 import me.jellysquid.mods.sodium.opengl.shader.ShaderBindingContext;
-import me.jellysquid.mods.sodium.opengl.shader.uniform.*;
+import me.jellysquid.mods.sodium.opengl.shader.uniform.UniformBlock;
+import me.jellysquid.mods.sodium.opengl.shader.uniform.UniformFloat3v;
+import me.jellysquid.mods.sodium.opengl.shader.uniform.UniformInt;
+import me.jellysquid.mods.sodium.opengl.shader.uniform.UniformMatrix4f;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL32C;
@@ -12,25 +15,25 @@ import org.lwjgl.opengl.GL32C;
  * A forward-rendering shader program for chunks.
  */
 public class ChunkShaderInterface {
-    private final GlUniformInt uniformBlockTex;
-    private final GlUniformInt uniformLightTex;
+    private final UniformInt uniformBlockTex;
+    private final UniformInt uniformLightTex;
 
-    private final GlUniformMatrix4f uniformModelViewMatrix;
-    private final GlUniformMatrix4f uniformProjectionMatrix;
-    private final GlUniformFloat3v uniformRegionOffset;
+    private final UniformMatrix4f uniformModelViewMatrix;
+    private final UniformMatrix4f uniformProjectionMatrix;
+    private final UniformFloat3v uniformRegionOffset;
 
-    private final GlUniformBlock uniformBlockDrawParameters;
+    private final UniformBlock uniformBlockDrawParameters;
 
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
 
     public ChunkShaderInterface(ShaderBindingContext context, ChunkShaderOptions options) {
-        this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new);
-        this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", GlUniformMatrix4f::new);
-        this.uniformRegionOffset = context.bindUniform("u_RegionOffset", GlUniformFloat3v::new);
+        this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", UniformMatrix4f::new);
+        this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", UniformMatrix4f::new);
+        this.uniformRegionOffset = context.bindUniform("u_RegionOffset", UniformFloat3v::new);
 
-        this.uniformBlockTex = context.bindUniform("u_BlockTex", GlUniformInt::new);
-        this.uniformLightTex = context.bindUniform("u_LightTex", GlUniformInt::new);
+        this.uniformBlockTex = context.bindUniform("u_BlockTex", UniformInt::new);
+        this.uniformLightTex = context.bindUniform("u_LightTex", UniformInt::new);
 
         this.uniformBlockDrawParameters = context.bindUniformBlock("ubo_DrawParameters", 0);
 
@@ -58,7 +61,7 @@ public class ChunkShaderInterface {
         this.uniformModelViewMatrix.set(matrix);
     }
 
-    public void setDrawUniforms(GlBuffer buffer) {
+    public void setDrawUniforms(Buffer buffer) {
         this.uniformBlockDrawParameters.bindBuffer(buffer);
     }
 

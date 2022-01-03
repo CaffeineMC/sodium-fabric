@@ -13,7 +13,6 @@ import me.jellysquid.mods.sodium.render.terrain.quad.properties.ModelQuadWinding
 import me.jellysquid.mods.sodium.render.terrain.color.ColorSampler;
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexSink;
-import me.jellysquid.mods.sodium.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.util.packed.ColorABGR;
 import me.jellysquid.mods.sodium.util.rand.XoRoShiRoRandom;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.BlockColorProviderRegistry;

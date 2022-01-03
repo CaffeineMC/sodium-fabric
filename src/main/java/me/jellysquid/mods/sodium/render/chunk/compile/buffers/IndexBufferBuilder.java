@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.render.chunk.compile.buffers;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntIterator;
-import me.jellysquid.mods.sodium.opengl.array.GlIndexType;
+import me.jellysquid.mods.sodium.opengl.types.IntType;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ModelQuadWinding;
 
 import java.nio.ByteBuffer;
@@ -33,11 +33,11 @@ public class IndexBufferBuilder {
         return new Result(this.indices);
     }
 
-    private static GlIndexType getOptimalIndexType(int count) {
+    private static IntType getOptimalIndexType(int count) {
         if (count < 65536) {
-            return GlIndexType.UNSIGNED_SHORT;
+            return IntType.UNSIGNED_SHORT;
         } else {
-            return GlIndexType.UNSIGNED_INT;
+            return IntType.UNSIGNED_INT;
         }
     }
 
@@ -49,7 +49,7 @@ public class IndexBufferBuilder {
         private final IntArrayList indices;
 
         private final int maxIndex, minIndex;
-        private final GlIndexType format;
+        private final IntType format;
 
         private Result(IntArrayList indices) {
             this.indices = indices;
@@ -105,7 +105,7 @@ public class IndexBufferBuilder {
             return this.minIndex;
         }
 
-        public GlIndexType getFormat() {
+        public IntType getFormat() {
             return this.format;
         }
     }
