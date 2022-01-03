@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -98,7 +99,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
-                this.currentIndex = (this.option.getValue().ordinal() + 1) % this.allowedValues.length;
+                this.currentIndex = Math.floorMod(this.option.getValue().ordinal() + (Screen.hasShiftDown() ? -1 : 1), this.allowedValues.length);
                 this.option.setValue(this.allowedValues[this.currentIndex]);
                 this.playClickSound();
 
