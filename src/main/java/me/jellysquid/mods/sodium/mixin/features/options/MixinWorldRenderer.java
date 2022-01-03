@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.options;
 
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.SodiumClientMod;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.WorldRenderer;
 import org.spongepowered.asm.mixin.Mixin;

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.core.matrix;
 
-import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Quaternion;
 import org.spongepowered.asm.mixin.Mixin;

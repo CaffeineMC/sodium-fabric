@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.cull;
 
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.entity.Entity;

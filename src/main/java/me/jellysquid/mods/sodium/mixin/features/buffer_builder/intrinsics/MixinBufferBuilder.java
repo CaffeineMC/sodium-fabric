@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.util.color.ColorU8;
-import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
+import me.jellysquid.mods.sodium.render.terrain.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexFormats;
+import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
+import me.jellysquid.mods.sodium.util.packed.ColorABGR;
+import me.jellysquid.mods.sodium.util.packed.ColorU8;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;
 import net.minecraft.client.render.model.BakedQuad;
@@ -43,7 +43,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
         int norm = MatrixUtil.computeNormal(normalMatrix, quad.getFace());
 
         QuadVertexSink drain = VertexDrain.of(this)
-                .createSink(VanillaVertexTypes.QUADS);
+                .createSink(VanillaVertexFormats.QUADS);
         drain.ensureCapacity(4);
 
         for (int i = 0; i < 4; i++) {

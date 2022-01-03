@@ -16,10 +16,10 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "me.jellysquid.mods.sodium.client.SodiumClientMod"
+      "me.jellysquid.mods.sodium.SodiumClientMod"
     ],
     "preLaunch": [
-      "me.jellysquid.mods.sodium.client.SodiumPreLaunch"
+      "me.jellysquid.mods.sodium.SodiumPreLaunch"
     ]
   },
   "custom": {
