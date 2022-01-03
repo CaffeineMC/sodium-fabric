@@ -2,9 +2,9 @@ package me.jellysquid.mods.sodium.render.chunk.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.opengl.shader.ShaderBindingContext;
-import me.jellysquid.mods.sodium.opengl.shader.uniform.GlUniformFloat;
-import me.jellysquid.mods.sodium.opengl.shader.uniform.GlUniformFloat4v;
-import me.jellysquid.mods.sodium.opengl.shader.uniform.GlUniformInt;
+import me.jellysquid.mods.sodium.opengl.shader.uniform.UniformFloat;
+import me.jellysquid.mods.sodium.opengl.shader.uniform.UniformFloat4v;
+import me.jellysquid.mods.sodium.opengl.shader.uniform.UniformInt;
 
 /**
  * These shader implementations try to remain compatible with the deprecated fixed function pipeline by manually
@@ -31,17 +31,17 @@ public abstract class ChunkShaderFogComponent {
     }
 
     public static class Smooth extends ChunkShaderFogComponent {
-        private final GlUniformFloat4v uFogColor;
+        private final UniformFloat4v uFogColor;
 
-        private final GlUniformInt uFogShape;
-        private final GlUniformFloat uFogStart;
-        private final GlUniformFloat uFogEnd;
+        private final UniformInt uFogShape;
+        private final UniformFloat uFogStart;
+        private final UniformFloat uFogEnd;
 
         public Smooth(ShaderBindingContext context) {
-            this.uFogColor = context.bindUniform("u_FogColor", GlUniformFloat4v::new);
-            this.uFogShape = context.bindUniform("u_FogShape", GlUniformInt::new);
-            this.uFogStart = context.bindUniform("u_FogStart", GlUniformFloat::new);
-            this.uFogEnd = context.bindUniform("u_FogEnd", GlUniformFloat::new);
+            this.uFogColor = context.bindUniform("u_FogColor", UniformFloat4v::new);
+            this.uFogShape = context.bindUniform("u_FogShape", UniformInt::new);
+            this.uFogStart = context.bindUniform("u_FogStart", UniformFloat::new);
+            this.uFogEnd = context.bindUniform("u_FogEnd", UniformFloat::new);
         }
 
         @Override

@@ -2,18 +2,17 @@ package me.jellysquid.mods.sodium.render.chunk.region;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
-import me.jellysquid.mods.sodium.render.chunk.arena.PendingUpload;
-import me.jellysquid.mods.sodium.render.chunk.buffer.IndexedVertexData;
-import me.jellysquid.mods.sodium.opengl.device.CommandList;
-import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
-import me.jellysquid.mods.sodium.render.stream.MappedStreamingBuffer;
-import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.Frustum;
-import me.jellysquid.mods.sodium.render.chunk.state.UploadedChunkMesh;
+import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
+import me.jellysquid.mods.sodium.render.arena.PendingUpload;
+import me.jellysquid.mods.sodium.render.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.TerrainBuildResult;
-import me.jellysquid.mods.sodium.render.chunk.state.ChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
+import me.jellysquid.mods.sodium.render.chunk.state.ChunkMesh;
+import me.jellysquid.mods.sodium.render.chunk.state.UploadedChunkMesh;
+import me.jellysquid.mods.sodium.render.stream.MappedStreamingBuffer;
+import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
 
 import java.util.*;
 
@@ -21,9 +20,11 @@ public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
 
     private final StreamingBuffer streamingBuffer;
+    private final RenderDevice device;
 
-    public RenderRegionManager(CommandList commandList) {
-        this.streamingBuffer = createStagingBuffer(commandList);
+    public RenderRegionManager(RenderDevice device) {
+        this.streamingBuffer = createStagingBuffer(device);
+        this.device = device;
     }
 
     public void updateVisibility(Frustum frustum) {
@@ -35,30 +36,27 @@ public class RenderRegionManager {
     }
 
     public void cleanup() {
-        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
-            this.streamingBuffer.flush(commandList);
+        this.streamingBuffer.flush();
 
-            Iterator<RenderRegion> it = this.regions.values()
-                    .iterator();
+        Iterator<RenderRegion> it = this.regions.values()
+                .iterator();
 
-            while (it.hasNext()) {
-                RenderRegion region = it.next();
+        while (it.hasNext()) {
+            RenderRegion region = it.next();
 
-                if (region.isEmpty()) {
-                    region.deleteResources(commandList);
-
-                    it.remove();
-                }
+            if (region.isEmpty()) {
+                region.deleteResources();
+                it.remove();
             }
         }
     }
 
-    public void upload(CommandList commandList, Iterator<TerrainBuildResult> queue) {
+    public void upload(Iterator<TerrainBuildResult> queue) {
         for (Map.Entry<RenderRegion, List<TerrainBuildResult>> entry : this.setupUploadBatches(queue).entrySet()) {
             RenderRegion region = entry.getKey();
             List<TerrainBuildResult> uploadQueue = entry.getValue();
 
-            this.upload(commandList, region, uploadQueue);
+            this.upload(region, uploadQueue);
 
             for (TerrainBuildResult result : uploadQueue) {
                 result.render.onBuildFinished(result);
@@ -68,7 +66,7 @@ public class RenderRegionManager {
         }
     }
 
-    private void upload(CommandList commandList, RenderRegion region, List<TerrainBuildResult> results) {
+    private void upload(RenderRegion region, List<TerrainBuildResult> results) {
         List<PendingSectionUpload> sectionUploads = new ArrayList<>();
 
         for (TerrainBuildResult result : results) {
@@ -98,10 +96,10 @@ public class RenderRegionManager {
             return;
         }
 
-        RenderRegion.RenderRegionArenas arenas = region.getOrCreateArenas(commandList);
+        RenderRegion.RenderRegionArenas arenas = region.getOrCreateArenas();
 
-        arenas.vertexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.vertexUpload));
-        arenas.indexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.indicesUpload));
+        arenas.vertexBuffers.upload(sectionUploads.stream().map(i -> i.vertexUpload));
+        arenas.indexBuffers.upload(sectionUploads.stream().map(i -> i.indicesUpload));
 
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
@@ -149,13 +147,13 @@ public class RenderRegionManager {
         return region;
     }
 
-    public void delete(CommandList commandList) {
+    public void delete() {
         for (RenderRegion region : this.regions.values()) {
-            region.deleteResources(commandList);
+            region.deleteResources();
         }
 
         this.regions.clear();
-        this.streamingBuffer.delete(commandList);
+        this.streamingBuffer.delete();
     }
 
     public Collection<RenderRegion> getLoadedRegions() {
@@ -166,12 +164,12 @@ public class RenderRegionManager {
         return this.streamingBuffer;
     }
 
-    protected RenderRegion.RenderRegionArenas createRegionArenas(CommandList commandList) {
-        return new RenderRegion.RenderRegionArenas(commandList, this.streamingBuffer);
+    protected RenderRegion.RenderRegionArenas createRegionArenas() {
+        return new RenderRegion.RenderRegionArenas(this.device, this.streamingBuffer);
     }
 
-    private static StreamingBuffer createStagingBuffer(CommandList commandList) {
-        return new MappedStreamingBuffer(commandList, 16 * 1024 * 1024);
+    private static StreamingBuffer createStagingBuffer(RenderDevice device) {
+        return new MappedStreamingBuffer(device, 16 * 1024 * 1024);
     }
 
     private record PendingSectionUpload(RenderSection section, ChunkMesh meshData, ChunkRenderPass pass,

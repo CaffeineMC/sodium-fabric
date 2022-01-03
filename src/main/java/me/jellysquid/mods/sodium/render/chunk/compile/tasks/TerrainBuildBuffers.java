@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.render.chunk.compile.tasks;
 
-import me.jellysquid.mods.sodium.render.chunk.buffer.IndexedVertexData;
-import me.jellysquid.mods.sodium.render.chunk.buffer.ElementRange;
+import me.jellysquid.mods.sodium.render.buffer.IndexedVertexData;
+import me.jellysquid.mods.sodium.render.buffer.ElementRange;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import me.jellysquid.mods.sodium.render.vertex.buffer.VertexBufferBuilder;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;

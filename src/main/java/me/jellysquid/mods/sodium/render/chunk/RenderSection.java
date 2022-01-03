@@ -9,7 +9,6 @@ import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.render.chunk.state.UploadedChunkMesh;
 import me.jellysquid.mods.sodium.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.render.world.ChunkUpdateType;
 import me.jellysquid.mods.sodium.util.DirectionUtil;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;

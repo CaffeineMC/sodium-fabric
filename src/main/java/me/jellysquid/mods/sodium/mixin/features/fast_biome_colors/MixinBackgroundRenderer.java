@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.fast_biome_colors;
 
-import me.jellysquid.mods.sodium.util.color.FastCubicSampler;
+import me.jellysquid.mods.sodium.world.biome.FastCubicSampler;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;

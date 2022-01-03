@@ -261,7 +261,7 @@ public class UserConfigScreen extends Screen {
 
         if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
             client.worldRenderer.reload();
-            RenderImmediate.reset();
+            RenderImmediate.delete();
         } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
             client.worldRenderer.scheduleTerrainUpdate();
         }

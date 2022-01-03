@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.render.terrain.context;
 
-import me.jellysquid.mods.sodium.render.chunk.compile.WorldSlice;
-import me.jellysquid.mods.sodium.render.chunk.compile.WorldSliceData;
+import me.jellysquid.mods.sodium.world.slice.WorldSlice;
+import me.jellysquid.mods.sodium.world.slice.WorldSliceData;
 import me.jellysquid.mods.sodium.render.terrain.BlockRenderer;
 import me.jellysquid.mods.sodium.render.terrain.FluidRenderer;
 import me.jellysquid.mods.sodium.render.terrain.color.blender.ColorBlender;
@@ -47,7 +47,7 @@ public class PreparedTerrainRenderCache extends TerrainRenderCache {
 
     public void init(WorldSliceData context) {
         this.lightDataCache.reset(context.getOrigin());
-        this.slice.copyData(context);
+        this.slice.init(context);
     }
 
     @Deprecated

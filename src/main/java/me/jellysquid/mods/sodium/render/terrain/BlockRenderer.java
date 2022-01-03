@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.render.terrain;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.BlockColorProviderRegistry;
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.IndexBufferBuilder;
-import me.jellysquid.mods.sodium.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.render.terrain.color.ColorSampler;
 import me.jellysquid.mods.sodium.render.terrain.color.blender.ColorBlender;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexSink;
@@ -17,7 +16,6 @@ import me.jellysquid.mods.sodium.render.terrain.quad.properties.ModelQuadOrienta
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.util.DirectionUtil;
 import me.jellysquid.mods.sodium.util.packed.ColorABGR;
-import me.jellysquid.mods.sodium.util.rand.XoRoShiRoRandom;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.BakedModel;

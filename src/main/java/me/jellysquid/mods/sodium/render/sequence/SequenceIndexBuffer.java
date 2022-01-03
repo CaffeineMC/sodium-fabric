@@ -1,21 +1,23 @@
 package me.jellysquid.mods.sodium.render.sequence;
 
-import me.jellysquid.mods.sodium.opengl.buffer.GlBuffer;
-import me.jellysquid.mods.sodium.opengl.device.CommandList;
+import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
+import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 
 public class SequenceIndexBuffer {
+    private final RenderDevice device;
     private final SequenceBuilder builder;
-    private GlBuffer buffer;
 
+    private Buffer buffer;
     private int maxVertices;
 
-    public SequenceIndexBuffer(SequenceBuilder builder) {
+    public SequenceIndexBuffer(RenderDevice device, SequenceBuilder builder) {
+        this.device = device;
         this.builder = builder;
     }
 
-    public void ensureCapacity(CommandList commandList, int vertexCount) {
+    public void ensureCapacity(int vertexCount) {
         if (vertexCount > this.maxVertices) {
-            this.grow(commandList, this.getNextSize(vertexCount));
+            this.grow(this.getNextSize(vertexCount));
         }
     }
 
@@ -23,8 +25,8 @@ public class SequenceIndexBuffer {
         return Math.max(this.maxVertices * 2, vertexCount + 2048);
     }
 
-    private void grow(CommandList commandList, int vertexCount) {
-        this.delete(commandList);
+    private void grow(int vertexCount) {
+        this.delete();
 
         var verticesPerPrimitive = this.builder.getVerticesPerPrimitive();
         var indicesPerPrimitive = this.builder.getIndicesPerPrimitive();
@@ -32,7 +34,7 @@ public class SequenceIndexBuffer {
         var primitiveCount = vertexCount / verticesPerPrimitive;
         var bufferSize = (long) indicesPerPrimitive * primitiveCount * 4L;
 
-        this.buffer = commandList.createBuffer(bufferSize, (buffer) -> {
+        this.buffer = this.device.createBuffer(bufferSize, (buffer) -> {
             var intBuffer = buffer.asIntBuffer();
 
             for (int primitiveIndex = 0; primitiveIndex < primitiveCount; primitiveIndex++) {
@@ -43,13 +45,13 @@ public class SequenceIndexBuffer {
         this.maxVertices = vertexCount;
     }
 
-    public GlBuffer getBuffer() {
+    public Buffer getBuffer() {
         return this.buffer;
     }
 
-    public void delete(CommandList commandList) {
+    public void delete() {
         if (this.buffer != null) {
-            commandList.deleteBuffer(this.buffer);
+            this.device.deleteBuffer(this.buffer);
             this.buffer = null;
         }
     }

@@ -1,20 +1,19 @@
 package me.jellysquid.mods.sodium.render.stream;
 
-import me.jellysquid.mods.sodium.opengl.buffer.GlBuffer;
-import me.jellysquid.mods.sodium.opengl.device.CommandList;
+import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
 
 import java.nio.ByteBuffer;
 
 public interface StreamingBuffer {
-    default int write(CommandList commandList, ByteBuffer data) {
-        return this.write(commandList, data, 1);
+    default int write(ByteBuffer data) {
+        return this.write(data, 1);
     }
 
-    int write(CommandList commandList, ByteBuffer data, int alignment);
+    int write(ByteBuffer data, int alignment);
 
-    GlBuffer getBuffer();
+    Buffer getBuffer();
 
-    void flush(CommandList commandList);
+    void flush();
 
-    void delete(CommandList commandList);
+    void delete();
 }

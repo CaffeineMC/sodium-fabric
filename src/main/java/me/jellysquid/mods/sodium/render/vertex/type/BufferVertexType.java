@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.render.vertex.type;
 
-import me.jellysquid.mods.sodium.opengl.attribute.BufferVertexFormat;
 import me.jellysquid.mods.sodium.render.vertex.VertexSink;
 
 /**

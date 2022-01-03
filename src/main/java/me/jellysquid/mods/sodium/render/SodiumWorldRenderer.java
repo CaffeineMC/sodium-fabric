@@ -4,19 +4,18 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.SodiumClientMod;
-import me.jellysquid.mods.sodium.opengl.device.CommandList;
-import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
-import me.jellysquid.mods.sodium.render.chunk.draw.ChunkRenderMatrices;
-import me.jellysquid.mods.sodium.render.world.ChunkTracker;
-import me.jellysquid.mods.sodium.render.chunk.RenderSectionManager;
-import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
-import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
-import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPassManager;
-import me.jellysquid.mods.sodium.render.terrain.context.ImmediateTerrainRenderCache;
-import me.jellysquid.mods.sodium.util.NativeBuffer;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.Frustum;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.WorldRendererHolder;
+import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
+import me.jellysquid.mods.sodium.render.chunk.RenderSectionManager;
+import me.jellysquid.mods.sodium.render.chunk.draw.ChunkRenderMatrices;
+import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
+import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPassManager;
+import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
+import me.jellysquid.mods.sodium.render.terrain.context.ImmediateTerrainRenderCache;
 import me.jellysquid.mods.sodium.util.ListUtil;
+import me.jellysquid.mods.sodium.util.NativeBuffer;
+import me.jellysquid.mods.sodium.world.ChunkTracker;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -26,7 +25,10 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 
 import java.util.Collection;
@@ -107,9 +109,7 @@ public class SodiumWorldRenderer {
 
         ImmediateTerrainRenderCache.createRenderContext(this.world);
 
-        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
-            this.initRenderer(commandList);
-        }
+        this.initRenderer(RenderDevice.INSTANCE);
     }
 
     private void unloadWorld() {
@@ -227,12 +227,10 @@ public class SodiumWorldRenderer {
             return;
         }
 
-        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
-            this.initRenderer(commandList);
-        }
+        this.initRenderer(RenderDevice.INSTANCE);
     }
 
-    private void initRenderer(CommandList commandList) {
+    private void initRenderer(RenderDevice device) {
         if (this.renderSectionManager != null) {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
@@ -242,7 +240,7 @@ public class SodiumWorldRenderer {
 
         this.renderPassManager = ChunkRenderPassManager.createDefaultMappings();
 
-        this.renderSectionManager = new RenderSectionManager(this, this.renderPassManager, this.world, this.renderDistance, commandList);
+        this.renderSectionManager = new RenderSectionManager(device, this, this.renderPassManager, this.world, this.renderDistance);
         this.renderSectionManager.reloadChunks(this.chunkTracker);
     }
 

@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.render.terrain.light.cache;
 
 import me.jellysquid.mods.sodium.render.terrain.light.data.LightDataAccess;
-import me.jellysquid.mods.sodium.render.chunk.compile.WorldSlice;
+import me.jellysquid.mods.sodium.world.slice.WorldSlice;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.BlockRenderView;
 
