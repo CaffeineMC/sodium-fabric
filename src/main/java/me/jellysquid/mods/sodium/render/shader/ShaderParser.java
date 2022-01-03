@@ -1,6 +1,4 @@
-package me.jellysquid.mods.sodium.opengl.shader.parser;
-
-import net.minecraft.util.Identifier;
+package me.jellysquid.mods.sodium.render.shader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,21 +9,23 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ShaderParser {
-    public static String parseShader(String src, ShaderConstants constants) {
-        List<String> lines = parseShader(src);
+    public static <T> String parseShader(ShaderLoader<T> loader, T name, ShaderConstants constants) {
+        String src = loader.getShaderSource(name);
+
+        List<String> lines = parseShader(loader, src);
         lines.addAll(1, constants.getDefineStrings());
 
         return String.join("\n", lines);
     }
 
-    public static List<String> parseShader(String src) {
+    public static List<String> parseShader(ShaderLoader<?> loader, String src) {
         List<String> builder = new LinkedList<>();
         String line;
 
         try (BufferedReader reader = new BufferedReader(new StringReader(src))) {
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("#import")) {
-                    builder.addAll(resolveImport(line));
+                    builder.addAll(resolveImport(loader, line));
                 } else {
                     builder.add(line);
                 }
@@ -37,21 +37,18 @@ public class ShaderParser {
         return builder;
     }
 
-    private static final Pattern IMPORT_PATTERN = Pattern.compile("#import <(?<namespace>.*):(?<path>.*)>");
+    private static final Pattern IMPORT_PATTERN = Pattern.compile("#import <(?<name>.*)>");
 
-    private static List<String> resolveImport(String line) {
+    private static List<String> resolveImport(ShaderLoader<?> loader, String line) {
         Matcher matcher = IMPORT_PATTERN.matcher(line);
 
         if (!matcher.matches()) {
             throw new IllegalArgumentException("Malformed import statement (expected format: " + IMPORT_PATTERN + ")");
         }
 
-        String namespace = matcher.group("namespace");
-        String path = matcher.group("path");
+        String name = matcher.group("name");
+        String source = loader.getShaderSource(name);
 
-        Identifier identifier = new Identifier(namespace, path);
-        String source = ShaderLoader.getShaderSource(identifier);
-
-        return ShaderParser.parseShader(source);
+        return ShaderParser.parseShader(loader, source);
     }
 }

@@ -6,12 +6,12 @@ package me.jellysquid.mods.sodium.opengl;
  * not stop code from cloning the handle and trying to use it after it has been deleted and as such should not be
  * relied on too heavily.
  */
-public abstract class GlObject {
+public abstract class ManagedObject {
     private static final int INVALID_HANDLE = Integer.MIN_VALUE;
 
     private int handle = INVALID_HANDLE;
 
-    protected GlObject() {
+    protected ManagedObject() {
 
     }
 

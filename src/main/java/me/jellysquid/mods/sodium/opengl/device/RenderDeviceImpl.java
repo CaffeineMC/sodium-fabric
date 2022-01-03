@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.opengl.device;
 
 import me.jellysquid.mods.sodium.opengl.array.*;
 import me.jellysquid.mods.sodium.opengl.buffer.*;
+import me.jellysquid.mods.sodium.opengl.shader.*;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
 import me.jellysquid.mods.sodium.opengl.sync.FenceImpl;
 import me.jellysquid.mods.sodium.opengl.types.IntType;
@@ -16,6 +17,7 @@ import org.lwjgl.opengl.GL45C;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class RenderDeviceImpl implements RenderDevice {
     @Override
@@ -40,8 +42,23 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     @Override
+    public void deleteProgram(Program<?> program) {
+        this.deleteProgram0((ProgramImpl<?>) program);
+    }
+
+    private void deleteProgram0(ProgramImpl<?> program) {
+        GL20C.glDeleteProgram(program.handle());
+        program.invalidateHandle();
+    }
+
+    @Override
     public Fence createFence() {
         return new FenceImpl(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
+    }
+
+    @Override
+    public <T> Program<T> createProgram(ShaderDescription desc, Function<ShaderBindingContext, T> interfaceFactory) {
+        return new ProgramImpl<>(desc, interfaceFactory);
     }
 
     @Override
@@ -98,16 +115,18 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     @Override
-    public <T extends Enum<T>> void useVertexArray(VertexArray<T> array, Consumer<VertexArrayCommandList<T>> consumer) {
-        this.useVertexArray0((VertexArrayImpl<T>) array, consumer);
+    public <T> void useProgram(Program<T> program, ProgramGate<T> gate) {
+        int prev = GL30C.glGetInteger(GL30C.GL_CURRENT_PROGRAM);
+
+        GL30C.glUseProgram(program.handle());
+        program.bindResources();
+
+        gate.run(new ImmediateProgramCommandList(), program.getInterface());
+
+        program.unbindResources();
+        GL30C.glUseProgram(prev);
     }
 
-    private <T extends Enum<T>> void useVertexArray0(VertexArrayImpl<T> array, Consumer<VertexArrayCommandList<T>> consumer) {
-        int prev = GL30C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
-        GL30C.glBindVertexArray(array.handle());
-        consumer.accept(new ImmediateVertexArrayCommandList<>(array));
-        GL30C.glBindVertexArray(prev);
-    }
 
     @Override
     public void deleteVertexArray(VertexArray<?> array) {
@@ -153,6 +172,20 @@ public class RenderDeviceImpl implements RenderDevice {
         @Override
         public void drawElementsBaseVertex(PrimitiveType primitiveType, IntType elementType, long elementPointer, int baseVertex, int elementCount) {
             GL32C.glDrawElementsBaseVertex(primitiveType.getId(), elementCount, elementType.getFormatId(), elementPointer, baseVertex);
+        }
+    }
+
+    private static class ImmediateProgramCommandList implements ProgramCommandList {
+        @Override
+        public <A extends Enum<A>> void useVertexArray(VertexArray<A> array, Consumer<VertexArrayCommandList<A>> consumer) {
+            this.useVertexArray0((VertexArrayImpl<A>) array, consumer);
+        }
+
+        private <A extends Enum<A>> void useVertexArray0(VertexArrayImpl<A> array, Consumer<VertexArrayCommandList<A>> consumer) {
+            int prev = GL30C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
+            GL30C.glBindVertexArray(array.handle());
+            consumer.accept(new ImmediateVertexArrayCommandList<>(array));
+            GL30C.glBindVertexArray(prev);
         }
     }
 }

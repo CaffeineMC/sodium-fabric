@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.opengl.shader.parser;
+package me.jellysquid.mods.sodium.render.shader;
 
 import java.util.*;
 

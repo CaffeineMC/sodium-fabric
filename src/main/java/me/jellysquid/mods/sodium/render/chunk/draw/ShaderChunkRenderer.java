@@ -4,20 +4,23 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.opengl.attribute.VertexFormat;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.opengl.shader.Program;
-import me.jellysquid.mods.sodium.opengl.shader.ShaderImpl;
+import me.jellysquid.mods.sodium.opengl.shader.ProgramCommandList;
+import me.jellysquid.mods.sodium.opengl.shader.ShaderDescription;
 import me.jellysquid.mods.sodium.opengl.shader.ShaderType;
-import me.jellysquid.mods.sodium.opengl.shader.parser.ShaderConstants;
-import me.jellysquid.mods.sodium.opengl.shader.parser.ShaderLoader;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkFogMode;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderOptions;
+import me.jellysquid.mods.sodium.render.shader.ShaderConstants;
+import me.jellysquid.mods.sodium.render.shader.ShaderLoader;
+import me.jellysquid.mods.sodium.render.shader.ShaderParser;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainMeshAttribute;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
 import net.minecraft.util.Identifier;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 public abstract class ShaderChunkRenderer implements ChunkRenderer {
     private final Map<ChunkShaderOptions, Program<ChunkShaderInterface>> programs = new Object2ObjectOpenHashMap<>();
@@ -26,8 +29,6 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     protected final VertexFormat<TerrainMeshAttribute> vertexFormat;
 
     protected final RenderDevice device;
-
-    protected Program<ChunkShaderInterface> activeProgram;
 
     public ShaderChunkRenderer(RenderDevice device, TerrainVertexType vertexType) {
         this.device = device;
@@ -48,46 +49,38 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     private Program<ChunkShaderInterface> createShader(String path, ChunkShaderOptions options) {
         ShaderConstants constants = options.constants();
 
-        ShaderImpl vertShader = ShaderLoader.loadShader(ShaderType.VERTEX,
-                new Identifier("sodium", path + ".vsh"), constants);
-        
-        ShaderImpl fragShader = ShaderLoader.loadShader(ShaderType.FRAGMENT,
-                new Identifier("sodium", path + ".fsh"), constants);
+        var vertShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", path + ".vsh"), constants);
+        var fragShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", path + ".fsh"), constants);
 
-        try {
-            return Program.builder(new Identifier("sodium", "chunk_shader"))
-                    .attachShader(vertShader)
-                    .attachShader(fragShader)
-                    .bindAttribute("a_PosId", ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID)
-                    .bindAttribute("a_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
-                    .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE)
-                    .bindAttribute("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
-                    .bindFragmentData("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
-                    .link((shader) -> new ChunkShaderInterface(shader, options));
-        } finally {
-            vertShader.delete();
-            fragShader.delete();
-        }
+        var desc = ShaderDescription.builder()
+                .addShaderSource(ShaderType.VERTEX, vertShader)
+                .addShaderSource(ShaderType.FRAGMENT, fragShader)
+                .addAttributeBinding("a_PosId", ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID)
+                .addAttributeBinding("a_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
+                .addAttributeBinding("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE)
+                .addAttributeBinding("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
+                .addFragmentBinding("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
+                .build();
+
+        return this.device.createProgram(desc, (binder) -> new ChunkShaderInterface(binder, options));
     }
 
-    protected void begin(ChunkRenderPass pass) {
-        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass, this.vertexType);
+    protected void beginRendering(ChunkRenderPass pass, RenderDevice.ProgramGate<ChunkShaderInterface> gate) {
+        var options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass, this.vertexType);
+        var program = this.compileProgram(options);
 
-        this.activeProgram = this.compileProgram(options);
-        this.activeProgram.bind();
-        this.activeProgram.getInterface()
-                .setup(this.vertexType);
-    }
-
-    protected void end() {
-        this.activeProgram.unbind();
-        this.activeProgram = null;
+        this.device.useProgram(program, (programCommandList, programInterface) -> {
+            programInterface.setup();
+            gate.run(programCommandList, programInterface);
+        });
     }
 
     @Override
     public void delete() {
-        this.programs.values()
-                .forEach(Program::delete);
+        for (var program : this.programs.values()) {
+            this.device.deleteProgram(program);
+        }
+
         this.programs.clear();
     }
 

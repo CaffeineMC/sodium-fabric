@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.opengl.array;
 
-import me.jellysquid.mods.sodium.opengl.GlObject;
+import me.jellysquid.mods.sodium.opengl.ManagedObject;
 import org.lwjgl.opengl.GL45C;
 
 import java.util.List;
 import java.util.Map;
 
-public class VertexArrayImpl<T extends Enum<T>> extends GlObject implements VertexArray<T> {
+public class VertexArrayImpl<T extends Enum<T>> extends ManagedObject implements VertexArray<T> {
     private final VertexArrayDescription<T> desc;
 
     public VertexArrayImpl(int id, VertexArrayDescription<T> desc) {
