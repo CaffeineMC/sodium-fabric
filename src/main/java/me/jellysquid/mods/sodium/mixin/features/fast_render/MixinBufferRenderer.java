@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.fast_render;
 
-import me.jellysquid.mods.sodium.client.render.immediate.RenderImmediate;
+import me.jellysquid.mods.sodium.render.immediate.RenderImmediate;
 import net.minecraft.client.render.BufferRenderer;
 import net.minecraft.client.render.VertexFormat;
 import org.spongepowered.asm.mixin.Mixin;

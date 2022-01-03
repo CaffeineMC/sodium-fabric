@@ -1,11 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkStatus;
-import me.jellysquid.mods.sodium.client.util.frustum.FrustumAdapter;
-import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
+import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.FrustumAdapter;
+import me.jellysquid.mods.sodium.interop.vanilla.mixin.WorldRendererHolder;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.*;
@@ -24,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.SortedSet;
 
 @Mixin(WorldRenderer.class)
-public abstract class MixinWorldRenderer implements WorldRendererExtended {
+public abstract class MixinWorldRenderer implements WorldRendererHolder {
     @Shadow
     @Final
     private BufferBuilderStorage bufferBuilders;
@@ -40,7 +38,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
 
     @Override
     public SodiumWorldRenderer getSodiumWorldRenderer() {
-        return renderer;
+        return this.renderer;
     }
 
     @Redirect(method = "reload()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/GameOptions;getClampedViewDistance()I", ordinal = 1))

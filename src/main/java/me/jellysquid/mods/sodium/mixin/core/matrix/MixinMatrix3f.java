@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core.matrix;
 
-import me.jellysquid.mods.sodium.client.util.Norm3b;
-import me.jellysquid.mods.sodium.client.util.math.Matrix3fExtended;
+import me.jellysquid.mods.sodium.util.packed.Normal3b;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.Matrix3fExtended;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Matrix3f;
 import net.minecraft.util.math.Quaternion;
@@ -89,7 +89,7 @@ public class MixinMatrix3f implements Matrix3fExtended {
         float y2 = this.a10 * x + this.a11 * y + this.a12 * z;
         float z2 = this.a20 * x + this.a21 * y + this.a22 * z;
 
-        return Norm3b.pack(x2, y2, z2);
+        return Normal3b.pack(x2, y2, z2);
     }
 
     private void rotateX(Quaternion quaternion) {

@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
-import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
-import me.jellysquid.mods.sodium.client.util.Norm3b;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.util.math.Matrix3fExtended;
-import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
-import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
+import me.jellysquid.mods.sodium.interop.vanilla.mixin.ModelCuboidAccessor;
+import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexFormats;
+import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
+import me.jellysquid.mods.sodium.util.packed.Normal3b;
+import me.jellysquid.mods.sodium.util.packed.ColorABGR;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.Matrix3fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
@@ -37,7 +37,7 @@ public class MixinModelPart {
         Matrix3fExtended normalExt = MatrixUtil.getExtendedMatrix(matrices.getNormalMatrix());
         Matrix4fExtended positionExt = MatrixUtil.getExtendedMatrix(matrices.getPositionMatrix());
 
-        QuadVertexSink drain = VertexDrain.of(vertexConsumer).createSink(VanillaVertexTypes.QUADS);
+        QuadVertexSink drain = VertexDrain.of(vertexConsumer).createSink(VanillaVertexFormats.QUADS);
         drain.ensureCapacity(this.cuboids.size() * 6 * 4);
 
         int color = ColorABGR.pack(red, green, blue, alpha);
@@ -48,7 +48,7 @@ public class MixinModelPart {
                 float normY = normalExt.transformVecY(quad.direction);
                 float normZ = normalExt.transformVecZ(quad.direction);
 
-                int norm = Norm3b.pack(normX, normY, normZ);
+                int norm = Normal3b.pack(normX, normY, normZ);
 
                 for (ModelPart.Vertex vertex : quad.vertices) {
                     Vec3f pos = vertex.pos;

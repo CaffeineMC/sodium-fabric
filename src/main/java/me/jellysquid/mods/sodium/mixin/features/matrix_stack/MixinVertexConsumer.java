@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.features.matrix_stack;
 
-import me.jellysquid.mods.sodium.client.util.math.Matrix3fExtended;
-import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
-import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.Matrix3fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.util.math.Matrix3f;
 import net.minecraft.util.math.Matrix4f;

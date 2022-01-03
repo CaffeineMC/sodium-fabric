@@ -1,13 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.line.LineVertexSink;
-import me.jellysquid.mods.sodium.client.util.Norm3b;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.util.math.Matrix3fExtended;
-import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
-import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
+import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexFormats;
+import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.line.LineVertexSink;
+import me.jellysquid.mods.sodium.util.packed.Normal3b;
+import me.jellysquid.mods.sodium.util.packed.ColorABGR;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.Matrix3fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
@@ -74,44 +74,44 @@ public class MixinWorldRenderer {
         float v8z = positionExt.transformVecZ(x2f, y2f, z2f);
 
         LineVertexSink lines = VertexDrain.of(vertexConsumer)
-                .createSink(VanillaVertexTypes.LINES);
+                .createSink(VanillaVertexFormats.LINES);
         lines.ensureCapacity(24);
 
-        lines.vertexLine(v1x, v1y, v1z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), Norm3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
-        lines.vertexLine(v2x, v2y, v2z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), Norm3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
+        lines.vertexLine(v1x, v1y, v1z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), Normal3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
+        lines.vertexLine(v2x, v2y, v2z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), Normal3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
 
-        lines.vertexLine(v1x, v1y, v1z, ColorABGR.pack(xAxisRed, green, zAxisBlue, alpha), Norm3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
-        lines.vertexLine(v3x, v3y, v3z, ColorABGR.pack(xAxisRed, green, zAxisBlue, alpha), Norm3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
+        lines.vertexLine(v1x, v1y, v1z, ColorABGR.pack(xAxisRed, green, zAxisBlue, alpha), Normal3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
+        lines.vertexLine(v3x, v3y, v3z, ColorABGR.pack(xAxisRed, green, zAxisBlue, alpha), Normal3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
 
-        lines.vertexLine(v1x, v1y, v1z, ColorABGR.pack(xAxisRed, yAxisGreen, blue, alpha), Norm3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
-        lines.vertexLine(v4x, v4y, v4z, ColorABGR.pack(xAxisRed, yAxisGreen, blue, alpha), Norm3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
+        lines.vertexLine(v1x, v1y, v1z, ColorABGR.pack(xAxisRed, yAxisGreen, blue, alpha), Normal3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
+        lines.vertexLine(v4x, v4y, v4z, ColorABGR.pack(xAxisRed, yAxisGreen, blue, alpha), Normal3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
 
-        lines.vertexLine(v2x, v2y, v2z, color, Norm3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
-        lines.vertexLine(v5x, v5y, v5z, color, Norm3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
+        lines.vertexLine(v2x, v2y, v2z, color, Normal3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
+        lines.vertexLine(v5x, v5y, v5z, color, Normal3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
 
-        lines.vertexLine(v5x, v5y, v5z, color, Norm3b.pack(-normalExt.getA00(), -normalExt.getA10(), -normalExt.getA20()));
-        lines.vertexLine(v3x, v3y, v3z, color, Norm3b.pack(-normalExt.getA00(), -normalExt.getA10(), -normalExt.getA20()));
+        lines.vertexLine(v5x, v5y, v5z, color, Normal3b.pack(-normalExt.getA00(), -normalExt.getA10(), -normalExt.getA20()));
+        lines.vertexLine(v3x, v3y, v3z, color, Normal3b.pack(-normalExt.getA00(), -normalExt.getA10(), -normalExt.getA20()));
 
-        lines.vertexLine(v3x, v3y, v3z, color, Norm3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
-        lines.vertexLine(v6x, v6y, v6z, color, Norm3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
+        lines.vertexLine(v3x, v3y, v3z, color, Normal3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
+        lines.vertexLine(v6x, v6y, v6z, color, Normal3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
 
-        lines.vertexLine(v6x, v6y, v6z, color, Norm3b.pack(-normalExt.getA01(), -normalExt.getA11(), -normalExt.getA21()));
-        lines.vertexLine(v4x, v4y, v4z, color, Norm3b.pack(-normalExt.getA01(), -normalExt.getA11(), -normalExt.getA21()));
+        lines.vertexLine(v6x, v6y, v6z, color, Normal3b.pack(-normalExt.getA01(), -normalExt.getA11(), -normalExt.getA21()));
+        lines.vertexLine(v4x, v4y, v4z, color, Normal3b.pack(-normalExt.getA01(), -normalExt.getA11(), -normalExt.getA21()));
 
-        lines.vertexLine(v4x, v4y, v4z, color, Norm3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
-        lines.vertexLine(v7x, v7y, v7z, color, Norm3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
+        lines.vertexLine(v4x, v4y, v4z, color, Normal3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
+        lines.vertexLine(v7x, v7y, v7z, color, Normal3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
 
-        lines.vertexLine(v7x, v7y, v7z, color, Norm3b.pack(-normalExt.getA02(), -normalExt.getA12(), -normalExt.getA22()));
-        lines.vertexLine(v2x, v2y, v2z, color, Norm3b.pack(-normalExt.getA02(), -normalExt.getA12(), -normalExt.getA22()));
+        lines.vertexLine(v7x, v7y, v7z, color, Normal3b.pack(-normalExt.getA02(), -normalExt.getA12(), -normalExt.getA22()));
+        lines.vertexLine(v2x, v2y, v2z, color, Normal3b.pack(-normalExt.getA02(), -normalExt.getA12(), -normalExt.getA22()));
 
-        lines.vertexLine(v6x, v6y, v6z, color, Norm3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
-        lines.vertexLine(v8x, v8y, v8z, color, Norm3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
+        lines.vertexLine(v6x, v6y, v6z, color, Normal3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
+        lines.vertexLine(v8x, v8y, v8z, color, Normal3b.pack(normalExt.getA00(), normalExt.getA10(), normalExt.getA20()));
 
-        lines.vertexLine(v7x, v7y, v7z, color, Norm3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
-        lines.vertexLine(v8x, v8y, v8z, color, Norm3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
+        lines.vertexLine(v7x, v7y, v7z, color, Normal3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
+        lines.vertexLine(v8x, v8y, v8z, color, Normal3b.pack(normalExt.getA01(), normalExt.getA11(), normalExt.getA21()));
 
-        lines.vertexLine(v5x, v5y, v5z, color, Norm3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
-        lines.vertexLine(v8x, v8y, v8z, color, Norm3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
+        lines.vertexLine(v5x, v5y, v5z, color, Normal3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
+        lines.vertexLine(v8x, v8y, v8z, color, Normal3b.pack(normalExt.getA02(), normalExt.getA12(), normalExt.getA22()));
 
         lines.flush();
     }

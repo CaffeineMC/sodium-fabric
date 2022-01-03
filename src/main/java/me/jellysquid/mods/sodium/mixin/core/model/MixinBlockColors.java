@@ -2,8 +2,8 @@ package me.jellysquid.mods.sodium.mixin.core.model;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
-import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
+import me.jellysquid.mods.sodium.render.terrain.color.ColorSampler;
+import me.jellysquid.mods.sodium.interop.vanilla.mixin.BlockColorProviderRegistry;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.color.block.BlockColors;
@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BlockColors.class)
-public class MixinBlockColors implements BlockColorsExtended {
+public class MixinBlockColors implements BlockColorProviderRegistry {
     private Reference2ReferenceMap<Block, ColorSampler<BlockState>> blocksToColor;
 
     private static final ColorSampler<?> DEFAULT_PROVIDER = (state, view, pos, tint) -> -1;

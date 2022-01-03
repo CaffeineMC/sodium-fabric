@@ -1,9 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.features.particle.fast_render;
 
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.particle.ParticleVertexSink;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
+import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexFormats;
+import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.particle.ParticleVertexSink;
+import me.jellysquid.mods.sodium.util.packed.ColorABGR;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.Camera;
@@ -72,7 +72,7 @@ public abstract class MixinBillboardParticle extends Particle {
         int color = ColorABGR.pack(this.red , this.green, this.blue, this.alpha);
 
         ParticleVertexSink drain = VertexDrain.of(vertexConsumer)
-                .createSink(VanillaVertexTypes.PARTICLES);
+                .createSink(VanillaVertexFormats.PARTICLES);
 
         addVertex(drain, quaternion,-1.0F, -1.0F, x, y, z, maxU, maxV, color, light, size);
         addVertex(drain, quaternion,-1.0F, 1.0F, x, y, z, maxU, minV, color, light, size);

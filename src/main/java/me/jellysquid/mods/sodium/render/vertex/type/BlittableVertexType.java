@@ -1,0 +1,20 @@
+package me.jellysquid.mods.sodium.render.vertex.type;
+
+import me.jellysquid.mods.sodium.SodiumClientMod;
+import me.jellysquid.mods.sodium.render.vertex.VertexSink;
+import me.jellysquid.mods.sodium.render.vertex.buffer.VertexBufferView;
+
+public interface BlittableVertexType<T extends VertexSink> extends BufferVertexType<T> {
+    /**
+     * Creates a {@link VertexSink} which writes into a {@link VertexBufferView}. This allows for specialization
+     * when the memory storage is known.
+     *
+     * @param buffer The backing vertex buffer
+     * @param direct True if direct memory access is allowed, otherwise false
+     */
+    T createBufferWriter(VertexBufferView buffer, boolean direct);
+
+    default T createBufferWriter(VertexBufferView buffer) {
+        return this.createBufferWriter(buffer, SodiumClientMod.isDirectMemoryAccessEnabled());
+    }
+}

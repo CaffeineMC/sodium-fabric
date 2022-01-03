@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
+import me.jellysquid.mods.sodium.render.terrain.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.render.terrain.quad.properties.ModelQuadFlags;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
+import static me.jellysquid.mods.sodium.render.terrain.quad.ModelQuadUtil.*;
 
 @Mixin(BakedQuad.class)
 public class MixinBakedQuad implements ModelQuadView {

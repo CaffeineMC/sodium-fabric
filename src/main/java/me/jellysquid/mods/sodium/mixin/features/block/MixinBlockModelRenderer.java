@@ -1,13 +1,14 @@
 package me.jellysquid.mods.sodium.mixin.features.block;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
-import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import me.jellysquid.mods.sodium.render.terrain.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexFormats;
+import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
+import me.jellysquid.mods.sodium.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.render.terrain.quad.ModelQuadUtil;
+import me.jellysquid.mods.sodium.util.packed.ColorABGR;
+import me.jellysquid.mods.sodium.util.rand.XoRoShiRoRandom;
+import me.jellysquid.mods.sodium.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.block.BlockModelRenderer;
@@ -50,7 +51,7 @@ public class MixinBlockModelRenderer {
     @Overwrite
     public void render(MatrixStack.Entry entry, VertexConsumer vertexConsumer, BlockState blockState, BakedModel bakedModel, float red, float green, float blue, int light, int overlay) {
         QuadVertexSink drain = VertexDrain.of(vertexConsumer)
-                .createSink(VanillaVertexTypes.QUADS);
+                .createSink(VanillaVertexFormats.QUADS);
         Xoroshiro128PlusPlusRandom random = this.random;
 
         // Clamp color ranges
@@ -61,6 +62,7 @@ public class MixinBlockModelRenderer {
         int defaultColor = ColorABGR.pack(red, green, blue, 1.0F);
 
         for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {
+            random.setSeed(42L);
             List<BakedQuad> quads = bakedModel.getQuads(blockState, direction, random);
 
             if (!quads.isEmpty()) {
@@ -68,6 +70,7 @@ public class MixinBlockModelRenderer {
             }
         }
 
+        random.setSeed(42L);
         List<BakedQuad> quads = bakedModel.getQuads(blockState, null, random);
 
         if (!quads.isEmpty()) {
