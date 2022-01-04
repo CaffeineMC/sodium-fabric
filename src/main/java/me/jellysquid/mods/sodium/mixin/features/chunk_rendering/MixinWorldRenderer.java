@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.FrustumAdapter;
@@ -85,6 +86,11 @@ public abstract class MixinWorldRenderer implements WorldRendererHolder {
     @Overwrite
     private void renderLayer(RenderLayer renderLayer, MatrixStack matrices, double x, double y, double z, Matrix4f matrix) {
         this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
+
+        // VANILLA BUG: Binding a RenderLayer for chunk rendering will result in setShaderColor being called,
+        // which is accidentally depended on by tile entity rendering. Since we don't bind a render layer, we need
+        // to set this back to the expected state, or colors will be corrupted.
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     /**
