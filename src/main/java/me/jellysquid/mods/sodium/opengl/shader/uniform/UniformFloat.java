@@ -1,18 +1,17 @@
 package me.jellysquid.mods.sodium.opengl.shader.uniform;
 
-import org.lwjgl.opengl.GL30C;
+import org.lwjgl.opengl.GL45C;
 
-public class UniformFloat extends Uniform<Float> {
-    public UniformFloat(int index) {
-        super(index);
+public class UniformFloat extends Uniform {
+    private UniformFloat(int program, int index) {
+        super(program, index);
     }
 
-    @Override
-    public void set(Float value) {
-        this.setFloat(value);
+    public static UniformFactory<UniformFloat> of() {
+        return UniformFloat::new;
     }
 
     public void setFloat(float value) {
-        GL30C.glUniform1f(this.index, value);
+        GL45C.glProgramUniform1f(this.program, this.index, value);
     }
 }
