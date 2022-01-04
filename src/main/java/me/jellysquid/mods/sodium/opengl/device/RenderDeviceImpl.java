@@ -2,11 +2,16 @@ package me.jellysquid.mods.sodium.opengl.device;
 
 import me.jellysquid.mods.sodium.opengl.array.*;
 import me.jellysquid.mods.sodium.opengl.buffer.*;
+import me.jellysquid.mods.sodium.opengl.pipeline.Blaze3DPipelineState;
+import me.jellysquid.mods.sodium.opengl.pipeline.PipelineCommandList;
+import me.jellysquid.mods.sodium.opengl.sampler.Sampler;
+import me.jellysquid.mods.sodium.opengl.sampler.SamplerImpl;
 import me.jellysquid.mods.sodium.opengl.shader.*;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
 import me.jellysquid.mods.sodium.opengl.sync.FenceImpl;
 import me.jellysquid.mods.sodium.opengl.types.IntType;
 import me.jellysquid.mods.sodium.opengl.types.PrimitiveType;
+import me.jellysquid.mods.sodium.opengl.types.RenderPipeline;
 import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL20C;
@@ -115,18 +120,33 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     @Override
-    public <T> void useProgram(Program<T> program, ProgramGate<T> gate) {
-        int prev = GL30C.glGetInteger(GL30C.GL_CURRENT_PROGRAM);
+    public <T> void usePipeline(RenderPipeline pipeline, PipelineGate gate) {
+        // TODO: Instantiate the device with a generic factory and provide this via platform interop code
+        var pipelineState = new Blaze3DPipelineState();
 
-        GL30C.glUseProgram(program.handle());
-        program.bindResources();
+        try {
+            if (pipeline != null) pipeline.enable(); // TODO: require a valid pipeline object,
 
-        gate.run(new ImmediateProgramCommandList(), program.getInterface());
-
-        program.unbindResources();
-        GL30C.glUseProgram(prev);
+            gate.run(new ImmediatePipelineCommandList(), pipelineState);
+        } finally {
+            pipelineState.restoreState();
+        }
     }
 
+    @Override
+    public Sampler createSampler() {
+        return new SamplerImpl();
+    }
+
+    @Override
+    public void deleteSampler(Sampler sampler) {
+        this.deleteSampler0((SamplerImpl) sampler);
+    }
+
+    private void deleteSampler0(SamplerImpl sampler) {
+        GL45C.glDeleteSamplers(sampler.handle());
+        sampler.invalidateHandle();
+    }
 
     @Override
     public void deleteVertexArray(VertexArray<?> array) {
@@ -149,6 +169,7 @@ public class RenderDeviceImpl implements RenderDevice {
         public void bindVertexBuffers(VertexArrayResourceSet<T> bindings) {
             var slots = bindings.slots;
 
+            // TODO: use multi-bind
             for (int i = 0; i < slots.length; i++) {
                 var slot = slots[i];
 
@@ -182,10 +203,27 @@ public class RenderDeviceImpl implements RenderDevice {
         }
 
         private <A extends Enum<A>> void useVertexArray0(VertexArrayImpl<A> array, Consumer<VertexArrayCommandList<A>> consumer) {
+            // TODO: use GlStateManager instead of glGet
             int prev = GL30C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
             GL30C.glBindVertexArray(array.handle());
             consumer.accept(new ImmediateVertexArrayCommandList<>(array));
             GL30C.glBindVertexArray(prev);
+        }
+    }
+
+    private static class ImmediatePipelineCommandList implements PipelineCommandList {
+        @Override
+        public <T> void useProgram(Program<T> program, ProgramGate<T> gate) {
+            // TODO: use GlStateManager instead of glGet
+            int prev = GL30C.glGetInteger(GL30C.GL_CURRENT_PROGRAM);
+
+            GL30C.glUseProgram(program.handle());
+            program.bindResources();
+
+            gate.run(new ImmediateProgramCommandList(), program.getInterface());
+
+            program.unbindResources();
+            GL30C.glUseProgram(prev);
         }
     }
 }

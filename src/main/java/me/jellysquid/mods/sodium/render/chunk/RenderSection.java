@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk;
 
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkGraphState;
@@ -15,6 +16,7 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
+import org.apache.commons.lang3.Validate;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -32,10 +34,6 @@ public class RenderSection {
     private final RenderRegion region;
     private final ChunkGraphState graphState;
     private final int chunkId;
-
-    private final float regionOffsetX;
-    private final float regionOffsetY;
-    private final float regionOffsetZ;
 
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
@@ -59,19 +57,14 @@ public class RenderSection {
 
         this.graphState = new ChunkGraphState(this);
 
-        this.meshes = new EnumMap<>(ChunkRenderPass.class);
+        this.meshes = new Reference2ReferenceOpenHashMap<>();
 
         int rX = this.getChunkX() & (RenderRegion.REGION_WIDTH - 1);
         int rY = this.getChunkY() & (RenderRegion.REGION_HEIGHT - 1);
         int rZ = this.getChunkZ() & (RenderRegion.REGION_LENGTH - 1);
 
-        this.regionOffsetX = rX * 16.0f;
-        this.regionOffsetY = rY * 16.0f;
-        this.regionOffsetZ = rZ * 16.0f;
-
         this.chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
     }
-
 
     public RenderSection getAdjacent(Direction dir) {
         return this.adjacent[dir.ordinal()];
@@ -213,12 +206,8 @@ public class RenderSection {
         return this.getOriginZ() + 8.0D;
     }
 
-    public UploadedChunkMesh updateMesh(ChunkRenderPass pass, UploadedChunkMesh mesh) {
-        if (mesh == null) {
-            return this.meshes.remove(pass);
-        } else {
-            return this.meshes.put(pass, mesh);
-        }
+    public void addMesh(ChunkRenderPass pass, UploadedChunkMesh mesh) {
+        Validate.isTrue(this.meshes.putIfAbsent(pass, mesh) == null);
     }
 
     public UploadedChunkMesh getMesh(ChunkRenderPass pass) {
@@ -314,15 +303,11 @@ public class RenderSection {
         return this.chunkId;
     }
 
-    public float getRegionOffsetX() {
-        return this.regionOffsetX;
-    }
+    public void deleteMeshes() {
+        for (UploadedChunkMesh mesh : this.meshes.values()) {
+            mesh.delete();
+        }
 
-    public float getRegionOffsetY() {
-        return this.regionOffsetY;
-    }
-
-    public float getRegionOffsetZ() {
-        return this.regionOffsetZ;
+        this.meshes.clear();
     }
 }

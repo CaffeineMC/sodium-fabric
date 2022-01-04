@@ -1,47 +1,10 @@
 package me.jellysquid.mods.sodium.render.chunk.passes;
 
-import net.minecraft.client.render.RenderLayer;
+import me.jellysquid.mods.sodium.opengl.types.RenderPipeline;
+import me.jellysquid.mods.sodium.opengl.types.TranslucencyMode;
 
-// TODO: Move away from using an enum, make this extensible
-public enum ChunkRenderPass {
-    SOLID(RenderLayer.getSolid(), false, 0.0f),
-    CUTOUT(RenderLayer.getCutout(), false, 0.1f),
-    CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false, 0.5f),
-    TRANSLUCENT(RenderLayer.getTranslucent(), true, 0.0f),
-    TRIPWIRE(RenderLayer.getTripwire(), true, 0.1f);
-
-    public static final ChunkRenderPass[] VALUES = ChunkRenderPass.values();
-    public static final int COUNT = VALUES.length;
-
-    private final RenderLayer layer;
-    private final boolean translucent;
-    private final float alphaCutoff;
-
-    ChunkRenderPass(RenderLayer layer, boolean translucent, float alphaCutoff) {
-        this.layer = layer;
-        this.translucent = translucent;
-        this.alphaCutoff = alphaCutoff;
-    }
-
+public record ChunkRenderPass(RenderPipeline pipeline, boolean mipped, float alphaCutoff) {
     public boolean isTranslucent() {
-        return this.translucent;
-    }
-
-    public RenderLayer getLayer() {
-        return this.layer;
-    }
-
-    @Deprecated
-    public void endDrawing() {
-        this.layer.endDrawing();
-    }
-
-    @Deprecated
-    public void startDrawing() {
-        this.layer.startDrawing();
-    }
-
-    public float getAlphaCutoff() {
-        return this.alphaCutoff;
+        return this.pipeline.translucencyMode == TranslucencyMode.ENABLED;
     }
 }

@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.compile.tasks;
 
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.render.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.render.buffer.ElementRange;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
@@ -27,10 +28,10 @@ import java.util.Objects;
  * shrink a buffer.
  */
 public class TerrainBuildBuffers {
-    private final ChunkMeshBuilder[] delegates;
+    private final Map<ChunkRenderPass, ChunkMeshBuilder> delegates;
 
-    private final VertexBufferBuilder[] vertexBuffers;
-    private final IndexBufferBuilder[][] indexBuffers;
+    private final Map<ChunkRenderPass, VertexBufferBuilder> vertexBuffers;
+    private final Map<ChunkRenderPass, IndexBufferBuilder[]> indexBuffers;
 
     private final TerrainVertexType vertexType;
 
@@ -40,39 +41,40 @@ public class TerrainBuildBuffers {
         this.vertexType = vertexType;
         this.renderPassManager = renderPassManager;
 
-        this.delegates = new ChunkMeshBuilder[ChunkRenderPass.COUNT];
+        this.delegates = new Reference2ReferenceOpenHashMap<>();
 
-        this.vertexBuffers = new VertexBufferBuilder[ChunkRenderPass.COUNT];
-        this.indexBuffers = new IndexBufferBuilder[ChunkRenderPass.COUNT][ChunkMeshFace.COUNT];
+        this.vertexBuffers = new Reference2ReferenceOpenHashMap<>();
+        this.indexBuffers = new Reference2ReferenceOpenHashMap<>();
 
-        for (ChunkRenderPass pass : ChunkRenderPass.VALUES) {
-            IndexBufferBuilder[] indexBuffers = this.indexBuffers[pass.ordinal()];
+        for (var renderPass : renderPassManager.getAllRenderPasses()) {
+            IndexBufferBuilder[] indexBuffers = new IndexBufferBuilder[ChunkMeshFace.COUNT];
 
             for (int facing = 0; facing < ChunkMeshFace.COUNT; facing++) {
                 indexBuffers[facing] = new IndexBufferBuilder(1024);
             }
 
-            this.vertexBuffers[pass.ordinal()] = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(),
-                    pass.getLayer().getExpectedBufferSize());
+            this.indexBuffers.put(renderPass, indexBuffers);
+            this.vertexBuffers.put(renderPass, new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(),
+                    2 * 1024 * 1024));
         }
     }
 
     public void init(ChunkRenderData.Builder renderData, int chunkId) {
-        for (VertexBufferBuilder vertexBuffer : this.vertexBuffers) {
+        for (VertexBufferBuilder vertexBuffer : this.vertexBuffers.values()) {
             vertexBuffer.start();
         }
 
-        for (IndexBufferBuilder[] indexBuffers : this.indexBuffers) {
+        for (IndexBufferBuilder[] indexBuffers : this.indexBuffers.values()) {
             for (IndexBufferBuilder indexBuffer : indexBuffers) {
                 indexBuffer.start();
             }
         }
 
-        for (int i = 0; i < this.delegates.length; i++) {
-            TerrainVertexSink vertexSink = this.vertexType.createBufferWriter(this.vertexBuffers[i]);
-            IndexBufferBuilder[] indexBuffers = this.indexBuffers[i];
+        for (var renderPass : this.renderPassManager.getAllRenderPasses()) {
+            TerrainVertexSink vertexSink = this.vertexType.createBufferWriter(this.vertexBuffers.get(renderPass));
+            IndexBufferBuilder[] indexBuffers = this.indexBuffers.get(renderPass);
 
-            this.delegates[i] = new DefaultChunkMeshBuilder(indexBuffers, vertexSink, renderData, chunkId);
+            this.delegates.put(renderPass, new DefaultChunkMeshBuilder(indexBuffers, vertexSink, renderData, chunkId));
         }
     }
 
@@ -81,7 +83,21 @@ public class TerrainBuildBuffers {
      * {@link ChunkRenderPassManager} for this render context.
      */
     public ChunkMeshBuilder get(RenderLayer layer) {
-        return this.delegates[this.renderPassManager.getRenderPassId(layer)];
+        return this.delegates.get(this.renderPassManager.getRenderPassForLayer(layer));
+    }
+
+    public Map<ChunkRenderPass, ChunkMesh> createMeshes() {
+        var map = new Reference2ReferenceOpenHashMap<ChunkRenderPass, ChunkMesh>();
+
+        for (var renderPass : this.renderPassManager.getAllRenderPasses()) {
+            var mesh = this.createMesh(renderPass);
+
+            if (mesh != null) {
+                map.put(renderPass, mesh);
+            }
+        }
+
+        return map;
     }
 
     /**
@@ -89,14 +105,16 @@ public class TerrainBuildBuffers {
      * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
      * times to return multiple copies.
      */
-    public ChunkMesh createMesh(ChunkRenderPass pass) {
-        NativeBuffer vertexBuffer = this.vertexBuffers[pass.ordinal()].pop();
+    private ChunkMesh createMesh(ChunkRenderPass pass) {
+        var vertexBufferBuilder = this.vertexBuffers.get(pass);
+        var vertexBuffer = vertexBufferBuilder.pop();
 
         if (vertexBuffer == null) {
             return null;
         }
 
-        IndexBufferBuilder.Result[] indexBuffers = Arrays.stream(this.indexBuffers[pass.ordinal()])
+        var indexBufferBuilders = this.indexBuffers.get(pass);
+        IndexBufferBuilder.Result[] indexBuffers = Arrays.stream(indexBufferBuilders)
                 .map(IndexBufferBuilder::pop)
                 .toArray(IndexBufferBuilder.Result[]::new);
 
@@ -129,7 +147,7 @@ public class TerrainBuildBuffers {
     }
 
     public void destroy() {
-        for (VertexBufferBuilder builder : this.vertexBuffers) {
+        for (VertexBufferBuilder builder : this.vertexBuffers.values()) {
             builder.destroy();
         }
     }

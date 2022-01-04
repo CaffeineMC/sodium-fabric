@@ -89,7 +89,7 @@ public class ChunkColorCache {
         for (int x = 0; x < this.sizeHorizontal; x++) {
             for (int z = 0; z < this.sizeHorizontal; z++) {
                 int index = this.indexXZ(x, z);
-                colorData[index] = resolver.getColor(biomeData[index],
+                colorData[index] = resolver.getColor(biomeData[index].value(),
                         x + this.baseX, z + this.baseZ);
             }
         }

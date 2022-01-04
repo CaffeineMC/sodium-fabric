@@ -1,8 +1,10 @@
 package me.jellysquid.mods.sodium.render.immediate;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import me.jellysquid.mods.sodium.interop.vanilla.mixin.ShaderExtended;
 import me.jellysquid.mods.sodium.opengl.array.VertexArray;
 import me.jellysquid.mods.sodium.opengl.array.VertexArrayBuffer;
 import me.jellysquid.mods.sodium.opengl.array.VertexArrayDescription;
@@ -24,6 +26,7 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.client.util.Window;
 import org.apache.commons.lang3.Validate;
+import org.lwjgl.opengl.GL45C;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -93,75 +96,100 @@ public class RenderImmediate {
         Shader shader = RenderSystem.getShader();
         Validate.notNull(shader, "No active shader");
 
-        for (int samplerIndex = 0; samplerIndex < 8; samplerIndex++) {
-            int textureHandle = RenderSystem.getShaderTexture(samplerIndex);
-            shader.addSampler("Sampler" + samplerIndex, textureHandle);
-        }
+        this.device.usePipeline(null, (pipelineCommands, pipelineState) -> {
+            pipelineCommands.useProgram(getProgram(shader), (programCommands, programInterface) -> {
+                setup(shader);
 
-        if (shader.modelViewMat != null) {
-            shader.modelViewMat.set(RenderSystem.getModelViewMatrix());
-        }
+                // TODO: replace this brute force loop
+                // We should create in the shader interface a set of "texture collectors"
+                // Then, we can iterate over the sampler collection and request a texture from their collector
+                for (int samplerIndex = 0; samplerIndex < 8; samplerIndex++) {
+                    int samplerLocation = programInterface.getSamplerLocation("Sampler" + samplerIndex);
 
-        if (shader.projectionMat != null) {
-            shader.projectionMat.set(RenderSystem.getProjectionMatrix());
-        }
+                    if (samplerLocation >= 0) {
+                        var texture = RenderSystem.getShaderTexture(samplerIndex);
+                        // TODO: use sampler objects
+                        // this might be hard because vanilla has a lot of global texture state
+                        pipelineState.bindTexture(samplerLocation, texture, null);
+                    }
+                }
 
-        if (shader.field_36323 != null) {
-            shader.field_36323.method_39978(RenderSystem.getInverseViewRotationMatrix());
-        }
+                if (programInterface.modelViewMat != null) {
+                    programInterface.modelViewMat.set(RenderSystem.getModelViewMatrix());
+                }
 
-        if (shader.colorModulator != null) {
-            shader.colorModulator.set(RenderSystem.getShaderColor());
-        }
+                if (programInterface.projectionMat != null) {
+                    programInterface.projectionMat.set(RenderSystem.getProjectionMatrix());
+                }
 
-        if (shader.fogStart != null) {
-            shader.fogStart.set(RenderSystem.getShaderFogStart());
-        }
+                if (programInterface.inverseViewRotationMat != null) {
+                    programInterface.inverseViewRotationMat.set(RenderSystem.getInverseViewRotationMatrix());
+                }
 
-        if (shader.fogEnd != null) {
-            shader.fogEnd.set(RenderSystem.getShaderFogEnd());
-        }
+                if (programInterface.colorModulator != null) {
+                    programInterface.colorModulator.setFloat(RenderSystem.getShaderColor());
+                }
 
-        if (shader.fogColor != null) {
-            shader.fogColor.set(RenderSystem.getShaderFogColor());
-        }
+                if (programInterface.fogStart != null) {
+                    programInterface.fogStart.setFloat(RenderSystem.getShaderFogStart());
+                }
 
-        if (shader.textureMat != null) {
-            shader.textureMat.set(RenderSystem.getTextureMatrix());
-        }
+                if (programInterface.fogEnd != null) {
+                    programInterface.fogEnd.setFloat(RenderSystem.getShaderFogEnd());
+                }
 
-        if (shader.gameTime != null) {
-            shader.gameTime.set(RenderSystem.getShaderGameTime());
-        }
+                if (programInterface.fogColor != null) {
+                    programInterface.fogColor.setFloat(RenderSystem.getShaderFogColor());
+                }
 
-        if (shader.screenSize != null) {
-            Window window = MinecraftClient.getInstance().getWindow();
-            // GlUniform.set is ambiguous without the cast
-            shader.screenSize.set((float) window.getFramebufferWidth(), (float) window.getFramebufferHeight());
-        }
+                if (programInterface.textureMat != null) {
+                    programInterface.textureMat.set(RenderSystem.getTextureMatrix());
+                }
 
-        if (shader.lineWidth != null && (drawMode == VertexFormat.DrawMode.LINES || drawMode == VertexFormat.DrawMode.LINE_STRIP)) {
-            shader.lineWidth.set(RenderSystem.getShaderLineWidth());
-        }
+                if (programInterface.gameTime != null) {
+                    programInterface.gameTime.setFloat(RenderSystem.getShaderGameTime());
+                }
 
-        RenderSystem.setupShaderLights(shader);
+                if (programInterface.screenSize != null) {
+                    Window window = MinecraftClient.getInstance().getWindow();
+                    programInterface.screenSize.setFloat(window.getFramebufferWidth(), window.getFramebufferHeight());
+                }
 
-        // Uniforms must be updated before binding shader
-        shader.bind();
+                if (programInterface.lineWidth != null && (drawMode == VertexFormat.DrawMode.LINES || drawMode == VertexFormat.DrawMode.LINE_STRIP)) {
+                    programInterface.lineWidth.setFloat(RenderSystem.getShaderLineWidth());
+                }
 
-        this.device.useProgram(new VanillaProgram(shader), (programCommandList, programInterface) -> {
-            programCommandList.useVertexArray(vertexArray, (drawCommandList) -> {
-                drawCommandList.bindVertexBuffers(vertexArray.createResourceSet(
-                        Map.of(BufferTarget.VERTICES, new VertexArrayBuffer(this.vertexBuffer.getBuffer(), vertexFormat.getVertexSize()))
-                ));
-                drawCommandList.bindElementBuffer(elementBuffer);
+                // We can't use RenderSystem.setupLightDirections because it expects to be able to modify
+                // the dirty table of the Minecraft shader, which we aren't using. We must extract these values
+                // manually.
+                if (programInterface.light0Direction != null) {
+                    programInterface.light0Direction.setFloat(RenderSystem.shaderLightDirections[0]);
+                }
 
-                drawCommandList.drawElementsBaseVertex(getPrimitiveType(drawMode), usedElementFormat,
-                        (long) elementPointer * elementFormat.size, baseVertex, elementCount);
+                if (programInterface.light1Direction != null) {
+                    programInterface.light1Direction.setFloat(RenderSystem.shaderLightDirections[1]);
+                }
+
+                programCommands.useVertexArray(vertexArray, (drawCommands) -> {
+                    drawCommands.bindVertexBuffers(vertexArray.createResourceSet(
+                            Map.of(BufferTarget.VERTICES, new VertexArrayBuffer(this.vertexBuffer.getBuffer(), vertexFormat.getVertexSize()))
+                    ));
+                    drawCommands.bindElementBuffer(elementBuffer);
+
+                    drawCommands.drawElementsBaseVertex(getPrimitiveType(drawMode), usedElementFormat,
+                            (long) elementPointer * elementFormat.size, baseVertex, elementCount);
+                });
             });
         });
+    }
 
-        shader.unbind();
+    @Deprecated(forRemoval = true)
+    private static void setup(Shader shader) {
+        ((ShaderExtended) shader).setup();
+    }
+
+    private static Program<VanillaShaderInterface> getProgram(Shader shader) {
+        return ((ShaderExtended) shader).sodium$getProgram();
     }
 
     private static IntType getElementType(VertexFormat.IntType format) {
@@ -266,27 +294,5 @@ public class RenderImmediate {
 
     private enum BufferTarget {
         VERTICES
-    }
-
-    private record VanillaProgram(Shader shader) implements Program<Shader> {
-        @Override
-        public Shader getInterface() {
-            return this.shader;
-        }
-
-        @Override
-        public int handle() {
-            return this.shader.getProgramRef();
-        }
-
-        @Override
-        public void bindResources() {
-            this.shader.bind();
-        }
-
-        @Override
-        public void unbindResources() {
-            this.shader.unbind();
-        }
     }
 }

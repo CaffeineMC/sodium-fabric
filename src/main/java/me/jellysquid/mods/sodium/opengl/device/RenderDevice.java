@@ -6,8 +6,15 @@ import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
 import me.jellysquid.mods.sodium.opengl.buffer.BufferMapFlags;
 import me.jellysquid.mods.sodium.opengl.buffer.BufferStorageFlags;
 import me.jellysquid.mods.sodium.opengl.buffer.MappedBuffer;
-import me.jellysquid.mods.sodium.opengl.shader.*;
+import me.jellysquid.mods.sodium.opengl.pipeline.PipelineCommandList;
+import me.jellysquid.mods.sodium.opengl.pipeline.PipelineState;
+import me.jellysquid.mods.sodium.opengl.sampler.Sampler;
+import me.jellysquid.mods.sodium.opengl.shader.Program;
+import me.jellysquid.mods.sodium.opengl.shader.ProgramCommandList;
+import me.jellysquid.mods.sodium.opengl.shader.ShaderBindingContext;
+import me.jellysquid.mods.sodium.opengl.shader.ShaderDescription;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
+import me.jellysquid.mods.sodium.opengl.types.RenderPipeline;
 import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
 
 import java.nio.ByteBuffer;
@@ -43,11 +50,15 @@ public interface RenderDevice {
 
     <T extends Enum<T>> VertexArray<T> createVertexArray(VertexArrayDescription<T> desc);
 
-    <T> void useProgram(Program<T> program, ProgramGate<T> gate);
+    <T> void usePipeline(RenderPipeline pipeline, PipelineGate gate);
 
-    interface ProgramGate<T> {
-        void run(ProgramCommandList commandList, T programInterface);
+    interface PipelineGate {
+        void run(PipelineCommandList commandList, PipelineState pipelineState);
     }
+
+    Sampler createSampler();
+
+    void deleteSampler(Sampler sampler);
 
     void deleteVertexArray(VertexArray<?> array);
 

@@ -23,3 +23,8 @@ accessible method net/minecraft/client/texture/Sprite upload (II[Lnet/minecraft/
 accessible field net/minecraft/client/texture/NativeImage pointer J
 
 accessible field net/minecraft/client/render/VertexFormat offsets Lit/unimi/dsi/fastutil/ints/IntList;
+accessible method net/minecraft/client/gl/Program getShaderRef ()I
+
+accessible field com/mojang/blaze3d/systems/RenderSystem shaderLightDirections [Lnet/minecraft/util/math/Vec3f;
+accessible field com/mojang/blaze3d/platform/GlStateManager TEXTURES [Lcom/mojang/blaze3d/platform/GlStateManager$Texture2DState;
+accessible class com/mojang/blaze3d/platform/GlStateManager$Texture2DState

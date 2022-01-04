@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.render.chunk.draw;
 
 import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.SodiumClientMod;
+import me.jellysquid.mods.sodium.interop.vanilla.mixin.LightmapTextureManagerAccessor;
 import me.jellysquid.mods.sodium.opengl.array.*;
 import me.jellysquid.mods.sodium.opengl.attribute.VertexAttributeBinding;
 import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
@@ -14,12 +15,17 @@ import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
+import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderOptions;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.render.chunk.state.UploadedChunkMesh;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainMeshAttribute;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import me.jellysquid.mods.sodium.util.draw.MultiDrawBatch;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.texture.AbstractTexture;
+import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.texture.TextureManager;
 
 import java.util.List;
 import java.util.Map;
@@ -71,25 +77,43 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     @Override
     public void render(ChunkRenderMatrices matrices, RenderDevice device,
-                       ChunkRenderList list, ChunkRenderPass pass,
+                       ChunkRenderList list, ChunkRenderPass renderPass,
                        ChunkCameraContext camera) {
-        this.beginRendering(pass, (programCommandList, programInterface) -> {
-            programInterface.setProjectionMatrix(matrices.projection());
-            programInterface.setModelViewMatrix(matrices.modelView());
-            programInterface.setDrawUniforms(this.chunkInfoBuffer);
+        var options = new ChunkShaderOptions(renderPass, this.vertexType);
+        var program = this.compileProgram(options);
 
-            programCommandList.useVertexArray(this.vertexArray, (drawCommandList) -> {
-                for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, pass.isTranslucent())) {
-                    RenderRegion region = entry.getKey();
-                    List<RenderSection> regionSections = entry.getValue();
+        MinecraftClient client = MinecraftClient.getInstance();
+        TextureManager textureManager = client.getTextureManager();
 
-                    if (!this.buildDrawBatches(regionSections, pass, camera)) {
-                        continue;
+        LightmapTextureManagerAccessor lightmapTextureManager =
+                ((LightmapTextureManagerAccessor) client.gameRenderer.getLightmapTextureManager());
+
+        AbstractTexture blockAtlasTex = textureManager.getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
+        AbstractTexture lightTex = lightmapTextureManager.getTexture();
+
+        device.usePipeline(renderPass.pipeline(), (pipelineCommands, pipelineState) -> {
+            pipelineState.bindTexture(0, blockAtlasTex.getGlId(), renderPass.mipped() ? this.blockTextureMippedSampler : this.blockTextureSampler);
+            pipelineState.bindTexture(1, lightTex.getGlId(), this.lightTextureSampler);
+
+            pipelineCommands.useProgram(program, (programCommands, programInterface) -> {
+                programInterface.setup();
+                programInterface.uniformProjectionMatrix.set(matrices.projection());
+                programInterface.uniformModelViewMatrix.set(matrices.modelView());
+                programInterface.uniformBlockDrawParameters.bindBuffer(this.chunkInfoBuffer);
+
+                programCommands.useVertexArray(this.vertexArray, (drawCommandList) -> {
+                    for (Map.Entry<RenderRegion, List<RenderSection>> entry : sortedRegions(list, renderPass.isTranslucent())) {
+                        RenderRegion region = entry.getKey();
+                        List<RenderSection> regionSections = entry.getValue();
+
+                        if (!this.buildDrawBatches(regionSections, renderPass, camera)) {
+                            continue;
+                        }
+
+                        this.setModelMatrixUniforms(programInterface, region, camera);
+                        this.executeDrawBatches(drawCommandList, region.getArenas());
                     }
-
-                    this.setModelMatrixUniforms(programInterface, region, camera);
-                    this.executeDrawBatches(drawCommandList, region.getArenas());
-                }
+                });
             });
         });
     }
@@ -181,7 +205,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         float y = getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY);
         float z = getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ);
 
-        shader.setRegionOffset(x, y, z);
+        shader.uniformRegionOffset.setFloat(x, y, z);
     }
 
     private void addDrawCall(ElementRange part, long baseIndexPointer, int baseVertexIndex) {

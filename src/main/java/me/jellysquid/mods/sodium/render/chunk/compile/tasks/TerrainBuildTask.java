@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.compile.tasks;
 
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.render.terrain.TerrainBuildContext;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkMesh;
@@ -133,15 +134,7 @@ public class TerrainBuildTask extends AbstractBuilderTask {
             }
         }
 
-        Map<ChunkRenderPass, ChunkMesh> meshes = new EnumMap<>(ChunkRenderPass.class);
-
-        for (ChunkRenderPass pass : ChunkRenderPass.VALUES) {
-            ChunkMesh mesh = buffers.createMesh(pass);
-
-            if (mesh != null) {
-                meshes.put(pass, mesh);
-            }
-        }
+        Map<ChunkRenderPass, ChunkMesh> meshes = buffers.createMeshes();
 
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));

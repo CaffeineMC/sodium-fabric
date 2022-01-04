@@ -70,24 +70,20 @@ public class RenderRegionManager {
         List<PendingSectionUpload> sectionUploads = new ArrayList<>();
 
         for (TerrainBuildResult result : results) {
-            for (ChunkRenderPass pass : ChunkRenderPass.VALUES) {
-                UploadedChunkMesh graphics = result.render.updateMesh(pass, null);
+            // De-allocate all storage for the meshes we're about to replace
+            // This will allow it to be cheaply re-allocated just below
+            result.render.deleteMeshes();
 
-                // De-allocate all storage for data we're about to replace
-                // This will allow it to be cheaply re-allocated just below
-                if (graphics != null) {
-                    graphics.delete();
-                }
+            for (var entry : result.getMeshes()) {
+                var renderPass = entry.getKey();
+                var meshData = entry.getValue();
 
-                ChunkMesh meshData = result.getMesh(pass);
+                IndexedVertexData vertexData = meshData.getVertexData();
 
-                if (meshData != null) {
-                    IndexedVertexData vertexData = meshData.getVertexData();
+                sectionUploads.add(new PendingSectionUpload(result.render, meshData, renderPass,
+                        new PendingUpload(vertexData.vertexBuffer()),
+                        new PendingUpload(vertexData.indexBuffer())));
 
-                    sectionUploads.add(new PendingSectionUpload(result.render, meshData, pass,
-                            new PendingUpload(vertexData.vertexBuffer()),
-                            new PendingUpload(vertexData.indexBuffer())));
-                }
             }
         }
 
@@ -103,7 +99,7 @@ public class RenderRegionManager {
 
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
-            upload.section.updateMesh(upload.pass, new UploadedChunkMesh(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
+            upload.section.addMesh(upload.pass, new UploadedChunkMesh(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
         }
     }
 

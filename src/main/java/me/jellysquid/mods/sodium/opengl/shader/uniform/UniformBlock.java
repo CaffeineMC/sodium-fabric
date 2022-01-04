@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.opengl.shader.uniform;
 import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
 import me.jellysquid.mods.sodium.opengl.buffer.BufferImpl;
 import org.lwjgl.opengl.GL32C;
+import org.lwjgl.opengl.GL45C;
 
 public class UniformBlock {
     private final int binding;

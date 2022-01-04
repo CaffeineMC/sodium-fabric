@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.opengl.shader;
 import me.jellysquid.mods.sodium.opengl.ManagedObject;
 import me.jellysquid.mods.sodium.opengl.shader.uniform.Uniform;
 import me.jellysquid.mods.sodium.opengl.shader.uniform.UniformBlock;
+import me.jellysquid.mods.sodium.opengl.shader.uniform.UniformFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL20C;
@@ -11,7 +12,6 @@ import org.lwjgl.opengl.GL32C;
 
 import java.util.ArrayList;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 
 /**
  * An OpenGL shader program.
@@ -88,14 +88,15 @@ public class ProgramImpl<T> extends ManagedObject implements ShaderBindingContex
     }
 
     @Override
-    public <U extends Uniform<?>> U bindUniform(String name, IntFunction<U> factory) {
-        int index = GL20C.glGetUniformLocation(this.handle(), name);
+    public <U extends Uniform> U bindUniform(String name, UniformFactory<U> factory) {
+        int handle = this.handle();
+        int index = GL20C.glGetUniformLocation(handle, name);
 
         if (index < 0) {
-            throw new NullPointerException("No uniform exists with name: " + name);
+            return null;
         }
 
-        return factory.apply(index);
+        return factory.create(handle, index);
     }
 
     @Override

@@ -9,7 +9,6 @@ import me.jellysquid.mods.sodium.interop.vanilla.mixin.WorldRendererHolder;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.render.chunk.draw.ChunkRenderMatrices;
-import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPassManager;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.terrain.context.ImmediateTerrainRenderCache;
@@ -25,10 +24,7 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import net.minecraft.util.profiler.Profiler;
 
 import java.util.Collection;
@@ -214,12 +210,8 @@ public class SodiumWorldRenderer {
      * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
     public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
-        ChunkRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
-        pass.startDrawing();
-
-        this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), pass, x, y, z);
-
-        pass.endDrawing();
+        var renderPass = this.renderPassManager.getRenderPassForLayer(renderLayer);
+        this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), renderPass, x, y, z);
     }
 
     public void reload() {

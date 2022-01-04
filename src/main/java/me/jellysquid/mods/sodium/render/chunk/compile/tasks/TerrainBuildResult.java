@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.render.chunk.state.ChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -25,8 +26,8 @@ public class TerrainBuildResult {
         this.buildTime = buildTime;
     }
 
-    public ChunkMesh getMesh(ChunkRenderPass pass) {
-        return this.meshes.get(pass);
+    public Iterable<Map.Entry<ChunkRenderPass, ChunkMesh>> getMeshes() {
+        return Collections.unmodifiableSet(this.meshes.entrySet());
     }
 
     public void delete() {

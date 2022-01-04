@@ -4,14 +4,11 @@ import me.jellysquid.mods.sodium.render.shader.ShaderConstants;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 
-public record ChunkShaderOptions(ChunkFogMode fog, ChunkRenderPass pass, TerrainVertexType vertexType) {
+public record ChunkShaderOptions(ChunkRenderPass pass, TerrainVertexType vertexType) {
     public ShaderConstants constants() {
         ShaderConstants.Builder constants = ShaderConstants.builder();
-        constants.addAll(this.fog.getDefines());
 
-        if (this.pass.getAlphaCutoff() != 0.0f) {
-            constants.add("ALPHA_CUTOFF", String.valueOf(this.pass.getAlphaCutoff()));
-        }
+        constants.add("ALPHA_CUTOFF", String.valueOf(this.pass.alphaCutoff()));
 
         constants.add("USE_VERTEX_COMPRESSION"); // TODO: allow compact vertex format to be disabled
         constants.add("VERT_POS_SCALE", String.valueOf(this.vertexType.getPositionScale()));
