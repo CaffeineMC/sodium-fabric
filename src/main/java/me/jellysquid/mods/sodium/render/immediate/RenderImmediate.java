@@ -284,7 +284,7 @@ public class RenderImmediate {
         this.elementBuffer.flush();
     }
 
-    private enum BufferTarget {
+    public enum BufferTarget {
         VERTICES
     }
 }
