@@ -238,7 +238,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         return (chunkBlockPos - cameraBlockPos) - cameraPos;
     }
 
-    private enum BufferTarget {
+    public enum BufferTarget {
         VERTICES
     }
 }
