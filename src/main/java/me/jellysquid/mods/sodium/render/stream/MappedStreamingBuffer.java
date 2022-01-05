@@ -100,6 +100,17 @@ public class MappedStreamingBuffer implements StreamingBuffer {
 
     @Override
     public void flush() {
+        // Poll fence objects and release regions
+        while (!this.regions.isEmpty()) {
+            var region = this.regions.peek();
+
+            if (!region.fence.poll()) {
+                break;
+            }
+
+            this.regions.remove();
+        }
+
         // No data to flush
         if (this.queued <= 0) {
             return;
@@ -115,17 +126,6 @@ public class MappedStreamingBuffer implements StreamingBuffer {
 
         this.queued = 0;
         this.mark = this.pos;
-
-        // Poll fence objects and release regions
-        while (!this.regions.isEmpty()) {
-            var region = this.regions.peek();
-
-            if (!region.fence.poll()) {
-                break;
-            }
-
-            this.regions.remove();
-        }
     }
 
     private void insertFence(int offset, int length) {
