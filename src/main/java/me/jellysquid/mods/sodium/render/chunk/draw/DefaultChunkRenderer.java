@@ -205,7 +205,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         float y = getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY);
         float z = getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ);
 
-        shader.uniformRegionOffset.setFloat(x, y, z);
+        shader.uniformRegionOffset.setFloats(x, y, z);
     }
 
     private void addDrawCall(ElementRange part, long baseIndexPointer, int baseVertexIndex) {

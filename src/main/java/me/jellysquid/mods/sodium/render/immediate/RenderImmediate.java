@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.render.immediate;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
@@ -26,7 +25,6 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.client.util.Window;
 import org.apache.commons.lang3.Validate;
-import org.lwjgl.opengl.GL45C;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -100,18 +98,12 @@ public class RenderImmediate {
             pipelineCommands.useProgram(getProgram(shader), (programCommands, programInterface) -> {
                 setup(shader);
 
-                // TODO: replace this brute force loop
-                // We should create in the shader interface a set of "texture collectors"
-                // Then, we can iterate over the sampler collection and request a texture from their collector
-                for (int samplerIndex = 0; samplerIndex < 8; samplerIndex++) {
-                    int samplerLocation = programInterface.getSamplerLocation("Sampler" + samplerIndex);
+                for (var sampler : programInterface.getSamplers()) {
+                    var samplerLocation = sampler.location();
+                    var samplerTexture = sampler.textureSupplier()
+                                    .getAsInt();
 
-                    if (samplerLocation >= 0) {
-                        var texture = RenderSystem.getShaderTexture(samplerIndex);
-                        // TODO: use sampler objects
-                        // this might be hard because vanilla has a lot of global texture state
-                        pipelineState.bindTexture(samplerLocation, texture, null);
-                    }
+                    pipelineState.bindTexture(samplerLocation, samplerTexture, null);
                 }
 
                 if (programInterface.modelViewMat != null) {
@@ -127,7 +119,7 @@ public class RenderImmediate {
                 }
 
                 if (programInterface.colorModulator != null) {
-                    programInterface.colorModulator.setFloat(RenderSystem.getShaderColor());
+                    programInterface.colorModulator.setFloats(RenderSystem.getShaderColor());
                 }
 
                 if (programInterface.fogStart != null) {
@@ -139,7 +131,7 @@ public class RenderImmediate {
                 }
 
                 if (programInterface.fogColor != null) {
-                    programInterface.fogColor.setFloat(RenderSystem.getShaderFogColor());
+                    programInterface.fogColor.setFloats(RenderSystem.getShaderFogColor());
                 }
 
                 if (programInterface.textureMat != null) {
@@ -152,7 +144,7 @@ public class RenderImmediate {
 
                 if (programInterface.screenSize != null) {
                     Window window = MinecraftClient.getInstance().getWindow();
-                    programInterface.screenSize.setFloat(window.getFramebufferWidth(), window.getFramebufferHeight());
+                    programInterface.screenSize.setFloats(window.getFramebufferWidth(), window.getFramebufferHeight());
                 }
 
                 if (programInterface.lineWidth != null && (drawMode == VertexFormat.DrawMode.LINES || drawMode == VertexFormat.DrawMode.LINE_STRIP)) {
@@ -163,11 +155,11 @@ public class RenderImmediate {
                 // the dirty table of the Minecraft shader, which we aren't using. We must extract these values
                 // manually.
                 if (programInterface.light0Direction != null) {
-                    programInterface.light0Direction.setFloat(RenderSystem.shaderLightDirections[0]);
+                    programInterface.light0Direction.setFloats(RenderSystem.shaderLightDirections[0]);
                 }
 
                 if (programInterface.light1Direction != null) {
-                    programInterface.light1Direction.setFloat(RenderSystem.shaderLightDirections[1]);
+                    programInterface.light1Direction.setFloats(RenderSystem.shaderLightDirections[1]);
                 }
 
                 programCommands.useVertexArray(vertexArray, (drawCommands) -> {

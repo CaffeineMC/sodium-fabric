@@ -1,13 +1,14 @@
 package me.jellysquid.mods.sodium.render.immediate;
 
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.objects.*;
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.opengl.shader.ShaderBindingContext;
 import me.jellysquid.mods.sodium.opengl.shader.uniform.*;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.function.IntSupplier;
 
 public class VanillaShaderInterface {
     @Nullable
@@ -38,12 +39,9 @@ public class VanillaShaderInterface {
     @Nullable
     public final UniformFloatArray chunkOffset;
 
-    private final Object2ReferenceMap<String, UniformInt> samplerUniforms = new Object2ReferenceOpenHashMap<>();
-    private final Object2IntMap<String> samplerLocations = new Object2IntOpenHashMap<>();
+    private final List<SamplerUniform> samplers;
 
     public VanillaShaderInterface(ShaderBindingContext context, List<String> samplerNames) {
-        this.samplerLocations.defaultReturnValue(-1);
-
         this.modelViewMat = context.bindUniform("ModelViewMat", UniformMatrix4.of());
         this.projectionMat = context.bindUniform("ProjMat", UniformMatrix4.of());
         this.inverseViewRotationMat = context.bindUniform("IViewRotMat", UniformMatrix3.of());
@@ -59,18 +57,40 @@ public class VanillaShaderInterface {
         this.gameTime = context.bindUniform("GameTime", UniformFloat.of());
         this.chunkOffset = context.bindUniform("ChunkOffset", UniformFloatArray.ofSize(3));
 
+        var samplers = new ArrayList<SamplerUniform>();
+
         for (var name : samplerNames) {
-            var location = this.samplerLocations.size();
+            var supplier = getTextureSupplier(name);
+
+            if (supplier == null) {
+                continue;
+            }
+
+            var location = samplers.size();
 
             var uniform = context.bindUniform(name, UniformInt.of());
             uniform.setInt(location);
 
-            this.samplerUniforms.put(name, uniform);
-            this.samplerLocations.put(name, location);
+            samplers.add(new SamplerUniform(location, supplier));
         }
+
+        this.samplers = Collections.unmodifiableList(samplers);
     }
 
-    public int getSamplerLocation(String name) {
-        return this.samplerLocations.getInt(name);
+    private static IntSupplier getTextureSupplier(String samplerName) {
+        if (samplerName.startsWith("Sampler")) {
+            int shaderTextureIndex = Integer.parseInt(samplerName.substring("Sampler".length()));
+            return () -> RenderSystem.getShaderTexture(shaderTextureIndex);
+        }
+
+        return null;
+    }
+
+    public Iterable<SamplerUniform> getSamplers() {
+        return this.samplers;
+    }
+
+    public record SamplerUniform(int location, IntSupplier textureSupplier) {
+
     }
 }

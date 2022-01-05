@@ -1,36 +1,50 @@
 package me.jellysquid.mods.sodium.opengl.shader.uniform;
 
+import me.jellysquid.mods.sodium.opengl.util.MemCmp;
 import org.joml.Matrix3f;
 import org.lwjgl.opengl.GL45C;
-import org.lwjgl.system.MemoryStack;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 public class UniformMatrix3 extends Uniform {
+    private FloatBuffer currentValue = createBuffer();
+    private FloatBuffer temp = createBuffer();
+
     private UniformMatrix3(int program, int index) {
         super(program, index);
+
+        GL45C.glGetUniformfv(program, index, this.currentValue);
     }
 
     public static UniformFactory<UniformMatrix3> of() {
         return UniformMatrix3::new;
     }
 
-    public void set(Matrix3f matrix3) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            FloatBuffer buf = stack.callocFloat(12);
-            matrix3.get(buf);
-
-            GL45C.glProgramUniformMatrix3fv(this.program, this.index, false, buf);
-        }
+    private static FloatBuffer createBuffer() {
+        return ByteBuffer.allocateDirect(12 * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
     }
 
-    @Deprecated // Vanilla type
-    public void set(net.minecraft.util.math.Matrix3f matrix3) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            FloatBuffer buf = stack.callocFloat(12);
-            matrix3.writeColumnMajor(buf);
+    public void set(Matrix3f matrix3) {
+        matrix3.get(this.temp);
+        this.compareAndSwap();
+    }
 
-            GL45C.glProgramUniformMatrix3fv(this.program, this.index, false, buf);
+    @Deprecated // vanilla type
+    public void set(net.minecraft.util.math.Matrix3f matrix3) {
+        matrix3.writeColumnMajor(this.temp);
+        this.compareAndSwap();
+    }
+
+    private void compareAndSwap() {
+        if (!MemCmp.compare(this.currentValue, this.temp)) {
+            var prev = this.currentValue;
+            this.currentValue = this.temp;
+            this.temp = prev;
+            GL45C.glProgramUniformMatrix3fv(this.program, this.index, false, this.currentValue);
         }
     }
 }
