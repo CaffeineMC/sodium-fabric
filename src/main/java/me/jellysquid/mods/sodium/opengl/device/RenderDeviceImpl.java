@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.opengl.array.*;
 import me.jellysquid.mods.sodium.opengl.buffer.*;
 import me.jellysquid.mods.sodium.opengl.pipeline.Blaze3DPipelineState;
 import me.jellysquid.mods.sodium.opengl.pipeline.PipelineCommandList;
+import me.jellysquid.mods.sodium.opengl.pipeline.PipelineState;
 import me.jellysquid.mods.sodium.opengl.sampler.Sampler;
 import me.jellysquid.mods.sodium.opengl.sampler.SamplerImpl;
 import me.jellysquid.mods.sodium.opengl.shader.*;
@@ -13,11 +14,14 @@ import me.jellysquid.mods.sodium.opengl.types.IntType;
 import me.jellysquid.mods.sodium.opengl.types.PrimitiveType;
 import me.jellysquid.mods.sodium.opengl.types.RenderPipeline;
 import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
+import net.minecraft.client.render.BufferRenderer;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL32C;
 import org.lwjgl.opengl.GL45C;
+import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -25,6 +29,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class RenderDeviceImpl implements RenderDevice {
+    private final PipelineState pipelineState;
+
+    public RenderDeviceImpl() {
+        // TODO: move this into platform code
+        this.pipelineState = new Blaze3DPipelineState();
+    }
+
     @Override
     public void copyBuffer(Buffer src, Buffer dst, long readOffset, long writeOffset, long bytes) {
         this.copyBuffer0((BufferImpl) src, (BufferImpl) dst, readOffset, writeOffset, bytes);
@@ -121,15 +132,14 @@ public class RenderDeviceImpl implements RenderDevice {
 
     @Override
     public <T> void usePipeline(RenderPipeline pipeline, PipelineGate gate) {
-        // TODO: Instantiate the device with a generic factory and provide this via platform interop code
-        var pipelineState = new Blaze3DPipelineState();
+        BufferRenderer.unbindAll(); // TODO: move this into platform code
 
         try {
             if (pipeline != null) pipeline.enable(); // TODO: require a valid pipeline object,
 
-            gate.run(new ImmediatePipelineCommandList(), pipelineState);
+            gate.run(new ImmediatePipelineCommandList(), this.pipelineState);
         } finally {
-            pipelineState.restoreState();
+            this.pipelineState.restoreState();
         }
     }
 
@@ -161,6 +171,9 @@ public class RenderDeviceImpl implements RenderDevice {
     private static class ImmediateVertexArrayCommandList<T extends Enum<T>> implements VertexArrayCommandList<T> {
         private final VertexArrayImpl<T> array;
 
+        private VertexArrayResourceSet<T> activeVertexBuffers;
+        private Buffer activeElementBuffer;
+
         public ImmediateVertexArrayCommandList(VertexArrayImpl<T> array) {
             this.array = array;
         }
@@ -169,30 +182,49 @@ public class RenderDeviceImpl implements RenderDevice {
         public void bindVertexBuffers(VertexArrayResourceSet<T> bindings) {
             var slots = bindings.slots;
 
-            // TODO: use multi-bind
-            for (int i = 0; i < slots.length; i++) {
-                var slot = slots[i];
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                var buffers = stack.callocInt(slots.length);
+                var offsets = stack.callocPointer(slots.length);
+                var strides = stack.callocInt(slots.length);
 
-                var buffer = slot.buffer();
-                var stride = slot.stride();
+                for (int i = 0; i < slots.length; i++) {
+                    var slot = slots[i];
 
-                GL45C.glVertexArrayVertexBuffer(this.array.handle(), i, ((BufferImpl) buffer).handle(), 0, stride);
+                    var buffer = slot.buffer();
+                    var stride = slot.stride();
+
+                    buffers.put(i, buffer.handle());
+                    offsets.put(i, 0 /* TODO: allow specifying an offset */);
+                    strides.put(i, stride);
+                }
+
+                GL45C.glVertexArrayVertexBuffers(this.array.handle(), 0, buffers, offsets, strides);
             }
+
+            this.activeVertexBuffers = bindings;
         }
 
         @Override
         public void bindElementBuffer(Buffer buffer) {
-            GL45C.glVertexArrayElementBuffer(this.array.handle(), ((BufferImpl) buffer).handle());
+            GL45C.glVertexArrayElementBuffer(this.array.handle(), buffer.handle());
+            this.activeElementBuffer = buffer;
         }
 
         @Override
         public void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex, IntType indexType, PrimitiveType primitiveType) {
+            this.checkIndexedResources();
             GL32C.glMultiDrawElementsBaseVertex(primitiveType.getId(), count, indexType.getFormatId(), pointer, baseVertex);
         }
 
         @Override
         public void drawElementsBaseVertex(PrimitiveType primitiveType, IntType elementType, long elementPointer, int baseVertex, int elementCount) {
+            this.checkIndexedResources();
             GL32C.glDrawElementsBaseVertex(primitiveType.getId(), elementCount, elementType.getFormatId(), elementPointer, baseVertex);
+        }
+
+        private void checkIndexedResources() {
+            Validate.notNull(this.activeVertexBuffers, "Vertex buffers not bound");
+            Validate.notNull(this.activeElementBuffer, "Element buffer not bound");
         }
     }
 
@@ -203,27 +235,16 @@ public class RenderDeviceImpl implements RenderDevice {
         }
 
         private <A extends Enum<A>> void useVertexArray0(VertexArrayImpl<A> array, Consumer<VertexArrayCommandList<A>> consumer) {
-            // TODO: use GlStateManager instead of glGet
-            int prev = GL30C.glGetInteger(GL30C.GL_VERTEX_ARRAY_BINDING);
             GL30C.glBindVertexArray(array.handle());
             consumer.accept(new ImmediateVertexArrayCommandList<>(array));
-            GL30C.glBindVertexArray(prev);
         }
     }
 
     private static class ImmediatePipelineCommandList implements PipelineCommandList {
         @Override
         public <T> void useProgram(Program<T> program, ProgramGate<T> gate) {
-            // TODO: use GlStateManager instead of glGet
-            int prev = GL30C.glGetInteger(GL30C.GL_CURRENT_PROGRAM);
-
             GL30C.glUseProgram(program.handle());
-            program.bindResources();
-
             gate.run(new ImmediateProgramCommandList(), program.getInterface());
-
-            program.unbindResources();
-            GL30C.glUseProgram(prev);
         }
     }
 }

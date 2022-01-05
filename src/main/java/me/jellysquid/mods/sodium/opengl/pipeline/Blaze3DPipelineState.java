@@ -30,5 +30,7 @@ public class Blaze3DPipelineState implements PipelineState {
             GL45C.glBindTextureUnit(unit, GlStateManager.TEXTURES[unit].boundTexture);
             GL45C.glBindSampler(unit, 0);
         }
+
+        this.changedTextures.clear();
     }
 }

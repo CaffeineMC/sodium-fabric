@@ -38,7 +38,7 @@ public class ChunkShaderInterface {
     }
 
     public void setup() {
-        this.uFogColor.setFloat(RenderSystem.getShaderFogColor());
+        this.uFogColor.setFloats(RenderSystem.getShaderFogColor());
         this.uFogStart.setFloat(RenderSystem.getShaderFogStart());
         this.uFogEnd.setFloat(RenderSystem.getShaderFogEnd());
     }

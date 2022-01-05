@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.opengl.shader;
 
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.opengl.ManagedObject;
 import me.jellysquid.mods.sodium.opengl.shader.uniform.Uniform;
 import me.jellysquid.mods.sodium.opengl.shader.uniform.UniformBlock;
@@ -11,12 +12,13 @@ import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL32C;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
  * An OpenGL shader program.
  */
-public class ProgramImpl<T> extends ManagedObject implements ShaderBindingContext, Program<T> {
+public class ProgramImpl<T> extends ManagedObject implements Program<T> {
     private static final Logger LOGGER = LogManager.getLogger(ProgramImpl.class);
 
     private final T shaderInterface;
@@ -53,7 +55,10 @@ public class ProgramImpl<T> extends ManagedObject implements ShaderBindingContex
         verifyProgramLinked(program);
 
         this.setHandle(program);
-        this.shaderInterface = interfaceFactory.apply(this);
+
+        try (var context = new BindingContext()) {
+            this.shaderInterface = interfaceFactory.apply(context);
+        }
     }
 
     private static void printProgramLinkLog(int program) {
@@ -75,41 +80,6 @@ public class ProgramImpl<T> extends ManagedObject implements ShaderBindingContex
     @Override
     public T getInterface() {
         return this.shaderInterface;
-    }
-
-    @Override
-    public void bindResources() {
-        // NO-OP
-    }
-
-    @Override
-    public void unbindResources() {
-        // NO-OP
-    }
-
-    @Override
-    public <U extends Uniform> U bindUniform(String name, UniformFactory<U> factory) {
-        int handle = this.handle();
-        int index = GL20C.glGetUniformLocation(handle, name);
-
-        if (index < 0) {
-            return null;
-        }
-
-        return factory.create(handle, index);
-    }
-
-    @Override
-    public UniformBlock bindUniformBlock(String name, int bindingPoint) {
-        int index = GL32C.glGetUniformBlockIndex(this.handle(), name);
-
-        if (index < 0) {
-            throw new NullPointerException("No uniform block exists with name: " + name);
-        }
-
-        GL32C.glUniformBlockBinding(this.handle(), index, bindingPoint);
-
-        return new UniformBlock(bindingPoint);
     }
 
     /**
@@ -142,6 +112,66 @@ public class ProgramImpl<T> extends ManagedObject implements ShaderBindingContex
             GL20C.glDeleteShader(this.handle());
 
             this.invalidateHandle();
+        }
+    }
+
+    private class BindingContext implements ShaderBindingContext, AutoCloseable {
+        private final int handle = ProgramImpl.this.handle();
+
+        private final Set<String> boundUniforms = new ObjectOpenHashSet<>();
+        private final Set<String> boundUniformBlocks = new ObjectOpenHashSet<>();
+
+        private boolean disposed;
+
+        @Override
+        public <U extends Uniform> U bindUniform(String name, UniformFactory<U> factory) {
+            this.checkDisposed();
+
+            if (this.boundUniforms.contains(name)) {
+                throw new IllegalStateException("Uniform %s has already been found".formatted(name));
+            }
+
+            int index = GL20C.glGetUniformLocation(this.handle, name);
+
+            if (index < 0) {
+                return null;
+            }
+
+            this.boundUniforms.add(name);
+
+            return factory.create(this.handle, index);
+        }
+
+        @Override
+        public UniformBlock bindUniformBlock(String name, int bindingPoint) {
+            this.checkDisposed();
+
+            if (this.boundUniformBlocks.contains(name)) {
+                throw new IllegalStateException("Uniform block %s has already been bound".formatted(name));
+            }
+
+            int index = GL32C.glGetUniformBlockIndex(this.handle, name);
+
+            if (index < 0) {
+                throw new NullPointerException("No uniform block exists with name: " + name);
+            }
+
+            GL32C.glUniformBlockBinding(this.handle, index, bindingPoint);
+
+            this.boundUniformBlocks.add(name);
+
+            return new UniformBlock(bindingPoint);
+        }
+
+        private void checkDisposed() {
+            if (this.disposed) {
+                throw new IllegalStateException("Binding context has been disposed");
+            }
+        }
+
+        @Override
+        public void close() {
+            this.disposed = true;
         }
     }
 }
