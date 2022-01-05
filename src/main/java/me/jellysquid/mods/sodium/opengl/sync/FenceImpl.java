@@ -52,7 +52,7 @@ public class FenceImpl implements Fence {
             return;
         }
 
-        GL32C.glWaitSync(this.id, 0, GL32C.GL_TIMEOUT_IGNORED);
+        GL32C.glClientWaitSync(this.id, 0, GL32C.GL_TIMEOUT_IGNORED);
         GL32C.glDeleteSync(this.id);
 
         this.signaled = true;
