@@ -29,7 +29,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     public MappedStreamingBuffer(RenderDevice device, int capacity) {
         this.device = device;
         this.buffer = device.createMappedBuffer(capacity,
-                EnumBitField.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.CLIENT_STORAGE, BufferStorageFlags.COHERENT, BufferStorageFlags.MAP_WRITE),
+                EnumBitField.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.COHERENT, BufferStorageFlags.MAP_WRITE),
                 EnumBitField.of(BufferMapFlags.PERSISTENT, BufferMapFlags.WRITE, BufferMapFlags.COHERENT, BufferMapFlags.INVALIDATE_BUFFER, BufferMapFlags.UNSYNCHRONIZED));
         this.capacity = capacity;
         this.remaining = this.capacity;
