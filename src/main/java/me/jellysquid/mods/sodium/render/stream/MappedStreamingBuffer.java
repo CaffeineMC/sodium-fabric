@@ -4,11 +4,13 @@ import me.jellysquid.mods.sodium.opengl.buffer.*;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
 import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
+import me.jellysquid.mods.sodium.util.MathUtil;
 import net.minecraft.util.math.MathHelper;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 
 public class MappedStreamingBuffer implements StreamingBuffer {
     private final RenderDevice device;
@@ -113,6 +115,17 @@ public class MappedStreamingBuffer implements StreamingBuffer {
 
         this.queued = 0;
         this.mark = this.pos;
+
+        // Poll fence objects and release regions
+        while (!this.regions.isEmpty()) {
+            var region = this.regions.peek();
+
+            if (!region.fence.poll()) {
+                break;
+            }
+
+            this.regions.remove();
+        }
     }
 
     private void insertFence(int offset, int length) {
@@ -130,6 +143,20 @@ public class MappedStreamingBuffer implements StreamingBuffer {
         }
 
         this.device.deleteBuffer(this.buffer);
+    }
+
+    @Override
+    public String getDebugString() {
+        var it = this.regions.iterator();
+
+        int used = 0;
+
+        while (it.hasNext()) {
+            var region = it.next();
+            used += region.length;
+        }
+
+        return String.format("%s/%s MiB", MathUtil.toMib(this.capacity - used), MathUtil.toMib(this.capacity));
     }
 
     private record Region(int offset, int length, Fence fence) {

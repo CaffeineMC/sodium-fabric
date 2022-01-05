@@ -16,4 +16,6 @@ public interface StreamingBuffer {
     void flush();
 
     void delete();
+
+    String getDebugString();
 }
