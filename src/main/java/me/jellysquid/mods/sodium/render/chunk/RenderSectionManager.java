@@ -614,7 +614,7 @@ public class RenderSectionManager {
 
         list.add(String.format("Device buffer objects: %d", count));
         list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
-        list.add(String.format("Staging buffer: %s", this.regions.getStreamingBuffer().toString()));
+        list.add(String.format("Staging buffer: %s", this.regions.getStreamingBuffer().getDebugString()));
         return list;
     }
 }
