@@ -165,7 +165,7 @@ public class RenderRegionManager {
     }
 
     private static StreamingBuffer createStagingBuffer(RenderDevice device) {
-        return new MappedStreamingBuffer(device, 16 * 1024 * 1024);
+        return new MappedStreamingBuffer(device, 48 * 1024 * 1024);
     }
 
     private record PendingSectionUpload(RenderSection section, ChunkMesh meshData, ChunkRenderPass pass,
