@@ -158,9 +158,12 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
         this.rebuildGUIPages();
         this.rebuildGUIOptions();
 
-        this.undoButton = new FlatButtonWidget(new Dim2i(this.width - 211, this.height - 30, 65, 20), Text.translatable("sodium.options.buttons.undo"), this::undoChanges);
-        this.applyButton = new FlatButtonWidget(new Dim2i(this.width - 142, this.height - 30, 65, 20), Text.translatable("sodium.options.buttons.apply"), this::applyChanges);
-        this.closeButton = new FlatButtonWidget(new Dim2i(this.width - 73, this.height - 30, 65, 20), Text.translatable("gui.done"), this::close);
+        int x = Math.max(6, (this.width - 427) / 2) + 403;
+        int y = Math.min(this.height - 30, 28 + this.pages.get(1).getOptions().size() * 18 + this.pages.get(1).getGroups().size() * 4);
+
+        this.undoButton = new FlatButtonWidget(new Dim2i(x - 61 - 69 * 2, y, 61, 20), Text.translatable("sodium.options.buttons.undo"), this::undoChanges);
+        this.applyButton = new FlatButtonWidget(new Dim2i(x - 61 - 69, y, 61, 20), Text.translatable("sodium.options.buttons.apply"), this::applyChanges);
+        this.closeButton = new FlatButtonWidget(new Dim2i(x - 61, y, 61, 20), Text.translatable("gui.done"), this::close);
         this.donateButton = new FlatButtonWidget(new Dim2i(this.width - 128, 6, 100, 20), Text.translatable("sodium.options.buttons.donate"), this::openDonationPage);
         this.hideDonateButton = new FlatButtonWidget(new Dim2i(this.width - 26, 6, 20, 20), Text.literal("x"), this::hideDonationButton);
 
@@ -194,7 +197,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     }
 
     private void rebuildGUIPages() {
-        int x = 6;
+        int x = Math.max(6, (this.width - 427) / 2);
         int y = 6;
 
         for (OptionPage page : this.pages) {
@@ -210,7 +213,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
     }
 
     private void rebuildGUIOptions() {
-        int x = 6;
+        int x = Math.max(6, (this.width - 427) / 2);
         int y = 28;
 
         for (OptionGroup group : this.currentPage.getGroups()) {
@@ -306,7 +309,7 @@ public class SodiumOptionsGUI extends Screen implements ScreenPromptable {
 
         int boxHeight = (tooltip.size() * 12) + boxPadding;
         int boxYLimit = boxY + boxHeight;
-        int boxYCutoff = this.height - 40;
+        int boxYCutoff = Math.min(this.height - 40, 28 + this.pages.get(1).getOptions().size() * 18 + this.pages.get(1).getGroups().size() * 4 - 4);
 
         // If the box is going to be cutoff on the Y-axis, move it back up the difference
         if (boxYLimit > boxYCutoff) {
