@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.region;
 
+import com.google.common.base.Suppliers;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.Frustum;

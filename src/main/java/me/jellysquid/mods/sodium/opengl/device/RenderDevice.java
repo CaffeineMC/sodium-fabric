@@ -10,7 +10,6 @@ import me.jellysquid.mods.sodium.opengl.pipeline.PipelineCommandList;
 import me.jellysquid.mods.sodium.opengl.pipeline.PipelineState;
 import me.jellysquid.mods.sodium.opengl.sampler.Sampler;
 import me.jellysquid.mods.sodium.opengl.shader.Program;
-import me.jellysquid.mods.sodium.opengl.shader.ProgramCommandList;
 import me.jellysquid.mods.sodium.opengl.shader.ShaderBindingContext;
 import me.jellysquid.mods.sodium.opengl.shader.ShaderDescription;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
@@ -62,7 +61,7 @@ public interface RenderDevice {
 
     void deleteVertexArray(VertexArray<?> array);
 
-    void copyBuffer(Buffer src, Buffer dst, long readOffset, long writeOffset, long bytes);
+    void copyBuffer(long bytes, Buffer src, long readOffset, Buffer dst, long writeOffset);
 
     void deleteBuffer(Buffer buffer);
 
