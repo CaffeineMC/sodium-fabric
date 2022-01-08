@@ -69,28 +69,33 @@ public class RenderImmediate {
         var vertexStride = vertexFormat.getVertexSize();
 
         VertexArray<BufferTarget> vertexArray = this.createVertexArray(vertexFormat);
-        int baseVertex = this.vertexBuffer.write(vertexData, vertexStride);
-
-        Buffer elementBuffer;
-        int elementPointer;
-
-        IntType usedElementFormat;
+        var vertexBufferHandle = this.vertexBuffer.write(vertexData, vertexStride);
 
         if (useDefaultElementBuffer) {
             var sequenceBufferBuilder = this.defaultElementBuffers.get(IndexSequenceType.map(drawMode));
             sequenceBufferBuilder.ensureCapacity(vertexCount);
 
-            usedElementFormat = getElementType(VertexFormat.IntType.INT);
-            elementBuffer = sequenceBufferBuilder.getBuffer();
-            elementPointer = 0;
+            this.draw(drawMode, vertexArray, vertexFormat,
+                    vertexBufferHandle.getBuffer(), vertexBufferHandle.getOffset(),
+                    sequenceBufferBuilder.getElementDataType(), sequenceBufferBuilder.getBuffer(), 0, elementCount);
+
         } else {
             var elementData = buffer.slice(vertexBytes, elementCount * elementFormat.size);
+            var elementBufferHandle = this.elementBuffer.write(elementData, elementFormat.size);
 
-            usedElementFormat = getElementType(elementFormat);
-            elementBuffer = this.elementBuffer.getBuffer();
-            elementPointer = this.elementBuffer.write(elementData, elementFormat.size);
+            this.draw(drawMode, vertexArray, vertexFormat,
+                    vertexBufferHandle.getBuffer(), vertexBufferHandle.getOffset(),
+                    getElementType(elementFormat), elementBufferHandle.getBuffer(), elementBufferHandle.getOffset(), elementCount);
+
+            elementBufferHandle.free();
         }
 
+        vertexBufferHandle.free();
+    }
+
+    private void draw(VertexFormat.DrawMode drawMode, VertexArray<BufferTarget> vertexArray,
+                      VertexFormat vertexFormat, Buffer vertexBuffer, int vertexBase,
+                      IntType elementFormat, Buffer elementBuffer, int elementPointer, int elementCount) {
         Shader shader = RenderSystem.getShader();
         Validate.notNull(shader, "No active shader");
 
@@ -101,7 +106,7 @@ public class RenderImmediate {
                 for (var sampler : programInterface.getSamplers()) {
                     var samplerLocation = sampler.location();
                     var samplerTexture = sampler.textureSupplier()
-                                    .getAsInt();
+                            .getAsInt();
 
                     pipelineState.bindTexture(samplerLocation, samplerTexture, null);
                 }
@@ -164,12 +169,12 @@ public class RenderImmediate {
 
                 programCommands.useVertexArray(vertexArray, (drawCommands) -> {
                     drawCommands.bindVertexBuffers(vertexArray.createResourceSet(
-                            Map.of(BufferTarget.VERTICES, new VertexArrayBuffer(this.vertexBuffer.getBuffer(), vertexFormat.getVertexSize()))
+                            Map.of(BufferTarget.VERTICES, new VertexArrayBuffer(vertexBuffer, vertexFormat.getVertexSize()))
                     ));
                     drawCommands.bindElementBuffer(elementBuffer);
 
-                    drawCommands.drawElementsBaseVertex(getPrimitiveType(drawMode), usedElementFormat,
-                            (long) elementPointer * elementFormat.size, baseVertex, elementCount);
+                    drawCommands.drawElementsBaseVertex(getPrimitiveType(drawMode), elementFormat,
+                            (long) elementPointer * elementFormat.getStride(), vertexBase, elementCount);
                 });
             });
         });
@@ -270,16 +275,13 @@ public class RenderImmediate {
         this.elementBuffer.delete();
     }
 
-    public static void flush() {
-        if (INSTANCE == null) {
-            return;
+    public static void tryFlush() {
+        if (INSTANCE != null) {
+            INSTANCE.flush();
         }
-
-        INSTANCE.flush0();
-        INSTANCE = null;
     }
 
-    private void flush0() {
+    private void flush() {
         this.vertexBuffer.flush();
         this.elementBuffer.flush();
     }

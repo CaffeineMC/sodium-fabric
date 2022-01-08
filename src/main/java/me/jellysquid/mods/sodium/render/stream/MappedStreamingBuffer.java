@@ -10,7 +10,6 @@ import net.minecraft.util.math.MathHelper;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Iterator;
 
 public class MappedStreamingBuffer implements StreamingBuffer {
     private final RenderDevice device;
@@ -29,15 +28,15 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     public MappedStreamingBuffer(RenderDevice device, int capacity) {
         this.device = device;
         this.buffer = device.createMappedBuffer(capacity,
-                EnumBitField.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.COHERENT, BufferStorageFlags.MAP_WRITE),
-                EnumBitField.of(BufferMapFlags.PERSISTENT, BufferMapFlags.WRITE, BufferMapFlags.COHERENT, BufferMapFlags.INVALIDATE_BUFFER, BufferMapFlags.UNSYNCHRONIZED));
+                EnumBitField.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.MAP_WRITE),
+                EnumBitField.of(BufferMapFlags.PERSISTENT, BufferMapFlags.WRITE, BufferMapFlags.EXPLICIT_FLUSH, BufferMapFlags.INVALIDATE_BUFFER, BufferMapFlags.UNSYNCHRONIZED));
         this.capacity = capacity;
         this.remaining = this.capacity;
         this.mark = 0;
     }
 
     @Override
-    public int write(ByteBuffer data, int alignment) {
+    public Handle write(ByteBuffer data, int stride) {
         int length = data.remaining();
 
         // We can't service allocations which are larger than the buffer itself
@@ -46,11 +45,11 @@ public class MappedStreamingBuffer implements StreamingBuffer {
         }
 
         // Align the pointer so that we can return element offsets from this buffer
-        int pos = MathHelper.roundUpToMultiple(this.pos, alignment);
+        int pos = MathHelper.roundUpToMultiple(this.pos, stride);
 
         // Wrap the pointer around to zero if there's not enough space in the buffer
         if (pos + length > this.capacity) {
-            pos = this.wrap(alignment);
+            pos = this.wrap(stride);
         }
 
         // Reclaim memory regions until we have enough memory to service the request
@@ -64,13 +63,13 @@ public class MappedStreamingBuffer implements StreamingBuffer {
         this.remaining -= length;
         this.queued += length;
 
-        return pos / alignment;
+        return new MappedHandle(pos, length, stride);
     }
 
     private int wrap(int alignment) {
         // When we wrap around, we need to ensure any memory behind us has a fence created
         if (this.queued > 0) {
-            this.insertFence(this.mark, this.queued);
+            this.insertFence(this.mark, this.queued, this.device.createFence());
         }
 
         this.mark = 0;
@@ -94,11 +93,6 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     }
 
     @Override
-    public Buffer getBuffer() {
-        return this.buffer;
-    }
-
-    @Override
     public void flush() {
         // Poll fence objects and release regions
         while (!this.regions.isEmpty()) {
@@ -116,23 +110,22 @@ public class MappedStreamingBuffer implements StreamingBuffer {
             return;
         }
 
+        var fence = this.device.createFence();
+
         // If we wrapped around since the last flush, then fence both the head and tail of the buffer
         if (this.mark + this.queued > this.capacity) {
-            this.insertFence(this.mark, this.capacity - this.mark);
-            this.insertFence(0, this.mark);
+            this.insertFence(this.mark, this.capacity - this.mark, fence);
+            this.insertFence(0, this.mark, fence);
         } else {
-            this.insertFence(this.mark, this.queued);
+            this.insertFence(this.mark, this.queued, fence);
         }
 
         this.queued = 0;
         this.mark = this.pos;
     }
 
-    private void insertFence(int offset, int length) {
-        var fence = this.device.createFence();
-        var region = new Region(offset, length, fence);
-
-        this.regions.add(region);
+    private void insertFence(int offset, int length, Fence fence) {
+        this.regions.add(new Region(offset, length, fence));
     }
 
     @Override
@@ -161,5 +154,34 @@ public class MappedStreamingBuffer implements StreamingBuffer {
 
     private record Region(int offset, int length, Fence fence) {
 
+    }
+
+    private class MappedHandle implements Handle {
+        private final int offset, length;
+
+        private MappedHandle(int offsetBytes, int lengthBytes, int stride) {
+            this.offset = offsetBytes / stride;
+            this.length = lengthBytes / stride;
+        }
+
+        @Override
+        public Buffer getBuffer() {
+            return MappedStreamingBuffer.this.buffer;
+        }
+
+        @Override
+        public int getOffset() {
+            return this.offset;
+        }
+
+        @Override
+        public int getLength() {
+            return this.length;
+        }
+
+        @Override
+        public void free() {
+
+        }
     }
 }

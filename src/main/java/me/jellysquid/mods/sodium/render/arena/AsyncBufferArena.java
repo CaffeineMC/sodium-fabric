@@ -120,10 +120,9 @@ public class AsyncBufferArena implements GlBufferArena {
         var dstBufferObj = this.device.createBuffer(capacity);
 
         for (PendingBufferCopyCommand cmd : list) {
-            this.device.copyBuffer(srcBufferObj, dstBufferObj,
-                    cmd.readOffset,
-                    cmd.writeOffset,
-                    cmd.length);
+            this.device.copyBuffer(cmd.length, srcBufferObj, cmd.readOffset, dstBufferObj,
+                    cmd.writeOffset
+            );
         }
 
         this.device.deleteBuffer(srcBufferObj);
@@ -298,11 +297,14 @@ public class AsyncBufferArena implements GlBufferArena {
         }
 
         // Copy the data into our staging buffer, then copy it into the arena's buffer
-        var readOffset = this.stagingBuffer.write(data, 1);
-        var writeOffset = dst.getOffset();
+        var readHandle = this.stagingBuffer.write(data, 1);
 
-        this.device.copyBuffer(this.stagingBuffer.getBuffer(), this.arenaBuffer, readOffset, writeOffset, length);
-        upload.setResult(dst);
+        try {
+            this.device.copyBuffer(length, readHandle.getBuffer(), readHandle.getOffset(), this.arenaBuffer, dst.getOffset());
+            upload.setResult(dst);
+        } finally {
+            readHandle.free();
+        }
 
         return true;
     }

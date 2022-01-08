@@ -37,7 +37,7 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     @Override
-    public void copyBuffer(Buffer src, Buffer dst, long readOffset, long writeOffset, long bytes) {
+    public void copyBuffer(long bytes, Buffer src, long readOffset, Buffer dst, long writeOffset) {
         this.copyBuffer0((BufferImpl) src, (BufferImpl) dst, readOffset, writeOffset, bytes);
     }
 
@@ -122,7 +122,7 @@ public class RenderDeviceImpl implements RenderDevice {
             throw new RuntimeException("Failed to map buffer");
         }
 
-        return new MappedBufferImpl(capacity, handle, data);
+        return new MappedBufferImpl(capacity, handle, data, mapFlags);
     }
 
     @Override

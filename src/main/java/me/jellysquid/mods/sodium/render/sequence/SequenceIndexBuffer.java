@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.render.sequence;
 
 import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
+import me.jellysquid.mods.sodium.opengl.types.IntType;
 
 public class SequenceIndexBuffer {
     private final RenderDevice device;
@@ -54,5 +55,9 @@ public class SequenceIndexBuffer {
             this.device.deleteBuffer(this.buffer);
             this.buffer = null;
         }
+    }
+
+    public IntType getElementDataType() {
+        return IntType.UNSIGNED_INT;
     }
 }
