@@ -2,10 +2,7 @@ package me.jellysquid.mods.sodium.opengl.device;
 
 import me.jellysquid.mods.sodium.opengl.array.VertexArray;
 import me.jellysquid.mods.sodium.opengl.array.VertexArrayDescription;
-import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
-import me.jellysquid.mods.sodium.opengl.buffer.BufferMapFlags;
-import me.jellysquid.mods.sodium.opengl.buffer.BufferStorageFlags;
-import me.jellysquid.mods.sodium.opengl.buffer.MappedBuffer;
+import me.jellysquid.mods.sodium.opengl.buffer.*;
 import me.jellysquid.mods.sodium.opengl.pipeline.PipelineCommandList;
 import me.jellysquid.mods.sodium.opengl.pipeline.PipelineState;
 import me.jellysquid.mods.sodium.opengl.sampler.Sampler;
@@ -47,6 +44,8 @@ public interface RenderDevice {
     }
 
     MappedBuffer createMappedBuffer(long capacity, EnumBitField<BufferStorageFlags> storageFlags, EnumBitField<BufferMapFlags> mapFlags);
+
+    FlushableMappedBuffer createFlushableMappedBuffer(long capacity, EnumBitField<BufferStorageFlags> storageFlags, EnumBitField<BufferMapFlags> mapFlags);
 
     <T extends Enum<T>> VertexArray<T> createVertexArray(VertexArrayDescription<T> desc);
 

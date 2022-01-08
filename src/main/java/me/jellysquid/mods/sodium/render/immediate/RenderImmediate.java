@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.lwjgl.system.MemoryUtil;
+
 public class RenderImmediate {
     private static RenderImmediate INSTANCE;
 
@@ -69,9 +71,13 @@ public class RenderImmediate {
         var vertexStride = vertexFormat.getVertexSize();
 
         VertexArray<BufferTarget> vertexArray = this.createVertexArray(vertexFormat);
-        int baseVertex = this.vertexBuffer.write(vertexData, vertexStride);
+        ByteBuffer vertexBufferSection = this.vertexBuffer.allocate(vertexData.capacity(), vertexStride);
+        int baseVertex = vertexBufferSection.position() / vertexStride;
+        MemoryUtil.memCopy(vertexData, vertexBufferSection);
+        this.vertexBuffer.flushRegion(vertexBufferSection);
 
         Buffer elementBuffer;
+        ByteBuffer elementBufferSection = null;
         int elementPointer;
 
         IntType usedElementFormat;
@@ -88,7 +94,10 @@ public class RenderImmediate {
 
             usedElementFormat = getElementType(elementFormat);
             elementBuffer = this.elementBuffer.getBuffer();
-            elementPointer = this.elementBuffer.write(elementData, elementFormat.size);
+            elementBufferSection = this.elementBuffer.allocate(elementData.capacity(), elementFormat.size);
+            elementPointer = elementBufferSection.position() / elementFormat.size;
+            MemoryUtil.memCopy(elementData, elementBufferSection);
+            this.elementBuffer.flushRegion(elementBufferSection);
         }
 
         Shader shader = RenderSystem.getShader();
@@ -173,6 +182,11 @@ public class RenderImmediate {
                 });
             });
         });
+
+        this.vertexBuffer.flushRegion(vertexBufferSection);
+        if (elementBufferSection != null) {
+            this.elementBuffer.flushRegion(elementBufferSection);
+        }
     }
 
     @Deprecated(forRemoval = true)
@@ -268,20 +282,6 @@ public class RenderImmediate {
 
         this.vertexBuffer.delete();
         this.elementBuffer.delete();
-    }
-
-    public static void flush() {
-        if (INSTANCE == null) {
-            return;
-        }
-
-        INSTANCE.flush0();
-        INSTANCE = null;
-    }
-
-    private void flush0() {
-        this.vertexBuffer.flush();
-        this.elementBuffer.flush();
     }
 
     public enum BufferTarget {

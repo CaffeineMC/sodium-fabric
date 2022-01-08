@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.lwjgl.system.MemoryUtil;
+
 // TODO: handle alignment
 // TODO: handle element vs pointers
 public class AsyncBufferArena implements GlBufferArena {
@@ -298,10 +300,16 @@ public class AsyncBufferArena implements GlBufferArena {
         }
 
         // Copy the data into our staging buffer, then copy it into the arena's buffer
-        var readOffset = this.stagingBuffer.write(data, 1);
+        ByteBuffer stagingSection = this.stagingBuffer.allocate(length);
+        var readOffset = stagingSection.position();
+        MemoryUtil.memCopy(data, stagingSection);
+        this.stagingBuffer.flushRegion(stagingSection);
+
         var writeOffset = dst.getOffset();
 
         this.device.copyBuffer(this.stagingBuffer.getBuffer(), this.arenaBuffer, readOffset, writeOffset, length);
+        this.stagingBuffer.fenceRegion(stagingSection);
+
         upload.setResult(dst);
 
         return true;

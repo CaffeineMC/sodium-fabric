@@ -116,13 +116,27 @@ public class RenderDeviceImpl implements RenderDevice {
         var handle = GL45C.glCreateBuffers();
         GL45C.glNamedBufferStorage(handle, capacity, storageFlags.getBitField());
 
-        ByteBuffer data = GL45C.glMapNamedBufferRange(handle, 0, capacity, mapFlags.getBitField());
+        ByteBuffer pointer = GL45C.glMapNamedBufferRange(handle, 0, capacity, mapFlags.getBitField());
 
-        if (data == null) {
+        if (pointer == null) {
             throw new RuntimeException("Failed to map buffer");
         }
 
-        return new MappedBufferImpl(capacity, handle, data);
+        return new MappedBufferImpl(capacity, handle, pointer);
+    }
+
+    @Override
+    public FlushableMappedBuffer createFlushableMappedBuffer(long capacity, EnumBitField<BufferStorageFlags> storageFlags, EnumBitField<BufferMapFlags> mapFlags) {
+        var handle = GL45C.glCreateBuffers();
+        GL45C.glNamedBufferStorage(handle, capacity, storageFlags.getBitField());
+
+        ByteBuffer pointer = GL45C.glMapNamedBufferRange(handle, 0, capacity, mapFlags.getBitField() | GL45C.GL_MAP_FLUSH_EXPLICIT_BIT);
+
+        if (pointer == null) {
+            throw new RuntimeException("Failed to map buffer");
+        }
+
+        return new FlushableMappedBufferImpl(capacity, handle, pointer);
     }
 
     @Override

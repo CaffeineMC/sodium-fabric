@@ -11,4 +11,13 @@ public class MathUtil {
     public static long toMib(long x) {
         return x / 1024L / 1024L;
     }
+
+    public static long roundUpToMultiple(long value, long divisor) {
+        return ceilDiv(value, divisor) * divisor;
+    }
+
+    public static long ceilDiv(long a, long b) {
+        return -Math.floorDiv(-a, b);
+    }
+
 }

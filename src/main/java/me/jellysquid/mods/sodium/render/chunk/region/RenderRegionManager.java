@@ -36,8 +36,6 @@ public class RenderRegionManager {
     }
 
     public void cleanup() {
-        this.streamingBuffer.flush();
-
         Iterator<RenderRegion> it = this.regions.values()
                 .iterator();
 
