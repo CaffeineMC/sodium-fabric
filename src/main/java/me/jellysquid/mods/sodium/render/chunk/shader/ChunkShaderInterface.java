@@ -37,10 +37,9 @@ public class ChunkShaderInterface {
         this.uFogEnd = context.bindUniform("u_FogEnd", UniformFloat.of());
     }
 
-    public void setup() {
+    public void setFogUniforms() {
         this.uFogColor.setFloats(RenderSystem.getShaderFogColor());
         this.uFogStart.setFloat(RenderSystem.getShaderFogStart());
         this.uFogEnd.setFloat(RenderSystem.getShaderFogEnd());
     }
-
 }

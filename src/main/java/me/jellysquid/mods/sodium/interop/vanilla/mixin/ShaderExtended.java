@@ -4,7 +4,5 @@ import me.jellysquid.mods.sodium.opengl.shader.Program;
 import me.jellysquid.mods.sodium.render.immediate.VanillaShaderInterface;
 
 public interface ShaderExtended {
-    Program<VanillaShaderInterface> sodium$getProgram();
-
-    void setup();
+    Program<VanillaShaderInterface> sodium$getShader();
 }

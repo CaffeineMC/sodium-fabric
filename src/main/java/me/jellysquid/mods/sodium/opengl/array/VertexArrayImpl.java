@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.opengl.ManagedObject;
 import org.lwjgl.opengl.GL45C;
 
 import java.util.List;
-import java.util.Map;
 
 public class VertexArrayImpl<T extends Enum<T>> extends ManagedObject implements VertexArray<T> {
     private final VertexArrayDescription<T> desc;
@@ -40,7 +39,7 @@ public class VertexArrayImpl<T extends Enum<T>> extends ManagedObject implements
     }
 
     @Override
-    public VertexArrayResourceSet<T> createResourceSet(Map<T, VertexArrayBuffer> bindings) {
-        return new VertexArrayResourceSet<>(this.desc.type(), bindings);
+    public T[] getBufferTargets() {
+        return this.desc.targets();
     }
 }

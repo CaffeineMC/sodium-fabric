@@ -74,7 +74,7 @@ public class IndexBufferBuilder {
 
         public int writeTo(int offset, ByteBuffer buffer) {
             IntIterator it = this.indices.iterator();
-            int stride = this.format.getStride();
+            int stride = this.format.getSize();
 
             int pointer = offset;
 
@@ -94,7 +94,7 @@ public class IndexBufferBuilder {
         }
 
         public int getByteSize() {
-            return this.indices.size() * this.format.getStride();
+            return this.indices.size() * this.format.getSize();
         }
 
         public int getCount() {

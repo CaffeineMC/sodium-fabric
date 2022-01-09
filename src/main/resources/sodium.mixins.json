@@ -41,7 +41,6 @@
     "features.entity.fast_render.MixinModelPart",
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinClientWorld",
-    "features.fast_render.MixinBufferRenderer",
     "features.gui.MixinDebugHud",
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
     "features.gui.font.MixinGlyphRenderer",
@@ -63,5 +62,17 @@
     "features.texture_tracking.MixinSpriteAtlasTexture",
     "features.texture_tracking.MixinSpriteBillboardParticle",
     "features.texture_updates.MixinSpriteInterpolated"
+  ],
+  "mixins": [
+    "core.MixinRenderLayer",
+    "core.MixinRenderLayer$MixinMultiPhase",
+    "core.MixinRenderLayer$MixinMultiPhaseParameters",
+    "core.MixinRenderPhase",
+    "core.MixinRenderPhase$MixinLightmap",
+    "core.MixinRenderPhase$MixinOverlay",
+    "core.MixinRenderPhase$MixinShader",
+    "core.MixinRenderPhase$MixinTexture",
+    "core.MixinRenderPhase$MixinTextureBase",
+    "core.MixinRenderPhase$MixinTextures"
   ]
 }
