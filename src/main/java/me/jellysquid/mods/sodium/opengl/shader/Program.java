@@ -4,4 +4,6 @@ public interface Program<T> {
     T getInterface();
 
     int handle();
+
+    boolean isHandleValid();
 }
