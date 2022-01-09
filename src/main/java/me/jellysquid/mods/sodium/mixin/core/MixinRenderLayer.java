@@ -79,8 +79,7 @@ public class MixinRenderLayer {
                     .setBlendFunction(createBlendFunction(this.transparency))
                     .setDepthFunc(createDepthFunction(this.depthTest))
                     .setCullingMode(createCullingMode(this.cull))
-                    .setColorMask(createColorMask(this.writeMaskState))
-                    .setDepthMask(createDepthMask(this.writeMaskState))
+                    .setWriteMask(createWriteMask(this.writeMaskState))
                     .build();
         }
 
@@ -127,24 +126,8 @@ public class MixinRenderLayer {
             }
         }
 
-        private static boolean createDepthMask(RenderPhase.WriteMaskState state) {
-            if (state == RenderPhase.ALL_MASK || state == RenderPhase.DEPTH_MASK) {
-                return true;
-            } else if (state == RenderPhase.COLOR_MASK) {
-                return false;
-            }
-
-            throw new UnsupportedOperationException();
-        }
-
-        private static ColorMask createColorMask(RenderPhase.WriteMaskState value) {
-            if (value == RenderPhase.ALL_MASK || value == RenderPhase.COLOR_MASK) {
-                return new ColorMask(true, true, true, true);
-            } else if (value == RenderPhase.DEPTH_MASK) {
-                return new ColorMask(false, false, false, false);
-            }
-
-            throw new UnsupportedOperationException();
+        private static WriteMask createWriteMask(RenderPhase.WriteMaskState value) {
+            return new WriteMask(value.color, value.depth);
         }
 
         private static CullingMode createCullingMode(RenderPhase.Cull value) {

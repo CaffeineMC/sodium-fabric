@@ -1,18 +1,19 @@
 package me.jellysquid.mods.sodium.opengl.types;
 
+import org.apache.commons.lang3.Validate;
+import org.jetbrains.annotations.Nullable;
+
 public class RenderState {
     public final CullingMode cullingMode;
-    public final BlendFunction blendFunction;
+    @Nullable public final BlendFunction blendFunction;
     public final DepthFunc depthFunc;
-    public final boolean depthMask;
-    public final ColorMask colorMask;
+    public final WriteMask writeMask;
 
-    private RenderState(CullingMode cullingMode, BlendFunction blendFunction, DepthFunc depthFunc, boolean depthMask, ColorMask colorMask) {
-        this.cullingMode = cullingMode;
+    private RenderState(CullingMode cullingMode, @Nullable BlendFunction blendFunction, DepthFunc depthFunc, WriteMask writeMask) {
+        this.cullingMode = Validate.notNull(cullingMode);
         this.blendFunction = blendFunction;
-        this.depthFunc = depthFunc;
-        this.depthMask = depthMask;
-        this.colorMask = colorMask;
+        this.depthFunc = Validate.notNull(depthFunc);
+        this.writeMask = Validate.notNull(writeMask);
     }
 
     public static Builder builder() {
@@ -27,8 +28,7 @@ public class RenderState {
         private CullingMode cullingMode = CullingMode.ENABLE;
         private BlendFunction blendFunction = null;
         private DepthFunc depthFunc = DepthFunc.LESS_THAN_OR_EQUAL;
-        private boolean depthMask = true;
-        private ColorMask colorMask = new ColorMask(true, true, true, true);
+        private WriteMask writeMask = new WriteMask(true, true);
 
         public Builder setCullingMode(CullingMode mode) {
             this.cullingMode = mode;
@@ -45,19 +45,14 @@ public class RenderState {
             return this;
         }
 
-        public Builder setDepthMask(boolean mask) {
-            this.depthMask = mask;
-            return this;
-        }
-
-        public Builder setColorMask(ColorMask mask) {
-            this.colorMask = mask;
+        public Builder setWriteMask(WriteMask mask) {
+            this.writeMask = mask;
             return this;
         }
 
         public RenderState build() {
             return new RenderState(this.cullingMode, this.blendFunction,
-                    this.depthFunc, this.depthMask, this.colorMask);
+                    this.depthFunc, this.writeMask);
         }
     }
 }
