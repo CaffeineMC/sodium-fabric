@@ -5,12 +5,12 @@ import org.apache.commons.lang3.Validate;
 
 public class BoxBlur {
     /**
-     * Performs a box blur with the specified radius on the 2D array of color values.
+     * Performs a box bilinear with the specified radius on the 2D array of color values.
      *
-     * @param data The array of color values to blur in-place
+     * @param data The array of color values to bilinear in-place
      * @param width The width of the array
      * @param height The height of the array
-     * @param radius The radius to blur with
+     * @param radius The radius to bilinear with
      */
     public static void blur(int[] data, int width, int height, int radius) {
         Validate.isTrue(data.length == (width * height), "data.length != (width * height)");

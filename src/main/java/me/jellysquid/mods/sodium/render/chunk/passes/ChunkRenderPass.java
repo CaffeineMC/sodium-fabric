@@ -1,10 +1,9 @@
 package me.jellysquid.mods.sodium.render.chunk.passes;
 
-import me.jellysquid.mods.sodium.opengl.types.RenderPipeline;
-import me.jellysquid.mods.sodium.opengl.types.TranslucencyMode;
+import me.jellysquid.mods.sodium.opengl.types.RenderState;
 
-public record ChunkRenderPass(RenderPipeline pipeline, boolean mipped, float alphaCutoff) {
-    public boolean isTranslucent() {
-        return this.pipeline.translucencyMode == TranslucencyMode.ENABLED;
+public record ChunkRenderPass(RenderState renderState, boolean mipped, float alphaCutoff) {
+    public boolean usesReverseOrder() {
+        return this.renderState.blendFunction != null;
     }
 }

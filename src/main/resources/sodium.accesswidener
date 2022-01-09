@@ -28,3 +28,41 @@ accessible method net/minecraft/client/gl/Program getShaderRef ()I
 accessible field com/mojang/blaze3d/systems/RenderSystem shaderLightDirections [Lnet/minecraft/util/math/Vec3f;
 accessible field com/mojang/blaze3d/platform/GlStateManager TEXTURES [Lcom/mojang/blaze3d/platform/GlStateManager$Texture2DState;
 accessible class com/mojang/blaze3d/platform/GlStateManager$Texture2DState
+
+accessible class net/minecraft/client/render/RenderPhase$TextureBase
+accessible class net/minecraft/client/render/RenderPhase$Shader
+accessible class net/minecraft/client/render/RenderPhase$Transparency
+accessible class net/minecraft/client/render/RenderPhase$DepthTest
+accessible class net/minecraft/client/render/RenderPhase$Cull
+accessible class net/minecraft/client/render/RenderPhase$Lightmap
+accessible class net/minecraft/client/render/RenderPhase$Overlay
+accessible class net/minecraft/client/render/RenderPhase$Layering
+accessible class net/minecraft/client/render/RenderPhase$Target
+accessible class net/minecraft/client/render/RenderPhase$Texturing
+accessible class net/minecraft/client/render/RenderPhase$WriteMaskState
+accessible class net/minecraft/client/render/RenderPhase$LineWidth
+
+accessible field net/minecraft/client/render/RenderPhase NO_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
+accessible field net/minecraft/client/render/RenderPhase ADDITIVE_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
+accessible field net/minecraft/client/render/RenderPhase LIGHTNING_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
+accessible field net/minecraft/client/render/RenderPhase GLINT_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
+accessible field net/minecraft/client/render/RenderPhase CRUMBLING_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
+accessible field net/minecraft/client/render/RenderPhase TRANSLUCENT_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
+
+accessible field net/minecraft/client/render/RenderPhase ALWAYS_DEPTH_TEST Lnet/minecraft/client/render/RenderPhase$DepthTest;
+accessible field net/minecraft/client/render/RenderPhase EQUAL_DEPTH_TEST Lnet/minecraft/client/render/RenderPhase$DepthTest;
+accessible field net/minecraft/client/render/RenderPhase LEQUAL_DEPTH_TEST Lnet/minecraft/client/render/RenderPhase$DepthTest;
+
+accessible field net/minecraft/client/render/RenderPhase ENABLE_CULLING Lnet/minecraft/client/render/RenderPhase$Cull;
+accessible field net/minecraft/client/render/RenderPhase DISABLE_CULLING Lnet/minecraft/client/render/RenderPhase$Cull;
+
+
+
+accessible field net/minecraft/client/render/RenderPhase ALL_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
+accessible field net/minecraft/client/render/RenderPhase COLOR_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
+accessible field net/minecraft/client/render/RenderPhase DEPTH_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
+
+accessible class net/minecraft/client/render/RenderPhase$MultiPhaseParameters
+accessible field net/minecraft/client/render/OverlayTexture texture Lnet/minecraft/client/texture/NativeImageBackedTexture;
+
+accessible field net/minecraft/client/render/BufferRenderer vertexFormat Lnet/minecraft/client/render/VertexFormat;

@@ -22,10 +22,4 @@ public interface ChunkRenderer {
     /**
      * Deletes this render backend and any resources attached to it.
      */
-    void delete();
-
-    /**
-     * Returns the vertex format used by this chunk render backend for rendering meshes.
-     */
-    TerrainVertexType getVertexType();
-}
+    void delete();}

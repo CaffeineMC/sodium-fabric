@@ -1,20 +1,23 @@
 package me.jellysquid.mods.sodium.opengl.device;
 
+import me.jellysquid.mods.sodium.opengl.array.DrawCommandList;
 import me.jellysquid.mods.sodium.opengl.array.VertexArray;
 import me.jellysquid.mods.sodium.opengl.array.VertexArrayDescription;
 import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
 import me.jellysquid.mods.sodium.opengl.buffer.BufferMapFlags;
 import me.jellysquid.mods.sodium.opengl.buffer.BufferStorageFlags;
 import me.jellysquid.mods.sodium.opengl.buffer.MappedBuffer;
-import me.jellysquid.mods.sodium.opengl.pipeline.PipelineCommandList;
+import me.jellysquid.mods.sodium.opengl.pipeline.Pipeline;
 import me.jellysquid.mods.sodium.opengl.pipeline.PipelineState;
 import me.jellysquid.mods.sodium.opengl.sampler.Sampler;
 import me.jellysquid.mods.sodium.opengl.shader.Program;
 import me.jellysquid.mods.sodium.opengl.shader.ShaderBindingContext;
 import me.jellysquid.mods.sodium.opengl.shader.ShaderDescription;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
-import me.jellysquid.mods.sodium.opengl.types.RenderPipeline;
+import me.jellysquid.mods.sodium.opengl.types.RenderState;
 import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
+import me.jellysquid.mods.sodium.render.chunk.draw.ShaderChunkRenderer;
+import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
@@ -47,12 +50,14 @@ public interface RenderDevice {
 
     MappedBuffer createMappedBuffer(long capacity, EnumBitField<BufferStorageFlags> storageFlags, EnumBitField<BufferMapFlags> mapFlags);
 
-    <T extends Enum<T>> VertexArray<T> createVertexArray(VertexArrayDescription<T> desc);
+    <PROGRAM, ARRAY extends Enum<ARRAY>> Pipeline<PROGRAM, ARRAY> createPipeline(RenderState state, Program<PROGRAM> program, VertexArrayDescription<ARRAY> vertexArray);
 
-    <T> void usePipeline(RenderPipeline pipeline, PipelineGate gate);
+    <PROGRAM, ARRAY extends Enum<ARRAY>> void usePipeline(Pipeline<PROGRAM, ARRAY> pipeline, PipelineGate<PROGRAM, ARRAY> gate);
 
-    interface PipelineGate {
-        void run(PipelineCommandList commandList, PipelineState pipelineState);
+    void deletePipeline(Pipeline<?, ?> pipeline);
+
+    interface PipelineGate<SHADER, VERTEX extends Enum<VERTEX>> {
+        void run(DrawCommandList<VERTEX> commandList, SHADER programInterface, PipelineState pipelineState);
     }
 
     Sampler createSampler();
@@ -68,4 +73,5 @@ public interface RenderDevice {
     void deleteProgram(Program<?> program);
 
     Fence createFence();
+
 }

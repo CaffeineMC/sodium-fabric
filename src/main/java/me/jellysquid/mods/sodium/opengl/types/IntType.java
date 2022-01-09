@@ -23,19 +23,19 @@ public enum IntType {
     }
 
     private final int id;
-    private final int stride;
+    private final int size;
 
-    IntType(int id, int stride) {
+    IntType(int id, int size) {
         this.id = id;
-        this.stride = stride;
+        this.size = size;
     }
 
     public int getFormatId() {
         return this.id;
     }
 
-    public int getStride() {
-        return this.stride;
+    public int getSize() {
+        return this.size;
     }
 
     public static final IntType[] VALUES = IntType.values();
