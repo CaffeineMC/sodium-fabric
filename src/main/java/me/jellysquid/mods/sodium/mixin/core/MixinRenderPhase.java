@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 
 @Mixin(RenderPhase.class)
 public class MixinRenderPhase {
-    @Mixin(targets = "net/minecraft/client/render/RenderPhase$TextureBase")
+    @Mixin(RenderPhase.TextureBase.class)
     public static class MixinTextureBase implements ShaderTextureProvider {
         @Override
         public List<ShaderTexture> getTextures() {
@@ -30,7 +30,7 @@ public class MixinRenderPhase {
         }
     }
 
-    @Mixin(targets = "net/minecraft/client/render/RenderPhase$Textures")
+    @Mixin(RenderPhase.Textures.class)
     public static class MixinTextures implements ShaderTextureProvider {
         private List<Triple<Identifier, Boolean, Boolean>> textures;
 
@@ -58,7 +58,7 @@ public class MixinRenderPhase {
         }
     }
 
-    @Mixin(targets = "net/minecraft/client/render/RenderPhase$Texture")
+    @Mixin(RenderPhase.Texture.class)
     public static class MixinTexture implements ShaderTextureProvider {
         @Shadow
         @Final
@@ -81,7 +81,7 @@ public class MixinRenderPhase {
         }
     }
 
-    @Mixin(targets = "net/minecraft/client/render/RenderPhase$Overlay")
+    @Mixin(RenderPhase.Overlay.class)
     public static class MixinOverlay implements ShaderTextureProvider {
         private static int getOverlayTextureId() {
             return MinecraftClient.getInstance().gameRenderer.getOverlayTexture().texture.getGlId();
@@ -95,7 +95,7 @@ public class MixinRenderPhase {
         }
     }
 
-    @Mixin(targets = "net/minecraft/client/render/RenderPhase$Lightmap")
+    @Mixin(RenderPhase.Lightmap.class)
     public static class MixinLightmap implements ShaderTextureProvider {
 
         private static int getLightmapTextureId() {
@@ -114,7 +114,7 @@ public class MixinRenderPhase {
         }
     }
 
-    @Mixin(targets = "net/minecraft/client/render/RenderPhase$Shader")
+    @Mixin(RenderPhase.Shader.class)
     public static class MixinShader implements RenderPhaseShaderAccess {
         @Shadow
         @Final
