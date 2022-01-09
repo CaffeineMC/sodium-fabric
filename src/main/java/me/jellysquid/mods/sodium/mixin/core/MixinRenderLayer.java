@@ -141,7 +141,7 @@ public class MixinRenderLayer {
             if (value == RenderPhase.ALL_MASK || value == RenderPhase.COLOR_MASK) {
                 return new ColorMask(true, true, true, true);
             } else if (value == RenderPhase.DEPTH_MASK) {
-                return null;
+                return new ColorMask(false, false, false, false);
             }
 
             throw new UnsupportedOperationException();
