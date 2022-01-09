@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import me.jellysquid.mods.sodium.render.stream.StreamingBufferRegion;
 import org.lwjgl.system.MemoryUtil;
 
 // TODO: handle alignment
@@ -300,15 +301,14 @@ public class AsyncBufferArena implements GlBufferArena {
         }
 
         // Copy the data into our staging buffer, then copy it into the arena's buffer
-        ByteBuffer stagingSection = this.stagingBuffer.allocate(length);
-        var readOffset = stagingSection.position();
-        MemoryUtil.memCopy(data, stagingSection);
-        this.stagingBuffer.flushRegion(stagingSection);
+        StreamingBufferRegion stagingRegion = this.stagingBuffer.allocate(length);
+        MemoryUtil.memCopy(data, stagingRegion.getPointer());
+        this.stagingBuffer.flushRegion(stagingRegion);
 
         var writeOffset = dst.getOffset();
 
-        this.device.copyBuffer(this.stagingBuffer.getBuffer(), this.arenaBuffer, readOffset, writeOffset, length);
-        this.stagingBuffer.fenceRegion(stagingSection);
+        this.device.copyBuffer(this.stagingBuffer.getBuffer(), this.arenaBuffer, stagingRegion.getOffset(), writeOffset, length);
+        this.stagingBuffer.fenceRegion(stagingRegion);
 
         upload.setResult(dst);
 

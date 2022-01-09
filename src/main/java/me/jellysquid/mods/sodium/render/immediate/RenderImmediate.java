@@ -19,6 +19,7 @@ import me.jellysquid.mods.sodium.render.sequence.IndexSequenceType;
 import me.jellysquid.mods.sodium.render.sequence.SequenceIndexBuffer;
 import me.jellysquid.mods.sodium.render.stream.MappedStreamingBuffer;
 import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
+import me.jellysquid.mods.sodium.render.stream.StreamingBufferRegion;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Shader;
 import net.minecraft.client.render.VertexFormat;
@@ -71,13 +72,14 @@ public class RenderImmediate {
         var vertexStride = vertexFormat.getVertexSize();
 
         VertexArray<BufferTarget> vertexArray = this.createVertexArray(vertexFormat);
-        ByteBuffer vertexBufferSection = this.vertexBuffer.allocate(vertexData.capacity(), vertexStride);
-        int baseVertex = vertexBufferSection.position() / vertexStride;
-        MemoryUtil.memCopy(vertexData, vertexBufferSection);
-        this.vertexBuffer.flushRegion(vertexBufferSection);
+        StreamingBufferRegion vertexBufferRegion = this.vertexBuffer.allocate(vertexData.capacity(), vertexStride);
+        MemoryUtil.memCopy(vertexData, vertexBufferRegion.getPointer());
+        this.vertexBuffer.flushRegion(vertexBufferRegion);
+
+        int baseVertex = (int) (vertexBufferRegion.getOffset() / vertexStride);
 
         Buffer elementBuffer;
-        ByteBuffer elementBufferSection = null;
+        StreamingBufferRegion elementBufferRegion = null;
         int elementPointer;
 
         IntType usedElementFormat;
@@ -94,10 +96,11 @@ public class RenderImmediate {
 
             usedElementFormat = getElementType(elementFormat);
             elementBuffer = this.elementBuffer.getBuffer();
-            elementBufferSection = this.elementBuffer.allocate(elementData.capacity(), elementFormat.size);
-            elementPointer = elementBufferSection.position() / elementFormat.size;
-            MemoryUtil.memCopy(elementData, elementBufferSection);
-            this.elementBuffer.flushRegion(elementBufferSection);
+            elementBufferRegion = this.elementBuffer.allocate(elementData.capacity(), elementFormat.size);
+            MemoryUtil.memCopy(elementData, elementBufferRegion.getPointer());
+            this.elementBuffer.flushRegion(elementBufferRegion);
+
+            elementPointer = (int) (elementBufferRegion.getOffset() / elementFormat.size);
         }
 
         Shader shader = RenderSystem.getShader();
@@ -183,9 +186,9 @@ public class RenderImmediate {
             });
         });
 
-        this.vertexBuffer.flushRegion(vertexBufferSection);
-        if (elementBufferSection != null) {
-            this.elementBuffer.flushRegion(elementBufferSection);
+        this.vertexBuffer.fenceRegion(vertexBufferRegion);
+        if (elementBufferRegion != null) {
+            this.elementBuffer.fenceRegion(elementBufferRegion);
         }
     }
 

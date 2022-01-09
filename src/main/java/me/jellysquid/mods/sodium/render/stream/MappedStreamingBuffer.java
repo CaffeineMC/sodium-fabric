@@ -13,14 +13,12 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Iterator;
 
-// WARNING: Not thread safe. Buffer ranges are NOT LOCKED on the CPU.
 public class MappedStreamingBuffer implements StreamingBuffer {
     private final RenderDevice device;
     private final FlushableMappedBuffer buffer;
 
-    private final Deque<Region> regions = new ArrayDeque<>();
+    private final Deque<StreamingBufferRegion> regions = new ArrayDeque<>(); // not thread safe
 
     public MappedStreamingBuffer(RenderDevice device, long capacity) {
         this.device = device;
@@ -30,7 +28,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     }
 
     @Override
-    public ByteBuffer allocate(long length, long alignment) {
+    public StreamingBufferRegion allocate(long length, long alignment) {
         // We can't service allocations which are larger than the buffer itself
         long capacity = this.buffer.getCapacity();
         if (length > capacity) {
@@ -49,34 +47,34 @@ public class MappedStreamingBuffer implements StreamingBuffer {
         }
 
         // Sync all intersecting regions and get rid of them
-        // TODO: use some sort of interval tree for faster lookups
-        Iterator<Region> regionIterator = regions.iterator();
-        while (regionIterator.hasNext()) {
-            Region region = regionIterator.next();
-            if (pos <= region.offset && pos + length <= region.offset + region.length) {
-                region.fence.sync();
-                regionIterator.remove();
-            }
+        // TODO: create thread safe impl of this
+        StreamingBufferRegion firstRegion = regions.peekFirst();
+        while (firstRegion != null && pos <= firstRegion.getOffset() + firstRegion.getLength() && pos + length >= firstRegion.getOffset()) {
+            Fence fence = firstRegion.getFence();
+            if (fence == null) throw new IllegalStateException("Fence null, not thread safe yet");
+            fence.sync();
+            regions.pollFirst();
+            firstRegion = regions.peekFirst();
         }
 
         // ByteBuffer doesn't support longs
-        ByteBuffer newRegionPointer = MemoryUtil.memDuplicate(bufferPointer);
-        newRegionPointer.position((int) pos);
-        newRegionPointer.limit((int) (pos + length));
+        ByteBuffer newRegionPointer = MemoryUtil.memByteBuffer(MemoryUtil.memAddress0(bufferPointer) + pos, (int) length);
         bufferPointer.position((int) (pos + length));
 
-        return newRegionPointer;
+        StreamingBufferRegion newRegion = new StreamingBufferRegion(pos, length, newRegionPointer);
+        this.regions.add(newRegion);
+
+        return newRegion;
     }
 
     @Override
-    public void flushRegion(ByteBuffer region) {
-        this.buffer.flush(region.position(), region.limit() - region.position());
+    public void flushRegion(StreamingBufferRegion region) {
+        this.buffer.flush(region.getOffset(), region.getLength());
     }
 
     @Override
-    public void fenceRegion(ByteBuffer region) {
-        Fence fence = this.device.createFence();
-        this.regions.add(new Region(region.position(), region.limit() - region.position(), fence));
+    public void fenceRegion(StreamingBufferRegion region) {
+        region.setFence(this.device.createFence());
     }
 
     @Override
@@ -88,7 +86,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     public void delete() {
         while (!this.regions.isEmpty()) {
             var region = this.regions.remove();
-            region.fence.sync();
+            region.getFence().sync();
         }
         this.device.deleteBuffer(this.buffer);
     }
@@ -99,15 +97,11 @@ public class MappedStreamingBuffer implements StreamingBuffer {
         int used = 0;
         while (it.hasNext()) {
             var region = it.next();
-            used += region.length;
+            used += region.getLength();
         }
 
         long capacity = this.buffer.getCapacity();
         return String.format("%s/%s MiB", MathUtil.toMib(capacity - used), MathUtil.toMib(capacity));
-    }
-
-    private record Region(int offset, int length, Fence fence) {
-
     }
 
 }
