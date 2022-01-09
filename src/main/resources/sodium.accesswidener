@@ -59,13 +59,10 @@ accessible field net/minecraft/client/render/RenderPhase LEQUAL_DEPTH_TEST Lnet/
 accessible field net/minecraft/client/render/RenderPhase ENABLE_CULLING Lnet/minecraft/client/render/RenderPhase$Cull;
 accessible field net/minecraft/client/render/RenderPhase DISABLE_CULLING Lnet/minecraft/client/render/RenderPhase$Cull;
 
-
-
 accessible field net/minecraft/client/render/RenderPhase ALL_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
 accessible field net/minecraft/client/render/RenderPhase COLOR_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
 accessible field net/minecraft/client/render/RenderPhase DEPTH_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
 
-accessible class net/minecraft/client/render/RenderPhase$MultiPhaseParameters
 accessible field net/minecraft/client/render/OverlayTexture texture Lnet/minecraft/client/texture/NativeImageBackedTexture;
 
 accessible field net/minecraft/client/render/BufferRenderer vertexFormat Lnet/minecraft/client/render/VertexFormat;
