@@ -31,7 +31,7 @@ public abstract class ManagedObject {
         }
     }
 
-    protected final boolean isHandleValid() {
+    public final boolean isHandleValid() {
         return this.handle != INVALID_HANDLE;
     }
 

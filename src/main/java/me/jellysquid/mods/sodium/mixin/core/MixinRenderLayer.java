@@ -180,15 +180,17 @@ public class MixinRenderLayer {
         private Pipeline<VanillaShaderInterface, VanillaShaderInterface.BufferTarget> pipeline;
         private ShaderTexture[] textures;
 
-        private boolean init;
-
         public MixinMultiPhase(String name, VertexFormat vertexFormat, VertexFormat.DrawMode drawMode, int expectedBufferSize, boolean hasCrumbling, boolean translucent, Runnable startAction, Runnable endAction) {
             super(name, vertexFormat, drawMode, expectedBufferSize, hasCrumbling, translucent, startAction, endAction);
         }
 
         @Override
         public void draw(BufferBuilder buffer, int cameraX, int cameraY, int cameraZ) {
-            if (!this.init) {
+            if (this.pipeline != null && !this.pipeline.getProgram().isHandleValid()) {
+                this.destroy();
+            }
+
+            if (this.pipeline == null) {
                 this.init();
             }
 
@@ -207,6 +209,12 @@ public class MixinRenderLayer {
             }
         }
 
+        private void destroy() {
+            RenderDevice.INSTANCE.deletePipeline(this.pipeline);
+            this.pipeline = null;
+            this.textures = null;
+        }
+
         private void init() {
             if ((Object) this.phases instanceof MultiPhaseParametersExtended params) {
                 this.pipeline = this.createPipeline(params.createRenderState(), params.createProgram());
@@ -214,8 +222,6 @@ public class MixinRenderLayer {
             } else {
                 throw new UnsupportedOperationException("Not able to convert multi-phase parameters into pipeline");
             }
-
-            this.init = true;
         }
 
         private Pipeline<VanillaShaderInterface, VanillaShaderInterface.BufferTarget> createPipeline(RenderState renderState, Program<VanillaShaderInterface> program) {
