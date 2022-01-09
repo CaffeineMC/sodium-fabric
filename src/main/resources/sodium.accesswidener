@@ -45,6 +45,9 @@ accessible class net/minecraft/client/render/RenderPhase$Texturing
 accessible class net/minecraft/client/render/RenderPhase$WriteMaskState
 accessible class net/minecraft/client/render/RenderPhase$LineWidth
 
+accessible class net/minecraft/client/render/RenderPhase$Textures
+accessible class net/minecraft/client/render/RenderPhase$Texture
+
 accessible field net/minecraft/client/render/RenderPhase NO_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
 accessible field net/minecraft/client/render/RenderPhase ADDITIVE_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
 accessible field net/minecraft/client/render/RenderPhase LIGHTNING_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
