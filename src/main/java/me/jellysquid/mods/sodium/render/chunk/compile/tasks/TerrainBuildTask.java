@@ -1,12 +1,11 @@
 package me.jellysquid.mods.sodium.render.chunk.compile.tasks;
 
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.terrain.TerrainBuildContext;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
-import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.terrain.context.PreparedTerrainRenderCache;
 import me.jellysquid.mods.sodium.util.tasks.CancellationSource;
 import me.jellysquid.mods.sodium.world.slice.WorldSlice;
@@ -23,7 +22,6 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.EnumMap;
 import java.util.Map;
 
 /**
@@ -135,6 +133,10 @@ public class TerrainBuildTask extends AbstractBuilderTask {
         }
 
         Map<ChunkRenderPass, ChunkMesh> meshes = buffers.createMeshes();
+
+        for (ChunkRenderPass renderPass : meshes.keySet()) {
+            renderData.addNonEmptyMesh(renderPass);
+        }
 
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));

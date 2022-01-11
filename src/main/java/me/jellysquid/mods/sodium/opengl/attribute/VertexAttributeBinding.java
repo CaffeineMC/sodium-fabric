@@ -4,7 +4,7 @@ public class VertexAttributeBinding extends VertexAttribute {
     private final int index;
 
     public VertexAttributeBinding(int index, VertexAttribute attribute) {
-        super(attribute.getFormat(), attribute.getSize(), attribute.getCount(), attribute.isNormalized(), attribute.getOffset(), attribute.getStride(), attribute.isIntType());
+        super(attribute.getFormat(), attribute.getSize(), attribute.getCount(), attribute.isNormalized(), attribute.getOffset(), attribute.isIntType());
 
         this.index = index;
     }

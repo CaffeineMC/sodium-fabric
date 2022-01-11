@@ -12,13 +12,12 @@ public class TerrainVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe im
     }
 
     @Override
-    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId) {
+    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light) {
         long i = this.writePointer;
 
         MemoryUtil.memPutShort(i + 0, TerrainVertexType.encodePosition(posX));
         MemoryUtil.memPutShort(i + 2, TerrainVertexType.encodePosition(posY));
         MemoryUtil.memPutShort(i + 4, TerrainVertexType.encodePosition(posZ));
-        MemoryUtil.memPutShort(i + 6, (short) chunkId);
 
         MemoryUtil.memPutInt(i + 8, color);
 

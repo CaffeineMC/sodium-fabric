@@ -5,7 +5,6 @@ public class VertexAttribute {
     private final int count;
     private final int pointer;
     private final int size;
-    private final int stride;
 
     private final boolean normalized;
     private final boolean intType;
@@ -16,18 +15,18 @@ public class VertexAttribute {
      * @param normalized Specifies whether or not fixed-point data values should be normalized (true) or used directly
  *                   as fixed-point values (false)
      * @param pointer The offset to the first component in the attribute
+     * @param intType Whether to treat the attribute as a pure integer value
      */
-    public VertexAttribute(VertexAttributeFormat format, int count, boolean normalized, int pointer, int stride) {
-        this(format.typeId(), format.size() * count, count, normalized, pointer, stride, false);
+    public VertexAttribute(VertexAttributeFormat format, int count, boolean normalized, int pointer, boolean intType) {
+        this(format.typeId(), format.size() * count, count, normalized, pointer, intType);
     }
 
-    public VertexAttribute(int format, int size, int count, boolean normalized, int pointer, int stride, boolean intType) {
+    public VertexAttribute(int format, int size, int count, boolean normalized, int pointer, boolean intType) {
         this.format = format;
         this.size = size;
         this.count = count;
         this.normalized = normalized;
         this.pointer = pointer;
-        this.stride = stride;
         this.intType = intType;
     }
 
@@ -49,10 +48,6 @@ public class VertexAttribute {
 
     public boolean isNormalized() {
         return this.normalized;
-    }
-
-    public int getStride() {
-        return this.stride;
     }
 
     public boolean isIntType() {

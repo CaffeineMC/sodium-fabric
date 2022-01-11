@@ -64,8 +64,8 @@ public class VertexFormat<T extends Enum<T>> implements BufferVertexFormat {
             this.stride = stride;
         }
 
-        public Builder<T> addElement(T type, int pointer, VertexAttributeFormat format, int count, boolean normalized) {
-            return this.addElement(type, new VertexAttribute(format, count, normalized, pointer, this.stride));
+        public Builder<T> addElement(T type, int pointer, VertexAttributeFormat format, int count, boolean normalized, boolean intType) {
+            return this.addElement(type, new VertexAttribute(format, count, normalized, pointer, intType));
         }
 
         /**

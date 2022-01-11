@@ -1,12 +1,11 @@
 package me.jellysquid.mods.sodium.render.chunk;
 
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.TerrainBuildResult;
+import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkGraphState;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
-import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.render.chunk.state.UploadedChunkMesh;
 import me.jellysquid.mods.sodium.render.texture.SpriteUtil;
@@ -16,10 +15,7 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
-import org.apache.commons.lang3.Validate;
 
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -30,7 +26,6 @@ public class RenderSection {
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
-    private final Map<ChunkRenderPass, UploadedChunkMesh> meshes;
     private final RenderRegion region;
     private final ChunkGraphState graphState;
     private final int chunkId;
@@ -46,6 +41,7 @@ public class RenderSection {
     private boolean disposed;
 
     private int lastAcceptedBuildTime = -1;
+    private int visibilityFlags;
 
     public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
         this.worldRenderer = worldRenderer;
@@ -56,8 +52,6 @@ public class RenderSection {
         this.chunkZ = chunkZ;
 
         this.graphState = new ChunkGraphState(this);
-
-        this.meshes = new Reference2ReferenceOpenHashMap<>();
 
         int rX = this.getChunkX() & (RenderRegion.REGION_WIDTH - 1);
         int rY = this.getChunkY() & (RenderRegion.REGION_HEIGHT - 1);
@@ -97,17 +91,9 @@ public class RenderSection {
     public void delete() {
         this.cancelRebuildTask();
         this.setData(ChunkRenderData.ABSENT);
-        this.deleteGraphicsState();
+        this.deleteMeshes();
 
         this.disposed = true;
-    }
-
-    private void deleteGraphicsState() {
-        for (UploadedChunkMesh state : this.meshes.values()) {
-            state.delete();
-        }
-
-        this.meshes.clear();
     }
 
     public void setData(ChunkRenderData info) {
@@ -125,7 +111,7 @@ public class RenderSection {
      * @return True if the chunk render contains no data, otherwise false
      */
     public boolean isEmpty() {
-        return this.meshes.isEmpty() && this.data.isEmpty();
+        return this.data.isEmpty();
     }
 
     /**
@@ -206,12 +192,8 @@ public class RenderSection {
         return this.getOriginZ() + 8.0D;
     }
 
-    public void addMesh(ChunkRenderPass pass, UploadedChunkMesh mesh) {
-        Validate.isTrue(this.meshes.putIfAbsent(pass, mesh) == null);
-    }
-
-    public UploadedChunkMesh getMesh(ChunkRenderPass pass) {
-        return this.meshes.get(pass);
+    public void updateMesh(ChunkRenderPass pass, UploadedChunkMesh mesh) {
+        this.region.updateMesh(pass, mesh, this.chunkId);
     }
 
     /**
@@ -304,10 +286,14 @@ public class RenderSection {
     }
 
     public void deleteMeshes() {
-        for (UploadedChunkMesh mesh : this.meshes.values()) {
-            mesh.delete();
-        }
+        this.region.deleteChunkMeshes(this.chunkId);
+    }
 
-        this.meshes.clear();
+    public void updateVisibilityFlags(int flags) {
+        this.visibilityFlags = flags;
+    }
+
+    public int getVisibilityFlags() {
+        return this.visibilityFlags;
     }
 }

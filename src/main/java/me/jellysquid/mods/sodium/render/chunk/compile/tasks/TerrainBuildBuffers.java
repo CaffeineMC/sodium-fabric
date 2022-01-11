@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.render.chunk.compile.tasks;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.render.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.render.buffer.ElementRange;
+import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import me.jellysquid.mods.sodium.render.vertex.buffer.VertexBufferBuilder;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
@@ -12,7 +13,6 @@ import me.jellysquid.mods.sodium.render.chunk.compile.buffers.IndexBufferBuilder
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexSink;
-import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPassManager;
 import me.jellysquid.mods.sodium.util.NativeBuffer;
 import net.minecraft.client.render.RenderLayer;
@@ -135,7 +135,7 @@ public class TerrainBuildBuffers {
             }
 
             ranges.put(facing,
-                    new ElementRange(indexPointer, indices.getCount(), indices.getFormat(), indices.getBaseVertex()));
+                    new ElementRange(indexPointer / 4, indices.getCount(), indices.getFormat(), indices.getBaseVertex()));
 
             indexPointer = indices.writeTo(indexPointer, indexBuffer.getDirectBuffer());
         }

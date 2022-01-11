@@ -248,7 +248,7 @@ public class MixinRenderLayer {
                 var normalized = isVanillaAttributeNormalized(element.getType());
                 var intType = isVanillaIntType(element.getType(), element.getDataType());
 
-                var attribute = new VertexAttribute(format, size, count, normalized, vertexFormat.offsets.getInt(i), vertexFormat.getVertexSize(), intType);
+                var attribute = new VertexAttribute(format, size, count, normalized, vertexFormat.offsets.getInt(i), intType);
 
                 bindings.add(new VertexAttributeBinding(i, attribute));
             }

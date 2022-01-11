@@ -16,8 +16,6 @@ import me.jellysquid.mods.sodium.opengl.shader.ShaderDescription;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
 import me.jellysquid.mods.sodium.opengl.types.RenderState;
 import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
-import me.jellysquid.mods.sodium.render.chunk.draw.ShaderChunkRenderer;
-import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
@@ -56,6 +54,8 @@ public interface RenderDevice {
 
     void deletePipeline(Pipeline<?, ?> pipeline);
 
+    void uploadData(Buffer buffer, ByteBuffer data);
+
     interface PipelineGate<SHADER, VERTEX extends Enum<VERTEX>> {
         void run(DrawCommandList<VERTEX> commandList, SHADER programInterface, PipelineState pipelineState);
     }
@@ -74,4 +74,5 @@ public interface RenderDevice {
 
     Fence createFence();
 
+    RenderDeviceProperties properties();
 }

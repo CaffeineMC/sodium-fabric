@@ -20,10 +20,7 @@ import me.jellysquid.mods.sodium.opengl.types.RenderState;
 import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.opengl.GL20C;
-import org.lwjgl.opengl.GL30C;
-import org.lwjgl.opengl.GL32C;
-import org.lwjgl.opengl.GL45C;
+import org.lwjgl.opengl.*;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
@@ -33,10 +30,12 @@ import java.util.function.Function;
 
 public class RenderDeviceImpl implements RenderDevice {
     private final PipelineManager pipelineManager;
+    private final RenderDeviceProperties properties;
 
     public RenderDeviceImpl() {
         // TODO: move this into platform code
         this.pipelineManager = new Blaze3DPipelineManager();
+        this.properties = new RenderDeviceProperties();
     }
 
     @Override
@@ -73,6 +72,11 @@ public class RenderDeviceImpl implements RenderDevice {
     @Override
     public Fence createFence() {
         return new FenceImpl(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
+    }
+
+    @Override
+    public RenderDeviceProperties properties() {
+        return this.properties;
     }
 
     @Override
@@ -148,6 +152,11 @@ public class RenderDeviceImpl implements RenderDevice {
     }
 
     @Override
+    public void uploadData(Buffer buffer, ByteBuffer data) {
+        GL45C.glNamedBufferSubData(buffer.handle(), 0, data);
+    }
+
+    @Override
     public Sampler createSampler() {
         return new SamplerImpl();
     }
@@ -177,6 +186,7 @@ public class RenderDeviceImpl implements RenderDevice {
 
         private final VertexArrayBuffer[] activeVertexBuffers;
         private Buffer activeElementBuffer;
+        private Buffer activeDrawIndirectBuffer;
 
         private boolean vertexBuffersDirty;
         private boolean elementBufferDirty;
@@ -197,6 +207,20 @@ public class RenderDeviceImpl implements RenderDevice {
         public void bindVertexBuffer(T target, Buffer buffer, int offset, int stride) {
             this.activeVertexBuffers[target.ordinal()] = new VertexArrayBuffer(buffer, offset, stride);
             this.vertexBuffersDirty = true;
+        }
+
+        @Override
+        public void multiDrawElementsIndirect(Buffer indirectBuffer, int indirectOffset, int indirectCount, IntType elementType, PrimitiveType primitiveType) {
+            this.setupIndexedRenderingState();
+            this.updateDrawIndirectBuffer(indirectBuffer);
+            GL43C.glMultiDrawElementsIndirect(primitiveType.getId(), elementType.getFormatId(), indirectOffset, indirectCount, 0);
+        }
+
+        private void updateDrawIndirectBuffer(Buffer indirectBuffer) {
+            if (this.activeDrawIndirectBuffer != indirectBuffer) {
+                GL45C.glBindBuffer(GL45C.GL_DRAW_INDIRECT_BUFFER, indirectBuffer.handle());
+                this.activeDrawIndirectBuffer = indirectBuffer;
+            }
         }
 
         @Override
@@ -241,11 +265,29 @@ public class RenderDeviceImpl implements RenderDevice {
             }
 
             if (this.elementBufferDirty) {
-                this.bindElementBuffers();
+                this.bindElementBuffer();
             }
         }
 
         private void bindVertexBuffers() {
+            if (this.activeVertexBuffers.length <= 1) {
+                this.bindVertexBuffersOneshot();
+            } else {
+                this.bindVertexBuffersMulti();
+            }
+        }
+
+        private void bindVertexBuffersOneshot() {
+            for (int bufferIndex = 0; bufferIndex < this.activeVertexBuffers.length; bufferIndex++) {
+                this.bindVertexBuffer(bufferIndex, this.activeVertexBuffers[bufferIndex]);
+            }
+        }
+
+        private void bindVertexBuffer(int bufferIndex, VertexArrayBuffer vertexBuffer) {
+            GL45C.glVertexArrayVertexBuffer(this.array.handle(), bufferIndex, vertexBuffer.buffer().handle(), vertexBuffer.offset(), vertexBuffer.stride());
+        }
+
+        private void bindVertexBuffersMulti() {
             var count = this.activeVertexBuffers.length;
 
             try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -271,8 +313,8 @@ public class RenderDeviceImpl implements RenderDevice {
             this.vertexBuffersDirty = false;
         }
 
-        private void bindElementBuffers() {
-            GL45C.glVertexArrayElementBuffer(this.array.handle(), this.activeElementBuffer.handle());
+        private void bindElementBuffer() {
+            GL45C.glVertexArrayElementBuffer(this.array.handle(), this.activeElementBuffer != null ? this.activeElementBuffer.handle() : 0);
             this.elementBufferDirty = false;
         }
     }

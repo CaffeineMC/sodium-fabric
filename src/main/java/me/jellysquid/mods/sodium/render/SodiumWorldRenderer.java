@@ -9,6 +9,7 @@ import me.jellysquid.mods.sodium.interop.vanilla.mixin.WorldRendererHolder;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.render.chunk.draw.ChunkRenderMatrices;
+import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPassManager;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.terrain.context.ImmediateTerrainRenderCache;
@@ -105,7 +106,7 @@ public class SodiumWorldRenderer {
 
         ImmediateTerrainRenderCache.createRenderContext(this.world);
 
-        this.initRenderer(RenderDevice.INSTANCE);
+        this.initRenderer();
     }
 
     private void unloadWorld() {
@@ -210,7 +211,7 @@ public class SodiumWorldRenderer {
      * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
     public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
-        var renderPass = this.renderPassManager.getRenderPassForLayer(renderLayer);
+        ChunkRenderPass renderPass = this.renderPassManager.getRenderPassForLayer(renderLayer);
         this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), renderPass, x, y, z);
     }
 
@@ -219,10 +220,10 @@ public class SodiumWorldRenderer {
             return;
         }
 
-        this.initRenderer(RenderDevice.INSTANCE);
+        this.initRenderer();
     }
 
-    private void initRenderer(RenderDevice device) {
+    private void initRenderer() {
         if (this.renderSectionManager != null) {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
@@ -232,7 +233,7 @@ public class SodiumWorldRenderer {
 
         this.renderPassManager = ChunkRenderPassManager.createDefaultMappings();
 
-        this.renderSectionManager = new RenderSectionManager(device, this, this.renderPassManager, this.world, this.renderDistance);
+        this.renderSectionManager = new RenderSectionManager(RenderDevice.INSTANCE, this, this.renderPassManager, this.world, this.renderDistance);
         this.renderSectionManager.reloadChunks(this.chunkTracker);
     }
 
@@ -396,5 +397,11 @@ public class SodiumWorldRenderer {
 
     public ChunkTracker getChunkTracker() {
         return this.chunkTracker;
+    }
+
+    public void flush() {
+        if (this.renderSectionManager != null) {
+            this.renderSectionManager.flush();
+        }
     }
 }

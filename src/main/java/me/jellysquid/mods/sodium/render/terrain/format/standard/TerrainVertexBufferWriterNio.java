@@ -13,14 +13,13 @@ public class TerrainVertexBufferWriterNio extends VertexBufferWriterNio implemen
     }
 
     @Override
-    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId) {
+    public void writeVertex(float posX, float posY, float posZ, int color, float u, float v, int light) {
         int i = this.writeOffset;
 
         ByteBuffer buffer = this.byteBuffer;
         buffer.putShort(i + 0, TerrainVertexType.encodePosition(posX));
         buffer.putShort(i + 2, TerrainVertexType.encodePosition(posY));
         buffer.putShort(i + 4, TerrainVertexType.encodePosition(posZ));
-        buffer.putShort(i + 6, (short) chunkId);
 
         buffer.putInt(i + 8, color);
 
