@@ -1,5 +1,4 @@
-#version 450 core
-#extension GL_ARB_shader_draw_parameters : require
+#version 460 core
 
 #import <sodium:include/fog.glsl>
 #import <sodium:include/chunk_vertex.glsl>

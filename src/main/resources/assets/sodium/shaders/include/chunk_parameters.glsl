@@ -11,5 +11,5 @@ layout(std140) uniform ubo_InstanceData {
 InstanceData _instance_data;
 
 void _instance_init() {
-    _instance_data = instances[gl_BaseInstanceARB];
+    _instance_data = instances[gl_BaseInstance];
 }
