@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.render.vertex.buffer;
 
 import me.jellysquid.mods.sodium.render.vertex.type.BufferVertexFormat;
-import me.jellysquid.mods.sodium.util.NativeBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -81,7 +80,7 @@ public class VertexBufferBuilder implements VertexBufferView {
         return this.count;
     }
 
-    public void start() {
+    public void reset() {
         this.writerOffset = 0;
         this.count = 0;
 
@@ -96,11 +95,7 @@ public class VertexBufferBuilder implements VertexBufferView {
         this.buffer = null;
     }
 
-    public NativeBuffer pop() {
-        if (this.writerOffset == 0) {
-            return null;
-        }
-
-        return NativeBuffer.copy(MemoryUtil.memByteBuffer(MemoryUtil.memAddress(this.buffer), this.writerOffset));
+    public ByteBuffer slice() {
+        return MemoryUtil.memByteBuffer(MemoryUtil.memAddress(this.buffer), this.writerOffset);
     }
 }

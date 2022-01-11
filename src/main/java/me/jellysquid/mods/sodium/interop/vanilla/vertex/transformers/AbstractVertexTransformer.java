@@ -23,9 +23,4 @@ public abstract class AbstractVertexTransformer<T extends VertexSink> implements
     public void flush() {
         this.delegate.flush();
     }
-
-    @Override
-    public int getVertexCount() {
-        return this.delegate.getVertexCount();
-    }
 }

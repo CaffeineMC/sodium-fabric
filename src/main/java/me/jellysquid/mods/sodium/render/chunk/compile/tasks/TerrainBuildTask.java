@@ -49,7 +49,7 @@ public class TerrainBuildTask extends AbstractBuilderTask {
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
         TerrainBuildBuffers buffers = buildContext.buffers;
-        buffers.init(renderData, this.render.getChunkId());
+        buffers.init(renderData);
 
         PreparedTerrainRenderCache renderCache = buildContext.cache;
         renderCache.init(this.renderContext);

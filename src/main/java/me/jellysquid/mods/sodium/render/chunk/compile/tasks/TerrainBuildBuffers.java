@@ -2,14 +2,13 @@ package me.jellysquid.mods.sodium.render.chunk.compile.tasks;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.render.buffer.IndexedVertexData;
-import me.jellysquid.mods.sodium.render.buffer.ElementRange;
+import me.jellysquid.mods.sodium.render.buffer.VertexRange;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import me.jellysquid.mods.sodium.render.vertex.buffer.VertexBufferBuilder;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.DefaultChunkMeshBuilder;
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
-import me.jellysquid.mods.sodium.render.chunk.compile.buffers.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexSink;
@@ -17,10 +16,8 @@ import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPassManager;
 import me.jellysquid.mods.sodium.util.NativeBuffer;
 import net.minecraft.client.render.RenderLayer;
 
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Objects;
+import java.nio.ByteBuffer;
+import java.util.*;
 
 /**
  * A collection of temporary buffers for each worker thread which will be used to build chunk meshes for given render
@@ -29,9 +26,7 @@ import java.util.Objects;
  */
 public class TerrainBuildBuffers {
     private final Map<ChunkRenderPass, ChunkMeshBuilder> delegates;
-
-    private final Map<ChunkRenderPass, VertexBufferBuilder> vertexBuffers;
-    private final Map<ChunkRenderPass, IndexBufferBuilder[]> indexBuffers;
+    private final Map<ChunkRenderPass, VertexBufferBuilder[]> vertexBuffers;
 
     private final TerrainVertexType vertexType;
 
@@ -44,37 +39,31 @@ public class TerrainBuildBuffers {
         this.delegates = new Reference2ReferenceOpenHashMap<>();
 
         this.vertexBuffers = new Reference2ReferenceOpenHashMap<>();
-        this.indexBuffers = new Reference2ReferenceOpenHashMap<>();
 
         for (var renderPass : renderPassManager.getAllRenderPasses()) {
-            IndexBufferBuilder[] indexBuffers = new IndexBufferBuilder[ChunkMeshFace.COUNT];
+            var vertexBuffers = new VertexBufferBuilder[ChunkMeshFace.COUNT];
 
-            for (int facing = 0; facing < ChunkMeshFace.COUNT; facing++) {
-                indexBuffers[facing] = new IndexBufferBuilder(1024);
+            for (int i = 0; i < vertexBuffers.length; i++) {
+                vertexBuffers[i] = new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(), 512 * 1024);
             }
 
-            this.indexBuffers.put(renderPass, indexBuffers);
-            this.vertexBuffers.put(renderPass, new VertexBufferBuilder(this.vertexType.getBufferVertexFormat(),
-                    2 * 1024 * 1024));
+            this.vertexBuffers.put(renderPass, vertexBuffers);
         }
     }
 
-    public void init(ChunkRenderData.Builder renderData, int chunkId) {
-        for (VertexBufferBuilder vertexBuffer : this.vertexBuffers.values()) {
-            vertexBuffer.start();
-        }
-
-        for (IndexBufferBuilder[] indexBuffers : this.indexBuffers.values()) {
-            for (IndexBufferBuilder indexBuffer : indexBuffers) {
-                indexBuffer.start();
-            }
-        }
-
+    public void init(ChunkRenderData.Builder renderData) {
         for (var renderPass : this.renderPassManager.getAllRenderPasses()) {
-            TerrainVertexSink vertexSink = this.vertexType.createBufferWriter(this.vertexBuffers.get(renderPass));
-            IndexBufferBuilder[] indexBuffers = this.indexBuffers.get(renderPass);
+            var buffers = this.vertexBuffers.get(renderPass);
+            var sinks = new TerrainVertexSink[buffers.length];
 
-            this.delegates.put(renderPass, new DefaultChunkMeshBuilder(indexBuffers, vertexSink, renderData, chunkId));
+            for (int i = 0; i < sinks.length; i++) {
+                var buffer = buffers[i];
+                buffer.reset();
+
+                sinks[i] = this.vertexType.createBufferWriter(buffer);
+            }
+
+            this.delegates.put(renderPass, new DefaultChunkMeshBuilder(sinks, renderData));
         }
     }
 
@@ -106,49 +95,43 @@ public class TerrainBuildBuffers {
      * times to return multiple copies.
      */
     private ChunkMesh createMesh(ChunkRenderPass pass) {
-        var vertexBufferBuilder = this.vertexBuffers.get(pass);
-        var vertexBuffer = vertexBufferBuilder.pop();
+        var bufferBuilders = this.vertexBuffers.get(pass);
+        var totalVertexCount = Arrays.stream(bufferBuilders)
+                .mapToInt(VertexBufferBuilder::getCount)
+                .sum();
 
-        if (vertexBuffer == null) {
+        if (totalVertexCount <= 0) {
             return null;
         }
 
-        var indexBufferBuilders = this.indexBuffers.get(pass);
-        IndexBufferBuilder.Result[] indexBuffers = Arrays.stream(indexBufferBuilders)
-                .map(IndexBufferBuilder::pop)
-                .toArray(IndexBufferBuilder.Result[]::new);
+        Map<ChunkMeshFace, VertexRange> ranges = new EnumMap<>(ChunkMeshFace.class);
+        NativeBuffer mergedVertexBuffer = new NativeBuffer(totalVertexCount * this.vertexType.getBufferVertexFormat().getStride());
 
-        NativeBuffer indexBuffer = new NativeBuffer(Arrays.stream(indexBuffers)
-                .filter(Objects::nonNull)
-                .mapToInt(IndexBufferBuilder.Result::getByteSize)
-                .sum());
-
-        int indexPointer = 0;
-
-        Map<ChunkMeshFace, ElementRange> ranges = new EnumMap<>(ChunkMeshFace.class);
+        ByteBuffer mergedBufferBuilder = mergedVertexBuffer.getDirectBuffer().slice();
+        int vertexCount = 0;
 
         for (ChunkMeshFace facing : ChunkMeshFace.VALUES) {
-            IndexBufferBuilder.Result indices = indexBuffers[facing.ordinal()];
+            var sidedVertexBuffer = bufferBuilders[facing.ordinal()];
+            var sidedVertexCount = sidedVertexBuffer.getCount();
 
-            if (indices == null) {
+            if (sidedVertexCount == 0) {
                 continue;
             }
 
-            ranges.put(facing,
-                    new ElementRange(indexPointer / 4, indices.getCount(), indices.getFormat(), indices.getBaseVertex()));
-
-            indexPointer = indices.writeTo(indexPointer, indexBuffer.getDirectBuffer());
+            mergedBufferBuilder.put(sidedVertexBuffer.slice());
+            ranges.put(facing, new VertexRange(vertexCount, sidedVertexCount));
+            vertexCount += sidedVertexCount;
         }
 
-        IndexedVertexData vertexData = new IndexedVertexData(this.vertexType.getCustomVertexFormat(),
-                vertexBuffer, indexBuffer);
+        IndexedVertexData vertexData = new IndexedVertexData(this.vertexType.getCustomVertexFormat(), mergedVertexBuffer);
 
         return new ChunkMesh(vertexData, ranges);
     }
-
     public void destroy() {
-        for (VertexBufferBuilder builder : this.vertexBuffers.values()) {
-            builder.destroy();
+        for (VertexBufferBuilder[] builders : this.vertexBuffers.values()) {
+            for (VertexBufferBuilder builder : builders) {
+                builder.destroy();
+            }
         }
     }
 }

@@ -80,10 +80,7 @@ public class RenderRegionManager {
 
                 IndexedVertexData vertexData = meshData.getVertexData();
 
-                sectionUploads.add(new PendingSectionUpload(result.render, meshData, renderPass,
-                        new PendingUpload(vertexData.vertexBuffer()),
-                        new PendingUpload(vertexData.indexBuffer())));
-
+                sectionUploads.add(new PendingSectionUpload(result.render, meshData, renderPass, new PendingUpload(vertexData.vertexBuffer())));
             }
         }
 
@@ -95,11 +92,10 @@ public class RenderRegionManager {
         RenderRegion.Resources arenas = region.getOrCreateArenas();
 
         arenas.vertexBuffers.upload(sectionUploads.stream().map(i -> i.vertexUpload));
-        arenas.indexBuffers.upload(sectionUploads.stream().map(i -> i.indicesUpload));
 
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
-            upload.section.updateMesh(upload.pass, new UploadedChunkMesh(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
+            upload.section.updateMesh(upload.pass, new UploadedChunkMesh(upload.vertexUpload.getResult(), upload.meshData));
         }
     }
 
@@ -164,7 +160,6 @@ public class RenderRegionManager {
         return new RenderRegion.Resources(this.device, this.streamingBuffer);
     }
 
-    private record PendingSectionUpload(RenderSection section, ChunkMesh meshData, ChunkRenderPass pass,
-                                        PendingUpload vertexUpload, PendingUpload indicesUpload) {
+    private record PendingSectionUpload(RenderSection section, ChunkMesh meshData, ChunkRenderPass pass, PendingUpload vertexUpload) {
     }
 }
