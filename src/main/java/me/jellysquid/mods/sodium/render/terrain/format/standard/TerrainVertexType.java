@@ -14,10 +14,10 @@ import net.minecraft.client.render.VertexConsumer;
  */
 public class TerrainVertexType implements me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType {
     public static final VertexFormat<TerrainMeshAttribute> VERTEX_FORMAT = VertexFormat.builder(TerrainMeshAttribute.class, 20)
-            .addElement(TerrainMeshAttribute.POSITION_ID, 0, VertexAttributeFormat.UNSIGNED_SHORT, 4, false)
-            .addElement(TerrainMeshAttribute.COLOR, 8, VertexAttributeFormat.UNSIGNED_BYTE, 4, true)
-            .addElement(TerrainMeshAttribute.BLOCK_TEXTURE, 12, VertexAttributeFormat.UNSIGNED_SHORT, 2, false)
-            .addElement(TerrainMeshAttribute.LIGHT_TEXTURE, 16, VertexAttributeFormat.UNSIGNED_SHORT, 2, true)
+            .addElement(TerrainMeshAttribute.POSITION, 0, VertexAttributeFormat.UNSIGNED_SHORT, 3, false, false)
+            .addElement(TerrainMeshAttribute.COLOR, 8, VertexAttributeFormat.UNSIGNED_BYTE, 4, true, false)
+            .addElement(TerrainMeshAttribute.BLOCK_TEXTURE, 12, VertexAttributeFormat.UNSIGNED_SHORT, 2, false, false)
+            .addElement(TerrainMeshAttribute.LIGHT_TEXTURE, 16, VertexAttributeFormat.UNSIGNED_SHORT, 2, true, false)
             .build();
 
     private static final int POSITION_MAX_VALUE = 65536;

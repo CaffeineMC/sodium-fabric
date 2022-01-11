@@ -6,4 +6,8 @@ public record ChunkRenderPass(RenderState renderState, boolean mipped, float alp
     public boolean usesReverseOrder() {
         return this.renderState.blendFunction != null;
     }
+
+    public boolean isCutout() {
+        return this.alphaCutoff != 0.0f;
+    }
 }

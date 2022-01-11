@@ -15,4 +15,8 @@ public class UniformBlock {
     public void bindBuffer(Buffer buffer) {
         GL32C.glBindBufferBase(GL32C.GL_UNIFORM_BUFFER, this.binding, ((BufferImpl) buffer).handle());
     }
+
+    public void bindBuffer(Buffer buffer, int offset, int length) {
+        GL32C.glBindBufferRange(GL32C.GL_UNIFORM_BUFFER, this.binding, ((BufferImpl) buffer).handle(), offset, length);
+    }
 }

@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.render.chunk.region;
 
-import com.google.common.base.Suppliers;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.Frustum;
@@ -24,7 +23,7 @@ public class RenderRegionManager {
     private final RenderDevice device;
 
     public RenderRegionManager(RenderDevice device) {
-        this.streamingBuffer = createStagingBuffer(device);
+        this.streamingBuffer = new MappedStreamingBuffer(device, 24 * 1024 * 1024);
         this.device = device;
     }
 
@@ -93,14 +92,14 @@ public class RenderRegionManager {
             return;
         }
 
-        RenderRegion.RenderRegionArenas arenas = region.getOrCreateArenas();
+        RenderRegion.Resources arenas = region.getOrCreateArenas();
 
         arenas.vertexBuffers.upload(sectionUploads.stream().map(i -> i.vertexUpload));
         arenas.indexBuffers.upload(sectionUploads.stream().map(i -> i.indicesUpload));
 
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
-            upload.section.addMesh(upload.pass, new UploadedChunkMesh(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
+            upload.section.updateMesh(upload.pass, new UploadedChunkMesh(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
         }
     }
 
@@ -161,12 +160,8 @@ public class RenderRegionManager {
         return this.streamingBuffer;
     }
 
-    protected RenderRegion.RenderRegionArenas createRegionArenas() {
-        return new RenderRegion.RenderRegionArenas(this.device, this.streamingBuffer);
-    }
-
-    private static StreamingBuffer createStagingBuffer(RenderDevice device) {
-        return new MappedStreamingBuffer(device, 48 * 1024 * 1024);
+    protected RenderRegion.Resources createRegionArenas() {
+        return new RenderRegion.Resources(this.device, this.streamingBuffer);
     }
 
     private record PendingSectionUpload(RenderSection section, ChunkMesh meshData, ChunkRenderPass pass,

@@ -22,4 +22,7 @@ public interface ChunkRenderer {
     /**
      * Deletes this render backend and any resources attached to it.
      */
-    void delete();}
+    void delete();
+
+    void flush();
+}

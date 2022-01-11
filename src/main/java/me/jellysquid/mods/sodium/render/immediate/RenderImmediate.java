@@ -59,9 +59,7 @@ public class RenderImmediate {
         int vertexBytes = vertexCount * vertexFormat.getVertexSize();
 
         var vertexData = buffer.slice(0, vertexBytes);
-        var vertexStride = vertexFormat.getVertexSize();
-
-        var vertexBufferHandle = this.vertexBuffer.write(vertexData, vertexStride);
+        var vertexBufferHandle = this.vertexBuffer.write(vertexData);
 
         if (useDefaultElementBuffer) {
             var sequenceBufferBuilder = this.defaultElementBuffers.get(IndexSequenceType.map(drawMode));
@@ -75,11 +73,11 @@ public class RenderImmediate {
             var intType = getElementType(elementFormat);
 
             var elementData = buffer.slice(vertexBytes, elementCount * intType.getSize());
-            var elementBufferHandle = this.elementBuffer.write(elementData, intType.getSize());
+            var elementBufferHandle = this.elementBuffer.write(elementData);
 
             this.draw(pipeline, shaderTextures, drawMode, vertexFormat,
                     vertexBufferHandle.getBuffer(), vertexBufferHandle.getOffset(),
-                    intType, elementBufferHandle.getBuffer(), elementBufferHandle.getOffset() * intType.getSize(), elementCount);
+                    intType, elementBufferHandle.getBuffer(), elementBufferHandle.getOffset(), elementCount);
 
             elementBufferHandle.free();
         }
@@ -89,13 +87,13 @@ public class RenderImmediate {
 
     private void draw(Pipeline<VanillaShaderInterface, VanillaShaderInterface.BufferTarget> pipeline, ShaderTexture[] shaderTextures,
                       VertexFormat.DrawMode drawMode,
-                      VertexFormat vertexFormat, Buffer vertexBuffer, int vertexBase,
+                      VertexFormat vertexFormat, Buffer vertexBuffer, int vertexPointer,
                       IntType elementFormat, Buffer elementBuffer, int elementPointer, int elementCount) {
         this.device.usePipeline(pipeline, (drawCommands, programInterface, pipelineState) -> {
             this.updateSamplers(programInterface, shaderTextures, pipelineState);
             this.updateUniforms(programInterface, drawMode);
 
-            drawCommands.bindVertexBuffer(VanillaShaderInterface.BufferTarget.VERTICES, vertexBuffer, vertexBase * vertexFormat.getVertexSize(), vertexFormat.getVertexSize());
+            drawCommands.bindVertexBuffer(VanillaShaderInterface.BufferTarget.VERTICES, vertexBuffer, vertexPointer, vertexFormat.getVertexSize());
             drawCommands.bindElementBuffer(elementBuffer);
 
             drawCommands.drawElements(getPrimitiveType(drawMode), elementFormat, elementPointer, elementCount);

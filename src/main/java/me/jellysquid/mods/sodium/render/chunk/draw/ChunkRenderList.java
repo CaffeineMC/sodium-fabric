@@ -10,19 +10,19 @@ import java.util.List;
 import java.util.Map;
 
 public class ChunkRenderList {
-    private final Reference2ObjectLinkedOpenHashMap<RenderRegion, List<RenderSection>> entries = new Reference2ObjectLinkedOpenHashMap<>();
+    private final Reference2ObjectLinkedOpenHashMap<RenderRegion, ObjectArrayList<RenderSection>> entries = new Reference2ObjectLinkedOpenHashMap<>();
 
-    public Iterable<Map.Entry<RenderRegion, List<RenderSection>>> sorted(boolean reverse) {
+    public Iterable<Map.Entry<RenderRegion, ObjectArrayList<RenderSection>>> sorted(boolean reverse) {
         if (this.entries.isEmpty()) {
             return Collections.emptyList();
         }
 
-        Reference2ObjectSortedMap.FastSortedEntrySet<RenderRegion, List<RenderSection>> entries =
+        Reference2ObjectSortedMap.FastSortedEntrySet<RenderRegion, ObjectArrayList<RenderSection>> entries =
                 this.entries.reference2ObjectEntrySet();
 
         if (reverse) {
             return () -> new Iterator<>() {
-                final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, List<RenderSection>>> iterator =
+                final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, ObjectArrayList<RenderSection>>> iterator =
                         entries.fastIterator(entries.last());
 
                 @Override
@@ -31,13 +31,13 @@ public class ChunkRenderList {
                 }
 
                 @Override
-                public Map.Entry<RenderRegion, List<RenderSection>> next() {
+                public Map.Entry<RenderRegion, ObjectArrayList<RenderSection>> next() {
                     return this.iterator.previous();
                 }
             };
         } else {
             return () -> new Iterator<>() {
-                final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, List<RenderSection>>> iterator =
+                final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, ObjectArrayList<RenderSection>>> iterator =
                         entries.fastIterator();
 
                 @Override
@@ -46,7 +46,7 @@ public class ChunkRenderList {
                 }
 
                 @Override
-                public Map.Entry<RenderRegion, List<RenderSection>> next() {
+                public Map.Entry<RenderRegion, ObjectArrayList<RenderSection>> next() {
                     return this.iterator.next();
                 }
             };

@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.render.terrain;
 
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.IndexBufferBuilder;
+import me.jellysquid.mods.sodium.render.chunk.compile.tasks.TerrainBuildBuffers;
 import me.jellysquid.mods.sodium.render.terrain.light.LightMode;
 import me.jellysquid.mods.sodium.render.terrain.light.LightPipeline;
 import me.jellysquid.mods.sodium.render.terrain.light.LightPipelineProvider;
@@ -19,6 +20,7 @@ import me.jellysquid.mods.sodium.interop.vanilla.mixin.BlockColorProviderRegistr
 import me.jellysquid.mods.sodium.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
@@ -142,7 +144,7 @@ public class BlockRenderer {
 
             int lm = light.lm[j];
 
-            vertices.writeVertex(origin, x, y, z, color, u, v, lm, model.getChunkId());
+            vertices.writeVertex(origin, x, y, z, color, u, v, lm);
         }
 
         indices.add(vertexStart, ModelQuadWinding.CLOCKWISE);

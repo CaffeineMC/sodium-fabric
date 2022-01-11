@@ -68,8 +68,8 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
 
         var vertexArray = new VertexArrayDescription<>(BufferTarget.values(), List.of(
                 new VertexArrayResourceBinding<>(BufferTarget.VERTICES, new VertexAttributeBinding[] {
-                        new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID,
-                                this.vertexFormat.getAttribute(TerrainMeshAttribute.POSITION_ID)),
+                        new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION,
+                                this.vertexFormat.getAttribute(TerrainMeshAttribute.POSITION)),
                         new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
                                 this.vertexFormat.getAttribute(TerrainMeshAttribute.COLOR)),
                         new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
@@ -95,7 +95,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         var desc = ShaderDescription.builder()
                 .addShaderSource(ShaderType.VERTEX, vertShader)
                 .addShaderSource(ShaderType.FRAGMENT, fragShader)
-                .addAttributeBinding("a_PosId", ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID)
+                .addAttributeBinding("a_Position", ChunkShaderBindingPoints.ATTRIBUTE_POSITION)
                 .addAttributeBinding("a_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
                 .addAttributeBinding("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE)
                 .addAttributeBinding("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
@@ -130,7 +130,11 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
 
     private static ShaderConstants getShaderConstants(ChunkRenderPass pass, TerrainVertexType vertexType) {
         var constants = ShaderConstants.builder();
-        constants.add("ALPHA_CUTOFF", String.valueOf(pass.alphaCutoff()));
+
+        if (pass.isCutout()) {
+            constants.add("ALPHA_CUTOFF", String.valueOf(pass.alphaCutoff()));
+        }
+
         constants.add("USE_VERTEX_COMPRESSION"); // TODO: allow compact vertex format to be disabled
         constants.add("VERT_POS_SCALE", String.valueOf(vertexType.getPositionScale()));
         constants.add("VERT_POS_OFFSET", String.valueOf(vertexType.getPositionOffset()));

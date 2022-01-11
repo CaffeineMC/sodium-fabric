@@ -17,4 +17,6 @@ public interface DrawCommandList<T extends Enum<T>> {
     void drawElements(PrimitiveType primitiveType, IntType elementType, long elementPointer, int elementCount);
 
     void bindVertexBuffer(T target, Buffer buffer, int offset, int stride);
+
+    void multiDrawElementsIndirect(Buffer indirectBuffer, int indirectOffset, int indirectCount, IntType elementType, PrimitiveType primitiveType);
 }

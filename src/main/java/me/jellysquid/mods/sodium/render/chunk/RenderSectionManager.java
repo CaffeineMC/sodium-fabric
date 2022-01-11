@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import me.jellysquid.mods.sodium.render.chunk.compile.ChunkBuilder;
+import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.chunk.draw.ChunkCameraContext;
 import me.jellysquid.mods.sodium.render.chunk.draw.ChunkRenderList;
@@ -27,6 +28,7 @@ import me.jellysquid.mods.sodium.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.TerrainBuildTask;
+import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import me.jellysquid.mods.sodium.world.ChunkStatus;
 import me.jellysquid.mods.sodium.world.ChunkTracker;
 import me.jellysquid.mods.sodium.util.MathUtil;
@@ -106,6 +108,8 @@ public class RenderSectionManager {
     private final ChunkTracker tracker;
     private final RenderDevice device;
 
+    private final boolean isBlockFaceCullingEnabled = SodiumClientMod.options().performance.useBlockFaceCulling;
+
     public RenderSectionManager(RenderDevice device, SodiumWorldRenderer worldRenderer, ChunkRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
         this.device = device;
         this.chunkRenderer = new DefaultChunkRenderer(device, TerrainVertexFormats.STANDARD);
@@ -127,6 +131,7 @@ public class RenderSectionManager {
         }
 
         this.tracker = this.worldRenderer.getChunkTracker();
+
     }
 
     public void reloadChunks(ChunkTracker tracker) {
@@ -213,6 +218,42 @@ public class RenderSectionManager {
         if (render.isTickable()) {
             this.tickableChunks.add(render);
         }
+
+        render.updateVisibilityFlags(this.calculateVisibilityFlags(render.getBounds()));
+    }
+
+    private int calculateVisibilityFlags(ChunkRenderBounds bounds) {
+        if (!this.isBlockFaceCullingEnabled) {
+            return ChunkMeshFace.ALL_BITS;
+        }
+
+        int flags = ChunkMeshFace.UNASSIGNED_BITS;
+
+        if (this.cameraY > bounds.y1) {
+            flags |= ChunkMeshFace.UP_BITS;
+        }
+
+        if (this.cameraY < bounds.y2) {
+            flags |= ChunkMeshFace.DOWN_BITS;
+        }
+
+        if (this.cameraX > bounds.x1) {
+            flags |= ChunkMeshFace.EAST_BITS;
+        }
+
+        if (this.cameraX < bounds.x2) {
+            flags |= ChunkMeshFace.WEST_BITS;
+        }
+
+        if (this.cameraZ > bounds.z1) {
+            flags |= ChunkMeshFace.SOUTH_BITS;
+        }
+
+        if (this.cameraZ < bounds.z2) {
+            flags |= ChunkMeshFace.NORTH_BITS;
+        }
+
+        return flags;
     }
 
     private void addEntitiesToRenderLists(RenderSection render) {
@@ -593,9 +634,9 @@ public class RenderSectionManager {
     public Collection<String> getDebugStrings() {
         List<String> list = new ArrayList<>();
 
-        Iterator<RenderRegion.RenderRegionArenas> it = this.regions.getLoadedRegions()
+        Iterator<RenderRegion.Resources> it = this.regions.getLoadedRegions()
                 .stream()
-                .map(RenderRegion::getArenas)
+                .map(RenderRegion::getResources)
                 .filter(Objects::nonNull)
                 .iterator();
 
@@ -605,7 +646,7 @@ public class RenderSectionManager {
         long deviceAllocated = 0;
 
         while (it.hasNext()) {
-            RenderRegion.RenderRegionArenas arena = it.next();
+            RenderRegion.Resources arena = it.next();
             deviceUsed += arena.getDeviceUsedMemory();
             deviceAllocated += arena.getDeviceAllocatedMemory();
 
@@ -613,8 +654,12 @@ public class RenderSectionManager {
         }
 
         list.add(String.format("Device buffer objects: %d", count));
-        list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
+        list.add(String.format("Device memory: %d MiB used/%d MiB alloc", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
         list.add(String.format("Staging buffer: %s", this.regions.getStreamingBuffer().getDebugString()));
         return list;
+    }
+
+    public void flush() {
+        this.chunkRenderer.flush();
     }
 }

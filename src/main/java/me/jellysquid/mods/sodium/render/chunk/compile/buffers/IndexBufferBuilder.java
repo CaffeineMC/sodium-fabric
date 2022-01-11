@@ -34,11 +34,7 @@ public class IndexBufferBuilder {
     }
 
     private static IntType getOptimalIndexType(int count) {
-        if (count < 65536) {
-            return IntType.UNSIGNED_SHORT;
-        } else {
-            return IntType.UNSIGNED_INT;
-        }
+        return IntType.UNSIGNED_INT;
     }
 
     public int getCount() {

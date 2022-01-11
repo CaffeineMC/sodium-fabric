@@ -10,15 +10,24 @@ public interface StreamingBuffer {
     }
 
     /**
-     * Writes the provided data into this streaming buffer, and returns a handle (in units of {@param alignment}) to
-     * the newly written data in this buffer. The caller must then invoke {@link Handle#free()} when they are done
-     * using the memory.
+     * Writes the provided data into this streaming buffer, and returns a handle to the newly written data in this
+     * buffer. The caller must then invoke {@link Handle#free()} when they are done using the memory.
      *
      * @param data The data to write into this buffer
-     * @param stride The size (in bytes) of each element in the buffer
-     * @return A handle to the written data
+     * @param alignment The alignment at which the written data will start at
+     * @return A handle to the written data at the specified alignment
      */
-    Handle write(ByteBuffer data, int stride);
+    Handle write(ByteBuffer data, int alignment);
+
+    /**
+     * Provides a writer instance which can be used to write data directly into this buffer. The caller must invoke
+     * {@link Writer#finish()} after writing all their data, which will return a handle to the newly written data.
+     *
+     * @param length The maximum capacity of the writer (i.e. space to reserve)
+     * @param alignment The alignment at which the written data will start at
+     * @return A writer instance of the specified capacity and alignment
+     */
+    Writer write(int length, int alignment);
 
     /**
      * Provides a hint to the implementation that it should create a synchronization point in the current command
@@ -50,5 +59,11 @@ public interface StreamingBuffer {
         int getLength();
 
         void free();
+    }
+
+    interface Writer {
+        long next(int length);
+
+        Handle finish();
     }
 }

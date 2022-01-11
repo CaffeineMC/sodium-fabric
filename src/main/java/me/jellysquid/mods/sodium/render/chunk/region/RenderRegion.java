@@ -1,17 +1,22 @@
 package me.jellysquid.mods.sodium.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.Frustum;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.arena.AsyncBufferArena;
 import me.jellysquid.mods.sodium.render.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
+import me.jellysquid.mods.sodium.render.chunk.passes.DefaultRenderPasses;
+import me.jellysquid.mods.sodium.render.chunk.state.UploadedChunkMesh;
 import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexFormats;
 import me.jellysquid.mods.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
+import java.util.Map;
 import java.util.Set;
 
 public class RenderRegion {
@@ -40,7 +45,7 @@ public class RenderRegion {
     private final RenderRegionManager manager;
 
     private final Set<RenderSection> chunks = new ObjectOpenHashSet<>();
-    private RenderRegionArenas arenas;
+    private Resources resources;
 
     private final int x, y, z;
 
@@ -58,14 +63,14 @@ public class RenderRegion {
         return new RenderRegion(manager, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
-    public RenderRegionArenas getArenas() {
-        return this.arenas;
+    public Resources getResources() {
+        return this.resources;
     }
 
     public void deleteResources() {
-        if (this.arenas != null) {
-            this.arenas.delete();
-            this.arenas = null;
+        if (this.resources != null) {
+            this.resources.delete();
+            this.resources = null;
         }
     }
 
@@ -85,11 +90,11 @@ public class RenderRegion {
         return this.z << REGION_LENGTH_SH << 4;
     }
 
-    public RenderRegionArenas getOrCreateArenas() {
-        RenderRegionArenas arenas = this.arenas;
+    public Resources getOrCreateArenas() {
+        Resources arenas = this.resources;
 
         if (arenas == null) {
-            this.arenas = (arenas = this.manager.createRegionArenas());
+            this.resources = (arenas = this.manager.createRegionArenas());
         }
 
         return arenas;
@@ -135,16 +140,28 @@ public class RenderRegion {
         return (x * RenderRegion.REGION_LENGTH * RenderRegion.REGION_HEIGHT) + (y * RenderRegion.REGION_LENGTH) + z;
     }
 
-    public static class RenderRegionArenas {
+    public void deleteChunkMeshes(int chunkId) {
+        if (this.resources != null) {
+            this.resources.deleteChunkMeshes(chunkId);
+        }
+    }
+
+    public void updateMesh(ChunkRenderPass pass, UploadedChunkMesh mesh, int chunkId) {
+        this.resources.updateMesh(pass, mesh, chunkId);
+    }
+
+    public static class Resources {
         public final GlBufferArena vertexBuffers;
         public final GlBufferArena indexBuffers;
 
-        public RenderRegionArenas(RenderDevice device, StreamingBuffer stagingBuffer) {
+        public final Map<ChunkRenderPass, UploadedChunkMesh[]> meshes = new Reference2ReferenceOpenHashMap<>();
+
+        public Resources(RenderDevice device, StreamingBuffer stagingBuffer) {
             int expectedVertexCount = REGION_SIZE * 756;
             int expectedIndexCount = (expectedVertexCount / 4) * 6;
 
-            this.vertexBuffers = createArena(device, expectedVertexCount, TerrainVertexFormats.STANDARD.getBufferVertexFormat().getStride(), stagingBuffer);
-            this.indexBuffers = createArena(device, expectedIndexCount, 4, stagingBuffer);
+            this.vertexBuffers = new AsyncBufferArena(device, expectedVertexCount, TerrainVertexFormats.STANDARD.getBufferVertexFormat().getStride(), stagingBuffer);
+            this.indexBuffers = new AsyncBufferArena(device, expectedIndexCount, 4, stagingBuffer);
         }
 
         public void delete() {
@@ -164,8 +181,33 @@ public class RenderRegion {
             return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
         }
 
-        private static GlBufferArena createArena(RenderDevice device, int initialCapacity, int stride, StreamingBuffer stagingBuffer) {
-            return new AsyncBufferArena(device, initialCapacity * stride, stride, stagingBuffer);
+        public UploadedChunkMesh[] getMeshes(ChunkRenderPass subpass) {
+            return this.meshes.get(subpass);
+        }
+
+        public void deleteChunkMeshes(int chunkId) {
+            for (UploadedChunkMesh[] meshes : this.meshes.values()) {
+                var mesh = meshes[chunkId];
+
+                if (mesh == null) {
+                    continue;
+                }
+
+                meshes[chunkId] = null;
+                mesh.delete();
+            }
+        }
+
+        public void updateMesh(ChunkRenderPass pass, UploadedChunkMesh mesh, int chunkId) {
+            var meshes = this.getMeshes(pass);
+
+            if (meshes == null) {
+                this.meshes.put(pass, meshes = new UploadedChunkMesh[RenderRegion.REGION_SIZE]);
+            } else if (meshes[chunkId] != null) {
+                meshes[chunkId].delete();
+            }
+
+            meshes[chunkId] = mesh;
         }
     }
 }

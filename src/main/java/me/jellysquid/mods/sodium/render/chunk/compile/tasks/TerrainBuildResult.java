@@ -1,9 +1,9 @@
 package me.jellysquid.mods.sodium.render.chunk.compile.tasks;
 
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
-import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 
 import java.util.Collections;
 import java.util.Map;

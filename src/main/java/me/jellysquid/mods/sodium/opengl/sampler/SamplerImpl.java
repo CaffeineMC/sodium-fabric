@@ -13,4 +13,9 @@ public class SamplerImpl extends ManagedObject implements Sampler {
     public void setParameter(int parameter, int value) {
         GL45C.glSamplerParameteri(this.handle(), parameter, value);
     }
+
+    @Override
+    public void setParameter(int parameter, float value) {
+        GL45C.glSamplerParameterf(this.handle(), parameter, value);
+    }
 }

@@ -18,7 +18,7 @@ public class MappedBufferImpl extends BufferImpl implements MappedBuffer {
     }
 
     @Override
-    public void write(ByteBuffer data, int writeOffset) {
+    public void write(int writeOffset, ByteBuffer data) {
         this.data.put(writeOffset, data, 0, data.remaining());
     }
 
@@ -28,5 +28,10 @@ public class MappedBufferImpl extends BufferImpl implements MappedBuffer {
                 "Buffer must be mapped with explicit flushing enabled");
 
         GL45C.glFlushMappedNamedBufferRange(this.handle(), pos, length);
+    }
+
+    @Override
+    public ByteBuffer getView() {
+        return this.data;
     }
 }
