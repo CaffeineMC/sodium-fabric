@@ -10,6 +10,8 @@
     "conformVisibility": true
   },
   "client": [
+    "core.MixinFrustum",
+    "core.MixinMinecraftClient",
     "core.MixinRenderLayer",
     "core.MixinRenderLayer$MixinMultiPhase",
     "core.MixinRenderLayer$MixinMultiPhaseParameters",
@@ -20,9 +22,8 @@
     "core.MixinRenderPhase$MixinTexture",
     "core.MixinRenderPhase$MixinTextureBase",
     "core.MixinRenderPhase$MixinTextures",
-    "core.MixinFrustum",
-    "core.MixinMinecraftClient",
     "core.MixinShader",
+    "core.MixinWindow",
     "core.matrix.MixinMatrix3f",
     "core.matrix.MixinMatrix4f",
     "core.model.MixinBlockColors",
