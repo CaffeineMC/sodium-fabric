@@ -5,11 +5,8 @@ import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexSink;
 import net.minecraft.client.texture.Sprite;
 
 public interface ChunkMeshBuilder {
-    TerrainVertexSink getVertexSink();
-
-    IndexBufferBuilder getIndexBufferBuilder(ChunkMeshFace facing);
+    TerrainVertexSink getVertexSink(ChunkMeshFace face);
 
     void addSprite(Sprite sprite);
 
-    int getChunkId();
 }

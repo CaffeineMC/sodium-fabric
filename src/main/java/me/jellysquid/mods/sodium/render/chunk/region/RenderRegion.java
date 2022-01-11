@@ -152,7 +152,6 @@ public class RenderRegion {
 
     public static class Resources {
         public final GlBufferArena vertexBuffers;
-        public final GlBufferArena indexBuffers;
 
         public final Map<ChunkRenderPass, UploadedChunkMesh[]> meshes = new Reference2ReferenceOpenHashMap<>();
 
@@ -161,24 +160,22 @@ public class RenderRegion {
             int expectedIndexCount = (expectedVertexCount / 4) * 6;
 
             this.vertexBuffers = new AsyncBufferArena(device, expectedVertexCount, TerrainVertexFormats.STANDARD.getBufferVertexFormat().getStride(), stagingBuffer);
-            this.indexBuffers = new AsyncBufferArena(device, expectedIndexCount, 4, stagingBuffer);
         }
 
         public void delete() {
             this.vertexBuffers.delete();
-            this.indexBuffers.delete();
         }
 
         public boolean isEmpty() {
-            return this.vertexBuffers.isEmpty() && this.indexBuffers.isEmpty();
+            return this.vertexBuffers.isEmpty();
         }
 
         public long getDeviceUsedMemory() {
-            return this.vertexBuffers.getDeviceUsedMemory() + this.indexBuffers.getDeviceUsedMemory();
+            return this.vertexBuffers.getDeviceUsedMemory();
         }
 
         public long getDeviceAllocatedMemory() {
-            return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
+            return this.vertexBuffers.getDeviceAllocatedMemory();
         }
 
         public UploadedChunkMesh[] getMeshes(ChunkRenderPass subpass) {

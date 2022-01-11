@@ -27,9 +27,4 @@ public abstract class VertexWriterFallback implements VertexSink {
     public void flush() {
         // NO-OP
     }
-
-    @Override
-    public int getVertexCount() {
-        return 0;
-    }
 }

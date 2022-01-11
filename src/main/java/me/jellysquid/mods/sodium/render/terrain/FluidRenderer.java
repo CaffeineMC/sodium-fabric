@@ -209,15 +209,14 @@ public class FluidRenderer {
             this.setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
 
             this.calculateQuadColors(quad, world, pos, lighter, Direction.UP, 1.0F, colorizer, fluidState);
-
-            int vertexStart = this.writeVertices(buffers, offset, quad);
-
-            buffers.getIndexBufferBuilder(facing)
-                    .add(vertexStart, ModelQuadWinding.CLOCKWISE);
+            this.flushQuad(buffers, offset, quad, facing, false);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                buffers.getIndexBufferBuilder(ChunkMeshFace.DOWN)
-                        .add(vertexStart, ModelQuadWinding.COUNTERCLOCKWISE);
+                this.setVertex(quad, 3, 0.0f, h1, 0.0f, u1, v1);
+                this.setVertex(quad, 2, 0.0f, h2, 1.0F, u2, v2);
+                this.setVertex(quad, 1, 1.0F, h3, 1.0F, u3, v3);
+                this.setVertex(quad, 0, 1.0F, h4, 0.0f, u4, v4);
+                this.flushQuad(buffers, offset, quad, ChunkMeshFace.DOWN, true);
             }
 
             rendered = true;
@@ -238,11 +237,7 @@ public class FluidRenderer {
             this.setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.calculateQuadColors(quad, world, pos, lighter, Direction.DOWN, 1.0F, colorizer, fluidState);
-
-            int vertexStart = this.writeVertices(buffers, offset, quad);
-
-            buffers.getIndexBufferBuilder(ChunkMeshFace.DOWN)
-                    .add(vertexStart, ModelQuadWinding.CLOCKWISE);
+            this.flushQuad(buffers, offset, quad, ChunkMeshFace.DOWN, false);
 
             rendered = true;
         }
@@ -346,15 +341,15 @@ public class FluidRenderer {
                 ChunkMeshFace facing = ChunkMeshFace.fromDirection(dir);
 
                 this.calculateQuadColors(quad, world, pos, lighter, dir, br, colorizer, fluidState);
-
-                int vertexStart = this.writeVertices(buffers, offset, quad);
-
-                buffers.getIndexBufferBuilder(facing)
-                        .add(vertexStart, ModelQuadWinding.CLOCKWISE);
+                this.flushQuad(buffers, offset, quad, facing, false);
 
                 if (sprite != this.waterOverlaySprite) {
-                    buffers.getIndexBufferBuilder(facing.getOpposite())
-                            .add(vertexStart, ModelQuadWinding.COUNTERCLOCKWISE);
+                    this.setVertex(quad, 0, x1, c1, z1, u1, v1);
+                    this.setVertex(quad, 1, x1, yOffset, z1, u1, v3);
+                    this.setVertex(quad, 2, x2, yOffset, z2, u2, v3);
+                    this.setVertex(quad, 3, x2, c2, z2, u2, v2);
+
+                    this.flushQuad(buffers, offset, quad, facing.getOpposite(), true);
                 }
 
                 rendered = true;
@@ -383,36 +378,43 @@ public class FluidRenderer {
         }
     }
 
-    private int writeVertices(ChunkMeshBuilder builder, BlockPos offset, ModelQuadView quad) {
-        TerrainVertexSink vertices = builder.getVertexSink();
-        vertices.ensureCapacity(4);
+    private void flushQuad(ChunkMeshBuilder meshBuilder, BlockPos offset, ModelQuadView quad, ChunkMeshFace facing, boolean flip) {
+        int vertexIdx, lightOrder;
 
-        int vertexStart = vertices.getVertexCount();
+        if (flip) {
+            vertexIdx = 3;
+            lightOrder = -1;
+        } else {
+            vertexIdx = 0;
+            lightOrder = 1;
+        }
+
+        var sink = meshBuilder.getVertexSink(facing);
+        sink.ensureCapacity(4);
 
         for (int i = 0; i < 4; i++) {
             float x = quad.getX(i);
             float y = quad.getY(i);
             float z = quad.getZ(i);
 
-            int color = this.quadColors[i];
+            int color = this.quadColors[vertexIdx];
 
             float u = quad.getTexU(i);
             float v = quad.getTexV(i);
 
-            int light = this.quadLightData.lm[i];
+            int light = this.quadLightData.lm[vertexIdx];
 
-            vertices.writeVertex(offset, x, y, z, color, u, v, light);
+            sink.writeVertex(offset, x, y, z, color, u, v, light);
+            vertexIdx += lightOrder;
         }
 
-        vertices.flush();
+        sink.flush();
 
         Sprite sprite = quad.getSprite();
 
         if (sprite != null) {
-            builder.addSprite(sprite);
+            meshBuilder.addSprite(sprite);
         }
-
-        return vertexStart;
     }
 
     private void setVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {

@@ -8,12 +8,14 @@ import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.opengl.pipeline.PipelineState;
 import me.jellysquid.mods.sodium.opengl.types.IntType;
 import me.jellysquid.mods.sodium.opengl.types.PrimitiveType;
-import me.jellysquid.mods.sodium.render.buffer.ElementRange;
+import me.jellysquid.mods.sodium.render.buffer.VertexRange;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
 import me.jellysquid.mods.sodium.render.chunk.state.UploadedChunkMesh;
+import me.jellysquid.mods.sodium.render.sequence.SequenceBuilder;
+import me.jellysquid.mods.sodium.render.sequence.SequenceIndexBuffer;
 import me.jellysquid.mods.sodium.render.stream.MappedStreamingBuffer;
 import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
@@ -37,11 +39,14 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     private final StreamingBuffer commandBuffer;
     private final StreamingBuffer instanceDataBuffer;
 
+    private final SequenceIndexBuffer indexBuffer;
+
     public DefaultChunkRenderer(RenderDevice device, TerrainVertexType vertexType) {
         super(device, vertexType);
 
         this.commandBuffer = new MappedStreamingBuffer(device, 16 * 1024 * 1024);
         this.instanceDataBuffer = new MappedStreamingBuffer(device, 4 * 1024 * 1024);
+        this.indexBuffer = new SequenceIndexBuffer(device, SequenceBuilder.QUADS);
     }
 
     @Override
@@ -58,7 +63,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                 var region = entry.getKey();
                 var sections = entry.getValue();
 
-                var handles = this.buildDrawBatches(sections, renderPass, camera, region.getResources());
+                var handles = this.prepareDrawBatches(sections, renderPass, camera, region.getResources());
 
                 if (handles == null) {
                     continue;
@@ -103,7 +108,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
-    private Handles buildDrawBatches(ObjectArrayList<RenderSection> sections, ChunkRenderPass pass, ChunkCameraContext camera, RenderRegion.Resources regionResources) {
+    private Handles prepareDrawBatches(ObjectArrayList<RenderSection> sections, ChunkRenderPass pass, ChunkCameraContext camera, RenderRegion.Resources regionResources) {
         var meshes = regionResources.getMeshes(pass);
 
         if (meshes == null) {
@@ -118,6 +123,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         int instanceCount = 0;
         int drawCount = 0;
 
+        int maxVertices = 0;
+
         for (RenderSection render : sortedChunks(sections, pass.usesReverseOrder())) {
             UploadedChunkMesh state = meshes[render.getChunkId()];
 
@@ -128,20 +135,19 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             int visibilityFlags = render.getVisibilityFlags() & state.getVisibilityFlags();
 
             if (visibilityFlags != 0) {
-                int firstIndex = state.getIndexSegment().getOffset();
                 int baseVertex = state.getVertexSegment().getOffset();
 
                 for (int face = 0; face < ChunkMeshFace.COUNT; face++) {
                     if ((visibilityFlags & (1 << face)) != 0) {
-                        ElementRange range = state.getMeshPart(face);
+                        VertexRange range = state.getMeshPart(face);
 
                         if (range == null) {
                             throw new IllegalStateException("Invalid visibility flag state");
                         }
 
-                        pushDrawCommand(commandBufferWriter, range.elementCount(), 1,
-                                firstIndex + range.firstIndex(), baseVertex + range.baseVertex(), instanceCount);
+                        pushDrawCommand(commandBufferWriter, (range.vertexCount() / 4) * 6, 1, 0, baseVertex + range.firstVertex(), instanceCount);
                         drawCount++;
+                        maxVertices = Math.max(maxVertices, range.vertexCount());
                     }
                 }
 
@@ -160,6 +166,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         if (commandBufferHandle == null || instanceDataHandle == null) {
             return null;
         }
+
+        this.indexBuffer.ensureCapacity(maxVertices);
 
         return new Handles(commandBufferHandle, instanceDataHandle, instanceCount, drawCount);
     }
@@ -189,7 +197,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private void executeDrawBatches(DrawCommandList<BufferTarget> drawCommandList, ChunkShaderInterface programInterface, RenderRegion.Resources resources, Handles handles) {
         drawCommandList.bindVertexBuffer(BufferTarget.VERTICES, resources.vertexBuffers.getBufferObject(), 0, this.vertexFormat.getStride());
-        drawCommandList.bindElementBuffer(resources.indexBuffers.getBufferObject());
+        drawCommandList.bindElementBuffer(this.indexBuffer.getBuffer());
 
         programInterface.bufferInstanceData.bindBuffer(handles.instanceData.getBuffer(), handles.instanceData.getOffset(), handles.instanceData.getLength());
 
