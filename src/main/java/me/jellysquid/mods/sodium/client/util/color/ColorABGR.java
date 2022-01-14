@@ -1,5 +1,9 @@
 package me.jellysquid.mods.sodium.client.util.color;
 
+import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.IntVector;
+import jdk.incubator.vector.VectorOperators;
+
 /**
  * Provides some utilities for packing and unpacking color components from packed integer colors in ABGR format, which
  * is used by OpenGL for color vectors.
@@ -17,14 +21,32 @@ public class ColorABGR implements ColorU8 {
      * @param a The alpha component of the color
      */
     public static int pack(int r, int g, int b, int a) {
-        return (a & 0xFF) << 24 | (b & 0xFF) << 16 | (g & 0xFF) << 8 | (r & 0xFF);
+        return IntVector.fromArray(
+                IntVector.SPECIES_128,
+                new int[]{a, b, g, r},
+                0
+        ).lanewise(VectorOperators.AND, 0xFF)
+                .lanewise(
+                        VectorOperators.LSHL,
+                        IntVector.fromArray(
+                                IntVector.SPECIES_128,
+                                new int[]{24, 16, 8, 0},
+                                0
+                        )
+                ).reduceLanes(VectorOperators.OR);
+//        return (a & 0xFF) << 24 | (b & 0xFF) << 16 | (g & 0xFF) << 8 | (r & 0xFF);
     }
 
     /**
      * @see ColorABGR#pack(int, int, int, int)
      */
     public static int pack(float r, float g, float b, float a) {
-        return pack((int) (r * COMPONENT_RANGE), (int) (g * COMPONENT_RANGE), (int) (b * COMPONENT_RANGE), (int) (a * COMPONENT_RANGE));
+        IntVector v = FloatVector.fromArray(
+            FloatVector.SPECIES_128,
+            new float[]{r, g, b, a},
+            0
+        ).mul(COMPONENT_RANGE).convert(VectorOperators.F2I, 0).reinterpretAsInts();
+        return pack(v.lane(0), v.lane(1), v.lane(2), v.lane(3));
     }
 
     /**

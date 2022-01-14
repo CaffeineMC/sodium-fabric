@@ -46,6 +46,18 @@ incomplete features, bugs, crashes, and all other kinds of weird issues. You **s
 unless you know what you are doing and are comfortable with software debugging. If you report issues using these builds,
 we will expect that this is the case. Caveat emptor.
 
+#### Vector API builds
+
+If you are interested in developing the Vector API branch for Sodium, you can clone the project normally but you will need to add
+
+`--add-modules jdk.incubator.vector`
+
+to your runClient configuration if you are using an IDE like IntelliJ.
+If you are running the client from the command line, you do not have to do anything special as the build.gradle already adds these arguments for you.
+
+When running the client in a real environment, you will also need to add the above JVM arguments in order to launch without crashing.
+This branch will likely only be merged, if ever, when the Panama Vector API is out of incubation.
+
 ### CurseForge
 
 [![CurseForge downloads](http://cf.way2muchnoise.eu/full_394468_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/sodium)

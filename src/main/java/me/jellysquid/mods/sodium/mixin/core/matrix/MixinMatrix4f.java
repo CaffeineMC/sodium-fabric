@@ -1,5 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.core.matrix;
 
+import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorOperators;
+import jdk.incubator.vector.VectorSpecies;
 import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Quaternion;
@@ -9,74 +12,135 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(Matrix4f.class)
 public class MixinMatrix4f implements Matrix4fExtended {
     @Shadow
-    protected float a00;
+    public float a00;
 
     @Shadow
-    protected float a01;
+    public float a01;
 
     @Shadow
-    protected float a02;
+    public float a02;
 
     @Shadow
-    protected float a03;
+    public float a03;
 
     @Shadow
-    protected float a10;
+    public float a10;
 
     @Shadow
-    protected float a11;
+    public float a11;
 
     @Shadow
-    protected float a12;
+    public float a12;
 
     @Shadow
-    protected float a13;
+    public float a13;
 
     @Shadow
-    protected float a20;
+    public float a20;
 
     @Shadow
-    protected float a21;
+    public float a21;
 
     @Shadow
-    protected float a22;
+    public float a22;
 
     @Shadow
-    protected float a23;
+    public float a23;
 
     @Shadow
-    protected float a30;
+    public float a30;
 
     @Shadow
-    protected float a31;
+    public float a31;
 
     @Shadow
-    protected float a32;
+    public float a32;
 
     @Shadow
-    protected float a33;
+    public float a33;
 
     @Override
     public void translate(float x, float y, float z) {
-        this.a03 = this.a00 * x + this.a01 * y + this.a02 * z + this.a03;
-        this.a13 = this.a10 * x + this.a11 * y + this.a12 * z + this.a13;
-        this.a23 = this.a20 * x + this.a21 * y + this.a22 * z + this.a23;
-        this.a33 = this.a30 * x + this.a31 * y + this.a32 * z + this.a33;
+        VectorSpecies<Float> SPECIES = FloatVector.SPECIES_128;
+        FloatVector v = FloatVector.fromArray(
+                SPECIES,
+                new float[]{this.a00, this.a10, this.a20, this.a30},
+                0
+        ).fma(
+                FloatVector.broadcast(SPECIES, x),
+                FloatVector.fromArray(
+                        SPECIES,
+                        new float[]{this.a01, this.a11, this.a21, this.a31},
+                        0
+                ).fma(
+                        FloatVector.broadcast(SPECIES, y),
+                        FloatVector.fromArray(
+                                SPECIES,
+                                new float[]{this.a02, this.a12, this.a22, this.a32},
+                                0
+                        ).fma(
+                                FloatVector.broadcast(SPECIES, z),
+                                FloatVector.fromArray(
+                                        SPECIES,
+                                        new float[]{this.a03, this.a13, this.a23, this.a33},
+                                        0
+                                )
+                        )
+                )
+        );
+
+        this.a03 = v.lane(0);
+        this.a13 = v.lane(1);
+        this.a23 = v.lane(2);
+        this.a33 = v.lane(3);
     }
 
     @Override
     public float transformVecX(float x, float y, float z) {
-        return (this.a00 * x) + (this.a01 * y) + (this.a02 * z) + (this.a03 * 1.0f);
+//        return (this.a00 * x) + (this.a01 * y) + (this.a02 * z) + (this.a03 * 1.0f);
+        return FloatVector.fromArray(
+                FloatVector.SPECIES_128,
+                new float[]{this.a00, this.a01, this.a02, this.a03},
+                0
+        ).mul(
+                FloatVector.fromArray(
+                        FloatVector.SPECIES_128,
+                        new float[]{x, y, z, 1.0f},
+                        0
+                )
+        ).reduceLanes(VectorOperators.ADD);
     }
 
     @Override
     public float transformVecY(float x, float y, float z) {
-        return (this.a10 * x) + (this.a11 * y) + (this.a12 * z) + (this.a13 * 1.0f);
+//        return (this.a10 * x) + (this.a11 * y) + (this.a12 * z) + (this.a13 * 1.0f);
+        return FloatVector.fromArray(
+                FloatVector.SPECIES_128,
+                new float[]{this.a10, this.a11, this.a12, this.a13},
+                0
+        ).mul(
+                FloatVector.fromArray(
+                        FloatVector.SPECIES_128,
+                        new float[]{x, y, z, 1.0f},
+                        0
+                )
+        ).reduceLanes(VectorOperators.ADD);
     }
 
     @Override
     public float transformVecZ(float x, float y, float z) {
-        return (this.a20 * x) + (this.a21 * y) + (this.a22 * z) + (this.a23 * 1.0f);
+//        return (this.a20 * x) + (this.a21 * y) + (this.a22 * z) + (this.a23 * 1.0f);
+        return FloatVector.fromArray(
+                FloatVector.SPECIES_128,
+                new float[]{this.a20, this.a21, this.a22, this.a23},
+                0
+        ).mul(
+                FloatVector.fromArray(
+                        FloatVector.SPECIES_128,
+                        new float[]{x, y, z, 1.0f},
+                        0
+                )
+        ).reduceLanes(VectorOperators.ADD);
     }
 
     @Override
@@ -116,23 +180,35 @@ public class MixinMatrix4f implements Matrix4fExtended {
         float ta21 = 2.0F * xw;
         float ta12 = 2.0F * -xw;
 
-        float a01 = this.a01 * ta11 + this.a02 * ta21;
-        float a02 = this.a01 * ta12 + this.a02 * ta22;
-        float a11 = this.a11 * ta11 + this.a12 * ta21;
-        float a12 = this.a11 * ta12 + this.a12 * ta22;
-        float a21 = this.a21 * ta11 + this.a22 * ta21;
-        float a22 = this.a21 * ta12 + this.a22 * ta22;
-        float a31 = this.a31 * ta11 + this.a32 * ta21;
-        float a32 = this.a31 * ta12 + this.a32 * ta22;
+        VectorSpecies<Float> SPECIES = FloatVector.SPECIES_256;
+        FloatVector v = FloatVector.fromArray(
+                SPECIES,
+                new float[]{this.a01, this.a01, this.a11, this.a11, this.a21, this.a21, this.a31, this.a31},
+                0
+        ).fma(
+                SPECIES.fromArray(
+                        new float[]{ta11, ta12, ta11, ta12, ta11, ta12, ta11, ta12},
+                        0
+                ),
+                SPECIES.fromArray(
+                        new float[]{this.a02, this.a02, this.a12, this.a12, this.a22, this.a22, this.a32, this.a32},
+                        0
+                ).mul(
+                        SPECIES.fromArray(
+                                new float[]{ta21, ta22, ta21, ta22, ta21, ta22, ta21, ta22},
+                                0
+                        )
+                )
+        );
 
-        this.a01 = a01;
-        this.a02 = a02;
-        this.a11 = a11;
-        this.a12 = a12;
-        this.a21 = a21;
-        this.a22 = a22;
-        this.a31 = a31;
-        this.a32 = a32;
+        this.a01 = v.lane(0);
+        this.a02 = v.lane(1);
+        this.a11 = v.lane(2);
+        this.a12 = v.lane(3);
+        this.a21 = v.lane(4);
+        this.a22 = v.lane(5);
+        this.a31 = v.lane(6);
+        this.a32 = v.lane(7);
     }
 
     private void rotateY(Quaternion quaternion) {
@@ -146,23 +222,35 @@ public class MixinMatrix4f implements Matrix4fExtended {
         float ta20 = 2.0F * -yw;
         float ta02 = 2.0F * yw;
 
-        float a00 = this.a00 * ta00 + this.a02 * ta20;
-        float a02 = this.a00 * ta02 + this.a02 * ta22;
-        float a10 = this.a10 * ta00 + this.a12 * ta20;
-        float a12 = this.a10 * ta02 + this.a12 * ta22;
-        float a20 = this.a20 * ta00 + this.a22 * ta20;
-        float a22 = this.a20 * ta02 + this.a22 * ta22;
-        float a30 = this.a30 * ta00 + this.a32 * ta20;
-        float a32 = this.a30 * ta02 + this.a32 * ta22;
+        VectorSpecies<Float> SPECIES = FloatVector.SPECIES_256;
+        FloatVector v = FloatVector.fromArray(
+                SPECIES,
+                new float[]{this.a00, this.a00, this.a10, this.a10, this.a20, this.a20, this.a30, this.a30},
+                0
+        ).fma(
+                SPECIES.fromArray(
+                        new float[]{ta00, ta02, ta00, ta02, ta00, ta02, ta00, ta02},
+                        0
+                ),
+                SPECIES.fromArray(
+                        new float[]{this.a02, this.a02, this.a12, this.a12, this.a22, this.a22, this.a32, this.a32},
+                        0
+                ).mul(
+                        SPECIES.fromArray(
+                                new float[]{ta20, ta22, ta20, ta22, ta20, ta22, ta20, ta22},
+                                0
+                        )
+                )
+        );
 
-        this.a00 = a00;
-        this.a02 = a02;
-        this.a10 = a10;
-        this.a12 = a12;
-        this.a20 = a20;
-        this.a22 = a22;
-        this.a30 = a30;
-        this.a32 = a32;
+        this.a00 = v.lane(0);
+        this.a02 = v.lane(1);
+        this.a10 = v.lane(2);
+        this.a12 = v.lane(3);
+        this.a20 = v.lane(4);
+        this.a22 = v.lane(5);
+        this.a30 = v.lane(6);
+        this.a32 = v.lane(7);
     }
 
     private void rotateZ(Quaternion quaternion) {
@@ -176,23 +264,35 @@ public class MixinMatrix4f implements Matrix4fExtended {
         float ta10 = 2.0F * zw;
         float ta01 = 2.0F * -zw;
 
-        float a00 = this.a00 * ta00 + this.a01 * ta10;
-        float a01 = this.a00 * ta01 + this.a01 * ta11;
-        float a10 = this.a10 * ta00 + this.a11 * ta10;
-        float a11 = this.a10 * ta01 + this.a11 * ta11;
-        float a20 = this.a20 * ta00 + this.a21 * ta10;
-        float a21 = this.a20 * ta01 + this.a21 * ta11;
-        float a30 = this.a30 * ta00 + this.a31 * ta10;
-        float a31 = this.a30 * ta01 + this.a31 * ta11;
+        VectorSpecies<Float> SPECIES = FloatVector.SPECIES_256;
+        FloatVector v = FloatVector.fromArray(
+                SPECIES,
+                new float[]{this.a00, this.a00, this.a10, this.a10, this.a20, this.a20, this.a30, this.a30},
+                0
+        ).fma(
+                SPECIES.fromArray(
+                        new float[]{ta00, ta01, ta00, ta01, ta00, ta01, ta00, ta01},
+                        0
+                ),
+                SPECIES.fromArray(
+                        new float[]{this.a01, this.a01, this.a11, this.a11, this.a21, this.a21, this.a31, this.a31},
+                        0
+                ).mul(
+                        SPECIES.fromArray(
+                                new float[]{ta10, ta11, ta10, ta11, ta10, ta11, ta10, ta11},
+                                0
+                        )
+                )
+        );
 
-        this.a00 = a00;
-        this.a01 = a01;
-        this.a10 = a10;
-        this.a11 = a11;
-        this.a20 = a20;
-        this.a21 = a21;
-        this.a30 = a30;
-        this.a31 = a31;
+        this.a00 = v.lane(0);
+        this.a01 = v.lane(1);
+        this.a10 = v.lane(2);
+        this.a11 = v.lane(3);
+        this.a20 = v.lane(4);
+        this.a21 = v.lane(5);
+        this.a30 = v.lane(6);
+        this.a31 = v.lane(7);
     }
 
     private void rotateXYZ(Quaternion quaternion) {
@@ -220,30 +320,80 @@ public class MixinMatrix4f implements Matrix4fExtended {
         float ta21 = 2.0F * (yz + xw);
         float ta12 = 2.0F * (yz - xw);
 
-        float a00 = this.a00 * ta00 + this.a01 * ta10 + this.a02 * ta20;
-        float a01 = this.a00 * ta01 + this.a01 * ta11 + this.a02 * ta21;
-        float a02 = this.a00 * ta02 + this.a01 * ta12 + this.a02 * ta22;
-        float a10 = this.a10 * ta00 + this.a11 * ta10 + this.a12 * ta20;
-        float a11 = this.a10 * ta01 + this.a11 * ta11 + this.a12 * ta21;
-        float a12 = this.a10 * ta02 + this.a11 * ta12 + this.a12 * ta22;
-        float a20 = this.a20 * ta00 + this.a21 * ta10 + this.a22 * ta20;
-        float a21 = this.a20 * ta01 + this.a21 * ta11 + this.a22 * ta21;
-        float a22 = this.a20 * ta02 + this.a21 * ta12 + this.a22 * ta22;
-        float a30 = this.a30 * ta00 + this.a31 * ta10 + this.a32 * ta20;
-        float a31 = this.a30 * ta01 + this.a31 * ta11 + this.a32 * ta21;
-        float a32 = this.a30 * ta02 + this.a31 * ta12 + this.a32 * ta22;
+        VectorSpecies<Float> SPECIES_256 = FloatVector.SPECIES_256;
+        VectorSpecies<Float> SPECIES_128 = FloatVector.SPECIES_128;
+        float[] a = new float[12];
+        FloatVector.fromArray(
+                SPECIES_256,
+                new float[]{this.a00, this.a00, this.a00, this.a10, this.a10, this.a10, this.a20, this.a20},
+                0
+        ).fma(
+                SPECIES_256.fromArray(
+                        new float[]{ta00, ta01, ta02, ta00, ta01, ta02, ta00, ta01},
+                        0
+                ),
+                FloatVector.fromArray(
+                        SPECIES_256,
+                        new float[]{this.a01, this.a01, this.a01, this.a11, this.a11, this.a11, this.a21, this.a21},
+                        0
+                ).fma(
+                        SPECIES_256.fromArray(
+                                new float[]{ta10, ta11, ta12, ta10, ta11, ta12, ta10, ta11},
+                                0
+                        ),
+                        SPECIES_256.fromArray(
+                                new float[]{this.a02, this.a02, this.a02, this.a12, this.a12, this.a12, this.a22, this.a22},
+                                0
+                        ).mul(
+                                SPECIES_256.fromArray(
+                                        new float[]{ta20, ta21, ta22, ta20, ta21, ta22, ta20, ta21},
+                                        0
+                                )
+                        )
+                )
+        ).intoArray(a, 0);
 
-        this.a00 = a00;
-        this.a01 = a01;
-        this.a02 = a02;
-        this.a10 = a10;
-        this.a11 = a11;
-        this.a12 = a12;
-        this.a20 = a20;
-        this.a21 = a21;
-        this.a22 = a22;
-        this.a30 = a30;
-        this.a31 = a31;
-        this.a32 = a32;
+        FloatVector.fromArray(
+                SPECIES_128,
+                new float[]{this.a20, this.a30, this.a30, this.a30},
+                0
+        ).fma(
+                SPECIES_128.fromArray(
+                        new float[]{ta02, ta00, ta01, ta02},
+                        0
+                ),
+                FloatVector.fromArray(
+                        SPECIES_128,
+                        new float[]{this.a21, this.a31, this.a31, this.a31},
+                        0
+                ).fma(
+                        SPECIES_128.fromArray(
+                                new float[]{ta12, ta10, ta11, ta12},
+                                0
+                        ),
+                        SPECIES_128.fromArray(
+                                new float[]{this.a22, this.a32, this.a32, this.a32},
+                                0
+                        ).mul(
+                                SPECIES_128.fromArray(
+                                        new float[]{ta22, ta20, ta21, ta22},
+                                        0
+                                )
+                        )
+                )
+        ).intoArray(a, 8);
+
+        this.a00 = a[0];
+        this.a01 = a[1];
+        this.a02 = a[2];
+        this.a10 = a[3];
+        this.a11 = a[4];
+        this.a12 = a[5];
+        this.a20 = a[6];
+        this.a21 = a[7];
+        this.a22 = a[8];
+        this.a30 = a[9];
+        this.a31 = a[10];
+        this.a32 = a[11];
     }
 }
