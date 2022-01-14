@@ -62,5 +62,5 @@
   "sodium.options.always_defer_chunk_updates.tooltip": "Если включено, рендеринг никогда не будет ожидать завершения обновлений чанков, даже если они важны. Это способствует сильному увеличению частоты кадров в некоторых ситуациях, но может привести к появлению существенных визуальных ошибок в мире.",
   "sodium.options.buttons.undo": "Отмена",
   "sodium.options.buttons.apply": "Применить",
-  "sodium.options.buttons.donate": "Подарите нам кофе!"
+  "sodium.options.buttons.donate": "Угостите нас кофе!"
 }
