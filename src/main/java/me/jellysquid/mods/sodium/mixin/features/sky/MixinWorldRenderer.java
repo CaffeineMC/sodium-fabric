@@ -40,21 +40,20 @@ public class MixinWorldRenderer {
      * outside of water, so the fog should also be covering the sun and sky.</p>
      * 
      * <p>When updating Sodium to new releases of the game, please check for new
-     * ways the fog can be reduced in {@link BackgroundRenderer#applyFog()}.</p>
+     * ways the fog can be reduced in {@link BackgroundRenderer#applyFog(Camera, BackgroundRenderer.FogType, float, boolean)} ()}.</p>
      */
-    @Inject(method = "renderSky(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/util/math/Matrix4f;FLjava/lang/Runnable;)V", at = @At("HEAD"), cancellable = true)
-    private void preRenderSky(MatrixStack matrices, Matrix4f matrix4f, float tickDelta, Runnable runnable, CallbackInfo callbackInfo) {
-        Camera camera = this.client.gameRenderer.getCamera();
+    @Inject(method = "renderSky(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/util/math/Matrix4f;FLnet/minecraft/client/render/Camera;ZLjava/lang/Runnable;)V", at = @At("HEAD"), cancellable = true)
+    private void preRenderSky(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, Camera camera, boolean bl, Runnable runnable, CallbackInfo ci) {
         Vec3d cameraPosition = camera.getPos();
         Entity cameraEntity = camera.getFocusedEntity();
 
         boolean isSubmersed = camera.getSubmersionType() != CameraSubmersionType.NONE;
         boolean hasBlindness = cameraEntity instanceof LivingEntity entity && entity.hasStatusEffect(StatusEffects.BLINDNESS);
-        boolean useThickFog = this.client.world.getDimensionEffects().useThickFog(MathHelper.floor(cameraPosition.getX()),
+        boolean useThickFog = client.world.getDimensionEffects().useThickFog(MathHelper.floor(cameraPosition.getX()),
                 MathHelper.floor(cameraPosition.getY())) || this.client.inGameHud.getBossBarHud().shouldThickenFog();
 
         if (isSubmersed || hasBlindness || useThickFog) {
-            callbackInfo.cancel();
+            ci.cancel();
         }
     }
 }
