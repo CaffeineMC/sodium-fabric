@@ -32,20 +32,6 @@ The latest releases of Sodium are published to our [Modrinth](https://modrinth.c
 
 Usually, releases will be made available on GitHub slightly sooner than other locations.
 
-#### Bleeding-edge builds (unstable)
-
-[![GitHub build status](https://img.shields.io/github/workflow/status/CaffeineMC/sodium-fabric/gradle-ci/1.17.x/dev)](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml)
-
-If you are a player who is looking to get your hands on the latest **bleeding-edge changes for testing**, consider
-taking a look at the automated builds produced through our [GitHub Actions workflow](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml?query=event%3Apush).
-This workflow automatically runs every time a change is pushed to the repository, and as such, the builds it produces
-will generally reflect the latest snapshot of development.
-
-Bleeding edge builds will often include unfinished code that hasn't been extensively tested. That code may introduce
-incomplete features, bugs, crashes, and all other kinds of weird issues. You **should not use these bleeding edge builds**
-unless you know what you are doing and are comfortable with software debugging. If you report issues using these builds,
-we will expect that this is the case. Caveat emptor.
-
 ### CurseForge
 
 [![CurseForge downloads](http://cf.way2muchnoise.eu/full_394468_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/sodium)
