@@ -13,7 +13,9 @@ import net.minecraft.client.render.chunk.ChunkBuilder;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -31,6 +33,13 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
     @Shadow
     @Final
     private Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions;
+
+    @Shadow
+    @Nullable
+    private ClientWorld world;
+
+    @Shadow
+    public abstract double getViewDistance();
 
     private SodiumWorldRenderer renderer;
 
@@ -158,8 +167,11 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
      * @author JellySquid
      */
     @Overwrite
-    public boolean method_40050(BlockPos blockPos) {
-        return this.renderer.doesChunkHaveFlag(blockPos.getX(), blockPos.getZ(), ChunkStatus.FLAG_ALL);
+    public boolean method_40050(BlockPos pos) {
+        int x = (int) MathHelper.floorMod(MathHelper.floorDiv(pos.getX(), 16), getViewDistance());
+        int z = (int) MathHelper.floorMod(MathHelper.floorDiv(pos.getZ(), 16), getViewDistance());
+
+        return this.renderer.doesChunkHaveFlag(x, z, ChunkStatus.FLAG_ALL);
     }
 
     @Inject(method = "reload()V", at = @At("RETURN"))
