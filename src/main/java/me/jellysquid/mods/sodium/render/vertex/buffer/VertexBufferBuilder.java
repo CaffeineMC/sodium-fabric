@@ -16,8 +16,7 @@ public class VertexBufferBuilder implements VertexBufferView {
 
     public VertexBufferBuilder(BufferVertexFormat vertexFormat, int initialCapacity) {
         this.vertexFormat = vertexFormat;
-
-        this.buffer = null;
+        this.buffer = MemoryUtil.memAlloc(initialCapacity);
         this.capacity = initialCapacity;
         this.writerOffset = 0;
         this.initialCapacity = initialCapacity;
