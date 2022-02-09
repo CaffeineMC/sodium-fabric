@@ -157,7 +157,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
      * @author JellySquid
      */
     @Overwrite
-    public boolean method_40050(BlockPos pos) {
+    public boolean isRenderingReady(BlockPos pos) {
         return this.renderer.doesChunkHaveFlag(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FLAG_ALL);
     }
 

@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.fast_biome_colors;
 
 import me.jellysquid.mods.sodium.client.util.color.FastCubicSampler;
 import me.jellysquid.mods.sodium.client.world.BiomeSeedProvider;
+import net.minecraft.class_6880;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
@@ -26,9 +27,7 @@ public class MixinClientWorld implements BiomeSeedProvider {
     private long biomeSeed;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void captureSeed(ClientPlayNetworkHandler netHandler, ClientWorld.Properties properties, RegistryKey<?> registryRef,
-                                    DimensionType dimensionType, int loadDistance, int simulationDistance, Supplier<?> profiler, WorldRenderer worldRenderer,
-                                    boolean debugWorld, long seed, CallbackInfo ci) {
+    private void captureSeed(ClientPlayNetworkHandler netHandler, ClientWorld.Properties properties, RegistryKey registryRef, class_6880 arg, int loadDistance, int simulationDistance, Supplier profiler, WorldRenderer worldRenderer, boolean debugWorld, long seed, CallbackInfo ci) {
         this.biomeSeed = seed;
     }
 
@@ -36,7 +35,7 @@ public class MixinClientWorld implements BiomeSeedProvider {
     private Vec3d redirectSampleColor(Vec3d pos, CubicSampler.RgbFetcher rgbFetcher) {
         World world = (World) (Object) this;
 
-        return FastCubicSampler.sampleColor(pos, (x, y, z) -> world.getBiomeForNoiseGen(x, y, z).getSkyColor(), Function.identity());
+        return FastCubicSampler.sampleColor(pos, (x, y, z) -> world.getBiomeForNoiseGen(x, y, z).value().getSkyColor(), Function.identity());
     }
 
     @Override

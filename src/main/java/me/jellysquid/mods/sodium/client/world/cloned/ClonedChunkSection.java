@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.class_6880;
 import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
@@ -41,7 +42,7 @@ public class ClonedChunkSection {
     private PackedIntegerArray blockStateData;
     private ClonedPalette<BlockState> blockStatePalette;
 
-    private PalettedContainer<Biome> biomeData;
+    private PalettedContainer<class_6880<Biome>> biomeData;
 
     ClonedChunkSection(ClonedChunkSectionCache backingCache) {
         this.backingCache = backingCache;
@@ -138,7 +139,7 @@ public class ClonedChunkSection {
         }
     }
 
-    public Biome getBiome(int x, int y, int z) {
+    public class_6880<Biome> getBiome(int x, int y, int z) {
         return this.biomeData.get(x, y, z);
     }
 
