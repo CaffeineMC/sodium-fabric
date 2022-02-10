@@ -9,7 +9,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.SodiumClientMod;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.Frustum;
-import me.jellysquid.mods.sodium.interop.vanilla.mixin.WorldRendererHolder;
+import me.jellysquid.mods.sodium.interop.vanilla.mixin.LevelRendererHolder;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.render.chunk.draw.ChunkRenderMatrices;
@@ -82,8 +82,8 @@ public class SodiumWorldRenderer {
     public static SodiumWorldRenderer instanceNullable() {
         var world = Minecraft.getInstance().levelRenderer;
 
-        if (world instanceof WorldRendererHolder) {
-            return ((WorldRendererHolder) world).getSodiumWorldRenderer();
+        if (world instanceof LevelRendererHolder) {
+            return ((LevelRendererHolder) world).getSodiumWorldRenderer();
         }
 
         return null;

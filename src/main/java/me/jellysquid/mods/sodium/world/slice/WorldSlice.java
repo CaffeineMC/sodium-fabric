@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.world.slice;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.BiomeSeedProvider;
 import me.jellysquid.mods.sodium.world.biome.ChunkColorCache;
 import me.jellysquid.mods.sodium.world.slice.cloned.ClonedChunkSection;
-import me.jellysquid.mods.sodium.interop.vanilla.mixin.PackedIntegerArrayExtended;
+import me.jellysquid.mods.sodium.interop.vanilla.mixin.SimpleBitStorageExtended;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -157,7 +157,7 @@ public class WorldSlice implements BlockAndTintGetter, RenderAttachedBlockView {
     }
 
     private void unpackBlockData(BlockState[] states, ClonedChunkSection section) {
-        ((PackedIntegerArrayExtended) section.getBlockData())
+        ((SimpleBitStorageExtended) section.getBlockData())
                 .copyUsingPalette(states, section.getBlockPalette());
     }
 

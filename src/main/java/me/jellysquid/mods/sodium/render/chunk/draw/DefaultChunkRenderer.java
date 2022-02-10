@@ -2,16 +2,14 @@ package me.jellysquid.mods.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrays;
-import me.jellysquid.mods.sodium.interop.vanilla.mixin.LightmapTextureManagerAccessor;
+import me.jellysquid.mods.sodium.interop.vanilla.mixin.LightTextureAccessor;
 import me.jellysquid.mods.sodium.opengl.array.DrawCommandList;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
-import me.jellysquid.mods.sodium.opengl.pipeline.Pipeline;
 import me.jellysquid.mods.sodium.opengl.pipeline.PipelineState;
 import me.jellysquid.mods.sodium.opengl.types.IntType;
 import me.jellysquid.mods.sodium.opengl.types.PrimitiveType;
 import me.jellysquid.mods.sodium.render.buffer.VertexRange;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.render.chunk.draw.DefaultChunkRenderer.Handles;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
@@ -20,8 +18,6 @@ import me.jellysquid.mods.sodium.render.sequence.SequenceBuilder;
 import me.jellysquid.mods.sodium.render.sequence.SequenceIndexBuffer;
 import me.jellysquid.mods.sodium.render.stream.MappedStreamingBuffer;
 import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
-import me.jellysquid.mods.sodium.render.stream.StreamingBuffer.Handle;
-import me.jellysquid.mods.sodium.render.stream.StreamingBuffer.Writer;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.minecraft.client.Minecraft;
@@ -82,8 +78,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         Minecraft client = Minecraft.getInstance();
         TextureManager textureManager = client.getTextureManager();
 
-        LightmapTextureManagerAccessor lightmapTextureManager =
-                ((LightmapTextureManagerAccessor) client.gameRenderer.lightTexture());
+        LightTextureAccessor lightmapTextureManager =
+                ((LightTextureAccessor) client.gameRenderer.lightTexture());
 
         AbstractTexture blockAtlasTex = textureManager.getTexture(TextureAtlas.LOCATION_BLOCKS);
         AbstractTexture lightTex = lightmapTextureManager.getTexture();
