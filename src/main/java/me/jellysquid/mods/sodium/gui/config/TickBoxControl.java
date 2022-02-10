@@ -37,8 +37,8 @@ public class TickBoxControl implements Control<Boolean> {
         }
 
         @Override
-        public void render(PoseStack matrixStack, int mouseX, int mouseY, float delta) {
-            super.render(matrixStack, mouseX, mouseY, delta);
+        public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+            super.render(poseStack, mouseX, mouseY, delta);
 
             final int x = this.button.getX();
             final int y = this.button.getY();

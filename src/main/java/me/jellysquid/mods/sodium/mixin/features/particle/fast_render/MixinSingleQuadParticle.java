@@ -34,8 +34,8 @@ public abstract class MixinSingleQuadParticle extends Particle {
     @Shadow
     public abstract float getQuadSize(float f);
 
-    protected MixinSingleQuadParticle(ClientLevel world, double x, double y, double z) {
-        super(world, x, y, z);
+    protected MixinSingleQuadParticle(ClientLevel level, double x, double y, double z) {
+        super(level, x, y, z);
     }
 
     /**

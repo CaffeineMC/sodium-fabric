@@ -19,7 +19,7 @@ public class MixinLevelRenderer {
      * changed is reflected in vanilla-style rendering.
      */
     @Inject(method = "renderLevel", at = @At("HEAD"))
-    private void reset(PoseStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera,
+    private void reset(PoseStack pose, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera,
                        GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f matrix4f,
                        CallbackInfo ci) {
         ImmediateTerrainRenderCache.resetCaches();

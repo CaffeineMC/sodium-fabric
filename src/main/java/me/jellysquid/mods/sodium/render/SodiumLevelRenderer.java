@@ -45,10 +45,10 @@ import java.util.SortedSet;
 /**
  * Provides an extension to vanilla's {@link LevelRenderer}.
  */
-public class SodiumWorldRenderer {
-    private final Minecraft client;
+public class SodiumLevelRenderer {
+    private final Minecraft minecraft;
 
-    private ClientLevel world;
+    private ClientLevel level;
     private int renderDistance;
 
     private double lastCameraX, lastCameraY, lastCameraZ;
@@ -64,63 +64,63 @@ public class SodiumWorldRenderer {
     private ChunkTracker chunkTracker;
 
     /**
-     * @return The SodiumWorldRenderer based on the current dimension
+     * @return The SodiumLevelRenderer based on the current dimension
      */
-    public static SodiumWorldRenderer instance() {
+    public static SodiumLevelRenderer instance() {
         var instance = instanceNullable();
 
         if (instance == null) {
-            throw new IllegalStateException("No renderer attached to active world");
+            throw new IllegalStateException("No renderer attached to active level");
         }
 
         return instance;
     }
 
     /**
-     * @return The SodiumWorldRenderer based on the current dimension, or null if none is attached
+     * @return The SodiumLevelRenderer based on the current dimension, or null if none is attached
      */
-    public static SodiumWorldRenderer instanceNullable() {
-        var world = Minecraft.getInstance().levelRenderer;
+    public static SodiumLevelRenderer instanceNullable() {
+        var level = Minecraft.getInstance().levelRenderer;
 
-        if (world instanceof LevelRendererHolder) {
-            return ((LevelRendererHolder) world).getSodiumWorldRenderer();
+        if (level instanceof LevelRendererHolder) {
+            return ((LevelRendererHolder) level).getSodiumLevelRenderer();
         }
 
         return null;
     }
 
-    public SodiumWorldRenderer(Minecraft client) {
-        this.client = client;
+    public SodiumLevelRenderer(Minecraft minecraft) {
+        this.minecraft = minecraft;
     }
 
-    public void setWorld(ClientLevel world) {
-        // Check that the world is actually changing
-        if (this.world == world) {
+    public void setLevel(ClientLevel level) {
+        // Check that the level is actually changing
+        if (this.level == level) {
             return;
         }
 
-        // If we have a world is already loaded, unload the renderer
-        if (this.world != null) {
-            this.unloadWorld();
+        // If we have a level is already loaded, unload the renderer
+        if (this.level != null) {
+            this.unloadLevel();
         }
 
-        // If we're loading a new world, load the renderer
-        if (world != null) {
-            this.loadWorld(world);
+        // If we're loading a new level, load the renderer
+        if (level != null) {
+            this.loadLevel(level);
         }
     }
 
-    private void loadWorld(ClientLevel world) {
-        this.world = world;
+    private void loadLevel(ClientLevel level) {
+        this.level = level;
         this.chunkTracker = new ChunkTracker();
 
-        ImmediateTerrainRenderCache.createRenderContext(this.world);
+        ImmediateTerrainRenderCache.createRenderContext(this.level);
 
         this.initRenderer();
     }
 
-    private void unloadWorld() {
-        ImmediateTerrainRenderCache.destroyRenderContext(this.world);
+    private void unloadLevel() {
+        ImmediateTerrainRenderCache.destroyRenderContext(this.level);
 
         if (this.renderSectionManager != null) {
             this.renderSectionManager.destroy();
@@ -130,7 +130,7 @@ public class SodiumWorldRenderer {
         this.globalBlockEntities.clear();
 
         this.chunkTracker = null;
-        this.world = null;
+        this.level = null;
     }
 
     /**
@@ -165,14 +165,14 @@ public class SodiumWorldRenderer {
 
         this.useEntityCulling = SodiumClientMod.options().performance.useEntityCulling;
 
-        if (this.client.options.getEffectiveRenderDistance() != this.renderDistance) {
+        if (this.minecraft.options.getEffectiveRenderDistance() != this.renderDistance) {
             this.reload();
         }
 
-        ProfilerFiller profiler = this.client.getProfiler();
+        ProfilerFiller profiler = this.minecraft.getProfiler();
         profiler.push("camera_setup");
 
-        LocalPlayer player = this.client.player;
+        LocalPlayer player = this.minecraft.player;
 
         if (player == null) {
             throw new IllegalStateException("Client instance has no active player entity");
@@ -214,19 +214,19 @@ public class SodiumWorldRenderer {
 
         profiler.pop();
 
-        Entity.setViewScale(Mth.clamp((double) this.client.options.getEffectiveRenderDistance() / 8.0D, 1.0D, 2.5D) * (double) this.client.options.entityDistanceScaling);
+        Entity.setViewScale(Mth.clamp((double) this.minecraft.options.getEffectiveRenderDistance() / 8.0D, 1.0D, 2.5D) * (double) this.minecraft.options.entityDistanceScaling);
     }
 
     /**
      * Performs a render pass for the given {@link RenderType} and draws all visible chunks for it.
      */
-    public void drawChunkLayer(RenderType renderLayer, PoseStack matrixStack, double x, double y, double z) {
+    public void drawChunkLayer(RenderType renderLayer, PoseStack poseStack, double x, double y, double z) {
         ChunkRenderPass renderPass = this.renderPassManager.getRenderPassForLayer(renderLayer);
-        this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), renderPass, x, y, z);
+        this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(poseStack), renderPass, x, y, z);
     }
 
     public void reload() {
-        if (this.world == null) {
+        if (this.level == null) {
             return;
         }
 
@@ -239,15 +239,15 @@ public class SodiumWorldRenderer {
             this.renderSectionManager = null;
         }
 
-        this.renderDistance = this.client.options.getEffectiveRenderDistance();
+        this.renderDistance = this.minecraft.options.getEffectiveRenderDistance();
 
         this.renderPassManager = ChunkRenderPassManager.createDefaultMappings();
 
-        this.renderSectionManager = new RenderSectionManager(RenderDevice.INSTANCE, this, this.renderPassManager, this.world, this.renderDistance);
+        this.renderSectionManager = new RenderSectionManager(RenderDevice.INSTANCE, this, this.renderPassManager, this.level, this.renderDistance);
         this.renderSectionManager.reloadChunks(this.chunkTracker);
     }
 
-    public void renderTileEntities(PoseStack matrices, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions,
+    public void renderTileEntities(PoseStack pose, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions,
                                    Camera camera, float tickDelta) {
         MultiBufferSource.BufferSource immediate = bufferBuilders.bufferSource();
 
@@ -261,8 +261,8 @@ public class SodiumWorldRenderer {
         for (BlockEntity blockEntity : this.renderSectionManager.getVisibleBlockEntities()) {
             BlockPos pos = blockEntity.getBlockPos();
 
-            matrices.pushPose();
-            matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
+            pose.pushPose();
+            pose.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
 
             MultiBufferSource consumer = immediate;
             SortedSet<BlockDestructionProgress> breakingInfos = blockBreakingProgressions.get(pos.asLong());
@@ -271,27 +271,27 @@ public class SodiumWorldRenderer {
                 int stage = breakingInfos.last().getProgress();
 
                 if (stage >= 0) {
-                    PoseStack.Pose entry = matrices.last();
+                    PoseStack.Pose entry = pose.last();
                     VertexConsumer transformer = new SheetedDecalTextureGenerator(bufferBuilders.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(stage)), entry.pose(), entry.normal());
                     consumer = (layer) -> layer.affectsCrumbling() ? VertexMultiConsumer.create(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
                 }
             }
 
 
-            blockEntityRenderer.render(blockEntity, tickDelta, matrices, consumer);
+            blockEntityRenderer.render(blockEntity, tickDelta, pose, consumer);
 
-            matrices.popPose();
+            pose.popPose();
         }
 
         for (BlockEntity blockEntity : this.globalBlockEntities) {
             BlockPos pos = blockEntity.getBlockPos();
 
-            matrices.pushPose();
-            matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
+            pose.pushPose();
+            pose.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
 
-            blockEntityRenderer.render(blockEntity, tickDelta, matrices, immediate);
+            blockEntityRenderer.render(blockEntity, tickDelta, pose, immediate);
 
-            matrices.popPose();
+            pose.popPose();
         }
     }
 
@@ -328,14 +328,14 @@ public class SodiumWorldRenderer {
 
         AABB box = entity.getBoundingBoxForCulling();
 
-        // Entities outside the valid world height will never map to a rendered chunk
+        // Entities outside the valid level height will never map to a rendered chunk
         // Always render these entities or they'll be culled incorrectly!
         if (box.maxY < 0.5D || box.minY > 255.5D) {
             return true;
         }
 
         // Ensure entities with outlines or nametags are always visible
-        if (this.client.shouldEntityAppearGlowing(entity) || entity.shouldShowName()) {
+        if (this.minecraft.shouldEntityAppearGlowing(entity) || entity.shouldShowName()) {
             return true;
         }
 

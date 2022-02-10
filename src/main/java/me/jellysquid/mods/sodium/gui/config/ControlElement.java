@@ -23,7 +23,7 @@ public class ControlElement<T> extends AbstractWidget {
     }
 
     @Override
-    public void render(PoseStack matrixStack, int mouseX, int mouseY, float delta) {
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
         String name = this.option.getName().getString();
         String label;
 
@@ -44,7 +44,7 @@ public class ControlElement<T> extends AbstractWidget {
         this.hovered = this.dim.containsCursor(mouseX, mouseY);
 
         this.drawRect(this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), this.hovered ? 0xE0000000 : 0x90000000);
-        this.drawString(matrixStack, label, this.dim.x() + 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
+        this.drawString(poseStack, label, this.dim.x() + 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
     }
 
     public Option<T> getOption() {

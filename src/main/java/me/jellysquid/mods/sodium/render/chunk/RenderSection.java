@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk;
 
-import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.render.SodiumLevelRenderer;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkGraphState;
@@ -22,7 +22,7 @@ import java.util.concurrent.CompletableFuture;
  * data about the render in the chunk visibility graph.
  */
 public class RenderSection {
-    private final SodiumWorldRenderer worldRenderer;
+    private final SodiumLevelRenderer levelRenderer;
     private final int chunkX, chunkY, chunkZ;
 
     private final RenderRegion region;
@@ -42,8 +42,8 @@ public class RenderSection {
     private int lastAcceptedBuildTime = -1;
     private int visibilityFlags;
 
-    public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
-        this.worldRenderer = worldRenderer;
+    public RenderSection(SodiumLevelRenderer levelRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
+        this.levelRenderer = levelRenderer;
         this.region = region;
 
         this.chunkX = chunkX;
@@ -100,7 +100,7 @@ public class RenderSection {
             throw new NullPointerException("Mesh information must not be null");
         }
 
-        this.worldRenderer.onChunkRenderUpdated(this.chunkX, this.chunkY, this.chunkZ, this.data, info);
+        this.levelRenderer.onChunkRenderUpdated(this.chunkX, this.chunkY, this.chunkZ, this.data, info);
         this.data = info;
 
         this.tickable = !info.getAnimatedSprites().isEmpty();

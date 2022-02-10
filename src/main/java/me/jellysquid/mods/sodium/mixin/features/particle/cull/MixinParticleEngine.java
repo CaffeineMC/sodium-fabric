@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.particle.cull;
 
 import me.jellysquid.mods.sodium.SodiumClientMod;
-import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.render.SodiumLevelRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleEngine;
@@ -31,21 +31,21 @@ public class MixinParticleEngine {
     private boolean useCulling;
 
     @Inject(method = "render", at = @At("HEAD"))
-    private void preRenderParticles(PoseStack matrixStack, MultiBufferSource.BufferSource immediate, LightTexture lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
+    private void preRenderParticles(PoseStack poseStack, MultiBufferSource.BufferSource immediate, LightTexture lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
         // Setup the frustum state before rendering particles
         this.useCulling = SodiumClientMod.options().performance.useParticleCulling;
     }
 
     @SuppressWarnings({ "SuspiciousMethodCalls", "unchecked" })
     @Redirect(method = "render", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
-    private <V> V filterParticleList(Map<ParticleRenderType, Queue<Particle>> map, Object key, PoseStack matrixStack, MultiBufferSource.BufferSource immediate, LightTexture lightmapTextureManager, Camera camera, float f) {
+    private <V> V filterParticleList(Map<ParticleRenderType, Queue<Particle>> map, Object key, PoseStack poseStack, MultiBufferSource.BufferSource immediate, LightTexture lightmapTextureManager, Camera camera, float f) {
         Queue<Particle> queue = this.particles.get(key);
 
         if (queue == null || queue.isEmpty()) {
             return null;
         }
 
-        SodiumWorldRenderer renderer = SodiumWorldRenderer.instanceNullable();
+        SodiumLevelRenderer renderer = SodiumLevelRenderer.instanceNullable();
 
         // If culling isn't enabled or available, simply return the queue as-is
         if (renderer == null || !this.useCulling) {
@@ -71,7 +71,7 @@ public class MixinParticleEngine {
     }
 
     @Inject(method = "render", at = @At("RETURN"))
-    private void postRenderParticles(PoseStack matrixStack, MultiBufferSource.BufferSource immediate, LightTexture lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
+    private void postRenderParticles(PoseStack poseStack, MultiBufferSource.BufferSource immediate, LightTexture lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
         // Ensure particles don't linger in the temporary collection
         this.cachedQueue.clear();
     }

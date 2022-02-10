@@ -85,14 +85,14 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
         }
 
         @Override
-        public void render(PoseStack matrixStack, int mouseX, int mouseY, float delta) {
-            super.render(matrixStack, mouseX, mouseY, delta);
+        public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+            super.render(poseStack, mouseX, mouseY, delta);
 
             Enum<T> value = this.option.getValue();
             Component name = this.names[value.ordinal()];
 
             int strWidth = this.getStringWidth(name);
-            this.drawString(matrixStack, name, this.dim.getLimitX() - strWidth - 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
+            this.drawString(poseStack, name, this.dim.getLimitX() - strWidth - 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
         }
 
         @Override

@@ -67,17 +67,17 @@ public class SliderControl implements Control<Integer> {
         }
 
         @Override
-        public void render(PoseStack matrixStack, int mouseX, int mouseY, float delta) {
-            super.render(matrixStack, mouseX, mouseY, delta);
+        public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+            super.render(poseStack, mouseX, mouseY, delta);
 
             if (this.option.isAvailable() && this.hovered) {
-                this.renderSlider(matrixStack);
+                this.renderSlider(poseStack);
             } else {
-                this.renderStandaloneValue(matrixStack);
+                this.renderStandaloneValue(poseStack);
             }
         }
 
-        private void renderStandaloneValue(PoseStack matrixStack) {
+        private void renderStandaloneValue(PoseStack poseStack) {
             int sliderX = this.sliderBounds.getX();
             int sliderY = this.sliderBounds.getY();
             int sliderWidth = this.sliderBounds.getWidth();
@@ -86,10 +86,10 @@ public class SliderControl implements Control<Integer> {
             String label = this.formatter.format(this.option.getValue());
             int labelWidth = this.font.width(label);
 
-            this.drawString(matrixStack, label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
+            this.drawString(poseStack, label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
         }
 
-        private void renderSlider(PoseStack matrixStack) {
+        private void renderSlider(PoseStack poseStack) {
             int sliderX = this.sliderBounds.getX();
             int sliderY = this.sliderBounds.getY();
             int sliderWidth = this.sliderBounds.getWidth();
@@ -109,7 +109,7 @@ public class SliderControl implements Control<Integer> {
 
             int labelWidth = this.font.width(label);
 
-            this.drawString(matrixStack, label, sliderX - labelWidth - 6, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
+            this.drawString(poseStack, label, sliderX - labelWidth - 6, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
         }
 
         public int getIntValue() {

@@ -23,11 +23,11 @@ public class MixinLevelRenderer {
      * @reason Use intrinsics where possible to speed up vertex writing
      */
     @Overwrite
-    public static void renderLineBox(PoseStack matrices, VertexConsumer vertexConsumer, double x1, double y1, double z1,
+    public static void renderLineBox(PoseStack pose, VertexConsumer vertexConsumer, double x1, double y1, double z1,
                                double x2, double y2, double z2, float red, float green, float blue, float alpha,
                                float xAxisRed, float yAxisGreen, float zAxisBlue) {
-        Matrix4f position = matrices.last().pose();
-        Matrix3f normal = matrices.last().normal();
+        Matrix4f position = pose.last().pose();
+        Matrix3f normal = pose.last().normal();
 
         float x1f = (float) x1;
         float y1f = (float) y1;

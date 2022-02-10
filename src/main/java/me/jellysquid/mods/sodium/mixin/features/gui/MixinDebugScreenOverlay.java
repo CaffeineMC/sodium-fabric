@@ -46,28 +46,28 @@ public abstract class MixinDebugScreenOverlay {
     }
 
     @Inject(method = "drawGameInformation", at = @At("RETURN"))
-    public void renderLeftText(PoseStack matrixStack, CallbackInfo ci) {
-        this.renderCapturedText(matrixStack, false);
+    public void renderLeftText(PoseStack poseStack, CallbackInfo ci) {
+        this.renderCapturedText(poseStack, false);
     }
 
     @Inject(method = "drawSystemInformation", at = @At("RETURN"))
-    public void renderRightText(PoseStack matrixStack, CallbackInfo ci) {
-        this.renderCapturedText(matrixStack, true);
+    public void renderRightText(PoseStack poseStack, CallbackInfo ci) {
+        this.renderCapturedText(poseStack, true);
     }
 
-    private void renderCapturedText(PoseStack matrixStack, boolean right) {
+    private void renderCapturedText(PoseStack poseStack, boolean right) {
         Validate.notNull(this.capturedList, "Failed to capture string list");
 
-        this.renderBackdrop(matrixStack, this.capturedList, right);
-        this.renderStrings(matrixStack, this.capturedList, right);
+        this.renderBackdrop(poseStack, this.capturedList, right);
+        this.renderStrings(poseStack, this.capturedList, right);
 
         this.capturedList = null;
     }
 
-    private void renderStrings(PoseStack matrixStack, List<String> list, boolean right) {
+    private void renderStrings(PoseStack poseStack, List<String> list, boolean right) {
         MultiBufferSource.BufferSource immediate = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
 
-        Matrix4f positionMatrix = matrixStack.last()
+        Matrix4f positionMatrix = poseStack.last()
                 .pose();
 
         for (int i = 0; i < list.size(); ++i) {
@@ -88,7 +88,7 @@ public abstract class MixinDebugScreenOverlay {
         immediate.endBatch();
     }
 
-    private void renderBackdrop(PoseStack matrixStack, List<String> list, boolean right) {
+    private void renderBackdrop(PoseStack poseStack, List<String> list, boolean right) {
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
@@ -105,7 +105,7 @@ public abstract class MixinDebugScreenOverlay {
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        Matrix4f matrix = matrixStack.last()
+        Matrix4f matrix = poseStack.last()
                 .pose();
 
         for (int i = 0; i < list.size(); ++i) {

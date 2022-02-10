@@ -28,12 +28,12 @@ public abstract class AbstractWidget implements Widget, GuiEventListener, Narrat
         this.font = Minecraft.getInstance().font;
     }
 
-    protected void drawString(PoseStack matrixStack, String str, int x, int y, int color) {
-        this.font.draw(matrixStack, str, x, y, color);
+    protected void drawString(PoseStack poseStack, String str, int x, int y, int color) {
+        this.font.draw(poseStack, str, x, y, color);
     }
 
-    protected void drawString(PoseStack matrixStack, Component text, int x, int y, int color) {
-        this.font.draw(matrixStack, text, x, y, color);
+    protected void drawString(PoseStack poseStack, Component text, int x, int y, int color) {
+        this.font.draw(poseStack, text, x, y, color);
     }
 
     protected void drawRect(double x1, double y1, double x2, double y2, int color) {

@@ -55,20 +55,20 @@ public class UserConfigErrorScreen extends Screen {
     }
 
     @Override
-    public void render(PoseStack matrices, int mouseX, int mouseY, float delta) {
-        this.renderBackground(matrices);
+    public void render(PoseStack pose, int mouseX, int mouseY, float delta) {
+        this.renderBackground(pose);
 
-        super.render(matrices, mouseX, mouseY, delta);
+        super.render(pose, mouseX, mouseY, delta);
 
-        drawString(matrices, this.font, new TextComponent("Sodium Renderer"), 32, 32, 0xffffff);
-        drawString(matrices, this.font, new TextComponent("Could not load configuration file"), 32, 48, 0xff0000);
+        drawString(pose, this.font, new TextComponent("Sodium Renderer"), 32, 32, 0xffffff);
+        drawString(pose, this.font, new TextComponent("Could not load configuration file"), 32, 48, 0xff0000);
 
         for (int i = 0; i < TEXT_BODY.size(); i++) {
             if (TEXT_BODY.get(i).getContents().isEmpty()) {
                 continue;
             }
 
-            drawString(matrices, this.font, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
+            drawString(pose, this.font, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
         }
     }
 }

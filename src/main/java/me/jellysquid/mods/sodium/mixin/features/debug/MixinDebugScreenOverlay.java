@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.debug;
 
 import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.SodiumClientMod;
-import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.render.SodiumLevelRenderer;
 import me.jellysquid.mods.sodium.util.NativeBuffer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
@@ -28,7 +28,7 @@ public abstract class MixinDebugScreenOverlay {
         strings.add("Sodium Renderer");
         strings.add(ChatFormatting.UNDERLINE + getFormattedVersionText());
 
-        var renderer = SodiumWorldRenderer.instanceNullable();
+        var renderer = SodiumLevelRenderer.instanceNullable();
 
         if (renderer != null) {
             strings.addAll(renderer.getMemoryDebugStrings());

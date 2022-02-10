@@ -20,8 +20,8 @@ public abstract class MixinTextureSheetParticle extends SingleQuadParticle {
 
     private boolean shouldTickSprite;
 
-    protected MixinTextureSheetParticle(ClientLevel world, double x, double y, double z) {
-        super(world, x, y, z);
+    protected MixinTextureSheetParticle(ClientLevel level, double x, double y, double z) {
+        super(level, x, y, z);
     }
 
     @Inject(method = "setSprite", at = @At("RETURN"))

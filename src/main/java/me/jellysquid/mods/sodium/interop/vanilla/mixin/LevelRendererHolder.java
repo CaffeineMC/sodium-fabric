@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.interop.vanilla.mixin;
 
-import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.render.SodiumLevelRenderer;
 
 public interface LevelRendererHolder {
-    SodiumWorldRenderer getSodiumWorldRenderer();
+    SodiumLevelRenderer getSodiumLevelRenderer();
 }

@@ -6,7 +6,7 @@ import me.jellysquid.mods.sodium.SodiumClientMod;
 import me.jellysquid.mods.sodium.gui.screen.UserConfigErrorScreen;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
-import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.render.SodiumLevelRenderer;
 import me.jellysquid.mods.sodium.render.immediate.RenderImmediate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.main.GameConfig;
@@ -40,7 +40,7 @@ public class MixinMinecraft {
         this.fences.enqueue(RenderDevice.INSTANCE.createFence());
 
         RenderImmediate.tryFlush();
-        var instance = SodiumWorldRenderer.instanceNullable();
+        var instance = SodiumLevelRenderer.instanceNullable();
 
         if (instance != null) {
             instance.flush();

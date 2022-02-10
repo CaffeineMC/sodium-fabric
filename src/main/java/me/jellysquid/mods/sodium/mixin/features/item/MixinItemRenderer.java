@@ -38,21 +38,21 @@ public class MixinItemRenderer {
      * @author JellySquid
      */
     @Overwrite
-    private void renderModelLists(BakedModel model, ItemStack stack, int light, int overlay, PoseStack matrices, VertexConsumer vertices) {
+    private void renderModelLists(BakedModel model, ItemStack stack, int light, int overlay, PoseStack pose, VertexConsumer vertices) {
         XoRoShiRoRandom random = this.random;
 
         for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {
             List<BakedQuad> quads = model.getQuads(null, direction, random.setSeedAndReturn(42L));
 
             if (!quads.isEmpty()) {
-                this.renderQuadList(matrices, vertices, quads, stack, light, overlay);
+                this.renderQuadList(pose, vertices, quads, stack, light, overlay);
             }
         }
 
         List<BakedQuad> quads = model.getQuads(null, null, random.setSeedAndReturn(42L));
 
         if (!quads.isEmpty()) {
-            this.renderQuadList(matrices, vertices, quads, stack, light, overlay);
+            this.renderQuadList(pose, vertices, quads, stack, light, overlay);
         }
     }
 
@@ -61,8 +61,8 @@ public class MixinItemRenderer {
      * @author JellySquid
      */
     @Overwrite
-    private void renderQuadList(PoseStack matrices, VertexConsumer vertexConsumer, List<BakedQuad> quads, ItemStack stack, int light, int overlay) {
-        PoseStack.Pose entry = matrices.last();
+    private void renderQuadList(PoseStack pose, VertexConsumer vertexConsumer, List<BakedQuad> quads, ItemStack stack, int light, int overlay) {
+        PoseStack.Pose entry = pose.last();
 
         ItemColor colorProvider = null;
 

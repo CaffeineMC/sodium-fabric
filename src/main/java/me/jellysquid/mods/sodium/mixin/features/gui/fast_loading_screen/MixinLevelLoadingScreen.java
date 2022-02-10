@@ -46,7 +46,7 @@ public class MixinLevelLoadingScreen {
      * @author JellySquid
      */
     @Overwrite
-    public static void renderChunks(PoseStack matrixStack, StoringChunkProgressListener tracker, int mapX, int mapY, int mapScale, int mapPadding) {
+    public static void renderChunks(PoseStack poseStack, StoringChunkProgressListener tracker, int mapX, int mapY, int mapScale, int mapPadding) {
         if (COLORS_FAST == null) {
             COLORS_FAST = new Reference2IntOpenHashMap<>(COLORS.size());
             COLORS_FAST.put(null, NULL_STATUS_COLOR);
@@ -56,7 +56,7 @@ public class MixinLevelLoadingScreen {
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        Matrix4f matrix = matrixStack.last().pose();
+        Matrix4f matrix = poseStack.last().pose();
 
         Tesselator tessellator = Tesselator.getInstance();
 

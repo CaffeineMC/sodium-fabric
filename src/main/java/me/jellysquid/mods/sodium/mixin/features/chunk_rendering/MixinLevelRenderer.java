@@ -4,7 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.render.SodiumLevelRenderer;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.FrustumAdapter;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.LevelRendererHolder;
 import net.minecraft.client.Camera;
@@ -37,13 +37,13 @@ public abstract class MixinLevelRenderer implements LevelRendererHolder {
     @Final
     private Long2ObjectMap<SortedSet<BlockDestructionProgress>> destructionProgress;
 
-    private SodiumWorldRenderer renderer;
+    private SodiumLevelRenderer renderer;
 
     @Unique
     private int frame;
 
     @Override
-    public SodiumWorldRenderer getSodiumWorldRenderer() {
+    public SodiumLevelRenderer getSodiumLevelRenderer() {
         return renderer;
     }
 
@@ -55,12 +55,12 @@ public abstract class MixinLevelRenderer implements LevelRendererHolder {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(Minecraft client, RenderBuffers bufferBuilders, CallbackInfo ci) {
-        this.renderer = new SodiumWorldRenderer(client);
+        this.renderer = new SodiumLevelRenderer(client);
     }
 
     @Inject(method = "setLevel", at = @At("RETURN"))
-    private void onWorldChanged(ClientLevel world, CallbackInfo ci) {
-        this.renderer.setWorld(world);
+    private void onWorldChanged(ClientLevel level, CallbackInfo ci) {
+        this.renderer.setLevel(level);
     }
 
     /**
@@ -91,8 +91,8 @@ public abstract class MixinLevelRenderer implements LevelRendererHolder {
      * @author JellySquid
      */
     @Overwrite
-    private void renderChunkLayer(RenderType renderLayer, PoseStack matrices, double x, double y, double z, Matrix4f matrix) {
-        this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
+    private void renderChunkLayer(RenderType renderLayer, PoseStack pose, double x, double y, double z, Matrix4f matrix) {
+        this.renderer.drawChunkLayer(renderLayer, pose, x, y, z);
 
         // VANILLA BUG: Binding a RenderLayer for chunk rendering will result in setShaderColor being called,
         // which is accidentally depended on by tile entity rendering. Since we don't bind a render layer, we need
@@ -151,8 +151,8 @@ public abstract class MixinLevelRenderer implements LevelRendererHolder {
     }
 
     @Inject(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/LevelRenderer;globalBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
-    private void onRenderTileEntities(PoseStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
-        this.renderer.renderTileEntities(matrices, this.renderBuffers, this.destructionProgress, camera, tickDelta);
+    private void onRenderTileEntities(PoseStack pose, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
+        this.renderer.renderTileEntities(pose, this.renderBuffers, this.destructionProgress, camera, tickDelta);
     }
 
     /**

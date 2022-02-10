@@ -27,7 +27,7 @@ public class MixinClientLevel implements BiomeSeedProvider {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void captureSeed(ClientPacketListener netHandler, ClientLevel.ClientLevelData properties, ResourceKey<?> registryRef,
-                                    DimensionType dimensionType, int loadDistance, int simulationDistance, Supplier<?> profiler, LevelRenderer worldRenderer,
+                                    DimensionType dimensionType, int loadDistance, int simulationDistance, Supplier<?> profiler, LevelRenderer levelRenderer,
                                     boolean debugWorld, long seed, CallbackInfo ci) {
         this.biomeSeed = seed;
     }
