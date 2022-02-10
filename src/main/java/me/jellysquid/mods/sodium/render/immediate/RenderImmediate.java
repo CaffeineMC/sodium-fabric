@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.render.immediate;
 
+import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.ShaderTexture;
@@ -13,17 +15,18 @@ import me.jellysquid.mods.sodium.opengl.pipeline.PipelineState;
 import me.jellysquid.mods.sodium.opengl.sampler.Sampler;
 import me.jellysquid.mods.sodium.opengl.types.IntType;
 import me.jellysquid.mods.sodium.opengl.types.PrimitiveType;
+import me.jellysquid.mods.sodium.render.immediate.VanillaShaderInterface.SamplerUniform;
 import me.jellysquid.mods.sodium.render.sequence.IndexSequenceType;
 import me.jellysquid.mods.sodium.render.sequence.SequenceIndexBuffer;
 import me.jellysquid.mods.sodium.render.stream.MappedStreamingBuffer;
 import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.util.Window;
+import me.jellysquid.mods.sodium.render.stream.StreamingBuffer.Handle;
+import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL30C;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.function.IntSupplier;
 
 public class RenderImmediate {
     private static RenderImmediate INSTANCE;
@@ -50,8 +53,8 @@ public class RenderImmediate {
     }
 
     public void draw(Pipeline<VanillaShaderInterface, VanillaShaderInterface.BufferTarget> pipeline, ShaderTexture[] shaderTextures,
-                     ByteBuffer buffer, VertexFormat.DrawMode drawMode, VertexFormat vertexFormat, int vertexCount,
-                     VertexFormat.IntType elementFormat, int elementCount, boolean useDefaultElementBuffer) {
+                     ByteBuffer buffer, VertexFormat.Mode drawMode, VertexFormat vertexFormat, int vertexCount,
+                     VertexFormat.IndexType elementFormat, int elementCount, boolean useDefaultElementBuffer) {
         if (vertexCount <= 0) {
             return;
         }
@@ -86,7 +89,7 @@ public class RenderImmediate {
     }
 
     private void draw(Pipeline<VanillaShaderInterface, VanillaShaderInterface.BufferTarget> pipeline, ShaderTexture[] shaderTextures,
-                      VertexFormat.DrawMode drawMode,
+                      VertexFormat.Mode drawMode,
                       VertexFormat vertexFormat, Buffer vertexBuffer, int vertexPointer,
                       IntType elementFormat, Buffer elementBuffer, int elementPointer, int elementCount) {
         this.device.usePipeline(pipeline, (drawCommands, programInterface, pipelineState) -> {
@@ -115,7 +118,7 @@ public class RenderImmediate {
         }
     }
 
-    private void updateUniforms(VanillaShaderInterface programInterface, VertexFormat.DrawMode drawMode) {
+    private void updateUniforms(VanillaShaderInterface programInterface, VertexFormat.Mode drawMode) {
         if (programInterface.modelViewMat != null) {
             programInterface.modelViewMat.set(RenderSystem.getModelViewMatrix());
         }
@@ -153,11 +156,11 @@ public class RenderImmediate {
         }
 
         if (programInterface.screenSize != null) {
-            Window window = MinecraftClient.getInstance().getWindow();
-            programInterface.screenSize.setFloats(window.getFramebufferWidth(), window.getFramebufferHeight());
+            Window window = Minecraft.getInstance().getWindow();
+            programInterface.screenSize.setFloats(window.getWidth(), window.getHeight());
         }
 
-        if (programInterface.lineWidth != null && (drawMode == VertexFormat.DrawMode.LINES || drawMode == VertexFormat.DrawMode.LINE_STRIP)) {
+        if (programInterface.lineWidth != null && (drawMode == VertexFormat.Mode.LINES || drawMode == VertexFormat.Mode.LINE_STRIP)) {
             programInterface.lineWidth.setFloat(RenderSystem.getShaderLineWidth());
         }
 
@@ -197,12 +200,12 @@ public class RenderImmediate {
         return sampler;
     }
 
-    private static IntType getElementType(VertexFormat.IntType format) {
-        return IntType.BY_FORMAT.get(format.count);
+    private static IntType getElementType(VertexFormat.IndexType format) {
+        return IntType.BY_FORMAT.get(format.asGLType);
     }
 
-    private static PrimitiveType getPrimitiveType(VertexFormat.DrawMode drawMode) {
-        return PrimitiveType.BY_FORMAT.get(drawMode.mode);
+    private static PrimitiveType getPrimitiveType(VertexFormat.Mode drawMode) {
+        return PrimitiveType.BY_FORMAT.get(drawMode.asGLMode);
     }
 
     public static RenderImmediate getInstance() {

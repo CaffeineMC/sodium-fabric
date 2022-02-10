@@ -1,6 +1,12 @@
 package me.jellysquid.mods.sodium.mixin.features.gui.fast_loading_screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexFormats;
@@ -8,12 +14,10 @@ import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.screen.BasicScreenQuadVertexSink;
 import me.jellysquid.mods.sodium.util.packed.ColorABGR;
 import me.jellysquid.mods.sodium.util.packed.ColorARGB;
-import net.minecraft.client.gui.WorldGenerationProgressTracker;
-import net.minecraft.client.gui.screen.LevelLoadingScreen;
-import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Matrix4f;
-import net.minecraft.world.chunk.ChunkStatus;
+import net.minecraft.client.gui.screens.LevelLoadingScreen;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.server.level.progress.StoringChunkProgressListener;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import org.spongepowered.asm.mixin.*;
 
 /**
@@ -25,9 +29,9 @@ public class MixinLevelLoadingScreen {
     @Mutable
     @Shadow
     @Final
-    private static Object2IntMap<ChunkStatus> STATUS_TO_COLOR;
+    private static Object2IntMap<ChunkStatus> COLORS;
 
-    private static Reference2IntOpenHashMap<ChunkStatus> STATUS_TO_COLOR_FAST;
+    private static Reference2IntOpenHashMap<ChunkStatus> COLORS_FAST;
 
     private static final int NULL_STATUS_COLOR = ColorABGR.pack(0, 0, 0, 0xFF);
     private static final int DEFAULT_STATUS_COLOR = ColorARGB.pack(0, 0x11, 0xFF, 0xFF);
@@ -42,31 +46,31 @@ public class MixinLevelLoadingScreen {
      * @author JellySquid
      */
     @Overwrite
-    public static void drawChunkMap(MatrixStack matrixStack, WorldGenerationProgressTracker tracker, int mapX, int mapY, int mapScale, int mapPadding) {
-        if (STATUS_TO_COLOR_FAST == null) {
-            STATUS_TO_COLOR_FAST = new Reference2IntOpenHashMap<>(STATUS_TO_COLOR.size());
-            STATUS_TO_COLOR_FAST.put(null, NULL_STATUS_COLOR);
-            STATUS_TO_COLOR.object2IntEntrySet()
-                    .forEach(entry -> STATUS_TO_COLOR_FAST.put(entry.getKey(), ColorARGB.toABGR(entry.getIntValue(), 0xFF)));
+    public static void renderChunks(PoseStack matrixStack, StoringChunkProgressListener tracker, int mapX, int mapY, int mapScale, int mapPadding) {
+        if (COLORS_FAST == null) {
+            COLORS_FAST = new Reference2IntOpenHashMap<>(COLORS.size());
+            COLORS_FAST.put(null, NULL_STATUS_COLOR);
+            COLORS.object2IntEntrySet()
+                    .forEach(entry -> COLORS_FAST.put(entry.getKey(), ColorARGB.toABGR(entry.getIntValue(), 0xFF)));
         }
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        Matrix4f matrix = matrixStack.peek().getPositionMatrix();
+        Matrix4f matrix = matrixStack.last().pose();
 
-        Tessellator tessellator = Tessellator.getInstance();
+        Tesselator tessellator = Tesselator.getInstance();
 
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
         
-        BufferBuilder buffer = tessellator.getBuffer();
-        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        BufferBuilder buffer = tessellator.getBuilder();
+        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
         BasicScreenQuadVertexSink sink = VertexDrain.of(buffer).createSink(VanillaVertexFormats.BASIC_SCREEN_QUADS);
 
-        int centerSize = tracker.getCenterSize();
-        int size = tracker.getSize();
+        int centerSize = tracker.getFullDiameter();
+        int size = tracker.getDiameter();
 
         int tileSize = mapScale + mapPadding;
 
@@ -95,13 +99,13 @@ public class MixinLevelLoadingScreen {
             for (int z = 0; z < size; ++z) {
                 int tileY = mapStartY + z * tileSize;
 
-                ChunkStatus status = tracker.getChunkStatus(x, z);
+                ChunkStatus status = tracker.getStatus(x, z);
                 int color;
 
                 if (prevStatus == status) {
                     color = prevColor;
                 } else {
-                    color = STATUS_TO_COLOR_FAST.getInt(status);
+                    color = COLORS_FAST.getInt(status);
 
                     prevStatus = status;
                     prevColor = color;
@@ -112,7 +116,7 @@ public class MixinLevelLoadingScreen {
         }
 
         sink.flush();
-        tessellator.draw();
+        tessellator.end();
 
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();

@@ -2,8 +2,8 @@ package me.jellysquid.mods.sodium.mixin.core;
 
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.FrustumAdapter;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.JomlFrustum;
+import net.minecraft.client.renderer.culling.Frustum;
 import me.jellysquid.mods.sodium.interop.vanilla.math.JomlHelper;
-import net.minecraft.client.render.Frustum;
 import org.apache.commons.lang3.Validate;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -16,20 +16,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Frustum.class)
 public class MixinFrustum implements FrustumAdapter {
     @Shadow
-    private double x;
+    private double camX;
 
     @Shadow
-    private double y;
+    private double camY;
 
     @Shadow
-    private double z;
+    private double camZ;
 
     private Matrix4f projectionMatrix;
     private Matrix4f modelViewMatrix;
 
-    @Inject(method = "init", at = @At("RETURN"))
-    public void init(net.minecraft.util.math.Matrix4f modelViewMatrix,
-                     net.minecraft.util.math.Matrix4f projectionMatrix,
+    @Inject(method = "calculateFrustum", at = @At("RETURN"))
+    public void init(com.mojang.math.Matrix4f modelViewMatrix,
+                     com.mojang.math.Matrix4f projectionMatrix,
                      CallbackInfo ci) {
         this.projectionMatrix = JomlHelper.copy(projectionMatrix);
         this.modelViewMatrix = JomlHelper.copy(modelViewMatrix);
@@ -41,6 +41,6 @@ public class MixinFrustum implements FrustumAdapter {
         matrix.set(Validate.notNull(this.projectionMatrix));
         matrix.mul(Validate.notNull(this.modelViewMatrix));
 
-        return new JomlFrustum(matrix, new Vector3f((float) this.x, (float) this.y, (float) this.z));
+        return new JomlFrustum(matrix, new Vector3f((float) this.camX, (float) this.camY, (float) this.camZ));
     }
 }

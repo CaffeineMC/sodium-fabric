@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.render.terrain.format.standard;
 
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import me.jellysquid.mods.sodium.opengl.attribute.VertexAttributeFormat;
 import me.jellysquid.mods.sodium.opengl.attribute.VertexFormat;
 import me.jellysquid.mods.sodium.render.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.render.vertex.type.BlittableVertexType;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainMeshAttribute;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexSink;
-import net.minecraft.client.render.VertexConsumer;
 
 /**
  * Simple vertex format which uses single-precision floating point numbers to represent position and texture

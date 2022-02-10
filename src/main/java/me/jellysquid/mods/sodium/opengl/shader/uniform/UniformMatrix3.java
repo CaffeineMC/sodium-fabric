@@ -34,8 +34,8 @@ public class UniformMatrix3 extends Uniform {
     }
 
     @Deprecated // vanilla type
-    public void set(net.minecraft.util.math.Matrix3f matrix3) {
-        matrix3.writeColumnMajor(this.temp);
+    public void set(com.mojang.math.Matrix3f matrix3) {
+        matrix3.store(this.temp);
         this.compareAndSwap();
     }
 

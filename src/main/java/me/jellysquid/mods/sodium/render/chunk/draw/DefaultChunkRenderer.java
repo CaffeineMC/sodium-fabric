@@ -5,11 +5,13 @@ import it.unimi.dsi.fastutil.objects.ObjectArrays;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.LightmapTextureManagerAccessor;
 import me.jellysquid.mods.sodium.opengl.array.DrawCommandList;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
+import me.jellysquid.mods.sodium.opengl.pipeline.Pipeline;
 import me.jellysquid.mods.sodium.opengl.pipeline.PipelineState;
 import me.jellysquid.mods.sodium.opengl.types.IntType;
 import me.jellysquid.mods.sodium.opengl.types.PrimitiveType;
 import me.jellysquid.mods.sodium.render.buffer.VertexRange;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.render.chunk.draw.DefaultChunkRenderer.Handles;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
@@ -18,12 +20,14 @@ import me.jellysquid.mods.sodium.render.sequence.SequenceBuilder;
 import me.jellysquid.mods.sodium.render.sequence.SequenceIndexBuffer;
 import me.jellysquid.mods.sodium.render.stream.MappedStreamingBuffer;
 import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
+import me.jellysquid.mods.sodium.render.stream.StreamingBuffer.Handle;
+import me.jellysquid.mods.sodium.render.stream.StreamingBuffer.Writer;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.AbstractTexture;
-import net.minecraft.client.texture.SpriteAtlasTexture;
-import net.minecraft.client.texture.TextureManager;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureManager;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
@@ -75,17 +79,17 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     }
 
     private void bindTextures(ChunkRenderPass renderPass, PipelineState pipelineState) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         TextureManager textureManager = client.getTextureManager();
 
         LightmapTextureManagerAccessor lightmapTextureManager =
-                ((LightmapTextureManagerAccessor) client.gameRenderer.getLightmapTextureManager());
+                ((LightmapTextureManagerAccessor) client.gameRenderer.lightTexture());
 
-        AbstractTexture blockAtlasTex = textureManager.getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
+        AbstractTexture blockAtlasTex = textureManager.getTexture(TextureAtlas.LOCATION_BLOCKS);
         AbstractTexture lightTex = lightmapTextureManager.getTexture();
 
-        pipelineState.bindTexture(0, blockAtlasTex.getGlId(), renderPass.mipped() ? this.blockTextureMippedSampler : this.blockTextureSampler);
-        pipelineState.bindTexture(1, lightTex.getGlId(), this.lightTextureSampler);
+        pipelineState.bindTexture(0, blockAtlasTex.getId(), renderPass.mipped() ? this.blockTextureMippedSampler : this.blockTextureSampler);
+        pipelineState.bindTexture(1, lightTex.getId(), this.lightTextureSampler);
     }
 
     private void updateUniforms(ChunkRenderMatrices matrices, ChunkShaderInterface programInterface) {
@@ -172,7 +176,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         return new Handles(commandBufferHandle, instanceDataHandle, instanceCount, drawCount);
     }
 
-    private record Handles(StreamingBuffer.Handle commandBuffer, StreamingBuffer.Handle instanceData, int instanceCount, int drawCount) {
+    record Handles(StreamingBuffer.Handle commandBuffer, StreamingBuffer.Handle instanceData, int instanceCount, int drawCount) {
         public void free() {
             this.commandBuffer.free();
             this.instanceData.free();

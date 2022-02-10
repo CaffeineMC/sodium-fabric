@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.render.terrain.quad.properties;
 
-import net.minecraft.util.math.Direction;
+import net.minecraft.core.Direction;
 
 public enum ChunkMeshFace {
     UP,

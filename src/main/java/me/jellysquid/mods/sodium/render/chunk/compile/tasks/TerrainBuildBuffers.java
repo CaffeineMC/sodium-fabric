@@ -14,8 +14,7 @@ import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexSink;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPassManager;
 import me.jellysquid.mods.sodium.util.NativeBuffer;
-import net.minecraft.client.render.RenderLayer;
-
+import net.minecraft.client.renderer.RenderType;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -68,10 +67,10 @@ public class TerrainBuildBuffers {
     }
 
     /**
-     * Return the {@link ChunkMeshBuilder} for the given {@link RenderLayer} as mapped by the
+     * Return the {@link ChunkMeshBuilder} for the given {@link RenderType} as mapped by the
      * {@link ChunkRenderPassManager} for this render context.
      */
-    public ChunkMeshBuilder get(RenderLayer layer) {
+    public ChunkMeshBuilder get(RenderType layer) {
         return this.delegates.get(this.renderPassManager.getRenderPassForLayer(layer));
     }
 

@@ -2,14 +2,13 @@ package me.jellysquid.mods.sodium.mixin.features.particle.cull;
 
 import me.jellysquid.mods.sodium.SodiumClientMod;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
+import net.minecraft.client.Camera;
 import net.minecraft.client.particle.Particle;
-import net.minecraft.client.particle.ParticleManager;
-import net.minecraft.client.particle.ParticleTextureSheet;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Box;
+import net.minecraft.client.particle.ParticleEngine;
+import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -17,29 +16,29 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
+import com.mojang.blaze3d.vertex.PoseStack;
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Queue;
 
-@Mixin(ParticleManager.class)
+@Mixin(ParticleEngine.class)
 public class MixinParticleManager {
     @Shadow
     @Final
-    private Map<ParticleTextureSheet, Queue<Particle>> particles;
+    private Map<ParticleRenderType, Queue<Particle>> particles;
 
     private final Queue<Particle> cachedQueue = new ArrayDeque<>();
     private boolean useCulling;
 
-    @Inject(method = "renderParticles", at = @At("HEAD"))
-    private void preRenderParticles(MatrixStack matrixStack, VertexConsumerProvider.Immediate immediate, LightmapTextureManager lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
+    @Inject(method = "render", at = @At("HEAD"))
+    private void preRenderParticles(PoseStack matrixStack, MultiBufferSource.BufferSource immediate, LightTexture lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
         // Setup the frustum state before rendering particles
         this.useCulling = SodiumClientMod.options().performance.useParticleCulling;
     }
 
     @SuppressWarnings({ "SuspiciousMethodCalls", "unchecked" })
-    @Redirect(method = "renderParticles", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
-    private <V> V filterParticleList(Map<ParticleTextureSheet, Queue<Particle>> map, Object key, MatrixStack matrixStack, VertexConsumerProvider.Immediate immediate, LightmapTextureManager lightmapTextureManager, Camera camera, float f) {
+    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
+    private <V> V filterParticleList(Map<ParticleRenderType, Queue<Particle>> map, Object key, PoseStack matrixStack, MultiBufferSource.BufferSource immediate, LightTexture lightmapTextureManager, Camera camera, float f) {
         Queue<Particle> queue = this.particles.get(key);
 
         if (queue == null || queue.isEmpty()) {
@@ -58,7 +57,7 @@ public class MixinParticleManager {
         filtered.clear();
 
         for (Particle particle : queue) {
-            Box box = particle.getBoundingBox();
+            AABB box = particle.getBoundingBox();
 
             // Hack: Grow the particle's bounding box in order to work around mis-behaved particles
             if (!renderer.isBoxVisible(box.minX - 1.0D, box.minY - 1.0D, box.minZ - 1.0D, box.maxX + 1.0D, box.maxY + 1.0D, box.maxZ + 1.0D)) {
@@ -71,8 +70,8 @@ public class MixinParticleManager {
         return (V) filtered;
     }
 
-    @Inject(method = "renderParticles", at = @At("RETURN"))
-    private void postRenderParticles(MatrixStack matrixStack, VertexConsumerProvider.Immediate immediate, LightmapTextureManager lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
+    @Inject(method = "render", at = @At("RETURN"))
+    private void postRenderParticles(PoseStack matrixStack, MultiBufferSource.BufferSource immediate, LightTexture lightmapTextureManager, Camera camera, float f, CallbackInfo ci) {
         // Ensure particles don't linger in the temporary collection
         this.cachedQueue.clear();
     }

@@ -4,9 +4,9 @@ import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.render.terrain.color.ColorSampler;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.BlockColorProviderRegistry;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
 import net.minecraft.client.color.block.BlockColors;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -25,8 +25,8 @@ public class MixinBlockColors implements BlockColorProviderRegistry {
         this.blocksToColor.defaultReturnValue((ColorSampler<BlockState>) DEFAULT_PROVIDER);
     }
 
-    @Inject(method = "registerColorProvider", at = @At("HEAD"))
-    private void preRegisterColor(net.minecraft.client.color.block.BlockColorProvider provider, Block[] blocks, CallbackInfo ci) {
+    @Inject(method = "register", at = @At("HEAD"))
+    private void preRegisterColor(net.minecraft.client.color.block.BlockColor provider, Block[] blocks, CallbackInfo ci) {
         for (Block block : blocks) {
             this.blocksToColor.put(block, provider::getColor);
         }

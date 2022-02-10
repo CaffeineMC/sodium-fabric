@@ -8,8 +8,9 @@ import me.jellysquid.mods.sodium.opengl.buffer.MappedBuffer;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
 import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
+import me.jellysquid.mods.sodium.render.stream.MappedStreamingBuffer.Region;
 import me.jellysquid.mods.sodium.util.MathUtil;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.BufferOverflowException;
@@ -47,7 +48,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
             throw new OutOfMemoryError("data.remaining() > capacity");
         }
 
-        int offset = MathHelper.roundUpToMultiple(this.position, alignment);
+        int offset = Mth.roundToward(this.position, alignment);
 
         if (offset + length > this.capacity) {
             this.flush0();
@@ -78,7 +79,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
             throw new OutOfMemoryError("data.remaining() > capacity");
         }
 
-        int offset = MathHelper.roundUpToMultiple(this.position, alignment);
+        int offset = Mth.roundToward(this.position, alignment);
 
         if (offset + length > this.capacity) {
             this.flush0();
@@ -152,7 +153,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
         return String.format("%s/%s MiB", MathUtil.toMib(this.capacity - used), MathUtil.toMib(this.capacity));
     }
 
-    private record Region(int offset, int length, Fence fence) {
+    record Region(int offset, int length, Fence fence) {
 
     }
 

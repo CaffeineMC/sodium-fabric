@@ -5,9 +5,9 @@ import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.quad.writer.Quad
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.quad.writer.QuadVertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.quad.writer.QuadVertexWriterFallback;
 import me.jellysquid.mods.sodium.render.vertex.type.BlittableVertexType;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexType;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexFormat;
 
 public class QuadVertexType implements VanillaVertexType<QuadVertexSink>, BlittableVertexType<QuadVertexSink> {
     @Override

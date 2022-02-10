@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.render.arena;
 import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
-
+import me.jellysquid.mods.sodium.render.stream.StreamingBuffer.Handle;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;

@@ -1,14 +1,16 @@
 package me.jellysquid.mods.sodium.world.biome;
 
+
+
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.util.image.BoxBlur;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.source.BiomeAccess;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.BlockPos.MutableBlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.ColorResolver;
-
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeManager;
 import java.util.Map;
 
 public class ChunkColorCache {
@@ -24,10 +26,10 @@ public class ChunkColorCache {
 
     private final int baseX, baseY, baseZ;
 
-    private final ChunkSectionPos origin;
-    private final BiomeAccess biomeAccess;
+    private final SectionPos origin;
+    private final BiomeManager biomeAccess;
 
-    public ChunkColorCache(ChunkSectionPos origin, BiomeAccess biomeAccess, int radius) {
+    public ChunkColorCache(SectionPos origin, BiomeManager biomeAccess, int radius) {
         this.origin = origin;
         this.biomeAccess = biomeAccess;
 
@@ -39,18 +41,18 @@ public class ChunkColorCache {
 
         this.blurHorizontal = radius;
 
-        this.baseX = this.origin.getMinX() - borderXZ;
-        this.baseY = this.origin.getMinY() - borderY;
-        this.baseZ = this.origin.getMinZ() - borderXZ;
+        this.baseX = this.origin.minBlockX() - borderXZ;
+        this.baseY = this.origin.minBlockY() - borderY;
+        this.baseZ = this.origin.minBlockZ() - borderXZ;
 
         this.colors = new Reference2ReferenceOpenHashMap<>();
         this.biomes = new Biome[this.sizeVertical][];
     }
 
     public int getColor(ColorResolver resolver, int posX, int posY, int posZ) {
-        var x = MathHelper.clamp(posX - this.baseX, 0, this.sizeHorizontal);
-        var y = MathHelper.clamp(posY - this.baseY, 0, this.sizeVertical);
-        var z = MathHelper.clamp(posZ - this.baseZ, 0, this.sizeHorizontal);
+        var x = Mth.clamp(posX - this.baseX, 0, this.sizeHorizontal);
+        var y = Mth.clamp(posY - this.baseY, 0, this.sizeVertical);
+        var z = Mth.clamp(posZ - this.baseZ, 0, this.sizeHorizontal);
 
         int[][] colors = this.colors.get(resolver);
 
@@ -70,7 +72,7 @@ public class ChunkColorCache {
     private Biome[] gatherBiomes(int level) {
         var biomeData = new Biome[this.sizeHorizontal * this.sizeHorizontal];
 
-        var pos = new BlockPos.Mutable();
+        var pos = new BlockPos.MutableBlockPos();
 
         for (int x = 0; x < this.sizeHorizontal; x++) {
             for (int z = 0; z < this.sizeHorizontal; z++) {

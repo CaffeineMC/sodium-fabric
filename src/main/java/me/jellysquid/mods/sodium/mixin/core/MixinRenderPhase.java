@@ -2,10 +2,11 @@ package me.jellysquid.mods.sodium.mixin.core;
 
 import com.google.common.collect.ImmutableList;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.*;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderPhase;
-import net.minecraft.client.render.Shader;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.RenderStateShard;
+import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.commons.lang3.tuple.Triple;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,9 +21,9 @@ import java.util.Optional;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-@Mixin(RenderPhase.class)
+@Mixin(RenderStateShard.class)
 public class MixinRenderPhase {
-    @Mixin(RenderPhase.TextureBase.class)
+    @Mixin(RenderStateShard.EmptyTextureStateShard.class)
     public static class MixinTextureBase implements ShaderTextureProvider {
         @Override
         public List<ShaderTexture> getTextures() {
@@ -30,24 +31,24 @@ public class MixinRenderPhase {
         }
     }
 
-    @Mixin(RenderPhase.Textures.class)
+    @Mixin(RenderStateShard.MultiTextureStateShard.class)
     public static class MixinTextures implements ShaderTextureProvider {
-        private List<Triple<Identifier, Boolean, Boolean>> textures;
+        private List<Triple<ResourceLocation, Boolean, Boolean>> textures;
 
         @Inject(method = "<init>", at = @At("RETURN"))
-        private void init(ImmutableList<Triple<Identifier, Boolean, Boolean>> textures, CallbackInfo ci) {
+        private void init(ImmutableList<Triple<ResourceLocation, Boolean, Boolean>> textures, CallbackInfo ci) {
             this.textures = textures;
         }
 
         @Override
         public List<ShaderTexture> getTextures() {
-            var textureManager = MinecraftClient.getInstance().getTextureManager();
+            var textureManager = Minecraft.getInstance().getTextureManager();
             var list = new ArrayList<ShaderTexture>();
 
             for (int target = 0; target < this.textures.size(); target++) {
                 var params = this.textures.get(target);
 
-                IntSupplier texture = () -> textureManager.getTexture(params.getLeft()).getGlId();
+                IntSupplier texture = () -> textureManager.getTexture(params.getLeft()).getId();
                 var blur = params.getMiddle();
                 var mipmap = params.getRight();
 
@@ -58,11 +59,11 @@ public class MixinRenderPhase {
         }
     }
 
-    @Mixin(RenderPhase.Texture.class)
+    @Mixin(RenderStateShard.TextureStateShard.class)
     public static class MixinTexture implements ShaderTextureProvider {
         @Shadow
         @Final
-        private Optional<Identifier> id;
+        private Optional<ResourceLocation> texture;
 
         @Shadow
         @Final
@@ -74,17 +75,17 @@ public class MixinRenderPhase {
 
         @Override
         public List<ShaderTexture> getTextures() {
-            var textureManager = MinecraftClient.getInstance().getTextureManager();
-            IntSupplier texture = () -> textureManager.getTexture(this.id.get()).getGlId();
+            var textureManager = Minecraft.getInstance().getTextureManager();
+            IntSupplier texture = () -> textureManager.getTexture(this.texture.get()).getId();
 
             return List.of(new ShaderTexture(0, texture, new ShaderTextureParameters(this.blur, this.mipmap)));
         }
     }
 
-    @Mixin(RenderPhase.Overlay.class)
+    @Mixin(RenderStateShard.OverlayStateShard.class)
     public static class MixinOverlay implements ShaderTextureProvider {
         private static int getOverlayTextureId() {
-            return MinecraftClient.getInstance().gameRenderer.getOverlayTexture().texture.getGlId();
+            return Minecraft.getInstance().gameRenderer.overlayTexture().texture.getId();
         }
 
         @Override
@@ -95,15 +96,15 @@ public class MixinRenderPhase {
         }
     }
 
-    @Mixin(RenderPhase.Lightmap.class)
+    @Mixin(RenderStateShard.LightmapStateShard.class)
     public static class MixinLightmap implements ShaderTextureProvider {
 
         private static int getLightmapTextureId() {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             LightmapTextureManagerAccessor lightmapTextureManager =
-                    ((LightmapTextureManagerAccessor) client.gameRenderer.getLightmapTextureManager());
+                    ((LightmapTextureManagerAccessor) client.gameRenderer.lightTexture());
 
-            return lightmapTextureManager.getTexture().getGlId();
+            return lightmapTextureManager.getTexture().getId();
         }
 
         @Override
@@ -114,15 +115,15 @@ public class MixinRenderPhase {
         }
     }
 
-    @Mixin(RenderPhase.Shader.class)
+    @Mixin(RenderStateShard.ShaderStateShard.class)
     public static class MixinShader implements RenderPhaseShaderAccess {
         @Shadow
         @Final
-        private Optional<Supplier<Shader>> supplier;
+        private Optional<Supplier<ShaderInstance>> shader;
 
         @Override
-        public Supplier<Shader> getShader() {
-            return this.supplier.orElse(null);
+        public Supplier<ShaderInstance> getShader() {
+            return this.shader.orElse(null);
         }
     }
 }

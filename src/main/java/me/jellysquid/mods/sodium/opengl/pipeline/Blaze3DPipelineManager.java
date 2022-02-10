@@ -2,11 +2,11 @@ package me.jellysquid.mods.sodium.opengl.pipeline;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferUploader;
 import me.jellysquid.mods.sodium.opengl.sampler.Sampler;
 import me.jellysquid.mods.sodium.opengl.types.CullingMode;
 import me.jellysquid.mods.sodium.opengl.types.DepthFunc;
 import me.jellysquid.mods.sodium.opengl.types.RenderState;
-import net.minecraft.client.render.BufferRenderer;
 import org.lwjgl.opengl.GL45C;
 
 import java.util.BitSet;
@@ -17,7 +17,7 @@ public class Blaze3DPipelineManager implements PipelineManager {
 
     @Override
     public <ARRAY extends Enum<ARRAY>, PROGRAM> void bindPipeline(Pipeline<PROGRAM, ARRAY> pipeline, Consumer<PipelineState> gate) {
-        BufferRenderer.vertexFormat = null;
+        BufferUploader.lastFormat = null;
 
         GlStateManager._glUseProgram(pipeline.getProgram().handle());
         GlStateManager._glBindVertexArray(pipeline.getVertexArray().handle());
@@ -97,7 +97,7 @@ public class Blaze3DPipelineManager implements PipelineManager {
 
         public void restore() {
             for (int unit = this.changedTextures.nextSetBit(0); unit != -1; unit = this.changedTextures.nextSetBit(unit + 1)) {
-                GL45C.glBindTextureUnit(unit, GlStateManager.TEXTURES[unit].boundTexture);
+                GL45C.glBindTextureUnit(unit, GlStateManager.TEXTURES[unit].binding);
                 GL45C.glBindSampler(unit, 0);
             }
 

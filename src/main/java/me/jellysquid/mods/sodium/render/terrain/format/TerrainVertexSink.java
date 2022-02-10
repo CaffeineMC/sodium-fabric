@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.render.terrain.format;
 
 import me.jellysquid.mods.sodium.render.vertex.VertexSink;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.core.Vec3i;
 
 public interface TerrainVertexSink extends VertexSink {
     /**

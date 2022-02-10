@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.interop.vanilla.math.matrix;
 
-import net.minecraft.util.math.Quaternion;
+import com.mojang.math.Quaternion;
 
 public interface Matrix4fExtended {
     /**

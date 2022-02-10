@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.render.sequence;
 
+import java.nio.IntBuffer;
 import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.opengl.types.IntType;

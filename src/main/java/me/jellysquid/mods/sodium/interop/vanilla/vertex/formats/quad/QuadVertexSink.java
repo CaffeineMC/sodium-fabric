@@ -1,14 +1,14 @@
 package me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.quad;
 
 import me.jellysquid.mods.sodium.render.vertex.VertexSink;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
 import me.jellysquid.mods.sodium.interop.vanilla.math.matrix.MatrixUtil;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.util.math.MatrixStack;
 
 public interface QuadVertexSink extends VertexSink {
-    VertexFormat VERTEX_FORMAT = VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL;
+    VertexFormat VERTEX_FORMAT = DefaultVertexFormat.NEW_ENTITY;
 
     /**
      * Writes a quad vertex to this sink.
@@ -30,14 +30,14 @@ public interface QuadVertexSink extends VertexSink {
      *
      * @param matrices The matrices to transform the vertex's position and normal vectors by
      */
-    default void writeQuad(MatrixStack.Entry matrices, float x, float y, float z, int color, float u, float v, int light, int overlay, int normal) {
-        Matrix4fExtended positionMatrix = MatrixUtil.getExtendedMatrix(matrices.getPositionMatrix());
+    default void writeQuad(PoseStack.Pose matrices, float x, float y, float z, int color, float u, float v, int light, int overlay, int normal) {
+        Matrix4fExtended positionMatrix = MatrixUtil.getExtendedMatrix(matrices.pose());
 
         float x2 = positionMatrix.transformVecX(x, y, z);
         float y2 = positionMatrix.transformVecY(x, y, z);
         float z2 = positionMatrix.transformVecZ(x, y, z);
 
-        int norm = MatrixUtil.transformPackedNormal(normal, matrices.getNormalMatrix());
+        int norm = MatrixUtil.transformPackedNormal(normal, matrices.normal());
 
         this.writeQuad(x2, y2, z2, color, u, v, light, overlay, norm);
     }

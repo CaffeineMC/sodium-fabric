@@ -1,6 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.core;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.*;
 import me.jellysquid.mods.sodium.opengl.array.VertexArrayDescription;
 import me.jellysquid.mods.sodium.opengl.array.VertexArrayResourceBinding;
@@ -12,7 +15,8 @@ import me.jellysquid.mods.sodium.opengl.shader.Program;
 import me.jellysquid.mods.sodium.opengl.types.*;
 import me.jellysquid.mods.sodium.render.immediate.RenderImmediate;
 import me.jellysquid.mods.sodium.render.immediate.VanillaShaderInterface;
-import net.minecraft.client.render.*;
+import net.minecraft.client.renderer.RenderStateShard;
+import net.minecraft.client.renderer.RenderType;
 import org.apache.commons.lang3.Validate;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,71 +25,71 @@ import org.spongepowered.asm.mixin.Shadow;
 import java.util.ArrayList;
 import java.util.List;
 
-@Mixin(RenderLayer.class)
+@Mixin(RenderType.class)
 public class MixinRenderLayer {
-    @Mixin(targets = "net/minecraft/client/render/RenderLayer$MultiPhaseParameters")
-    public static class MixinMultiPhaseParameters implements MultiPhaseParametersExtended {
+    @Mixin(targets = "net/minecraft/client/renderer/RenderType$CompositeState")
+    public static class MixinCompositeState implements CompositeStateExtended {
         @Shadow
         @Final
-        private RenderPhase.TextureBase texture;
+        private RenderStateShard.EmptyTextureStateShard textureState;
 
         @Shadow
         @Final
-        private RenderPhase.Shader shader;
+        private RenderStateShard.ShaderStateShard shaderState;
 
         @Shadow
         @Final
-        private RenderPhase.Transparency transparency;
+        private RenderStateShard.TransparencyStateShard transparencyState;
 
         @Shadow
         @Final
-        private RenderPhase.DepthTest depthTest;
+        private RenderStateShard.DepthTestStateShard depthTestState;
 
         @Shadow
         @Final
-        private RenderPhase.Cull cull;
+        private RenderStateShard.CullStateShard cullState;
 
         @Shadow
         @Final
-        private RenderPhase.Lightmap lightmap;
+        private RenderStateShard.LightmapStateShard lightmapState;
 
         @Shadow
         @Final
-        private RenderPhase.Overlay overlay;
+        private RenderStateShard.OverlayStateShard overlayState;
 
         @Shadow
         @Final
-        private RenderPhase.Layering layering; // TODO: implement
+        private RenderStateShard.LayeringStateShard layeringState; // TODO: implement
 
         @Shadow
         @Final
-        private RenderPhase.Target target; // TODO: implement
+        private RenderStateShard.OutputStateShard outputState; // TODO: implement
 
         @Shadow
         @Final
-        private RenderPhase.Texturing texturing; // TODO: implement
+        private RenderStateShard.TexturingStateShard texturingState; // TODO: implement
 
         @Shadow
         @Final
-        private RenderPhase.WriteMaskState writeMaskState;
+        private RenderStateShard.WriteMaskStateShard writeMaskState;
 
         @Shadow
         @Final
-        private RenderPhase.LineWidth lineWidth; // TODO: implement
+        private RenderStateShard.LineStateShard lineState; // TODO: implement
 
         @Override
         public RenderState createRenderState() {
             return RenderState.builder()
-                    .setBlendFunction(createBlendFunction(this.transparency))
-                    .setDepthFunc(createDepthFunction(this.depthTest))
-                    .setCullingMode(createCullingMode(this.cull))
+                    .setBlendFunction(createBlendFunction(this.transparencyState))
+                    .setDepthFunc(createDepthFunction(this.depthTestState))
+                    .setCullingMode(createCullingMode(this.cullState))
                     .setWriteMask(createWriteMask(this.writeMaskState))
                     .build();
         }
 
         @Override
         public Program<VanillaShaderInterface> createProgram() {
-            if (this.shader instanceof RenderPhaseShaderAccess access) {
+            if (this.shaderState instanceof RenderPhaseShaderAccess access) {
                 var supplier = access.getShader();
                 var shader = supplier.get();
 
@@ -105,15 +109,15 @@ public class MixinRenderLayer {
         public ShaderTexture[] createShaderTextures() {
             var textures = new ShaderTexture[12];
 
-            if (this.overlay instanceof ShaderTextureProvider provider) {
+            if (this.overlayState instanceof ShaderTextureProvider provider) {
                 populateTextures(textures, provider.getTextures());
             }
 
-            if (this.lightmap instanceof ShaderTextureProvider provider) {
+            if (this.lightmapState instanceof ShaderTextureProvider provider) {
                 populateTextures(textures, provider.getTextures());
             }
 
-            if (this.texture instanceof ShaderTextureProvider provider) {
+            if (this.textureState instanceof ShaderTextureProvider provider) {
                 populateTextures(textures, provider.getTextures());
             }
 
@@ -126,66 +130,66 @@ public class MixinRenderLayer {
             }
         }
 
-        private static WriteMask createWriteMask(RenderPhase.WriteMaskState value) {
-            return new WriteMask(value.color, value.depth);
+        private static WriteMask createWriteMask(RenderStateShard.WriteMaskStateShard value) {
+            return new WriteMask(value.writeColor, value.writeDepth);
         }
 
-        private static CullingMode createCullingMode(RenderPhase.Cull value) {
-            if (value == RenderPhase.ENABLE_CULLING) {
+        private static CullingMode createCullingMode(RenderStateShard.CullStateShard value) {
+            if (value == RenderStateShard.CULL) {
                 return CullingMode.ENABLE;
-            } else if (value == RenderPhase.DISABLE_CULLING) {
+            } else if (value == RenderStateShard.NO_CULL) {
                 return CullingMode.DISABLE;
             }
 
             throw new UnsupportedOperationException();
         }
 
-        private static DepthFunc createDepthFunction(RenderPhase.DepthTest value) {
-            if (value == RenderPhase.ALWAYS_DEPTH_TEST) {
+        private static DepthFunc createDepthFunction(RenderStateShard.DepthTestStateShard value) {
+            if (value == RenderStateShard.NO_DEPTH_TEST) {
                 return DepthFunc.ALWAYS;
-            } else if (value == RenderPhase.EQUAL_DEPTH_TEST) {
+            } else if (value == RenderStateShard.EQUAL_DEPTH_TEST) {
                 return DepthFunc.EQUAL;
-            } else if (value == RenderPhase.LEQUAL_DEPTH_TEST) {
+            } else if (value == RenderStateShard.LEQUAL_DEPTH_TEST) {
                 return DepthFunc.LESS_THAN_OR_EQUAL;
             }
 
             throw new UnsupportedOperationException();
         }
 
-        private static BlendFunction createBlendFunction(RenderPhase.Transparency value) {
-            if (value == RenderPhase.NO_TRANSPARENCY) {
+        private static BlendFunction createBlendFunction(RenderStateShard.TransparencyStateShard value) {
+            if (value == RenderStateShard.NO_TRANSPARENCY) {
                 return null;
-            } else if (value == RenderPhase.ADDITIVE_TRANSPARENCY) {
-                return BlendFunction.of(GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE);
-            } else if (value == RenderPhase.LIGHTNING_TRANSPARENCY) {
-                return BlendFunction.of(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE);
-            } else if (value == RenderPhase.GLINT_TRANSPARENCY) {
-                return BlendFunction.of(GlStateManager.SrcFactor.SRC_COLOR, GlStateManager.DstFactor.ONE, GlStateManager.SrcFactor.ZERO, GlStateManager.DstFactor.ONE);
-            } else if (value == RenderPhase.CRUMBLING_TRANSPARENCY) {
-                return BlendFunction.of(GlStateManager.SrcFactor.DST_COLOR, GlStateManager.DstFactor.SRC_COLOR, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ZERO);
-            } else if (value == RenderPhase.TRANSLUCENT_TRANSPARENCY) {
-                return BlendFunction.of(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
+            } else if (value == RenderStateShard.ADDITIVE_TRANSPARENCY) {
+                return BlendFunction.of(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
+            } else if (value == RenderStateShard.LIGHTNING_TRANSPARENCY) {
+                return BlendFunction.of(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+            } else if (value == RenderStateShard.GLINT_TRANSPARENCY) {
+                return BlendFunction.of(GlStateManager.SourceFactor.SRC_COLOR, GlStateManager.DestFactor.ONE, GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+            } else if (value == RenderStateShard.CRUMBLING_TRANSPARENCY) {
+                return BlendFunction.of(GlStateManager.SourceFactor.DST_COLOR, GlStateManager.DestFactor.SRC_COLOR, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+            } else if (value == RenderStateShard.TRANSLUCENT_TRANSPARENCY) {
+                return BlendFunction.of(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
             }
 
             throw new UnsupportedOperationException();
         }
     }
 
-    @Mixin(targets = "net/minecraft/client/render/RenderLayer$MultiPhase")
-    public static class MixinMultiPhase extends RenderLayer {
+    @Mixin(targets = "net/minecraft/client/renderer/RenderType$CompositeRenderType")
+    public static class MixinCompositeRenderType extends RenderType {
         @Shadow
         @Final
-        private MultiPhaseParameters phases;
+        private CompositeState state;
 
         private Pipeline<VanillaShaderInterface, VanillaShaderInterface.BufferTarget> pipeline;
         private ShaderTexture[] textures;
 
-        public MixinMultiPhase(String name, VertexFormat vertexFormat, VertexFormat.DrawMode drawMode, int expectedBufferSize, boolean hasCrumbling, boolean translucent, Runnable startAction, Runnable endAction) {
+        public MixinCompositeRenderType(String name, VertexFormat vertexFormat, VertexFormat.Mode drawMode, int expectedBufferSize, boolean hasCrumbling, boolean translucent, Runnable startAction, Runnable endAction) {
             super(name, vertexFormat, drawMode, expectedBufferSize, hasCrumbling, translucent, startAction, endAction);
         }
 
         @Override
-        public void draw(BufferBuilder buffer, int cameraX, int cameraY, int cameraZ) {
+        public void end(BufferBuilder buffer, int cameraX, int cameraY, int cameraZ) {
             if (this.pipeline != null && !this.pipeline.getProgram().isHandleValid()) {
                 this.destroy();
             }
@@ -194,18 +198,18 @@ public class MixinRenderLayer {
                 this.init();
             }
 
-            if (buffer.isBuilding()) {
+            if (buffer.building()) {
                 if (this.pipeline.getState().blendFunction != null) {
-                    buffer.setCameraPosition((float) cameraX, (float) cameraY, (float) cameraZ);
+                    buffer.setQuadSortOrigin((float) cameraX, (float) cameraY, (float) cameraZ);
                 }
 
                 buffer.end();
 
-                var data = buffer.popData();
+                var data = buffer.popNextBuffer();
                 var params = data.getFirst();
 
                 RenderImmediate.getInstance()
-                        .draw(this.pipeline, this.textures, data.getSecond(), params.getMode(), params.getVertexFormat(), params.getCount(), params.getElementFormat(), params.getVertexCount(), params.isTextured());
+                        .draw(this.pipeline, this.textures, data.getSecond(), params.mode(), params.format(), params.vertexCount(), params.indexType(), params.indexCount(), params.sequentialIndex());
             }
         }
 
@@ -216,7 +220,7 @@ public class MixinRenderLayer {
         }
 
         private void init() {
-            if ((Object) this.phases instanceof MultiPhaseParametersExtended params) {
+            if ((Object) this.state instanceof CompositeStateExtended params) {
                 this.pipeline = this.createPipeline(params.createRenderState(), params.createProgram());
                 this.textures = params.createShaderTextures();
             } else {
@@ -226,7 +230,7 @@ public class MixinRenderLayer {
 
         private Pipeline<VanillaShaderInterface, VanillaShaderInterface.BufferTarget> createPipeline(RenderState renderState, Program<VanillaShaderInterface> program) {
             var vertexArray = new VertexArrayDescription<>(VanillaShaderInterface.BufferTarget.values(),
-                    List.of(new VertexArrayResourceBinding<>(VanillaShaderInterface.BufferTarget.VERTICES, createVanillaVertexBindings(this.getVertexFormat()))));
+                    List.of(new VertexArrayResourceBinding<>(VanillaShaderInterface.BufferTarget.VERTICES, createVanillaVertexBindings(this.format()))));
 
             return RenderDevice.INSTANCE.createPipeline(renderState, program, vertexArray);
         }
@@ -238,15 +242,15 @@ public class MixinRenderLayer {
             for (int i = 0; i < elements.size(); i++) {
                 VertexFormatElement element = elements.get(i);
 
-                if (element.getType() == VertexFormatElement.Type.PADDING) {
+                if (element.getUsage() == VertexFormatElement.Usage.PADDING) {
                     continue;
                 }
 
-                var format = element.getDataType().getId();
-                var count = element.getLength();
-                var size = element.getByteLength();
-                var normalized = isVanillaAttributeNormalized(element.getType());
-                var intType = isVanillaIntType(element.getType(), element.getDataType());
+                var format = element.getType().getGlType();
+                var count = element.getCount();
+                var size = element.getByteSize();
+                var normalized = isVanillaAttributeNormalized(element.getUsage());
+                var intType = isVanillaIntType(element.getUsage(), element.getType());
 
                 var attribute = new VertexAttribute(format, size, count, normalized, vertexFormat.offsets.getInt(i), intType);
 
@@ -256,12 +260,12 @@ public class MixinRenderLayer {
             return bindings.toArray(VertexAttributeBinding[]::new);
         }
 
-        private static boolean isVanillaIntType(VertexFormatElement.Type type, VertexFormatElement.DataType dataType) {
-            return type == VertexFormatElement.Type.UV && dataType != VertexFormatElement.DataType.FLOAT;
+        private static boolean isVanillaIntType(VertexFormatElement.Usage type, VertexFormatElement.Type dataType) {
+            return type == VertexFormatElement.Usage.UV && dataType != VertexFormatElement.Type.FLOAT;
         }
 
-        private static boolean isVanillaAttributeNormalized(VertexFormatElement.Type type) {
-            return type == VertexFormatElement.Type.NORMAL || type == VertexFormatElement.Type.COLOR;
+        private static boolean isVanillaAttributeNormalized(VertexFormatElement.Usage type) {
+            return type == VertexFormatElement.Usage.NORMAL || type == VertexFormatElement.Usage.COLOR;
         }
     }
 }

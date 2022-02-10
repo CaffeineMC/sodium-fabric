@@ -5,9 +5,9 @@ import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.particle.writer.
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.particle.writer.ParticleVertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.particle.writer.ParticleVertexWriterFallback;
 import me.jellysquid.mods.sodium.render.vertex.type.BlittableVertexType;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexType;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexFormat;
 
 public class ParticleVertexType implements VanillaVertexType<ParticleVertexSink>, BlittableVertexType<ParticleVertexSink> {
     @Override

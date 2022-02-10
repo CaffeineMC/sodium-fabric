@@ -14,18 +14,17 @@ import me.jellysquid.mods.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexSink;
 import me.jellysquid.mods.sodium.util.packed.ColorABGR;
 import me.jellysquid.mods.sodium.util.rand.XoRoShiRoRandom;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.BlockColorProviderRegistry;
 import me.jellysquid.mods.sodium.util.DirectionUtil;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.BakedQuad;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.BlockRenderView;
-
 import java.util.List;
 import java.util.Random;
 
@@ -42,19 +41,19 @@ public class BlockRenderer {
 
     private final boolean useAmbientOcclusion;
 
-    public BlockRenderer(MinecraftClient client, LightPipelineProvider lighters, ColorBlender colorBlender) {
+    public BlockRenderer(Minecraft client, LightPipelineProvider lighters, ColorBlender colorBlender) {
         this.blockColors = (BlockColorProviderRegistry) client.getBlockColors();
         this.colorBlender = colorBlender;
 
         this.lighters = lighters;
 
         this.occlusionCache = new BlockOcclusionCache();
-        this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
+        this.useAmbientOcclusion = Minecraft.useAmbientOcclusion();
     }
 
-    public boolean renderModel(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, BakedModel model, ChunkMeshBuilder buffers, boolean cull, long seed) {
+    public boolean renderModel(BlockAndTintGetter world, BlockState state, BlockPos pos, BlockPos origin, BakedModel model, ChunkMeshBuilder buffers, boolean cull, long seed) {
         LightPipeline lighter = this.lighters.getLighter(this.getLightingMode(state, model));
-        Vec3d offset = state.getModelOffset(world, pos);
+        Vec3 offset = state.getOffset(world, pos);
 
         boolean rendered = false;
 
@@ -87,7 +86,7 @@ public class BlockRenderer {
         return rendered;
     }
 
-    private void renderQuadList(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, LightPipeline lighter, Vec3d offset,
+    private void renderQuadList(BlockAndTintGetter world, BlockState state, BlockPos pos, BlockPos origin, LightPipeline lighter, Vec3 offset,
                                 ChunkMeshBuilder buffers, List<BakedQuad> quads, ChunkMeshFace facing) {
         ColorSampler<BlockState> colorizer = null;
 
@@ -100,9 +99,9 @@ public class BlockRenderer {
             BakedQuad quad = quads.get(i);
 
             QuadLightData light = this.cachedQuadLightData;
-            lighter.calculate((ModelQuadView) quad, pos, light, quad.getFace(), quad.hasShade());
+            lighter.calculate((ModelQuadView) quad, pos, light, quad.getDirection(), quad.isShade());
 
-            if (quad.hasColor() && colorizer == null) {
+            if (quad.isTinted() && colorizer == null) {
                 colorizer = this.blockColors.getColorProvider(state);
             }
 
@@ -112,23 +111,23 @@ public class BlockRenderer {
         vertices.flush();
     }
 
-    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, TerrainVertexSink vertices, Vec3d blockOffset,
+    private void renderQuad(BlockAndTintGetter world, BlockState state, BlockPos pos, BlockPos origin, TerrainVertexSink vertices, Vec3 blockOffset,
                             ColorSampler<BlockState> colorSampler, BakedQuad bakedQuad, QuadLightData light, ChunkMeshBuilder model) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
         ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(light.br);
 
         int[] colors = null;
 
-        if (bakedQuad.hasColor()) {
+        if (bakedQuad.isTinted()) {
             colors = this.colorBlender.getColors(world, pos, src, colorSampler, state);
         }
         
         for (int i = 0; i < 4; i++) {
             int j = orientation.getVertexIndex(i);
 
-            float x = src.getX(j) + (float) blockOffset.getX();
-            float y = src.getY(j) + (float) blockOffset.getY();
-            float z = src.getZ(j) + (float) blockOffset.getZ();
+            float x = src.getX(j) + (float) blockOffset.x();
+            float y = src.getY(j) + (float) blockOffset.y();
+            float z = src.getZ(j) + (float) blockOffset.z();
 
             int color = ColorABGR.mul(colors != null ? colors[j] : 0xFFFFFFFF, light.br[j]);
 
@@ -140,7 +139,7 @@ public class BlockRenderer {
             vertices.writeVertex(origin, x, y, z, color, u, v, lm);
         }
 
-        Sprite sprite = src.getSprite();
+        TextureAtlasSprite sprite = src.getSprite();
 
         if (sprite != null) {
             model.addSprite(sprite);
@@ -148,7 +147,7 @@ public class BlockRenderer {
     }
 
     private LightMode getLightingMode(BlockState state, BakedModel model) {
-        if (this.useAmbientOcclusion && model.useAmbientOcclusion() && state.getLuminance() == 0) {
+        if (this.useAmbientOcclusion && model.useAmbientOcclusion() && state.getLightEmission() == 0) {
             return LightMode.SMOOTH;
         } else {
             return LightMode.FLAT;

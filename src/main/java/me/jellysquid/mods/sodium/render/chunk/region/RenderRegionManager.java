@@ -9,12 +9,14 @@ import me.jellysquid.mods.sodium.render.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
+import me.jellysquid.mods.sodium.render.chunk.region.RenderRegionManager.PendingSectionUpload;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkMesh;
 import me.jellysquid.mods.sodium.render.chunk.state.UploadedChunkMesh;
 import me.jellysquid.mods.sodium.render.stream.MappedStreamingBuffer;
 import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
 
 import java.util.*;
+import java.util.Map.Entry;
 
 public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
@@ -160,6 +162,6 @@ public class RenderRegionManager {
         return new RenderRegion.Resources(this.device, this.streamingBuffer);
     }
 
-    private record PendingSectionUpload(RenderSection section, ChunkMesh meshData, ChunkRenderPass pass, PendingUpload vertexUpload) {
+    record PendingSectionUpload(RenderSection section, ChunkMesh meshData, ChunkRenderPass pass, PendingUpload vertexUpload) {
     }
 }

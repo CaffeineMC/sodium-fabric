@@ -8,9 +8,9 @@ import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPassManager;
 import me.jellysquid.mods.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import me.jellysquid.mods.sodium.util.tasks.CancellationSource;
 import me.jellysquid.mods.sodium.util.tasks.QueueDrainingIterator;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,7 +29,7 @@ public class ChunkBuilder {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
 
-    private World world;
+    private Level world;
     private ChunkRenderPassManager renderPassManager;
 
     private final int limitThreads;
@@ -155,7 +155,7 @@ public class ChunkBuilder {
      * @param world The world instance
      * @param renderPassManager The render pass manager used for the world
      */
-    public void init(ClientWorld world, ChunkRenderPassManager renderPassManager) {
+    public void init(ClientLevel world, ChunkRenderPassManager renderPassManager) {
         if (world == null) {
             throw new NullPointerException("World is null");
         }
@@ -173,7 +173,7 @@ public class ChunkBuilder {
      * thread.
      */
     private static int getOptimalThreadCount() {
-        return MathHelper.clamp(Math.max(getMaxThreadCount() / 3, getMaxThreadCount() - 6), 1, 10);
+        return Mth.clamp(Math.max(getMaxThreadCount() / 3, getMaxThreadCount() - 6), 1, 10);
     }
 
     private static int getThreadCount() {

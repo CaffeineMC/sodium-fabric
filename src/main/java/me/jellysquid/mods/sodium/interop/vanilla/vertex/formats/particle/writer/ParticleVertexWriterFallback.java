@@ -1,9 +1,9 @@
 package me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.particle.writer;
 
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.fallback.VertexWriterFallback;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.particle.ParticleVertexSink;
 import me.jellysquid.mods.sodium.util.packed.ColorABGR;
-import net.minecraft.client.render.VertexConsumer;
 
 public class ParticleVertexWriterFallback extends VertexWriterFallback implements ParticleVertexSink {
     public ParticleVertexWriterFallback(VertexConsumer consumer) {
@@ -14,9 +14,9 @@ public class ParticleVertexWriterFallback extends VertexWriterFallback implement
     public void writeParticle(float x, float y, float z, float u, float v, int color, int light) {
         VertexConsumer consumer = this.consumer;
         consumer.vertex(x, y, z);
-        consumer.texture(u, v);
+        consumer.uv(u, v);
         consumer.color(ColorABGR.unpackRed(color), ColorABGR.unpackGreen(color), ColorABGR.unpackBlue(color), ColorABGR.unpackAlpha(color));
-        consumer.light(light);
-        consumer.next();
+        consumer.uv2(light);
+        consumer.endVertex();
     }
 }

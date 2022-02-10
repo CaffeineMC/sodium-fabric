@@ -1,21 +1,21 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.LightmapTextureManagerAccessor;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.texture.AbstractTexture;
-import net.minecraft.client.texture.NativeImageBackedTexture;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(LightmapTextureManager.class)
+@Mixin(LightTexture.class)
 public class MixinLightmapTextureManager implements LightmapTextureManagerAccessor {
     @Shadow
     @Final
-    private NativeImageBackedTexture texture;
+    private DynamicTexture lightTexture;
 
     @Override
     public AbstractTexture getTexture() {
-        return this.texture;
+        return this.lightTexture;
     }
 }

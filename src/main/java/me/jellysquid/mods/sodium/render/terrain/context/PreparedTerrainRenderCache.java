@@ -2,14 +2,14 @@ package me.jellysquid.mods.sodium.render.terrain.context;
 
 import me.jellysquid.mods.sodium.world.slice.WorldSlice;
 import me.jellysquid.mods.sodium.world.slice.WorldSliceData;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.block.BlockModelShaper;
+import net.minecraft.world.level.Level;
 import me.jellysquid.mods.sodium.render.terrain.BlockRenderer;
 import me.jellysquid.mods.sodium.render.terrain.FluidRenderer;
 import me.jellysquid.mods.sodium.render.terrain.color.blender.ColorBlender;
 import me.jellysquid.mods.sodium.render.terrain.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.render.terrain.light.cache.ArrayLightDataCache;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.block.BlockModels;
-import net.minecraft.world.World;
 
 public class PreparedTerrainRenderCache extends TerrainRenderCache {
     private final ArrayLightDataCache lightDataCache;
@@ -17,10 +17,10 @@ public class PreparedTerrainRenderCache extends TerrainRenderCache {
     private final BlockRenderer blockRenderer;
     private final FluidRenderer fluidRenderer;
 
-    private final BlockModels blockModels;
+    private final BlockModelShaper blockModels;
     private final WorldSlice slice;
 
-    public PreparedTerrainRenderCache(MinecraftClient client, World world) {
+    public PreparedTerrainRenderCache(Minecraft client, Level world) {
         this.slice = new WorldSlice(world);
         this.lightDataCache = new ArrayLightDataCache(this.slice);
 
@@ -30,10 +30,10 @@ public class PreparedTerrainRenderCache extends TerrainRenderCache {
         this.blockRenderer = new BlockRenderer(client, lightPipelineProvider, colorBlender);
         this.fluidRenderer = new FluidRenderer(lightPipelineProvider, colorBlender);
 
-        this.blockModels = client.getBakedModelManager().getBlockModels();
+        this.blockModels = client.getModelManager().getBlockModelShaper();
     }
 
-    public BlockModels getBlockModels() {
+    public BlockModelShaper getBlockModels() {
         return this.blockModels;
     }
 

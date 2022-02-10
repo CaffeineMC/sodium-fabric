@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.render.sequence;
 
-import net.minecraft.client.render.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 
 public enum IndexSequenceType {
     QUADS(SequenceBuilder.QUADS),
@@ -13,10 +13,10 @@ public enum IndexSequenceType {
         this.builder = builder;
     }
 
-    public static IndexSequenceType map(VertexFormat.DrawMode drawMode) {
-        if (drawMode == VertexFormat.DrawMode.QUADS) {
+    public static IndexSequenceType map(VertexFormat.Mode drawMode) {
+        if (drawMode == VertexFormat.Mode.QUADS) {
             return QUADS;
-        } else if (drawMode == VertexFormat.DrawMode.LINES) {
+        } else if (drawMode == VertexFormat.Mode.LINES) {
             return LINES;
         } else {
             return NONE;

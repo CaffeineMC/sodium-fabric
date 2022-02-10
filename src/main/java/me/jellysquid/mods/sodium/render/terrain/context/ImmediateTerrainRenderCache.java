@@ -3,21 +3,20 @@ package me.jellysquid.mods.sodium.render.terrain.context;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.render.terrain.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.render.terrain.light.cache.HashLightDataCache;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.BlockAndTintGetter;
 import me.jellysquid.mods.sodium.render.terrain.color.blender.ColorBlender;
 import me.jellysquid.mods.sodium.render.terrain.BlockRenderer;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.world.BlockRenderView;
-
 import java.util.Map;
 
 public class ImmediateTerrainRenderCache extends TerrainRenderCache {
-    private static final Map<BlockRenderView, ImmediateTerrainRenderCache> INSTANCES = new Reference2ObjectOpenHashMap<>();
+    private static final Map<BlockAndTintGetter, ImmediateTerrainRenderCache> INSTANCES = new Reference2ObjectOpenHashMap<>();
 
     private final BlockRenderer blockRenderer;
     private final HashLightDataCache lightCache;
 
-    private ImmediateTerrainRenderCache(BlockRenderView world) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    private ImmediateTerrainRenderCache(BlockAndTintGetter world) {
+        Minecraft client = Minecraft.getInstance();
 
         this.lightCache = new HashLightDataCache(world);
 
@@ -35,7 +34,7 @@ public class ImmediateTerrainRenderCache extends TerrainRenderCache {
         this.lightCache.clearCache();
     }
 
-    public static ImmediateTerrainRenderCache getInstance(BlockRenderView world) {
+    public static ImmediateTerrainRenderCache getInstance(BlockAndTintGetter world) {
         ImmediateTerrainRenderCache instance = INSTANCES.get(world);
 
         if (instance == null) {
@@ -45,13 +44,13 @@ public class ImmediateTerrainRenderCache extends TerrainRenderCache {
         return instance;
     }
 
-    public static void destroyRenderContext(BlockRenderView world) {
+    public static void destroyRenderContext(BlockAndTintGetter world) {
         if (INSTANCES.remove(world) == null) {
             throw new IllegalStateException("No render context exists for world: " + world);
         }
     }
 
-    public static void createRenderContext(BlockRenderView world) {
+    public static void createRenderContext(BlockAndTintGetter world) {
         if (INSTANCES.containsKey(world)) {
             throw new IllegalStateException("Render context already exists for world: " + world);
         }

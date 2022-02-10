@@ -2,41 +2,41 @@ package me.jellysquid.mods.sodium.world.slice;
 
 import me.jellysquid.mods.sodium.world.slice.cloned.ClonedChunkSection;
 import me.jellysquid.mods.sodium.world.slice.cloned.ClonedChunkSectionCache;
-import net.minecraft.util.math.BlockBox;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 public class WorldSliceData {
-    private final ChunkSectionPos origin;
+    private final SectionPos origin;
     private final ClonedChunkSection[] sections;
-    private final BlockBox volume;
+    private final BoundingBox volume;
 
-    public WorldSliceData(ChunkSectionPos origin, ClonedChunkSection[] sections, BlockBox volume) {
+    public WorldSliceData(SectionPos origin, ClonedChunkSection[] sections, BoundingBox volume) {
         this.origin = origin;
         this.sections = sections;
         this.volume = volume;
     }
 
-    public static WorldSliceData prepare(World world, ChunkSectionPos origin, ClonedChunkSectionCache sectionCache) {
-        WorldChunk chunk = world.getChunk(origin.getX(), origin.getZ());
-        ChunkSection section = chunk.getSectionArray()[world.sectionCoordToIndex(origin.getY())];
+    public static WorldSliceData prepare(Level world, SectionPos origin, ClonedChunkSectionCache sectionCache) {
+        LevelChunk chunk = world.getChunk(origin.getX(), origin.getZ());
+        LevelChunkSection section = chunk.getSections()[world.getSectionIndexFromSectionY(origin.getY())];
 
         // If the chunk section is absent or empty, simply terminate now. There will never be anything in this chunk
         // section to render, so we need to signal that a chunk render task shouldn't created. This saves a considerable
         // amount of time in queueing instant build tasks and greatly accelerates how quickly the world can be loaded.
-        if (section == null || section.isEmpty()) {
+        if (section == null || section.hasOnlyAir()) {
             return null;
         }
 
-        BlockBox volume = new BlockBox(
-                origin.getMinX() - WorldSlice.NEIGHBOR_BLOCK_RADIUS,
-                origin.getMinY() - WorldSlice.NEIGHBOR_BLOCK_RADIUS,
-                origin.getMinZ() - WorldSlice.NEIGHBOR_BLOCK_RADIUS,
-                origin.getMaxX() + WorldSlice.NEIGHBOR_BLOCK_RADIUS,
-                origin.getMaxY() + WorldSlice.NEIGHBOR_BLOCK_RADIUS,
-                origin.getMaxZ() + WorldSlice.NEIGHBOR_BLOCK_RADIUS);
+        BoundingBox volume = new BoundingBox(
+                origin.minBlockX() - WorldSlice.NEIGHBOR_BLOCK_RADIUS,
+                origin.minBlockY() - WorldSlice.NEIGHBOR_BLOCK_RADIUS,
+                origin.minBlockZ() - WorldSlice.NEIGHBOR_BLOCK_RADIUS,
+                origin.maxBlockX() + WorldSlice.NEIGHBOR_BLOCK_RADIUS,
+                origin.maxBlockY() + WorldSlice.NEIGHBOR_BLOCK_RADIUS,
+                origin.maxBlockZ() + WorldSlice.NEIGHBOR_BLOCK_RADIUS);
 
         // The min/max bounds of the sections copied by this slice
         final int minSectionX = origin.getX() - WorldSlice.NEIGHBOR_SECTION_RADIUS;
@@ -65,11 +65,11 @@ public class WorldSliceData {
         return this.sections;
     }
 
-    public ChunkSectionPos getOrigin() {
+    public SectionPos getOrigin() {
         return this.origin;
     }
 
-    public BlockBox getVolume() {
+    public BoundingBox getVolume() {
         return this.volume;
     }
 

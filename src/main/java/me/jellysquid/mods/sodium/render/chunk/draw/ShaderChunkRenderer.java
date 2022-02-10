@@ -15,11 +15,12 @@ import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
 import me.jellysquid.mods.sodium.render.shader.ShaderConstants;
+import me.jellysquid.mods.sodium.render.shader.ShaderConstants.Builder;
 import me.jellysquid.mods.sodium.render.shader.ShaderLoader;
 import me.jellysquid.mods.sodium.render.shader.ShaderParser;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainMeshAttribute;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL33C;
 
 import java.util.List;
@@ -89,8 +90,8 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     private Program<ChunkShaderInterface> createProgram(ChunkRenderPass pass) {
         var constants = getShaderConstants(pass, this.vertexType);
 
-        var vertShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "blocks/block_layer_opaque.vsh"), constants);
-        var fragShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "blocks/block_layer_opaque.fsh"), constants);
+        var vertShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new ResourceLocation("sodium", "blocks/block_layer_opaque.vsh"), constants);
+        var fragShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new ResourceLocation("sodium", "blocks/block_layer_opaque.fsh"), constants);
 
         var desc = ShaderDescription.builder()
                 .addShaderSource(ShaderType.VERTEX, vertShader)

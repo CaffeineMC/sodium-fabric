@@ -22,7 +22,6 @@ import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.MemoryStack;
-
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.function.Consumer;

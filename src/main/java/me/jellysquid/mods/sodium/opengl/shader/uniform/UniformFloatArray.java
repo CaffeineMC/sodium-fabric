@@ -1,10 +1,9 @@
 package me.jellysquid.mods.sodium.opengl.shader.uniform;
 
 import me.jellysquid.mods.sodium.opengl.util.MemCmp;
-import net.minecraft.util.math.Vec3f;
 import org.lwjgl.opengl.GL45C;
 import org.lwjgl.system.MemoryUtil;
-
+import com.mojang.math.Vector3f;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -114,7 +113,7 @@ public final class UniformFloatArray extends Uniform {
     }
 
     @Deprecated // Vanilla type
-    public void setFloats(Vec3f vec) {
-        this.setFloats(vec.getX(), vec.getY(), vec.getZ());
+    public void setFloats(Vector3f vec) {
+        this.setFloats(vec.x(), vec.y(), vec.z());
     }
 }

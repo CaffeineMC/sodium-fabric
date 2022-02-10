@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.mixin.features.texture_tracking;
 
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.SpriteVisibilityStorage;
-import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.spongepowered.asm.mixin.Mixin;
 
-@Mixin(Sprite.class)
+@Mixin(TextureAtlasSprite.class)
 public abstract class MixinSprite implements SpriteVisibilityStorage {
     private boolean active;
 

@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.opengl.array;
 
 import me.jellysquid.mods.sodium.opengl.ManagedObject;
+import me.jellysquid.mods.sodium.opengl.attribute.VertexAttributeBinding;
 import org.lwjgl.opengl.GL45C;
-
 import java.util.List;
 
 public class VertexArrayImpl<T extends Enum<T>> extends ManagedObject implements VertexArray<T> {

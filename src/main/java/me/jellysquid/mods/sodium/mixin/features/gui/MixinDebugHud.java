@@ -2,12 +2,18 @@ package me.jellysquid.mods.sodium.mixin.features.gui;
 
 import com.google.common.base.Strings;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.hud.DebugHud;
-import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Matrix4f;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.math.Matrix4f;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.DebugScreenOverlay;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import org.apache.commons.lang3.Validate;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,19 +25,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 
-@Mixin(DebugHud.class)
+@Mixin(DebugScreenOverlay.class)
 public abstract class MixinDebugHud {
     @Shadow
     @Final
-    private MinecraftClient client;
+    private Minecraft minecraft;
 
     @Shadow
     @Final
-    private TextRenderer textRenderer;
+    private Font font;
 
     private List<String> capturedList = null;
 
-    @Redirect(method = { "renderLeftText", "renderRightText" }, at = @At(value = "INVOKE", target = "Ljava/util/List;size()I"))
+    @Redirect(method = { "drawGameInformation", "drawSystemInformation" }, at = @At(value = "INVOKE", target = "Ljava/util/List;size()I"))
     private int preRenderText(List<String> list) {
         // Capture the list to be rendered later
         this.capturedList = list;
@@ -39,17 +45,17 @@ public abstract class MixinDebugHud {
         return 0; // Prevent the rendering of any text
     }
 
-    @Inject(method = "renderLeftText", at = @At("RETURN"))
-    public void renderLeftText(MatrixStack matrixStack, CallbackInfo ci) {
+    @Inject(method = "drawGameInformation", at = @At("RETURN"))
+    public void renderLeftText(PoseStack matrixStack, CallbackInfo ci) {
         this.renderCapturedText(matrixStack, false);
     }
 
-    @Inject(method = "renderRightText", at = @At("RETURN"))
-    public void renderRightText(MatrixStack matrixStack, CallbackInfo ci) {
+    @Inject(method = "drawSystemInformation", at = @At("RETURN"))
+    public void renderRightText(PoseStack matrixStack, CallbackInfo ci) {
         this.renderCapturedText(matrixStack, true);
     }
 
-    private void renderCapturedText(MatrixStack matrixStack, boolean right) {
+    private void renderCapturedText(PoseStack matrixStack, boolean right) {
         Validate.notNull(this.capturedList, "Failed to capture string list");
 
         this.renderBackdrop(matrixStack, this.capturedList, right);
@@ -58,31 +64,31 @@ public abstract class MixinDebugHud {
         this.capturedList = null;
     }
 
-    private void renderStrings(MatrixStack matrixStack, List<String> list, boolean right) {
-        VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
+    private void renderStrings(PoseStack matrixStack, List<String> list, boolean right) {
+        MultiBufferSource.BufferSource immediate = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
 
-        Matrix4f positionMatrix = matrixStack.peek()
-                .getPositionMatrix();
+        Matrix4f positionMatrix = matrixStack.last()
+                .pose();
 
         for (int i = 0; i < list.size(); ++i) {
             String string = list.get(i);
 
             if (!Strings.isNullOrEmpty(string)) {
                 int height = 9;
-                int width = this.textRenderer.getWidth(string);
+                int width = this.font.width(string);
 
-                float x1 = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
+                float x1 = right ? this.minecraft.getWindow().getGuiScaledWidth() - 2 - width : 2;
                 float y1 = 2 + (height * i);
 
-                this.textRenderer.draw(string, x1, y1, 0xe0e0e0, false, positionMatrix, immediate,
-                        false, 0, 15728880, this.textRenderer.isRightToLeft());
+                this.font.drawInBatch(string, x1, y1, 0xe0e0e0, false, positionMatrix, immediate,
+                        false, 0, 15728880, this.font.isBidirectional());
             }
         }
 
-        immediate.draw();
+        immediate.endBatch();
     }
 
-    private void renderBackdrop(MatrixStack matrixStack, List<String> list, boolean right) {
+    private void renderBackdrop(PoseStack matrixStack, List<String> list, boolean right) {
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
@@ -94,13 +100,13 @@ public abstract class MixinDebugHud {
         float h = (float) (color >> 8 & 255) / 255.0F;
         float k = (float) (color & 255) / 255.0F;
 
-        BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
-        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
+        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        Matrix4f matrix = matrixStack.peek()
-                .getPositionMatrix();
+        Matrix4f matrix = matrixStack.last()
+                .pose();
 
         for (int i = 0; i < list.size(); ++i) {
             String string = list.get(i);
@@ -110,9 +116,9 @@ public abstract class MixinDebugHud {
             }
 
             int height = 9;
-            int width = this.textRenderer.getWidth(string);
+            int width = this.font.width(string);
 
-            int x = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
+            int x = right ? this.minecraft.getWindow().getGuiScaledWidth() - 2 - width : 2;
             int y = 2 + height * i;
 
             float x1 = x - 1;
@@ -120,15 +126,15 @@ public abstract class MixinDebugHud {
             float x2 = x + width + 1;
             float y2 = y + height - 1;
 
-            bufferBuilder.vertex(matrix, x1, y2, 0.0F).color(g, h, k, f).next();
-            bufferBuilder.vertex(matrix, x2, y2, 0.0F).color(g, h, k, f).next();
-            bufferBuilder.vertex(matrix, x2, y1, 0.0F).color(g, h, k, f).next();
-            bufferBuilder.vertex(matrix, x1, y1, 0.0F).color(g, h, k, f).next();
+            bufferBuilder.vertex(matrix, x1, y2, 0.0F).color(g, h, k, f).endVertex();
+            bufferBuilder.vertex(matrix, x2, y2, 0.0F).color(g, h, k, f).endVertex();
+            bufferBuilder.vertex(matrix, x2, y1, 0.0F).color(g, h, k, f).endVertex();
+            bufferBuilder.vertex(matrix, x1, y1, 0.0F).color(g, h, k, f).endVertex();
         }
 
         bufferBuilder.end();
 
-        BufferRenderer.draw(bufferBuilder);
+        BufferUploader.end(bufferBuilder);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }

@@ -5,9 +5,9 @@ import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.glyph.writer.Gly
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.glyph.writer.GlyphVertexBufferWriterUnsafe;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.glyph.writer.GlyphVertexWriterFallback;
 import me.jellysquid.mods.sodium.render.vertex.type.BlittableVertexType;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexType;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexFormat;
 
 public class GlyphVertexType implements VanillaVertexType<GlyphVertexSink>, BlittableVertexType<GlyphVertexSink> {
     @Override

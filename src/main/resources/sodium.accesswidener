@@ -1,74 +1,60 @@
 accessWidener v1 named
 
-accessible class net/minecraft/client/model/ModelPart$Vertex
-accessible class net/minecraft/client/model/ModelPart$Quad
-accessible class net/minecraft/client/texture/Sprite$Interpolation
-accessible class net/minecraft/client/texture/Sprite$Animation
-accessible class net/minecraft/world/chunk/PalettedContainer$Data
-accessible class net/minecraft/world/chunk/PalettedContainer$DataProvider
-
-accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
-
-accessible field net/minecraft/client/option/CyclingOption setter Lnet/minecraft/client/option/CyclingOption$Setter;
-accessible field net/minecraft/client/option/CyclingOption getter Ljava/util/function/Function;
-
-accessible class net/minecraft/client/texture/Sprite$AnimationFrame
-accessible field net/minecraft/client/texture/Sprite$AnimationFrame index I
-accessible field net/minecraft/client/texture/Sprite$AnimationFrame time I
-accessible field net/minecraft/client/texture/Sprite$Animation frameIndex I
-accessible field net/minecraft/client/texture/Sprite$Animation frameTicks I
-accessible field net/minecraft/client/texture/Sprite$Animation frames Ljava/util/List;
-accessible field net/minecraft/client/texture/Sprite$Animation frameCount I
-accessible field net/minecraft/client/texture/Sprite width I
-accessible field net/minecraft/client/texture/Sprite height I
-accessible field net/minecraft/client/texture/Sprite images [Lnet/minecraft/client/texture/NativeImage;
-accessible method net/minecraft/client/texture/Sprite upload (II[Lnet/minecraft/client/texture/NativeImage;)V
-accessible field net/minecraft/client/texture/NativeImage pointer J
-
-accessible field net/minecraft/client/render/VertexFormat offsets Lit/unimi/dsi/fastutil/ints/IntList;
-accessible method net/minecraft/client/gl/Program getShaderRef ()I
-
-accessible field com/mojang/blaze3d/systems/RenderSystem shaderLightDirections [Lnet/minecraft/util/math/Vec3f;
-accessible field com/mojang/blaze3d/platform/GlStateManager TEXTURES [Lcom/mojang/blaze3d/platform/GlStateManager$Texture2DState;
-accessible class com/mojang/blaze3d/platform/GlStateManager$Texture2DState
-
-accessible class net/minecraft/client/render/RenderPhase$TextureBase
-accessible class net/minecraft/client/render/RenderPhase$Shader
-accessible class net/minecraft/client/render/RenderPhase$Transparency
-accessible class net/minecraft/client/render/RenderPhase$DepthTest
-accessible class net/minecraft/client/render/RenderPhase$Cull
-accessible class net/minecraft/client/render/RenderPhase$Lightmap
-accessible class net/minecraft/client/render/RenderPhase$Overlay
-accessible class net/minecraft/client/render/RenderPhase$Layering
-accessible class net/minecraft/client/render/RenderPhase$Target
-accessible class net/minecraft/client/render/RenderPhase$Texturing
-accessible class net/minecraft/client/render/RenderPhase$WriteMaskState
-accessible class net/minecraft/client/render/RenderPhase$LineWidth
-
-accessible class net/minecraft/client/render/RenderPhase$Textures
-accessible class net/minecraft/client/render/RenderPhase$Texture
-
-accessible field net/minecraft/client/render/RenderPhase$WriteMaskState color Z
-accessible field net/minecraft/client/render/RenderPhase$WriteMaskState depth Z
-
-accessible field net/minecraft/client/render/RenderPhase NO_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
-accessible field net/minecraft/client/render/RenderPhase ADDITIVE_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
-accessible field net/minecraft/client/render/RenderPhase LIGHTNING_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
-accessible field net/minecraft/client/render/RenderPhase GLINT_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
-accessible field net/minecraft/client/render/RenderPhase CRUMBLING_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
-accessible field net/minecraft/client/render/RenderPhase TRANSLUCENT_TRANSPARENCY Lnet/minecraft/client/render/RenderPhase$Transparency;
-
-accessible field net/minecraft/client/render/RenderPhase ALWAYS_DEPTH_TEST Lnet/minecraft/client/render/RenderPhase$DepthTest;
-accessible field net/minecraft/client/render/RenderPhase EQUAL_DEPTH_TEST Lnet/minecraft/client/render/RenderPhase$DepthTest;
-accessible field net/minecraft/client/render/RenderPhase LEQUAL_DEPTH_TEST Lnet/minecraft/client/render/RenderPhase$DepthTest;
-
-accessible field net/minecraft/client/render/RenderPhase ENABLE_CULLING Lnet/minecraft/client/render/RenderPhase$Cull;
-accessible field net/minecraft/client/render/RenderPhase DISABLE_CULLING Lnet/minecraft/client/render/RenderPhase$Cull;
-
-accessible field net/minecraft/client/render/RenderPhase ALL_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
-accessible field net/minecraft/client/render/RenderPhase COLOR_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
-accessible field net/minecraft/client/render/RenderPhase DEPTH_MASK Lnet/minecraft/client/render/RenderPhase$WriteMaskState;
-
-accessible field net/minecraft/client/render/OverlayTexture texture Lnet/minecraft/client/texture/NativeImageBackedTexture;
-
-accessible field net/minecraft/client/render/BufferRenderer vertexFormat Lnet/minecraft/client/render/VertexFormat;
+accessible	class	net/minecraft/client/model/geom/ModelPart$Vertex
+accessible	class	net/minecraft/client/model/geom/ModelPart$Polygon
+accessible	class	net/minecraft/client/renderer/texture/TextureAtlasSprite$InterpolationData
+accessible	class	net/minecraft/client/renderer/texture/TextureAtlasSprite$AnimatedTexture
+accessible	class	net/minecraft/world/level/chunk/PalettedContainer$Data
+accessible	class	net/minecraft/world/level/chunk/PalettedContainer$Configuration
+accessible	method	net/minecraft/client/renderer/culling/Frustum	cubeInFrustum	(DDDDDD)Z
+accessible	field	net/minecraft/client/CycleOption	setter	Lnet/minecraft/client/CycleOption$OptionSetter;
+accessible	field	net/minecraft/client/CycleOption	getter	Ljava/util/function/Function;
+accessible	class	net/minecraft/client/renderer/texture/TextureAtlasSprite$FrameInfo
+accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite$FrameInfo	index	I
+accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite$FrameInfo	time	I
+accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite$AnimatedTexture	frame	I
+accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite$AnimatedTexture	subFrame	I
+accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite$AnimatedTexture	frames	Ljava/util/List;
+accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite$AnimatedTexture	frameRowSize	I
+accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite	width	I
+accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite	height	I
+accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite	mainImage	[Lcom/mojang/blaze3d/platform/NativeImage;
+accessible	method	net/minecraft/client/renderer/texture/TextureAtlasSprite	upload	(II[Lcom/mojang/blaze3d/platform/NativeImage;)V
+accessible	field	com/mojang/blaze3d/platform/NativeImage	pixels	J
+accessible	field	com/mojang/blaze3d/vertex/VertexFormat	offsets	Lit/unimi/dsi/fastutil/ints/IntList;
+accessible	method	com/mojang/blaze3d/shaders/Program	getId	()I
+accessible	field	com/mojang/blaze3d/systems/RenderSystem	shaderLightDirections	[Lcom/mojang/math/Vector3f;
+accessible	field	com/mojang/blaze3d/platform/GlStateManager	TEXTURES	[Lcom/mojang/blaze3d/platform/GlStateManager$TextureState;
+accessible	class	com/mojang/blaze3d/platform/GlStateManager$TextureState
+accessible	class	net/minecraft/client/renderer/RenderStateShard$EmptyTextureStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$ShaderStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$TransparencyStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$DepthTestStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$CullStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$LightmapStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$OverlayStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$LayeringStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$OutputStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$TexturingStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$LineStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$MultiTextureStateShard
+accessible	class	net/minecraft/client/renderer/RenderStateShard$TextureStateShard
+accessible	field	net/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard	writeColor	Z
+accessible	field	net/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard	writeDepth	Z
+accessible	field	net/minecraft/client/renderer/RenderStateShard	NO_TRANSPARENCY	Lnet/minecraft/client/renderer/RenderStateShard$TransparencyStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	ADDITIVE_TRANSPARENCY	Lnet/minecraft/client/renderer/RenderStateShard$TransparencyStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	LIGHTNING_TRANSPARENCY	Lnet/minecraft/client/renderer/RenderStateShard$TransparencyStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	GLINT_TRANSPARENCY	Lnet/minecraft/client/renderer/RenderStateShard$TransparencyStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	CRUMBLING_TRANSPARENCY	Lnet/minecraft/client/renderer/RenderStateShard$TransparencyStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	TRANSLUCENT_TRANSPARENCY	Lnet/minecraft/client/renderer/RenderStateShard$TransparencyStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	NO_DEPTH_TEST	Lnet/minecraft/client/renderer/RenderStateShard$DepthTestStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	EQUAL_DEPTH_TEST	Lnet/minecraft/client/renderer/RenderStateShard$DepthTestStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	LEQUAL_DEPTH_TEST	Lnet/minecraft/client/renderer/RenderStateShard$DepthTestStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	CULL	Lnet/minecraft/client/renderer/RenderStateShard$CullStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	NO_CULL	Lnet/minecraft/client/renderer/RenderStateShard$CullStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	COLOR_DEPTH_WRITE	Lnet/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	COLOR_WRITE	Lnet/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard;
+accessible	field	net/minecraft/client/renderer/RenderStateShard	DEPTH_WRITE	Lnet/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard;
+accessible	field	net/minecraft/client/renderer/texture/OverlayTexture	texture	Lnet/minecraft/client/renderer/texture/DynamicTexture;
+accessible	field	com/mojang/blaze3d/vertex/BufferUploader	lastFormat	Lcom/mojang/blaze3d/vertex/VertexFormat;

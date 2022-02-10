@@ -9,8 +9,8 @@ public class DefaultRenderPasses {
     public static final ChunkRenderPass CUTOUT_MIPPED = new ChunkRenderPass(RenderState.defaults(), true, 0.5f);
     public static final ChunkRenderPass CUTOUT = new ChunkRenderPass(RenderState.defaults(), false, 0.1f);
     public static final ChunkRenderPass TRANSLUCENT = new ChunkRenderPass(RenderState.builder()
-            .setBlendFunction(BlendFunction.of(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA,
-                    GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA))
+            .setBlendFunction(BlendFunction.of(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
+                    GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA))
             .build(), true, 0.0f);
     public static final ChunkRenderPass TRIPWIRE = new ChunkRenderPass(RenderState.defaults(), true, 0.1f);
 }

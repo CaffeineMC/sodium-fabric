@@ -5,20 +5,24 @@ import me.jellysquid.mods.sodium.world.biome.ChunkColorCache;
 import me.jellysquid.mods.sodium.world.slice.cloned.ClonedChunkSection;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.PackedIntegerArrayExtended;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.util.math.*;
-import net.minecraft.world.BlockRenderView;
-import net.minecraft.world.LightType;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.source.BiomeAccess;
-import net.minecraft.world.biome.source.BiomeCoords;
-import net.minecraft.world.chunk.light.LightingProvider;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.QuartPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.ColorResolver;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeManager;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.lighting.LevelLightEngine;
+import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -33,7 +37,7 @@ import java.util.Arrays;
  *
  * Object pooling should be used to avoid huge allocations as this class contains many large arrays.
  */
-public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
+public class WorldSlice implements BlockAndTintGetter, RenderAttachedBlockView {
     // The number of blocks in a section.
     private static final int SECTION_BLOCK_COUNT = 16 * 16 * 16;
 
@@ -44,14 +48,14 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     static final int NEIGHBOR_BLOCK_RADIUS = 2;
 
     // The radius of sections around the origin chunk section that should be copied.
-    static final int NEIGHBOR_SECTION_RADIUS = ChunkSectionPos.getSectionCoord(MathHelper.roundUpToMultiple(NEIGHBOR_BLOCK_RADIUS, 16));
+    static final int NEIGHBOR_SECTION_RADIUS = SectionPos.blockToSectionCoord(Mth.roundToward(NEIGHBOR_BLOCK_RADIUS, 16));
 
     // The number of sections on each axis of this slice.
     private static final int SECTION_LENGTH = 1 + (NEIGHBOR_SECTION_RADIUS * 2);
 
     // The size of the lookup tables used for mapping values to coordinate int pairs. The lookup table size is always
     // a power of two so that multiplications can be replaced with simple bit shifts in hot code paths.
-    private static final int TABLE_LENGTH = MathHelper.smallestEncompassingPowerOfTwo(SECTION_LENGTH);
+    private static final int TABLE_LENGTH = Mth.smallestEncompassingPowerOfTwo(SECTION_LENGTH);
 
     // The number of bits needed for each X/Y/Z component in a lookup table.
     private static final int TABLE_BITS = Integer.bitCount(TABLE_LENGTH - 1);
@@ -66,10 +70,10 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     private static final int PACKED_BIOME_BITS = 2;
 
     // The world this slice has copied data from
-    private final World world;
+    private final Level world;
 
     // The accessor used for fetching biome data from the slice
-    private final BiomeAccess biomeAccess;
+    private final BiomeManager biomeAccess;
 
     // Local Section->BlockState table.
     private final BlockState[][] blockStatesArrays;
@@ -87,12 +91,12 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     private int offsetSectionX, offsetSectionY, offsetSectionZ;
 
     // The origin of this slice in section-coordinate space
-    private ChunkSectionPos origin;
+    private SectionPos origin;
 
-    public WorldSlice(World world) {
+    public WorldSlice(Level world) {
         this.world = world;
 
-        this.biomeAccess = new BiomeAccess(this::getStoredBiome, ((BiomeSeedProvider) this.world).getBiomeSeed());
+        this.biomeAccess = new BiomeManager(this::getStoredBiome, ((BiomeSeedProvider) this.world).getBiomeSeed());
 
         this.clonedSections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
         this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][SECTION_BLOCK_COUNT];
@@ -117,12 +121,12 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
             }
         }
 
-        this.biomeColorCache = new ChunkColorCache(this.origin, this.biomeAccess, MinecraftClient.getInstance().options.biomeBlendRadius);
+        this.biomeColorCache = new ChunkColorCache(this.origin, this.biomeAccess, Minecraft.getInstance().options.biomeBlendRadius);
     }
 
-    private void unpackBlockData(BlockState[] states, ClonedChunkSection section, BlockBox box) {
+    private void unpackBlockData(BlockState[] states, ClonedChunkSection section, BoundingBox box) {
         if (section.isEmpty()) {
-            Arrays.fill(states, Blocks.AIR.getDefaultState());
+            Arrays.fill(states, Blocks.AIR.defaultBlockState());
         } else if (this.origin.equals(section.getPosition()))  {
             this.unpackBlockData(states, section);
         } else {
@@ -130,17 +134,17 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
         }
     }
 
-    private void unpackBlockDataSlow(BlockState[] states, ClonedChunkSection section, BlockBox box) {
-        ChunkSectionPos pos = section.getPosition();
+    private void unpackBlockDataSlow(BlockState[] states, ClonedChunkSection section, BoundingBox box) {
+        SectionPos pos = section.getPosition();
 
-        int minBlockX = Math.max(box.getMinX(), pos.getMinX());
-        int maxBlockX = Math.min(box.getMaxX(), pos.getMaxX());
+        int minBlockX = Math.max(box.minX(), pos.minBlockX());
+        int maxBlockX = Math.min(box.maxX(), pos.maxBlockX());
 
-        int minBlockY = Math.max(box.getMinY(), pos.getMinY());
-        int maxBlockY = Math.min(box.getMaxY(), pos.getMaxY());
+        int minBlockY = Math.max(box.minY(), pos.minBlockY());
+        int maxBlockY = Math.min(box.maxY(), pos.maxBlockY());
 
-        int minBlockZ = Math.max(box.getMinZ(), pos.getMinZ());
-        int maxBlockZ = Math.min(box.getMaxZ(), pos.getMaxZ());
+        int minBlockZ = Math.max(box.minZ(), pos.minBlockZ());
+        int maxBlockZ = Math.min(box.maxZ(), pos.maxBlockZ());
 
         for (int y = minBlockY; y <= maxBlockY; y++) {
             for (int z = minBlockZ; z <= maxBlockZ; z++) {
@@ -185,13 +189,13 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     }
 
     @Override
-    public float getBrightness(Direction direction, boolean shaded) {
-        return this.world.getBrightness(direction, shaded);
+    public float getShade(Direction direction, boolean shaded) {
+        return this.world.getShade(direction, shaded);
     }
 
     @Override
-    public LightingProvider getLightingProvider() {
-        return this.world.getLightingProvider();
+    public LevelLightEngine getLightEngine() {
+        return this.world.getLightEngine();
     }
 
     @Override
@@ -203,31 +207,31 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
         var section = this.clonedSections[this.getSectionIndexFromBlockCoord(blockX, blockY, blockZ)];
 
         return section.getBlockEntity(
-                ChunkSectionPos.getLocalCoord(blockX),
-                ChunkSectionPos.getLocalCoord(blockY),
-                ChunkSectionPos.getLocalCoord(blockZ));
+                SectionPos.sectionRelative(blockX),
+                SectionPos.sectionRelative(blockY),
+                SectionPos.sectionRelative(blockZ));
     }
 
     @Override
-    public int getColor(BlockPos pos, ColorResolver resolver) {
+    public int getBlockTint(BlockPos pos, ColorResolver resolver) {
         return this.biomeColorCache.getColor(resolver, pos.getX(), pos.getY(), pos.getZ());
     }
 
     @Override
-    public int getLightLevel(LightType type, BlockPos pos) {
+    public int getBrightness(LightLayer type, BlockPos pos) {
         return this.getLightLevel(type, pos.getX(), pos.getY(), pos.getZ());
     }
 
-    public int getLightLevel(LightType type, int blockX, int blockY, int blockZ) {
+    public int getLightLevel(LightLayer type, int blockX, int blockY, int blockZ) {
         var section = this.clonedSections[this.getSectionIndexFromBlockCoord(blockX, blockY, blockZ)];
 
         return section.getLightLevel(type,
-                ChunkSectionPos.getLocalCoord(blockX),
-                ChunkSectionPos.getLocalCoord(blockY),
-                ChunkSectionPos.getLocalCoord(blockZ));
+                SectionPos.sectionRelative(blockX),
+                SectionPos.sectionRelative(blockY),
+                SectionPos.sectionRelative(blockZ));
     }
 
-    public ChunkSectionPos getOrigin() {
+    public SectionPos getOrigin() {
         return this.origin;
     }
 
@@ -237,8 +241,8 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     }
 
     @Override
-    public int getBottomY() {
-        return this.world.getBottomY();
+    public int getMinBuildHeight() {
+        return this.world.getMinBuildHeight();
     }
 
     @Override
@@ -250,19 +254,19 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
         var section = this.clonedSections[this.getSectionIndexFromBlockCoord(blockX, blockY, blockZ)];
 
         return section.getBlockEntityRenderAttachment(
-                        ChunkSectionPos.getLocalCoord(blockX),
-                        ChunkSectionPos.getLocalCoord(blockY),
-                        ChunkSectionPos.getLocalCoord(blockZ));
+                        SectionPos.sectionRelative(blockX),
+                        SectionPos.sectionRelative(blockY),
+                        SectionPos.sectionRelative(blockZ));
     }
 
     // Coordinates are in biome space!
     private Biome getStoredBiome(int biomeX, int biomeY, int biomeZ) {
         var biomeArray = this.biomeArrays[this.getSectionIndexFromBiomeCoord(biomeX, biomeY, biomeZ)];
 
-        return biomeArray[packLocalBiomeIndex(BiomeCoords.method_39920(biomeX), BiomeCoords.method_39920(biomeY), BiomeCoords.method_39920(biomeZ))];
+        return biomeArray[packLocalBiomeIndex(QuartPos.quartLocal(biomeX), QuartPos.quartLocal(biomeY), QuartPos.quartLocal(biomeZ))];
     }
 
-    public BiomeAccess getBiomeAccess() {
+    public BiomeManager getBiomeAccess() {
         return this.biomeAccess;
     }
 
@@ -280,13 +284,13 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
 
     private static int getBlockIndex(int blockX, int blockY, int blockZ) {
         return packLocalBlockIndex(
-                ChunkSectionPos.getLocalCoord(blockX),
-                ChunkSectionPos.getLocalCoord(blockY),
-                ChunkSectionPos.getLocalCoord(blockZ));
+                SectionPos.sectionRelative(blockX),
+                SectionPos.sectionRelative(blockY),
+                SectionPos.sectionRelative(blockZ));
     }
 
     private int getSectionIndexFromBiomeCoord(int biomeX, int biomeY, int biomeZ) {
-        return this.getSectionIndexFromSectionCoord(BiomeCoords.toChunk(biomeX), BiomeCoords.toChunk(biomeY), BiomeCoords.toChunk(biomeZ));
+        return this.getSectionIndexFromSectionCoord(QuartPos.toSection(biomeX), QuartPos.toSection(biomeY), QuartPos.toSection(biomeZ));
     }
 
     private int getSectionIndexFromSectionCoord(int sectionX, int sectionY, int sectionZ) {
@@ -295,8 +299,8 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
 
     private int getSectionIndexFromBlockCoord(int blockX, int blockY, int blockZ) {
         return this.getSectionIndexFromSectionCoord(
-                ChunkSectionPos.getSectionCoord(blockX),
-                ChunkSectionPos.getSectionCoord(blockY),
-                ChunkSectionPos.getSectionCoord(blockZ));
+                SectionPos.blockToSectionCoord(blockX),
+                SectionPos.blockToSectionCoord(blockY),
+                SectionPos.blockToSectionCoord(blockZ));
     }
 }

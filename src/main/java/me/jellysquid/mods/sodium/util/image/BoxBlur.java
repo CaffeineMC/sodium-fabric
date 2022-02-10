@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.util.image;
 
+
 import me.jellysquid.mods.sodium.util.packed.ColorARGB;
 import org.apache.commons.lang3.Validate;
 

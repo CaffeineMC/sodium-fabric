@@ -1,9 +1,8 @@
 package me.jellysquid.mods.sodium.interop.vanilla.mixin;
 
-import net.minecraft.client.render.Shader;
-
 import java.util.function.Supplier;
+import net.minecraft.client.renderer.ShaderInstance;
 
 public interface RenderPhaseShaderAccess {
-    Supplier<Shader> getShader();
+    Supplier<ShaderInstance> getShader();
 }

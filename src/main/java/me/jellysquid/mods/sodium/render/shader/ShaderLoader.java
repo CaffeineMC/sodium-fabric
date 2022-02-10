@@ -1,16 +1,16 @@
 package me.jellysquid.mods.sodium.render.shader;
 
-import net.minecraft.util.Identifier;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import net.minecraft.resources.ResourceLocation;
 
 public interface ShaderLoader<T> {
-    ShaderLoader<Identifier> MINECRAFT_ASSETS = new ShaderLoader<>() {
+    ShaderLoader<ResourceLocation> MINECRAFT_ASSETS = new ShaderLoader<>() {
         @Override
-        public String getShaderSource(Identifier name) {
+        public String getShaderSource(ResourceLocation name) {
             String path = String.format("/assets/%s/shaders/%s", name.getNamespace(), name.getPath());
 
             try (InputStream in = ShaderLoader.class.getResourceAsStream(path)) {
@@ -26,7 +26,7 @@ public interface ShaderLoader<T> {
 
         @Override
         public String getShaderSource(String name) {
-            return this.getShaderSource(new Identifier(name));
+            return this.getShaderSource(new ResourceLocation(name));
         }
     };
 

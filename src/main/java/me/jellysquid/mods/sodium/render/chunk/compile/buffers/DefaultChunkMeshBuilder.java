@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.render.chunk.compile.buffers;
 import me.jellysquid.mods.sodium.render.chunk.state.ChunkRenderData;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexSink;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
-import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
 public class DefaultChunkMeshBuilder implements ChunkMeshBuilder {
     private final TerrainVertexSink[] sinks;
@@ -21,7 +21,7 @@ public class DefaultChunkMeshBuilder implements ChunkMeshBuilder {
     }
 
     @Override
-    public void addSprite(Sprite sprite) {
+    public void addSprite(TextureAtlasSprite sprite) {
         this.renderData.addSprite(sprite);
     }
 
