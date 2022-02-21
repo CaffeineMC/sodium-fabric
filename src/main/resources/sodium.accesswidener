@@ -69,3 +69,5 @@ accessible field net/minecraft/client/render/RenderPhase DEPTH_MASK Lnet/minecra
 accessible field net/minecraft/client/render/OverlayTexture texture Lnet/minecraft/client/texture/NativeImageBackedTexture;
 
 accessible field net/minecraft/client/render/BufferRenderer vertexFormat Lnet/minecraft/client/render/VertexFormat;
+
+accessible field net/minecraft/client/render/RenderPhase ENABLE_LIGHTMAP Lnet/minecraft/client/render/RenderPhase$Lightmap;
