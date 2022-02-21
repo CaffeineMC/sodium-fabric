@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.*;
 import me.jellysquid.mods.sodium.opengl.array.VertexArrayDescription;
 import me.jellysquid.mods.sodium.opengl.array.VertexArrayResourceBinding;
@@ -14,6 +15,7 @@ import me.jellysquid.mods.sodium.render.immediate.RenderImmediate;
 import me.jellysquid.mods.sodium.render.immediate.VanillaShaderInterface;
 import net.minecraft.client.render.*;
 import org.apache.commons.lang3.Validate;
+import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -120,6 +122,15 @@ public class MixinRenderLayer {
             return textures;
         }
 
+        @Override
+        public Vector4f getDefaultColorModulator() {
+            if (this.lightmap == RenderPhase.ENABLE_LIGHTMAP) {
+                return new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+            }
+
+            return null;
+        }
+
         private static void populateTextures(ShaderTexture[] outputs, List<ShaderTexture> inputs) {
             for (var input : inputs) {
                 outputs[input.target()] = input;
@@ -180,6 +191,8 @@ public class MixinRenderLayer {
         private Pipeline<VanillaShaderInterface, VanillaShaderInterface.BufferTarget> pipeline;
         private ShaderTexture[] textures;
 
+        private Vector4f defaultColorModulator;
+
         public MixinMultiPhase(String name, VertexFormat vertexFormat, VertexFormat.DrawMode drawMode, int expectedBufferSize, boolean hasCrumbling, boolean translucent, Runnable startAction, Runnable endAction) {
             super(name, vertexFormat, drawMode, expectedBufferSize, hasCrumbling, translucent, startAction, endAction);
         }
@@ -204,6 +217,13 @@ public class MixinRenderLayer {
                 var data = buffer.popData();
                 var params = data.getFirst();
 
+                // VANILLA BUG: LightmapTextureManager resets the color back to all-white when using the vanilla lightmap
+                // render phase, but we don't use that code path. Without this, many things will fail to render correctly.
+                if (this.defaultColorModulator != null) {
+                    RenderSystem.setShaderColor(this.defaultColorModulator.x, this.defaultColorModulator.y, this.defaultColorModulator.z,
+                            this.defaultColorModulator.w);
+                }
+
                 RenderImmediate.getInstance()
                         .draw(this.pipeline, this.textures, data.getSecond(), params.getMode(), params.getVertexFormat(), params.getCount(), params.getElementFormat(), params.getVertexCount(), params.isTextured());
             }
@@ -219,6 +239,7 @@ public class MixinRenderLayer {
             if ((Object) this.phases instanceof MultiPhaseParametersExtended params) {
                 this.pipeline = this.createPipeline(params.createRenderState(), params.createProgram());
                 this.textures = params.createShaderTextures();
+                this.defaultColorModulator = params.getDefaultColorModulator();
             } else {
                 throw new UnsupportedOperationException("Not able to convert multi-phase parameters into pipeline");
             }
