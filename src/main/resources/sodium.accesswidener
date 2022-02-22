@@ -21,6 +21,7 @@ accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite	height
 accessible	field	net/minecraft/client/renderer/texture/TextureAtlasSprite	mainImage	[Lcom/mojang/blaze3d/platform/NativeImage;
 accessible	method	net/minecraft/client/renderer/texture/TextureAtlasSprite	upload	(II[Lcom/mojang/blaze3d/platform/NativeImage;)V
 accessible	field	com/mojang/blaze3d/platform/NativeImage	pixels	J
+
 accessible	field	com/mojang/blaze3d/vertex/VertexFormat	offsets	Lit/unimi/dsi/fastutil/ints/IntList;
 accessible	method	com/mojang/blaze3d/shaders/Program	getId	()I
 accessible	field	com/mojang/blaze3d/systems/RenderSystem	shaderLightDirections	[Lcom/mojang/math/Vector3f;
