@@ -57,5 +57,6 @@ accessible	field	net/minecraft/client/renderer/RenderStateShard	NO_CULL	Lnet/min
 accessible	field	net/minecraft/client/renderer/RenderStateShard	COLOR_DEPTH_WRITE	Lnet/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard;
 accessible	field	net/minecraft/client/renderer/RenderStateShard	COLOR_WRITE	Lnet/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard;
 accessible	field	net/minecraft/client/renderer/RenderStateShard	DEPTH_WRITE	Lnet/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard LIGHTMAP Lnet/minecraft/client/renderer/RenderStateShard$LightmapStateShard;
 accessible	field	net/minecraft/client/renderer/texture/OverlayTexture	texture	Lnet/minecraft/client/renderer/texture/DynamicTexture;
 accessible	field	com/mojang/blaze3d/vertex/BufferUploader	lastFormat	Lcom/mojang/blaze3d/vertex/VertexFormat;

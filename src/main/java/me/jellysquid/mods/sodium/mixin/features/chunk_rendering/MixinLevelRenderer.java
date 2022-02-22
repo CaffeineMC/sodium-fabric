@@ -93,11 +93,6 @@ public abstract class MixinLevelRenderer implements LevelRendererHolder {
     @Overwrite
     private void renderChunkLayer(RenderType renderLayer, PoseStack pose, double x, double y, double z, Matrix4f matrix) {
         this.renderer.drawChunkLayer(renderLayer, pose, x, y, z);
-
-        // VANILLA BUG: Binding a RenderLayer for chunk rendering will result in setShaderColor being called,
-        // which is accidentally depended on by tile entity rendering. Since we don't bind a render layer, we need
-        // to set this back to the expected state, or colors will be corrupted.
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     /**

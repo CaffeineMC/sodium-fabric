@@ -128,7 +128,7 @@ public class MixinRenderType {
 
         @Override
         public Vector4f getDefaultColorModulator() {
-            if (this.lightmap == RenderPhase.ENABLE_LIGHTMAP) {
+            if (this.lightmapState == RenderStateShard.LIGHTMAP) {
                 return new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
             }
 
