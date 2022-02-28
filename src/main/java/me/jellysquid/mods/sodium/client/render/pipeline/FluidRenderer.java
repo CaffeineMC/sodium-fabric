@@ -44,6 +44,8 @@ public class FluidRenderer {
     private static final float EPSILON = 0.001f;
 
     private final BlockPos.Mutable scratchPos = new BlockPos.Mutable();
+    private final MutableFloat scratchHeight = new MutableFloat(0);
+    private final MutableInt scratchSamples = new MutableInt();
 
     private final Sprite waterOverlaySprite;
 
@@ -442,9 +444,6 @@ public class FluidRenderer {
             return 1.0f;
         }
 
-        MutableFloat totalHeight = new MutableFloat(0);
-        MutableInt samples = new MutableInt();
-
         if (fluidHeightY > 0.0f || fluidHeightX > 0.0f) {
             float height = this.fluidHeight(world, fluid, blockPos);
 
@@ -452,14 +451,18 @@ public class FluidRenderer {
                 return 1.0f;
             }
 
-            modifyHeight(totalHeight, samples, height);
+            modifyHeight(scratchHeight, scratchSamples, height);
         }
 
-        modifyHeight(totalHeight, samples, fluidHeight);
-        modifyHeight(totalHeight, samples, fluidHeightY);
-        modifyHeight(totalHeight, samples, fluidHeightX);
+        modifyHeight(scratchHeight, scratchSamples, fluidHeight);
+        modifyHeight(scratchHeight, scratchSamples, fluidHeightY);
+        modifyHeight(scratchHeight, scratchSamples, fluidHeightX);
 
-        return totalHeight.floatValue() / samples.intValue();
+        float result = scratchHeight.floatValue() / scratchSamples.intValue();
+        scratchHeight.setValue(0);
+        scratchSamples.setValue(0);
+
+        return result;
     }
 
     private void modifyHeight(MutableFloat totalHeight, MutableInt samples, float target) {
