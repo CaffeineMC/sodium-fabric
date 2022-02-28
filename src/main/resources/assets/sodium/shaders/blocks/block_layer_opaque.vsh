@@ -23,7 +23,7 @@ void main() {
     vec3 position = u_RegionOffset + _draw_translation + _vert_position;
 
 #ifdef USE_FOG
-    v_FragDistance = u_FogShape == 0 ? length(position) : max(length(position.xz), abs(position.y)); // Use the maximum of the horizontal and vertical distance to get cylindrical fog if fog shape is 1 (cylindrical)
+    v_FragDistance = getFragDistance(u_FogShape, position);
 #endif
 
     // Transform the vertex position into model-view-projection space
