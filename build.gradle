@@ -10,9 +10,9 @@ archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}
 version = "${project.mod_version}+${getVersionMetadata()}"
 group = project.maven_group
 
-minecraft {
-    refmapName = "mixins.sodium.refmap.json"
-    accessWidener = file("src/main/resources/sodium.accesswidener")
+loom {
+    mixin.defaultRefmapName = "mixins.sodium.refmap.json"
+    accessWidenerPath = file("src/main/resources/sodium.accesswidener")
 }
 
 configurations {
