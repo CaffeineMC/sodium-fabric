@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.level.ColorResolver;
 
@@ -13,7 +14,7 @@ import java.util.Map;
 public class BlockColorCache {
     private static final int BORDER = 1;
 
-    private final Biome[][] biomes;
+    private final RegistryEntry<Biome>[][] biomes;
     private final Map<ColorResolver, int[][]> colors;
 
     private final int sizeHorizontal;
@@ -42,7 +43,7 @@ public class BlockColorCache {
         this.baseZ = pos.getMinZ() - borderXZ;
 
         this.colors = new Reference2ReferenceOpenHashMap<>();
-        this.biomes = new Biome[this.sizeVertical][];
+        this.biomes = new RegistryEntry[this.sizeVertical][];
     }
 
     public int getColor(ColorResolver resolver, int posX, int posY, int posZ) {
@@ -65,9 +66,9 @@ public class BlockColorCache {
         return layer[this.indexXZ(x, z)];
     }
 
-    private Biome[] gatherBiomes(int level) {
+    private RegistryEntry<Biome>[] gatherBiomes(int level) {
         var biomeAccess = this.slice.getBiomeAccess();
-        var biomeData = new Biome[this.sizeHorizontal * this.sizeHorizontal];
+        var biomeData = new RegistryEntry[this.sizeHorizontal * this.sizeHorizontal];
 
         var pos = new BlockPos.Mutable();
 
@@ -81,13 +82,13 @@ public class BlockColorCache {
     }
 
     private int[] gatherColorsXZ(ColorResolver resolver, int y) {
-        var biomeData = this.getBiomeData(y);
+        RegistryEntry<Biome>[] biomeData = this.getBiomeData(y);
         var colorData = new int[this.sizeHorizontal * this.sizeHorizontal];
 
         for (int x = 0; x < this.sizeHorizontal; x++) {
             for (int z = 0; z < this.sizeHorizontal; z++) {
                 int index = this.indexXZ(x, z);
-                colorData[index] = resolver.getColor(biomeData[index],
+                colorData[index] = resolver.getColor(biomeData[index].value(),
                         x + this.baseX, z + this.baseZ);
             }
         }
@@ -97,8 +98,8 @@ public class BlockColorCache {
         return colorData;
     }
 
-    private Biome[] getBiomeData(int y) {
-        Biome[] biomes = this.biomes[y];
+    private RegistryEntry<Biome>[] getBiomeData(int y) {
+        RegistryEntry<Biome>[] biomes = this.biomes[y];
 
         if (biomes == null) {
             this.biomes[y] = (biomes = this.gatherBiomes(y));

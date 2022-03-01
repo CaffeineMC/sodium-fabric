@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkStatus;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
@@ -341,6 +342,9 @@ public class SodiumWorldRenderer {
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
     }
 
+    public boolean doesChunkHaveFlag(int x, int z, int status) {
+        return this.chunkTracker.hasMergedFlags(x, z, status);
+    }
 
     public boolean isBoxVisible(double x1, double y1, double z1, double x2, double y2, double z2) {
         int minX = MathHelper.floor(x1 - 0.5D) >> 4;

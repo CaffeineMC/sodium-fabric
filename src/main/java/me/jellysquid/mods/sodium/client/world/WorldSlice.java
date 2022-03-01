@@ -13,6 +13,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.*;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
@@ -77,7 +78,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     private final BlockState[][] blockStatesArrays;
 
     // Local Section->Biome table.
-    private final Biome[][] biomeArrays;
+    private final RegistryEntry<Biome>[][] biomeArrays;
 
     // Local section copies. Read-only.
     private ClonedChunkSection[] sections;
@@ -139,7 +140,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
 
         this.sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
         this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][SECTION_BLOCK_COUNT];
-        this.biomeArrays = new Biome[SECTION_TABLE_ARRAY_SIZE][SECTION_BIOME_COUNT];
+        this.biomeArrays = new RegistryEntry[SECTION_TABLE_ARRAY_SIZE][SECTION_BIOME_COUNT];
 
     }
 
@@ -204,7 +205,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
                 .copyUsingPalette(states, section.getBlockPalette());
     }
 
-    private void unpackBiomeData(Biome[] biomes, ClonedChunkSection section) {
+    private void unpackBiomeData(RegistryEntry<Biome>[] biomes, ClonedChunkSection section) {
         for (int x = 0; x < 4; x++) {
             for (int y = 0; y < 4; y++) {
                 for (int z = 0; z < 4; z++) {
@@ -298,7 +299,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     }
 
     // Coordinates are in biome space!
-    private Biome getStoredBiome(int biomeX, int biomeY, int biomeZ) {
+    private RegistryEntry<Biome> getStoredBiome(int biomeX, int biomeY, int biomeZ) {
         int chunkX = (BiomeCoords.toBlock(biomeX) - this.baseX) >> 4;
         int chunkY = (BiomeCoords.toBlock(biomeY) - this.baseY) >> 4;
         int chunkZ = (BiomeCoords.toBlock(biomeZ) - this.baseZ) >> 4;
