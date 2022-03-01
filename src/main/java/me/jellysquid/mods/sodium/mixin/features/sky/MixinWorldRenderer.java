@@ -44,15 +44,11 @@ public class MixinWorldRenderer {
      */
     @Inject(method = "renderSky(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/util/math/Matrix4f;FLnet/minecraft/client/render/Camera;ZLjava/lang/Runnable;)V", at = @At("HEAD"), cancellable = true)
     private void preRenderSky(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, Camera camera, boolean bl, Runnable runnable, CallbackInfo ci) {
-        Vec3d cameraPosition = camera.getPos();
-        Entity cameraEntity = camera.getFocusedEntity();
-
-        boolean isSubmersed = camera.getSubmersionType() != CameraSubmersionType.NONE;
-        boolean hasBlindness = cameraEntity instanceof LivingEntity entity && entity.hasStatusEffect(StatusEffects.BLINDNESS);
-        boolean useThickFog = client.world.getDimensionEffects().useThickFog(MathHelper.floor(cameraPosition.getX()),
-                MathHelper.floor(cameraPosition.getY())) || this.client.inGameHud.getBossBarHud().shouldThickenFog();
-
-        if (isSubmersed || hasBlindness || useThickFog) {
+        // Cancels sky rendering when the camera is submersed underwater.
+        // This prevents the sky from being visible through chunks culled by Sodium's fog occlusion.
+        // Fixes https://bugs.mojang.com/browse/MC-152504.
+        // Credit to bytzo for noticing the change in 1.18.2.
+        if (camera.getSubmersionType() == CameraSubmersionType.WATER) {
             ci.cancel();
         }
     }
