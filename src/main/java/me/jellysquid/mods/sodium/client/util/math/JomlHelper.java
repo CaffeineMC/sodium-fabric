@@ -8,7 +8,7 @@ import java.nio.FloatBuffer;
 public class JomlHelper {
     public static void set(Matrix4f dst, net.minecraft.util.math.Matrix4f src) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            FloatBuffer buffer = stack.callocFloat(16);
+            FloatBuffer buffer = stack.mallocFloat(16);
             src.writeColumnMajor(buffer);
 
             dst.set(buffer);
