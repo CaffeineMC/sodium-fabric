@@ -30,6 +30,7 @@ public class AsyncBufferArena implements GlBufferArena {
 
     private int capacity;
     private int used;
+    private int ancd;
 
     public AsyncBufferArena(CommandList commands, int initialCapacity, StagingBuffer stagingBuffer) {
         this.resizeIncrement = initialCapacity / 16;
