@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.render.vertex.buffer;
 
-import me.jellysquid.mods.sodium.render.vertex.type.BufferVertexFormat;
+import net.caffeinemc.gfx.api.buffer.BufferVertexFormat;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;

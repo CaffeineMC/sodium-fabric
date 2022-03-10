@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.render.terrain;
 
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.BlockColorProviderRegistry;
 import me.jellysquid.mods.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
-import me.jellysquid.mods.sodium.render.chunk.compile.buffers.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.render.terrain.color.ColorSampler;
 import me.jellysquid.mods.sodium.render.terrain.color.blender.ColorBlender;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexSink;
@@ -13,7 +12,6 @@ import me.jellysquid.mods.sodium.render.terrain.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.render.terrain.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import me.jellysquid.mods.sodium.render.terrain.quad.properties.ModelQuadOrientation;
-import me.jellysquid.mods.sodium.render.terrain.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.util.DirectionUtil;
 import me.jellysquid.mods.sodium.util.packed.ColorABGR;
 import net.minecraft.block.BlockState;

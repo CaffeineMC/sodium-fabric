@@ -9,6 +9,8 @@ import net.minecraft.util.math.Vec3i;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
+import java.nio.FloatBuffer;
+
 @Mixin(Matrix3f.class)
 public class MixinMatrix3f implements Matrix3fExtended {
     @Shadow
@@ -271,5 +273,22 @@ public class MixinMatrix3f implements Matrix3fExtended {
     @Override
     public float getA22() {
         return this.a22;
+    }
+
+    @Override
+    public void writeColumnMajor3x4(FloatBuffer buf) {
+        buf.put(pack3x4(0, 0), this.a00);
+        buf.put(pack3x4(0, 1), this.a01);
+        buf.put(pack3x4(0, 2), this.a02);
+        buf.put(pack3x4(1, 0), this.a10);
+        buf.put(pack3x4(1, 1), this.a11);
+        buf.put(pack3x4(1, 2), this.a12);
+        buf.put(pack3x4(2, 0), this.a20);
+        buf.put(pack3x4(2, 1), this.a21);
+        buf.put(pack3x4(2, 2), this.a22);
+    }
+
+    private static int pack3x4(int x, int y) {
+        return (y * 4) + x;
     }
 }

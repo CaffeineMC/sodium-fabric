@@ -1,14 +1,13 @@
 package me.jellysquid.mods.sodium.mixin.features.block;
 
-import me.jellysquid.mods.sodium.render.terrain.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexFormats;
-import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
-import me.jellysquid.mods.sodium.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.render.terrain.quad.ModelQuadUtil;
-import me.jellysquid.mods.sodium.util.packed.ColorABGR;
-import me.jellysquid.mods.sodium.util.rand.XoRoShiRoRandom;
+import me.jellysquid.mods.sodium.render.terrain.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.util.DirectionUtil;
+import me.jellysquid.mods.sodium.util.packed.ColorABGR;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.block.BlockModelRenderer;
@@ -26,7 +25,6 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 

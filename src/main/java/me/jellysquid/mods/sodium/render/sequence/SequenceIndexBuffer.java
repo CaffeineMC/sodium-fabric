@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.render.sequence;
 
-import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
-import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
-import me.jellysquid.mods.sodium.opengl.types.IntType;
+import net.caffeinemc.gfx.api.buffer.Buffer;
+import net.caffeinemc.gfx.api.device.RenderDevice;
+import net.caffeinemc.gfx.api.types.IntType;
 
 public class SequenceIndexBuffer {
     private final RenderDevice device;

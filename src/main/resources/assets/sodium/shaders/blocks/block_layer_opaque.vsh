@@ -2,8 +2,27 @@
 
 #import <sodium:include/fog.glsl>
 #import <sodium:include/chunk_vertex.glsl>
-#import <sodium:include/chunk_matrices.glsl>
-#import <sodium:include/chunk_parameters.glsl>
+
+const uint MAX_INSTANCES = 8 * 4 * 8;
+
+struct InstanceData {
+    vec3 translation;
+};
+
+layout(std140, binding = 0) uniform ubo_CameraMatrices {
+    // The projection matrix
+    mat4 u_ProjectionMatrix;
+
+    // The model-view matrix
+    mat4 u_ModelViewMatrix;
+
+    // The model-view-projection matrix
+    mat4 u_ModelViewProjectionMatrix;
+};
+
+layout(std140, binding = 1) uniform ubo_InstanceData {
+    InstanceData instances[MAX_INSTANCES];
+};
 
 out vec4 v_Color;
 out vec2 v_TexCoord;
@@ -18,10 +37,10 @@ uniform vec3 u_RegionOffset;
 
 void main() {
     _vert_init();
-    _instance_init();
 
     // Transform the chunk-local vertex position into world model space
-    vec3 position = _instance_data.translation + _vert_position;
+    InstanceData instance = instances[gl_BaseInstance];
+    vec3 position = instance.translation + _vert_position;
 
 #ifdef USE_FOG
     v_FragDistance = getFragDistance(u_FogShape, position);

@@ -20,6 +20,11 @@ configurations {
 
     include.extendsFrom modIncludeImplementation
     modImplementation.extendsFrom modIncludeImplementation
+
+    includeImplementation
+
+    include.extendsFrom includesImplementation
+    implementation.extendsFrom includesImplementation
 }
 
 dependencies {
@@ -28,8 +33,9 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    implementation 'org.joml:joml:1.10.4'
-    include 'org.joml:joml:1.10.4'
+    includesImplementation 'org.joml:joml:1.10.4'
+    includesImplementation project(":components:gfx")
+    includesImplementation project(":components:gfx-opengl")
 
     // Fabric API
     modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))

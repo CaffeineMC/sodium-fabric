@@ -6,7 +6,6 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.SodiumClientMod;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.Frustum;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.WorldRendererHolder;
-import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.render.chunk.draw.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
@@ -233,7 +232,7 @@ public class SodiumWorldRenderer {
 
         this.renderPassManager = ChunkRenderPassManager.createDefaultMappings();
 
-        this.renderSectionManager = new RenderSectionManager(RenderDevice.INSTANCE, this, this.renderPassManager, this.world, this.renderDistance);
+        this.renderSectionManager = new RenderSectionManager(SodiumClientMod.DEVICE, this, this.renderPassManager, this.world, this.renderDistance);
         this.renderSectionManager.reloadChunks(this.chunkTracker);
     }
 

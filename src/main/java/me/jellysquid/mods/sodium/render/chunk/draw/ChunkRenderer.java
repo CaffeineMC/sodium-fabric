@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.render.chunk.draw;
 
-import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
-import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexType;
+import net.caffeinemc.gfx.api.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 
 /**

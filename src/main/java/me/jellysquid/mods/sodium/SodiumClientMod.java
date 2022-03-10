@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium;
 
 import me.jellysquid.mods.sodium.config.user.UserConfig;
+import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -10,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 public class SodiumClientMod implements ClientModInitializer {
+    public static RenderDevice DEVICE;
+
     private static UserConfig CONFIG;
     private static Logger LOGGER;
 

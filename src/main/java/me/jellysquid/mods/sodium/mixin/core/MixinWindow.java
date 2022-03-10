@@ -1,6 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.core;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import me.jellysquid.mods.sodium.SodiumClientMod;
+import me.jellysquid.mods.sodium.interop.vanilla.Blaze3DPipelineManager;
+import net.caffeinemc.gfx.opengl.device.GlRenderDevice;
 import net.minecraft.client.WindowEventHandler;
 import net.minecraft.client.WindowSettings;
 import net.minecraft.client.util.MonitorTracker;
@@ -24,6 +27,11 @@ public class MixinWindow {
         GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
         GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 6);
         GLFW.glfwSetErrorCallback(MixinWindow::sodium$throwGlError);
+    }
+
+    @Inject(method = "<init>", at = @At("TAIL"))
+    private void init(WindowEventHandler eventHandler, MonitorTracker monitorTracker, WindowSettings settings, String videoMode, String title, CallbackInfo ci) {
+        SodiumClientMod.DEVICE = new GlRenderDevice(new Blaze3DPipelineManager());
     }
 
     private static void sodium$throwGlError(int error, long description) {

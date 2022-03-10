@@ -7,3 +7,6 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
+include ":components:gfx"
+include ":components:gfx-opengl"
