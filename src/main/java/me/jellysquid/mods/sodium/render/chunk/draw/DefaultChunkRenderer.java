@@ -1,13 +1,17 @@
 package me.jellysquid.mods.sodium.render.chunk.draw;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrays;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.LightmapTextureManagerAccessor;
-import me.jellysquid.mods.sodium.opengl.array.DrawCommandList;
-import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
-import me.jellysquid.mods.sodium.opengl.pipeline.PipelineState;
-import me.jellysquid.mods.sodium.opengl.types.IntType;
-import me.jellysquid.mods.sodium.opengl.types.PrimitiveType;
+import net.caffeinemc.gfx.api.device.commands.RenderCommandList;
+import net.caffeinemc.gfx.api.buffer.BufferMapFlags;
+import net.caffeinemc.gfx.api.buffer.BufferStorageFlags;
+import net.caffeinemc.gfx.api.buffer.MappedBuffer;
+import net.caffeinemc.gfx.api.device.RenderDevice;
+import net.caffeinemc.gfx.api.pipeline.PipelineState;
+import net.caffeinemc.gfx.api.types.IntType;
+import net.caffeinemc.gfx.api.types.PrimitiveType;
 import me.jellysquid.mods.sodium.render.buffer.VertexRange;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
@@ -27,6 +31,7 @@ import net.minecraft.client.texture.TextureManager;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
+import java.util.EnumSet;
 import java.util.Map;
 
 public class DefaultChunkRenderer extends ShaderChunkRenderer {
@@ -41,12 +46,21 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private final SequenceIndexBuffer indexBuffer;
 
+    private final MappedBuffer bufferCameraMatrices;
+    private final MappedBuffer bufferFogParameters;
+
     public DefaultChunkRenderer(RenderDevice device, TerrainVertexType vertexType) {
         super(device, vertexType);
 
         this.commandBuffer = new MappedStreamingBuffer(device, 16 * 1024 * 1024);
         this.instanceDataBuffer = new MappedStreamingBuffer(device, 4 * 1024 * 1024);
         this.indexBuffer = new SequenceIndexBuffer(device, SequenceBuilder.QUADS);
+
+        this.bufferCameraMatrices = device.createMappedBuffer(192, EnumSet.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.MAP_WRITE),
+                EnumSet.of(BufferMapFlags.WRITE, BufferMapFlags.EXPLICIT_FLUSH, BufferMapFlags.PERSISTENT));
+
+        this.bufferFogParameters = device.createMappedBuffer(24, EnumSet.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.MAP_WRITE),
+                EnumSet.of(BufferMapFlags.WRITE, BufferMapFlags.EXPLICIT_FLUSH, BufferMapFlags.PERSISTENT));
     }
 
     @Override
@@ -55,7 +69,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                        ChunkCameraContext camera) {
         var pipeline = this.getPipeline(renderPass);
 
-        device.usePipeline(pipeline, (drawCommandList, programInterface, pipelineState) -> {
+        device.usePipeline(pipeline, (renderCommandList, programInterface, pipelineState) -> {
             this.bindTextures(renderPass, pipelineState);
             this.updateUniforms(matrices, programInterface);
 
@@ -69,7 +83,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                     continue;
                 }
 
-                this.executeDrawBatches(drawCommandList, programInterface, region.getResources(), handles);
+                this.executeDrawBatches(renderCommandList, programInterface, region.getResources(), handles);
             }
         });
     }
@@ -89,23 +103,34 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     }
 
     private void updateUniforms(ChunkRenderMatrices matrices, ChunkShaderInterface programInterface) {
-        programInterface.setFogUniforms();
+        var bufMatrices = this.bufferCameraMatrices.getView();
 
-        if (programInterface.uniformProjectionMatrix != null) {
-            programInterface.uniformProjectionMatrix.set(matrices.projection());
-        }
+        matrices.projection()
+                .get(0, bufMatrices);
+        matrices.modelView()
+                .get(64, bufMatrices);
 
-        if (programInterface.uniformModelViewMatrix != null) {
-            programInterface.uniformModelViewMatrix.set(matrices.modelView());
-        }
+        var mvpMatrix = new Matrix4f();
+        mvpMatrix.set(matrices.projection());
+        mvpMatrix.mul(matrices.modelView());
+        mvpMatrix
+                .get(128, bufMatrices);
 
-        if (programInterface.uniformModelViewProjectionMatrix != null) {
-            var mvpMatrix = new Matrix4f();
-            mvpMatrix.set(matrices.projection());
-            mvpMatrix.mul(matrices.modelView());
+        this.bufferCameraMatrices.flush();
 
-            programInterface.uniformModelViewProjectionMatrix.set(mvpMatrix);
-        }
+        var bufFogParameters = this.bufferFogParameters.getView();
+        var paramFogColor = RenderSystem.getShaderFogColor();
+        bufFogParameters.putFloat(0, paramFogColor[0]);
+        bufFogParameters.putFloat(4, paramFogColor[1]);
+        bufFogParameters.putFloat(8, paramFogColor[2]);
+        bufFogParameters.putFloat(12, paramFogColor[3]);
+        bufFogParameters.putFloat(16, RenderSystem.getShaderFogStart());
+        bufFogParameters.putFloat(20, RenderSystem.getShaderFogEnd());
+
+        this.bufferFogParameters.flush();
+
+        programInterface.uniformFogParameters.bindBuffer(this.bufferFogParameters);
+        programInterface.uniformCameraMatrices.bindBuffer(this.bufferCameraMatrices);
     }
 
     private Handles prepareDrawBatches(ObjectArrayList<RenderSection> sections, ChunkRenderPass pass, ChunkCameraContext camera, RenderRegion.Resources regionResources) {
@@ -115,7 +140,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             return null;
         }
 
-        var alignment = this.device.properties().uniformBufferOffsetAlignment;
+        var alignment = this.device.properties().uniformBufferOffsetAlignment();
 
         var commandBufferWriter = this.commandBuffer.write(MAX_COMMAND_BUFFER_SIZE, alignment);
         var instanceDataWriter = this.instanceDataBuffer.write(MAX_INSTANCE_DATA_SIZE, alignment);
@@ -195,13 +220,13 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         MemoryUtil.memPutInt(ptr + 16, baseInstance);
     }
 
-    private void executeDrawBatches(DrawCommandList<BufferTarget> drawCommandList, ChunkShaderInterface programInterface, RenderRegion.Resources resources, Handles handles) {
-        drawCommandList.bindVertexBuffer(BufferTarget.VERTICES, resources.vertexBuffers.getBufferObject(), 0, this.vertexFormat.getStride());
-        drawCommandList.bindElementBuffer(this.indexBuffer.getBuffer());
+    private void executeDrawBatches(RenderCommandList<BufferTarget> renderCommandList, ChunkShaderInterface programInterface, RenderRegion.Resources resources, Handles handles) {
+        renderCommandList.bindVertexBuffer(BufferTarget.VERTICES, resources.vertexBuffers.getBufferObject(), 0, this.vertexFormat.getStride());
+        renderCommandList.bindElementBuffer(this.indexBuffer.getBuffer());
 
-        programInterface.bufferInstanceData.bindBuffer(handles.instanceData.getBuffer(), handles.instanceData.getOffset(), handles.instanceData.getLength());
+        programInterface.uniformInstanceData.bindBuffer(handles.instanceData.getBuffer(), handles.instanceData.getOffset(), handles.instanceData.getLength());
 
-        drawCommandList.multiDrawElementsIndirect(handles.commandBuffer.getBuffer(), handles.commandBuffer.getOffset(), handles.drawCount,
+        renderCommandList.multiDrawElementsIndirect(handles.commandBuffer.getBuffer(), handles.commandBuffer.getOffset(), handles.drawCount,
                 IntType.UNSIGNED_INT, PrimitiveType.TRIANGLES);
 
         handles.free();

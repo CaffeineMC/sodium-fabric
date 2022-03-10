@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.render.terrain.format.standard;
 
-import me.jellysquid.mods.sodium.opengl.attribute.VertexAttributeFormat;
-import me.jellysquid.mods.sodium.opengl.attribute.VertexFormat;
+import net.caffeinemc.gfx.api.array.attribute.VertexAttributeFormat;
+import net.caffeinemc.gfx.api.array.attribute.VertexFormat;
 import me.jellysquid.mods.sodium.render.vertex.buffer.VertexBufferView;
 import me.jellysquid.mods.sodium.render.vertex.type.BlittableVertexType;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainMeshAttribute;

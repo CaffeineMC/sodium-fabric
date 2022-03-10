@@ -4,10 +4,7 @@ import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import me.jellysquid.mods.sodium.SodiumClientMod;
 import me.jellysquid.mods.sodium.gui.screen.UserConfigErrorScreen;
-import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
-import me.jellysquid.mods.sodium.opengl.sync.Fence;
-import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.render.immediate.RenderImmediate;
+import net.caffeinemc.gfx.api.sync.Fence;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,18 +29,6 @@ public class MixinMinecraftClient {
         while (this.fences.size() > SodiumClientMod.options().advanced.cpuRenderAheadLimit) {
             var fence = this.fences.dequeue();
             fence.sync();
-        }
-    }
-
-    @Inject(method = "render", at = @At("RETURN"))
-    private void postRender(boolean tick, CallbackInfo ci) {
-        this.fences.enqueue(RenderDevice.INSTANCE.createFence());
-
-        RenderImmediate.tryFlush();
-        var instance = SodiumWorldRenderer.instanceNullable();
-
-        if (instance != null) {
-            instance.flush();
         }
     }
 }

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.render.stream;
 
-import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
+import net.caffeinemc.gfx.api.buffer.Buffer;
 
 import java.nio.ByteBuffer;
 

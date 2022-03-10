@@ -1,0 +1,28 @@
+apply plugin: "java"
+
+archivesBaseName = 'sodium-gfx-opengl'
+version = rootProject.version
+group = 'net.caffeinemc'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(":components:gfx")
+
+    implementation "it.unimi.dsi:fastutil:8.5.6"
+    implementation "org.lwjgl:lwjgl:3.2.2"
+    implementation "org.lwjgl:lwjgl-opengl:3.2.2"
+    implementation "org.apache.commons:commons-lang3:3.12.0"
+
+    compileOnly "org.jetbrains:annotations:23.0.0"
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}

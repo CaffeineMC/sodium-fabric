@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.render.chunk.passes;
 
-import me.jellysquid.mods.sodium.opengl.types.RenderState;
+import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
 
-public record ChunkRenderPass(RenderState renderState, boolean mipped, float alphaCutoff) {
+public record ChunkRenderPass(PipelineDescription pipelineDescription, boolean mipped, float alphaCutoff) {
     public boolean usesReverseOrder() {
-        return this.renderState.blendFunction != null;
+        return this.pipelineDescription.blendFunc != null;
     }
 
     public boolean isCutout() {

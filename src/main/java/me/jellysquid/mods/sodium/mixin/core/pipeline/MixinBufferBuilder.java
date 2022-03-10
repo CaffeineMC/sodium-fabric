@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
 import me.jellysquid.mods.sodium.SodiumClientMod;
-import me.jellysquid.mods.sodium.render.vertex.type.BufferVertexFormat;
+import net.caffeinemc.gfx.api.buffer.BufferVertexFormat;
 import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.render.vertex.VertexSink;
 import me.jellysquid.mods.sodium.render.vertex.buffer.VertexBufferView;
@@ -77,12 +77,12 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
 
     @Override
     public BufferVertexFormat getVertexFormat() {
-        return BufferVertexFormat.from(this.format);
+        return (BufferVertexFormat) this.format;
     }
 
     @Override
     public void flush(int vertexCount, BufferVertexFormat format) {
-        if (BufferVertexFormat.from(this.format) != format) {
+        if (this.getVertexFormat() != format) {
             throw new IllegalStateException("Mis-matched vertex format (expected: [" + format + "], currently using: [" + this.format + "])");
         }
 

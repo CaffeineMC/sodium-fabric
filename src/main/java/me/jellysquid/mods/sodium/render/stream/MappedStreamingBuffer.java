@@ -1,19 +1,19 @@
 package me.jellysquid.mods.sodium.render.stream;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
-import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
-import me.jellysquid.mods.sodium.opengl.buffer.BufferMapFlags;
-import me.jellysquid.mods.sodium.opengl.buffer.BufferStorageFlags;
-import me.jellysquid.mods.sodium.opengl.buffer.MappedBuffer;
-import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
-import me.jellysquid.mods.sodium.opengl.sync.Fence;
-import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
+import net.caffeinemc.gfx.api.buffer.Buffer;
+import net.caffeinemc.gfx.api.buffer.BufferMapFlags;
+import net.caffeinemc.gfx.api.buffer.BufferStorageFlags;
+import net.caffeinemc.gfx.api.buffer.MappedBuffer;
+import net.caffeinemc.gfx.api.device.RenderDevice;
+import net.caffeinemc.gfx.api.sync.Fence;
 import me.jellysquid.mods.sodium.util.MathUtil;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 
 public class MappedStreamingBuffer implements StreamingBuffer {
     private final RenderDevice device;
@@ -31,8 +31,8 @@ public class MappedStreamingBuffer implements StreamingBuffer {
     public MappedStreamingBuffer(RenderDevice device, int capacity) {
         this.device = device;
         this.buffer = device.createMappedBuffer(capacity,
-                EnumBitField.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.MAP_WRITE, BufferStorageFlags.COHERENT),
-                EnumBitField.of(BufferMapFlags.PERSISTENT, BufferMapFlags.WRITE, BufferMapFlags.COHERENT, BufferMapFlags.INVALIDATE_BUFFER, BufferMapFlags.UNSYNCHRONIZED));
+                EnumSet.of(BufferStorageFlags.PERSISTENT, BufferStorageFlags.MAP_WRITE, BufferStorageFlags.COHERENT),
+                EnumSet.of(BufferMapFlags.PERSISTENT, BufferMapFlags.WRITE, BufferMapFlags.COHERENT, BufferMapFlags.INVALIDATE_BUFFER, BufferMapFlags.UNSYNCHRONIZED));
         this.capacity = capacity;
         this.remaining = this.capacity;
         this.mark = 0;

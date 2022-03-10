@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.render.buffer;
 
-import me.jellysquid.mods.sodium.opengl.attribute.VertexFormat;
+import net.caffeinemc.gfx.api.array.attribute.VertexFormat;
 import me.jellysquid.mods.sodium.util.NativeBuffer;
 
 /**

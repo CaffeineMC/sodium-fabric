@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "sodium-gfx",
+  "version": "${version}",
+  "description": "A thin graphics abstraction layer",
+  "license": "LGPL-3.0-only",
+  "custom": {
+    "modmenu": {
+      "parent": {
+        "id": "sodium"
+      }
+    }
+  }
+}

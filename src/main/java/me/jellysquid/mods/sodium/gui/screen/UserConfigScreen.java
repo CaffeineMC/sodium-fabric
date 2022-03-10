@@ -8,7 +8,6 @@ import me.jellysquid.mods.sodium.gui.config.Control;
 import me.jellysquid.mods.sodium.gui.config.ControlElement;
 import me.jellysquid.mods.sodium.config.user.options.storage.OptionStorage;
 import me.jellysquid.mods.sodium.gui.widgets.FlatButtonWidget;
-import me.jellysquid.mods.sodium.render.immediate.RenderImmediate;
 import me.jellysquid.mods.sodium.interop.vanilla.math.vector.Dim2i;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -261,7 +260,6 @@ public class UserConfigScreen extends Screen {
 
         if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
             client.worldRenderer.reload();
-            RenderImmediate.delete();
         } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
             client.worldRenderer.scheduleTerrainUpdate();
         }

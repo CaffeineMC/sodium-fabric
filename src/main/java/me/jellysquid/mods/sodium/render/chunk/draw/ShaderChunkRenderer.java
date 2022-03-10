@@ -1,16 +1,16 @@
 package me.jellysquid.mods.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import me.jellysquid.mods.sodium.opengl.array.VertexArrayDescription;
-import me.jellysquid.mods.sodium.opengl.array.VertexArrayResourceBinding;
-import me.jellysquid.mods.sodium.opengl.attribute.VertexAttributeBinding;
-import me.jellysquid.mods.sodium.opengl.attribute.VertexFormat;
-import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
-import me.jellysquid.mods.sodium.opengl.pipeline.Pipeline;
-import me.jellysquid.mods.sodium.opengl.sampler.Sampler;
-import me.jellysquid.mods.sodium.opengl.shader.Program;
-import me.jellysquid.mods.sodium.opengl.shader.ShaderDescription;
-import me.jellysquid.mods.sodium.opengl.shader.ShaderType;
+import net.caffeinemc.gfx.api.array.VertexArrayDescription;
+import net.caffeinemc.gfx.api.array.VertexArrayResourceBinding;
+import net.caffeinemc.gfx.api.array.attribute.VertexAttributeBinding;
+import net.caffeinemc.gfx.api.array.attribute.VertexFormat;
+import net.caffeinemc.gfx.api.device.RenderDevice;
+import net.caffeinemc.gfx.api.pipeline.Pipeline;
+import net.caffeinemc.gfx.api.texture.Sampler;
+import net.caffeinemc.gfx.api.shader.Program;
+import net.caffeinemc.gfx.api.shader.ShaderDescription;
+import net.caffeinemc.gfx.api.shader.ShaderType;
 import me.jellysquid.mods.sodium.render.chunk.passes.ChunkRenderPass;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.render.chunk.shader.ChunkShaderInterface;
@@ -79,7 +79,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
                 })
         ));
 
-        return this.device.createPipeline(pass.renderState(), program, vertexArray);
+        return this.device.createPipeline(pass.pipelineDescription(), program, vertexArray);
     }
 
     private Program<ChunkShaderInterface> getProgram(ChunkRenderPass pass) {

@@ -7,12 +7,14 @@ in vec2 v_TexCoord; // The interpolated block texture coordinates
 in vec2 v_LightCoord; // The interpolated light map texture coordinates
 in float v_FragDistance; // The fragment's distance from the camera
 
-uniform sampler2D u_BlockTex; // The block texture sampler
-uniform sampler2D u_LightTex; // The light map texture sampler
+layout(binding = 0) uniform sampler2D u_BlockTex; // The block texture sampler
+layout(binding = 1) uniform sampler2D u_LightTex; // The light map texture sampler
 
-uniform vec4 u_FogColor; // The color of the shader fog
-uniform float u_FogStart; // The starting position of the shader fog
-uniform float u_FogEnd; // The ending position of the shader fog
+layout(std140, binding = 1) uniform ubo_FogParameters {
+    vec4 u_FogColor; // The color of the shader fog
+    float u_FogStart; // The starting position of the shader fog
+    float u_FogEnd; // The ending position of the shader fog
+};
 
 out vec4 fragColor; // The output fragment for the color framebuffer
 

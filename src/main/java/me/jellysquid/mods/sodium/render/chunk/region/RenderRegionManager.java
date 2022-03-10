@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.render.chunk.region;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.Frustum;
-import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
+import net.caffeinemc.gfx.api.device.RenderDevice;
 import me.jellysquid.mods.sodium.render.arena.PendingUpload;
 import me.jellysquid.mods.sodium.render.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.render.chunk.RenderSection;

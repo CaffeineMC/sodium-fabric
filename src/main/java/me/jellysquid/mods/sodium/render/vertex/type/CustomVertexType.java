@@ -1,7 +1,8 @@
 package me.jellysquid.mods.sodium.render.vertex.type;
 
-import me.jellysquid.mods.sodium.opengl.attribute.VertexFormat;
+import net.caffeinemc.gfx.api.array.attribute.VertexFormat;
 import me.jellysquid.mods.sodium.render.vertex.VertexSink;
+import net.caffeinemc.gfx.api.buffer.BufferVertexFormat;
 
 public interface CustomVertexType<T extends VertexSink, A extends Enum<A>> extends BufferVertexType<T> {
     /**
