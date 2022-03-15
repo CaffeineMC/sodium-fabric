@@ -51,10 +51,8 @@ public abstract class MixinDebugHud {
         String version = SodiumClientMod.getVersion();
         Formatting color;
 
-        if (version.endsWith("-dirty")) {
+        if (version.endsWith("-unstable")) {
             color = Formatting.RED;
-        } else if (version.contains("+rev.")) {
-            color = Formatting.LIGHT_PURPLE;
         } else {
             color = Formatting.GREEN;
         }

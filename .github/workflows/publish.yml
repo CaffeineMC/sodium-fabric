@@ -16,9 +16,9 @@ jobs:
         with:
           java-version: 17
       - name: Build artifacts
-        run: ./gradlew build
-      - name: Upload assets to GitHub
-        uses: AButler/upload-release-assets@v2.0
+        run: ./gradlew build -PreleaseType=stable
+      - name: Upload release artifacts to GitHub
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: 'build/libs/*;LICENSE'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          files: build/libs/*[0-9].jar
