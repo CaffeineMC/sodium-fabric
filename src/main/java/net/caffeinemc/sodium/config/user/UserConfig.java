@@ -17,20 +17,16 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 public class UserConfig {
-    private static final String DEFAULT_FILE_NAME = "sodium-options.json";
-
     public final QualitySettings quality = new QualitySettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
     public final PerformanceSettings performance = new PerformanceSettings();
     public final NotificationSettings notifications = new NotificationSettings();
 
-    private boolean readOnly;
-
     private Path configPath;
 
-    public static UserConfig defaults() {
+    public static UserConfig defaults(Path path) {
         var options = new UserConfig();
-        options.configPath = getConfigPath(DEFAULT_FILE_NAME);
+        options.configPath = path;
         options.sanitize();
 
         return options;
@@ -93,12 +89,7 @@ public class UserConfig {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
 
-    public static UserConfig load() {
-        return load(DEFAULT_FILE_NAME);
-    }
-
-    public static UserConfig load(String name) {
-        Path path = getConfigPath(name);
+    public static UserConfig load(Path path) {
         UserConfig config;
 
         if (Files.exists(path)) {
@@ -107,12 +98,12 @@ public class UserConfig {
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse config", e);
             }
-        } else {
-            config = new UserConfig();
-        }
 
-        config.configPath = path;
-        config.sanitize();
+            config.configPath = path;
+            config.sanitize();
+        } else {
+            config = UserConfig.defaults(path);
+        }
 
         try {
             config.writeChanges();
@@ -128,17 +119,7 @@ public class UserConfig {
 
     }
 
-    private static Path getConfigPath(String name) {
-        return FabricLoader.getInstance()
-                .getConfigDir()
-                .resolve(name);
-    }
-
     public void writeChanges() throws IOException {
-        if (this.isReadOnly()) {
-            throw new IllegalStateException("Config file is read-only");
-        }
-
         Path dir = this.configPath.getParent();
 
         if (!Files.exists(dir)) {
@@ -155,17 +136,5 @@ public class UserConfig {
 
         // Atomically replace the old config file (if it exists) with the temporary file
         Files.move(tempPath, this.configPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-    }
-
-    public boolean isReadOnly() {
-        return this.readOnly;
-    }
-
-    public void setReadOnly() {
-        this.readOnly = true;
-    }
-
-    public String getFileName() {
-        return this.configPath.getFileName().toString();
     }
 }
