@@ -23,7 +23,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
 
     @Override
     public <ARRAY extends Enum<ARRAY>, PROGRAM> void bindPipeline(Pipeline<PROGRAM, ARRAY> pipeline, Consumer<PipelineState> gate) {
-        BufferRenderer.vertexFormat = null;
+        BufferRenderer.resetCurrentVertexBuffer();
 
         GL45C.glUseProgram(GlProgram.getHandle(pipeline.getProgram()));
         GL45C.glBindVertexArray(GlVertexArray.getHandle(pipeline.getVertexArray()));

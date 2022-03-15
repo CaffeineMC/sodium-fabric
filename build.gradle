@@ -1,30 +1,31 @@
 plugins {
     id 'fabric-loom' version '0.12-SNAPSHOT'
-    id 'org.ajoberstar.grgit' version '4.1.0'
 }
 
-sourceCompatibility = "17"
-targetCompatibility = "17"
+apply from: "${rootProject.projectDir}/gradle/fabric.gradle"
+apply from: "${rootProject.projectDir}/gradle/java.gradle"
 
-archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}"
-version = "${project.mod_version}+${getVersionMetadata()}"
+archivesBaseName = project.archives_base_name
+version = getVersion()
 group = project.maven_group
 
 loom {
-    mixin.defaultRefmapName = "mixins.sodium.refmap.json"
-    accessWidenerPath = file("src/main/resources/sodium.accesswidener")
+    mixin {
+        defaultRefmapName = "mixins.sodium.refmap.json"
+    }
+
+    accessWidenerPath.set file("src/main/resources/sodium.accesswidener")
 }
 
 configurations {
-    modIncludeImplementation
-
-    include.extendsFrom modIncludeImplementation
-    modImplementation.extendsFrom modIncludeImplementation
-
+    includeModImplementation
     includeImplementation
 
-    include.extendsFrom includesImplementation
-    implementation.extendsFrom includesImplementation
+    include.extendsFrom includeImplementation
+    include.extendsFrom includeModImplementation
+
+    implementation.extendsFrom includeImplementation
+    modImplementation.extendsFrom includeModImplementation
 }
 
 dependencies {
@@ -33,60 +34,23 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    includesImplementation 'org.joml:joml:1.10.4'
-    includesImplementation project(":components:gfx")
-    includesImplementation project(":components:gfx-opengl")
+    includeImplementation 'org.joml:joml:1.10.4'
+    includeImplementation project(":components:gfx")
+    includeImplementation project(":components:gfx-opengl")
 
-    // Fabric API
-    modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
-    modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
-    modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
-    modIncludeImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
+    // Fabric API modules
+    includeModImplementation fabricApi.module("fabric-api-base", project.fabric_version)
+    includeModImplementation fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version)
+    includeModImplementation fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version)
+    includeModImplementation fabricApi.module("fabric-resource-loader-v0", project.fabric_version)
 }
 
-processResources {
-    inputs.property "version", project.version
+String getVersion() {
+    String version = "${project.mod_version}+mc${project.minecraft_version}"
 
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
-    }
-}
-
-// ensure that the encoding is set to UTF-8, no matter what the system default is
-// this fixes some edge cases with special characters not displaying correctly
-// see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-java {
-    withSourcesJar()
-}
-
-jar {
-    from "LICENSE.txt"
-}
-
-def getVersionMetadata() {
-    def build_id = System.getenv("GITHUB_RUN_NUMBER")
-
-    // CI builds only
-    if (build_id != null) {
-        return "build.${build_id}"
+    if (findProperty("releaseType") != "stable") {
+        version += "-unstable"
     }
 
-    if (grgit != null) {
-        def head = grgit.head()
-        def id = head.abbreviatedId
-
-        // Flag the build if the build tree is not clean
-        if (!grgit.status().clean) {
-            id += "-dirty"
-        }
-
-        return "rev.${id}"
-    }
-
-    // No tracking information could be found about the build
-    return "unknown"
+    return version
 }
