@@ -1,20 +1,19 @@
 package net.caffeinemc.sodium.render.terrain;
 
+import net.caffeinemc.sodium.interop.vanilla.mixin.BlockColorProviderRegistry;
+import net.caffeinemc.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
+import net.caffeinemc.sodium.render.terrain.color.ColorSampler;
+import net.caffeinemc.sodium.render.terrain.color.blender.ColorBlender;
+import net.caffeinemc.sodium.render.terrain.format.TerrainVertexSink;
 import net.caffeinemc.sodium.render.terrain.light.LightMode;
 import net.caffeinemc.sodium.render.terrain.light.LightPipeline;
 import net.caffeinemc.sodium.render.terrain.light.LightPipelineProvider;
 import net.caffeinemc.sodium.render.terrain.light.data.QuadLightData;
 import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
-import net.caffeinemc.sodium.render.terrain.color.blender.ColorBlender;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ModelQuadOrientation;
-import net.caffeinemc.sodium.render.terrain.color.ColorSampler;
-import net.caffeinemc.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
-import net.caffeinemc.sodium.render.terrain.format.TerrainVertexSink;
-import net.caffeinemc.sodium.util.packed.ColorABGR;
-import net.caffeinemc.sodium.util.rand.XoRoShiRoRandom;
-import net.caffeinemc.sodium.interop.vanilla.mixin.BlockColorProviderRegistry;
 import net.caffeinemc.sodium.util.DirectionUtil;
+import net.caffeinemc.sodium.util.packed.ColorABGR;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.BakedModel;

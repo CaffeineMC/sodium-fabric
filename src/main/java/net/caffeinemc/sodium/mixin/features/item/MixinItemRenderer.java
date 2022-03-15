@@ -1,15 +1,14 @@
 package net.caffeinemc.sodium.mixin.features.item;
 
-import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
-import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
-import net.caffeinemc.sodium.render.vertex.VertexDrain;
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
-import net.caffeinemc.sodium.render.texture.SpriteUtil;
-import net.caffeinemc.sodium.render.terrain.quad.ModelQuadUtil;
-import net.caffeinemc.sodium.util.packed.ColorARGB;
-import net.caffeinemc.sodium.util.rand.XoRoShiRoRandom;
 import net.caffeinemc.sodium.interop.vanilla.mixin.ItemColorProviderRegistry;
+import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
+import net.caffeinemc.sodium.render.terrain.quad.ModelQuadUtil;
+import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
+import net.caffeinemc.sodium.render.texture.SpriteUtil;
+import net.caffeinemc.sodium.render.vertex.VertexDrain;
 import net.caffeinemc.sodium.util.DirectionUtil;
+import net.caffeinemc.sodium.util.packed.ColorARGB;
 import net.minecraft.client.color.item.ItemColorProvider;
 import net.minecraft.client.color.item.ItemColors;
 import net.minecraft.client.render.VertexConsumer;

@@ -1,14 +1,13 @@
 package net.caffeinemc.sodium.mixin.features.block;
 
-import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
 import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
-import net.caffeinemc.sodium.render.vertex.VertexDrain;
 import net.caffeinemc.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
-import net.caffeinemc.sodium.render.texture.SpriteUtil;
 import net.caffeinemc.sodium.render.terrain.quad.ModelQuadUtil;
-import net.caffeinemc.sodium.util.packed.ColorABGR;
-import net.caffeinemc.sodium.util.rand.XoRoShiRoRandom;
+import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
+import net.caffeinemc.sodium.render.texture.SpriteUtil;
+import net.caffeinemc.sodium.render.vertex.VertexDrain;
 import net.caffeinemc.sodium.util.DirectionUtil;
+import net.caffeinemc.sodium.util.packed.ColorABGR;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.block.BlockModelRenderer;
