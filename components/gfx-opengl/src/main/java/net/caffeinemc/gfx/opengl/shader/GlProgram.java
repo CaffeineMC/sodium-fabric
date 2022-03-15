@@ -137,7 +137,7 @@ public class GlProgram<T> extends GlObject implements Program<T> {
 
             this.boundUniformBlocks.add(name);
 
-            return new GlUniformBlock(bindingPoint);
+            return new GlUniformBlock(GlProgram.this, bindingPoint);
         }
 
         private void checkDisposed() {

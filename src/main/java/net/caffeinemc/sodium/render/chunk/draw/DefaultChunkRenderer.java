@@ -71,7 +71,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         device.usePipeline(pipeline, (renderCommandList, programInterface, pipelineState) -> {
             this.bindTextures(renderPass, pipelineState);
-            this.updateUniforms(matrices, programInterface);
+            this.updateUniforms(matrices, programInterface, pipelineState);
 
             for (Map.Entry<RenderRegion, ObjectArrayList<RenderSection>> entry : sortedRegions(list, renderPass.usesReverseOrder())) {
                 var region = entry.getKey();
@@ -83,7 +83,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                     continue;
                 }
 
-                this.executeDrawBatches(renderCommandList, programInterface, region.getResources(), handles);
+                this.executeDrawBatches(renderCommandList, programInterface, pipelineState, region.getResources(), handles);
             }
         });
     }
@@ -102,7 +102,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         pipelineState.bindTexture(1, lightTex.getGlId(), this.lightTextureSampler);
     }
 
-    private void updateUniforms(ChunkRenderMatrices matrices, ChunkShaderInterface programInterface) {
+    private void updateUniforms(ChunkRenderMatrices matrices, ChunkShaderInterface programInterface, PipelineState state) {
         var bufMatrices = this.bufferCameraMatrices.getView();
 
         matrices.projection()
@@ -129,8 +129,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         this.bufferFogParameters.flush();
 
-        programInterface.uniformFogParameters.bindBuffer(this.bufferFogParameters);
-        programInterface.uniformCameraMatrices.bindBuffer(this.bufferCameraMatrices);
+        state.bindUniformBlock(programInterface.uniformFogParameters, this.bufferFogParameters);
+        state.bindUniformBlock(programInterface.uniformCameraMatrices, this.bufferCameraMatrices);
     }
 
     private Handles prepareDrawBatches(ObjectArrayList<RenderSection> sections, ChunkRenderPass pass, ChunkCameraContext camera, RenderRegion.Resources regionResources) {
@@ -220,11 +220,12 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         MemoryUtil.memPutInt(ptr + 16, baseInstance);
     }
 
-    private void executeDrawBatches(RenderCommandList<BufferTarget> renderCommandList, ChunkShaderInterface programInterface, RenderRegion.Resources resources, Handles handles) {
+    private void executeDrawBatches(RenderCommandList<BufferTarget> renderCommandList, ChunkShaderInterface programInterface, PipelineState state, RenderRegion.Resources resources, Handles handles) {
         renderCommandList.bindVertexBuffer(BufferTarget.VERTICES, resources.vertexBuffers.getBufferObject(), 0, this.vertexFormat.getStride());
         renderCommandList.bindElementBuffer(this.indexBuffer.getBuffer());
 
-        programInterface.uniformInstanceData.bindBuffer(handles.instanceData.getBuffer(), handles.instanceData.getOffset(), handles.instanceData.getLength());
+        state.bindUniformBlock(programInterface.uniformInstanceData, handles.instanceData.getBuffer(),
+                handles.instanceData.getOffset(), handles.instanceData.getLength());
 
         renderCommandList.multiDrawElementsIndirect(handles.commandBuffer.getBuffer(), handles.commandBuffer.getOffset(), handles.drawCount,
                 IntType.UNSIGNED_INT, PrimitiveType.TRIANGLES);
