@@ -1,7 +1,7 @@
 package net.caffeinemc.gfx.api.shader;
 
 /**
- * An enumeration over the supported OpenGL shader types.
+ * An enumeration over the supported shader types.
  */
 public enum ShaderType {
     VERTEX,

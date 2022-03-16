@@ -11,7 +11,7 @@ public abstract class MixinVertexFormat implements BufferVertexFormat {
     public abstract int getVertexSize();
 
     @Override
-    public int getStride() {
+    public int stride() {
         return this.getVertexSize();
     }
 }

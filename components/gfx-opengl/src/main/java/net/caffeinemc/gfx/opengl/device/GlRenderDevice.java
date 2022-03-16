@@ -1,5 +1,6 @@
 package net.caffeinemc.gfx.opengl.device;
 
+import net.caffeinemc.gfx.api.device.commands.PipelineGate;
 import net.caffeinemc.gfx.opengl.array.GlVertexArray;
 import net.caffeinemc.gfx.opengl.buffer.GlBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlMappedBuffer;
@@ -22,7 +23,7 @@ import net.caffeinemc.gfx.api.device.RenderDeviceProperties;
 import net.caffeinemc.gfx.api.shader.Program;
 import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
 import net.caffeinemc.gfx.api.shader.ShaderDescription;
-import net.caffeinemc.gfx.api.types.IntType;
+import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.pipeline.Pipeline;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
@@ -52,8 +53,8 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     @Override
-    public void copyBuffer(long bytes, Buffer src, long readOffset, Buffer dst, long writeOffset) {
-        this.copyBuffer0((GlBuffer) src, (GlBuffer) dst, readOffset, writeOffset, bytes);
+    public void copyBuffer(Buffer readBuffer, long readOffset, Buffer writeBuffer, long writeOffset, long bytes) {
+        this.copyBuffer0((GlBuffer) readBuffer, (GlBuffer) writeBuffer, readOffset, writeOffset, bytes);
     }
 
     private void copyBuffer0(GlBuffer src, GlBuffer dst, long readOffset, long writeOffset, long bytes) {
@@ -165,8 +166,8 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     @Override
-    public void uploadData(Buffer buffer, ByteBuffer data) {
-        GL45C.glNamedBufferSubData(buffer.handle(), 0, data);
+    public void updateBuffer(Buffer buffer, ByteBuffer data) {
+        GL45C.glNamedBufferSubData(GlBuffer.handle(buffer), 0, data);
     }
 
     @Override
@@ -198,8 +199,8 @@ public class GlRenderDevice implements RenderDevice {
         private final GlVertexArray<T> array;
 
         private final VertexArrayBuffer[] activeVertexBuffers;
-        private Buffer activeElementBuffer;
-        private Buffer activeDrawIndirectBuffer;
+        private GlBuffer activeElementBuffer;
+        private GlBuffer activeDrawIndirectBuffer;
 
         private boolean vertexBuffersDirty;
         private boolean elementBufferDirty;
@@ -212,7 +213,7 @@ public class GlRenderDevice implements RenderDevice {
 
         @Override
         public void bindElementBuffer(Buffer buffer) {
-            this.activeElementBuffer = buffer;
+            this.activeElementBuffer = (GlBuffer) buffer;
             this.elementBufferDirty = true;
         }
 
@@ -223,7 +224,7 @@ public class GlRenderDevice implements RenderDevice {
         }
 
         @Override
-        public void multiDrawElementsIndirect(Buffer indirectBuffer, int indirectOffset, int indirectCount, IntType elementType, PrimitiveType primitiveType) {
+        public void multiDrawElementsIndirect(Buffer indirectBuffer, int indirectOffset, int indirectCount, ElementFormat elementType, PrimitiveType primitiveType) {
             this.setupIndexedRenderingState();
             this.updateDrawIndirectBuffer(indirectBuffer);
             GL43C.glMultiDrawElementsIndirect(GlEnum.from(primitiveType), GlEnum.from(elementType), indirectOffset, indirectCount, 0);
@@ -231,25 +232,25 @@ public class GlRenderDevice implements RenderDevice {
 
         private void updateDrawIndirectBuffer(Buffer indirectBuffer) {
             if (this.activeDrawIndirectBuffer != indirectBuffer) {
-                GL45C.glBindBuffer(GL45C.GL_DRAW_INDIRECT_BUFFER, indirectBuffer.handle());
-                this.activeDrawIndirectBuffer = indirectBuffer;
+                this.activeDrawIndirectBuffer = (GlBuffer) indirectBuffer;
+                GL45C.glBindBuffer(GL45C.GL_DRAW_INDIRECT_BUFFER, this.activeDrawIndirectBuffer.handle());
             }
         }
 
         @Override
-        public void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex, IntType indexType, PrimitiveType primitiveType) {
+        public void multiDrawElementsBaseVertex(PointerBuffer pointer, IntBuffer count, IntBuffer baseVertex, ElementFormat indexType, PrimitiveType primitiveType) {
             this.setupIndexedRenderingState();
             GL32C.glMultiDrawElementsBaseVertex(GlEnum.from(primitiveType), count, GlEnum.from(indexType), pointer, baseVertex);
         }
 
         @Override
-        public void drawElementsBaseVertex(PrimitiveType primitiveType, IntType elementType, long elementPointer, int baseVertex, int elementCount) {
+        public void drawElementsBaseVertex(PrimitiveType primitiveType, ElementFormat elementType, long elementPointer, int baseVertex, int elementCount) {
             this.setupIndexedRenderingState();
             GL32C.glDrawElementsBaseVertex(GlEnum.from(primitiveType), elementCount, GlEnum.from(elementType), elementPointer, baseVertex);
         }
 
         @Override
-        public void drawElements(PrimitiveType primitiveType, IntType elementType, long elementPointer, int elementCount) {
+        public void drawElements(PrimitiveType primitiveType, ElementFormat elementType, long elementPointer, int elementCount) {
             this.setupIndexedRenderingState();
             GL32C.glDrawElements(GlEnum.from(primitiveType), elementCount, GlEnum.from(elementType), elementPointer);
         }
@@ -297,7 +298,7 @@ public class GlRenderDevice implements RenderDevice {
         }
 
         private void bindVertexBuffer(int bufferIndex, VertexArrayBuffer vertexBuffer) {
-            GL45C.glVertexArrayVertexBuffer(this.array.handle(), bufferIndex, vertexBuffer.buffer().handle(), vertexBuffer.offset(), vertexBuffer.stride());
+            GL45C.glVertexArrayVertexBuffer(this.array.handle(), bufferIndex, GlBuffer.handle(vertexBuffer.buffer()), vertexBuffer.offset(), vertexBuffer.stride());
         }
 
         private void bindVertexBuffersMulti() {
@@ -315,7 +316,7 @@ public class GlRenderDevice implements RenderDevice {
                     var offset = binding.offset();
                     var stride = binding.stride();
 
-                    buffers.put(i, buffer.handle());
+                    buffers.put(i, GlBuffer.handle(buffer));
                     offsets.put(i, offset);
                     strides.put(i, stride);
                 }

@@ -19,4 +19,8 @@ public class GlSampler extends GlObject implements Sampler {
     public void setParameter(int parameter, float value) {
         GL45C.glSamplerParameterf(this.handle(), parameter, value);
     }
+
+    public static int handle(Sampler sampler) {
+        return ((GlSampler) sampler).handle();
+    }
 }

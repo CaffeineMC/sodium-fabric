@@ -1,5 +1,5 @@
 package net.caffeinemc.gfx.api.buffer;
 
 public interface BufferVertexFormat {
-    int getStride();
+    int stride();
 }

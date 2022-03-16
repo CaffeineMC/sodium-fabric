@@ -3,7 +3,7 @@ package net.caffeinemc.sodium.interop.vanilla;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.caffeinemc.gfx.api.buffer.Buffer;
-import net.caffeinemc.gfx.api.shader.UniformBlock;
+import net.caffeinemc.gfx.api.shader.BufferBlock;
 import net.caffeinemc.gfx.opengl.array.GlVertexArray;
 import net.caffeinemc.gfx.opengl.GlEnum;
 import net.caffeinemc.gfx.api.pipeline.Pipeline;
@@ -15,6 +15,7 @@ import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
 import net.caffeinemc.gfx.opengl.buffer.GlBuffer;
 import net.caffeinemc.gfx.opengl.pipeline.GlPipelineManager;
 import net.caffeinemc.gfx.opengl.shader.GlProgram;
+import net.caffeinemc.gfx.opengl.texture.GlSampler;
 import net.minecraft.client.render.BufferRenderer;
 import org.lwjgl.opengl.GL32C;
 import org.lwjgl.opengl.GL45C;
@@ -102,17 +103,17 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
             this.changedTextures.set(unit);
 
             GL45C.glBindTextureUnit(unit, texture);
-            GL45C.glBindSampler(unit, sampler.handle());
+            GL45C.glBindSampler(unit, GlSampler.handle(sampler));
         }
 
         @Override
-        public void bindUniformBlock(UniformBlock block, Buffer buffer) {
-            this.bindUniformBlock(block, buffer, 0, buffer.getCapacity());
+        public void bindUniformBlock(BufferBlock block, Buffer buffer) {
+            this.bindUniformBlock(block, buffer, 0, buffer.capacity());
         }
 
         @Override
-        public void bindUniformBlock(UniformBlock block, Buffer buffer, long offset, long length) {
-            GL32C.glBindBufferRange(GL32C.GL_UNIFORM_BUFFER, block.binding(), ((GlBuffer) buffer).handle(), offset, length);
+        public void bindUniformBlock(BufferBlock block, Buffer buffer, long offset, long length) {
+            GL32C.glBindBufferRange(GL32C.GL_UNIFORM_BUFFER, block.index(), ((GlBuffer) buffer).handle(), offset, length);
         }
 
         public void restore() {

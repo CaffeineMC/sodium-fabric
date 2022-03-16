@@ -12,8 +12,12 @@ public class GlBuffer extends GlObject implements Buffer {
         this.capacity = capacity;
     }
 
+    public static int handle(Buffer buffer) {
+        return ((GlBuffer) buffer).handle();
+    }
+
     @Override
-    public long getCapacity() {
+    public long capacity() {
         return this.capacity;
     }
 }

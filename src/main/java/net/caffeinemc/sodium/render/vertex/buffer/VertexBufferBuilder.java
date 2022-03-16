@@ -64,7 +64,7 @@ public class VertexBufferBuilder implements VertexBufferView {
         }
 
         this.count += vertexCount;
-        this.writerOffset = this.count * format.getStride();
+        this.writerOffset = this.count * format.stride();
     }
 
     @Override
