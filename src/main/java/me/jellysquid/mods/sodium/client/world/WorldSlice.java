@@ -162,7 +162,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
             }
         }
 
-        this.biomeColors = new BlockColorCache(this, MinecraftClient.getInstance().options.biomeBlendRadius);
+        this.biomeColors = new BlockColorCache(this, MinecraftClient.getInstance().options.method_41805().method_41753());
     }
 
     private void unpackBlockData(BlockState[] states, ClonedChunkSection section, BlockBox box) {
