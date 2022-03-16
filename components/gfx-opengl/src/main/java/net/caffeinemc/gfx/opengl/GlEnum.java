@@ -8,7 +8,7 @@ import net.caffeinemc.gfx.api.buffer.BufferStorageFlags;
 import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.api.pipeline.state.BlendFunc;
 import net.caffeinemc.gfx.api.pipeline.state.DepthFunc;
-import net.caffeinemc.gfx.api.types.IntType;
+import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import org.lwjgl.opengl.GL45C;
 
@@ -58,10 +58,10 @@ public class GlEnum {
         map.put(BlendFunc.DstFactor.ONE_MINUS_CONSTANT_ALPHA,   GL45C.GL_ONE_MINUS_CONSTANT_ALPHA);
     });
 
-    private static final int[] INT_TYPE = build(IntType.class, (map) -> {
-        map.put(IntType.UNSIGNED_BYTE,  GL45C.GL_UNSIGNED_BYTE);
-        map.put(IntType.UNSIGNED_SHORT, GL45C.GL_UNSIGNED_SHORT);
-        map.put(IntType.UNSIGNED_INT,   GL45C.GL_UNSIGNED_INT);
+    private static final int[] INT_TYPE = build(ElementFormat.class, (map) -> {
+        map.put(ElementFormat.UNSIGNED_BYTE,  GL45C.GL_UNSIGNED_BYTE);
+        map.put(ElementFormat.UNSIGNED_SHORT, GL45C.GL_UNSIGNED_SHORT);
+        map.put(ElementFormat.UNSIGNED_INT,   GL45C.GL_UNSIGNED_INT);
     });
 
     private static final int[] BUFFER_MAP_FLAGS = build(BufferMapFlags.class, (map) -> {
@@ -125,7 +125,7 @@ public class GlEnum {
         return BLEND_DST_FACTOR[value.ordinal()];
     }
 
-    public static int from(IntType value) {
+    public static int from(ElementFormat value) {
         return INT_TYPE[value.ordinal()];
     }
 

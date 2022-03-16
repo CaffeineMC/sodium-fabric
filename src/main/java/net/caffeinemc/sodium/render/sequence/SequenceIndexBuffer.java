@@ -2,7 +2,7 @@ package net.caffeinemc.sodium.render.sequence;
 
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.gfx.api.types.IntType;
+import net.caffeinemc.gfx.api.types.ElementFormat;
 
 public class SequenceIndexBuffer {
     private final RenderDevice device;
@@ -57,7 +57,7 @@ public class SequenceIndexBuffer {
         }
     }
 
-    public IntType getElementDataType() {
-        return IntType.UNSIGNED_INT;
+    public ElementFormat getElementDataType() {
+        return ElementFormat.UNSIGNED_INT;
     }
 }

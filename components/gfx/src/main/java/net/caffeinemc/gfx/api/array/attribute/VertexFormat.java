@@ -11,47 +11,47 @@ import java.util.EnumMap;
  * @param <T> The enumeration over the vertex attributes
  */
 public class VertexFormat<T extends Enum<T>> implements BufferVertexFormat {
-    private final Class<T> attributeEnum;
-    private final EnumMap<T, VertexAttribute> attributesKeyed;
+    private final Class<T> genericType;
+    private final EnumMap<T, VertexAttribute> bindings;
 
     private final int stride;
 
-    public VertexFormat(Class<T> attributeEnum, EnumMap<T, VertexAttribute> attributesKeyed, int stride) {
-        this.attributeEnum = attributeEnum;
-        this.attributesKeyed = attributesKeyed;
+    public VertexFormat(Class<T> genericType, EnumMap<T, VertexAttribute> bindings, int stride) {
+        this.genericType = genericType;
+        this.bindings = bindings;
         this.stride = stride;
-    }
-
-    public static <T extends Enum<T>> Builder<T> builder(Class<T> type, int stride) {
-        return new Builder<>(type, stride);
     }
 
     /**
      * Returns the {@link VertexAttribute} of this vertex format bound to the type {@param name}.
      * @throws NullPointerException If the attribute does not exist in this format
      */
-    public VertexAttribute getAttribute(T name) {
-        VertexAttribute attr = this.attributesKeyed.get(name);
+    public VertexAttribute getAttribute(T type) {
+        VertexAttribute attrib = this.bindings.get(type);
 
-        if (attr == null) {
-            throw new NullPointerException("No attribute exists for " + name.toString());
+        if (attrib == null) {
+            throw new NullPointerException("No attribute exists for " + type.toString());
         }
 
-        return attr;
+        return attrib;
     }
 
     /**
      * @return The stride (or the size of) the vertex format in bytes
      */
     @Override
-    public int getStride() {
+    public int stride() {
         return this.stride;
     }
 
     @Override
     public String toString() {
-        return String.format("GlVertexFormat<%s>{attributes=%d,stride=%d}", this.attributeEnum.getName(),
-                this.attributesKeyed.size(), this.stride);
+        return String.format("GlVertexFormat<%s>{attributes=%d,stride=%d}", this.genericType.getName(),
+                this.bindings.size(), this.stride);
+    }
+
+    public static <T extends Enum<T>> Builder<T> builder(Class<T> type, int stride) {
+        return new Builder<>(type, stride);
     }
 
     public static class Builder<T extends Enum<T>> {
@@ -70,19 +70,19 @@ public class VertexFormat<T extends Enum<T>> implements BufferVertexFormat {
         }
 
         /**
-         * Adds an vertex attribute which will be bound to the given generic attribute type.
+         * Adds a attribute for this format which will be bound to the given generic attribute type.
          *
          * @param type The generic attribute type
-         * @param attribute The attribute to bind
+         * @param attribute The attribute to be bound to the generic type
+         *
          * @throws IllegalStateException If an attribute is already bound to the generic type
+         * @throws IllegalArgumentException If the attribute is specified outside the byte boundaries of this format
          */
         private Builder<T> addElement(T type, VertexAttribute attribute) {
-            if (attribute.getOffset() >= this.stride) {
-                throw new IllegalArgumentException("Element starts outside vertex format");
-            }
-
-            if (attribute.getOffset() + attribute.getSize() > this.stride) {
-                throw new IllegalArgumentException("Element extends outside vertex format");
+            // The vertex format must be large enough to cover all attributes. This still allows for additional padding
+            // to be added to the end of the vertex to accommodate alignment restrictions.
+            if (attribute.offset() + attribute.length() > this.stride) {
+                throw new IllegalArgumentException("Attribute is not contained within the byte boundaries of this format");
             }
 
             if (this.attributes.put(type, attribute) != null) {
@@ -93,25 +93,16 @@ public class VertexFormat<T extends Enum<T>> implements BufferVertexFormat {
         }
 
         /**
-         * Creates a {@link VertexFormat} from the current builder.
+         * Creates a {@link VertexFormat} from the current builder. All generic attributes must be bound before the
+         * vertex format can be created.
+         *
+         * @throws IllegalStateException If any generic attributes are not bound
          */
         public VertexFormat<T> build() {
-            int size = 0;
-
             for (T key : this.type.getEnumConstants()) {
-                VertexAttribute attribute = this.attributes.get(key);
-
-                if (attribute == null) {
-                    throw new NullPointerException("Generic attribute not assigned to enumeration " + key.name());
+                if (!this.attributes.containsKey(key)) {
+                    throw new IllegalStateException("Generic attribute not assigned to enumeration " + key.name());
                 }
-
-                size = Math.max(size, attribute.getOffset() + attribute.getSize());
-            }
-
-            // The stride must be large enough to cover all attributes. This still allows for additional padding
-            // to be added to the end of the vertex to accommodate alignment restrictions.
-            if (this.stride < size) {
-                throw new IllegalArgumentException("Stride is too small");
             }
 
             return new VertexFormat<>(this.type, this.attributes, this.stride);

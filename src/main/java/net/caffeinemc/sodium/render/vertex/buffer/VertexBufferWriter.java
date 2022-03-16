@@ -20,7 +20,7 @@ public abstract class VertexBufferWriter implements VertexSink {
         this.backingBuffer = backingBuffer;
 
         this.vertexFormat = vertexType.getBufferVertexFormat();
-        this.vertexStride = this.vertexFormat.getStride();
+        this.vertexStride = this.vertexFormat.stride();
 
         this.onBufferStorageChanged();
     }

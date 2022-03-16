@@ -87,7 +87,7 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
         }
 
         this.vertexCount += vertexCount;
-        this.elementOffset += vertexCount * format.getStride();
+        this.elementOffset += vertexCount * format.stride();
     }
 
     @Override

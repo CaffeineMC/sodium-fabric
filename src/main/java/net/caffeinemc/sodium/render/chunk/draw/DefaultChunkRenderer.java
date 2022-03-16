@@ -10,7 +10,7 @@ import net.caffeinemc.gfx.api.buffer.BufferStorageFlags;
 import net.caffeinemc.gfx.api.buffer.MappedBuffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.pipeline.PipelineState;
-import net.caffeinemc.gfx.api.types.IntType;
+import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.sodium.render.buffer.VertexRange;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
@@ -103,7 +103,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     }
 
     private void updateUniforms(ChunkRenderMatrices matrices, ChunkShaderInterface programInterface, PipelineState state) {
-        var bufMatrices = this.bufferCameraMatrices.getView();
+        var bufMatrices = this.bufferCameraMatrices.view();
 
         matrices.projection()
                 .get(0, bufMatrices);
@@ -118,7 +118,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         this.bufferCameraMatrices.flush();
 
-        var bufFogParameters = this.bufferFogParameters.getView();
+        var bufFogParameters = this.bufferFogParameters.view();
         var paramFogColor = RenderSystem.getShaderFogColor();
         bufFogParameters.putFloat(0, paramFogColor[0]);
         bufFogParameters.putFloat(4, paramFogColor[1]);
@@ -221,14 +221,14 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     }
 
     private void executeDrawBatches(RenderCommandList<BufferTarget> renderCommandList, ChunkShaderInterface programInterface, PipelineState state, RenderRegion.Resources resources, Handles handles) {
-        renderCommandList.bindVertexBuffer(BufferTarget.VERTICES, resources.vertexBuffers.getBufferObject(), 0, this.vertexFormat.getStride());
+        renderCommandList.bindVertexBuffer(BufferTarget.VERTICES, resources.vertexBuffers.getBufferObject(), 0, this.vertexFormat.stride());
         renderCommandList.bindElementBuffer(this.indexBuffer.getBuffer());
 
         state.bindUniformBlock(programInterface.uniformInstanceData, handles.instanceData.getBuffer(),
                 handles.instanceData.getOffset(), handles.instanceData.getLength());
 
         renderCommandList.multiDrawElementsIndirect(handles.commandBuffer.getBuffer(), handles.commandBuffer.getOffset(), handles.drawCount,
-                IntType.UNSIGNED_INT, PrimitiveType.TRIANGLES);
+                ElementFormat.UNSIGNED_INT, PrimitiveType.TRIANGLES);
 
         handles.free();
     }

@@ -15,29 +15,32 @@ public class GlVertexArray<T extends Enum<T>> extends GlObject implements Vertex
     public GlVertexArray(int id, VertexArrayDescription<T> desc) {
         this.setHandle(id);
 
-        this.setVertexBindings(desc.vertexBindings());
+        this.setAttributeBindings(desc.vertexBindings());
 
         this.desc = desc;
     }
 
-    private void setVertexBindings(List<VertexArrayResourceBinding<T>> bindings) {
+    private void setAttributeBindings(List<VertexArrayResourceBinding<T>> bindings) {
         var handle = this.handle();
 
         for (var bufferIndex = 0; bufferIndex < bindings.size(); bufferIndex++) {
             var bufferBinding = bindings.get(bufferIndex);
 
-            for (var attrib : bufferBinding.attributeBindings()) {
-                GL45C.glVertexArrayAttribBinding(handle, attrib.getIndex(), bufferIndex);
+            for (var binding : bufferBinding.attributeBindings()) {
+                var attrib = binding.attribute();
+                var index = binding.index();
 
-                if (attrib.isIntType()) {
-                    GL45C.glVertexArrayAttribIFormat(handle, attrib.getIndex(),
-                            attrib.getCount(), GlEnum.from(attrib.getFormat()), attrib.getOffset());
+                GL45C.glVertexArrayAttribBinding(handle, index, bufferIndex);
+
+                if (attrib.intType()) {
+                    GL45C.glVertexArrayAttribIFormat(handle, index,
+                            attrib.count(), GlEnum.from(attrib.format()), attrib.offset());
                 } else {
-                    GL45C.glVertexArrayAttribFormat(handle, attrib.getIndex(),
-                            attrib.getCount(), GlEnum.from(attrib.getFormat()), attrib.isNormalized(), attrib.getOffset());
+                    GL45C.glVertexArrayAttribFormat(handle, index,
+                            attrib.count(), GlEnum.from(attrib.format()), attrib.normalized(), attrib.offset());
                 }
 
-                GL45C.glEnableVertexArrayAttrib(handle, attrib.getIndex());
+                GL45C.glEnableVertexArrayAttrib(handle, index);
             }
         }
     }

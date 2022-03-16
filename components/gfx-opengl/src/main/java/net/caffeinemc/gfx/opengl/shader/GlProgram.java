@@ -7,7 +7,7 @@ import net.caffeinemc.gfx.api.shader.ShaderDescription;
 import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.opengl.GlObject;
 import net.caffeinemc.gfx.opengl.GlEnum;
-import net.caffeinemc.gfx.opengl.shader.uniform.GlUniformBlock;
+import net.caffeinemc.gfx.opengl.shader.uniform.GlBufferBlock;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL32C;
@@ -120,7 +120,7 @@ public class GlProgram<T> extends GlObject implements Program<T> {
         private boolean disposed;
 
         @Override
-        public GlUniformBlock bindUniformBlock(String name, int bindingPoint) {
+        public GlBufferBlock bindUniformBlock(String name, int bindingPoint) {
             this.checkDisposed();
 
             if (this.boundUniformBlocks.contains(name)) {
@@ -137,7 +137,7 @@ public class GlProgram<T> extends GlObject implements Program<T> {
 
             this.boundUniformBlocks.add(name);
 
-            return new GlUniformBlock(GlProgram.this, bindingPoint);
+            return new GlBufferBlock(GlProgram.this, bindingPoint);
         }
 
         private void checkDisposed() {

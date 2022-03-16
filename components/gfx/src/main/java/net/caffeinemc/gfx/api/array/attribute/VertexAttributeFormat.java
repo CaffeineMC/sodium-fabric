@@ -1,7 +1,7 @@
 package net.caffeinemc.gfx.api.array.attribute;
 
 /**
- * An enumeration over the supported data types that can be used for vertex attributes.
+ * An enumeration over the supported data formats that can be used for vertex attributes.
  */
 public enum VertexAttributeFormat {
     FLOAT(4),

@@ -63,7 +63,8 @@ public class MappedStreamingBuffer implements StreamingBuffer {
             this.reclaim();
         }
 
-        this.buffer.write(offset, data);
+        this.buffer.view()
+                .put(offset, data, 0, data.remaining());
 
         this.position = offset + length;
         this.remaining -= length;
@@ -94,7 +95,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
             this.reclaim();
         }
 
-        return new MappedWriter(this.buffer.getView(), offset, length);
+        return new MappedWriter(this.buffer.view(), offset, length);
     }
 
     private void flush0() {

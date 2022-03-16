@@ -15,10 +15,6 @@ public class GlFence implements Fence {
         this.id = id;
     }
 
-    /**
-     * Polls the signaled state of the fence.
-     * @return True if the fence has been signaled, otherwise false
-     */
     @Override
     public boolean poll() {
         if (!this.signaled) {
@@ -44,9 +40,6 @@ public class GlFence implements Fence {
         }
     }
 
-    /**
-     * Performs a blocking wait until the fence to be signaled.
-     */
     @Override
     public void sync() {
         if (this.signaled) {

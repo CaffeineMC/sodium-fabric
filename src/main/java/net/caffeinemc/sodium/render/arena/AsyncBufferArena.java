@@ -120,7 +120,7 @@ public class AsyncBufferArena implements GlBufferArena {
         var dstBufferObj = this.device.createBuffer(this.toBytes(capacity));
 
         for (PendingBufferCopyCommand cmd : list) {
-            this.device.copyBuffer(this.toBytes(cmd.length), srcBufferObj, this.toBytes(cmd.readOffset), dstBufferObj, this.toBytes(cmd.writeOffset));
+            this.device.copyBuffer(srcBufferObj, this.toBytes(cmd.readOffset), dstBufferObj, this.toBytes(cmd.writeOffset), this.toBytes(cmd.length));
         }
 
         this.device.deleteBuffer(srcBufferObj);
@@ -298,7 +298,7 @@ public class AsyncBufferArena implements GlBufferArena {
         var readHandle = this.stagingBuffer.write(data);
 
         try {
-            this.device.copyBuffer(bytes, readHandle.getBuffer(), readHandle.getOffset(), this.arenaBuffer, this.toBytes(dst.getOffset()));
+            this.device.copyBuffer(readHandle.getBuffer(), readHandle.getOffset(), this.arenaBuffer, this.toBytes(dst.getOffset()), bytes);
             upload.setResult(dst);
         } finally {
             readHandle.free();

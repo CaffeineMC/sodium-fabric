@@ -1,15 +1,15 @@
 package net.caffeinemc.sodium.render.chunk.shader;
 
 import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
-import net.caffeinemc.gfx.api.shader.UniformBlock;
+import net.caffeinemc.gfx.api.shader.BufferBlock;
 
 /**
  * A forward-rendering shader program for chunks.
  */
 public class ChunkShaderInterface {
-    public final UniformBlock uniformCameraMatrices;
-    public final UniformBlock uniformFogParameters;
-    public final UniformBlock uniformInstanceData;
+    public final BufferBlock uniformCameraMatrices;
+    public final BufferBlock uniformFogParameters;
+    public final BufferBlock uniformInstanceData;
 
     public ChunkShaderInterface(ShaderBindingContext context) {
         this.uniformCameraMatrices = context.bindUniformBlock("ubo_CameraMatrices", 0);

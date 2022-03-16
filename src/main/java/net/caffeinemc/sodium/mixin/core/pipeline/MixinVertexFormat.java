@@ -12,7 +12,7 @@ public abstract class MixinVertexFormat implements BufferVertexFormat {
     public abstract int getVertexSizeByte();
 
     @Override
-    public int getStride() {
+    public int stride() {
         return this.getVertexSizeByte();
     }
 }

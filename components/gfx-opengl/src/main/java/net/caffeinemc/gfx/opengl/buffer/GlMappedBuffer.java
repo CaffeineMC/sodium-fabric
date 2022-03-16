@@ -15,25 +15,19 @@ public class GlMappedBuffer extends GlBuffer implements MappedBuffer {
     public GlMappedBuffer(long capacity, int handle, ByteBuffer data, Set<BufferMapFlags> flags) {
         super(capacity, handle);
 
-        this.data = data;
+        this.data = !flags.contains(BufferMapFlags.WRITE) ? data.asReadOnlyBuffer() : data;
         this.flags = flags;
     }
 
     @Override
-    public void write(int writeOffset, ByteBuffer data) {
-        this.data.put(writeOffset, data, 0, data.remaining());
-    }
-
-    @Override
     public void flush(long pos, long length) {
-        Validate.isTrue(this.flags.contains(BufferMapFlags.EXPLICIT_FLUSH),
-                "Buffer must be mapped with explicit flushing enabled");
-
-        GL45C.glFlushMappedNamedBufferRange(this.handle(), pos, length);
+        if (this.flags.contains(BufferMapFlags.EXPLICIT_FLUSH)) {
+            GL45C.glFlushMappedNamedBufferRange(this.handle(), pos, length);
+        }
     }
 
     @Override
-    public ByteBuffer getView() {
+    public ByteBuffer view() {
         return this.data;
     }
 }

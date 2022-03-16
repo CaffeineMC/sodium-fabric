@@ -105,7 +105,7 @@ public class TerrainBuildBuffers {
         }
 
         Map<ChunkMeshFace, VertexRange> ranges = new EnumMap<>(ChunkMeshFace.class);
-        NativeBuffer mergedVertexBuffer = new NativeBuffer(totalVertexCount * this.vertexType.getBufferVertexFormat().getStride());
+        NativeBuffer mergedVertexBuffer = new NativeBuffer(totalVertexCount * this.vertexType.getBufferVertexFormat().stride());
 
         ByteBuffer mergedBufferBuilder = mergedVertexBuffer.getDirectBuffer().slice();
         int vertexCount = 0;

@@ -158,7 +158,7 @@ public class RenderRegion {
             int expectedVertexCount = REGION_SIZE * 756;
             int expectedIndexCount = (expectedVertexCount / 4) * 6;
 
-            this.vertexBuffers = new AsyncBufferArena(device, expectedVertexCount, TerrainVertexFormats.STANDARD.getBufferVertexFormat().getStride(), stagingBuffer);
+            this.vertexBuffers = new AsyncBufferArena(device, expectedVertexCount, TerrainVertexFormats.STANDARD.getBufferVertexFormat().stride(), stagingBuffer);
         }
 
         public void delete() {
