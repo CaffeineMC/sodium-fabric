@@ -11,6 +11,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public class MixinWorldRenderer {
     @Redirect(method = "renderWeather", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;isFancyGraphicsOrBetter()Z"))
     private boolean redirectGetFancyWeather() {
-        return SodiumClientMod.options().quality.weatherQuality.isFancy(MinecraftClient.getInstance().options.graphicsMode);
+        return SodiumClientMod.options().quality.weatherQuality.isFancy(MinecraftClient.getInstance().options.method_42534().getValue());
     }
 }
