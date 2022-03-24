@@ -7,6 +7,6 @@ import net.minecraft.client.MinecraftClient;
 
 public class ChunkRenderCache {
     protected ColorBlender createBiomeColorBlender() {
-        return MinecraftClient.getInstance().options.method_41805().method_41753() <= 0 ? new FlatColorBlender() : new LinearColorBlender();
+        return MinecraftClient.getInstance().options.getBiomeBlendRadius().getValue() <= 0 ? new FlatColorBlender() : new LinearColorBlender();
     }
 }
