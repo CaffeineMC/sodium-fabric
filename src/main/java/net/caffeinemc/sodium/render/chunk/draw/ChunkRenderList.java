@@ -68,9 +68,13 @@ public class ChunkRenderList {
     }
 
     public record Bucket(RenderRegion region,
-                         List<RenderSection> sections) {
+                         ObjectList<RenderSection> sections) {
         public int size() {
             return this.sections.size();
+        }
+
+        public Iterator<RenderSection> sorted(boolean reverse) {
+            return IteratorUtils.reversibleIterator(this.sections, reverse);
         }
     }
 }
