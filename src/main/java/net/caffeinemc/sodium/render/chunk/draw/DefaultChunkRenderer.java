@@ -12,7 +12,6 @@ import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
-import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.sodium.render.sequence.SequenceBuilder;
 import net.caffeinemc.sodium.render.sequence.SequenceIndexBuffer;
@@ -22,6 +21,7 @@ import net.caffeinemc.sodium.render.shader.ShaderParser;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.TextureUtil;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import org.joml.Matrix4f;
 
 import java.util.EnumSet;
@@ -105,17 +105,12 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer<ChunkShaderInterfa
     protected Program<ChunkShaderInterface> createProgram(ChunkRenderPass pass) {
         var constants = getShaderConstants(pass, this.vertexType);
 
-        var vertShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "blocks/block_layer_opaque.vsh"), constants);
-        var fragShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "blocks/block_layer_opaque.fsh"), constants);
+        var vertShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.vert"), constants);
+        var fragShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.frag"), constants);
 
         var desc = ShaderDescription.builder()
                 .addShaderSource(ShaderType.VERTEX, vertShader)
                 .addShaderSource(ShaderType.FRAGMENT, fragShader)
-                .addAttributeBinding("a_Position", ChunkShaderBindingPoints.ATTRIBUTE_POSITION)
-                .addAttributeBinding("a_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
-                .addAttributeBinding("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE)
-                .addAttributeBinding("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
-                .addFragmentBinding("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
                 .build();
 
         return this.device.createProgram(desc, ChunkShaderInterface::new);
@@ -128,10 +123,9 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer<ChunkShaderInterfa
             constants.add("ALPHA_CUTOFF", String.valueOf(pass.alphaCutoff()));
         }
 
-        constants.add("USE_VERTEX_COMPRESSION"); // TODO: allow compact vertex format to be disabled
-        constants.add("VERT_POS_SCALE", String.valueOf(vertexType.getPositionScale()));
-        constants.add("VERT_POS_OFFSET", String.valueOf(vertexType.getPositionOffset()));
-        constants.add("VERT_TEX_SCALE", String.valueOf(vertexType.getTextureScale()));
+        if (!MathHelper.approximatelyEquals(vertexType.getVertexRange(), 1.0f)) {
+            constants.add("VERT_SCALE", String.valueOf(vertexType.getVertexRange()));
+        }
 
         return constants.build();
     }

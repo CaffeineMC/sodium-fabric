@@ -1,7 +1,9 @@
 package net.caffeinemc.sodium.render.terrain.format;
 
-import net.caffeinemc.sodium.render.terrain.format.standard.TerrainVertexType;
+import net.caffeinemc.sodium.render.terrain.format.compact.CompactTerrainVertexType;
+import net.caffeinemc.sodium.render.terrain.format.standard.StandardTerrainVertexType;
 
 public class TerrainVertexFormats {
-    public static final net.caffeinemc.sodium.render.terrain.format.standard.TerrainVertexType STANDARD = new TerrainVertexType();
+    public static final TerrainVertexType STANDARD = new StandardTerrainVertexType();
+    public static final TerrainVertexType COMPACT = new CompactTerrainVertexType();
 }
