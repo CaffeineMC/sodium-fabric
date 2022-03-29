@@ -6,11 +6,11 @@ import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.arena.BufferSegment;
 import net.caffeinemc.sodium.render.arena.PendingUpload;
-import net.caffeinemc.sodium.render.arena.UploadBatch;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
 import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry;
+import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -19,9 +19,11 @@ public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
 
     private final RenderDevice device;
+    private final TerrainVertexType vertexType;
 
-    public RenderRegionManager(RenderDevice device) {
+    public RenderRegionManager(RenderDevice device, TerrainVertexType vertexType) {
         this.device = device;
+        this.vertexType = vertexType;
     }
 
     public void updateVisibility(Frustum frustum) {
@@ -150,7 +152,7 @@ public class RenderRegionManager {
     }
 
     protected RenderRegion.Resources createRegionArenas() {
-        return new RenderRegion.Resources(this.device);
+        return new RenderRegion.Resources(this.device, this.vertexType);
     }
 
     private record ChunkGeometryUpload(RenderSection section, BuiltChunkGeometry geometry, AtomicReference<BufferSegment> result) {

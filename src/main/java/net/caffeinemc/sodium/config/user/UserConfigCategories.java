@@ -9,7 +9,6 @@ import net.caffeinemc.sodium.gui.config.TickBoxControl;
 import net.caffeinemc.sodium.interop.vanilla.options.MinecraftOptionsStorage;
 import net.caffeinemc.sodium.config.user.options.storage.UserConfigStorage;
 import net.caffeinemc.sodium.config.user.options.*;
-import net.caffeinemc.sodium.config.user.options.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.*;
@@ -291,6 +290,15 @@ public class UserConfigCategories {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.useParticleCulling = value, opts -> opts.performance.useParticleCulling)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(Text.translatable("sodium.options.use_compact_vertex_format.name"))
+                        .setTooltip(Text.translatable("sodium.options.use_compact_vertex_format.tooltip"))
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.performance.useCompactVertexFormat = value, opts -> opts.performance.useCompactVertexFormat)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)

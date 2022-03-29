@@ -40,6 +40,7 @@ public class UserConfig {
         public boolean useParticleCulling = true;
         public boolean useFogOcclusion = true;
         public boolean useBlockFaceCulling = true;
+        public boolean useCompactVertexFormat = true;
     }
 
     public static class AdvancedSettings {

@@ -25,6 +25,7 @@ import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildTask;
+import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.caffeinemc.sodium.world.ChunkStatus;
 import net.caffeinemc.sodium.world.ChunkTracker;
@@ -80,7 +81,7 @@ public class RenderSectionManager {
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
     private final ObjectList<RenderSection> visibleSections = new ObjectArrayList<>();
 
-    private final DefaultChunkRenderer chunkRenderer;
+    private final ChunkRenderer chunkRenderer;
 
     private final SodiumWorldRenderer worldRenderer;
     private final ClientWorld world;
@@ -110,19 +111,21 @@ public class RenderSectionManager {
     private Map<ChunkRenderPass, ChunkPrep.PreparedRenderList> renderLists;
 
     public RenderSectionManager(RenderDevice device, SodiumWorldRenderer worldRenderer, ChunkRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
+        var vertexType = createVertexType();
+
         this.device = device;
-        this.chunkRenderer = new DefaultChunkRenderer(device, TerrainVertexFormats.STANDARD);
+        this.chunkRenderer = createChunkRenderer(device, vertexType);
 
         this.worldRenderer = worldRenderer;
         this.world = world;
 
-        this.builder = new ChunkBuilder(TerrainVertexFormats.STANDARD);
+        this.builder = new ChunkBuilder(vertexType);
         this.builder.init(world, renderPassManager);
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
 
-        this.regions = new RenderRegionManager(device);
+        this.regions = new RenderRegionManager(device, vertexType);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
@@ -664,5 +667,13 @@ public class RenderSectionManager {
         list.add(String.format("Device memory: %d MiB used/%d MiB alloc", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
 
         return list;
+    }
+
+    private static ChunkRenderer createChunkRenderer(RenderDevice device, TerrainVertexType vertexType) {
+        return new DefaultChunkRenderer(device, vertexType);
+    }
+
+    private static TerrainVertexType createVertexType() {
+        return SodiumClientMod.options().performance.useCompactVertexFormat ? TerrainVertexFormats.COMPACT : TerrainVertexFormats.STANDARD;
     }
 }

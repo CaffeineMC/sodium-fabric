@@ -7,6 +7,7 @@ import net.caffeinemc.sodium.render.arena.AsyncBufferArena;
 import net.caffeinemc.sodium.render.arena.BufferArena;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
+import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
@@ -137,8 +138,8 @@ public class RenderRegion {
     public static class Resources {
         public final BufferArena vertexBuffers;
 
-        public Resources(RenderDevice device) {
-            this.vertexBuffers = new AsyncBufferArena(device, REGION_SIZE * 756, TerrainVertexFormats.STANDARD.getBufferVertexFormat().stride());
+        public Resources(RenderDevice device, TerrainVertexType vertexType) {
+            this.vertexBuffers = new AsyncBufferArena(device, REGION_SIZE * 756, vertexType.getBufferVertexFormat().stride());
         }
 
         public void delete() {

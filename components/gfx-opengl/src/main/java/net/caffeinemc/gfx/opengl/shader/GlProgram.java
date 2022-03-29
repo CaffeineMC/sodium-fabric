@@ -1,6 +1,6 @@
 package net.caffeinemc.gfx.opengl.shader;
 
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.caffeinemc.gfx.api.shader.Program;
 import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
 import net.caffeinemc.gfx.api.shader.ShaderDescription;
@@ -9,11 +9,8 @@ import net.caffeinemc.gfx.opengl.GlObject;
 import net.caffeinemc.gfx.opengl.GlEnum;
 import net.caffeinemc.gfx.opengl.shader.uniform.GlBufferBlock;
 import org.lwjgl.opengl.GL20C;
-import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL32C;
 
-import java.util.ArrayList;
-import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -23,31 +20,25 @@ public class GlProgram<T> extends GlObject implements Program<T> {
     private final T shaderInterface;
 
     public GlProgram(ShaderDescription description, Function<ShaderBindingContext, T> interfaceFactory) {
-        var shaders = new ArrayList<Shader>();
+        var shaders = new IntArrayList(description.shaderSources.size());
 
         for (var entry : description.shaderSources.entrySet()) {
-            shaders.add(new Shader(entry.getKey(), entry.getValue()));
+            shaders.add(createShader(entry.getKey(), entry.getValue()));
         }
 
         int program = GL20C.glCreateProgram();
 
-        for (var shader : shaders) {
-            GL20C.glAttachShader(program, shader.handle());
-        }
-
-        for (var entry : description.attributeBindings.object2IntEntrySet()) {
-            GL20C.glBindAttribLocation(program, entry.getIntValue(), entry.getKey());
-        }
-
-        for (var entry : description.attributeBindings.object2IntEntrySet()) {
-            GL30C.glBindFragDataLocation(program, entry.getIntValue(), entry.getKey());
+        for (var it = shaders.iterator(); it.hasNext(); ) {
+            var shader = it.nextInt();
+            GL20C.glAttachShader(program, shader);
         }
 
         GL20C.glLinkProgram(program);
 
-        for (var shader : shaders) {
-            GL20C.glDetachShader(program, shader.handle());
-            shader.delete();
+        for (var it = shaders.iterator(); it.hasNext(); ) {
+            var shader = it.nextInt();
+            GL20C.glDetachShader(program, shader);
+            GL20C.glDeleteShader(shader);
         }
 
         printProgramLinkLog(program);
@@ -58,6 +49,28 @@ public class GlProgram<T> extends GlObject implements Program<T> {
         try (var context = new BindingContext()) {
             this.shaderInterface = interfaceFactory.apply(context);
         }
+    }
+
+    private static int createShader(ShaderType type, String src) {
+        int shader = GL20C.glCreateShader(GlEnum.from(type));
+        ShaderWorkarounds.safeShaderSource(shader, src);
+        GL20C.glCompileShader(shader);
+
+        String log = GL20C.glGetShaderInfoLog(shader);
+
+        if (!log.isEmpty()) {
+            System.err.println(log);
+        }
+
+        int result = GL20C.glGetShaderi(shader, GL20C.GL_COMPILE_STATUS);
+
+        if (result != GL20C.GL_TRUE) {
+            GL20C.glDeleteShader(shader);
+
+            throw new RuntimeException("Shader compilation failed, see log for details");
+        }
+
+        return shader;
     }
 
     private static void printProgramLinkLog(int program) {
@@ -81,63 +94,28 @@ public class GlProgram<T> extends GlObject implements Program<T> {
         return this.shaderInterface;
     }
 
-    /**
-     * A compiled OpenGL shader object.
-     */
-    private static class Shader extends GlObject {
-        private Shader(ShaderType type, String src) {
-            int handle = GL20C.glCreateShader(GlEnum.from(type));
-            ShaderWorkarounds.safeShaderSource(handle, src);
-            GL20C.glCompileShader(handle);
-
-            String log = GL20C.glGetShaderInfoLog(handle);
-
-            if (!log.isEmpty()) {
-                System.err.println(log);
-            }
-
-            int result = GL20C.glGetShaderi(handle, GL20C.GL_COMPILE_STATUS);
-
-            if (result != GL20C.GL_TRUE) {
-                throw new RuntimeException("Shader compilation failed, see log for details");
-            }
-
-            this.setHandle(handle);
-        }
-
-        public void delete() {
-            GL20C.glDeleteShader(this.handle());
-
-            this.invalidateHandle();
-        }
-    }
-
     private class BindingContext implements ShaderBindingContext, AutoCloseable {
         private final int handle = GlProgram.this.handle();
 
-        private final Set<String> boundUniformBlocks = new ObjectOpenHashSet<>();
+        private final IntArrayList boundUniformBlocks = new IntArrayList();
 
         private boolean disposed;
 
         @Override
-        public GlBufferBlock bindUniformBlock(String name, int bindingPoint) {
+        public GlBufferBlock bindUniformBlock(int index) {
             this.checkDisposed();
 
-            if (this.boundUniformBlocks.contains(name)) {
-                throw new IllegalStateException("Uniform block %s has already been bound".formatted(name));
+            if (this.boundUniformBlocks.contains(index)) {
+                throw new IllegalStateException("Uniform block %s has already been bound".formatted(index));
             }
 
-            int index = GL32C.glGetUniformBlockIndex(this.handle, name);
+            var binding = this.boundUniformBlocks.size();
 
-            if (index < 0) {
-                throw new NullPointerException("No uniform block exists with name: " + name);
-            }
+            GL32C.glUniformBlockBinding(this.handle, index, binding);
 
-            GL32C.glUniformBlockBinding(this.handle, index, bindingPoint);
+            this.boundUniformBlocks.add(index);
 
-            this.boundUniformBlocks.add(name);
-
-            return new GlBufferBlock(GlProgram.this, bindingPoint);
+            return new GlBufferBlock(GlProgram.this, binding);
         }
 
         private void checkDisposed() {
