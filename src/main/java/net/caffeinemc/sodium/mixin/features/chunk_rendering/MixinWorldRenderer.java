@@ -84,7 +84,7 @@ public abstract class MixinWorldRenderer implements WorldRendererHolder {
      */
     @Overwrite
     private void renderLayer(RenderLayer renderLayer, MatrixStack matrices, double x, double y, double z, Matrix4f matrix) {
-        this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
+        this.renderer.drawChunkLayer(renderLayer, matrices);
     }
 
     /**

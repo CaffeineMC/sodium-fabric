@@ -1,23 +1,29 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.caffeinemc.gfx.api.array.VertexArrayDescription;
+import net.caffeinemc.gfx.api.array.VertexArrayResourceBinding;
+import net.caffeinemc.gfx.api.array.attribute.VertexAttributeBinding;
 import net.caffeinemc.gfx.api.buffer.BufferMapFlags;
 import net.caffeinemc.gfx.api.buffer.BufferStorageFlags;
-import net.caffeinemc.gfx.api.buffer.MappedBuffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
+import net.caffeinemc.gfx.api.pipeline.Pipeline;
 import net.caffeinemc.gfx.api.pipeline.PipelineState;
 import net.caffeinemc.gfx.api.shader.Program;
 import net.caffeinemc.gfx.api.shader.ShaderDescription;
 import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
+import net.caffeinemc.sodium.SodiumClientMod;
+import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
+import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
-import net.caffeinemc.sodium.render.sequence.SequenceBuilder;
 import net.caffeinemc.sodium.render.sequence.SequenceIndexBuffer;
 import net.caffeinemc.sodium.render.shader.ShaderConstants;
 import net.caffeinemc.sodium.render.shader.ShaderLoader;
 import net.caffeinemc.sodium.render.shader.ShaderParser;
+import net.caffeinemc.sodium.render.terrain.format.TerrainMeshAttribute;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.TextureUtil;
 import net.minecraft.util.Identifier;
@@ -25,39 +31,72 @@ import net.minecraft.util.math.MathHelper;
 import org.joml.Matrix4f;
 
 import java.util.EnumSet;
+import java.util.List;
 
-public class DefaultChunkRenderer extends ShaderChunkRenderer<ChunkShaderInterface> {
-    private final MappedBuffer bufferCameraMatrices;
-    private final MappedBuffer bufferFogParameters;
+public class DefaultChunkRenderer extends AbstractChunkRenderer {
+    private final Pipeline<ChunkShaderInterface, BufferTarget> pipeline;
+    private final Program<ChunkShaderInterface> program;
 
-    private final SequenceIndexBuffer sequenceIndexBuffer;
+    private final StreamingBuffer bufferCameraMatrices;
+    private final StreamingBuffer bufferFogParameters;
 
-    public DefaultChunkRenderer(RenderDevice device, TerrainVertexType vertexType) {
+    private final SequenceIndexBuffer indexBuffer;
+
+    public DefaultChunkRenderer(RenderDevice device, SequenceIndexBuffer indexBuffer, TerrainVertexType vertexType, ChunkRenderPass pass) {
         super(device, vertexType);
 
-        var storageFlags = EnumSet.of(BufferStorageFlags.WRITABLE, BufferStorageFlags.COHERENT, BufferStorageFlags.PERSISTENT);
-        var mapFlags = EnumSet.of(BufferMapFlags.WRITE, BufferMapFlags.COHERENT, BufferMapFlags.PERSISTENT);
+        var storageFlags = EnumSet.of(BufferStorageFlags.WRITABLE, BufferStorageFlags.PERSISTENT);
+        var mapFlags = EnumSet.of(BufferMapFlags.WRITE, BufferMapFlags.EXPLICIT_FLUSH, BufferMapFlags.PERSISTENT, BufferMapFlags.UNSYNCHRONIZED);
 
-        this.bufferCameraMatrices = device.createMappedBuffer(192, storageFlags, mapFlags);
-        this.bufferFogParameters = device.createMappedBuffer(24, storageFlags, mapFlags);
+        var maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
 
-        this.sequenceIndexBuffer = new SequenceIndexBuffer(device, SequenceBuilder.QUADS);
+        this.bufferCameraMatrices = new StreamingBuffer(device, storageFlags, mapFlags, 192, maxInFlightFrames);
+        this.bufferFogParameters = new StreamingBuffer(device, storageFlags, mapFlags, 24, maxInFlightFrames);
+
+        this.indexBuffer = indexBuffer;
+
+        var vertexFormat = vertexType.getCustomVertexFormat();
+        var vertexArray = new VertexArrayDescription<>(BufferTarget.values(), List.of(
+                new VertexArrayResourceBinding<>(BufferTarget.VERTICES, new VertexAttributeBinding[] {
+                        new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION,
+                                vertexFormat.getAttribute(TerrainMeshAttribute.POSITION)),
+                        new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
+                                vertexFormat.getAttribute(TerrainMeshAttribute.COLOR)),
+                        new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
+                                vertexFormat.getAttribute(TerrainMeshAttribute.BLOCK_TEXTURE)),
+                        new VertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,
+                                vertexFormat.getAttribute(TerrainMeshAttribute.LIGHT_TEXTURE))
+                })
+        ));
+
+        var constants = getShaderConstants(pass, this.vertexType);
+
+        var vertShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.vert"), constants);
+        var fragShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.frag"), constants);
+
+        var desc = ShaderDescription.builder()
+                .addShaderSource(ShaderType.VERTEX, vertShader)
+                .addShaderSource(ShaderType.FRAGMENT, fragShader)
+                .build();
+
+        this.program = this.device.createProgram(desc, ChunkShaderInterface::new);
+        this.pipeline = this.device.createPipeline(pass.pipelineDescription(), this.program, vertexArray);
     }
 
     @Override
-    public void render(ChunkPrep.PreparedRenderList lists, ChunkRenderPass renderPass, ChunkRenderMatrices matrices) {
-        this.sequenceIndexBuffer.ensureCapacity(lists.largestVertexIndex());
+    public void render(ChunkPrep.PreparedRenderList lists, ChunkRenderPass renderPass, ChunkRenderMatrices matrices, int frameIndex) {
+        this.indexBuffer.ensureCapacity(lists.largestVertexIndex());
 
-        this.device.usePipeline(this.getPipeline(renderPass), (cmd, programInterface, pipelineState) -> {
+        this.device.usePipeline(this.pipeline, (cmd, programInterface, pipelineState) -> {
             this.setupTextures(renderPass, pipelineState);
-            this.setupUniforms(matrices, programInterface, pipelineState);
+            this.setupUniforms(matrices, programInterface, pipelineState, frameIndex);
 
             for (var batch : lists.batches()) {
                 pipelineState.bindUniformBlock(programInterface.uniformInstanceData, lists.instanceBuffer(),
                         batch.instanceData().offset(), batch.instanceData().length());
 
-                cmd.bindVertexBuffer(BufferTarget.VERTICES, batch.vertexBuffer(), 0, this.vertexFormat.stride());
-                cmd.bindElementBuffer(this.sequenceIndexBuffer.getBuffer());
+                cmd.bindVertexBuffer(BufferTarget.VERTICES, batch.vertexBuffer(), 0, batch.vertexStride());
+                cmd.bindElementBuffer(this.indexBuffer.getBuffer());
 
                 cmd.multiDrawElementsIndirect(lists.commandBuffer(), batch.commandData().offset(), batch.commandCount(),
                         ElementFormat.UNSIGNED_INT, PrimitiveType.TRIANGLES);
@@ -70,50 +109,39 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer<ChunkShaderInterfa
         pipelineState.bindTexture(1, TextureUtil.getLightTexture(), this.lightTextureSampler);
     }
 
-    private void setupUniforms(ChunkRenderMatrices matrices, ChunkShaderInterface programInterface, PipelineState state) {
-        var bufMatrices = this.bufferCameraMatrices.view();
+    private void setupUniforms(ChunkRenderMatrices renderMatrices, ChunkShaderInterface programInterface, PipelineState state, int frameIndex) {
+        var matrices = this.bufferCameraMatrices.slice(frameIndex);
+        var matricesBuf = matrices.view();
 
-        matrices.projection()
-                .get(0, bufMatrices);
-        matrices.modelView()
-                .get(64, bufMatrices);
+        renderMatrices.projection()
+                .get(0, matricesBuf);
+        renderMatrices.modelView()
+                .get(64, matricesBuf);
 
         var mvpMatrix = new Matrix4f();
-        mvpMatrix.set(matrices.projection());
-        mvpMatrix.mul(matrices.modelView());
+        mvpMatrix.set(renderMatrices.projection());
+        mvpMatrix.mul(renderMatrices.modelView());
         mvpMatrix
-                .get(128, bufMatrices);
+                .get(128, matricesBuf);
 
-        this.bufferCameraMatrices.flush();
+        this.bufferCameraMatrices.flush(matrices);
 
-        var bufFogParameters = this.bufferFogParameters.view();
+        state.bindUniformBlock(programInterface.uniformCameraMatrices, matrices.buffer(), matrices.offset(), matrices.length());
+
+        var fogParams = this.bufferFogParameters.slice(frameIndex);
+        var fogParamsBuf = fogParams.view();
+
         var paramFogColor = RenderSystem.getShaderFogColor();
-        bufFogParameters.putFloat(0, paramFogColor[0]);
-        bufFogParameters.putFloat(4, paramFogColor[1]);
-        bufFogParameters.putFloat(8, paramFogColor[2]);
-        bufFogParameters.putFloat(12, paramFogColor[3]);
-        bufFogParameters.putFloat(16, RenderSystem.getShaderFogStart());
-        bufFogParameters.putFloat(20, RenderSystem.getShaderFogEnd());
+        fogParamsBuf.putFloat(0, paramFogColor[0]);
+        fogParamsBuf.putFloat(4, paramFogColor[1]);
+        fogParamsBuf.putFloat(8, paramFogColor[2]);
+        fogParamsBuf.putFloat(12, paramFogColor[3]);
+        fogParamsBuf.putFloat(16, RenderSystem.getShaderFogStart());
+        fogParamsBuf.putFloat(20, RenderSystem.getShaderFogEnd());
 
-        this.bufferFogParameters.flush();
+        this.bufferFogParameters.flush(fogParams);
 
-        state.bindUniformBlock(programInterface.uniformFogParameters, this.bufferFogParameters);
-        state.bindUniformBlock(programInterface.uniformCameraMatrices, this.bufferCameraMatrices);
-    }
-
-    @Override
-    protected Program<ChunkShaderInterface> createProgram(ChunkRenderPass pass) {
-        var constants = getShaderConstants(pass, this.vertexType);
-
-        var vertShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.vert"), constants);
-        var fragShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.frag"), constants);
-
-        var desc = ShaderDescription.builder()
-                .addShaderSource(ShaderType.VERTEX, vertShader)
-                .addShaderSource(ShaderType.FRAGMENT, fragShader)
-                .build();
-
-        return this.device.createProgram(desc, ChunkShaderInterface::new);
+        state.bindUniformBlock(programInterface.uniformFogParameters, fogParams.buffer(), fogParams.offset(), fogParams.length());
     }
 
     private static ShaderConstants getShaderConstants(ChunkRenderPass pass, TerrainVertexType vertexType) {
@@ -134,7 +162,14 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer<ChunkShaderInterfa
     public void delete() {
         super.delete();
 
-        this.device.deleteBuffer(this.bufferFogParameters);
-        this.device.deleteBuffer(this.bufferCameraMatrices);
+        this.device.deletePipeline(this.pipeline);
+        this.device.deleteProgram(this.program);
+
+        this.bufferFogParameters.delete();
+        this.bufferCameraMatrices.delete();
+    }
+
+    public enum BufferTarget {
+        VERTICES
     }
 }
