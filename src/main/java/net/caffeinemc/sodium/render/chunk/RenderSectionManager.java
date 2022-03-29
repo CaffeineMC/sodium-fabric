@@ -7,15 +7,19 @@ import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.render.SodiumWorldRenderer;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.compile.ChunkBuilder;
 import net.caffeinemc.sodium.render.chunk.draw.*;
+import net.caffeinemc.sodium.render.chunk.passes.DefaultRenderPasses;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.chunk.state.ChunkGraphIterationQueue;
+import net.caffeinemc.sodium.render.sequence.SequenceBuilder;
+import net.caffeinemc.sodium.render.sequence.SequenceIndexBuffer;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.render.chunk.state.ChunkGraphState;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
@@ -81,12 +85,13 @@ public class RenderSectionManager {
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
     private final ObjectList<RenderSection> visibleSections = new ObjectArrayList<>();
 
-    private final ChunkRenderer chunkRenderer;
+    private final Map<ChunkRenderPass, ChunkRenderer> chunkRenderers;
 
     private final SodiumWorldRenderer worldRenderer;
     private final ClientWorld world;
 
     private final int renderDistance;
+    private final SequenceIndexBuffer indexBuffer;
 
     private float cameraX, cameraY, cameraZ;
     private int centerChunkX, centerChunkZ;
@@ -100,7 +105,8 @@ public class RenderSectionManager {
 
     private Frustum frustum;
 
-    private int currentFrame = 0;
+    private int currentFrame = 0, lastUpdatedFrame;
+
     private boolean alwaysDeferChunkUpdates;
 
     private final ChunkTracker tracker;
@@ -114,7 +120,13 @@ public class RenderSectionManager {
         var vertexType = createVertexType();
 
         this.device = device;
-        this.chunkRenderer = createChunkRenderer(device, vertexType);
+        this.chunkRenderers = new Reference2ReferenceOpenHashMap<>();
+
+        this.indexBuffer = new SequenceIndexBuffer(device, SequenceBuilder.QUADS);
+
+        for (var renderPass : DefaultRenderPasses.ALL) {
+            this.chunkRenderers.put(renderPass, createChunkRenderer(device, this.indexBuffer, vertexType, renderPass));
+        }
 
         this.worldRenderer = worldRenderer;
         this.world = world;
@@ -140,9 +152,14 @@ public class RenderSectionManager {
                 .forEach(pos -> this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
     }
 
+    public void setFrameIndex(int frame) {
+        this.currentFrame = frame;
+    }
+
     public void update(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.resetLists();
 
+        this.lastUpdatedFrame = this.currentFrame;
         this.regions.updateVisibility(frustum);
 
         this.setup(camera);
@@ -335,12 +352,16 @@ public class RenderSectionManager {
         return true;
     }
 
-    public void renderLayer(ChunkRenderMatrices matrices, ChunkRenderPass renderPass, double x, double y, double z) {
+    public void renderLayer(ChunkRenderMatrices matrices, ChunkRenderPass renderPass) {
         if (this.renderLists == null || !this.renderLists.containsKey(renderPass)) {
             return;
         }
 
-        this.chunkRenderer.render(this.renderLists.get(renderPass), renderPass, matrices);
+        var chunkRenderer = this.chunkRenderers.get(renderPass);
+
+        if (chunkRenderer != null) {
+            chunkRenderer.render(this.renderLists.get(renderPass), renderPass, matrices, this.currentFrame);
+        }
     }
 
     public void tickVisibleRenders() {
@@ -357,7 +378,7 @@ public class RenderSectionManager {
         }
 
         return render.getGraphInfo()
-                .getLastVisibleFrame() == this.currentFrame;
+                .getLastVisibleFrame() == this.lastUpdatedFrame;
     }
 
     public void updateChunks() {
@@ -455,8 +476,14 @@ public class RenderSectionManager {
         this.resetLists();
 
         this.regions.delete();
-        this.chunkRenderer.delete();
         this.builder.stopWorkers();
+
+        for (var renderer : this.chunkRenderers.values()) {
+            renderer.delete();
+        }
+
+        this.chunkRenderers.clear();
+        this.indexBuffer.delete();
     }
 
     public int getTotalSections() {
@@ -517,7 +544,6 @@ public class RenderSectionManager {
     }
 
     private void initSearch(Camera camera, Frustum frustum, int frame, boolean spectator) {
-        this.currentFrame = frame;
         this.frustum = frustum;
         this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
 
@@ -669,8 +695,8 @@ public class RenderSectionManager {
         return list;
     }
 
-    private static ChunkRenderer createChunkRenderer(RenderDevice device, TerrainVertexType vertexType) {
-        return new DefaultChunkRenderer(device, vertexType);
+    private static ChunkRenderer createChunkRenderer(RenderDevice device, SequenceIndexBuffer indexBuffer, TerrainVertexType vertexType, ChunkRenderPass pass) {
+        return new DefaultChunkRenderer(device, indexBuffer, vertexType, pass);
     }
 
     private static TerrainVertexType createVertexType() {

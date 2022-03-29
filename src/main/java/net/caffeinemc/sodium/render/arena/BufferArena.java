@@ -18,4 +18,6 @@ public interface BufferArena {
     Buffer getBufferObject();
 
     void upload(List<PendingUpload> uploads);
+
+    int getStride();
 }

@@ -274,6 +274,11 @@ public class AsyncBufferArena implements BufferArena {
         this.device.deleteBuffer(batch.buffer);
     }
 
+    @Override
+    public int getStride() {
+        return this.stride;
+    }
+
     private boolean tryUpload(UploadBatch batch, UploadBatch.Entry entry) {
         Buffer src = batch.buffer;
         BufferSegment segment = this.alloc(this.toElements(entry.length()));

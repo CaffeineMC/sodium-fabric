@@ -54,8 +54,11 @@ public class ChunkPrep {
                 var instanceData = builder.instanceBufferBuilder.flush();
                 var commandData = builder.commandBufferBuilder.flush();
 
+                var vertexBuffers = resources.vertexBuffers;
+
                 builder.batches.add(new ChunkRenderBatch(
-                        resources.vertexBuffers.getBufferObject(),
+                        vertexBuffers.getBufferObject(),
+                        vertexBuffers.getStride(),
                         instanceCount,
                         commandCount,
                         instanceData,
@@ -136,6 +139,7 @@ public class ChunkPrep {
     }
 
     public record ChunkRenderBatch(Buffer vertexBuffer,
+                                   int vertexStride,
                                    int instanceCount,
                                    int commandCount,
                                    BufferSlice instanceData,

@@ -189,6 +189,8 @@ public class SodiumWorldRenderer {
         profiler.swap("chunk_update");
 
         this.chunkTracker.update();
+
+        this.renderSectionManager.setFrameIndex(frame);
         this.renderSectionManager.updateChunks();
 
         if (this.renderSectionManager.isGraphDirty()) {
@@ -209,9 +211,9 @@ public class SodiumWorldRenderer {
     /**
      * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
-    public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
+    public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack) {
         ChunkRenderPass renderPass = this.renderPassManager.getRenderPassForLayer(renderLayer);
-        this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), renderPass, x, y, z);
+        this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), renderPass);
     }
 
     public void reload() {
