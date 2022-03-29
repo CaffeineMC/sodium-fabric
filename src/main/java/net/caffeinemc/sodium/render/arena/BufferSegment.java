@@ -1,17 +1,17 @@
 package net.caffeinemc.sodium.render.arena;
 
-public class GlBufferSegment {
-    private final GlBufferArena arena;
+public class BufferSegment {
+    private final BufferArena arena;
 
     private boolean free = false;
 
     private int offset;
     private int length;
 
-    private GlBufferSegment next;
-    private GlBufferSegment prev;
+    private BufferSegment next;
+    private BufferSegment prev;
 
-    public GlBufferSegment(GlBufferArena arena, int offset, int length) {
+    public BufferSegment(BufferArena arena, int offset, int length) {
         this.arena = arena;
         this.offset = offset;
         this.length = length;
@@ -57,23 +57,23 @@ public class GlBufferSegment {
         return this.free;
     }
 
-    protected void setNext(GlBufferSegment next) {
+    protected void setNext(BufferSegment next) {
         this.next = next;
     }
 
-    protected GlBufferSegment getNext() {
+    protected BufferSegment getNext() {
         return this.next;
     }
 
-    protected GlBufferSegment getPrev() {
+    protected BufferSegment getPrev() {
         return this.prev;
     }
 
-    protected void setPrev(GlBufferSegment prev) {
+    protected void setPrev(BufferSegment prev) {
         this.prev = prev;
     }
 
-    protected void mergeInto(GlBufferSegment entry) {
+    protected void mergeInto(BufferSegment entry) {
         this.setLength(this.getLength() + entry.getLength());
         this.setNext(entry.getNext());
 

@@ -3,71 +3,74 @@ package net.caffeinemc.sodium.render.chunk.draw;
 import it.unimi.dsi.fastutil.objects.*;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
+import net.caffeinemc.sodium.util.IteratorUtils;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class ChunkRenderList {
-    private final Reference2ObjectLinkedOpenHashMap<RenderRegion, ObjectArrayList<RenderSection>> entries = new Reference2ObjectLinkedOpenHashMap<>();
+    private final ObjectList<RenderSection> sections;
+    private final ObjectList<Bucket> regions;
 
-    public Iterable<Map.Entry<RenderRegion, ObjectArrayList<RenderSection>>> sorted(boolean reverse) {
-        if (this.entries.isEmpty()) {
-            return Collections.emptyList();
+    public ChunkRenderList(ObjectList<RenderSection> sections) {
+        RenderRegion cachedRegion = null;
+        ObjectArrayList<RenderSection> cachedList = null;
+
+        var regions = new Reference2ReferenceLinkedOpenHashMap<RenderRegion, ObjectArrayList<RenderSection>>();
+
+        for (RenderSection section : sections) {
+            var region = section.getRegion();
+
+            if (cachedRegion != region) {
+                cachedRegion = region;
+                cachedList = regions.get(region);
+
+                if (cachedList == null) {
+                    regions.put(region, cachedList = new ObjectArrayList<>(RenderRegion.REGION_SIZE / 4));
+                }
+            }
+
+            cachedList.add(section);
         }
 
-        Reference2ObjectSortedMap.FastSortedEntrySet<RenderRegion, ObjectArrayList<RenderSection>> entries =
-                this.entries.reference2ObjectEntrySet();
-
-        if (reverse) {
-            return () -> new Iterator<>() {
-                final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, ObjectArrayList<RenderSection>>> iterator =
-                        entries.fastIterator(entries.last());
-
-                @Override
-                public boolean hasNext() {
-                    return this.iterator.hasPrevious();
-                }
-
-                @Override
-                public Map.Entry<RenderRegion, ObjectArrayList<RenderSection>> next() {
-                    return this.iterator.previous();
-                }
-            };
-        } else {
-            return () -> new Iterator<>() {
-                final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, ObjectArrayList<RenderSection>>> iterator =
-                        entries.fastIterator();
-
-                @Override
-                public boolean hasNext() {
-                    return this.iterator.hasNext();
-                }
-
-                @Override
-                public Map.Entry<RenderRegion, ObjectArrayList<RenderSection>> next() {
-                    return this.iterator.next();
-                }
-            };
-        }
+        this.regions = flatten(regions);
+        this.sections = ObjectLists.unmodifiable(sections);
     }
 
-    public void clear() {
-        this.entries.clear();
+    private static ObjectList<Bucket> flatten(Reference2ReferenceLinkedOpenHashMap<RenderRegion, ObjectArrayList<RenderSection>> regions) {
+        var array = new ObjectArrayList<Bucket>(regions.size());
+
+        for (var entry : Reference2ReferenceSortedMaps.fastIterable(regions)) {
+            array.add(new Bucket(entry.getKey(), entry.getValue()));
+        }
+
+        return array;
     }
 
     public void add(RenderSection render) {
-        RenderRegion region = render.getRegion();
-
-        List<RenderSection> sections = this.entries.computeIfAbsent(region, (key) -> new ObjectArrayList<>());
-        sections.add(render);
+        this.sections.add(render);
     }
 
-    public int getCount() {
-        return this.entries.values()
-                .stream()
-                .mapToInt(List::size)
-                .sum();
+    public int sectionCount() {
+        return this.sections.size();
+    }
+
+    public int regionCount() {
+        return this.regions.size();
+    }
+
+    public Iterator<Bucket> sorted(boolean reverse) {
+        return IteratorUtils.reversibleIterator(this.regions, reverse);
+    }
+
+    public Iterable<Bucket> unsorted() {
+        return this.regions;
+    }
+
+    public record Bucket(RenderRegion region,
+                         List<RenderSection> sections) {
+        public int size() {
+            return this.sections.size();
+        }
     }
 }

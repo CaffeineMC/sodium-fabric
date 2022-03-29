@@ -12,12 +12,9 @@ import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.render.SodiumWorldRenderer;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.compile.ChunkBuilder;
+import net.caffeinemc.sodium.render.chunk.draw.*;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
-import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
-import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderList;
-import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderMatrices;
-import net.caffeinemc.sodium.render.chunk.draw.DefaultChunkRenderer;
 import net.caffeinemc.sodium.render.chunk.state.ChunkGraphIterationQueue;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.render.chunk.state.ChunkGraphState;
@@ -77,11 +74,11 @@ public class RenderSectionManager {
 
     private final Map<ChunkUpdateType, PriorityQueue<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
 
-    private final ChunkRenderList chunkRenderList = new ChunkRenderList();
     private final ChunkGraphIterationQueue iterationQueue = new ChunkGraphIterationQueue();
 
     private final ObjectList<RenderSection> tickableChunks = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
+    private final ObjectList<RenderSection> visibleSections = new ObjectArrayList<>();
 
     private final DefaultChunkRenderer chunkRenderer;
 
@@ -110,6 +107,8 @@ public class RenderSectionManager {
 
     private final boolean isBlockFaceCullingEnabled = SodiumClientMod.options().performance.useBlockFaceCulling;
 
+    private Map<ChunkRenderPass, ChunkPrep.PreparedRenderList> renderLists;
+
     public RenderSectionManager(RenderDevice device, SodiumWorldRenderer worldRenderer, ChunkRenderPassManager renderPassManager, ClientWorld world, int renderDistance) {
         this.device = device;
         this.chunkRenderer = new DefaultChunkRenderer(device, TerrainVertexFormats.STANDARD);
@@ -131,7 +130,6 @@ public class RenderSectionManager {
         }
 
         this.tracker = this.worldRenderer.getChunkTracker();
-
     }
 
     public void reloadChunks(ChunkTracker tracker) {
@@ -147,6 +145,11 @@ public class RenderSectionManager {
         this.setup(camera);
         this.iterateChunks(camera, frustum, frame, spectator);
 
+        if (this.renderLists != null) {
+            ChunkPrep.deleteRenderLists(this.device, this.renderLists);
+        }
+
+        this.renderLists = ChunkPrep.createRenderLists(this.device, new ChunkRenderList(this.visibleSections), new ChunkCameraContext(camera));
         this.needsUpdate = false;
     }
 
@@ -213,7 +216,7 @@ public class RenderSectionManager {
     }
 
     private void addChunkToVisible(RenderSection render) {
-        this.chunkRenderList.add(render);
+        this.visibleSections.add(render);
 
         if (render.isTickable()) {
             this.tickableChunks.add(render);
@@ -270,7 +273,7 @@ public class RenderSectionManager {
         }
 
         this.visibleBlockEntities.clear();
-        this.chunkRenderList.clear();
+        this.visibleSections.clear();
         this.tickableChunks.clear();
     }
 
@@ -329,8 +332,12 @@ public class RenderSectionManager {
         return true;
     }
 
-    public void renderLayer(ChunkRenderMatrices matrices, ChunkRenderPass pass, double x, double y, double z) {
-        this.chunkRenderer.render(matrices, this.device, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
+    public void renderLayer(ChunkRenderMatrices matrices, ChunkRenderPass renderPass, double x, double y, double z) {
+        if (this.renderLists == null || !this.renderLists.containsKey(renderPass)) {
+            return;
+        }
+
+        this.chunkRenderer.render(this.renderLists.get(renderPass), renderPass, matrices);
     }
 
     public void tickVisibleRenders() {
@@ -459,8 +466,8 @@ public class RenderSectionManager {
         return sum;
     }
 
-    public int getVisibleChunkCount() {
-        return this.chunkRenderList.getCount();
+    public int getVisibleSectionCount() {
+        return this.visibleSections.size();
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
@@ -655,11 +662,7 @@ public class RenderSectionManager {
 
         list.add(String.format("Device buffer objects: %d", count));
         list.add(String.format("Device memory: %d MiB used/%d MiB alloc", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
-        list.add(String.format("Staging buffer: %s", this.regions.getStreamingBuffer().getDebugString()));
-        return list;
-    }
 
-    public void flush() {
-        this.chunkRenderer.flush();
+        return list;
     }
 }

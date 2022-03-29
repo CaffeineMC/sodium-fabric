@@ -2,28 +2,25 @@ package net.caffeinemc.sodium.render.chunk.region;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
-import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.gfx.api.device.RenderDevice;
+import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
+import net.caffeinemc.sodium.render.arena.BufferSegment;
 import net.caffeinemc.sodium.render.arena.PendingUpload;
-import net.caffeinemc.sodium.render.buffer.IndexedVertexData;
+import net.caffeinemc.sodium.render.arena.UploadBatch;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
-import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
-import net.caffeinemc.sodium.render.chunk.state.ChunkMesh;
-import net.caffeinemc.sodium.render.chunk.state.UploadedChunkMesh;
-import net.caffeinemc.sodium.render.stream.MappedStreamingBuffer;
-import net.caffeinemc.sodium.render.stream.StreamingBuffer;
+import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
+import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
 
-    private final StreamingBuffer streamingBuffer;
     private final RenderDevice device;
 
     public RenderRegionManager(RenderDevice device) {
-        this.streamingBuffer = new MappedStreamingBuffer(device, 24 * 1024 * 1024);
         this.device = device;
     }
 
@@ -36,8 +33,6 @@ public class RenderRegionManager {
     }
 
     public void cleanup() {
-        this.streamingBuffer.flush();
-
         Iterator<RenderRegion> it = this.regions.values()
                 .iterator();
 
@@ -59,43 +54,46 @@ public class RenderRegionManager {
             this.upload(region, uploadQueue);
 
             for (TerrainBuildResult result : uploadQueue) {
-                result.render.onBuildFinished(result);
-
+                result.render().onBuildFinished(result);
                 result.delete();
             }
         }
     }
 
     private void upload(RenderRegion region, List<TerrainBuildResult> results) {
-        List<PendingSectionUpload> sectionUploads = new ArrayList<>();
+        List<PendingUpload> uploads = new ArrayList<>();
+        List<ChunkGeometryUpload> jobs = new ArrayList<>(results.size());
 
         for (TerrainBuildResult result : results) {
+            var render = result.render();
+            var geometry = result.geometry();
+
             // De-allocate all storage for the meshes we're about to replace
-            // This will allow it to be cheaply re-allocated just below
-            result.render.deleteMeshes();
+            // This will allow it to be cheaply re-allocated later
+            render.deleteGeometry();
 
-            for (var entry : result.getMeshes()) {
-                var renderPass = entry.getKey();
-                var meshData = entry.getValue();
+            // Only submit an upload job if there is data in the first place
+            var vertices = geometry.vertices();
 
-                IndexedVertexData vertexData = meshData.getVertexData();
+            if (vertices != null) {
+                var upload = new PendingUpload(vertices.buffer());
+                jobs.add(new ChunkGeometryUpload(render, geometry, upload.holder));
 
-                sectionUploads.add(new PendingSectionUpload(result.render, meshData, renderPass, new PendingUpload(vertexData.vertexBuffer())));
+                uploads.add(upload);
             }
         }
 
-        // If we have nothing to upload, abort!
-        if (sectionUploads.isEmpty()) {
+        // If we have nothing to upload, don't allocate a region
+        if (jobs.isEmpty()) {
             return;
         }
 
-        RenderRegion.Resources arenas = region.getOrCreateArenas();
-
-        arenas.vertexBuffers.upload(sectionUploads.stream().map(i -> i.vertexUpload));
+        RenderRegion.Resources resources = region.getOrCreateArenas();
+        resources.vertexBuffers.upload(uploads);
 
         // Collect the upload results
-        for (PendingSectionUpload upload : sectionUploads) {
-            upload.section.updateMesh(upload.pass, new UploadedChunkMesh(upload.vertexUpload.getResult(), upload.meshData));
+        for (ChunkGeometryUpload upload : jobs) {
+            upload.section.updateGeometry(new UploadedChunkGeometry(upload.result.get(), upload.geometry.models()));
         }
     }
 
@@ -104,7 +102,7 @@ public class RenderRegionManager {
 
         while (renders.hasNext()) {
             TerrainBuildResult result = renders.next();
-            RenderSection render = result.render;
+            RenderSection render = result.render();
 
             if (!render.canAcceptBuildResults(result)) {
                 result.delete();
@@ -145,21 +143,17 @@ public class RenderRegionManager {
         }
 
         this.regions.clear();
-        this.streamingBuffer.delete();
     }
 
     public Collection<RenderRegion> getLoadedRegions() {
         return this.regions.values();
     }
 
-    public StreamingBuffer getStreamingBuffer() {
-        return this.streamingBuffer;
-    }
-
     protected RenderRegion.Resources createRegionArenas() {
-        return new RenderRegion.Resources(this.device, this.streamingBuffer);
+        return new RenderRegion.Resources(this.device);
     }
 
-    private record PendingSectionUpload(RenderSection section, ChunkMesh meshData, ChunkRenderPass pass, PendingUpload vertexUpload) {
+    private record ChunkGeometryUpload(RenderSection section, BuiltChunkGeometry geometry, AtomicReference<BufferSegment> result) {
+
     }
 }

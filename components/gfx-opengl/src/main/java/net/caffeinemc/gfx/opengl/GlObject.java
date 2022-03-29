@@ -27,7 +27,8 @@ public abstract class GlObject {
 
     protected final void checkHandle() {
         if (!this.isHandleValid()) {
-            throw new IllegalStateException("Handle is not valid");
+            throw new IllegalStateException("%s is not valid"
+                    .formatted(this.getClass().getSimpleName()));
         }
     }
 

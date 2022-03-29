@@ -1,21 +1,16 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.render.arena.AsyncBufferArena;
-import net.caffeinemc.sodium.render.arena.GlBufferArena;
+import net.caffeinemc.sodium.render.arena.BufferArena;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
-import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
-import net.caffeinemc.sodium.render.chunk.state.UploadedChunkMesh;
-import net.caffeinemc.sodium.render.stream.StreamingBuffer;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
-import java.util.Map;
 import java.util.Set;
 
 public class RenderRegion {
@@ -139,26 +134,11 @@ public class RenderRegion {
         return (x * RenderRegion.REGION_LENGTH * RenderRegion.REGION_HEIGHT) + (y * RenderRegion.REGION_LENGTH) + z;
     }
 
-    public void deleteChunkMeshes(int chunkId) {
-        if (this.resources != null) {
-            this.resources.deleteChunkMeshes(chunkId);
-        }
-    }
-
-    public void updateMesh(ChunkRenderPass pass, UploadedChunkMesh mesh, int chunkId) {
-        this.resources.updateMesh(pass, mesh, chunkId);
-    }
-
     public static class Resources {
-        public final GlBufferArena vertexBuffers;
+        public final BufferArena vertexBuffers;
 
-        public final Map<ChunkRenderPass, UploadedChunkMesh[]> meshes = new Reference2ReferenceOpenHashMap<>();
-
-        public Resources(RenderDevice device, StreamingBuffer stagingBuffer) {
-            int expectedVertexCount = REGION_SIZE * 756;
-            int expectedIndexCount = (expectedVertexCount / 4) * 6;
-
-            this.vertexBuffers = new AsyncBufferArena(device, expectedVertexCount, TerrainVertexFormats.STANDARD.getBufferVertexFormat().stride(), stagingBuffer);
+        public Resources(RenderDevice device) {
+            this.vertexBuffers = new AsyncBufferArena(device, REGION_SIZE * 756, TerrainVertexFormats.STANDARD.getBufferVertexFormat().stride());
         }
 
         public void delete() {
@@ -175,35 +155,6 @@ public class RenderRegion {
 
         public long getDeviceAllocatedMemory() {
             return this.vertexBuffers.getDeviceAllocatedMemory();
-        }
-
-        public UploadedChunkMesh[] getMeshes(ChunkRenderPass subpass) {
-            return this.meshes.get(subpass);
-        }
-
-        public void deleteChunkMeshes(int chunkId) {
-            for (UploadedChunkMesh[] meshes : this.meshes.values()) {
-                var mesh = meshes[chunkId];
-
-                if (mesh == null) {
-                    continue;
-                }
-
-                meshes[chunkId] = null;
-                mesh.delete();
-            }
-        }
-
-        public void updateMesh(ChunkRenderPass pass, UploadedChunkMesh mesh, int chunkId) {
-            var meshes = this.getMeshes(pass);
-
-            if (meshes == null) {
-                this.meshes.put(pass, meshes = new UploadedChunkMesh[RenderRegion.REGION_SIZE]);
-            } else if (meshes[chunkId] != null) {
-                meshes[chunkId].delete();
-            }
-
-            meshes[chunkId] = mesh;
         }
     }
 }

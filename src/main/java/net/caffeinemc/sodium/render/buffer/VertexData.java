@@ -6,9 +6,9 @@ import net.caffeinemc.sodium.util.NativeBuffer;
 /**
  * Helper type for tagging the vertex format alongside the raw buffer data.
  */
-public record IndexedVertexData(VertexFormat<?> vertexFormat,
-                                NativeBuffer vertexBuffer) {
+public record VertexData(VertexFormat<?> format,
+                         NativeBuffer buffer) {
     public void delete() {
-        this.vertexBuffer.free();
+        this.buffer.free();
     }
 }

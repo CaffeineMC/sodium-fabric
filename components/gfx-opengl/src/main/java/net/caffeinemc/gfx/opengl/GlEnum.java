@@ -77,8 +77,8 @@ public class GlEnum {
 
     private static final int[] BUFFER_STORAGE_FLAGS = build(BufferStorageFlags.class, (map) -> {
         map.put(BufferStorageFlags.PERSISTENT,      GL45C.GL_MAP_PERSISTENT_BIT);
-        map.put(BufferStorageFlags.MAP_READ,        GL45C.GL_MAP_READ_BIT);
-        map.put(BufferStorageFlags.MAP_WRITE,       GL45C.GL_MAP_WRITE_BIT);
+        map.put(BufferStorageFlags.READABLE,        GL45C.GL_MAP_READ_BIT);
+        map.put(BufferStorageFlags.WRITABLE,       GL45C.GL_MAP_WRITE_BIT);
         map.put(BufferStorageFlags.CLIENT_STORAGE,  GL45C.GL_CLIENT_STORAGE_BIT);
         map.put(BufferStorageFlags.COHERENT,        GL45C.GL_MAP_COHERENT_BIT);
     });

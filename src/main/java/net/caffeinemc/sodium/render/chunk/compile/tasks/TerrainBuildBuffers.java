@@ -1,22 +1,22 @@
 package net.caffeinemc.sodium.render.chunk.compile.tasks;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import net.caffeinemc.sodium.render.buffer.IndexedVertexData;
+import net.caffeinemc.sodium.render.buffer.VertexData;
 import net.caffeinemc.sodium.render.buffer.VertexRange;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
+import net.caffeinemc.sodium.render.chunk.state.ChunkModel;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.caffeinemc.sodium.render.vertex.buffer.VertexBufferBuilder;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.chunk.compile.buffers.DefaultChunkMeshBuilder;
 import net.caffeinemc.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
-import net.caffeinemc.sodium.render.chunk.state.ChunkMesh;
+import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexSink;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.util.NativeBuffer;
 import net.minecraft.client.render.RenderLayer;
 
-import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -75,58 +75,53 @@ public class TerrainBuildBuffers {
         return this.delegates.get(this.renderPassManager.getRenderPassForLayer(layer));
     }
 
-    public Map<ChunkRenderPass, ChunkMesh> createMeshes() {
-        var map = new Reference2ReferenceOpenHashMap<ChunkRenderPass, ChunkMesh>();
-
-        for (var renderPass : this.renderPassManager.getAllRenderPasses()) {
-            var mesh = this.createMesh(renderPass);
-
-            if (mesh != null) {
-                map.put(renderPass, mesh);
-            }
-        }
-
-        return map;
-    }
-
-    /**
-     * Creates immutable baked chunk meshes from all non-empty scratch buffers. This is used after all blocks
-     * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
-     * times to return multiple copies.
-     */
-    private ChunkMesh createMesh(ChunkRenderPass pass) {
-        var bufferBuilders = this.vertexBuffers.get(pass);
-        var totalVertexCount = Arrays.stream(bufferBuilders)
-                .mapToInt(VertexBufferBuilder::getCount)
+    public BuiltChunkGeometry buildGeometry() {
+        var capacity = this.vertexBuffers.values()
+                .stream()
+                .flatMapToInt((vertexBuffers) -> Arrays.stream(vertexBuffers)
+                        .mapToInt(VertexBufferBuilder::getCount))
                 .sum();
 
-        if (totalVertexCount <= 0) {
-            return null;
+        if (capacity <= 0) {
+            return BuiltChunkGeometry.empty();
         }
 
-        Map<ChunkMeshFace, VertexRange> ranges = new EnumMap<>(ChunkMeshFace.class);
-        NativeBuffer mergedVertexBuffer = new NativeBuffer(totalVertexCount * this.vertexType.getBufferVertexFormat().stride());
+        var vertexFormat = this.vertexType.getCustomVertexFormat();
+        var vertexCount = 0;
 
-        ByteBuffer mergedBufferBuilder = mergedVertexBuffer.getDirectBuffer().slice();
-        int vertexCount = 0;
+        var chunkVertexBuffer = new NativeBuffer(capacity * vertexFormat.stride());
+        var chunkVertexBufferBuilder = chunkVertexBuffer.getDirectBuffer().slice();
 
-        for (ChunkMeshFace facing : ChunkMeshFace.VALUES) {
-            var sidedVertexBuffer = bufferBuilders[facing.ordinal()];
-            var sidedVertexCount = sidedVertexBuffer.getCount();
+        var models = new ArrayList<ChunkModel>();
 
-            if (sidedVertexCount == 0) {
-                continue;
+        for (var entry : this.vertexBuffers.entrySet()) {
+            var sidedBuffers = entry.getValue();
+            var ranges = new VertexRange[ChunkMeshFace.COUNT];
+
+            for (ChunkMeshFace facing : ChunkMeshFace.VALUES) {
+                var index = facing.ordinal();
+
+                var sidedVertexBuffer = sidedBuffers[index];
+                var sidedVertexCount = sidedVertexBuffer.getCount();
+
+                if (sidedVertexCount == 0) {
+                    continue;
+                }
+
+                chunkVertexBufferBuilder.put(sidedVertexBuffer.slice());
+                ranges[index] = new VertexRange(vertexCount, sidedVertexCount);
+
+                vertexCount += sidedVertexCount;
             }
 
-            mergedBufferBuilder.put(sidedVertexBuffer.slice());
-            ranges.put(facing, new VertexRange(vertexCount, sidedVertexCount));
-            vertexCount += sidedVertexCount;
+            models.add(new ChunkModel(entry.getKey(), ranges));
         }
 
-        IndexedVertexData vertexData = new IndexedVertexData(this.vertexType.getCustomVertexFormat(), mergedVertexBuffer);
+        VertexData vertexData = new VertexData(vertexFormat, chunkVertexBuffer);
 
-        return new ChunkMesh(vertexData, ranges);
+        return new BuiltChunkGeometry(vertexData, models);
     }
+
     public void destroy() {
         for (VertexBufferBuilder[] builders : this.vertexBuffers.values()) {
             for (VertexBufferBuilder builder : builders) {

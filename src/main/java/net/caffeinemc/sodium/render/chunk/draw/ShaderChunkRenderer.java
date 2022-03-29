@@ -25,9 +25,9 @@ import org.lwjgl.opengl.GL33C;
 import java.util.List;
 import java.util.Map;
 
-public abstract class ShaderChunkRenderer implements ChunkRenderer {
-    private final Map<ChunkRenderPass, Pipeline<ChunkShaderInterface, BufferTarget>> pipelines = new Object2ObjectOpenHashMap<>();
-    private final Map<ChunkRenderPass, Program<ChunkShaderInterface>> programs = new Object2ObjectOpenHashMap<>();
+public abstract class ShaderChunkRenderer<T> implements ChunkRenderer {
+    private final Map<ChunkRenderPass, Pipeline<T, BufferTarget>> pipelines = new Object2ObjectOpenHashMap<>();
+    private final Map<ChunkRenderPass, Program<T>> programs = new Object2ObjectOpenHashMap<>();
 
     protected final TerrainVertexType vertexType;
     protected final VertexFormat<TerrainMeshAttribute> vertexFormat;
@@ -59,11 +59,11 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         this.lightTextureSampler.setParameter(GL33C.GL_TEXTURE_WRAP_T, GL33C.GL_CLAMP_TO_EDGE);
     }
 
-    protected Pipeline<ChunkShaderInterface, BufferTarget> getPipeline(ChunkRenderPass pass) {
+    protected Pipeline<T, BufferTarget> getPipeline(ChunkRenderPass pass) {
         return this.pipelines.computeIfAbsent(pass, this::createPipeline);
     }
 
-    private Pipeline<ChunkShaderInterface, BufferTarget> createPipeline(ChunkRenderPass pass) {
+    private Pipeline<T, BufferTarget> createPipeline(ChunkRenderPass pass) {
         var program = this.getProgram(pass);
 
         var vertexArray = new VertexArrayDescription<>(BufferTarget.values(), List.of(
@@ -82,28 +82,11 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         return this.device.createPipeline(pass.pipelineDescription(), program, vertexArray);
     }
 
-    private Program<ChunkShaderInterface> getProgram(ChunkRenderPass pass) {
+    private Program<T> getProgram(ChunkRenderPass pass) {
         return this.programs.computeIfAbsent(pass, this::createProgram);
     }
 
-    private Program<ChunkShaderInterface> createProgram(ChunkRenderPass pass) {
-        var constants = getShaderConstants(pass, this.vertexType);
-
-        var vertShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "blocks/block_layer_opaque.vsh"), constants);
-        var fragShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "blocks/block_layer_opaque.fsh"), constants);
-
-        var desc = ShaderDescription.builder()
-                .addShaderSource(ShaderType.VERTEX, vertShader)
-                .addShaderSource(ShaderType.FRAGMENT, fragShader)
-                .addAttributeBinding("a_Position", ChunkShaderBindingPoints.ATTRIBUTE_POSITION)
-                .addAttributeBinding("a_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
-                .addAttributeBinding("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE)
-                .addAttributeBinding("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
-                .addFragmentBinding("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
-                .build();
-
-        return this.device.createProgram(desc, ChunkShaderInterface::new);
-    }
+    protected abstract Program<T> createProgram(ChunkRenderPass pass);
 
     @Override
     public void delete() {
@@ -126,20 +109,5 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
 
     public enum BufferTarget {
         VERTICES
-    }
-
-    private static ShaderConstants getShaderConstants(ChunkRenderPass pass, TerrainVertexType vertexType) {
-        var constants = ShaderConstants.builder();
-
-        if (pass.isCutout()) {
-            constants.add("ALPHA_CUTOFF", String.valueOf(pass.alphaCutoff()));
-        }
-
-        constants.add("USE_VERTEX_COMPRESSION"); // TODO: allow compact vertex format to be disabled
-        constants.add("VERT_POS_SCALE", String.valueOf(vertexType.getPositionScale()));
-        constants.add("VERT_POS_OFFSET", String.valueOf(vertexType.getPositionOffset()));
-        constants.add("VERT_TEX_SCALE", String.valueOf(vertexType.getTextureScale()));
-
-        return constants.build();
     }
 }

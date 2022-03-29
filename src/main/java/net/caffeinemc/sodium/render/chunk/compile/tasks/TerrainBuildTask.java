@@ -1,9 +1,8 @@
 package net.caffeinemc.sodium.render.chunk.compile.tasks;
 
-import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.terrain.TerrainBuildContext;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
-import net.caffeinemc.sodium.render.chunk.state.ChunkMesh;
+import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.terrain.context.PreparedTerrainRenderCache;
@@ -21,8 +20,6 @@ import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
-
-import java.util.Map;
 
 /**
  * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
@@ -132,15 +129,15 @@ public class TerrainBuildTask extends AbstractBuilderTask {
             }
         }
 
-        Map<ChunkRenderPass, ChunkMesh> meshes = buffers.createMeshes();
+        BuiltChunkGeometry geometry = buffers.buildGeometry();
 
-        for (ChunkRenderPass renderPass : meshes.keySet()) {
-            renderData.addNonEmptyMesh(renderPass);
+        for (var model : geometry.models()) {
+            renderData.addNonEmptyMesh(model.getRenderPass());
         }
 
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
 
-        return new TerrainBuildResult(this.render, renderData.build(), meshes, this.frame);
+        return new TerrainBuildResult(this.render, renderData.build(), geometry, this.frame);
     }
 }
