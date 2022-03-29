@@ -2,14 +2,14 @@ package net.caffeinemc.sodium.render.arena;
 
 import net.caffeinemc.gfx.api.buffer.Buffer;
 
-import java.util.stream.Stream;
+import java.util.List;
 
-public interface GlBufferArena {
+public interface BufferArena {
     int getDeviceUsedMemory();
 
     int getDeviceAllocatedMemory();
 
-    void free(GlBufferSegment entry);
+    void free(BufferSegment entry);
 
     void delete();
 
@@ -17,5 +17,5 @@ public interface GlBufferArena {
 
     Buffer getBufferObject();
 
-    void upload(Stream<PendingUpload> stream);
+    void upload(List<PendingUpload> uploads);
 }

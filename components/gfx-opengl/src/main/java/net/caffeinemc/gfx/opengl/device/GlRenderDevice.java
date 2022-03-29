@@ -1,7 +1,9 @@
 package net.caffeinemc.gfx.opengl.device;
 
+import net.caffeinemc.gfx.api.buffer.*;
 import net.caffeinemc.gfx.api.device.commands.PipelineGate;
 import net.caffeinemc.gfx.opengl.array.GlVertexArray;
+import net.caffeinemc.gfx.opengl.buffer.GlAllocatedBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlMappedBuffer;
 import net.caffeinemc.gfx.opengl.GlEnum;
@@ -14,10 +16,6 @@ import net.caffeinemc.gfx.api.device.commands.RenderCommandList;
 import net.caffeinemc.gfx.api.array.VertexArray;
 import net.caffeinemc.gfx.api.array.VertexArrayBuffer;
 import net.caffeinemc.gfx.api.array.VertexArrayDescription;
-import net.caffeinemc.gfx.api.buffer.Buffer;
-import net.caffeinemc.gfx.api.buffer.BufferMapFlags;
-import net.caffeinemc.gfx.api.buffer.BufferStorageFlags;
-import net.caffeinemc.gfx.api.buffer.MappedBuffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.device.RenderDeviceProperties;
 import net.caffeinemc.gfx.api.shader.Program;
@@ -106,6 +104,27 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     @Override
+    public AllocatedBuffer allocateBuffer(long capacity, boolean client) {
+        var handle = GL45C.glCreateBuffers();
+        var usage = GL45C.GL_MAP_WRITE_BIT;
+
+        if (client) {
+            usage |= GL45C.GL_CLIENT_STORAGE_BIT;
+        }
+
+        GL45C.glNamedBufferStorage(handle, capacity, usage);
+
+        var mapping = GL45C.glMapNamedBufferRange(handle, 0, capacity,
+                GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | GL45C.GL_MAP_WRITE_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_FLUSH_EXPLICIT_BIT);
+
+        if (mapping == null) {
+            throw new RuntimeException("Failed to map buffer for writing");
+        }
+
+        return new GlAllocatedBuffer(mapping, capacity, handle);
+    }
+
+    @Override
     public Buffer createBuffer(ByteBuffer data, Set<BufferStorageFlags> flags) {
         return this.createBuffer(data.remaining(), (writer) -> {
             writer.put(data.asReadOnlyBuffer());
@@ -158,6 +177,21 @@ public class GlRenderDevice implements RenderDevice {
         this.pipelineManager.bindPipeline(pipeline, (state) -> {
             gate.run(new ImmediateRenderCommandList<>((GlVertexArray<ARRAY>) pipeline.getVertexArray()), pipeline.getProgram().getInterface(), state);
         });
+    }
+
+    @Override
+    public Buffer createBuffer(AllocatedBuffer buffer, int offset, int length) {
+        return this.createBuffer0((GlAllocatedBuffer) buffer, offset, length);
+    }
+
+    private Buffer createBuffer0(GlAllocatedBuffer buffer, int offset, int length) {
+        var handle = buffer.handle();
+        buffer.invalidateHandle();
+
+        GL45C.glFlushMappedNamedBufferRange(handle, offset, length);
+        GL45C.glUnmapNamedBuffer(handle);
+
+        return new GlBuffer(length, handle);
     }
 
     @Override

@@ -2,8 +2,8 @@ package net.caffeinemc.gfx.api.buffer;
 
 public enum BufferStorageFlags {
     PERSISTENT,
-    MAP_READ,
-    MAP_WRITE,
+    READABLE,
+    WRITABLE,
     CLIENT_STORAGE,
     COHERENT;
 }

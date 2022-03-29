@@ -42,7 +42,7 @@ public class GlFence implements Fence {
 
     @Override
     public void sync() {
-        if (this.signaled) {
+        if (this.poll()) {
             return;
         }
 

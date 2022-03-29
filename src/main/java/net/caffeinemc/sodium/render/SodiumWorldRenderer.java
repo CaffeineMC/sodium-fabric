@@ -126,7 +126,7 @@ public class SodiumWorldRenderer {
      * @return The number of chunk renders which are visible in the current camera's frustum
      */
     public int getVisibleChunkCount() {
-        return this.renderSectionManager.getVisibleChunkCount();
+        return this.renderSectionManager.getVisibleSectionCount();
     }
 
     /**
@@ -360,7 +360,7 @@ public class SodiumWorldRenderer {
     public String getChunksDebugString() {
         // C: visible/total
         // TODO: add dirty and queued counts
-        return String.format("C: %s/%s", this.renderSectionManager.getVisibleChunkCount(), this.renderSectionManager.getTotalSections());
+        return String.format("C: %s/%s", this.renderSectionManager.getVisibleSectionCount(), this.renderSectionManager.getTotalSections());
     }
 
     /**
@@ -396,11 +396,5 @@ public class SodiumWorldRenderer {
 
     public ChunkTracker getChunkTracker() {
         return this.chunkTracker;
-    }
-
-    public void flush() {
-        if (this.renderSectionManager != null) {
-            this.renderSectionManager.flush();
-        }
     }
 }

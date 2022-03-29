@@ -2,12 +2,8 @@ package net.caffeinemc.sodium.render.chunk;
 
 import net.caffeinemc.sodium.render.SodiumWorldRenderer;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
-import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
-import net.caffeinemc.sodium.render.chunk.state.ChunkGraphState;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.caffeinemc.sodium.render.chunk.state.*;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
-import net.caffeinemc.sodium.render.chunk.state.UploadedChunkMesh;
 import net.caffeinemc.sodium.render.texture.SpriteUtil;
 import net.caffeinemc.sodium.util.DirectionUtil;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
@@ -36,6 +32,7 @@ public class RenderSection {
     private CompletableFuture<?> rebuildTask = null;
 
     private ChunkUpdateType pendingUpdate;
+    private UploadedChunkGeometry uploadedGeometry;
 
     private boolean tickable;
     private boolean disposed;
@@ -91,7 +88,7 @@ public class RenderSection {
     public void delete() {
         this.cancelRebuildTask();
         this.setData(ChunkRenderData.ABSENT);
-        this.deleteMeshes();
+        this.deleteGeometry();
 
         this.disposed = true;
     }
@@ -192,10 +189,6 @@ public class RenderSection {
         return this.getOriginZ() + 8.0D;
     }
 
-    public void updateMesh(ChunkRenderPass pass, UploadedChunkMesh mesh) {
-        this.region.updateMesh(pass, mesh, this.chunkId);
-    }
-
     /**
      * @return The squared distance from the center of this chunk in the world to the given position
      */
@@ -273,20 +266,23 @@ public class RenderSection {
     }
 
     public boolean canAcceptBuildResults(TerrainBuildResult result) {
-        return !this.isDisposed() && result.buildTime > this.lastAcceptedBuildTime;
+        return !this.isDisposed() && result.buildTime() > this.lastAcceptedBuildTime;
     }
 
     public void onBuildFinished(TerrainBuildResult result) {
-        this.setData(result.data);
-        this.lastAcceptedBuildTime = result.buildTime;
+        this.setData(result.data());
+        this.lastAcceptedBuildTime = result.buildTime();
     }
 
     public int getChunkId() {
         return this.chunkId;
     }
 
-    public void deleteMeshes() {
-        this.region.deleteChunkMeshes(this.chunkId);
+    public void deleteGeometry() {
+        if (this.uploadedGeometry != null) {
+            this.uploadedGeometry.delete();
+            this.uploadedGeometry = null;
+        }
     }
 
     public void updateVisibilityFlags(int flags) {
@@ -295,5 +291,14 @@ public class RenderSection {
 
     public int getVisibilityFlags() {
         return this.visibilityFlags;
+    }
+
+    public void updateGeometry(UploadedChunkGeometry geometry) {
+        this.deleteGeometry();
+        this.uploadedGeometry = geometry;
+    }
+
+    public UploadedChunkGeometry getGeometry() {
+        return this.uploadedGeometry;
     }
 }

@@ -1,6 +1,5 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
-import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 
 /**
@@ -10,18 +9,14 @@ import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 public interface ChunkRenderer {
     /**
      * Renders the given chunk render list to the active framebuffer.
+     * @param renderLists An iterator over the list of chunks to be rendered
+     * @param renderPass The block render pass to execute
      * @param matrices The camera matrices to use for rendering
-     * @param device The device which the scene will be rendered on
-     * @param list An iterator over the list of chunks to be rendered
-     * @param pass The block render pass to execute
-     * @param camera The camera context containing chunk offsets for the current render
      */
-    void render(ChunkRenderMatrices matrices, RenderDevice device, ChunkRenderList list, ChunkRenderPass pass, ChunkCameraContext camera);
+    void render(ChunkPrep.PreparedRenderList renderLists, ChunkRenderPass renderPass, ChunkRenderMatrices matrices);
 
     /**
      * Deletes this render backend and any resources attached to it.
      */
     void delete();
-
-    void flush();
 }

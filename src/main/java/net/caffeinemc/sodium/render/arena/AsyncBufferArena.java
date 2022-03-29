@@ -2,45 +2,35 @@ package net.caffeinemc.sodium.render.arena;
 
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.sodium.render.stream.StreamingBuffer;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.*;
 
 // TODO: handle alignment
 // TODO: handle element vs pointers
-public class AsyncBufferArena implements GlBufferArena {
+public class AsyncBufferArena implements BufferArena {
     static final boolean CHECK_ASSERTIONS = false;
 
     private final int resizeIncrement;
 
     private final RenderDevice device;
-    private final StreamingBuffer stagingBuffer;
     private Buffer arenaBuffer;
 
-    private GlBufferSegment head;
+    private BufferSegment head;
 
     private int capacity;
     private int used;
 
     private final int stride;
 
-    public AsyncBufferArena(RenderDevice device, int capacity, int stride, StreamingBuffer stagingBuffer) {
+    public AsyncBufferArena(RenderDevice device, int capacity, int stride) {
         this.device = device;
         this.resizeIncrement = capacity / 16;
         this.capacity = capacity;
 
-        this.head = new GlBufferSegment(this, 0, capacity);
+        this.head = new BufferSegment(this, 0, capacity);
         this.head.setFree(true);
 
         this.arenaBuffer = device.createBuffer((long) capacity * stride);
-        this.stagingBuffer = stagingBuffer;
-
         this.stride = stride;
     }
 
@@ -53,12 +43,12 @@ public class AsyncBufferArena implements GlBufferArena {
 
         int base = newCapacity - this.used;
 
-        List<GlBufferSegment> usedSegments = this.getUsedSegments();
+        List<BufferSegment> usedSegments = this.getUsedSegments();
         List<PendingBufferCopyCommand> pendingCopies = this.buildTransferList(usedSegments, base);
 
         this.transferSegments(pendingCopies, newCapacity);
 
-        this.head = new GlBufferSegment(this, 0, base);
+        this.head = new BufferSegment(this, 0, base);
         this.head.setFree(true);
 
         if (usedSegments.isEmpty()) {
@@ -72,14 +62,14 @@ public class AsyncBufferArena implements GlBufferArena {
         this.checkAssertions();
     }
 
-    private List<PendingBufferCopyCommand> buildTransferList(List<GlBufferSegment> usedSegments, int base) {
+    private List<PendingBufferCopyCommand> buildTransferList(List<BufferSegment> usedSegments, int base) {
         List<PendingBufferCopyCommand> pendingCopies = new ArrayList<>();
         PendingBufferCopyCommand currentCopyCommand = null;
 
         int writeOffset = base;
 
         for (int i = 0; i < usedSegments.size(); i++) {
-            GlBufferSegment s = usedSegments.get(i);
+            BufferSegment s = usedSegments.get(i);
 
             if (currentCopyCommand == null || currentCopyCommand.readOffset + currentCopyCommand.length != s.getOffset()) {
                 if (currentCopyCommand != null) {
@@ -129,12 +119,12 @@ public class AsyncBufferArena implements GlBufferArena {
         this.capacity = capacity;
     }
 
-    private ArrayList<GlBufferSegment> getUsedSegments() {
-        ArrayList<GlBufferSegment> used = new ArrayList<>();
-        GlBufferSegment seg = this.head;
+    private ArrayList<BufferSegment> getUsedSegments() {
+        ArrayList<BufferSegment> used = new ArrayList<>();
+        BufferSegment seg = this.head;
 
         while (seg != null) {
-            GlBufferSegment next = seg.getNext();
+            BufferSegment next = seg.getNext();
 
             if (!seg.isFree()) {
                 used.add(seg);
@@ -156,21 +146,21 @@ public class AsyncBufferArena implements GlBufferArena {
         return this.toBytes(this.capacity);
     }
 
-    private GlBufferSegment alloc(int size) {
-        GlBufferSegment a = this.findFree(size);
+    private BufferSegment alloc(int size) {
+        BufferSegment a = this.findFree(size);
 
         if (a == null) {
             return null;
         }
 
-        GlBufferSegment result;
+        BufferSegment result;
 
         if (a.getLength() == size) {
             a.setFree(false);
 
             result = a;
         } else {
-            GlBufferSegment b = new GlBufferSegment(this, a.getEnd() - size, size);
+            BufferSegment b = new BufferSegment(this, a.getEnd() - size, size);
             b.setNext(a.getNext());
             b.setPrev(a);
 
@@ -191,9 +181,9 @@ public class AsyncBufferArena implements GlBufferArena {
         return result;
     }
 
-    private GlBufferSegment findFree(int size) {
-        GlBufferSegment entry = this.head;
-        GlBufferSegment best = null;
+    private BufferSegment findFree(int size) {
+        BufferSegment entry = this.head;
+        BufferSegment best = null;
 
         while (entry != null) {
             if (entry.isFree()) {
@@ -213,7 +203,7 @@ public class AsyncBufferArena implements GlBufferArena {
     }
 
     @Override
-    public void free(GlBufferSegment entry) {
+    public void free(BufferSegment entry) {
         if (entry.isFree()) {
             throw new IllegalStateException("Already freed");
         }
@@ -222,13 +212,13 @@ public class AsyncBufferArena implements GlBufferArena {
 
         this.used -= entry.getLength();
 
-        GlBufferSegment next = entry.getNext();
+        BufferSegment next = entry.getNext();
 
         if (next != null && next.isFree()) {
             entry.mergeInto(next);
         }
 
-        GlBufferSegment prev = entry.getPrev();
+        BufferSegment prev = entry.getPrev();
 
         if (prev != null && prev.isFree()) {
             prev.mergeInto(entry);
@@ -253,18 +243,18 @@ public class AsyncBufferArena implements GlBufferArena {
     }
 
     @Override
-    public void upload(Stream<PendingUpload> stream) {
-        // A linked list is used as we'll be randomly removing elements and want O(1) performance
-        List<PendingUpload> queue = stream.collect(Collectors.toCollection(LinkedList::new));
+    public void upload(List<PendingUpload> uploads) {
+        var batch = new UploadBatch(this.device, uploads);
 
         // Try to upload all of the data into free segments first
-        queue.removeIf(this::tryUpload);
+        batch.queue.removeIf(entry -> this.tryUpload(batch, entry));
 
         // If we weren't able to upload some buffers, they will have been left behind in the queue
-        if (!queue.isEmpty()) {
+        if (!batch.queue.isEmpty()) {
             // Calculate the amount of memory needed for the remaining uploads
-            int remainingElements = queue.stream()
-                    .mapToInt(upload -> this.toElements(upload.getDataBuffer().getLength()))
+            int remainingElements = batch.queue
+                    .stream()
+                    .mapToInt(upload -> this.toElements(upload.length()))
                     .sum();
 
             // Ask the arena to grow to accommodate the remaining uploads
@@ -273,36 +263,29 @@ public class AsyncBufferArena implements GlBufferArena {
             this.ensureCapacity(remainingElements);
 
             // Try again to upload any buffers that failed last time
-            queue.removeIf(this::tryUpload);
+            batch.queue.removeIf(entry -> this.tryUpload(batch, entry));
 
             // If we still had failures, something has gone wrong
-            if (!queue.isEmpty()) {
+            if (!batch.queue.isEmpty()) {
                 throw new RuntimeException("Failed to upload all buffers");
             }
         }
+
+        this.device.deleteBuffer(batch.buffer);
     }
 
-    private boolean tryUpload(PendingUpload upload) {
-        ByteBuffer data = upload.getDataBuffer()
-                .getDirectBuffer();
+    private boolean tryUpload(UploadBatch batch, UploadBatch.Entry entry) {
+        Buffer src = batch.buffer;
+        BufferSegment segment = this.alloc(this.toElements(entry.length()));
 
-        int bytes = data.remaining();
-
-        GlBufferSegment dst = this.alloc(this.toElements(bytes));
-
-        if (dst == null) {
+        if (segment == null) {
             return false;
         }
 
         // Copy the data into our staging buffer, then copy it into the arena's buffer
-        var readHandle = this.stagingBuffer.write(data);
+        this.device.copyBuffer(src, entry.offset(), this.arenaBuffer, this.toBytes(segment.getOffset()), entry.length());
 
-        try {
-            this.device.copyBuffer(readHandle.getBuffer(), readHandle.getOffset(), this.arenaBuffer, this.toBytes(dst.getOffset()), bytes);
-            upload.setResult(dst);
-        } finally {
-            readHandle.free();
-        }
+        entry.holder().set(segment);
 
         return true;
     }
@@ -324,7 +307,7 @@ public class AsyncBufferArena implements GlBufferArena {
     }
 
     private void checkAssertions0() {
-        GlBufferSegment seg = this.head;
+        BufferSegment seg = this.head;
         int used = 0;
 
         while (seg != null) {
@@ -338,7 +321,7 @@ public class AsyncBufferArena implements GlBufferArena {
                 used += seg.getLength();
             }
 
-            GlBufferSegment next = seg.getNext();
+            BufferSegment next = seg.getNext();
 
             if (next != null) {
                 if (next.getOffset() < seg.getEnd()) {
@@ -354,7 +337,7 @@ public class AsyncBufferArena implements GlBufferArena {
                 }
             }
 
-            GlBufferSegment prev = seg.getPrev();
+            BufferSegment prev = seg.getPrev();
 
             if (prev != null) {
                 if (prev.getEnd() > seg.getOffset()) {

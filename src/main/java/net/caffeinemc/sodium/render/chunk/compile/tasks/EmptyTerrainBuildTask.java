@@ -1,5 +1,6 @@
 package net.caffeinemc.sodium.render.chunk.compile.tasks;
 
+import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
 import net.caffeinemc.sodium.render.terrain.TerrainBuildContext;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
@@ -25,6 +26,6 @@ public class EmptyTerrainBuildTask extends AbstractBuilderTask {
 
     @Override
     public TerrainBuildResult performBuild(TerrainBuildContext context, CancellationSource cancellationSource) {
-        return new TerrainBuildResult(this.render, ChunkRenderData.EMPTY, Collections.emptyMap(), this.frame);
+        return new TerrainBuildResult(this.render, ChunkRenderData.EMPTY, BuiltChunkGeometry.empty(), this.frame);
     }
 }

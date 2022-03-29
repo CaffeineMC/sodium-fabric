@@ -12,4 +12,6 @@ public class DefaultRenderPasses {
                     BlendFunc.SrcFactor.ONE, BlendFunc.DstFactor.ONE_MINUS_SRC_ALPHA))
             .build(), true, 0.0f);
     public static final ChunkRenderPass TRIPWIRE = new ChunkRenderPass(PipelineDescription.defaults(), true, 0.1f);
+
+    public static final ChunkRenderPass[] ALL = new ChunkRenderPass[] { SOLID, CUTOUT_MIPPED, CUTOUT, TRANSLUCENT, TRIPWIRE };
 }

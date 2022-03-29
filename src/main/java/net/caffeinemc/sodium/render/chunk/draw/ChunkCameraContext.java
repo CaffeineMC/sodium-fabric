@@ -1,5 +1,7 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
+import net.minecraft.client.render.Camera;
+
 public class ChunkCameraContext {
     public final int blockX, blockY, blockZ;
     public final float deltaX, deltaY, deltaZ;
@@ -20,4 +22,7 @@ public class ChunkCameraContext {
         this.posZ = (float) z;
     }
 
+    public ChunkCameraContext(Camera camera) {
+        this(camera.getPos().x, camera.getPos().y, camera.getPos().z);
+    }
 }
