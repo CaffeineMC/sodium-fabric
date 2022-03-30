@@ -7,8 +7,8 @@ vec2 _vert_tex_diffuse_coord;
 // The light texture coordinate of the vertex
 vec2 _vert_tex_light_coord;
 
-// The color of the vertex
-vec4 _vert_color;
+// The color (rgb) and shade (a) of the vertex
+vec4 _vert_color_shade;
 
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec4 in_color;
@@ -23,5 +23,5 @@ void _vert_init() {
 #endif
     _vert_tex_diffuse_coord = in_tex_diffuse_coord;
     _vert_tex_light_coord = in_tex_light_coord;
-    _vert_color = in_color;
+    _vert_color_shade = in_color;
 }

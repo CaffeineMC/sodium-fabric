@@ -128,7 +128,7 @@ public class BlockRenderer {
             float y = src.getY(j) + (float) blockOffset.getY();
             float z = src.getZ(j) + (float) blockOffset.getZ();
 
-            int color = ColorABGR.mul(colors != null ? colors[j] : 0xFFFFFFFF, light.br[j]);
+            int color = ColorABGR.repack(colors != null ? colors[j] : 0xFFFFFFFF, light.br[j]);
 
             float u = src.getTexU(j);
             float v = src.getTexV(j);

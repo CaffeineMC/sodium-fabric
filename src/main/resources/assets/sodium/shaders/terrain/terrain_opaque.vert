@@ -6,7 +6,8 @@
 #import <sodium:include/terrain_format.vert>
 
 out VertexOutput {
-    vec4 color;
+    vec3 color;
+    float shade;
 
     vec2 tex_diffuse_coord;
     vec2 tex_light_coord;
@@ -23,8 +24,11 @@ void main() {
     // View space -> Clip space
     gl_Position = mat_modelviewproj * vec4(view_position, 1.0);
 
-    // Pass the color and texture coordinates to the fragment shader
-    vs_out.color = _vert_color;
+    // Unpack the vertex color and shade values
+    vs_out.color = _vert_color_shade.rgb;
+    vs_out.shade = _vert_color_shade.a;
+
+    // Pass the texture coordinates verbatim
     vs_out.tex_diffuse_coord = _vert_tex_diffuse_coord;
     vs_out.tex_light_coord = _vert_tex_light_coord;
 

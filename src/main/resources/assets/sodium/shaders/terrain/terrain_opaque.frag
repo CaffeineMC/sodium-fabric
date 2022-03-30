@@ -5,7 +5,8 @@
 #import <sodium:include/terrain_textures.frag>
 
 in VertexOutput {
-    vec4 color;
+    vec3 color;
+    float shade;
 
     vec2 tex_diffuse_coord;
     vec2 tex_light_coord;
@@ -23,8 +24,7 @@ void main() {
 #endif
 
     vec4 frag_light = texture(tex_light, vs_out.tex_light_coord);
-    vec4 frag_mixed = (frag_diffuse * frag_light);
-    frag_mixed *= vs_out.color;
+    vec4 frag_mixed = vec4((frag_diffuse.rgb * frag_light.rgb) * vs_out.color * vs_out.shade, frag_diffuse.a);
 
     frag_final = _apply_fog(frag_mixed, vs_out.fog_depth, fog_color, fog_start, fog_end);
 }
