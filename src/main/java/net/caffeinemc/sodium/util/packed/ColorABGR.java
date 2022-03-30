@@ -81,4 +81,8 @@ public class ColorABGR implements ColorU8 {
     public static int pack(float r, float g, float b) {
         return pack(r, g, b, 255);
     }
+
+    public static int repack(int rgb, float alpha) {
+        return (rgb & 0xFFFFFF) | ((int) (alpha * COMPONENT_RANGE) << 24);
+    }
 }
