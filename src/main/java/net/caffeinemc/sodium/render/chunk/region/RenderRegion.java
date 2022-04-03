@@ -1,12 +1,10 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.render.arena.AsyncBufferArena;
 import net.caffeinemc.sodium.render.arena.BufferArena;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
-import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -42,20 +40,8 @@ public class RenderRegion {
     private final Set<RenderSection> chunks = new ObjectOpenHashSet<>();
     private Resources resources;
 
-    private final int x, y, z;
-
-    private Frustum.Visibility visibility;
-
-    public RenderRegion(RenderRegionManager manager, int x, int y, int z) {
+    public RenderRegion(RenderRegionManager manager) {
         this.manager = manager;
-
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-
-    public static RenderRegion createRegionForChunk(RenderRegionManager manager, int x, int y, int z) {
-        return new RenderRegion(manager, x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
     public Resources getResources() {
@@ -71,18 +57,6 @@ public class RenderRegion {
 
     public static long getRegionKeyForChunk(int x, int y, int z) {
         return ChunkSectionPos.asLong(x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
-    }
-
-    public int getOriginX() {
-        return this.x << REGION_WIDTH_SH << 4;
-    }
-
-    public int getOriginY() {
-        return this.y << REGION_HEIGHT_SH << 4;
-    }
-
-    public int getOriginZ() {
-        return this.z << REGION_LENGTH_SH << 4;
     }
 
     public Resources getOrCreateArenas() {
@@ -113,22 +87,6 @@ public class RenderRegion {
 
     public int getChunkCount() {
         return this.chunks.size();
-    }
-
-    public void updateVisibility(Frustum frustum) {
-        int x = this.getOriginX();
-        int y = this.getOriginY();
-        int z = this.getOriginZ();
-
-        // HACK: Regions need to be slightly larger than their real volume
-        // Otherwise, the first node in the iteration graph might be incorrectly culled when the camera
-        // is at the extreme end of a region
-        this.visibility = frustum.testBox(x - REGION_EXCESS, y - REGION_EXCESS, z - REGION_EXCESS,
-                x + (REGION_WIDTH << 4) + REGION_EXCESS, y + (REGION_HEIGHT << 4) + REGION_EXCESS, z + (REGION_LENGTH << 4) + REGION_EXCESS);
-    }
-
-    public Frustum.Visibility getVisibility() {
-        return this.visibility;
     }
 
     public static int getChunkIndex(int x, int y, int z) {

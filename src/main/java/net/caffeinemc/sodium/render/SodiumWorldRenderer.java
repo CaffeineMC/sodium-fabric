@@ -7,6 +7,7 @@ import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.interop.vanilla.mixin.WorldRendererHolder;
 import net.caffeinemc.sodium.render.chunk.RenderSectionManager;
+import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderMatrices;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
@@ -199,7 +200,7 @@ public class SodiumWorldRenderer {
         if (this.renderSectionManager.isGraphDirty()) {
             profiler.swap("chunk_graph_rebuild");
 
-            this.renderSectionManager.update(camera, frustum, frame, spectator);
+            this.renderSectionManager.update(new ChunkCameraContext(camera), frustum, spectator);
         }
 
         profiler.swap("visible_chunk_tick");

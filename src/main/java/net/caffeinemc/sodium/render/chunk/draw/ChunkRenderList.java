@@ -6,17 +6,16 @@ import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.util.IteratorUtils;
 
 import java.util.Iterator;
-import java.util.List;
 
 public class ChunkRenderList {
-    private final ObjectList<RenderSection> sections;
-    private final ObjectList<Bucket> regions;
+    private final ReferenceArrayList<RenderSection> sections;
+    private final ReferenceArrayList<Bucket> regions;
 
-    public ChunkRenderList(ObjectList<RenderSection> sections) {
+    public ChunkRenderList(ReferenceArrayList<RenderSection> sections) {
         RenderRegion cachedRegion = null;
-        ObjectArrayList<RenderSection> cachedList = null;
+        ReferenceArrayList<RenderSection> cachedList = null;
 
-        var regions = new Reference2ReferenceLinkedOpenHashMap<RenderRegion, ObjectArrayList<RenderSection>>();
+        var regions = new Reference2ReferenceLinkedOpenHashMap<RenderRegion, ReferenceArrayList<RenderSection>>();
 
         for (RenderSection section : sections) {
             var region = section.getRegion();
@@ -26,7 +25,7 @@ public class ChunkRenderList {
                 cachedList = regions.get(region);
 
                 if (cachedList == null) {
-                    regions.put(region, cachedList = new ObjectArrayList<>(RenderRegion.REGION_SIZE / 4));
+                    regions.put(region, cachedList = new ReferenceArrayList<>(RenderRegion.REGION_SIZE / 4));
                 }
             }
 
@@ -34,11 +33,11 @@ public class ChunkRenderList {
         }
 
         this.regions = flatten(regions);
-        this.sections = ObjectLists.unmodifiable(sections);
+        this.sections = sections;
     }
 
-    private static ObjectList<Bucket> flatten(Reference2ReferenceLinkedOpenHashMap<RenderRegion, ObjectArrayList<RenderSection>> regions) {
-        var array = new ObjectArrayList<Bucket>(regions.size());
+    private static ReferenceArrayList<Bucket> flatten(Reference2ReferenceSortedMap<RenderRegion, ReferenceArrayList<RenderSection>> regions) {
+        var array = new ReferenceArrayList<Bucket>(regions.size());
 
         for (var entry : Reference2ReferenceSortedMaps.fastIterable(regions)) {
             array.add(new Bucket(entry.getKey(), entry.getValue()));
@@ -68,7 +67,7 @@ public class ChunkRenderList {
     }
 
     public record Bucket(RenderRegion region,
-                         ObjectList<RenderSection> sections) {
+                         ReferenceArrayList<RenderSection> sections) {
         public int size() {
             return this.sections.size();
         }

@@ -20,8 +20,8 @@ public class ChunkRenderData {
             .build();
     public static final ChunkRenderData EMPTY = createEmptyData();
 
-    private List<BlockEntity> globalBlockEntities;
-    private List<BlockEntity> blockEntities;
+    private BlockEntity[] globalBlockEntities;
+    private BlockEntity[] blockEntities;
 
     private ChunkOcclusionData occlusionData;
     private ChunkRenderBounds bounds;
@@ -29,12 +29,28 @@ public class ChunkRenderData {
     private List<Sprite> animatedSprites;
 
     private boolean isEmpty;
+    private boolean isTickable;
+    private boolean hasBlockEntities;
 
     /**
-     * @return True if the chunk has no renderables, otherwise false
+     * @return True if the chunk is completely empty, otherwise false
      */
     public boolean isEmpty() {
         return this.isEmpty;
+    }
+
+    /**
+     * @return True if the chunk has tickable textures, otherwise false
+     */
+    public boolean isTickable() {
+        return this.isTickable;
+    }
+
+    /**
+     * @return True if the chunk contains any block entities, otherwise false
+     */
+    public boolean hasBlockEntities() {
+        return this.hasBlockEntities;
     }
 
     public ChunkRenderBounds getBounds() {
@@ -52,7 +68,7 @@ public class ChunkRenderData {
     /**
      * The collection of block entities contained by this rendered chunk.
      */
-    public Collection<BlockEntity> getBlockEntities() {
+    public BlockEntity[] getBlockEntities() {
         return this.blockEntities;
     }
 
@@ -60,18 +76,18 @@ public class ChunkRenderData {
      * The collection of block entities contained by this rendered chunk section which are not part of its culling
      * volume. These entities should always be rendered regardless of the render being visible in the frustum.
      */
-    public Collection<BlockEntity> getGlobalBlockEntities() {
+    public BlockEntity[] getGlobalBlockEntities() {
         return this.globalBlockEntities;
     }
 
     public static class Builder {
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
-        private final List<BlockEntity> blockEntities = new ArrayList<>();
+        private final List<BlockEntity> localBlockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
+        private final Set<ChunkRenderPass> meshes = new ReferenceOpenHashSet<>();
 
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
-        private Set<ChunkRenderPass> nonEmptyMeshes = new ReferenceOpenHashSet<>();
 
         public void setBounds(ChunkRenderBounds bounds) {
             this.bounds = bounds;
@@ -98,21 +114,23 @@ public class ChunkRenderData {
          * @param cull True if the block entity can be culled to this chunk render's volume, otherwise false
          */
         public void addBlockEntity(BlockEntity entity, boolean cull) {
-            (cull ? this.blockEntities : this.globalBlockEntities).add(entity);
+            (cull ? this.localBlockEntities : this.globalBlockEntities).add(entity);
         }
 
-        public void addNonEmptyMesh(ChunkRenderPass pass) {
-            this.nonEmptyMeshes.add(pass);
+        public void addMesh(ChunkRenderPass pass) {
+            this.meshes.add(pass);
         }
 
         public ChunkRenderData build() {
             ChunkRenderData data = new ChunkRenderData();
-            data.globalBlockEntities = this.globalBlockEntities;
-            data.blockEntities = this.blockEntities;
+            data.globalBlockEntities = this.globalBlockEntities.toArray(BlockEntity[]::new);
+            data.blockEntities = this.localBlockEntities.toArray(BlockEntity[]::new);
             data.occlusionData = this.occlusionData;
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
-            data.isEmpty = this.nonEmptyMeshes.isEmpty() && this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty();
+            data.hasBlockEntities = this.globalBlockEntities.isEmpty() && this.localBlockEntities.isEmpty();
+            data.isEmpty = this.meshes.isEmpty() && !data.hasBlockEntities;
+            data.isTickable = !this.animatedSprites.isEmpty();
 
             return data;
         }
