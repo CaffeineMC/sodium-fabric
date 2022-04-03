@@ -3,7 +3,6 @@ package net.caffeinemc.sodium.render.chunk.region;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.arena.BufferSegment;
 import net.caffeinemc.sodium.render.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
@@ -24,14 +23,6 @@ public class RenderRegionManager {
     public RenderRegionManager(RenderDevice device, TerrainVertexType vertexType) {
         this.device = device;
         this.vertexType = vertexType;
-    }
-
-    public void updateVisibility(Frustum frustum) {
-        for (RenderRegion region : this.regions.values()) {
-            if (!region.isEmpty()) {
-                region.updateVisibility(frustum);
-            }
-        }
     }
 
     public void cleanup() {
@@ -133,7 +124,7 @@ public class RenderRegionManager {
         RenderRegion region = this.regions.get(key);
 
         if (region == null) {
-            this.regions.put(key, region = RenderRegion.createRegionForChunk(this, x, y, z));
+            this.regions.put(key, region = new RenderRegion(this));
         }
 
         return region;

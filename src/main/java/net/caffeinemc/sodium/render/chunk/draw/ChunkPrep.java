@@ -1,13 +1,16 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
+import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.gfx.api.buffer.*;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.render.buffer.VertexRange;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.DefaultRenderPasses;
+import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.system.MemoryUtil;
 
@@ -19,16 +22,18 @@ public class ChunkPrep {
     private static final int COMMAND_STRUCT_STRIDE = 20;
     private static final int INSTANCE_STRUCT_STRIDE = 16;
 
-    public static Map<ChunkRenderPass, PreparedRenderList> createRenderLists(RenderDevice device, ChunkRenderList list, ChunkCameraContext camera) {
-        if (list.regionCount() <= 0) {
+    public static Map<ChunkRenderPass, PreparedRenderList> createRenderLists(RenderDevice device, ReferenceArrayList<RenderSection> visibleChunks, ChunkCameraContext camera) {
+        if (visibleChunks.isEmpty()) {
             return null;
         }
+
+        var sortedChunks = new ChunkRenderList(visibleChunks);
 
         var builders = new Reference2ReferenceArrayMap<ChunkRenderPass, RenderListBuilder>();
         var alignment = device.properties().uniformBufferOffsetAlignment();
 
-        var commandBufferCapacity = commandBufferSize(alignment, list);
-        var instanceBufferCapacity = instanceBufferSize(alignment, list);
+        var commandBufferCapacity = commandBufferSize(alignment, sortedChunks);
+        var instanceBufferCapacity = instanceBufferSize(alignment, sortedChunks);
 
         for (var pass : DefaultRenderPasses.ALL) {
             builders.put(pass, new RenderListBuilder(device, commandBufferCapacity, instanceBufferCapacity, alignment));
@@ -37,7 +42,7 @@ public class ChunkPrep {
         var largestVertexIndex = 0;
         var reverseOrder = false; // TODO: fix me
 
-        for (var bucketIterator = list.sorted(reverseOrder); bucketIterator.hasNext(); ) {
+        for (var bucketIterator = sortedChunks.sorted(reverseOrder); bucketIterator.hasNext(); ) {
             var bucket = bucketIterator.next();
 
             for (var sectionIterator = bucket.sorted(reverseOrder); sectionIterator.hasNext(); ) {
@@ -89,9 +94,10 @@ public class ChunkPrep {
     }
 
     private static void createCommands(RenderSection section, Reference2ReferenceArrayMap<ChunkRenderPass, RenderListBuilder> builders, ChunkCameraContext camera) {
-        var visibility = section.getVisibilityFlags();
         var geometry = section.getGeometry();
         var baseVertex = geometry.segment.getOffset();
+
+        var visibility = calculateVisibilityFlags(section.getBounds(), camera);
 
         for (var model : geometry.models) {
             if ((model.visibilityBits & visibility) == 0) {
@@ -125,9 +131,9 @@ public class ChunkPrep {
                 commandBufferBuilder.push(firstVertex, vertexCount, instanceBufferBuilder.pending());
             }
 
-            float x = getCameraTranslation(section.getOriginX(), camera.blockX, camera.deltaX);
-            float y = getCameraTranslation(section.getOriginY(), camera.blockY, camera.deltaY);
-            float z = getCameraTranslation(section.getOriginZ(), camera.blockZ, camera.deltaZ);
+            float x = getCameraTranslation(ChunkSectionPos.getBlockCoord(section.getChunkX()), camera.blockX, camera.deltaX);
+            float y = getCameraTranslation(ChunkSectionPos.getBlockCoord(section.getChunkY()), camera.blockY, camera.deltaY);
+            float z = getCameraTranslation(ChunkSectionPos.getBlockCoord(section.getChunkZ()), camera.blockZ, camera.deltaZ);
 
             instanceBufferBuilder.push(x, y, z);
 
@@ -289,4 +295,35 @@ public class ChunkPrep {
     private static float getCameraTranslation(int chunkBlockPos, int cameraBlockPos, float cameraPos) {
         return (chunkBlockPos - cameraBlockPos) - cameraPos;
     }
+
+    private static int calculateVisibilityFlags(ChunkRenderBounds bounds, ChunkCameraContext camera) {
+        int flags = ChunkMeshFace.UNASSIGNED_BITS;
+
+        if (camera.posY > bounds.y1) {
+            flags |= ChunkMeshFace.UP_BITS;
+        }
+
+        if (camera.posY < bounds.y2) {
+            flags |= ChunkMeshFace.DOWN_BITS;
+        }
+
+        if (camera.posX > bounds.x1) {
+            flags |= ChunkMeshFace.EAST_BITS;
+        }
+
+        if (camera.posX < bounds.x2) {
+            flags |= ChunkMeshFace.WEST_BITS;
+        }
+
+        if (camera.posZ > bounds.z1) {
+            flags |= ChunkMeshFace.SOUTH_BITS;
+        }
+
+        if (camera.posZ < bounds.z2) {
+            flags |= ChunkMeshFace.NORTH_BITS;
+        }
+
+        return flags;
+    }
+
 }

@@ -38,7 +38,6 @@ public class UserConfig {
         public boolean animateOnlyVisibleTextures = true;
         public boolean useEntityCulling = true;
         public boolean useParticleCulling = true;
-        public boolean useFogOcclusion = true;
         public boolean useBlockFaceCulling = true;
         public boolean useCompactVertexFormat = true;
     }

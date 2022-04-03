@@ -20,6 +20,7 @@ import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
 
 /**
  * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
@@ -53,9 +54,9 @@ public class TerrainBuildTask extends AbstractBuilderTask {
 
         WorldSlice slice = renderCache.getWorldSlice();
 
-        int minX = this.render.getOriginX();
-        int minY = this.render.getOriginY();
-        int minZ = this.render.getOriginZ();
+        int minX = ChunkSectionPos.getBlockCoord(this.render.getChunkX());
+        int minY = ChunkSectionPos.getBlockCoord(this.render.getChunkY());
+        int minZ = ChunkSectionPos.getBlockCoord(this.render.getChunkZ());
 
         int maxX = minX + 16;
         int maxY = minY + 16;
@@ -132,7 +133,7 @@ public class TerrainBuildTask extends AbstractBuilderTask {
         BuiltChunkGeometry geometry = buffers.buildGeometry();
 
         for (var model : geometry.models()) {
-            renderData.addNonEmptyMesh(model.getRenderPass());
+            renderData.addMesh(model.getRenderPass());
         }
 
         renderData.setOcclusionData(occluder.build());

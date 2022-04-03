@@ -6,8 +6,8 @@ import net.minecraft.util.math.Direction;
 import java.util.Arrays;
 
 public class ChunkGraphIterationQueue {
-    private RenderSection[] renders;
-    private Direction[] directions;
+    private int[] renders;
+    private int[] directions;
 
     private int pos;
     private int capacity;
@@ -17,13 +17,13 @@ public class ChunkGraphIterationQueue {
     }
 
     public ChunkGraphIterationQueue(int capacity) {
-        this.renders = new RenderSection[capacity];
-        this.directions = new Direction[capacity];
+        this.renders = new int[capacity];
+        this.directions = new int[capacity];
 
         this.capacity = capacity;
     }
 
-    public void add(RenderSection render, Direction direction) {
+    public void add(int render, int direction) {
         int i = this.pos++;
 
         if (i == this.capacity) {
@@ -41,11 +41,11 @@ public class ChunkGraphIterationQueue {
         this.directions = Arrays.copyOf(this.directions, this.capacity);
     }
 
-    public RenderSection getRender(int i) {
+    public int getRender(int i) {
         return this.renders[i];
     }
 
-    public Direction getDirection(int i) {
+    public int getDirection(int i) {
         return this.directions[i];
     }
 
