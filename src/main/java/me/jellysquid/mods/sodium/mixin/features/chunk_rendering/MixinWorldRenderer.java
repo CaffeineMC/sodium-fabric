@@ -41,7 +41,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
         return renderer;
     }
 
-    @Redirect(method = "reload()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/GameOptions;getViewDistance()I", ordinal = 1))
+    @Redirect(method = "reload()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/GameOptions;getClampedViewDistance()I", ordinal = 1))
     private int nullifyBuiltChunkStorage(GameOptions options) {
         // Do not allow any resources to be allocated
         return 0;

@@ -6,6 +6,7 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.MultipartBakedModel;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.gen.random.AbstractRandom;
 import org.apache.commons.lang3.tuple.Pair;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,7 +29,7 @@ public class MixinMultipartBakedModel {
      * @reason Avoid expensive allocations and replace bitfield indirection
      */
     @Overwrite
-    public List<BakedQuad> getQuads(BlockState state, Direction face, Random random) {
+    public List<BakedQuad> getQuads(BlockState state, Direction face, AbstractRandom random) {
         if (state == null) {
             return Collections.emptyList();
         }

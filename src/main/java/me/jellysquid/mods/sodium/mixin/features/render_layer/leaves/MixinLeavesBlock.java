@@ -18,7 +18,7 @@ public class MixinLeavesBlock extends Block {
 
     @Override
     public boolean isSideInvisible(BlockState state, BlockState stateFrom, Direction direction) {
-        if (SodiumClientMod.options().quality.leavesQuality.isFancy(MinecraftClient.getInstance().options.method_42534().getValue())) {
+        if (SodiumClientMod.options().quality.leavesQuality.isFancy(MinecraftClient.getInstance().options.getGraphicsMode().getValue())) {
             return super.isSideInvisible(state, stateFrom, direction);
         } else {
             return stateFrom.getBlock() instanceof LeavesBlock || super.isSideInvisible(state, stateFrom, direction);

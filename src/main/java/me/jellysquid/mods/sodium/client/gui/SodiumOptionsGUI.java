@@ -263,7 +263,7 @@ public class SodiumOptionsGUI extends Screen {
         }
 
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
-            client.setMipmapLevels(client.options.method_42563().getValue());
+            client.setMipmapLevels(client.options.getMipmapLevels().getValue());
             client.reloadResourcesConcurrently();
         }
 

@@ -6,6 +6,7 @@ import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.WeightedBakedModel;
 import net.minecraft.util.collection.Weighted;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.gen.random.AbstractRandom;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,7 +30,7 @@ public class MixinWeightedBakedModel {
      * @reason Avoid excessive object allocations
      */
     @Overwrite
-    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction face, Random random) {
+    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction face, AbstractRandom random) {
         Weighted.Present<BakedModel> quad = getAt(this.models, Math.abs((int) random.nextLong()) % this.totalWeight);
 
         if (quad != null) {

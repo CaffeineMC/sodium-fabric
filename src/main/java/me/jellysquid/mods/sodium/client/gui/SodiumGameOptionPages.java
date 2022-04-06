@@ -34,7 +34,7 @@ public class SodiumGameOptionPages {
                         .setName(new TranslatableText("options.renderDistance"))
                         .setTooltip(new TranslatableText("sodium.options.view_distance.tooltip"))
                         .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.translateVariable("options.chunks")))
-                        .setBinding((options, value) -> options.method_42503().setValue(value), options -> options.method_42503().getValue())
+                        .setBinding((options, value) -> options.getViewDistance().setValue(value), options -> options.getViewDistance().getValue())
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
@@ -42,7 +42,7 @@ public class SodiumGameOptionPages {
                         .setName(new TranslatableText("options.simulationDistance"))
                         .setTooltip(new TranslatableText("sodium.options.simulation_distance.tooltip"))
                         .setControl(option -> new SliderControl(option, 5, 32, 1, ControlValueFormatter.translateVariable("options.chunks")))
-                        .setBinding((options, value) -> options.method_42510().setValue(value), options -> options.method_42510().getValue())
+                        .setBinding((options, value) -> options.getSimulationDistance().setValue(value), options -> options.getSimulationDistance().getValue())
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
@@ -50,7 +50,7 @@ public class SodiumGameOptionPages {
                         .setName(new TranslatableText("options.gamma"))
                         .setTooltip(new TranslatableText("sodium.options.brightness.tooltip"))
                         .setControl(opt -> new SliderControl(opt, 0, 100, 1, ControlValueFormatter.brightness()))
-                        .setBinding((opts, value) -> opts.method_42473().setValue(value * 0.01D), (opts) -> (int) (opts.method_42473().getValue() / 0.01D))
+                        .setBinding((opts, value) -> opts.getGamma().setValue(value * 0.01D), (opts) -> (int) (opts.getGamma().getValue() / 0.01D))
                         .build())
                 .build());
 
@@ -60,35 +60,35 @@ public class SodiumGameOptionPages {
                         .setTooltip(new TranslatableText("sodium.options.gui_scale.tooltip"))
                         .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.guiScale()))
                         .setBinding((opts, value) -> {
-                            opts.method_42474().setValue(value);
+                            opts.getGuiScale().setValue(value);
 
                             MinecraftClient client = MinecraftClient.getInstance();
                             client.onResolutionChanged();
-                        }, opts -> opts.method_42474().getValue())
+                        }, opts -> opts.getGuiScale().getValue())
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName(new TranslatableText("options.fullscreen"))
                         .setTooltip(new TranslatableText("sodium.options.fullscreen.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setBinding((opts, value) -> {
-                            opts.method_42447().setValue(value);
+                            opts.getFullscreen().setValue(value);
 
                             MinecraftClient client = MinecraftClient.getInstance();
                             Window window = client.getWindow();
 
-                            if (window != null && window.isFullscreen() != opts.method_42447().getValue()) {
+                            if (window != null && window.isFullscreen() != opts.getFullscreen().getValue()) {
                                 window.toggleFullscreen();
 
                                 // The client might not be able to enter full-screen mode
-                                opts.method_42447().setValue(window.isFullscreen());
+                                opts.getFullscreen().setValue(window.isFullscreen());
                             }
-                        }, (opts) -> opts.method_42447().getValue())
+                        }, (opts) -> opts.getFullscreen().getValue())
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName(new TranslatableText("options.vsync"))
                         .setTooltip(new TranslatableText("sodium.options.v_sync.tooltip"))
                         .setControl(TickBoxControl::new)
-                        .setBinding(new VanillaBooleanOptionBinding(MinecraftClient.getInstance().options.method_42433()))
+                        .setBinding(new VanillaBooleanOptionBinding(MinecraftClient.getInstance().options.getEnableVsync()))
                         .setImpact(OptionImpact.VARIES)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
@@ -96,9 +96,9 @@ public class SodiumGameOptionPages {
                         .setTooltip(new TranslatableText("sodium.options.fps_limit.tooltip"))
                         .setControl(option -> new SliderControl(option, 5, 260, 5, ControlValueFormatter.fpsLimit()))
                         .setBinding((opts, value) -> {
-                            opts.method_42524().setValue(value);
+                            opts.getMaxFps().setValue(value);
                             MinecraftClient.getInstance().getWindow().setFramerateLimit(value);
-                        }, opts -> opts.method_42524().getValue())
+                        }, opts -> opts.getMaxFps().getValue())
                         .build())
                 .build());
 
@@ -107,19 +107,19 @@ public class SodiumGameOptionPages {
                         .setName(new TranslatableText("options.viewBobbing"))
                         .setTooltip(new TranslatableText("sodium.options.view_bobbing.tooltip"))
                         .setControl(TickBoxControl::new)
-                        .setBinding(new VanillaBooleanOptionBinding(MinecraftClient.getInstance().options.method_42448()))
+                        .setBinding(new VanillaBooleanOptionBinding(MinecraftClient.getInstance().options.getBobView()))
                         .build())
                 .add(OptionImpl.createBuilder(AttackIndicator.class, vanillaOpts)
                         .setName(new TranslatableText("options.attackIndicator"))
                         .setTooltip(new TranslatableText("sodium.options.attack_indicator.tooltip"))
                         .setControl(opts -> new CyclingControl<>(opts, AttackIndicator.class, new Text[] { new TranslatableText("options.off"), new TranslatableText("options.attack.crosshair"), new TranslatableText("options.attack.hotbar") }))
-                        .setBinding((opts, value) -> opts.method_42565().setValue(value), (opts) -> opts.method_42565().getValue())
+                        .setBinding((opts, value) -> opts.getAttackIndicator().setValue(value), (opts) -> opts.getAttackIndicator().getValue())
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName(new TranslatableText("options.autosaveIndicator"))
                         .setTooltip(new TranslatableText("sodium.options.autosave_indicator.tooltip"))
                         .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.method_42452().setValue(value), opts -> opts.method_42452().getValue())
+                        .setBinding((opts, value) -> opts.getShowAutosaveIndicator().setValue(value), opts -> opts.getShowAutosaveIndicator().getValue())
                         .build())
                 .build());
 
@@ -135,8 +135,8 @@ public class SodiumGameOptionPages {
                         .setTooltip(new TranslatableText("sodium.options.graphics_quality.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, GraphicsMode.class, new Text[] { new TranslatableText("options.graphics.fast"), new TranslatableText("options.graphics.fancy"), new TranslatableText("options.graphics.fabulous") }))
                         .setBinding(
-                                (opts, value) -> opts.method_42534().setValue(value),
-                                opts -> opts.method_42534().getValue())
+                                (opts, value) -> opts.getGraphicsMode().setValue(value),
+                                opts -> opts.getGraphicsMode().getValue())
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
@@ -148,7 +148,7 @@ public class SodiumGameOptionPages {
                         .setTooltip(new TranslatableText("sodium.options.clouds_quality.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class, new Text[] { new TranslatableText("options.off"), new TranslatableText("options.clouds.fast"), new TranslatableText("options.clouds.fancy") }))
                         .setBinding((opts, value) -> {
-                            opts.method_42528().setValue(value);
+                            opts.getCloudRenderMod().setValue(value);
 
                             if (MinecraftClient.isFabulousGraphicsOrBetter()) {
                                 Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
@@ -156,7 +156,7 @@ public class SodiumGameOptionPages {
                                     framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
                                 }
                             }
-                        }, opts -> opts.method_42528().getValue())
+                        }, opts -> opts.getCloudRenderMod().getValue())
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
@@ -178,7 +178,7 @@ public class SodiumGameOptionPages {
                         .setName(new TranslatableText("options.particles"))
                         .setTooltip(new TranslatableText("sodium.options.particle_quality.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, ParticlesMode.class, new Text[] { new TranslatableText("options.particles.all"), new TranslatableText("options.particles.decreased"), new TranslatableText("options.particles.minimal") }))
-                        .setBinding((opts, value) -> opts.method_42475().setValue(value), (opts) -> opts.method_42475().getValue())
+                        .setBinding((opts, value) -> opts.getParticles().setValue(value), (opts) -> opts.getParticles().getValue())
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
@@ -201,7 +201,7 @@ public class SodiumGameOptionPages {
                         .setName(new TranslatableText("options.entityDistanceScaling"))
                         .setTooltip(new TranslatableText("sodium.options.entity_distance.tooltip"))
                         .setControl(option -> new SliderControl(option, 50, 500, 25, ControlValueFormatter.percentage()))
-                        .setBinding((opts, value) -> opts.method_42517().setValue(value / 100.0), opts -> Math.round(opts.method_42517().getValue().floatValue() * 100.0F))
+                        .setBinding((opts, value) -> opts.getEntityDistanceScaling().setValue(value / 100.0), opts -> Math.round(opts.getEntityDistanceScaling().getValue().floatValue() * 100.0F))
                         .setImpact(OptionImpact.MEDIUM)
                         .build()
                 )
@@ -209,7 +209,7 @@ public class SodiumGameOptionPages {
                         .setName(new TranslatableText("options.entityShadows"))
                         .setTooltip(new TranslatableText("sodium.options.entity_shadows.tooltip"))
                         .setControl(TickBoxControl::new)
-                        .setBinding((opts, value) -> opts.method_42435().setValue(value), opts -> opts.method_42435().getValue())
+                        .setBinding((opts, value) -> opts.getEntityShadows().setValue(value), opts -> opts.getEntityShadows().getValue())
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
@@ -227,7 +227,7 @@ public class SodiumGameOptionPages {
                         .setName(new TranslatableText("options.mipmapLevels"))
                         .setTooltip(new TranslatableText("sodium.options.mipmap_levels.tooltip"))
                         .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.multiplier()))
-                        .setBinding((opts, value) -> opts.method_42563().setValue(value), opts -> opts.method_42563().getValue())
+                        .setBinding((opts, value) -> opts.getMipmapLevels().setValue(value), opts -> opts.getMipmapLevels().getValue())
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_ASSET_RELOAD)
                         .build())
