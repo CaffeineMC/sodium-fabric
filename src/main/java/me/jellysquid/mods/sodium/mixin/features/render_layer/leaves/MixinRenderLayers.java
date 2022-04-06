@@ -39,7 +39,7 @@ public class MixinRenderLayers {
     @Inject(method = "getBlockLayer(Lnet/minecraft/block/BlockState;)Lnet/minecraft/client/render/RenderLayer;", at = @At(value = "RETURN"), cancellable = true)
     private static void redirectLeavesGraphics(BlockState state, CallbackInfoReturnable<RenderLayer> cir) {
         if (state.getBlock() instanceof LeavesBlock) {
-            boolean fancyLeaves = SodiumClientMod.options().quality.leavesQuality.isFancy(MinecraftClient.getInstance().options.method_42534().getValue());
+            boolean fancyLeaves = SodiumClientMod.options().quality.leavesQuality.isFancy(MinecraftClient.getInstance().options.getGraphicsMode().getValue());
             cir.setReturnValue(fancyLeaves ? RenderLayer.getCutoutMipped() : RenderLayer.getSolid());
         }
     }
