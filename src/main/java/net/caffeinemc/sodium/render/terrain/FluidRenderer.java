@@ -151,6 +151,7 @@ public class FluidRenderer {
             h3 = this.fluidCornerHeight(world, fluid, fluidHeight, south1, east1, pos.offset(Direction.SOUTH).offset(Direction.EAST));
             h4 = this.fluidCornerHeight(world, fluid, fluidHeight, north1, east1, pos.offset(Direction.NORTH).offset(Direction.EAST));
         }
+
         float yOffset = sfDown ? 0.0F : EPSILON;
 
         final ModelQuadViewMutable quad = this.quad;
@@ -451,16 +452,16 @@ public class FluidRenderer {
                 return 1.0f;
             }
 
-            modifyHeight(scratchHeight, scratchSamples, height);
+            this.modifyHeight(this.scratchHeight, this.scratchSamples, height);
         }
 
-        modifyHeight(scratchHeight, scratchSamples, fluidHeight);
-        modifyHeight(scratchHeight, scratchSamples, fluidHeightY);
-        modifyHeight(scratchHeight, scratchSamples, fluidHeightX);
+        this.modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeight);
+        this.modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeightY);
+        this.modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeightX);
 
-        float result = scratchHeight.floatValue() / scratchSamples.intValue();
-        scratchHeight.setValue(0);
-        scratchSamples.setValue(0);
+        float result = this.scratchHeight.floatValue() / this.scratchSamples.intValue();
+        this.scratchHeight.setValue(0);
+        this.scratchSamples.setValue(0);
 
         return result;
     }

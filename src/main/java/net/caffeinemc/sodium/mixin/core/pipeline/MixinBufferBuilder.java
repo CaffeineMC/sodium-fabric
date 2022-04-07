@@ -1,7 +1,7 @@
 package net.caffeinemc.sodium.mixin.core.pipeline;
 
-import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.gfx.api.buffer.BufferVertexFormat;
+import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.vertex.VertexDrain;
 import net.caffeinemc.sodium.render.vertex.VertexSink;
 import net.caffeinemc.sodium.render.vertex.buffer.VertexBufferView;

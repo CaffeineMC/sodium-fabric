@@ -45,6 +45,8 @@ public class ChunkColorCache {
         this.baseZ = this.origin.getMinZ() - borderXZ;
 
         this.colors = new Reference2ReferenceOpenHashMap<>();
+
+        //noinspection unchecked
         this.biomes = new RegistryEntry[this.sizeVertical][];
     }
 
@@ -100,7 +102,7 @@ public class ChunkColorCache {
     }
 
     private RegistryEntry<Biome>[] getBiomeData(int y) {
-        RegistryEntry<Biome>[] biomes = this.biomes[y];
+        var biomes = this.biomes[y];
 
         if (biomes == null) {
             this.biomes[y] = (biomes = this.gatherBiomes(y));

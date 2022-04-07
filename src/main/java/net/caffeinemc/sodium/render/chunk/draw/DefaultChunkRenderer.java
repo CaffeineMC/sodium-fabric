@@ -38,7 +38,9 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
     private final Program<ChunkShaderInterface> program;
 
     private final StreamingBuffer bufferCameraMatrices;
-    private final StreamingBuffer bufferFogParameters;
+
+    private final StreamingBuffer bufferFogParametersVS;
+    private final StreamingBuffer bufferFogParametersFS;
 
     private final SequenceIndexBuffer indexBuffer;
 
@@ -51,7 +53,9 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
         var maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
 
         this.bufferCameraMatrices = new StreamingBuffer(device, storageFlags, mapFlags, 192, maxInFlightFrames);
-        this.bufferFogParameters = new StreamingBuffer(device, storageFlags, mapFlags, 24, maxInFlightFrames);
+
+        this.bufferFogParametersVS = new StreamingBuffer(device, storageFlags, mapFlags, 4, maxInFlightFrames);
+        this.bufferFogParametersFS = new StreamingBuffer(device, storageFlags, mapFlags, 24, maxInFlightFrames);
 
         this.indexBuffer = indexBuffer;
 
@@ -128,20 +132,28 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
 
         state.bindUniformBlock(programInterface.uniformCameraMatrices, matrices.buffer(), matrices.offset(), matrices.length());
 
-        var fogParams = this.bufferFogParameters.slice(frameIndex);
-        var fogParamsBuf = fogParams.view();
+        var fogParamsVS = this.bufferFogParametersVS.slice(frameIndex);
+        var fogParamsVSBuf = fogParamsVS.view();
+        fogParamsVSBuf.putInt(0, RenderSystem.getShaderFogShape().getId());
+
+        this.bufferFogParametersVS.flush(fogParamsVS);
+
+        state.bindUniformBlock(programInterface.uniformFogParametersVS, fogParamsVS.buffer(), fogParamsVS.offset(), fogParamsVS.length());
+
+        var fogParamsFS = this.bufferFogParametersFS.slice(frameIndex);
+        var fogParamsFSBuf = fogParamsFS.view();
 
         var paramFogColor = RenderSystem.getShaderFogColor();
-        fogParamsBuf.putFloat(0, paramFogColor[0]);
-        fogParamsBuf.putFloat(4, paramFogColor[1]);
-        fogParamsBuf.putFloat(8, paramFogColor[2]);
-        fogParamsBuf.putFloat(12, paramFogColor[3]);
-        fogParamsBuf.putFloat(16, RenderSystem.getShaderFogStart());
-        fogParamsBuf.putFloat(20, RenderSystem.getShaderFogEnd());
+        fogParamsFSBuf.putFloat(0, paramFogColor[0]);
+        fogParamsFSBuf.putFloat(4, paramFogColor[1]);
+        fogParamsFSBuf.putFloat(8, paramFogColor[2]);
+        fogParamsFSBuf.putFloat(12, paramFogColor[3]);
+        fogParamsFSBuf.putFloat(16, RenderSystem.getShaderFogStart());
+        fogParamsFSBuf.putFloat(20, RenderSystem.getShaderFogEnd());
 
-        this.bufferFogParameters.flush(fogParams);
+        this.bufferFogParametersFS.flush(fogParamsFS);
 
-        state.bindUniformBlock(programInterface.uniformFogParameters, fogParams.buffer(), fogParams.offset(), fogParams.length());
+        state.bindUniformBlock(programInterface.uniformFogParametersFS, fogParamsFS.buffer(), fogParamsFS.offset(), fogParamsFS.length());
     }
 
     private static ShaderConstants getShaderConstants(ChunkRenderPass pass, TerrainVertexType vertexType) {
@@ -165,7 +177,9 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
         this.device.deletePipeline(this.pipeline);
         this.device.deleteProgram(this.program);
 
-        this.bufferFogParameters.delete();
+        this.bufferFogParametersVS.delete();
+        this.bufferFogParametersFS.delete();
+
         this.bufferCameraMatrices.delete();
     }
 

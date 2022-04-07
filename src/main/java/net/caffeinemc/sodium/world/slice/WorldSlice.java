@@ -97,6 +97,8 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
 
         this.clonedSections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
         this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][SECTION_BLOCK_COUNT];
+
+        //noinspection unchecked
         this.biomeArrays = new RegistryEntry[SECTION_TABLE_ARRAY_SIZE][SECTION_BIOME_COUNT];
     }
 
@@ -264,10 +266,6 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
         var biomeArray = this.biomeArrays[this.getSectionIndexFromBiomeCoord(biomeX, biomeY, biomeZ)];
 
         return biomeArray[packLocalBiomeIndex(BiomeCoords.method_39920(biomeX), BiomeCoords.method_39920(biomeY), BiomeCoords.method_39920(biomeZ))];
-    }
-
-    public BiomeAccess getBiomeAccess() {
-        return this.biomeAccess;
     }
 
     private static int packLocalBiomeIndex(int localBiomeX, int localBiomeY, int localBiomeZ) {

@@ -1,7 +1,7 @@
 package net.caffeinemc.sodium.mixin.features.fast_biome_colors;
 
-import net.caffeinemc.sodium.world.biome.FastCubicSampler;
 import net.caffeinemc.sodium.interop.vanilla.mixin.BiomeSeedProvider;
+import net.caffeinemc.sodium.world.biome.FastCubicSampler;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
@@ -10,7 +10,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
