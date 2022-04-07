@@ -42,7 +42,7 @@
   "sodium.options.use_particle_culling.tooltip": "Etkinleştirilirse, yalnızca görünür olduğu belirlenen parçacıklar oluşturulacaktır. Bu, birçok parçacık yakında olduğunda kare hızlarında önemli bir gelişme sağlayabilir.",
   "sodium.options.animate_only_visible_textures.name": "Yalnızca Görünür Dokuları Animasyonlandır",
   "sodium.options.animate_only_visible_textures.tooltip": "Etkinleştirilirse, yalnızca görünür olduğu belirlenen animasyonlu dokular güncellenecektir. Bu, özellikle daha ağır kaynak paketleri ile bazı donanımlarda kare hızlarında önemli bir artış sağlayabilir. Bazı dokuların animasyonları ile ilgili sorunlar yaşıyorsanız bu seçeneği devre dışı bırakmayı deneyin.",
-  "sodium.options.cpu_render_ahead_limit.name": "CPU İşleme İleri Sınırı",
+  "sodium.options.cpu_render_ahead_limit.name": "CPU İleri İşleme Sınırı",
   "sodium.options.cpu_render_ahead_limit.tooltip": "İşlemeyi bitirmek için CPU'nun GPU'da bekleyebileceği maksimum kare sayısını belirtir. Çok düşük veya yüksek değerler kare hızı kararsızlığına neden olabilir.",
   "sodium.options.cpu_render_ahead_limit.value": "%s kare(ler)",
   "sodium.options.allow_direct_memory_access.name": "Doğrudan Bellek Erişimine İzin Ver",
