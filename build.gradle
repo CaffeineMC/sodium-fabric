@@ -28,21 +28,39 @@ configurations {
     modImplementation.extendsFrom includeModImplementation
 }
 
+repositories {
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
 dependencies {
     //to change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    includeImplementation 'org.joml:joml:1.10.4'
-    includeImplementation project(":components:gfx")
-    includeImplementation project(":components:gfx-opengl")
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Fabric API modules
     includeModImplementation fabricApi.module("fabric-api-base", project.fabric_version)
     includeModImplementation fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version)
     includeModImplementation fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version)
     includeModImplementation fabricApi.module("fabric-resource-loader-v0", project.fabric_version)
+
+    includeImplementation 'org.joml:joml:1.10.4'
+    includeImplementation project(":components:gfx")
+    includeImplementation project(":components:gfx-opengl")
+
+    if (findProperty("sodium.use_third_party_mods") != "false") {
+        // lazydfu not updated yet
+//        modRuntimeOnly "maven.modrinth:lazydfu:0.1.3"
+        modRuntimeOnly "maven.modrinth:starlight:1.1.0+1.19"
+    }
 }
 
 String getVersion() {
