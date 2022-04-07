@@ -13,6 +13,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 import java.util.Comparator;
+import java.util.function.ToDoubleFunction;
 
 public class ChunkOcclusion {
     public record Results(BitArray visibilityTable, ReferenceList<RenderSection> visibleList) {
@@ -43,7 +44,7 @@ public class ChunkOcclusion {
             initSearchFallback(tree, queue, frustumTable, world, blockOrigin, chunkViewDistance);
         }
 
-        var viewDistance = (chunkViewDistance * 16) + 8;
+        var drawDistance = MathHelper.square((chunkViewDistance + 1) * 16.0f);
         var visibleList = new ReferenceArrayList<RenderSection>(2048);
 
         for (int i = 0; i < queue.size(); i++) {
@@ -52,7 +53,7 @@ public class ChunkOcclusion {
 
             var section = tree.getSectionById(sectionId);
 
-            if (section.getTaxicabDistanceXZ(camera.blockX, camera.blockZ) > viewDistance) {
+            if (section.getDistance(camera.posX, camera.posZ) > drawDistance) {
                 continue;
             }
 
@@ -118,7 +119,7 @@ public class ChunkOcclusion {
 
         var chunkPos = ChunkSectionPos.from(origin);
         var chunkX = chunkPos.getX();
-        var chunkY = MathHelper.clamp(origin.getY() >> 4, world.getBottomSectionCoord(), world.getTopSectionCoord() - 1);
+        var chunkY = MathHelper.clamp(chunkPos.getY(), world.getBottomSectionCoord(), world.getTopSectionCoord() - 1);
         var chunkZ = chunkPos.getZ();
 
         for (int x2 = -renderDistance; x2 <= renderDistance; ++x2) {
@@ -131,8 +132,16 @@ public class ChunkOcclusion {
             }
         }
 
-        sorted.sort(Comparator.comparingInt(node ->
-                node.getTaxicabDistanceXYZ(origin.getX(), origin.getY(), origin.getZ())));
+        sorted.sort(Comparator.comparingDouble(new ToDoubleFunction<>() {
+            final float x = origin.getX();
+            final float z = origin.getZ();
+
+            @Override
+            public double applyAsDouble(RenderSection node) {
+                // All chunks will be at the same Y-level, so only compare the XZ-coordinates
+                return node.getDistance(this.x, this.z);
+            }
+        }));
 
         for (RenderSection render : sorted) {
             queue.add(render.id(), -1);

@@ -23,7 +23,7 @@ public class RenderSection {
     private final int sectionId;
 
     private final int chunkX, chunkY, chunkZ;
-    private final int originX, originY, originZ;
+    private final float originX, originY, originZ;
 
     private final RenderRegion region;
 
@@ -216,18 +216,18 @@ public class RenderSection {
         return ((this.visibilityBits & (1L << ((incoming << 3) + outgoing))) != 0L);
     }
 
-    public int getTaxicabDistanceXZ(int blockX, int blockZ) {
-        int xDist = Math.abs(this.originX - blockX);
-        int zDist = Math.abs(this.originZ - blockZ);
+    public float getDistance(float x, float y, float z) {
+        float xDist = x - this.originX;
+        float yDist = y - this.originY;
+        float zDist = z - this.originZ;
 
-        return Math.max(xDist, zDist);
+        return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
 
-    public int getTaxicabDistanceXYZ(int blockX, int blockY, int blockZ) {
-        int xDist = Math.abs(this.originX - blockX);
-        int yDist = Math.abs(this.originY - blockY);
-        int zDist = Math.abs(this.originZ - blockZ);
+    public float getDistance(float x, float z) {
+        float xDist = x - this.originX;
+        float zDist = z - this.originZ;
 
-        return Math.max(xDist, Math.max(yDist, zDist));
+        return (xDist * xDist) + (zDist * zDist);
     }
 }

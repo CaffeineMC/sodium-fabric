@@ -46,7 +46,7 @@ public class RenderSectionManager {
     /**
      * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
      */
-    private static final int NEARBY_BLOCK_UPDATE_DISTANCE = 32;
+    private static final float NEARBY_BLOCK_UPDATE_DISTANCE = 32.0f;
 
     private final ChunkBuilder builder;
 
@@ -406,7 +406,7 @@ public class RenderSectionManager {
             return false;
         }
 
-        return render.getTaxicabDistanceXYZ(camera.blockX, camera.blockY, camera.blockZ) <= NEARBY_BLOCK_UPDATE_DISTANCE;
+        return render.getDistance(camera.posX, camera.posY, camera.posZ) <= NEARBY_BLOCK_UPDATE_DISTANCE;
     }
 
     public void onChunkRenderUpdates(int x, int y, int z, ChunkRenderData data) {
