@@ -14,6 +14,14 @@ loom {
         defaultRefmapName = "mixins.sodium.refmap.json"
     }
 
+    if (findProperty("sodium.use_custom_jvm_args") != "false") {
+        runs {
+            it.configureEach {
+                vmArgs("-Xmx3G", "-XX:+UseZGC")
+            }
+        }
+    }
+
     accessWidenerPath.set file("src/main/resources/sodium.accesswidener")
 }
 
