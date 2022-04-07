@@ -6,9 +6,9 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,7 +32,7 @@ public class SodiumClientMod implements ClientModInitializer {
                 .getVersion()
                 .getFriendlyString();
 
-        LOGGER = LogManager.getLogger("Sodium");
+        LOGGER = LoggerFactory.getLogger("Sodium");
 
         var configPath = FabricLoader.getInstance()
                 .getConfigDir()

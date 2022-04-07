@@ -11,6 +11,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.*;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
@@ -75,7 +76,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     private final BlockState[][] blockStatesArrays;
 
     // Local Section->Biome table.
-    private final Biome[][] biomeArrays;
+    private final RegistryEntry<Biome>[][] biomeArrays;
 
     // Local section copies. Read-only.
     private ClonedChunkSection[] clonedSections;
@@ -96,7 +97,9 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
 
         this.clonedSections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
         this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][SECTION_BLOCK_COUNT];
-        this.biomeArrays = new Biome[SECTION_TABLE_ARRAY_SIZE][SECTION_BIOME_COUNT];
+
+        //noinspection unchecked
+        this.biomeArrays = new RegistryEntry[SECTION_TABLE_ARRAY_SIZE][SECTION_BIOME_COUNT];
     }
 
     public void init(WorldSliceData context) {
@@ -160,7 +163,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
                 .copyUsingPalette(states, section.getBlockPalette());
     }
 
-    private void unpackBiomeData(Biome[] biomes, ClonedChunkSection section) {
+    private void unpackBiomeData(RegistryEntry<Biome>[] biomes, ClonedChunkSection section) {
         for (int x = 0; x < 4; x++) {
             for (int y = 0; y < 4; y++) {
                 for (int z = 0; z < 4; z++) {
@@ -259,14 +262,10 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     }
 
     // Coordinates are in biome space!
-    private Biome getStoredBiome(int biomeX, int biomeY, int biomeZ) {
+    private RegistryEntry<Biome> getStoredBiome(int biomeX, int biomeY, int biomeZ) {
         var biomeArray = this.biomeArrays[this.getSectionIndexFromBiomeCoord(biomeX, biomeY, biomeZ)];
 
         return biomeArray[packLocalBiomeIndex(BiomeCoords.method_39920(biomeX), BiomeCoords.method_39920(biomeY), BiomeCoords.method_39920(biomeZ))];
-    }
-
-    public BiomeAccess getBiomeAccess() {
-        return this.biomeAccess;
     }
 
     private static int packLocalBiomeIndex(int localBiomeX, int localBiomeY, int localBiomeZ) {

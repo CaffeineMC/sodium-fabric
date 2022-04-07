@@ -5,6 +5,7 @@ import net.caffeinemc.sodium.util.image.BoxBlur;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.level.ColorResolver;
@@ -14,7 +15,7 @@ import java.util.Map;
 public class ChunkColorCache {
     private static final int BORDER = 1;
 
-    private final Biome[][] biomes;
+    private final RegistryEntry<Biome>[][] biomes;
     private final Map<ColorResolver, int[][]> colors;
 
     private final int sizeHorizontal;
@@ -44,7 +45,9 @@ public class ChunkColorCache {
         this.baseZ = this.origin.getMinZ() - borderXZ;
 
         this.colors = new Reference2ReferenceOpenHashMap<>();
-        this.biomes = new Biome[this.sizeVertical][];
+
+        //noinspection unchecked
+        this.biomes = new RegistryEntry[this.sizeVertical][];
     }
 
     public int getColor(ColorResolver resolver, int posX, int posY, int posZ) {
@@ -67,8 +70,9 @@ public class ChunkColorCache {
         return layer[this.indexXZ(x, z)];
     }
 
-    private Biome[] gatherBiomes(int level) {
-        var biomeData = new Biome[this.sizeHorizontal * this.sizeHorizontal];
+    private RegistryEntry<Biome>[] gatherBiomes(int level) {
+        @SuppressWarnings("unchecked")
+        RegistryEntry<Biome>[] biomeData = new RegistryEntry[this.sizeHorizontal * this.sizeHorizontal];
 
         var pos = new BlockPos.Mutable();
 
@@ -88,7 +92,7 @@ public class ChunkColorCache {
         for (int x = 0; x < this.sizeHorizontal; x++) {
             for (int z = 0; z < this.sizeHorizontal; z++) {
                 int index = this.indexXZ(x, z);
-                colorData[index] = resolver.getColor(biomeData[index],
+                colorData[index] = resolver.getColor(biomeData[index].value(),
                         x + this.baseX, z + this.baseZ);
             }
         }
@@ -98,8 +102,8 @@ public class ChunkColorCache {
         return colorData;
     }
 
-    private Biome[] getBiomeData(int y) {
-        Biome[] biomes = this.biomes[y];
+    private RegistryEntry<Biome>[] getBiomeData(int y) {
+        var biomes = this.biomes[y];
 
         if (biomes == null) {
             this.biomes[y] = (biomes = this.gatherBiomes(y));

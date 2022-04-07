@@ -16,6 +16,7 @@ import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.registry.BuiltinRegistries;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
@@ -46,7 +47,7 @@ public class ClonedChunkSection {
     private PackedIntegerArray blockStateData;
     private ClonedPalette<BlockState> blockStatePalette;
 
-    private PalettedContainer<Biome> biomeData;
+    private PalettedContainer<RegistryEntry<Biome>> biomeData;
     private boolean isEmpty = true;
 
     ClonedChunkSection(ClonedChunkSectionCache backingCache) {
@@ -146,7 +147,7 @@ public class ClonedChunkSection {
         }
     }
 
-    public Biome getBiome(int x, int y, int z) {
+    public RegistryEntry<Biome> getBiome(int x, int y, int z) {
         return this.biomeData.get(x, y, z);
     }
 

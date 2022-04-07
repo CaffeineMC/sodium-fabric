@@ -32,6 +32,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockRenderView;
+import org.apache.commons.lang3.mutable.MutableFloat;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
 public class FluidRenderer {
@@ -44,6 +46,8 @@ public class FluidRenderer {
     private final Sprite waterOverlaySprite;
 
     private final ModelQuadViewMutable quad = new ModelQuad();
+    private final MutableFloat scratchHeight = new MutableFloat(0);
+    private final MutableInt scratchSamples = new MutableInt();
 
     private final LightPipelineProvider lighters;
     private final ColorBlender colorBlender;
@@ -130,10 +134,23 @@ public class FluidRenderer {
 
         boolean rendered = false;
 
-        float h1 = this.getCornerHeight(world, posX, posY, posZ, fluidState.getFluid());
-        float h2 = this.getCornerHeight(world, posX, posY, posZ + 1, fluidState.getFluid());
-        float h3 = this.getCornerHeight(world, posX + 1, posY, posZ + 1, fluidState.getFluid());
-        float h4 = this.getCornerHeight(world, posX + 1, posY, posZ, fluidState.getFluid());
+        float fluidHeight = this.fluidHeight(world, fluid, pos);
+        float h1, h2, h3, h4;
+        if (fluidHeight >= 1.0f) {
+            h1 = 1.0f;
+            h2 = 1.0f;
+            h3 = 1.0f;
+            h4 = 1.0f;
+        } else {
+            float north1 = this.fluidHeight(world, fluid, pos.north());
+            float south1 = this.fluidHeight(world, fluid, pos.south());
+            float east1 = this.fluidHeight(world, fluid, pos.east());
+            float west1 = this.fluidHeight(world, fluid, pos.west());
+            h1 = this.fluidCornerHeight(world, fluid, fluidHeight, north1, west1, pos.offset(Direction.NORTH).offset(Direction.WEST));
+            h2 = this.fluidCornerHeight(world, fluid, fluidHeight, south1, west1, pos.offset(Direction.SOUTH).offset(Direction.WEST));
+            h3 = this.fluidCornerHeight(world, fluid, fluidHeight, south1, east1, pos.offset(Direction.SOUTH).offset(Direction.EAST));
+            h4 = this.fluidCornerHeight(world, fluid, fluidHeight, north1, east1, pos.offset(Direction.NORTH).offset(Direction.EAST));
+        }
 
         float yOffset = sfDown ? 0.0F : EPSILON;
 
@@ -423,39 +440,58 @@ public class FluidRenderer {
         quad.setTexV(i, v);
     }
 
-    private float getCornerHeight(BlockRenderView world, int x, int y, int z, Fluid fluid) {
-        int samples = 0;
-        float totalHeight = 0.0F;
-
-        for (int i = 0; i < 4; ++i) {
-            int x2 = x - (i & 1);
-            int z2 = z - (i >> 1 & 1);
-
-            if (world.getFluidState(this.scratchPos.set(x2, y + 1, z2)).getFluid().matchesType(fluid)) {
-                return 1.0F;
-            }
-
-            BlockPos pos = this.scratchPos.set(x2, y, z2);
-
-            BlockState blockState = world.getBlockState(pos);
-            FluidState fluidState = blockState.getFluidState();
-
-            if (fluidState.getFluid().matchesType(fluid)) {
-                float height = fluidState.getHeight(world, pos);
-
-                if (height >= 0.8F) {
-                    totalHeight += height * 10.0F;
-                    samples += 10;
-                } else {
-                    totalHeight += height;
-                    ++samples;
-                }
-            } else if (!blockState.getMaterial().isSolid()) {
-                ++samples;
-            }
+    private float fluidCornerHeight(BlockRenderView world, Fluid fluid, float fluidHeight, float fluidHeightX, float fluidHeightY, BlockPos blockPos) {
+        if (fluidHeightY >= 1.0f || fluidHeightX >= 1.0f) {
+            return 1.0f;
         }
 
-        return totalHeight / (float) samples;
+        this.scratchHeight.setValue(0);
+        this.scratchSamples.setValue(0);
+
+        if (fluidHeightY > 0.0f || fluidHeightX > 0.0f) {
+            float height = this.fluidHeight(world, fluid, blockPos);
+
+            if (height >= 1.0f) {
+                return 1.0f;
+            }
+
+            this.modifyHeight(this.scratchHeight, this.scratchSamples, height);
+        }
+
+        this.modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeight);
+        this.modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeightY);
+        this.modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeightX);
+
+        return this.scratchHeight.floatValue() / this.scratchSamples.intValue();
+    }
+
+    private void modifyHeight(MutableFloat totalHeight, MutableInt samples, float target) {
+        if (target >= 0.8f) {
+            totalHeight.add(target * 10.0f);
+            samples.add(10);
+        } else if (target >= 0.0f) {
+            totalHeight.add(target);
+            samples.increment();
+        }
+    }
+
+    private float fluidHeight(BlockRenderView world, Fluid fluid, BlockPos blockPos) {
+        BlockState blockState = world.getBlockState(blockPos);
+        FluidState fluidState = blockState.getFluidState();
+
+        if (fluid.matchesType(fluidState.getFluid())) {
+            FluidState fluidStateUp = world.getFluidState(blockPos.up());
+
+            if (fluid.matchesType(fluidStateUp.getFluid())) {
+                return 1.0f;
+            } else {
+                return fluidState.getHeight();
+            }
+        }
+        if (!blockState.getMaterial().isSolid()) {
+            return 0.0f;
+        }
+        return -1.0f;
     }
 
     private static class FabricFluidColorizerAdapter implements ColorSampler<FluidState> {

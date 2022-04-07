@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.caffeinemc.sodium.render.SodiumWorldRenderer;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.FrustumAdapter;
 import net.caffeinemc.sodium.interop.vanilla.mixin.WorldRendererHolder;
+import net.caffeinemc.sodium.world.ChunkStatus;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.*;
@@ -36,7 +37,7 @@ public abstract class MixinWorldRenderer implements WorldRendererHolder {
 
     @Override
     public SodiumWorldRenderer getSodiumWorldRenderer() {
-        return renderer;
+        return this.renderer;
     }
 
     @Redirect(method = "reload()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/GameOptions;getViewDistance()I", ordinal = 1))
@@ -130,6 +131,15 @@ public abstract class MixinWorldRenderer implements WorldRendererHolder {
     @Overwrite
     private void scheduleChunkRender(int x, int y, int z, boolean important) {
         this.renderer.scheduleRebuildForChunk(x, y, z, important);
+    }
+
+    /**
+     * @reason Redirect chunk updates to our renderer
+     * @author JellySquid
+     */
+    @Overwrite
+    public boolean isRenderingReady(BlockPos pos) {
+        return this.renderer.doesChunkHaveFlag(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FLAG_ALL);
     }
 
     @Inject(method = "reload()V", at = @At("RETURN"))
