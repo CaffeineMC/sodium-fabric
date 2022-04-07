@@ -25,7 +25,7 @@ public class MixinWindow {
         }
 
         GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
-        GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 5);
+        GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 6);
         GLFW.glfwSetErrorCallback(MixinWindow::sodium$throwGlError);
     }
 
@@ -39,7 +39,7 @@ public class MixinWindow {
         String string = "GLFW error " + error + ": " + MemoryUtil.memUTF8(description);
         TinyFileDialogs.tinyfd_messageBox("Minecraft",
                 string +
-                        "\n\nSodium requires a graphics card driver with support for OpenGL 4.5 Core." +
+                        "\n\nSodium requires a graphics card driver with support for OpenGL 4.6 Core." +
                         "\nPlease make sure you have up-to-date drivers (see aka.ms/mcdriver for instructions).",
                 "ok",
                 "error",
