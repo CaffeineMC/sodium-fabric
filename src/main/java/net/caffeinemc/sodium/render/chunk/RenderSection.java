@@ -1,14 +1,9 @@
 package net.caffeinemc.sodium.render.chunk;
 
-import net.caffeinemc.sodium.render.SodiumWorldRenderer;
-import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
-import net.caffeinemc.sodium.render.chunk.state.*;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
+import net.caffeinemc.sodium.render.chunk.state.*;
 import net.caffeinemc.sodium.render.texture.SpriteUtil;
-import net.caffeinemc.sodium.util.DirectionUtil;
-import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 
 import java.util.concurrent.CompletableFuture;
@@ -18,14 +13,11 @@ import java.util.concurrent.CompletableFuture;
  * data about the render in the chunk visibility graph.
  */
 public class RenderSection {
-    private final SodiumWorldRenderer worldRenderer;
-
     private final int sectionId;
+    private final long regionKey;
 
     private final int chunkX, chunkY, chunkZ;
     private final float originX, originY, originZ;
-
-    private final RenderRegion region;
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<?> rebuildTask = null;
@@ -37,12 +29,7 @@ public class RenderSection {
 
     private int lastAcceptedBuildTime = -1;
 
-    private long visibilityBits;
-
-    public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region, int sectionId) {
-        this.worldRenderer = worldRenderer;
-        this.region = region;
-
+    public RenderSection(int chunkX, int chunkY, int chunkZ, int sectionId) {
         this.chunkX = chunkX;
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
@@ -52,6 +39,7 @@ public class RenderSection {
         this.originZ = ChunkSectionPos.getBlockCoord(this.chunkZ) + 8;
 
         this.sectionId = sectionId;
+        this.regionKey = RenderRegion.getRegionCoord(this.chunkX, this.chunkY, this.chunkZ);
     }
 
     /**
@@ -65,7 +53,7 @@ public class RenderSection {
         }
     }
 
-    public ChunkRenderData getData() {
+    public ChunkRenderData data() {
         return this.data;
     }
 
@@ -76,19 +64,17 @@ public class RenderSection {
      */
     public void delete() {
         this.cancelRebuildTask();
-        this.setData(ChunkRenderData.ABSENT);
         this.deleteGeometry();
 
         this.disposed = true;
     }
 
-    public void setData(ChunkRenderData info) {
-        if (info == null) {
+    public void setData(ChunkRenderData data) {
+        if (data == null) {
             throw new NullPointerException("Mesh information must not be null");
         }
 
-        this.worldRenderer.onChunkRenderUpdated(this.chunkX, this.chunkY, this.chunkZ, this.data, info);
-        this.data = info;
+        this.data = data;
     }
 
     /**
@@ -131,10 +117,6 @@ public class RenderSection {
         return this.data.getBounds();
     }
 
-    public RenderRegion getRegion() {
-        return this.region;
-    }
-
     public boolean isDisposed() {
         return this.disposed;
     }
@@ -143,20 +125,6 @@ public class RenderSection {
     public String toString() {
         return String.format("RenderChunk{chunkX=%d, chunkY=%d, chunkZ=%d}",
                 this.chunkX, this.chunkY, this.chunkZ);
-    }
-
-    public void setOcclusionData(ChunkOcclusionData occlusionData) {
-        long visBits = 0;
-
-        for (var from : DirectionUtil.ALL_DIRECTIONS) {
-            for (var to : DirectionUtil.ALL_DIRECTIONS) {
-                if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
-                    visBits |= (1L << ((from.ordinal() << 3) + to.ordinal()));
-                }
-            }
-        }
-
-        this.visibilityBits = visBits;
     }
 
     public ChunkUpdateType getPendingUpdate() {
@@ -183,13 +151,12 @@ public class RenderSection {
         return this.data != ChunkRenderData.ABSENT;
     }
 
-    public boolean canAcceptBuildResults(TerrainBuildResult result) {
-        return !this.isDisposed() && result.buildTime() > this.lastAcceptedBuildTime;
+    public int getLastAcceptedBuildTime() {
+        return this.lastAcceptedBuildTime;
     }
 
-    public void onBuildFinished(TerrainBuildResult result) {
-        this.setData(result.data());
-        this.lastAcceptedBuildTime = result.buildTime();
+    public void setLastAcceptedBuildTime(int time) {
+        this.lastAcceptedBuildTime = time;
     }
 
     public void deleteGeometry() {
@@ -212,10 +179,6 @@ public class RenderSection {
         return this.sectionId;
     }
 
-    public boolean isVisibleThrough(int incoming, int outgoing) {
-        return ((this.visibilityBits & (1L << ((incoming << 3) + outgoing))) != 0L);
-    }
-
     public float getDistance(float x, float y, float z) {
         float xDist = x - this.originX;
         float yDist = y - this.originY;
@@ -229,5 +192,9 @@ public class RenderSection {
         float zDist = z - this.originZ;
 
         return (xDist * xDist) + (zDist * zDist);
+    }
+
+    public long getRegionKey() {
+        return this.regionKey;
     }
 }

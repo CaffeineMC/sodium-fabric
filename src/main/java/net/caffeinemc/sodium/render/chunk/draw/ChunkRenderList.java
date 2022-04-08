@@ -1,49 +1,56 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
+import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceSortedMaps;
 import it.unimi.dsi.fastutil.objects.*;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
+import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.util.IteratorUtils;
 
 import java.util.Iterator;
 
 public class ChunkRenderList {
     private final ReferenceArrayList<RenderSection> sections;
-    private final ReferenceArrayList<Bucket> regions;
+    private final ReferenceArrayList<Bucket> buckets;
 
-    public ChunkRenderList(ReferenceArrayList<RenderSection> sections) {
-        RenderRegion cachedRegion = null;
-        ReferenceArrayList<RenderSection> cachedList = null;
+    public ChunkRenderList(RenderRegionManager renderRegions, ReferenceArrayList<RenderSection> unsortedSections) {
+        var builders = new Long2ReferenceLinkedOpenHashMap<ReferenceArrayList<RenderSection>>();
 
-        var regions = new Reference2ReferenceLinkedOpenHashMap<RenderRegion, ReferenceArrayList<RenderSection>>();
+        var lastListId = Long.MAX_VALUE;
+        ReferenceArrayList<RenderSection> lastSortedList = null;
 
-        for (RenderSection section : sections) {
-            var region = section.getRegion();
+        for (RenderSection section : unsortedSections) {
+            var regionId = section.getRegionKey();
 
-            if (cachedRegion != region) {
-                cachedRegion = region;
-                cachedList = regions.get(region);
+            if (lastSortedList == null || lastListId != regionId) {
+                lastListId = regionId;
+                lastSortedList = builders.get(regionId);
 
-                if (cachedList == null) {
-                    regions.put(region, cachedList = new ReferenceArrayList<>(RenderRegion.REGION_SIZE / 4));
+                if (lastSortedList == null) {
+                    builders.put(regionId, lastSortedList =
+                            new ReferenceArrayList<>(RenderRegion.REGION_SIZE / 4));
                 }
             }
 
-            cachedList.add(section);
+            lastSortedList.add(section);
         }
 
-        this.regions = flatten(regions);
-        this.sections = sections;
-    }
+        var buckets = new ReferenceArrayList<Bucket>(builders.size());
 
-    private static ReferenceArrayList<Bucket> flatten(Reference2ReferenceSortedMap<RenderRegion, ReferenceArrayList<RenderSection>> regions) {
-        var array = new ReferenceArrayList<Bucket>(regions.size());
+        for (var entry : Long2ReferenceSortedMaps.fastIterable(builders)) {
+            var regionId = entry.getLongKey();
+            var sectionList = entry.getValue();
 
-        for (var entry : Reference2ReferenceSortedMaps.fastIterable(regions)) {
-            array.add(new Bucket(entry.getKey(), entry.getValue()));
+            var region = renderRegions.getRegion(regionId);
+
+            if (region != null) {
+                buckets.add(new Bucket(region, sectionList));
+            }
         }
 
-        return array;
+        this.buckets = buckets;
+        this.sections = unsortedSections;
     }
 
     public void add(RenderSection render) {
@@ -55,15 +62,15 @@ public class ChunkRenderList {
     }
 
     public int regionCount() {
-        return this.regions.size();
+        return this.buckets.size();
     }
 
     public Iterator<Bucket> sorted(boolean reverse) {
-        return IteratorUtils.reversibleIterator(this.regions, reverse);
+        return IteratorUtils.reversibleIterator(this.buckets, reverse);
     }
 
     public Iterable<Bucket> unsorted() {
-        return this.regions;
+        return this.buckets;
     }
 
     public record Bucket(RenderRegion region,

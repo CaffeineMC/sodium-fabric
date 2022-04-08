@@ -50,8 +50,6 @@ public class SodiumWorldRenderer {
 
     private boolean useEntityCulling;
 
-    private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
-
     private RenderSectionManager renderSectionManager;
     private ChunkRenderPassManager renderPassManager;
     private ChunkTracker chunkTracker;
@@ -119,8 +117,6 @@ public class SodiumWorldRenderer {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
         }
-
-        this.globalBlockEntities.clear();
 
         this.chunkTracker = null;
         this.world = null;
@@ -278,7 +274,7 @@ public class SodiumWorldRenderer {
             matrices.pop();
         }
 
-        for (BlockEntity blockEntity : this.globalBlockEntities) {
+        for (BlockEntity blockEntity : this.renderSectionManager.getGlobalBlockEntities()) {
             BlockPos pos = blockEntity.getPos();
 
             matrices.push();
@@ -304,12 +300,6 @@ public class SodiumWorldRenderer {
         if (this.chunkTracker.unloadChunk(x, z)) {
             this.renderSectionManager.onChunkRemoved(x, z);
         }
-    }
-
-    public void onChunkRenderUpdated(int x, int y, int z, ChunkRenderData meshBefore, ChunkRenderData meshAfter) {
-        ListUtil.updateList(this.globalBlockEntities, meshBefore.getGlobalBlockEntities(), meshAfter.getGlobalBlockEntities());
-
-        this.renderSectionManager.onChunkRenderUpdates(x, y, z, meshAfter);
     }
 
     /**

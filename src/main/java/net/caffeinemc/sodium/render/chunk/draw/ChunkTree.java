@@ -41,7 +41,7 @@ public class ChunkTree {
     }
 
     public void calculateVisible(Frustum frustum, BitArray vis) {
-        if (vis.capacity() < this.getSectionCount()) {
+        if (vis.capacity() < this.getSectionTableSize()) {
             throw new IllegalArgumentException("Visibility array does not contain enough elements");
         }
 
@@ -53,7 +53,7 @@ public class ChunkTree {
         }
     }
 
-    public int getSectionCount() {
+    public int getSectionTableSize() {
         return this.idPool.capacity();
     }
 
@@ -244,7 +244,7 @@ public class ChunkTree {
         return this.sections[sectionId];
     }
 
-    public RenderSection getSectionById(int id) {
+    public RenderSection getSectionForNode(int id) {
         return this.sections[id];
     }
 
@@ -252,11 +252,19 @@ public class ChunkTree {
         return this.nodes[id].adjacent[direction];
     }
 
+    public int getLoadedSections() {
+        return this.sectionLookup.size();
+    }
+
+    public Node getNodeById(int sectionId) {
+        return this.nodes[sectionId];
+    }
+
     public interface Factory<T> {
         T create(int x, int y, int z, int id);
     }
 
-    private static class Node {
+    public static class Node {
         private final int id;
 
         private final float minX, minY, minZ;
@@ -264,6 +272,8 @@ public class ChunkTree {
 
         private final int[] adjacent = new int[6];
         private int[] children = new int[0];
+
+        private long visibilityData = 0L;
 
         public Node(int id, float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
             this.id = id;
@@ -296,6 +306,14 @@ public class ChunkTree {
             }
 
             this.children = ArrayUtils.remove(this.children, index);
+        }
+
+        public void setVisibilityData(long data) {
+            this.visibilityData = data;
+        }
+
+        public boolean isVisibleThrough(int incomingDirection, int outgoingDirection) {
+            return ((this.visibilityData & (1L << ((incomingDirection << 3) + outgoingDirection))) != 0L);
         }
     }
 }
