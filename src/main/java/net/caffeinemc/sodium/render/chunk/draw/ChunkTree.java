@@ -20,7 +20,7 @@ public class ChunkTree {
     private final Long2IntOpenHashMap sectionLookup;
 
     private RenderSection[] sections = new RenderSection[4096];
-    private Node[] nodes = new Node[512];
+    private Node[] nodes = new Node[4096];
 
     private final int maxDepth;
 
@@ -177,33 +177,33 @@ public class ChunkTree {
             var nodeY = chunkY >> depth;
             var nodeZ = chunkZ >> depth;
 
-            var childNodeMap = this.nodeLookup[depth];
-            var childNodeKey = ChunkSectionPos.asLong(nodeX, nodeY, nodeZ);
-            var childNodeId = childNodeMap.get(childNodeKey);
+            var nodeMap = this.nodeLookup[depth];
+            var nodeKey = ChunkSectionPos.asLong(nodeX, nodeY, nodeZ);
+            var nodeId = nodeMap.get(nodeKey);
 
-            if (childNodeId == ABSENT_VALUE) {
+            if (nodeId == ABSENT_VALUE) {
                 throw new IllegalStateException();
             }
 
-            var childNode = this.nodes[childNodeId];
+            var node = this.nodes[nodeId];
 
             if (lastChildNodeId != ABSENT_VALUE) {
-                childNode.removeChild(lastChildNodeId);
+                node.removeChild(lastChildNodeId);
             }
 
-            if (childNode.isEmpty()) {
+            if (node.isEmpty()) {
                 this.disconnectAdjacentNodes(nodeX, nodeY, nodeZ, depth);
 
-                childNodeMap.remove(childNodeKey);
+                nodeMap.remove(nodeKey);
 
-                this.idPool.free(childNodeId);
-                this.nodes[childNodeId] = null;
-                this.sections[childNodeId] = null;
+                this.idPool.free(nodeId);
+                this.nodes[nodeId] = null;
+                this.sections[nodeId] = null;
             } else {
                 break;
             }
 
-            lastChildNodeId = childNodeId;
+            lastChildNodeId = nodeId;
         }
     }
 
@@ -265,13 +265,15 @@ public class ChunkTree {
     }
 
     public static class Node {
+        private static final int[] EMPTY_CHILDREN = new int[0];
+
         private final int id;
 
         private final float minX, minY, minZ;
         private final float maxX, maxY, maxZ;
 
         private final int[] adjacent = new int[6];
-        private int[] children = new int[0];
+        private int[] children = EMPTY_CHILDREN;
 
         private long visibilityData = 0L;
 
@@ -291,7 +293,7 @@ public class ChunkTree {
         }
 
         public boolean isEmpty() {
-            return this.children == null;
+            return this.children.length == 0;
         }
 
         public void addChild(int child) {
