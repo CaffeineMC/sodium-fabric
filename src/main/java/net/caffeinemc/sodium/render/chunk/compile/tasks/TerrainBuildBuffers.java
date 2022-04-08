@@ -16,6 +16,7 @@ import net.caffeinemc.sodium.render.terrain.format.TerrainVertexSink;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.util.NativeBuffer;
 import net.minecraft.client.render.RenderLayer;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.*;
 
@@ -114,7 +115,9 @@ public class TerrainBuildBuffers {
                 vertexCount += sidedVertexCount;
             }
 
-            models.add(new ChunkModel(entry.getKey(), ranges));
+            if (!ArrayUtils.isEmpty(ranges)) {
+                models.add(new ChunkModel(entry.getKey(), ranges));
+            }
         }
 
         VertexData vertexData = new VertexData(vertexFormat, chunkVertexBuffer);

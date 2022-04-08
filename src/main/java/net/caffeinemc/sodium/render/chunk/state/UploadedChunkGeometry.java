@@ -1,7 +1,7 @@
 package net.caffeinemc.sodium.render.chunk.state;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.caffeinemc.sodium.render.arena.BufferSegment;
-import net.caffeinemc.sodium.render.buffer.VertexRange;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 
@@ -32,23 +32,45 @@ public final class UploadedChunkGeometry {
 
         public PackedModel(ChunkModel model) {
             this.pass = model.getRenderPass();
-            this.ranges = new long[ChunkMeshFace.COUNT];
 
-            for (int i = 0; i < ChunkMeshFace.COUNT; i++) {
-                var range = model.getModelRanges()[i];
+            var ranges = new LongArrayList(ChunkMeshFace.COUNT);
 
-                long packed;
+            for (int faceIndex = 0; faceIndex < ChunkMeshFace.COUNT; faceIndex++) {
+                var range = model.getModelRanges()[faceIndex];
 
                 if (range == null) {
-                    packed = VertexRange.NULL;
-                } else {
-                    packed = VertexRange.pack(range.firstVertex(), 6 * (range.vertexCount() >> 2));
+                    continue;
                 }
 
-                this.ranges[i] = packed;
+                long packed = ModelPart.pack(1 << faceIndex, 6 * (range.vertexCount() >> 2), range.firstVertex());
+                ranges.add(packed);
             }
 
+            this.ranges = ranges.toLongArray();
             this.visibilityBits = model.getVisibilityBits();
+        }
+    }
+
+    public static class ModelPart {
+        public static long pack(int face, int vertexCount, int firstVertex) {
+            long packed = 0L;
+            packed |= (face & 0xFFL) << 0;
+            packed |= (vertexCount & 0xFFFFFFFL) << 8;
+            packed |= (firstVertex & 0xFFFFFFFL) << 36;
+
+            return packed;
+        }
+
+        public static int unpackFace(long packed) {
+            return (int) ((packed >>> 0) & 0xFFL);
+        }
+
+        public static int unpackVertexCount(long packed) {
+            return (int) ((packed >>> 8) & 0xFFFFFFFL);
+        }
+
+        public static int unpackFirstVertex(long packed) {
+            return (int) ((packed >>> 36) & 0xFFFFFFFL);
         }
     }
 }
