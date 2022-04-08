@@ -30,6 +30,7 @@ import net.caffeinemc.gfx.api.texture.Sampler;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.*;
+import org.lwjgl.system.MathUtil;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
@@ -45,9 +46,18 @@ public class GlRenderDevice implements RenderDevice {
     public GlRenderDevice(GlPipelineManager pipelineManager) {
         // TODO: move this into platform code
         this.pipelineManager = pipelineManager;
-        this.properties = new RenderDeviceProperties(
-                GL45C.glGetInteger(GL45C.GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT)
-        );
+        this.properties = getDeviceProperties();
+    }
+
+    private static RenderDeviceProperties getDeviceProperties() {
+        var uniformBufferAlignment = GL45C.glGetInteger(GL45C.GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT);
+
+        if (!MathUtil.mathIsPoT(uniformBufferAlignment)) {
+            throw new RuntimeException("GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT is not a power-of-two (found value of %s)"
+                    .formatted(uniformBufferAlignment));
+        }
+
+        return new RenderDeviceProperties(uniformBufferAlignment);
     }
 
     @Override
