@@ -1,4 +1,4 @@
-layout(std140, binding = 3) uniform FogParametersFS {
+layout(std140, binding = 2) uniform FogParameters {
     // The color of the shader fog
     vec4 fog_color;
 
