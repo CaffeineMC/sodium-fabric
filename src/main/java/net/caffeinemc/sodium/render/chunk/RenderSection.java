@@ -2,8 +2,6 @@ package net.caffeinemc.sodium.render.chunk;
 
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.state.*;
-import net.caffeinemc.sodium.render.texture.SpriteUtil;
-import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.ChunkSectionPos;
 
 import java.util.concurrent.CompletableFuture;
@@ -78,27 +76,10 @@ public class RenderSection {
     }
 
     /**
-     * @return True if the chunk render contains no data, otherwise false
-     */
-    public boolean isEmpty() {
-        return this.data.isEmpty();
-    }
-
-    /**
      * Returns the chunk section position which this render refers to in the world.
      */
     public ChunkSectionPos getChunkPos() {
         return ChunkSectionPos.from(this.chunkX, this.chunkY, this.chunkZ);
-    }
-
-    /**
-     * Ensures that all resources attached to the given chunk render are "ticked" forward. This should be called every
-     * time before this render is drawn if {@link ChunkRenderData#isTickable()} is true.
-     */
-    public void tick() {
-        for (Sprite sprite : this.data.getAnimatedSprites()) {
-            SpriteUtil.markSpriteActive(sprite);
-        }
     }
 
     public int getChunkX() {
@@ -114,7 +95,7 @@ public class RenderSection {
     }
 
     public ChunkRenderBounds getBounds() {
-        return this.data.getBounds();
+        return this.data.bounds;
     }
 
     public boolean isDisposed() {

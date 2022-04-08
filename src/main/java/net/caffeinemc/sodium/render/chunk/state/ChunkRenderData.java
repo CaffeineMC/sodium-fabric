@@ -1,6 +1,5 @@
 package net.caffeinemc.sodium.render.chunk.state;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
@@ -11,6 +10,7 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 
 import java.util.*;
+import java.util.function.IntFunction;
 
 /**
  * The render data for a chunk render container containing all the information about which meshes are attached, the
@@ -21,64 +21,21 @@ public class ChunkRenderData {
             .build();
     public static final ChunkRenderData EMPTY = createEmptyData();
 
-    private BlockEntity[] globalBlockEntities;
-    private BlockEntity[] blockEntities;
+    public final BlockEntity[] globalBlockEntities;
+    public final BlockEntity[] blockEntities;
+    public final Sprite[] animatedSprites;
+    public final ChunkRenderPass[] meshes;
+    public final ChunkRenderBounds bounds;
+    public final long visibilityData;
 
-    private long visibilityData;
-    private ChunkRenderBounds bounds;
-
-    private List<Sprite> animatedSprites;
-
-    private boolean isEmpty;
-    private boolean isTickable;
-    private boolean hasBlockEntities;
-
-    /**
-     * @return True if the chunk is completely empty, otherwise false
-     */
-    public boolean isEmpty() {
-        return this.isEmpty;
-    }
-
-    /**
-     * @return True if the chunk has tickable textures, otherwise false
-     */
-    public boolean isTickable() {
-        return this.isTickable;
-    }
-
-    /**
-     * @return True if the chunk contains any block entities, otherwise false
-     */
-    public boolean hasBlockEntities() {
-        return this.hasBlockEntities;
-    }
-
-    public ChunkRenderBounds getBounds() {
-        return this.bounds;
-    }
-
-    public long getVisibilityData() {
-        return this.visibilityData;
-    }
-
-    public List<Sprite> getAnimatedSprites() {
-        return this.animatedSprites;
-    }
-
-    /**
-     * The collection of block entities contained by this rendered chunk.
-     */
-    public BlockEntity[] getBlockEntities() {
-        return this.blockEntities;
-    }
-
-    /**
-     * The collection of block entities contained by this rendered chunk section which are not part of its culling
-     * volume. These entities should always be rendered regardless of the render being visible in the frustum.
-     */
-    public BlockEntity[] getGlobalBlockEntities() {
-        return this.globalBlockEntities;
+    public ChunkRenderData(BlockEntity[] globalBlockEntities, BlockEntity[] blockEntities, Sprite[] animatedSprites,
+                           ChunkRenderPass[] meshes, ChunkRenderBounds bounds, ChunkOcclusionData occlusionData) {
+        this.globalBlockEntities = globalBlockEntities;
+        this.blockEntities = blockEntities;
+        this.animatedSprites = animatedSprites;
+        this.meshes = meshes;
+        this.bounds = bounds;
+        this.visibilityData = calculateVisibilityData(occlusionData);
     }
 
     public static class Builder {
@@ -123,31 +80,20 @@ public class ChunkRenderData {
         }
 
         public ChunkRenderData build() {
-            ChunkRenderData data = new ChunkRenderData();
-            data.globalBlockEntities = this.globalBlockEntities.toArray(BlockEntity[]::new);
-            data.blockEntities = this.localBlockEntities.toArray(BlockEntity[]::new);
-            data.visibilityData = calculateVisibilityData(this.occlusionData);
-            data.bounds = this.bounds;
-            data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
-            data.hasBlockEntities = this.globalBlockEntities.isEmpty() && this.localBlockEntities.isEmpty();
-            data.isEmpty = this.meshes.isEmpty() && !data.hasBlockEntities;
-            data.isTickable = !this.animatedSprites.isEmpty();
+            var globalBlockEntities = toArray(this.globalBlockEntities, BlockEntity[]::new);
+            var blockEntities = toArray(this.localBlockEntities, BlockEntity[]::new);
+            var animatedSprites = toArray(this.animatedSprites, Sprite[]::new);
+            var meshes = toArray(this.meshes, ChunkRenderPass[]::new);
 
-            return data;
+            return new ChunkRenderData(globalBlockEntities, blockEntities, animatedSprites, meshes, this.bounds, this.occlusionData);
         }
 
-        private static long calculateVisibilityData(ChunkOcclusionData occlusionData) {
-            long bits = 0L;
-
-            for (var from : DirectionUtil.ALL_DIRECTIONS) {
-                for (var to : DirectionUtil.ALL_DIRECTIONS) {
-                    if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
-                        bits |= (1L << ((from.ordinal() << 3) + to.ordinal()));
-                    }
-                }
+        private static <T> T[] toArray(Collection<T> collection, IntFunction<T[]> factory) {
+            if (collection.isEmpty()) {
+                return null;
             }
 
-            return bits;
+            return collection.toArray(factory);
         }
     }
 
@@ -159,5 +105,19 @@ public class ChunkRenderData {
         meshInfo.setOcclusionData(occlusionData);
 
         return meshInfo.build();
+    }
+
+    private static long calculateVisibilityData(ChunkOcclusionData occlusionData) {
+        long bits = 0L;
+
+        for (var from : DirectionUtil.ALL_DIRECTIONS) {
+            for (var to : DirectionUtil.ALL_DIRECTIONS) {
+                if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
+                    bits |= (1L << ((from.ordinal() << 3) + to.ordinal()));
+                }
+            }
+        }
+
+        return bits;
     }
 }

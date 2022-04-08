@@ -58,10 +58,7 @@ public class ChunkOcclusion {
                 continue;
             }
 
-            // Only add the node to the list of visible nodes if it contains actual data
-            if (!section.isEmpty()) {
-                visibleList.add(section);
-            }
+            visibleList.add(section);
 
             for (int outgoingDirection : DirectionUtil.ALL_DIRECTION_IDS) {
                 var parentTraversalState = traversalTable[sectionId];
