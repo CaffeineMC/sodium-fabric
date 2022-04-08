@@ -21,6 +21,7 @@ import net.caffeinemc.sodium.render.sequence.SequenceBuilder;
 import net.caffeinemc.sodium.render.sequence.SequenceIndexBuffer;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
+import net.caffeinemc.sodium.render.texture.SpriteUtil;
 import net.caffeinemc.sodium.util.ListUtil;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.caffeinemc.sodium.util.collections.BitArray;
@@ -30,6 +31,7 @@ import net.caffeinemc.sodium.world.ChunkTracker;
 import net.caffeinemc.sodium.world.slice.WorldSliceData;
 import net.caffeinemc.sodium.world.slice.cloned.ClonedChunkSectionCache;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -147,16 +149,16 @@ public class RenderSectionManager {
         for (var section : visible) {
             var data = section.data();
 
-            if (section.getGeometry() != null) {
+            if (data.meshes != null) {
                 this.visibleMeshedSections.add(section);
             }
 
-            if (data.isTickable()) {
+            if (data.animatedSprites != null) {
                 this.visibleTickingSections.add(section);
             }
 
-            if (data.hasBlockEntities()) {
-                for (var entity : data.getBlockEntities()) {
+            if (data.blockEntities != null) {
+                for (var entity : data.blockEntities) {
                     this.visibleBlockEntities.add(entity);
                 }
             }
@@ -243,7 +245,9 @@ public class RenderSectionManager {
 
     public void tickVisibleRenders() {
         for (RenderSection render : this.visibleTickingSections) {
-            render.tick();
+            for (Sprite sprite : render.data().animatedSprites) {
+                SpriteUtil.markSpriteActive(sprite);
+            }
         }
     }
 
@@ -330,12 +334,12 @@ public class RenderSectionManager {
     }
 
     private void onChunkDataChanged(RenderSection section, ChunkRenderData prev, ChunkRenderData next) {
-        ListUtil.updateList(this.globalBlockEntities, prev.getGlobalBlockEntities(), next.getGlobalBlockEntities());
+        ListUtil.updateList(this.globalBlockEntities, prev.globalBlockEntities, next.globalBlockEntities);
 
         var node = this.tree.getNodeById(section.id());
 
         if (node != null) {
-            node.setVisibilityData(next.getVisibilityData());
+            node.setVisibilityData(next.visibilityData);
         }
     }
 

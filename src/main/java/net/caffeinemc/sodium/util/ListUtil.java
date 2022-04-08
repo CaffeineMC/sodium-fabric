@@ -4,13 +4,13 @@ import java.util.Collection;
 
 public class ListUtil {
     public static <T> void updateList(Collection<T> collection, T[] before, T[] after) {
-        if (before.length > 0) {
+        if (before != null) {
             for (T ref : before) {
                 collection.remove(ref);
             }
         }
 
-        if (after.length > 0) {
+        if (after != null) {
             for (T ref : after) {
                 collection.add(ref);
             }
