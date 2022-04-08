@@ -213,6 +213,8 @@ public class RenderSectionManager {
             render.markForUpdate(ChunkUpdateType.INITIAL_BUILD);
         }
 
+        this.onChunkDataChanged(render, ChunkRenderData.ABSENT, render.data());
+
         return true;
     }
 
