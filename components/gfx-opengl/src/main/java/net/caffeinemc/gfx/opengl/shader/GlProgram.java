@@ -97,25 +97,13 @@ public class GlProgram<T> extends GlObject implements Program<T> {
     private class BindingContext implements ShaderBindingContext, AutoCloseable {
         private final int handle = GlProgram.this.handle();
 
-        private final IntArrayList boundUniformBlocks = new IntArrayList();
-
         private boolean disposed;
 
         @Override
         public GlBufferBlock bindUniformBlock(int index) {
             this.checkDisposed();
 
-            if (this.boundUniformBlocks.contains(index)) {
-                throw new IllegalStateException("Uniform block %s has already been bound".formatted(index));
-            }
-
-            var binding = this.boundUniformBlocks.size();
-
-            GL32C.glUniformBlockBinding(this.handle, index, binding);
-
-            this.boundUniformBlocks.add(index);
-
-            return new GlBufferBlock(GlProgram.this, binding);
+            return new GlBufferBlock(GlProgram.this, index);
         }
 
         private void checkDisposed() {
