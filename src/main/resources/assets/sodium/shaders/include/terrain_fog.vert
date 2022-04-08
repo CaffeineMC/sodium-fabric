@@ -1,10 +1,7 @@
 const int FOG_SHAPE_SPHERICAL = 0;
 const int FOG_SHAPE_CYLINDRICAL = 1;
 
-layout(std140, binding = 2) uniform FogParametersVS {
-    // The fog rendering style
-    int fog_mode;
-};
+#import <sodium:include/terrain_fog.glsl>
 
 float _get_fog_depth(vec3 position) {
     switch (fog_mode) {
