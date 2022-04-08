@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
+import net.caffeinemc.sodium.util.DirectionUtil;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
@@ -23,7 +24,7 @@ public class ChunkRenderData {
     private BlockEntity[] globalBlockEntities;
     private BlockEntity[] blockEntities;
 
-    private ChunkOcclusionData occlusionData;
+    private long visibilityData;
     private ChunkRenderBounds bounds;
 
     private List<Sprite> animatedSprites;
@@ -57,8 +58,8 @@ public class ChunkRenderData {
         return this.bounds;
     }
 
-    public ChunkOcclusionData getOcclusionData() {
-        return this.occlusionData;
+    public long getVisibilityData() {
+        return this.visibilityData;
     }
 
     public List<Sprite> getAnimatedSprites() {
@@ -125,7 +126,7 @@ public class ChunkRenderData {
             ChunkRenderData data = new ChunkRenderData();
             data.globalBlockEntities = this.globalBlockEntities.toArray(BlockEntity[]::new);
             data.blockEntities = this.localBlockEntities.toArray(BlockEntity[]::new);
-            data.occlusionData = this.occlusionData;
+            data.visibilityData = calculateVisibilityData(this.occlusionData);
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
             data.hasBlockEntities = this.globalBlockEntities.isEmpty() && this.localBlockEntities.isEmpty();
@@ -133,6 +134,20 @@ public class ChunkRenderData {
             data.isTickable = !this.animatedSprites.isEmpty();
 
             return data;
+        }
+
+        private static long calculateVisibilityData(ChunkOcclusionData occlusionData) {
+            long bits = 0L;
+
+            for (var from : DirectionUtil.ALL_DIRECTIONS) {
+                for (var to : DirectionUtil.ALL_DIRECTIONS) {
+                    if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
+                        bits |= (1L << ((from.ordinal() << 3) + to.ordinal()));
+                    }
+                }
+            }
+
+            return bits;
         }
     }
 

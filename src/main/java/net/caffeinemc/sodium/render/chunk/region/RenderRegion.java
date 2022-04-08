@@ -1,16 +1,12 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.render.arena.AsyncBufferArena;
 import net.caffeinemc.sodium.render.arena.BufferArena;
-import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
-
-import java.util.Set;
 
 public class RenderRegion {
     public static final int REGION_WIDTH = 8;
@@ -27,93 +23,35 @@ public class RenderRegion {
 
     public static final int REGION_SIZE = REGION_WIDTH * REGION_HEIGHT * REGION_LENGTH;
 
-    private static final int REGION_EXCESS = 8;
-
     static {
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_WIDTH));
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_HEIGHT));
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_LENGTH));
     }
 
-    private final RenderRegionManager manager;
+    public final BufferArena vertexBuffers;
 
-    private final Set<RenderSection> chunks = new ObjectOpenHashSet<>();
-    private Resources resources;
-
-    public RenderRegion(RenderRegionManager manager) {
-        this.manager = manager;
+    public RenderRegion(RenderDevice device, TerrainVertexType vertexType) {
+        this.vertexBuffers = new AsyncBufferArena(device, REGION_SIZE * 756, vertexType.getBufferVertexFormat().stride());
     }
 
-    public Resources getResources() {
-        return this.resources;
-    }
-
-    public void deleteResources() {
-        if (this.resources != null) {
-            this.resources.delete();
-            this.resources = null;
-        }
-    }
-
-    public static long getRegionKeyForChunk(int x, int y, int z) {
-        return ChunkSectionPos.asLong(x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
-    }
-
-    public Resources getOrCreateArenas() {
-        Resources arenas = this.resources;
-
-        if (arenas == null) {
-            this.resources = (arenas = this.manager.createRegionArenas());
-        }
-
-        return arenas;
-    }
-
-    public void addChunk(RenderSection chunk) {
-        if (!this.chunks.add(chunk)) {
-            throw new IllegalStateException("Chunk " + chunk + " is already a member of region " + this);
-        }
-    }
-
-    public void removeChunk(RenderSection chunk) {
-        if (!this.chunks.remove(chunk)) {
-            throw new IllegalStateException("Chunk " + chunk + " is not a member of region " + this);
-        }
+    public void delete() {
+        this.vertexBuffers.delete();
     }
 
     public boolean isEmpty() {
-        return this.chunks.isEmpty();
+        return this.vertexBuffers.isEmpty();
     }
 
-    public int getChunkCount() {
-        return this.chunks.size();
+    public long getDeviceUsedMemory() {
+        return this.vertexBuffers.getDeviceUsedMemory();
     }
 
-    public static int getChunkIndex(int x, int y, int z) {
-        return (x * RenderRegion.REGION_LENGTH * RenderRegion.REGION_HEIGHT) + (y * RenderRegion.REGION_LENGTH) + z;
+    public long getDeviceAllocatedMemory() {
+        return this.vertexBuffers.getDeviceAllocatedMemory();
     }
 
-    public static class Resources {
-        public final BufferArena vertexBuffers;
-
-        public Resources(RenderDevice device, TerrainVertexType vertexType) {
-            this.vertexBuffers = new AsyncBufferArena(device, REGION_SIZE * 756, vertexType.getBufferVertexFormat().stride());
-        }
-
-        public void delete() {
-            this.vertexBuffers.delete();
-        }
-
-        public boolean isEmpty() {
-            return this.vertexBuffers.isEmpty();
-        }
-
-        public long getDeviceUsedMemory() {
-            return this.vertexBuffers.getDeviceUsedMemory();
-        }
-
-        public long getDeviceAllocatedMemory() {
-            return this.vertexBuffers.getDeviceAllocatedMemory();
-        }
+    public static long getRegionCoord(int chunkX, int chunkY, int chunkZ) {
+        return ChunkSectionPos.asLong(chunkX >> REGION_WIDTH_SH, chunkY >> REGION_HEIGHT_SH, chunkZ >> REGION_LENGTH_SH);
     }
 }

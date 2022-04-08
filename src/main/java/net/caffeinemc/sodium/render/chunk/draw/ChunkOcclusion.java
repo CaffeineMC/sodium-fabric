@@ -25,7 +25,7 @@ public class ChunkOcclusion {
         var queue = new ChunkGraphIterationQueue();
         var blockOrigin = new BlockPos(camera.blockX, camera.blockY, camera.blockZ);
 
-        var sectionCount = tree.getSectionCount();
+        var sectionCount = tree.getSectionTableSize();
 
         var frustumTable = new BitArray(sectionCount);
         var visitedTable = new BitArray(sectionCount);
@@ -51,7 +51,8 @@ public class ChunkOcclusion {
             var sectionId = queue.getRender(i);
             var incomingDirection = queue.getDirection(i);
 
-            var section = tree.getSectionById(sectionId);
+            var node = tree.getNodeById(sectionId);
+            var section = tree.getSectionForNode(sectionId);
 
             if (section.getDistance(camera.posX, camera.posZ) > drawDistance) {
                 continue;
@@ -71,7 +72,7 @@ public class ChunkOcclusion {
                 }
 
                 // The adjacent chunk is not visible through the iterated node
-                if (useOcclusionCulling && (incomingDirection != -1 && !section.isVisibleThrough(incomingDirection, outgoingDirection))) {
+                if (useOcclusionCulling && (incomingDirection != -1 && !node.isVisibleThrough(incomingDirection, outgoingDirection))) {
                     continue;
                 }
 

@@ -8,6 +8,7 @@ import net.caffeinemc.sodium.render.buffer.VertexRange;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.DefaultRenderPasses;
+import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -22,12 +23,13 @@ public class ChunkPrep {
     private static final int COMMAND_STRUCT_STRIDE = 20;
     private static final int INSTANCE_STRUCT_STRIDE = 16;
 
-    public static Map<ChunkRenderPass, PreparedRenderList> createRenderLists(RenderDevice device, ReferenceArrayList<RenderSection> visibleChunks, ChunkCameraContext camera) {
-        if (visibleChunks.isEmpty()) {
+    public static Map<ChunkRenderPass, PreparedRenderList> createRenderLists(RenderDevice device, RenderRegionManager regionManager,
+                                                                             ReferenceArrayList<RenderSection> unsortedChunks, ChunkCameraContext camera) {
+        if (unsortedChunks.isEmpty()) {
             return null;
         }
 
-        var sortedChunks = new ChunkRenderList(visibleChunks);
+        var sortedChunks = new ChunkRenderList(regionManager, unsortedChunks);
 
         var builders = new Reference2ReferenceArrayMap<ChunkRenderPass, RenderListBuilder>();
         var alignment = device.properties().uniformBufferOffsetAlignment();
@@ -58,16 +60,14 @@ public class ChunkPrep {
                     continue;
                 }
 
-                var resources = bucket.region().getResources();
+                var region = bucket.region();
 
                 var instanceData = builder.instanceBufferBuilder.flush();
                 var commandData = builder.commandBufferBuilder.flush();
 
-                var vertexBuffers = resources.vertexBuffers;
-
                 builder.batches.add(new ChunkRenderBatch(
-                        vertexBuffers.getBufferObject(),
-                        vertexBuffers.getStride(),
+                        region.vertexBuffers.getBufferObject(),
+                        region.vertexBuffers.getStride(),
                         instanceCount,
                         commandCount,
                         instanceData,

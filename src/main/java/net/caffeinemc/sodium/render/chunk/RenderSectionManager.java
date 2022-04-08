@@ -1,10 +1,7 @@
 package net.caffeinemc.sodium.render.chunk;
 
 import it.unimi.dsi.fastutil.PriorityQueue;
-import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import it.unimi.dsi.fastutil.objects.ReferenceList;
+import it.unimi.dsi.fastutil.objects.*;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
@@ -18,13 +15,13 @@ import net.caffeinemc.sodium.render.chunk.draw.*;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.passes.DefaultRenderPasses;
-import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.sequence.SequenceBuilder;
 import net.caffeinemc.sodium.render.sequence.SequenceIndexBuffer;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
+import net.caffeinemc.sodium.util.ListUtil;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.caffeinemc.sodium.util.collections.BitArray;
 import net.caffeinemc.sodium.util.tasks.WorkStealingFutureDrain;
@@ -77,6 +74,8 @@ public class RenderSectionManager {
     private final ReferenceArrayList<RenderSection> visibleTickingSections = new ReferenceArrayList<>();
     private final ReferenceArrayList<BlockEntity> visibleBlockEntities = new ReferenceArrayList<>();
 
+    private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
+
     private final boolean alwaysDeferChunkUpdates = SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
     private BitArray sectionVisibility;
 
@@ -108,13 +107,7 @@ public class RenderSectionManager {
         }
 
         this.tracker = worldRenderer.getChunkTracker();
-        this.tree = new ChunkTree(4, (x, y, z, id) -> {
-            var region = this.regions.createRegionForChunk(x, y, z);
-            var section = new RenderSection(worldRenderer, x, y, z, region, id);
-            region.addChunk(section);
-
-            return section;
-        });
+        this.tree = new ChunkTree(4, RenderSection::new);
     }
 
     public void reloadChunks(ChunkTracker tracker) {
@@ -138,7 +131,7 @@ public class RenderSectionManager {
         this.sectionVisibility = occlusionResults.visibilityTable();
         this.updateVisibilityLists(occlusionResults.visibleList());
 
-        this.renderLists = ChunkPrep.createRenderLists(this.device, this.visibleMeshedSections, this.camera);
+        this.renderLists = ChunkPrep.createRenderLists(this.device, this.regions, this.visibleMeshedSections, this.camera);
         this.needsUpdate = false;
     }
 
@@ -152,7 +145,7 @@ public class RenderSectionManager {
         this.visibleMeshedSections.clear();
 
         for (var section : visible) {
-            var data = section.getData();
+            var data = section.data();
 
             if (section.getGeometry() != null) {
                 this.visibleMeshedSections.add(section);
@@ -186,8 +179,12 @@ public class RenderSectionManager {
         queue.enqueue(section);
     }
 
-    public Collection<BlockEntity> getVisibleBlockEntities() {
+    public Iterable<BlockEntity> getVisibleBlockEntities() {
         return this.visibleBlockEntities;
+    }
+
+    public Iterable<BlockEntity> getGlobalBlockEntities() {
+        return this.globalBlockEntities;
     }
 
     public void onChunkAdded(int x, int z) {
@@ -226,10 +223,8 @@ public class RenderSectionManager {
 
         chunk.delete();
 
+        // TODO: consolidate into get(..) call
         this.tree.remove(x, y, z);
-
-        RenderRegion region = chunk.getRegion();
-        region.removeChunk(chunk);
 
         return true;
     }
@@ -277,7 +272,7 @@ public class RenderSectionManager {
 
         if (!blockingFutures.isEmpty()) {
             this.needsUpdate = true;
-            this.regions.upload(new WorkStealingFutureDrain<>(blockingFutures, this.builder::stealTask));
+            this.regions.uploadChunks(new WorkStealingFutureDrain<>(blockingFutures, this.builder::stealTask), this::onChunkDataChanged);
         }
 
         this.regions.cleanup();
@@ -329,9 +324,19 @@ public class RenderSectionManager {
             return false;
         }
 
-        this.regions.upload(it);
+        this.regions.uploadChunks(it, this::onChunkDataChanged);
 
         return true;
+    }
+
+    private void onChunkDataChanged(RenderSection section, ChunkRenderData prev, ChunkRenderData next) {
+        ListUtil.updateList(this.globalBlockEntities, prev.getGlobalBlockEntities(), next.getGlobalBlockEntities());
+
+        var node = this.tree.getNodeById(section.id());
+
+        if (node != null) {
+            node.setVisibilityData(next.getVisibilityData());
+        }
     }
 
     public AbstractBuilderTask createTerrainBuildTask(RenderSection render) {
@@ -370,13 +375,7 @@ public class RenderSectionManager {
     }
 
     public int getTotalSections() {
-        int sum = 0;
-
-        for (RenderRegion region : this.regions.getLoadedRegions()) {
-            sum += region.getChunkCount();
-        }
-
-        return sum;
+        return this.tree.getLoadedSections();
     }
 
     public int getVisibleSectionCount() {
@@ -409,40 +408,24 @@ public class RenderSectionManager {
         return render.getDistance(camera.posX, camera.posY, camera.posZ) <= NEARBY_BLOCK_UPDATE_DISTANCE;
     }
 
-    public void onChunkRenderUpdates(int x, int y, int z, ChunkRenderData data) {
-        RenderSection node = this.tree.getSection(x, y, z);
-
-        if (node != null) {
-            node.setOcclusionData(data.getOcclusionData());
-        }
-    }
-
     public Collection<String> getDebugStrings() {
-        List<String> list = new ArrayList<>();
-
-        Iterator<RenderRegion.Resources> it = this.regions.getLoadedRegions()
-                .stream()
-                .map(RenderRegion::getResources)
-                .filter(Objects::nonNull)
-                .iterator();
-
         int count = 0;
 
         long deviceUsed = 0;
         long deviceAllocated = 0;
 
-        while (it.hasNext()) {
-            RenderRegion.Resources arena = it.next();
-            deviceUsed += arena.getDeviceUsedMemory();
-            deviceAllocated += arena.getDeviceAllocatedMemory();
+        for (var region : this.regions.getLoadedRegions()) {
+            deviceUsed += region.getDeviceUsedMemory();
+            deviceAllocated += region.getDeviceAllocatedMemory();
 
             count++;
         }
 
-        list.add(String.format("Device buffer objects: %d", count));
-        list.add(String.format("Device memory: %d MiB used/%d MiB alloc", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
+        List<String> strings = new ArrayList<>();
+        strings.add(String.format("Device buffer objects: %d", count));
+        strings.add(String.format("Device memory: %d MiB used/%d MiB alloc", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
 
-        return list;
+        return strings;
     }
 
     private static ChunkRenderer createChunkRenderer(RenderDevice device, SequenceIndexBuffer indexBuffer, TerrainVertexType vertexType, ChunkRenderPass pass) {

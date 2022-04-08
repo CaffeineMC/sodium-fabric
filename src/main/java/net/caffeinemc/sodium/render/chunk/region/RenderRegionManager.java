@@ -1,18 +1,21 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
+import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.render.arena.BufferSegment;
 import net.caffeinemc.sodium.render.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
+import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
@@ -25,6 +28,10 @@ public class RenderRegionManager {
         this.vertexType = vertexType;
     }
 
+    public RenderRegion getRegion(long regionId) {
+        return this.regions.get(regionId);
+    }
+
     public void cleanup() {
         Iterator<RenderRegion> it = this.regions.values()
                 .iterator();
@@ -33,27 +40,36 @@ public class RenderRegionManager {
             RenderRegion region = it.next();
 
             if (region.isEmpty()) {
-                region.deleteResources();
+                region.delete();
                 it.remove();
             }
         }
     }
 
-    public void upload(Iterator<TerrainBuildResult> queue) {
-        for (Map.Entry<RenderRegion, List<TerrainBuildResult>> entry : this.setupUploadBatches(queue).entrySet()) {
-            RenderRegion region = entry.getKey();
-            List<TerrainBuildResult> uploadQueue = entry.getValue();
+    public void uploadChunks(Iterator<TerrainBuildResult> queue, @Deprecated RenderUpdateCallback callback) {
+        for (var entry : this.setupUploadBatches(queue)) {
+            this.uploadGeometryBatch(entry.getLongKey(), entry.getValue());
 
-            this.upload(region, uploadQueue);
+            for (TerrainBuildResult result : entry.getValue()) {
+                RenderSection section = result.render();
 
-            for (TerrainBuildResult result : uploadQueue) {
-                result.render().onBuildFinished(result);
+                if (section.data() != null) {
+                    callback.accept(section, section.data(), result.data());
+                }
+
+                section.setData(result.data());
+                section.setLastAcceptedBuildTime(result.buildTime());
+
                 result.delete();
             }
         }
     }
 
-    private void upload(RenderRegion region, List<TerrainBuildResult> results) {
+    public interface RenderUpdateCallback {
+        void accept(RenderSection section, ChunkRenderData prev, ChunkRenderData next);
+    }
+
+    private void uploadGeometryBatch(long regionKey, List<TerrainBuildResult> results) {
         List<PendingUpload> uploads = new ArrayList<>();
         List<ChunkGeometryUpload> jobs = new ArrayList<>(results.size());
 
@@ -81,8 +97,13 @@ public class RenderRegionManager {
             return;
         }
 
-        RenderRegion.Resources resources = region.getOrCreateArenas();
-        resources.vertexBuffers.upload(uploads);
+        RenderRegion region = this.regions.get(regionKey);
+
+        if (region == null) {
+            this.regions.put(regionKey, region = new RenderRegion(this.device, this.vertexType));
+        }
+
+        region.vertexBuffers.upload(uploads);
 
         // Collect the upload results
         for (ChunkGeometryUpload upload : jobs) {
@@ -90,49 +111,29 @@ public class RenderRegionManager {
         }
     }
 
-    private Map<RenderRegion, List<TerrainBuildResult>> setupUploadBatches(Iterator<TerrainBuildResult> renders) {
-        Map<RenderRegion, List<TerrainBuildResult>> map = new Reference2ObjectLinkedOpenHashMap<>();
+    private Iterable<Long2ReferenceMap.Entry<List<TerrainBuildResult>>> setupUploadBatches(Iterator<TerrainBuildResult> renders) {
+        var batches = new Long2ReferenceOpenHashMap<List<TerrainBuildResult>>();
 
         while (renders.hasNext()) {
             TerrainBuildResult result = renders.next();
             RenderSection render = result.render();
 
-            if (!render.canAcceptBuildResults(result)) {
+            if (render.isDisposed() || result.buildTime() <= render.getLastAcceptedBuildTime()) {
                 result.delete();
 
                 continue;
             }
 
-            RenderRegion region = this.regions.get(RenderRegion.getRegionKeyForChunk(render.getChunkX(), render.getChunkY(), render.getChunkZ()));
-
-            if (region == null) {
-                // Discard the result if the region is no longer loaded
-                result.delete();
-
-                continue;
-            }
-
-            List<TerrainBuildResult> uploadQueue = map.computeIfAbsent(region, k -> new ArrayList<>());
-            uploadQueue.add(result);
+            var batch = batches.computeIfAbsent(render.getRegionKey(), key -> new ReferenceArrayList<>());
+            batch.add(result);
         }
 
-        return map;
-    }
-
-    public RenderRegion createRegionForChunk(int x, int y, int z) {
-        long key = RenderRegion.getRegionKeyForChunk(x, y, z);
-        RenderRegion region = this.regions.get(key);
-
-        if (region == null) {
-            this.regions.put(key, region = new RenderRegion(this));
-        }
-
-        return region;
+        return batches.long2ReferenceEntrySet();
     }
 
     public void delete() {
         for (RenderRegion region : this.regions.values()) {
-            region.deleteResources();
+            region.delete();
         }
 
         this.regions.clear();
@@ -140,10 +141,6 @@ public class RenderRegionManager {
 
     public Collection<RenderRegion> getLoadedRegions() {
         return this.regions.values();
-    }
-
-    protected RenderRegion.Resources createRegionArenas() {
-        return new RenderRegion.Resources(this.device, this.vertexType);
     }
 
     private record ChunkGeometryUpload(RenderSection section, BuiltChunkGeometry geometry, AtomicReference<BufferSegment> result) {
