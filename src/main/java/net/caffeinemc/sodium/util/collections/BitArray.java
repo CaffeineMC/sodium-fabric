@@ -1,6 +1,6 @@
 package net.caffeinemc.sodium.util.collections;
 
-import net.minecraft.util.math.MathHelper;
+import net.caffeinemc.sodium.util.MathUtil;
 
 import java.util.Arrays;
 
@@ -13,7 +13,7 @@ public class BitArray {
     private final int count;
 
     public BitArray(int count) {
-        this.words = new long[MathHelper.roundUpToMultiple(count, 64) / 8];
+        this.words = new long[(MathUtil.align(count, BITS_PER_WORD) >> ADDRESS_BITS_PER_WORD)];
         this.count = count;
     }
 
@@ -55,13 +55,13 @@ public class BitArray {
         return this.count;
     }
 
-    public boolean getAndSet(int index) {
+    public boolean getAndUnset(int index) {
         var wordIndex = wordIndex(index);
         var bit = 1L << bitIndex(index);
 
-        var result = (this.words[wordIndex] & bit) != 0;
-        this.words[wordIndex] |= bit;
+        var word = this.words[wordIndex];
+        this.words[wordIndex] = word & ~bit;
 
-        return result;
+        return (word & bit) != 0;
     }
 }

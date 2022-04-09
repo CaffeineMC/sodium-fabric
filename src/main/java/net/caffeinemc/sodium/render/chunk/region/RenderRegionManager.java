@@ -8,6 +8,7 @@ import net.caffeinemc.sodium.render.arena.BufferSegment;
 import net.caffeinemc.sodium.render.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
+import net.caffeinemc.sodium.render.chunk.draw.IntPool;
 import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry;
@@ -15,10 +16,10 @@ import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 
 public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
+    private final IntPool idPool = new IntPool();
 
     private final RenderDevice device;
     private final TerrainVertexType vertexType;
@@ -40,7 +41,7 @@ public class RenderRegionManager {
             RenderRegion region = it.next();
 
             if (region.isEmpty()) {
-                region.delete();
+                this.deleteRegion(region);
                 it.remove();
             }
         }
@@ -63,6 +64,10 @@ public class RenderRegionManager {
                 result.delete();
             }
         }
+    }
+
+    public int getRegionTableSize() {
+        return this.idPool.capacity();
     }
 
     public interface RenderUpdateCallback {
@@ -100,14 +105,14 @@ public class RenderRegionManager {
         RenderRegion region = this.regions.get(regionKey);
 
         if (region == null) {
-            this.regions.put(regionKey, region = new RenderRegion(this.device, this.vertexType));
+            this.regions.put(regionKey, region = new RenderRegion(this.device, this.vertexType, this.idPool.create()));
         }
 
         region.vertexBuffers.upload(uploads);
 
         // Collect the upload results
         for (ChunkGeometryUpload upload : jobs) {
-            upload.section.updateGeometry(new UploadedChunkGeometry(upload.result.get(), upload.geometry.models()));
+            upload.section.updateGeometry(region, new UploadedChunkGeometry(upload.result.get(), upload.geometry.models()));
         }
     }
 
@@ -133,10 +138,17 @@ public class RenderRegionManager {
 
     public void delete() {
         for (RenderRegion region : this.regions.values()) {
-            region.delete();
+            this.deleteRegion(region);
         }
 
         this.regions.clear();
+    }
+
+    private void deleteRegion(RenderRegion region) {
+        var id = region.id;
+        region.delete();
+
+        this.idPool.free(id);
     }
 
     public Collection<RenderRegion> getLoadedRegions() {

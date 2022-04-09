@@ -30,9 +30,11 @@ public class RenderRegion {
     }
 
     public final BufferArena vertexBuffers;
+    public final int id;
 
-    public RenderRegion(RenderDevice device, TerrainVertexType vertexType) {
+    public RenderRegion(RenderDevice device, TerrainVertexType vertexType, int id) {
         this.vertexBuffers = new AsyncBufferArena(device, REGION_SIZE * 756, vertexType.getBufferVertexFormat().stride());
+        this.id = id;
     }
 
     public void delete() {
