@@ -29,6 +29,7 @@ public class RenderSection {
     private boolean disposed;
 
     private int lastAcceptedBuildTime = -1;
+    private int flags;
 
     public RenderSection(int chunkX, int chunkY, int chunkZ, int id) {
         this.chunkX = chunkX;
@@ -76,6 +77,7 @@ public class RenderSection {
         }
 
         this.data = data;
+        this.flags = data.getFlags();
     }
 
     /**
@@ -192,5 +194,9 @@ public class RenderSection {
     public boolean isWithinFrustum(Frustum frustum) {
         return frustum.isBoxVisible(this.originX - 8.0f, this.originY - 8.0f, this.originZ - 8.0f,
                 this.originX + 8.0f, this.originY + 8.0f, this.originZ + 8.0f);
+    }
+
+    public int getFlags() {
+        return this.flags;
     }
 }

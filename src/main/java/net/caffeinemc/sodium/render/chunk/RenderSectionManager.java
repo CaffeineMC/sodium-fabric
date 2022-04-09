@@ -21,6 +21,7 @@ import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.passes.DefaultRenderPasses;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.caffeinemc.sodium.render.chunk.state.ChunkRenderFlag;
 import net.caffeinemc.sodium.render.sequence.SequenceBuilder;
 import net.caffeinemc.sodium.render.sequence.SequenceIndexBuffer;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
@@ -79,7 +80,7 @@ public class RenderSectionManager {
 
     private final ReferenceArrayList<RenderSection> visibleMeshedSections = new ReferenceArrayList<>();
     private final ReferenceArrayList<RenderSection> visibleTickingSections = new ReferenceArrayList<>();
-    private final ReferenceArrayList<BlockEntity> visibleBlockEntities = new ReferenceArrayList<>();
+    private final ReferenceArrayList<RenderSection> visibleBlockEntitySections = new ReferenceArrayList<>();
 
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
@@ -155,9 +156,9 @@ public class RenderSectionManager {
             queue.clear();
         }
 
-        this.visibleBlockEntities.clear();
-        this.visibleTickingSections.clear();
         this.visibleMeshedSections.clear();
+        this.visibleTickingSections.clear();
+        this.visibleBlockEntitySections.clear();
 
         var vis = new BitArray(this.tree.getSectionTableSize());
 
@@ -171,44 +172,40 @@ public class RenderSectionManager {
 
             vis.set(sectionId);
 
-            var data = section.data();
+            if (section.getPendingUpdate() != null) {
+                this.schedulePendingUpdates(section);
+            }
 
-            if (data.meshes != null) {
+            var data = section.getFlags();
+
+            if (ChunkRenderFlag.has(data, ChunkRenderFlag.HAS_MESHES)) {
                 this.visibleMeshedSections.add(section);
             }
 
-            if (data.animatedSprites != null) {
+            if (ChunkRenderFlag.has(data, ChunkRenderFlag.HAS_TICKING_TEXTURES)) {
                 this.visibleTickingSections.add(section);
             }
 
-            if (data.blockEntities != null) {
-                for (var entity : data.blockEntities) {
-                    this.visibleBlockEntities.add(entity);
-                }
+            if (ChunkRenderFlag.has(data, ChunkRenderFlag.HAS_BLOCK_ENTITIES)) {
+                this.visibleBlockEntitySections.add(section);
             }
-
-            this.schedulePendingUpdates(section);
         }
 
         this.sectionVisibility = vis;
     }
 
     private void schedulePendingUpdates(RenderSection section) {
-        if (section.getPendingUpdate() == null || !this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
-            return;
-        }
-
         PriorityQueue<RenderSection> queue = this.rebuildQueues.get(section.getPendingUpdate());
 
-        if (queue.size() >= 32) {
-            return;
+        if (queue.size() < 32 && this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
+            queue.enqueue(section);
         }
-
-        queue.enqueue(section);
     }
 
     public Iterable<BlockEntity> getVisibleBlockEntities() {
-        return this.visibleBlockEntities;
+        return () -> this.visibleBlockEntitySections.stream()
+                .flatMap(section -> Arrays.stream(section.data().blockEntities))
+                .iterator();
     }
 
     public Iterable<BlockEntity> getGlobalBlockEntities() {
@@ -371,7 +368,7 @@ public class RenderSectionManager {
     }
 
     public boolean isGraphDirty() {
-        return this.needsUpdate;
+        return true;
     }
 
     public ChunkBuilder getBuilder() {
