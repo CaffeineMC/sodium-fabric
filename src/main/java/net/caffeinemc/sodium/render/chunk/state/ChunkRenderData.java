@@ -38,6 +38,28 @@ public class ChunkRenderData {
         this.occlusionData = occlusionData;
     }
 
+    public int getFlags() {
+        int flags = 0;
+
+        if (this.globalBlockEntities != null) {
+            flags |= ChunkRenderFlag.HAS_GLOBAL_BLOCK_ENTITIES;
+        }
+
+        if (this.blockEntities != null) {
+            flags |= ChunkRenderFlag.HAS_BLOCK_ENTITIES;
+        }
+
+        if (this.meshes != null) {
+            flags |= ChunkRenderFlag.HAS_MESHES;
+        }
+
+        if (this.animatedSprites != null) {
+            flags |= ChunkRenderFlag.HAS_TICKING_TEXTURES;
+        }
+
+        return flags;
+    }
+
     public static class Builder {
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> localBlockEntities = new ArrayList<>();
