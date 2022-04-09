@@ -1,7 +1,9 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrays;
+import it.unimi.dsi.fastutil.ints.IntComparator;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import it.unimi.dsi.fastutil.objects.ReferenceList;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.state.ChunkGraphIterationQueue;
@@ -12,146 +14,127 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.function.ToDoubleFunction;
 
 public class ChunkOcclusion {
-    public record Results(BitArray visibilityTable, ReferenceList<RenderSection> visibleList) {
-
-    }
-
-    public static Results calculateVisibleSections(ChunkTree tree, ChunkCameraContext camera, Frustum frustum,
-                                                   World world, int chunkViewDistance, boolean spectator) {
+    public static IntArrayList calculateVisibleSections(ChunkTree tree, Frustum frustum, World world, BlockPos origin,
+                                                        int chunkViewDistance, boolean useOcclusionCulling) {
         var queue = new ChunkGraphIterationQueue();
-        var blockOrigin = new BlockPos(camera.blockX, camera.blockY, camera.blockZ);
+        var startingNodes = ChunkOcclusion.getStartingNodes(tree, frustum, world, origin, chunkViewDistance);
 
-        var sectionCount = tree.getSectionTableSize();
-
-        var frustumTable = new BitArray(sectionCount);
-        var visitedTable = new BitArray(sectionCount);
-
-        var traversalTable = new byte[sectionCount];
-
-        tree.calculateVisible(frustum, frustumTable);
-
-        boolean useOcclusionCulling = true;
-
-        if (initSearch(tree, queue, blockOrigin)) {
-            if (spectator && world.getBlockState(blockOrigin).isOpaqueFullCube(world, blockOrigin)) {
-                useOcclusionCulling = false;
-            }
-        } else {
-            initSearchFallback(tree, queue, frustumTable, world, blockOrigin, chunkViewDistance);
+        for (var it = startingNodes.intIterator(); it.hasNext(); ) {
+            queue.enqueue(it.nextInt(), -1);
         }
 
-        var drawDistance = MathHelper.square((chunkViewDistance + 1) * 16.0f);
-        var visibleList = new ReferenceArrayList<RenderSection>(2048);
+        var nodeVisitable = tree.findVisibleSections(frustum);
+        var nodeState = new byte[nodeVisitable.capacity()];
 
-        for (int i = 0; i < queue.size(); i++) {
-            var sectionId = queue.getRender(i);
-            var incomingDirection = queue.getDirection(i);
+        var visibleSections = new int[nodeVisitable.count() + startingNodes.size()];
+        var visibleSectionCount = 0;
 
-            var node = tree.getNodeById(sectionId);
-            var section = tree.getSectionForNode(sectionId);
+        var visibilityDataMask = useOcclusionCulling ? Integer.MAX_VALUE : 0;
 
-            if (section.getDistance(camera.posX, camera.posZ) > drawDistance) {
-                continue;
+        while (!queue.isEmpty()) {
+            var index = queue.dequeIndex();
+
+            var sectionId = queue.getSectionId(index);
+            var sectionIncomingDirection = queue.getDirection(index);
+
+            visibleSections[visibleSectionCount++] = sectionId;
+
+            int visibilityData;
+
+            if (sectionIncomingDirection != -1) {
+                visibilityData = tree.getVisibilityData(sectionId, sectionIncomingDirection);
+            } else {
+                visibilityData = 0;
             }
 
-            visibleList.add(section);
+            var traversalState = nodeState[sectionId];
+            var cullState = traversalState | (visibilityData & visibilityDataMask);
 
-            for (int outgoingDirection : DirectionUtil.ALL_DIRECTION_IDS) {
-                var parentTraversalState = traversalTable[sectionId];
-
-                // The origin node has already been traversed in this direction
-                if (canTraverse(parentTraversalState, outgoingDirection)) {
+            for (int outgoingDirection = 0; outgoingDirection < DirectionUtil.COUNT; outgoingDirection++) {
+                if (hasDirection(cullState, outgoingDirection)) {
                     continue;
                 }
 
-                // The adjacent chunk is not visible through the iterated node
-                if (useOcclusionCulling && (incomingDirection != -1 && !node.isVisibleThrough(incomingDirection, outgoingDirection))) {
-                    continue;
-                }
+                int adjacentNodeId = tree.getAdjacent(sectionId, outgoingDirection);
 
-                int adjacentSectionId = tree.getAdjacent(sectionId, outgoingDirection);
-
-                // The adjacent chunk isn't loaded
-                if (adjacentSectionId == -1) {
-                    continue;
-                }
-
-                // The adjacent chunk has already been visited
-                if (visitedTable.getAndSet(adjacentSectionId)) {
-                    continue;
-                }
-
-                // The adjacent chunk isn't within the frustum
-                if (!frustumTable.get(adjacentSectionId)) {
+                if (adjacentNodeId == ChunkTree.ABSENT_VALUE || !nodeVisitable.getAndUnset(adjacentNodeId)) {
                     continue;
                 }
 
                 var reverseDirection = DirectionUtil.getOppositeId(outgoingDirection);
-                traversalTable[adjacentSectionId] = (byte) updateTraversalState(parentTraversalState, reverseDirection);
+                nodeState[adjacentNodeId] = (byte) markDirection(traversalState, reverseDirection);
 
-                queue.add(adjacentSectionId, reverseDirection);
+                queue.enqueue(adjacentNodeId, reverseDirection);
             }
         }
 
-        return new Results(frustumTable, visibleList);
+        return IntArrayList.wrap(visibleSections, visibleSectionCount);
     }
 
-    private static boolean initSearch(ChunkTree tree, ChunkGraphIterationQueue queue, BlockPos origin) {
+    public static IntArrayList getStartingNodes(ChunkTree tree, Frustum frustum, World world, BlockPos origin, int renderDistance) {
         RenderSection section = tree.getSection(ChunkSectionPos.fromBlockPos(origin.asLong()));
 
         if (section == null) {
-            return false;
+            return getStartingNodesFallback(tree, frustum, world, origin, renderDistance);
         }
 
-        queue.add(section.id(), -1);
-
-        return true;
+        return IntArrayList.of(section.id());
     }
 
-    private static void initSearchFallback(ChunkTree tree, ChunkGraphIterationQueue queue, BitArray frustumTable, World world, BlockPos origin, int renderDistance) {
-        var sorted = new ReferenceArrayList<RenderSection>();
+    private static IntArrayList getStartingNodesFallback(ChunkTree tree, Frustum frustum, World world, BlockPos origin, int renderDistance) {
+        var capacity = MathHelper.square(renderDistance * 2);
+        var count = 0;
+
+        var sections = new int[capacity];
+        var distances = new float[capacity];
 
         var chunkPos = ChunkSectionPos.from(origin);
         var chunkX = chunkPos.getX();
         var chunkY = MathHelper.clamp(chunkPos.getY(), world.getBottomSectionCoord(), world.getTopSectionCoord() - 1);
         var chunkZ = chunkPos.getZ();
 
+        final float originX = origin.getX();
+        final float originZ = origin.getZ();
+
         for (int x2 = -renderDistance; x2 <= renderDistance; ++x2) {
             for (int z2 = -renderDistance; z2 <= renderDistance; ++z2) {
                 var node = tree.getSection(chunkX + x2, chunkY, chunkZ + z2);
 
-                if (node != null && frustumTable.get(node.id())) {
-                    sorted.add(node);
+                if (node != null && node.isWithinFrustum(frustum)) {
+                    var index = count++;
+                    sections[index] = node.id();
+                    distances[index] = node.getDistance(originX, originZ);
                 }
             }
         }
 
-        sorted.sort(Comparator.comparingDouble(new ToDoubleFunction<>() {
-            final float x = origin.getX();
-            final float z = origin.getZ();
+        var sortedIndices = new int[count];
 
-            @Override
-            public double applyAsDouble(RenderSection node) {
-                // All chunks will be at the same Y-level, so only compare the XZ-coordinates
-                return node.getDistance(this.x, this.z);
-            }
-        }));
-
-        for (RenderSection render : sorted) {
-            queue.add(render.id(), -1);
+        for (int i = 0; i < count; i++) {
+            sortedIndices[i] = i;
         }
+
+        IntArrays.mergeSort(sortedIndices, (k1, k2) -> Float.compare(distances[k1], distances[k2]));
+
+        var sortedSections = new int[count];
+
+        for (int i = 0; i < count; i++) {
+            sortedSections[i] = sections[sortedIndices[i]];
+        }
+
+        return IntArrayList.wrap(sortedSections, count);
     }
 
-    private static int updateTraversalState(byte parent, int dir) {
-        return (parent | (1 << dir));
+    private static int markDirection(int state, int dir) {
+        return (state | (1 << dir));
     }
 
-    private static boolean canTraverse(byte state, int dir) {
-        return (state & 1 << dir) != 0;
+    private static boolean hasDirection(int state, int dir) {
+        return (state & (1 << dir)) != 0;
     }
-
 }

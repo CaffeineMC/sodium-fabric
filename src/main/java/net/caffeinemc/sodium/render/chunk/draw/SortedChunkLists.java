@@ -10,47 +10,31 @@ import net.caffeinemc.sodium.util.IteratorUtils;
 
 import java.util.Iterator;
 
-public class ChunkRenderList {
+public class SortedChunkLists {
     private final ReferenceArrayList<RenderSection> sections;
     private final ReferenceArrayList<Bucket> buckets;
 
-    public ChunkRenderList(RenderRegionManager renderRegions, ReferenceArrayList<RenderSection> unsortedSections) {
-        var builders = new Long2ReferenceLinkedOpenHashMap<ReferenceArrayList<RenderSection>>();
+    @SuppressWarnings("unchecked")
+    public SortedChunkLists(RenderRegionManager regionManager, ReferenceArrayList<RenderSection> sortedSections) {
+        ReferenceArrayList<Bucket> bucketList = new ReferenceArrayList<>();
+        ReferenceArrayList<RenderSection>[] bucketTable = new ReferenceArrayList[regionManager.getRegionTableSize()];
 
-        var lastListId = Long.MAX_VALUE;
-        ReferenceArrayList<RenderSection> lastSortedList = null;
+        for (RenderSection section : sortedSections) {
+            var region = section.getRegion();
+            var list = bucketTable[region.id];
 
-        for (RenderSection section : unsortedSections) {
-            var regionId = section.getRegionKey();
+            if (list == null) {
+                list = new ReferenceArrayList<>(RenderRegion.REGION_SIZE / 4);
 
-            if (lastSortedList == null || lastListId != regionId) {
-                lastListId = regionId;
-                lastSortedList = builders.get(regionId);
-
-                if (lastSortedList == null) {
-                    builders.put(regionId, lastSortedList =
-                            new ReferenceArrayList<>(RenderRegion.REGION_SIZE / 4));
-                }
+                bucketList.add(new Bucket(region, list));
+                bucketTable[region.id] = list;
             }
 
-            lastSortedList.add(section);
+            list.add(section);
         }
 
-        var buckets = new ReferenceArrayList<Bucket>(builders.size());
-
-        for (var entry : Long2ReferenceSortedMaps.fastIterable(builders)) {
-            var regionId = entry.getLongKey();
-            var sectionList = entry.getValue();
-
-            var region = renderRegions.getRegion(regionId);
-
-            if (region != null) {
-                buckets.add(new Bucket(region, sectionList));
-            }
-        }
-
-        this.buckets = buckets;
-        this.sections = unsortedSections;
+        this.buckets = bucketList;
+        this.sections = sortedSections;
     }
 
     public void add(RenderSection render) {
@@ -71,6 +55,10 @@ public class ChunkRenderList {
 
     public Iterable<Bucket> unsorted() {
         return this.buckets;
+    }
+
+    public boolean isEmpty() {
+        return this.sections.isEmpty();
     }
 
     public record Bucket(RenderRegion region,

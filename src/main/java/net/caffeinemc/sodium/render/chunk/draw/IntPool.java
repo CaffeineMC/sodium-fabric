@@ -30,10 +30,6 @@ public class IntPool {
         }
 
         this.freeIds.enqueue(id);
-
-        if (this.usedIds.isEmpty()) {
-            this.nextId = 0;
-        }
     }
 
     public int capacity() {

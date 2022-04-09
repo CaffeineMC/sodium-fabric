@@ -1,7 +1,11 @@
 package net.caffeinemc.sodium.render.chunk;
 
 import it.unimi.dsi.fastutil.PriorityQueue;
-import it.unimi.dsi.fastutil.objects.*;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
@@ -33,8 +37,9 @@ import net.caffeinemc.sodium.world.slice.cloned.ClonedChunkSectionCache;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 
@@ -79,7 +84,9 @@ public class RenderSectionManager {
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
     private final boolean alwaysDeferChunkUpdates = SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
-    private BitArray sectionVisibility;
+
+    @Deprecated
+    private BitArray sectionVisibility = null;
 
     public RenderSectionManager(RenderDevice device, SodiumWorldRenderer worldRenderer, ChunkRenderPassManager renderPassManager, ClientWorld world, int chunkViewDistance) {
         var vertexType = createVertexType();
@@ -128,16 +135,22 @@ public class RenderSectionManager {
             ChunkPrep.deleteRenderLists(this.device, this.renderLists);
         }
 
-        var occlusionResults = ChunkOcclusion.calculateVisibleSections(this.tree, this.camera, frustum, this.world, this.chunkViewDistance, spectator);
+        BlockPos origin = camera.getBlockPos();
+        var useOcclusionCulling = !spectator || !this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin);
 
-        this.sectionVisibility = occlusionResults.visibilityTable();
-        this.updateVisibilityLists(occlusionResults.visibleList());
+        var visibleSections = ChunkOcclusion.calculateVisibleSections(this.tree, frustum, this.world, origin, this.chunkViewDistance, useOcclusionCulling);
 
-        this.renderLists = ChunkPrep.createRenderLists(this.device, this.regions, this.visibleMeshedSections, this.camera);
+        this.updateVisibilityLists(visibleSections, camera);
+
+        var chunks = new SortedChunkLists(this.regions, this.visibleMeshedSections);
+
+        this.renderLists = ChunkPrep.createRenderLists(this.device, chunks, this.camera);
         this.needsUpdate = false;
     }
 
-    private void updateVisibilityLists(ReferenceList<RenderSection> visible) {
+    private void updateVisibilityLists(IntArrayList visible, ChunkCameraContext camera) {
+        var drawDistance = MathHelper.square((this.chunkViewDistance + 1) * 16.0f);
+
         for (PriorityQueue<RenderSection> queue : this.rebuildQueues.values()) {
             queue.clear();
         }
@@ -146,7 +159,18 @@ public class RenderSectionManager {
         this.visibleTickingSections.clear();
         this.visibleMeshedSections.clear();
 
-        for (var section : visible) {
+        var vis = new BitArray(this.tree.getSectionTableSize());
+
+        for (int i = 0; i < visible.size(); i++) {
+            var sectionId = visible.getInt(i);
+            var section = this.tree.getSectionById(sectionId);
+
+            if (section.getDistance(camera.posX, camera.posZ) > drawDistance) {
+                continue;
+            }
+
+            vis.set(sectionId);
+
             var data = section.data();
 
             if (data.meshes != null) {
@@ -165,6 +189,8 @@ public class RenderSectionManager {
 
             this.schedulePendingUpdates(section);
         }
+
+        this.sectionVisibility = vis;
     }
 
     private void schedulePendingUpdates(RenderSection section) {
@@ -219,16 +245,8 @@ public class RenderSectionManager {
     }
 
     private boolean unloadSection(int x, int y, int z) {
-        RenderSection chunk = this.tree.getSection(x, y, z);
-
-        if (chunk == null) {
-            throw new IllegalStateException("Chunk is not loaded: " + ChunkSectionPos.from(x, y, z));
-        }
-
+        RenderSection chunk = this.tree.remove(x, y, z);
         chunk.delete();
-
-        // TODO: consolidate into get(..) call
-        this.tree.remove(x, y, z);
 
         return true;
     }
@@ -254,17 +272,13 @@ public class RenderSectionManager {
     }
 
     public boolean isSectionVisible(int x, int y, int z) {
-        RenderSection render = this.tree.getSection(x, y, z);
+        var sectionId = this.tree.getSectionId(x, y, z);
 
-        if (render == null) {
+        if (sectionId == ChunkTree.ABSENT_VALUE) {
             return false;
         }
 
-        if (this.sectionVisibility == null || this.sectionVisibility.capacity() < render.id()) {
-            return false;
-        }
-
-        return this.sectionVisibility.get(render.id());
+        return this.sectionVisibility != null && this.sectionVisibility.capacity() > sectionId && this.sectionVisibility.get(sectionId);
     }
 
     public void updateChunks() {
@@ -338,11 +352,7 @@ public class RenderSectionManager {
     private void onChunkDataChanged(RenderSection section, ChunkRenderData prev, ChunkRenderData next) {
         ListUtil.updateList(this.globalBlockEntities, prev.globalBlockEntities, next.globalBlockEntities);
 
-        var node = this.tree.getNodeById(section.id());
-
-        if (node != null) {
-            node.setVisibilityData(next.visibilityData);
-        }
+        this.tree.setVisibilityData(section.id(), next.occlusionData);
     }
 
     public AbstractBuilderTask createTerrainBuildTask(RenderSection render) {

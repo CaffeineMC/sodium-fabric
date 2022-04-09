@@ -2,13 +2,11 @@ package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
-import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.gfx.api.buffer.*;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.DefaultRenderPasses;
-import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry.ModelPart;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
@@ -24,19 +22,16 @@ public class ChunkPrep {
     private static final int COMMAND_STRUCT_STRIDE = 20;
     private static final int INSTANCE_STRUCT_STRIDE = 16;
 
-    public static Map<ChunkRenderPass, PreparedRenderList> createRenderLists(RenderDevice device, RenderRegionManager regionManager,
-                                                                             ReferenceArrayList<RenderSection> unsortedChunks, ChunkCameraContext camera) {
-        if (unsortedChunks.isEmpty()) {
+    public static Map<ChunkRenderPass, PreparedRenderList> createRenderLists(RenderDevice device, SortedChunkLists chunks, ChunkCameraContext camera) {
+        if (chunks.isEmpty()) {
             return null;
         }
-
-        var sortedChunks = new ChunkRenderList(regionManager, unsortedChunks);
 
         var builders = new Reference2ReferenceArrayMap<ChunkRenderPass, RenderListBuilder>();
         var alignment = device.properties().uniformBufferOffsetAlignment;
 
-        var commandBufferCapacity = commandBufferSize(alignment, sortedChunks);
-        var instanceBufferCapacity = instanceBufferSize(alignment, sortedChunks);
+        var commandBufferCapacity = commandBufferSize(alignment, chunks);
+        var instanceBufferCapacity = instanceBufferSize(alignment, chunks);
 
         for (var pass : DefaultRenderPasses.ALL) {
             builders.put(pass, new RenderListBuilder(device, commandBufferCapacity, instanceBufferCapacity, alignment));
@@ -45,7 +40,7 @@ public class ChunkPrep {
         var largestVertexIndex = 0;
         var reverseOrder = false; // TODO: fix me
 
-        for (var bucketIterator = sortedChunks.sorted(reverseOrder); bucketIterator.hasNext(); ) {
+        for (var bucketIterator = chunks.sorted(reverseOrder); bucketIterator.hasNext(); ) {
             var bucket = bucketIterator.next();
 
             for (var sectionIterator = bucket.sorted(reverseOrder); sectionIterator.hasNext(); ) {
@@ -271,7 +266,7 @@ public class ChunkPrep {
 
     }
 
-    private static long commandBufferSize(int alignment, ChunkRenderList list) {
+    private static long commandBufferSize(int alignment, SortedChunkLists list) {
         int size = 0;
 
         for (var bucket : list.unsorted()) {
@@ -281,7 +276,7 @@ public class ChunkPrep {
         return size;
     }
 
-    private static long instanceBufferSize(int alignment, ChunkRenderList list) {
+    private static long instanceBufferSize(int alignment, SortedChunkLists list) {
         int size = 0;
 
         for (var bucket : list.unsorted()) {

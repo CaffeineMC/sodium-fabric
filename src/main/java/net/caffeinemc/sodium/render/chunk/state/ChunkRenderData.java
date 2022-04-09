@@ -26,7 +26,7 @@ public class ChunkRenderData {
     public final Sprite[] animatedSprites;
     public final ChunkRenderPass[] meshes;
     public final ChunkRenderBounds bounds;
-    public final long visibilityData;
+    public final ChunkOcclusionData occlusionData;
 
     public ChunkRenderData(BlockEntity[] globalBlockEntities, BlockEntity[] blockEntities, Sprite[] animatedSprites,
                            ChunkRenderPass[] meshes, ChunkRenderBounds bounds, ChunkOcclusionData occlusionData) {
@@ -35,7 +35,7 @@ public class ChunkRenderData {
         this.animatedSprites = animatedSprites;
         this.meshes = meshes;
         this.bounds = bounds;
-        this.visibilityData = calculateVisibilityData(occlusionData);
+        this.occlusionData = occlusionData;
     }
 
     public static class Builder {
@@ -105,19 +105,5 @@ public class ChunkRenderData {
         meshInfo.setOcclusionData(occlusionData);
 
         return meshInfo.build();
-    }
-
-    private static long calculateVisibilityData(ChunkOcclusionData occlusionData) {
-        long bits = 0L;
-
-        for (var from : DirectionUtil.ALL_DIRECTIONS) {
-            for (var to : DirectionUtil.ALL_DIRECTIONS) {
-                if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
-                    bits |= (1L << ((from.ordinal() << 3) + to.ordinal()));
-                }
-            }
-        }
-
-        return bits;
     }
 }
