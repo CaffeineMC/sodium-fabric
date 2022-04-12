@@ -6,7 +6,7 @@ import net.caffeinemc.gfx.api.pipeline.Pipeline;
 import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
 import net.caffeinemc.gfx.api.shader.Program;
 import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
-import net.caffeinemc.gfx.api.shader.ShaderDescription;
+import net.caffeinemc.gfx.api.shader.ProgramDescription;
 import net.caffeinemc.gfx.api.sync.Fence;
 import net.caffeinemc.gfx.api.texture.Sampler;
 
@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface ResourceFactory {
-    <T> Program<T> createProgram(ShaderDescription desc, Function<ShaderBindingContext, T> interfaceFactory);
+    <T> Program<T> createProgram(ProgramDescription desc, Function<ShaderBindingContext, T> interfaceFactory);
 
     ImmutableBuffer createBuffer(ByteBuffer data, Set<ImmutableBufferFlags> flags);
 

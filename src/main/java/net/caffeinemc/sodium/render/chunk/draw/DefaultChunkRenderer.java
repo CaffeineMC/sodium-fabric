@@ -7,9 +7,7 @@ import net.caffeinemc.gfx.api.array.attribute.VertexAttributeBinding;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.pipeline.Pipeline;
 import net.caffeinemc.gfx.api.pipeline.PipelineState;
-import net.caffeinemc.gfx.api.shader.Program;
-import net.caffeinemc.gfx.api.shader.ShaderDescription;
-import net.caffeinemc.gfx.api.shader.ShaderType;
+import net.caffeinemc.gfx.api.shader.*;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.sodium.SodiumClientMod;
@@ -20,14 +18,14 @@ import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.sodium.render.sequence.SequenceIndexBuffer;
 import net.caffeinemc.sodium.render.shader.ShaderConstants;
 import net.caffeinemc.sodium.render.shader.ShaderLoader;
-import net.caffeinemc.sodium.render.shader.ShaderParser;
 import net.caffeinemc.sodium.render.terrain.format.TerrainMeshAttribute;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.TextureUtil;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
 import org.joml.Matrix4f;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class DefaultChunkRenderer extends AbstractChunkRenderer {
@@ -64,14 +62,14 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
                 })
         ));
 
-        var constants = getShaderConstants(pass, this.vertexType);
+        var shaderName = pass.shaderName();
+        
+        var vertShader = ShaderLoader.MINECRAFT_ASSETS.getShaderSource(new Identifier("sodium", "terrain/%s.vert.spv".formatted(shaderName)));
+        var fragShader = ShaderLoader.MINECRAFT_ASSETS.getShaderSource(new Identifier("sodium", "terrain/%s.frag.spv".formatted(shaderName)));
 
-        var vertShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.vert"), constants);
-        var fragShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.frag"), constants);
-
-        var desc = ShaderDescription.builder()
-                .addShaderSource(ShaderType.VERTEX, vertShader)
-                .addShaderSource(ShaderType.FRAGMENT, fragShader)
+        var desc = ProgramDescription.builder()
+                .addShaderBinary(ShaderType.VERTEX, new ShaderDescription(vertShader, Collections.emptyList()))
+                .addShaderBinary(ShaderType.FRAGMENT, new ShaderDescription(fragShader, getFragmentShaderConstants(pass)))
                 .build();
 
         this.program = this.device.createProgram(desc, ChunkShaderInterface::new);
@@ -137,18 +135,14 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
         state.bindUniformBlock(programInterface.uniformFogParameters, fogParams.buffer(), fogParams.offset(), fogParams.length());
     }
 
-    private static ShaderConstants getShaderConstants(ChunkRenderPass pass, TerrainVertexType vertexType) {
-        var constants = ShaderConstants.builder();
+    private static List<SpecializationConstant> getFragmentShaderConstants(ChunkRenderPass pass) {
+        var constants = new ArrayList<SpecializationConstant>();
 
         if (pass.isCutout()) {
-            constants.add("ALPHA_CUTOFF", String.valueOf(pass.alphaCutoff()));
+            constants.add(SpecializationConstant.ofFloat(0, pass.alphaCutoff()));
         }
 
-        if (!MathHelper.approximatelyEquals(vertexType.getVertexRange(), 1.0f)) {
-            constants.add("VERT_SCALE", String.valueOf(vertexType.getVertexRange()));
-        }
-
-        return constants.build();
+        return Collections.unmodifiableList(constants);
     }
 
     @Override

@@ -1,5 +1,6 @@
 plugins {
     id 'fabric-loom' version '0.12-SNAPSHOT'
+    id 'net.caffeinemc.gradle-shaderc-plugin' version '1.0-SNAPSHOT'
 }
 
 apply from: "${rootProject.projectDir}/gradle/fabric.gradle"
@@ -70,6 +71,15 @@ dependencies {
         modRuntimeOnly "maven.modrinth:starlight:1.1.0+1.19"
     }
 }
+
+compileShaders {
+    // TODO: use sourcesets?
+    inputFiles = file("src/main/resources/assets/sodium/shaders")
+    includeFiles = file("src/main/resources/assets/sodium/shaders/include")
+    outputDirectory = file("build/resources/main/assets/sodium/shaders")
+}
+
+jar.dependsOn compileShaders
 
 String getVersion() {
     String version = "${project.mod_version}+mc${project.minecraft_version}"
