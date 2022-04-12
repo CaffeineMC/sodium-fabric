@@ -3,6 +3,7 @@ package net.caffeinemc.sodium.interop.vanilla;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.caffeinemc.gfx.api.buffer.Buffer;
+import net.caffeinemc.gfx.api.device.RenderConfiguration;
 import net.caffeinemc.gfx.api.shader.BufferBlock;
 import net.caffeinemc.gfx.opengl.array.GlVertexArray;
 import net.caffeinemc.gfx.opengl.GlEnum;
@@ -12,11 +13,12 @@ import net.caffeinemc.gfx.api.texture.Sampler;
 import net.caffeinemc.gfx.api.pipeline.state.CullMode;
 import net.caffeinemc.gfx.api.pipeline.state.DepthFunc;
 import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
-import net.caffeinemc.gfx.opengl.buffer.GlBuffer;
+import net.caffeinemc.gfx.opengl.buffer.GlAbstractBuffer;
 import net.caffeinemc.gfx.opengl.pipeline.GlPipelineManager;
 import net.caffeinemc.gfx.opengl.shader.GlProgram;
 import net.caffeinemc.gfx.opengl.texture.GlSampler;
 import net.minecraft.client.render.BufferRenderer;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.opengl.GL32C;
 import org.lwjgl.opengl.GL45C;
 
@@ -31,7 +33,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
         BufferRenderer.vertexFormat = null;
 
         GL45C.glUseProgram(GlProgram.getHandle(pipeline.getProgram()));
-        GL45C.glBindVertexArray(GlVertexArray.getHandle(pipeline.getVertexArray()));
+        GL45C.glBindVertexArray(GlVertexArray.handle(pipeline.getVertexArray()));
 
         setRenderState(pipeline.getDescription());
 
@@ -113,7 +115,12 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
 
         @Override
         public void bindUniformBlock(BufferBlock block, Buffer buffer, long offset, long length) {
-            GL32C.glBindBufferRange(GL32C.GL_UNIFORM_BUFFER, block.index(), ((GlBuffer) buffer).handle(), offset, length);
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.isTrue(offset >= 0, "Offset must be greater-than or equal to zero");
+                Validate.isTrue(offset + length <= buffer.capacity(), "Range is out of buffer bounds");
+            }
+
+            GL32C.glBindBufferRange(GL32C.GL_UNIFORM_BUFFER, block.index(), GlAbstractBuffer.handle(buffer), offset, length);
         }
 
         public void restore() {

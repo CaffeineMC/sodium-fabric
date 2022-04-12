@@ -50,7 +50,7 @@ public class GlVertexArray<T extends Enum<T>> extends GlObject implements Vertex
         return this.desc.targets();
     }
 
-    public static int getHandle(VertexArray<?> array) {
+    public static int handle(VertexArray<?> array) {
         return ((GlVertexArray<?>) array).handle();
     }
 }

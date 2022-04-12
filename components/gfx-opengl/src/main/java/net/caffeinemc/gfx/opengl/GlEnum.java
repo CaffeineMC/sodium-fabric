@@ -3,11 +3,9 @@ package net.caffeinemc.gfx.opengl;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import net.caffeinemc.gfx.api.array.attribute.VertexAttributeFormat;
-import net.caffeinemc.gfx.api.buffer.BufferMapFlags;
-import net.caffeinemc.gfx.api.buffer.BufferStorageFlags;
-import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.api.pipeline.state.BlendFunc;
 import net.caffeinemc.gfx.api.pipeline.state.DepthFunc;
+import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import org.lwjgl.opengl.GL45C;
@@ -62,25 +60,6 @@ public class GlEnum {
         map.put(ElementFormat.UNSIGNED_BYTE,  GL45C.GL_UNSIGNED_BYTE);
         map.put(ElementFormat.UNSIGNED_SHORT, GL45C.GL_UNSIGNED_SHORT);
         map.put(ElementFormat.UNSIGNED_INT,   GL45C.GL_UNSIGNED_INT);
-    });
-
-    private static final int[] BUFFER_MAP_FLAGS = build(BufferMapFlags.class, (map) -> {
-        map.put(BufferMapFlags.READ,                GL45C.GL_MAP_READ_BIT);
-        map.put(BufferMapFlags.WRITE,               GL45C.GL_MAP_WRITE_BIT);
-        map.put(BufferMapFlags.PERSISTENT,          GL45C.GL_MAP_PERSISTENT_BIT);
-        map.put(BufferMapFlags.INVALIDATE_BUFFER,   GL45C.GL_MAP_INVALIDATE_BUFFER_BIT);
-        map.put(BufferMapFlags.INVALIDATE_RANGE,    GL45C.GL_MAP_INVALIDATE_RANGE_BIT);
-        map.put(BufferMapFlags.EXPLICIT_FLUSH,      GL45C.GL_MAP_FLUSH_EXPLICIT_BIT);
-        map.put(BufferMapFlags.UNSYNCHRONIZED,      GL45C.GL_MAP_UNSYNCHRONIZED_BIT);
-        map.put(BufferMapFlags.COHERENT,            GL45C.GL_MAP_COHERENT_BIT);
-    });
-
-    private static final int[] BUFFER_STORAGE_FLAGS = build(BufferStorageFlags.class, (map) -> {
-        map.put(BufferStorageFlags.PERSISTENT,      GL45C.GL_MAP_PERSISTENT_BIT);
-        map.put(BufferStorageFlags.READABLE,        GL45C.GL_MAP_READ_BIT);
-        map.put(BufferStorageFlags.WRITABLE,       GL45C.GL_MAP_WRITE_BIT);
-        map.put(BufferStorageFlags.CLIENT_STORAGE,  GL45C.GL_CLIENT_STORAGE_BIT);
-        map.put(BufferStorageFlags.COHERENT,        GL45C.GL_MAP_COHERENT_BIT);
     });
 
     private static final int[] DEPTH_FUNC = build(DepthFunc.class, (map) -> {
@@ -139,26 +118,6 @@ public class GlEnum {
 
     public static int from(ShaderType value) {
         return SHADER_TYPES[value.ordinal()];
-    }
-
-    public static int mapFlags(Iterable<BufferMapFlags> values) {
-        int result = 0;
-
-        for (BufferMapFlags value : values) {
-            result |= BUFFER_MAP_FLAGS[value.ordinal()];
-        }
-
-        return result;
-    }
-
-    public static int storageFlags(Iterable<BufferStorageFlags> values) {
-        int result = 0;
-
-        for (BufferStorageFlags value : values) {
-            result |= BUFFER_STORAGE_FLAGS[value.ordinal()];
-        }
-
-        return result;
     }
 
     private static <T extends Enum<T>> int[] build(Class<T> type, Consumer<Reference2IntMap<T>> consumer) {

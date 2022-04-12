@@ -11,37 +11,22 @@ import net.caffeinemc.gfx.api.sync.Fence;
 import net.caffeinemc.gfx.api.texture.Sampler;
 
 import java.nio.ByteBuffer;
-import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface ResourceFactory {
-    Set<BufferStorageFlags> DEFAULT_STORAGE_FLAGS = EnumSet.noneOf(BufferStorageFlags.class);
-
     <T> Program<T> createProgram(ShaderDescription desc, Function<ShaderBindingContext, T> interfaceFactory);
 
-    AllocatedBuffer allocateBuffer(long capacity, boolean client);
+    ImmutableBuffer createBuffer(ByteBuffer data, Set<ImmutableBufferFlags> flags);
 
-    Buffer createBuffer(ByteBuffer data, Set<BufferStorageFlags> flags);
+    ImmutableBuffer createBuffer(long capacity, Set<ImmutableBufferFlags> flags);
 
-    default Buffer createBuffer(ByteBuffer data) {
-        return this.createBuffer(data, DEFAULT_STORAGE_FLAGS);
-    }
+    ImmutableBuffer createBuffer(long capacity, Consumer<ByteBuffer> data, Set<ImmutableBufferFlags> flags);
 
-    Buffer createBuffer(long capacity, Set<BufferStorageFlags> flags);
+    DynamicBuffer createDynamicBuffer(long capacity, Set<DynamicBufferFlags> flags);
 
-    default Buffer createBuffer(long capacity) {
-        return this.createBuffer(capacity, DEFAULT_STORAGE_FLAGS);
-    }
-
-    Buffer createBuffer(long capacity, Consumer<ByteBuffer> data, Set<BufferStorageFlags> flags);
-
-    default Buffer createBuffer(long capacity, Consumer<ByteBuffer> data) {
-        return this.createBuffer(capacity, data, DEFAULT_STORAGE_FLAGS);
-    }
-
-    MappedBuffer createMappedBuffer(long capacity, Set<BufferStorageFlags> storageFlags, Set<BufferMapFlags> mapFlags);
+    MappedBuffer createMappedBuffer(long capacity, Set<MappedBufferFlags> flags);
 
     <PROGRAM, ARRAY extends Enum<ARRAY>> Pipeline<PROGRAM, ARRAY> createPipeline(PipelineDescription state, Program<PROGRAM> program, VertexArrayDescription<ARRAY> vertexArray);
 

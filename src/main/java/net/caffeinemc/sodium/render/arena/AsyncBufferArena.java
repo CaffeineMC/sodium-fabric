@@ -1,6 +1,7 @@
 package net.caffeinemc.sodium.render.arena;
 
 import net.caffeinemc.gfx.api.buffer.Buffer;
+import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 
 import java.util.*;
@@ -30,7 +31,7 @@ public class AsyncBufferArena implements BufferArena {
         this.head = new BufferSegment(this, 0, capacity);
         this.head.setFree(true);
 
-        this.arenaBuffer = device.createBuffer((long) capacity * stride);
+        this.arenaBuffer = device.createBuffer((long) capacity * stride, EnumSet.noneOf(ImmutableBufferFlags.class));
         this.stride = stride;
     }
 
@@ -107,10 +108,10 @@ public class AsyncBufferArena implements BufferArena {
 
     private void transferSegments(Collection<PendingBufferCopyCommand> list, int capacity) {
         var srcBufferObj = this.arenaBuffer;
-        var dstBufferObj = this.device.createBuffer(this.toBytes(capacity));
+        var dstBufferObj = this.device.createBuffer(this.toBytes(capacity), EnumSet.noneOf(ImmutableBufferFlags.class));
 
         for (PendingBufferCopyCommand cmd : list) {
-            this.device.copyBuffer(srcBufferObj, this.toBytes(cmd.readOffset), dstBufferObj, this.toBytes(cmd.writeOffset), this.toBytes(cmd.length));
+            this.device.copyBuffer(srcBufferObj, dstBufferObj, this.toBytes(cmd.readOffset), this.toBytes(cmd.writeOffset), this.toBytes(cmd.length));
         }
 
         this.device.deleteBuffer(srcBufferObj);
@@ -288,7 +289,7 @@ public class AsyncBufferArena implements BufferArena {
         }
 
         // Copy the data into our staging buffer, then copy it into the arena's buffer
-        this.device.copyBuffer(src, entry.offset(), this.arenaBuffer, this.toBytes(segment.getOffset()), entry.length());
+        this.device.copyBuffer(src, this.arenaBuffer, entry.offset(), this.toBytes(segment.getOffset()), entry.length());
 
         entry.holder().set(segment);
 

@@ -1,6 +1,7 @@
 package net.caffeinemc.gfx.api.buffer;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
 
 /**
  * A buffer object whose underlying storage is exposed to the client as a {@link ByteBuffer}. The client can freely read
@@ -10,13 +11,13 @@ import java.nio.ByteBuffer;
 public interface MappedBuffer extends Buffer {
     /**
      * Signals that the data represented in the given range should have the changes reflected to the server. If the
-     * buffer is mapped with {@link BufferMapFlags#EXPLICIT_FLUSH}, you must call this method after making changes to
+     * buffer is mapped with {@link MappedBufferFlags#EXPLICIT_FLUSH}, you must call this method after making changes to
      * the mapped memory. If the buffer is not mapped with this flag, then calls to this method will return immediately.
      *
-     * @param pos The offset (in bytes) from which to flush
+     * @param offset The offset (in bytes) from which to flush
      * @param length The number of bytes to flush
      */
-    void flush(long pos, long length);
+    void flush(long offset, long length);
 
     /**
      * @return Returns a {@link ByteBuffer} which represents the underlying storage of the buffer, mapped in
@@ -31,4 +32,6 @@ public interface MappedBuffer extends Buffer {
     default void flush() {
         this.flush(0, this.capacity());
     }
+
+    Set<MappedBufferFlags> flags();
 }
