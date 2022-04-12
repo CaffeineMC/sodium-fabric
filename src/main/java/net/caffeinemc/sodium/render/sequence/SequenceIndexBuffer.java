@@ -1,8 +1,11 @@
 package net.caffeinemc.sodium.render.sequence;
 
 import net.caffeinemc.gfx.api.buffer.Buffer;
+import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.types.ElementFormat;
+
+import java.util.EnumSet;
 
 public class SequenceIndexBuffer {
     private final RenderDevice device;
@@ -41,7 +44,7 @@ public class SequenceIndexBuffer {
             for (int primitiveIndex = 0; primitiveIndex < primitiveCount; primitiveIndex++) {
                 this.builder.write(intBuffer, primitiveIndex * verticesPerPrimitive);
             }
-        });
+        }, EnumSet.noneOf(ImmutableBufferFlags.class));
 
         this.maxVertices = vertexCount;
     }

@@ -80,10 +80,14 @@ public class ChunkPrep {
             var pass = entry.getKey();
             var builder = entry.getValue();
 
-            var commandBuffer = device.createBuffer(builder.commandBuffer, 0, builder.commandBufferBuilder.position());
-            var instanceBuffer = device.createBuffer(builder.instanceBuffer, 0, builder.instanceBufferBuilder.position());
+            if (builder.commandBufferBuilder.position() <= 0) {
+                device.deleteBuffer(builder.commandBuffer);
+                device.deleteBuffer(builder.instanceBuffer);
 
-            lists.put(pass, new PreparedRenderList(commandBuffer, instanceBuffer, builder.batches, largestVertexIndex));
+                continue;
+            }
+
+            lists.put(pass, new PreparedRenderList(builder.commandBuffer, builder.instanceBuffer, builder.batches, largestVertexIndex));
         }
 
         return lists;
@@ -154,8 +158,8 @@ public class ChunkPrep {
     }
 
     private static class RenderListBuilder {
-        public final AllocatedBuffer commandBuffer;
-        public final AllocatedBuffer instanceBuffer;
+        public final MappedBuffer commandBuffer;
+        public final MappedBuffer instanceBuffer;
 
         public final CommandBufferBuilder commandBufferBuilder;
         public final InstanceBufferBuilder instanceBufferBuilder;
@@ -165,8 +169,10 @@ public class ChunkPrep {
         public int maxVertexIndex;
 
         private RenderListBuilder(RenderDevice device, long commandBufferCapacity, long instanceBufferCapacity, int alignment) {
-            this.commandBuffer = device.allocateBuffer(commandBufferCapacity, false);
-            this.instanceBuffer = device.allocateBuffer(instanceBufferCapacity, false);
+            var flags = EnumSet.of(MappedBufferFlags.WRITE);
+
+            this.commandBuffer = device.createMappedBuffer(commandBufferCapacity, flags);
+            this.instanceBuffer = device.createMappedBuffer(instanceBufferCapacity, flags);
 
             this.commandBufferBuilder = new CommandBufferBuilder(this.commandBuffer.view(), alignment);
             this.instanceBufferBuilder = new InstanceBufferBuilder(this.instanceBuffer.view(), alignment);

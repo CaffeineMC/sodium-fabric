@@ -16,24 +16,20 @@ public abstract class GlObject {
     }
 
     protected final void setHandle(int handle) {
+        if (handle == INVALID_HANDLE) {
+            throw new IllegalArgumentException("Handle must be valid");
+        }
+
         this.handle = handle;
     }
 
     public final int handle() {
-        this.checkHandle();
-
-        return this.handle;
-    }
-
-    protected final void checkHandle() {
-        if (!this.isHandleValid()) {
-            throw new IllegalStateException("%s is not valid"
+        if (this.handle == INVALID_HANDLE) {
+            throw new IllegalStateException("%s handle is not valid"
                     .formatted(this.getClass().getSimpleName()));
         }
-    }
 
-    private boolean isHandleValid() {
-        return this.handle != INVALID_HANDLE;
+        return this.handle;
     }
 
     public final void invalidateHandle() {
