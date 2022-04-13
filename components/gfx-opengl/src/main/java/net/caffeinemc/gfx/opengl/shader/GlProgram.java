@@ -1,15 +1,16 @@
 package net.caffeinemc.gfx.opengl.shader;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import net.caffeinemc.gfx.api.shader.*;
+import net.caffeinemc.gfx.api.shader.Program;
+import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
+import net.caffeinemc.gfx.api.shader.ShaderDescription;
+import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.opengl.GlObject;
 import net.caffeinemc.gfx.opengl.GlEnum;
 import net.caffeinemc.gfx.opengl.shader.uniform.GlBufferBlock;
-import org.lwjgl.opengl.*;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.opengl.GL20C;
+import org.lwjgl.opengl.GL32C;
 
-import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 /**
@@ -18,10 +19,10 @@ import java.util.function.Function;
 public class GlProgram<T> extends GlObject implements Program<T> {
     private final T shaderInterface;
 
-    public GlProgram(ProgramDescription description, Function<ShaderBindingContext, T> interfaceFactory) {
-        var shaders = new IntArrayList(description.shaders.size());
+    public GlProgram(ShaderDescription description, Function<ShaderBindingContext, T> interfaceFactory) {
+        var shaders = new IntArrayList(description.shaderSources.size());
 
-        for (var entry : description.shaders.entrySet()) {
+        for (var entry : description.shaderSources.entrySet()) {
             shaders.add(createShader(entry.getKey(), entry.getValue()));
         }
 
@@ -50,33 +51,10 @@ public class GlProgram<T> extends GlObject implements Program<T> {
         }
     }
 
-    private static int createShader(ShaderType type, ShaderDescription desc) {
-        var source = desc.source();
-        var specializationConstants = desc.specializationConstants();
-
-        ByteBuffer sourceBuffer = MemoryUtil.memAlloc(source.length);
-        sourceBuffer.put(source);
-        sourceBuffer.flip();
-
-        int shader = GL45C.glCreateShader(GlEnum.from(type));
-        GL46C.glShaderBinary(new int[] { shader }, GL46C.GL_SHADER_BINARY_FORMAT_SPIR_V, sourceBuffer);
-
-        try (var stack = MemoryStack.stackPush()) {
-            var specializationIndices = stack.mallocInt(specializationConstants.size());
-            var specializationValues = stack.mallocInt(specializationConstants.size());
-
-            for (var constant : specializationConstants) {
-                specializationIndices.put(constant.index());
-                specializationValues.put(constant.value());
-            }
-
-            specializationIndices.flip();
-            specializationValues.flip();
-
-            GL46C.glSpecializeShader(shader, "main", specializationIndices, specializationValues);
-        }
-
-        MemoryUtil.memFree(sourceBuffer);
+    private static int createShader(ShaderType type, String src) {
+        int shader = GL20C.glCreateShader(GlEnum.from(type));
+        ShaderWorkarounds.safeShaderSource(shader, src);
+        GL20C.glCompileShader(shader);
 
         String log = GL20C.glGetShaderInfoLog(shader);
 
