@@ -1,7 +1,7 @@
 const int FOG_SHAPE_SPHERICAL = 0;
 const int FOG_SHAPE_CYLINDRICAL = 1;
 
-#include "terrain_fog.glsl"
+#import <sodium:include/terrain_fog.glsl>
 
 float _get_fog_depth(vec3 position) {
     switch (fog_mode) {

@@ -8,7 +8,5 @@ pluginManagement {
     }
 }
 
-includeBuild "components/gradle-shaderc-plugin"
-
 include ":components:gfx"
 include ":components:gfx-opengl"

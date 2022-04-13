@@ -1,8 +1,19 @@
-#include "terrain_fog.vert"
-#include "terrain_draw.vert"
-#include "terrain_view.vert"
-#include "terrain_format.vert"
-#include "terrain_output.vert"
+#version 460 core
+
+#import <sodium:include/terrain_fog.vert>
+#import <sodium:include/terrain_draw.vert>
+#import <sodium:include/terrain_view.vert>
+#import <sodium:include/terrain_format.vert>
+
+out VertexOutput {
+    vec3 color;
+    float shade;
+
+    vec2 tex_diffuse_coord;
+    vec2 tex_light_coord;
+
+    float fog_depth;
+} vs_out;
 
 void main() {
     _vert_init();

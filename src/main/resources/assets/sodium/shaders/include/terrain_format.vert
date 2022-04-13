@@ -16,7 +16,11 @@ layout(location = 2) in vec2 in_tex_diffuse_coord;
 layout(location = 3) in vec2 in_tex_light_coord;
 
 void _vert_init() {
-    _vert_position = (in_position * 16.0f) + 8.0f;
+#ifdef VERT_SCALE
+    _vert_position = (in_position * VERT_SCALE) + 8.0f;
+#else
+    _vert_position = in_position;
+#endif
     _vert_tex_diffuse_coord = in_tex_diffuse_coord;
     _vert_tex_light_coord = in_tex_light_coord;
     _vert_color_shade = in_color;

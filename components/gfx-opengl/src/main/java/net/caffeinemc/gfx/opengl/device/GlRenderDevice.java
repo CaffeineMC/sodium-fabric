@@ -21,7 +21,7 @@ import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.device.RenderDeviceProperties;
 import net.caffeinemc.gfx.api.shader.Program;
 import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
-import net.caffeinemc.gfx.api.shader.ProgramDescription;
+import net.caffeinemc.gfx.api.shader.ShaderDescription;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.pipeline.Pipeline;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
@@ -115,7 +115,7 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     @Override
-    public <T> Program<T> createProgram(ProgramDescription desc, Function<ShaderBindingContext, T> interfaceFactory) {
+    public <T> Program<T> createProgram(ShaderDescription desc, Function<ShaderBindingContext, T> interfaceFactory) {
         return new GlProgram<>(desc, interfaceFactory);
     }
 
