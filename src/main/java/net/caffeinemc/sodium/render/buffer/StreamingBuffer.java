@@ -1,9 +1,10 @@
 package net.caffeinemc.sodium.render.buffer;
 
 import net.caffeinemc.gfx.api.buffer.Buffer;
-import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.buffer.MappedBuffer;
+import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
+import net.caffeinemc.sodium.util.MathUtil;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -14,16 +15,20 @@ public class StreamingBuffer {
     private final MappedBuffer buffer;
     private final int frameCount;
     private final int stride;
+    private final int alignedStride;
 
     public StreamingBuffer(RenderDevice device, int stride, int frameCount) {
-        this.buffer = device.createMappedBuffer(stride * frameCount, EnumSet.of(MappedBufferFlags.WRITE, MappedBufferFlags.CLIENT_STORAGE));
+        var alignment = device.properties().uniformBufferOffsetAlignment;
+
+        this.stride = stride;
+        this.alignedStride = MathUtil.align(stride, alignment);
+        this.buffer = device.createMappedBuffer(this.alignedStride * frameCount, EnumSet.of(MappedBufferFlags.WRITE));
         this.frameCount = frameCount;
         this.device = device;
-        this.stride = stride;
     }
 
     public Slice slice(int frameIndex) {
-        int start = this.stride * (frameIndex % this.frameCount);
+        int start = this.alignedStride * (frameIndex % this.frameCount);
         var view = MemoryUtil.memSlice(this.buffer.view(), start, this.stride);
 
         return new Slice(this.buffer, view, start, this.stride);
