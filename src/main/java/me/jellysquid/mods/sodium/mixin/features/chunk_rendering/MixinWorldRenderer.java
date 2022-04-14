@@ -9,6 +9,8 @@ import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
@@ -48,7 +50,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void init(MinecraftClient client, BufferBuilderStorage bufferBuilders, CallbackInfo ci) {
+    private void init(MinecraftClient client, EntityRenderDispatcher entityRenderDispatcher, BlockEntityRenderDispatcher blockEntityRenderDispatcher, BufferBuilderStorage bufferBuilderStorage, CallbackInfo ci) {
         this.renderer = new SodiumWorldRenderer(client);
     }
 

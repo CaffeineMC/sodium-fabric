@@ -18,7 +18,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockRenderView;
-import net.minecraft.world.gen.random.AbstractRandom;
+import net.minecraft.util.math.random.AbstractRandom;
 import net.minecraft.world.gen.random.Xoroshiro128PlusPlusRandom;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -33,7 +33,7 @@ import java.util.Random;
 public class MixinBlockModelRenderer {
     private final Xoroshiro128PlusPlusRandom random = new Xoroshiro128PlusPlusRandom(42L);
 
-    @Inject(method = "render(Lnet/minecraft/world/BlockRenderView;Lnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;ZLnet/minecraft/world/gen/random/AbstractRandom;JI)Z", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "render(Lnet/minecraft/world/BlockRenderView;Lnet/minecraft/client/render/model/BakedModel;Lnet/minecraft/block/BlockState;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;ZLnet/minecraft/util/math/random/AbstractRandom;JI)Z", at = @At("HEAD"), cancellable = true)
     private void preRenderBlockInWorld(BlockRenderView world, BakedModel model, BlockState state, BlockPos pos, MatrixStack matrices, VertexConsumer vertexConsumer, boolean cull, AbstractRandom abstractRandom, long seed, int overlay, CallbackInfoReturnable<Boolean> cir) {
 //        GlobalRenderContext renderer = GlobalRenderContext.getInstance(world);
 //        BlockRenderer blockRenderer = renderer.getBlockRenderer();
