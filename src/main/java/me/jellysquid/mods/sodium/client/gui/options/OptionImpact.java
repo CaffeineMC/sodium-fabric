@@ -13,7 +13,7 @@ public enum OptionImpact implements TextProvider {
     private final Text text;
 
     OptionImpact(Formatting color, String text) {
-        this.text = new TranslatableText(text).formatted(color);
+        this.text = Text.method_43469(text).formatted(color);
     }
 
     @Override

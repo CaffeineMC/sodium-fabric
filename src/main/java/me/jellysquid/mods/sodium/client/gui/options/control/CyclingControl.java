@@ -42,7 +42,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
             if (value instanceof TextProvider) {
                 name = ((TextProvider) value).getLocalizedName();
             } else {
-                name = new LiteralText(value.name());
+                name = Text.method_43470(value.name());
             }
 
             this.names[i] = name;

@@ -128,7 +128,7 @@ public abstract class MixinDebugHud {
 
         bufferBuilder.end();
 
-        BufferRenderer.draw(bufferBuilder);
+        BufferRenderer.method_43433(bufferBuilder);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }

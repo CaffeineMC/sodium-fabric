@@ -76,7 +76,7 @@ public class SodiumGameOptions {
         private final Text name;
 
         ArenaMemoryAllocator(String name) {
-            this.name = new TranslatableText(name);
+            this.name = Text.method_43469(name);
         }
 
         @Override
@@ -93,7 +93,7 @@ public class SodiumGameOptions {
         private final Text name;
 
         GraphicsQuality(String name) {
-            this.name = new TranslatableText(name);
+            this.name = Text.method_43469(name);
         }
 
         @Override
