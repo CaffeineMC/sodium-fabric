@@ -27,16 +27,16 @@ public class ConfigCorruptedScreen extends Screen {
         """;
 
     private static final List<Text> TEXT_BODY = Arrays.stream(TEXT_BODY_RAW.split("\n"))
-            .map(LiteralText::new)
+            .map(Text::method_43470)
             .collect(Collectors.toList());
 
-    private static final Text TEXT_BUTTON_RESTORE_DEFAULTS = new LiteralText("Restore defaults");
-    private static final Text TEXT_BUTTON_CLOSE_GAME = new LiteralText("Close game");
+    private static final Text TEXT_BUTTON_RESTORE_DEFAULTS = Text.method_43470("Restore defaults");
+    private static final Text TEXT_BUTTON_CLOSE_GAME = Text.method_43470("Close game");
 
     private final Supplier<Screen> child;
 
     public ConfigCorruptedScreen(Supplier<Screen> child) {
-        super(new LiteralText("Config corruption detected"));
+        super(Text.method_43470("Config corruption detected"));
 
         this.child = child;
     }
@@ -61,11 +61,11 @@ public class ConfigCorruptedScreen extends Screen {
 
         super.render(matrices, mouseX, mouseY, delta);
 
-        drawTextWithShadow(matrices, this.textRenderer, new LiteralText("Sodium Renderer"), 32, 32, 0xffffff);
-        drawTextWithShadow(matrices, this.textRenderer, new LiteralText("Could not load configuration file"), 32, 48, 0xff0000);
+        drawTextWithShadow(matrices, this.textRenderer, Text.method_43470("Sodium Renderer"), 32, 32, 0xffffff);
+        drawTextWithShadow(matrices, this.textRenderer, Text.method_43470("Could not load configuration file"), 32, 48, 0xff0000);
 
         for (int i = 0; i < TEXT_BODY.size(); i++) {
-            if (TEXT_BODY.get(i).asString().isEmpty()) {
+            if (TEXT_BODY.get(i).getString().isEmpty()) {
                 continue;
             }
 

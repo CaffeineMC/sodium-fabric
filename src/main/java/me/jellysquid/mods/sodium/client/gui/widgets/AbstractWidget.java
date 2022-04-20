@@ -54,7 +54,7 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
 
         bufferBuilder.end();
 
-        BufferRenderer.draw(bufferBuilder);
+        BufferRenderer.method_43433(bufferBuilder);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
