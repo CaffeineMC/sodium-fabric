@@ -5,7 +5,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 
 import java.util.Arrays;
@@ -27,16 +26,16 @@ public class ConfigCorruptedScreen extends Screen {
         """;
 
     private static final List<Text> TEXT_BODY = Arrays.stream(TEXT_BODY_RAW.split("\n"))
-            .map(Text::method_43470)
+            .map(Text::literal)
             .collect(Collectors.toList());
 
-    private static final Text TEXT_BUTTON_RESTORE_DEFAULTS = Text.method_43470("Restore defaults");
-    private static final Text TEXT_BUTTON_CLOSE_GAME = Text.method_43470("Close game");
+    private static final Text TEXT_BUTTON_RESTORE_DEFAULTS = Text.literal("Restore defaults");
+    private static final Text TEXT_BUTTON_CLOSE_GAME = Text.literal("Close game");
 
     private final Supplier<Screen> child;
 
     public ConfigCorruptedScreen(Supplier<Screen> child) {
-        super(Text.method_43470("Config corruption detected"));
+        super(Text.literal("Config corruption detected"));
 
         this.child = child;
     }
@@ -61,8 +60,8 @@ public class ConfigCorruptedScreen extends Screen {
 
         super.render(matrices, mouseX, mouseY, delta);
 
-        drawTextWithShadow(matrices, this.textRenderer, Text.method_43470("Sodium Renderer"), 32, 32, 0xffffff);
-        drawTextWithShadow(matrices, this.textRenderer, Text.method_43470("Could not load configuration file"), 32, 48, 0xff0000);
+        drawTextWithShadow(matrices, this.textRenderer, Text.literal("Sodium Renderer"), 32, 32, 0xffffff);
+        drawTextWithShadow(matrices, this.textRenderer, Text.literal("Could not load configuration file"), 32, 48, 0xff0000);
 
         for (int i = 0; i < TEXT_BODY.size(); i++) {
             if (TEXT_BODY.get(i).getString().isEmpty()) {
