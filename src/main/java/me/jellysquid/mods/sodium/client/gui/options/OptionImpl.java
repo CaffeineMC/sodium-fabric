@@ -1,9 +1,14 @@
 package me.jellysquid.mods.sodium.client.gui.options;
 
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.gui.options.binding.GenericBinding;
 import me.jellysquid.mods.sodium.client.gui.options.binding.OptionBinding;
 import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
+import net.minecraft.client.option.AttackIndicator;
+import net.minecraft.client.option.CloudRenderMode;
+import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.Validate;
 
@@ -113,8 +118,21 @@ public class OptionImpl<S, T> implements Option<T> {
         return this.flags;
     }
 
-    public static <S, T> OptionImpl.Builder<S, T> createBuilder(Class<T> type, OptionStorage<S> storage) {
-        return new Builder<>(storage);
+    public static class BuilderFactory<T> {
+        public static final OptionImpl.BuilderFactory<Integer> integerFactory = new OptionImpl.BuilderFactory<>();
+        public static final OptionImpl.BuilderFactory<Boolean> booleanFactory = new OptionImpl.BuilderFactory<>();
+        public static final OptionImpl.BuilderFactory<AttackIndicator> attackIndicatorFactory = new OptionImpl.BuilderFactory<>();
+        public static final OptionImpl.BuilderFactory<GraphicsMode> graphicsModeFactory = new OptionImpl.BuilderFactory<>();
+        public static final OptionImpl.BuilderFactory<CloudRenderMode> cloudRenderModeFactory = new OptionImpl.BuilderFactory<>();
+        public static final OptionImpl.BuilderFactory<SodiumGameOptions.GraphicsQuality> graphicsQualityFactory = new OptionImpl.BuilderFactory<>();
+        public static final OptionImpl.BuilderFactory<ParticlesMode> particlesModeFactory = new OptionImpl.BuilderFactory<>();
+        public static final OptionImpl.BuilderFactory<SodiumGameOptions.ArenaMemoryAllocator> arenaMemoryAllocatorFactory = new OptionImpl.BuilderFactory<>();
+
+        private BuilderFactory(){}
+
+        public <S> OptionImpl.Builder<S, T> createBuilder(OptionStorage<S> storage) {
+            return new Builder<>(storage);
+        }
     }
 
     public static class Builder<S, T> {
