@@ -143,6 +143,7 @@ public class BlockRenderer {
             int lm = light.lm[j];
 
             vertices.writeVertex(origin, x, y, z, color, u, v, lm, model.getChunkId());
+
         }
 
         indices.add(vertexStart, ModelQuadWinding.CLOCKWISE);

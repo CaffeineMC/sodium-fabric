@@ -126,7 +126,7 @@ public abstract class MixinDebugHud {
             bufferBuilder.vertex(matrix, x1, y1, 0.0F).color(g, h, k, f).next();
         }
 
-        BufferBuilder.class_7433 output = bufferBuilder.end();
+        BufferBuilder.BuiltBuffer output = bufferBuilder.end();
 
         BufferRenderer.drawWithShader(output);
         RenderSystem.enableTexture();
