@@ -7,7 +7,6 @@ import net.caffeinemc.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
 import net.caffeinemc.sodium.render.texture.SpriteUtil;
 import net.caffeinemc.sodium.render.terrain.quad.ModelQuadUtil;
 import net.caffeinemc.sodium.util.packed.ColorARGB;
-import net.caffeinemc.sodium.util.rand.XoRoShiRoRandom;
 import net.caffeinemc.sodium.interop.vanilla.mixin.ItemColorProviderRegistry;
 import net.caffeinemc.sodium.util.DirectionUtil;
 import net.minecraft.client.color.item.ItemColorProvider;
@@ -19,6 +18,7 @@ import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
+import net.minecraft.world.gen.random.Xoroshiro128PlusPlusRandom;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -28,7 +28,7 @@ import java.util.List;
 
 @Mixin(ItemRenderer.class)
 public class MixinItemRenderer {
-    private final XoRoShiRoRandom random = new XoRoShiRoRandom();
+    private final Xoroshiro128PlusPlusRandom random = new Xoroshiro128PlusPlusRandom(42L);
 
     @Shadow
     @Final
@@ -40,17 +40,19 @@ public class MixinItemRenderer {
      */
     @Overwrite
     private void renderBakedItemModel(BakedModel model, ItemStack stack, int light, int overlay, MatrixStack matrices, VertexConsumer vertices) {
-        XoRoShiRoRandom random = this.random;
+        Xoroshiro128PlusPlusRandom random = this.random;
 
         for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {
-            List<BakedQuad> quads = model.getQuads(null, direction, random.setSeedAndReturn(42L));
+            random.setSeed(42L);
+            List<BakedQuad> quads = model.getQuads(null, direction, random);
 
             if (!quads.isEmpty()) {
                 this.renderBakedItemQuads(matrices, vertices, quads, stack, light, overlay);
             }
         }
 
-        List<BakedQuad> quads = model.getQuads(null, null, random.setSeedAndReturn(42L));
+        random.setSeed(42L);
+        List<BakedQuad> quads = model.getQuads(null, null, random);
 
         if (!quads.isEmpty()) {
             this.renderBakedItemQuads(matrices, vertices, quads, stack, light, overlay);

@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.10.66'
+    id 'fabric-loom' version '0.12-SNAPSHOT'
 }
 
 apply from: "${rootProject.projectDir}/gradle/fabric.gradle"
@@ -60,13 +60,13 @@ dependencies {
     includeModImplementation fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version)
     includeModImplementation fabricApi.module("fabric-resource-loader-v0", project.fabric_version)
 
-    includeImplementation 'org.joml:joml:1.10.4'
+    includeImplementation "org.joml:joml:1.10.4"
     includeImplementation project(":components:gfx")
     includeImplementation project(":components:gfx-opengl")
 
     if (findProperty("sodium.use_third_party_mods") != "false") {
-        modRuntime "maven.modrinth:lazydfu:0.1.2"
-        modRuntime "maven.modrinth:starlight:1.0.2+1.18.2"
+        modRuntimeOnly "maven.modrinth:lazydfu:0.1.2"
+//        modRuntime "maven.modrinth:starlight:1.0.2+1.18.2"
     }
 }
 

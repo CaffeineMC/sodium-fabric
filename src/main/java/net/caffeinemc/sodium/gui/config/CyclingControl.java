@@ -4,8 +4,8 @@ import net.caffeinemc.sodium.config.user.options.Option;
 import net.caffeinemc.sodium.config.user.options.TextProvider;
 import net.caffeinemc.sodium.interop.vanilla.math.vector.Dim2i;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.util.TranslatableOption;
 import org.apache.commons.lang3.Validate;
 
 public class CyclingControl<T extends Enum<T>> implements Control<T> {
@@ -39,10 +39,12 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
             Text name;
             T value = universe[i];
 
-            if (value instanceof TextProvider) {
-                name = ((TextProvider) value).getLocalizedName();
+            if (value instanceof TextProvider textProvider) {
+                name = textProvider.getLocalizedName();
+            } else if (value instanceof TranslatableOption translatableOption) {
+                name = translatableOption.getText();
             } else {
-                name = new LiteralText(value.name());
+                name = Text.literal(value.name());
             }
 
             this.names[i] = name;

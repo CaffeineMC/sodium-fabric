@@ -9,9 +9,6 @@ accessible class net/minecraft/world/chunk/PalettedContainer$DataProvider
 
 accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
 
-accessible field net/minecraft/client/option/CyclingOption setter Lnet/minecraft/client/option/CyclingOption$Setter;
-accessible field net/minecraft/client/option/CyclingOption getter Ljava/util/function/Function;
-
 accessible class net/minecraft/client/texture/Sprite$AnimationFrame
 accessible field net/minecraft/client/texture/Sprite$AnimationFrame index I
 accessible field net/minecraft/client/texture/Sprite$AnimationFrame time I
@@ -29,5 +26,3 @@ accessible field net/minecraft/client/render/VertexFormat offsets Lit/unimi/dsi/
 
 accessible field com/mojang/blaze3d/platform/GlStateManager TEXTURES [Lcom/mojang/blaze3d/platform/GlStateManager$Texture2DState;
 accessible class com/mojang/blaze3d/platform/GlStateManager$Texture2DState
-
-accessible field net/minecraft/client/render/BufferRenderer vertexFormat Lnet/minecraft/client/render/VertexFormat;

@@ -121,7 +121,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
         }
 
         var options = MinecraftClient.getInstance().options;
-        var colorBlendDistance = MathHelper.clamp(options.biomeBlendRadius, 0, 7);
+        var colorBlendDistance = MathHelper.clamp(options.getBiomeBlendRadius().getValue(), 0, 7);
 
         this.biomeColorCache = new ChunkColorCache(this.origin, this.biomeAccess, colorBlendDistance);
     }

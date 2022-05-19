@@ -4,10 +4,8 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.caffeinemc.sodium.config.user.options.TextProvider;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.GraphicsMode;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -70,7 +68,7 @@ public class UserConfig {
         private final Text name;
 
         GraphicsQuality(String name) {
-            this.name = new TranslatableText(name);
+            this.name = Text.translatable(name);
         }
 
         @Override
