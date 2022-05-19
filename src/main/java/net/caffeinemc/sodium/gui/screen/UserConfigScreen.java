@@ -4,7 +4,6 @@ import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.config.user.UserConfigCategories;
 import net.caffeinemc.sodium.config.user.UserConfig;
 import net.caffeinemc.sodium.config.user.options.*;
-import net.caffeinemc.sodium.config.user.options.*;
 import net.caffeinemc.sodium.gui.config.Control;
 import net.caffeinemc.sodium.gui.config.ControlElement;
 import net.caffeinemc.sodium.config.user.options.storage.OptionStorage;
@@ -266,7 +265,8 @@ public class UserConfigScreen extends Screen {
         }
 
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
-            client.setMipmapLevels(client.options.getMipmapLevels().getValue());
+            // This previously set the client mipmap levels, but it is no longer needed
+            // because Minecraft will make sure to set it itself
             client.reloadResourcesConcurrently();
         }
 

@@ -2,7 +2,6 @@ package net.caffeinemc.sodium.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.interop.vanilla.mixin.WorldRendererHolder;
@@ -11,9 +10,7 @@ import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderMatrices;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.terrain.context.ImmediateTerrainRenderCache;
-import net.caffeinemc.sodium.util.ListUtil;
 import net.caffeinemc.sodium.util.NativeBuffer;
 import net.caffeinemc.sodium.world.ChunkTracker;
 import net.minecraft.block.entity.BlockEntity;
@@ -29,7 +26,6 @@ import net.minecraft.util.math.*;
 import net.minecraft.util.profiler.Profiler;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.SortedSet;
 
 /**

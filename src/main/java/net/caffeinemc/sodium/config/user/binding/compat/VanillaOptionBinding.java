@@ -4,20 +4,20 @@ import net.caffeinemc.sodium.config.user.binding.OptionBinding;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.SimpleOption;
 
-public class VanillaBooleanOptionBinding implements OptionBinding<GameOptions, Boolean> {
-    private final SimpleOption<Boolean> option;
+public class VanillaOptionBinding<T> implements OptionBinding<GameOptions, T> {
+    private final SimpleOption<T> option;
 
-    public VanillaBooleanOptionBinding(SimpleOption<Boolean> option) {
+    public VanillaOptionBinding(SimpleOption<T> option) {
         this.option = option;
     }
 
     @Override
-    public void setValue(GameOptions storage, Boolean value) {
+    public void setValue(GameOptions storage, T value) {
         this.option.setValue(value);
     }
 
     @Override
-    public Boolean getValue(GameOptions storage) {
+    public T getValue(GameOptions storage) {
         return this.option.getValue();
     }
 }

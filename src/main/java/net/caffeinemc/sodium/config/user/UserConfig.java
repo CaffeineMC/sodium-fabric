@@ -4,7 +4,6 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.caffeinemc.sodium.config.user.options.TextProvider;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.GraphicsMode;
 import net.minecraft.text.Text;
 
