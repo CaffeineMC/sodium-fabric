@@ -25,8 +25,8 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Xoroshiro128PlusPlusRandom;
 import net.minecraft.world.BlockRenderView;
-import net.minecraft.world.gen.random.Xoroshiro128PlusPlusRandom;
 
 import java.util.List;
 
