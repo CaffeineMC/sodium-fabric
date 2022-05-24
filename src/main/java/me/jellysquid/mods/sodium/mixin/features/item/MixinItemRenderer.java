@@ -18,7 +18,7 @@ import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.gen.random.Xoroshiro128PlusPlusRandom;
+import net.minecraft.util.math.random.Xoroshiro128PlusPlusRandom;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
