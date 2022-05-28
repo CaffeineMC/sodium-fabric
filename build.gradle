@@ -60,6 +60,7 @@ dependencies {
     includeModImplementation fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version)
     includeModImplementation fabricApi.module("fabric-resource-loader-v0", project.fabric_version)
 
+    includeImplementation "io.github.douira:glsl-transformer:0.25.2"
     includeImplementation "org.joml:joml:1.10.4"
     includeImplementation project(":components:gfx")
     includeImplementation project(":components:gfx-opengl")
