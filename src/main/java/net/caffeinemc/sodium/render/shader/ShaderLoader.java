@@ -1,5 +1,12 @@
 package net.caffeinemc.sodium.render.shader;
 
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+
+import java.util.List;
+import java.util.Set;
+
+import net.caffeinemc.sodium.render.entity.shader.ShaderTransformer;
+import net.minecraft.client.gl.GLImportProcessor;
 import net.minecraft.util.Identifier;
 import org.apache.commons.io.IOUtils;
 

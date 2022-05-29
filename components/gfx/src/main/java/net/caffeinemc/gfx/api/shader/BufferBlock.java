@@ -5,6 +5,11 @@ package net.caffeinemc.gfx.api.shader;
  */
 public interface BufferBlock {
     /**
+     * @return The type of storage block this points to in the shader.
+     */
+    BufferBlockType type();
+
+    /**
      * @return The index of the storage block in the shader.
      */
     int index();

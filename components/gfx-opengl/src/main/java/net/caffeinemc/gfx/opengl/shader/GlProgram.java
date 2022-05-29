@@ -1,15 +1,11 @@
 package net.caffeinemc.gfx.opengl.shader;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import net.caffeinemc.gfx.api.shader.Program;
-import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
-import net.caffeinemc.gfx.api.shader.ShaderDescription;
-import net.caffeinemc.gfx.api.shader.ShaderType;
-import net.caffeinemc.gfx.opengl.GlObject;
+import net.caffeinemc.gfx.api.shader.*;
 import net.caffeinemc.gfx.opengl.GlEnum;
+import net.caffeinemc.gfx.opengl.GlObject;
 import net.caffeinemc.gfx.opengl.shader.uniform.GlBufferBlock;
 import org.lwjgl.opengl.GL20C;
-import org.lwjgl.opengl.GL32C;
 
 import java.util.function.Function;
 
@@ -100,10 +96,10 @@ public class GlProgram<T> extends GlObject implements Program<T> {
         private boolean disposed;
 
         @Override
-        public GlBufferBlock bindUniformBlock(int index) {
+        public GlBufferBlock bindBufferBlock(BufferBlockType type, int index) {
             this.checkDisposed();
 
-            return new GlBufferBlock(GlProgram.this, index);
+            return new GlBufferBlock(GlProgram.this, type, index);
         }
 
         private void checkDisposed() {
