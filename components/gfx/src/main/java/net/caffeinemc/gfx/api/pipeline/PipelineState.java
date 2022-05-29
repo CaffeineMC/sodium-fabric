@@ -8,7 +8,7 @@ public interface PipelineState {
     // TODO: disallow directly passing texture handles, require validated object
     void bindTexture(int unit, int texture, Sampler sampler);
 
-    void bindUniformBlock(BufferBlock block, Buffer buffer);
+    void bindBufferBlock(BufferBlock block, Buffer buffer);
 
-    void bindUniformBlock(BufferBlock block, Buffer buffer, long offset, long length);
+    void bindBufferBlock(BufferBlock block, Buffer buffer, long offset, long length);
 }

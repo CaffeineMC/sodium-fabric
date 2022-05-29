@@ -6,7 +6,13 @@ public final class RenderDeviceProperties {
      */
     public final int uniformBufferOffsetAlignment;
 
-    public RenderDeviceProperties(int uniformBufferOffsetAlignment) {
+    /**
+     * The required alignment for offsets used by storage buffer bindings. Always a power-of-two.
+     */
+    public final int storageBufferOffsetAlignment;
+
+    public RenderDeviceProperties(int uniformBufferOffsetAlignment, int storageBufferOffsetAlignment) {
         this.uniformBufferOffsetAlignment = uniformBufferOffsetAlignment;
+        this.storageBufferOffsetAlignment = storageBufferOffsetAlignment;
     }
 }

@@ -51,4 +51,11 @@ public class GlFence implements Fence {
 
         this.signaled = true;
     }
+
+    @Override
+    public void delete() {
+        if (!this.signaled) {
+            GL32C.glDeleteSync(this.id);
+        }
+    }
 }

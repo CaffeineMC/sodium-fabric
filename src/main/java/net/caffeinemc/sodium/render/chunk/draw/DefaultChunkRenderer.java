@@ -17,6 +17,8 @@ import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
+import net.caffeinemc.sodium.render.entity.shader.EntityShaderInterface;
+import net.caffeinemc.sodium.render.entity.shader.ShaderTransformer;
 import net.caffeinemc.sodium.render.sequence.SequenceIndexBuffer;
 import net.caffeinemc.sodium.render.shader.ShaderConstants;
 import net.caffeinemc.sodium.render.shader.ShaderLoader;
@@ -45,8 +47,9 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
 
         var maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
 
-        this.bufferCameraMatrices = new StreamingBuffer(device, 192, maxInFlightFrames);
-        this.bufferFogParameters = new StreamingBuffer(device, 32, maxInFlightFrames);
+        final int alignment = device.properties().uniformBufferOffsetAlignment;
+        this.bufferCameraMatrices = new StreamingBuffer(device, true, alignment, 192, maxInFlightFrames);
+        this.bufferFogParameters = new StreamingBuffer(device, true, alignment, 32, maxInFlightFrames);
 
         this.indexBuffer = indexBuffer;
 
@@ -66,8 +69,8 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
 
         var constants = getShaderConstants(pass, this.vertexType);
 
-        var vertShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.vert"), constants);
-        var fragShader = ShaderParser.parseShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.frag"), constants);
+        var vertShader = ShaderParser.parseSodiumShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.vert"), constants);
+        var fragShader = ShaderParser.parseSodiumShader(ShaderLoader.MINECRAFT_ASSETS, new Identifier("sodium", "terrain/terrain_opaque.frag"), constants);
 
         var desc = ShaderDescription.builder()
                 .addShaderSource(ShaderType.VERTEX, vertShader)
@@ -90,7 +93,7 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
             cmd.bindElementBuffer(this.indexBuffer.getBuffer());
 
             for (var batch : lists.batches()) {
-                pipelineState.bindUniformBlock(programInterface.uniformInstanceData, lists.instanceBuffer(),
+                pipelineState.bindBufferBlock(programInterface.uniformInstanceData, lists.instanceBuffer(),
                         batch.instanceData().offset(), batch.instanceData().length());
 
                 cmd.bindVertexBuffer(BufferTarget.VERTICES, batch.vertexBuffer(), 0, batch.vertexStride());
@@ -106,8 +109,8 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
     }
 
     private void setupUniforms(ChunkRenderMatrices renderMatrices, ChunkShaderInterface programInterface, PipelineState state, int frameIndex) {
-        var matrices = this.bufferCameraMatrices.slice(frameIndex);
-        var matricesBuf = matrices.view();
+        var matricesSlice = this.bufferCameraMatrices.slice(frameIndex);
+        var matricesBuf = matricesSlice.view();
 
         renderMatrices.projection()
                 .get(0, matricesBuf);
@@ -120,10 +123,12 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
         mvpMatrix
                 .get(128, matricesBuf);
 
-        state.bindUniformBlock(programInterface.uniformCameraMatrices, matrices.buffer(), matrices.offset(), matrices.length());
+        matricesSlice.flush();
 
-        var fogParams = this.bufferFogParameters.slice(frameIndex);
-        var fogParamsBuf = fogParams.view();
+        state.bindBufferBlock(programInterface.uniformCameraMatrices, matricesSlice.buffer(), matricesSlice.offset(), matricesSlice.length());
+
+        var fogParamsSlice = this.bufferFogParameters.slice(frameIndex);
+        var fogParamsBuf = fogParamsSlice.view();
 
         var paramFogColor = RenderSystem.getShaderFogColor();
         fogParamsBuf.putFloat(0, paramFogColor[0]);
@@ -134,7 +139,9 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
         fogParamsBuf.putFloat(20, RenderSystem.getShaderFogEnd());
         fogParamsBuf.putInt(24, RenderSystem.getShaderFogShape().getId());
 
-        state.bindUniformBlock(programInterface.uniformFogParameters, fogParams.buffer(), fogParams.offset(), fogParams.length());
+        fogParamsSlice.flush();
+
+        state.bindBufferBlock(programInterface.uniformFogParameters, fogParamsSlice.buffer(), fogParamsSlice.offset(), fogParamsSlice.length());
     }
 
     private static ShaderConstants getShaderConstants(ChunkRenderPass pass, TerrainVertexType vertexType) {

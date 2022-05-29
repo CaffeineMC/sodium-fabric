@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import net.caffeinemc.gfx.api.array.attribute.VertexAttributeFormat;
 import net.caffeinemc.gfx.api.pipeline.state.BlendFunc;
 import net.caffeinemc.gfx.api.pipeline.state.DepthFunc;
+import net.caffeinemc.gfx.api.shader.BufferBlockType;
 import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
@@ -92,6 +93,11 @@ public class GlEnum {
         map.put(ShaderType.TESSELLATION_EVALUATION, GL45C.GL_TESS_EVALUATION_SHADER);
     });
 
+    private static final int[] BUFFER_BLOCK_TYPES = build(BufferBlockType.class, (map) -> {
+        map.put(BufferBlockType.STORAGE, GL45C.GL_SHADER_STORAGE_BUFFER);
+        map.put(BufferBlockType.UNIFORM, GL45C.GL_UNIFORM_BUFFER);
+    });
+
     public static int from(PrimitiveType value) {
         return PRIMITIVE_TYPES[value.ordinal()];
     }
@@ -118,6 +124,10 @@ public class GlEnum {
 
     public static int from(ShaderType value) {
         return SHADER_TYPES[value.ordinal()];
+    }
+
+    public static int from(BufferBlockType value) {
+        return BUFFER_BLOCK_TYPES[value.ordinal()];
     }
 
     private static <T extends Enum<T>> int[] build(Class<T> type, Consumer<Reference2IntMap<T>> consumer) {

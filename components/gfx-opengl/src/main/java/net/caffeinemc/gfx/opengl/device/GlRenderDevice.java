@@ -55,7 +55,17 @@ public class GlRenderDevice implements RenderDevice {
                     .formatted(uniformBufferAlignment));
         }
 
-        return new RenderDeviceProperties(uniformBufferAlignment);
+        var storageBufferAlignment = GL45C.glGetInteger(GL45C.GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT);
+
+        if (!MathUtil.mathIsPoT(storageBufferAlignment)) {
+            throw new RuntimeException("GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT is not a power-of-two (found value of %s)"
+                    .formatted(storageBufferAlignment));
+        }
+
+        return new RenderDeviceProperties(
+                uniformBufferAlignment,
+                storageBufferAlignment
+        );
     }
 
     @Override
@@ -302,7 +312,7 @@ public class GlRenderDevice implements RenderDevice {
 
                 Validate.isTrue(indirectOffset >= 0, "Command offset must be greater than or equal to zero");
                 Validate.isTrue(indirectCount > 0, "Command count must be positive");
-                Validate.isTrue(indirectOffset + (indirectCount * 20) <= this.commandBuffer.capacity(),
+                Validate.isTrue(indirectOffset + (indirectCount * 20L) <= this.commandBuffer.capacity(),
                         "Command buffer range is out of bounds");
             }
 

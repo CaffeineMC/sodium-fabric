@@ -1,5 +1,6 @@
 package net.caffeinemc.sodium.render.chunk.shader;
 
+import net.caffeinemc.gfx.api.shader.BufferBlockType;
 import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
 import net.caffeinemc.gfx.api.shader.BufferBlock;
 
@@ -12,8 +13,8 @@ public class ChunkShaderInterface {
     public final BufferBlock uniformFogParameters;
 
     public ChunkShaderInterface(ShaderBindingContext context) {
-        this.uniformCameraMatrices = context.bindUniformBlock(0);
-        this.uniformInstanceData = context.bindUniformBlock(1);
-        this.uniformFogParameters = context.bindUniformBlock(2);
+        this.uniformCameraMatrices = context.bindBufferBlock(BufferBlockType.UNIFORM, 0);
+        this.uniformInstanceData = context.bindBufferBlock(BufferBlockType.UNIFORM, 1);
+        this.uniformFogParameters = context.bindBufferBlock(BufferBlockType.UNIFORM, 2);
     }
 }

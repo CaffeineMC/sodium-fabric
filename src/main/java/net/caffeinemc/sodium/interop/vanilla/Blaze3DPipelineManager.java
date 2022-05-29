@@ -110,18 +110,18 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
         }
 
         @Override
-        public void bindUniformBlock(BufferBlock block, Buffer buffer) {
-            this.bindUniformBlock(block, buffer, 0, buffer.capacity());
+        public void bindBufferBlock(BufferBlock block, Buffer buffer) {
+            this.bindBufferBlock(block, buffer, 0, buffer.capacity());
         }
 
         @Override
-        public void bindUniformBlock(BufferBlock block, Buffer buffer, long offset, long length) {
+        public void bindBufferBlock(BufferBlock block, Buffer buffer, long offset, long length) {
             if (RenderConfiguration.API_CHECKS) {
                 Validate.isTrue(offset >= 0, "Offset must be greater-than or equal to zero");
                 Validate.isTrue(offset + length <= buffer.capacity(), "Range is out of buffer bounds");
             }
 
-            GL32C.glBindBufferRange(GL32C.GL_UNIFORM_BUFFER, block.index(), GlAbstractBuffer.handle(buffer), offset, length);
+            GL32C.glBindBufferRange(GlEnum.from(block.type()), block.index(), GlAbstractBuffer.handle(buffer), offset, length);
         }
 
         public void restore() {
