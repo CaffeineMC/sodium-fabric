@@ -125,11 +125,6 @@ public class EntityShaderTransformer {
         public boolean isFinished() {
             return this.found.getValue();
         }
-
-        @Override
-        public boolean isActive() {
-            return !this.getJobParameters().skippedVertexInputs.contains(this.name);
-        }
     }
 
     static {
@@ -165,13 +160,10 @@ public class EntityShaderTransformer {
             }
         };
 
-        TransformationPhase<Parameters> addExtensions = new RunPhase<>() {
-            @Override
-            protected void run(TranslationUnitContext ctx) {
-                //"#extension GL_ARB_shading_language_packing : require\n"
-                this.injectExternalDeclaration(InjectionPoint.BEFORE_EXTENSIONS, "#extension GL_ARB_shader_storage_buffer_object : require\n");
-            }
-        };
+        TransformationPhase<Parameters> addExtensions = RunPhase.withInjectExternalDeclarations(
+                InjectionPoint.BEFORE_EXTENSIONS,
+                "#extension GL_ARB_shader_storage_buffer_object : require\n"
+        );
 
         LifecycleUser<Parameters> replaceVertexInputs = new Transformation<>() {
             private final MutableBoolean foundNormal = new MutableBoolean(false);
@@ -190,95 +182,79 @@ public class EntityShaderTransformer {
             @Override
             protected void setupGraph() {
                 // Color
-                ReplaceVertexInputPhase replaceColor = new ReplaceVertexInputPhase(Type.F32VEC4, "Color", this.foundNormal);
-                this.addEndDependent(replaceColor);
+                if (!this.getJobParameters().skippedVertexInputs.contains("Color")) {
+                    ReplaceVertexInputPhase replaceColor = new ReplaceVertexInputPhase(Type.F32VEC4, "Color", this.foundNormal);
+                    this.addEndDependent(replaceColor);
 
-                this.chainDependent(new AddToMainHeadPhase() {
-                    @Override
-                    protected ParseTree createNodeToAdd(CompoundStatementContext methodBody) {
-                        return createLocalRoot("\n    Color = " + PREFIX + "model.Color;", methodBody, GLSLParser::statement);
-                    }
-
-                    @Override
-                    public boolean isActive() {
-                        return foundNormal.booleanValue();
-                    }
-                });
+                    this.chainDependent(new AddToMainHeadPhase() {
+                        @Override
+                        protected ParseTree createNodeToAdd(CompoundStatementContext methodBody) {
+                            return createLocalRoot("\n    Color = " + PREFIX + "model.Color;", methodBody, GLSLParser::statement);
+                        }
+                    }).activation(this.foundNormal::booleanValue);
+                }
 
                 // UV1
-                ReplaceVertexInputPhase replaceUV1 = new ReplaceVertexInputPhase(Type.I16VEC2, "UV1", this.foundUV1);
-                this.addEndDependent(replaceUV1);
+                if (!this.getJobParameters().skippedVertexInputs.contains("UV1")) {
+                    ReplaceVertexInputPhase replaceUV1 = new ReplaceVertexInputPhase(Type.I16VEC2, "UV1", this.foundUV1);
+                    this.addEndDependent(replaceUV1);
 
-                this.chainDependent(new AddToMainHeadPhase() {
-                    @Override
-                    protected ParseTree createNodeToAdd(CompoundStatementContext methodBody) {
-                        return createLocalRoot("\n    UV1 = " + PREFIX + "model.UV1;", methodBody, GLSLParser::statement);
-                    }
-
-                    @Override
-                    public boolean isActive() {
-                        return foundUV1.booleanValue();
-                    }
-                });
+                    this.chainDependent(new AddToMainHeadPhase() {
+                        @Override
+                        protected ParseTree createNodeToAdd(CompoundStatementContext methodBody) {
+                            return createLocalRoot("\n    UV1 = " + PREFIX + "model.UV1;", methodBody, GLSLParser::statement);
+                        }
+                    }).activation(this.foundUV1::booleanValue);
+                }
 
                 // UV2
-                ReplaceVertexInputPhase replaceUV2 = new ReplaceVertexInputPhase(Type.I16VEC2, "UV2", this.foundUV2);
-                this.addEndDependent(replaceUV2);
+                if (!this.getJobParameters().skippedVertexInputs.contains("UV2")) {
+                    ReplaceVertexInputPhase replaceUV2 = new ReplaceVertexInputPhase(Type.I16VEC2, "UV2", this.foundUV2);
+                    this.addEndDependent(replaceUV2);
 
-                this.chainDependent(new AddToMainHeadPhase() {
-                    @Override
-                    protected ParseTree createNodeToAdd(CompoundStatementContext methodBody) {
-                        return createLocalRoot("\n    UV2 = " + PREFIX + "model.UV2;", methodBody, GLSLParser::statement);
-                    }
-
-                    @Override
-                    public boolean isActive() {
-                        return foundUV2.booleanValue();
-                    }
-                });
+                    this.chainDependent(new AddToMainHeadPhase() {
+                        @Override
+                        protected ParseTree createNodeToAdd(CompoundStatementContext methodBody) {
+                            return createLocalRoot("\n    UV2 = " + PREFIX + "model.UV2;", methodBody, GLSLParser::statement);
+                        }
+                    }).activation(this.foundUV2::booleanValue);
+                }
 
                 // Normal
-                ReplaceVertexInputPhase replaceNormal = new ReplaceVertexInputPhase(
-                        Type.I8VEC3,
-                        "Normal",
-                        "\nin vec3 " + PREFIX + "PreMulNormal;",
-                        this.foundNormal
-                );
+                if (!this.getJobParameters().skippedVertexInputs.contains("Normal")) {
+                    ReplaceVertexInputPhase replaceNormal = new ReplaceVertexInputPhase(
+                            Type.I8VEC3,
+                            "Normal",
+                            "\nin vec3 " + PREFIX + "PreMulNormal;",
+                            this.foundNormal
+                    );
 
-                this.addEndDependent(replaceNormal);
+                    this.addEndDependent(replaceNormal);
 
-                this.chainDependent(new AddToMainHeadPhase() {
-                    @Override
-                    protected ParseTree createNodeToAdd(CompoundStatementContext methodBody) {
-                        // does this actually need another call to normalize?
-                        return createLocalRoot(
-                                "\n    Normal = normalize(mat3(" + PREFIX + "modelPart.NormalMat) * " + PREFIX + "PreMulNormal);",
-                                methodBody,
-                                GLSLParser::statement
-                        );
-                    }
-
-                    @Override
-                    public boolean isActive() {
-                        return foundNormal.booleanValue();
-                    }
-                });
+                    this.chainDependent(new AddToMainHeadPhase() {
+                        @Override
+                        protected ParseTree createNodeToAdd(CompoundStatementContext methodBody) {
+                            // does this actually need another call to normalize?
+                            return createLocalRoot(
+                                    "\n    Normal = normalize(mat3(" + PREFIX + "modelPart.NormalMat) * " + PREFIX + "PreMulNormal);",
+                                    methodBody,
+                                    GLSLParser::statement
+                            );
+                        }
+                    }).activation(this.foundNormal::booleanValue);
+                }
             }
         };
 
-        TransformationPhase<Parameters> addVertexInputs = new RunPhase<>() {
-            @Override
-            protected void run(TranslationUnitContext ctx) {
-                this.injectExternalDeclaration(InjectionPoint.BEFORE_FUNCTIONS, "\nin uint " + PREFIX + "PartId;");
-            }
-        };
+        TransformationPhase<Parameters> addVertexInputs = RunPhase.withInjectExternalDeclarations(
+                InjectionPoint.BEFORE_FUNCTIONS,
+                "\nin uint " + PREFIX + "PartId;"
+        );
 
-        TransformationPhase<Parameters> addUniforms = new RunPhase<>() {
-            @Override
-            protected void run(TranslationUnitContext ctx) {
-                this.injectExternalDeclarations(InjectionPoint.BEFORE_FUNCTIONS, "\nuniform uint " + PREFIX + "InstanceOffset;");
-            }
-        };
+        TransformationPhase<Parameters> addUniforms = RunPhase.withInjectExternalDeclarations(
+                InjectionPoint.BEFORE_FUNCTIONS,
+                "\nuniform uint " + PREFIX + "InstanceOffset;"
+        );
 
         Transformation<Parameters> retrieveModelAndModelPart = new Transformation<>() {
             @Override
@@ -307,48 +283,42 @@ public class EntityShaderTransformer {
             }
         };
 
-        TransformationPhase<Parameters> createBuffers = new RunPhase<>() {
-            @Override
-            protected void run(TranslationUnitContext ctx) {
-                this.injectExternalDeclarations(
-                        InjectionPoint.BEFORE_FUNCTIONS,
-                        "\n" +
+        TransformationPhase<Parameters> createBuffers = RunPhase.withInjectExternalDeclarations(
+                InjectionPoint.BEFORE_FUNCTIONS,
+                "\n" +
                         "layout(std140, binding = 1) readonly restrict buffer " + PREFIX + "ModelPartsLayout {\n" +
                         "    ModelPart[] modelParts;\n" +
                         "} " + PREFIX + "ModelPartsBuffer;",
-                        "\n" +
+                "\n" +
                         "layout(std140, binding = 2) readonly restrict buffer " + PREFIX + "ModelsLayout {\n" +
                         "    Model[] models;\n" +
                         "} " + PREFIX + "ModelsBuffer;"
-                );
-            }
-        };
+        );
 
         Transformation<Parameters> createModelPartStruct = new Transformation<>() {
             @Override
             protected void setupGraph() {
                 // TODO: allow adding more to this and dynamically removing stuff
-                this.addEndDependent(new WalkPhase<Parameters>() {
-                    private ParseTreePattern modelViewMatPattern;
+                if (!this.getJobParameters().skippedUniforms.contains("ModelViewMat")) {
+                    this.addEndDependent(new WalkPhase<Parameters>() {
+                        private ParseTreePattern modelViewMatPattern;
 
-                    @Override
-                    public void init() {
-                        this.modelViewMatPattern = this.compilePattern("uniform mat4 ModelViewMat;", GLSLParser.RULE_externalDeclaration);
-                    }
-
-                    @Override
-                    public void enterExternalDeclaration(ExternalDeclarationContext ctx) {
-                        ParseTreeMatch match = this.modelViewMatPattern.match(ctx);
-                        if (match.succeeded()) {
-                            removeNode(ctx);
+                        @Override
+                        public void init() {
+                            this.modelViewMatPattern = this.compilePattern("uniform mat4 ModelViewMat;", GLSLParser.RULE_externalDeclaration);
                         }
-                    }
-                });
 
-                this.chainDependent(new RunPhase<Parameters>() {
-                    @Override
-                    protected void run(TranslationUnitContext ctx) {
-                        this.injectExternalDeclaration(
+                        @Override
+                        public void enterExternalDeclaration(ExternalDeclarationContext ctx) {
+                            ParseTreeMatch match = this.modelViewMatPattern.match(ctx);
+                            if (match.succeeded()) {
+                                removeNode(ctx);
+                            }
+                        }
+                    });
+                }
+
+                this.chainDependent(RunPhase.withInjectExternalDeclarations(
                                 InjectionPoint.BEFORE_FUNCTIONS,
                                 """
                                         struct ModelPart {
@@ -356,31 +326,25 @@ public class EntityShaderTransformer {
                                             mat3x4 NormalMat;
                                         };
                                         """
-                        );
-                    }
-                });
+                        )
+                );
             }
         };
 
         // TODO: allow adding more to this and dynamically removing stuff
-        TransformationPhase<Parameters> createModelStruct = new RunPhase<>() {
-            @Override
-            protected void run(TranslationUnitContext ctx) {
-                this.injectExternalDeclaration(
-                        InjectionPoint.BEFORE_FUNCTIONS,
+        TransformationPhase<Parameters> createModelStruct = RunPhase.withInjectExternalDeclarations(
+                InjectionPoint.BEFORE_FUNCTIONS,
+                """
+                                                
+                        struct Model {
+                            vec4 Color;
+                            ivec2 UV1;
+                            ivec2 UV2;
+                            vec3 Padding;
+                            uint PartOffset;
+                        };
                         """
-                                
-                                struct Model {
-                                    vec4 Color;
-                                    ivec2 UV1;
-                                    ivec2 UV2;
-                                    vec3 Padding;
-                                    uint PartOffset;
-                                };
-                                """
-                );
-            }
-        };
+        );
 
         MANAGER = new TransformationManager<>(new Transformation<>() {
             @Override
@@ -408,47 +372,47 @@ public class EntityShaderTransformer {
         System.out.println(
                 transform(
                         """
-                        #version 150
-                        
-                        //#moj_import <light.glsl>
-                        //#moj_import <fog.glsl>
-                        
-                        in vec3 Position;
-                        in vec4 Color;
-                        in vec2 UV0;
-                        in ivec2 UV1;
-                        in ivec2 UV2;
-                        in vec3 Normal;
-                        
-                        uniform sampler2D Sampler1;
-                        uniform sampler2D Sampler2;
-                        
-                        uniform mat4 ModelViewMat;
-                        uniform mat4 ProjMat;
-                        uniform mat3 IViewRotMat;
-                        uniform int FogShape;
-                        
-                        uniform vec3 Light0_Direction;
-                        uniform vec3 Light1_Direction;
-                        
-                        out float vertexDistance;
-                        out vec4 vertexColor;
-                        out vec4 lightMapColor;
-                        out vec4 overlayColor;
-                        out vec2 texCoord0;
-                        out vec4 normal;
-                        
-                        void main() {
-                            gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
+                                #version 150
                                                         
-                            vertexDistance = fog_distance(ModelViewMat, IViewRotMat * Position, FogShape);
-                            vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);
-                            lightMapColor = texelFetch(Sampler2, UV2 / 16, 0);
-                            overlayColor = texelFetch(Sampler1, UV1, 0);
-                            texCoord0 = UV0;
-                            normal = ProjMat * ModelViewMat * vec4(Normal, 0.0);
-                        }
-                        """,
+                                //#moj_import <light.glsl>
+                                //#moj_import <fog.glsl>
+                                                        
+                                in vec3 Position;
+                                in vec4 Color;
+                                in vec2 UV0;
+                                in ivec2 UV1;
+                                in ivec2 UV2;
+                                in vec3 Normal;
+                                                        
+                                uniform sampler2D Sampler1;
+                                uniform sampler2D Sampler2;
+                                                        
+                                uniform mat4 ModelViewMat;
+                                uniform mat4 ProjMat;
+                                uniform mat3 IViewRotMat;
+                                uniform int FogShape;
+                                                        
+                                uniform vec3 Light0_Direction;
+                                uniform vec3 Light1_Direction;
+                                                        
+                                out float vertexDistance;
+                                out vec4 vertexColor;
+                                out vec4 lightMapColor;
+                                out vec4 overlayColor;
+                                out vec2 texCoord0;
+                                out vec4 normal;
+                                                        
+                                void main() {
+                                    gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
+                                                                
+                                    vertexDistance = fog_distance(ModelViewMat, IViewRotMat * Position, FogShape);
+                                    vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color);
+                                    lightMapColor = texelFetch(Sampler2, UV2 / 16, 0);
+                                    overlayColor = texelFetch(Sampler1, UV1, 0);
+                                    texCoord0 = UV0;
+                                    normal = ProjMat * ModelViewMat * vec4(Normal, 0.0);
+                                }
+                                """,
                         new Parameters()
                 )
         );
