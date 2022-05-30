@@ -53,6 +53,7 @@ public class UserConfigCategories {
                         .setTooltip(Text.translatable("sodium.options.gui_scale.tooltip"))
                         .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.guiScale()))
                         .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getGuiScale()))
+                        .setFlags(OptionFlag.REQUIRES_RESOLUTION_UPDATE)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName(Text.translatable("options.fullscreen"))

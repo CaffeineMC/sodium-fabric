@@ -257,6 +257,10 @@ public class UserConfigScreen extends Screen {
 
         MinecraftClient client = MinecraftClient.getInstance();
 
+        if (flags.contains(OptionFlag.REQUIRES_RESOLUTION_UPDATE)) {
+            client.onResolutionChanged();
+        }
+
         if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
             client.worldRenderer.reload();
         } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
