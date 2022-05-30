@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import net.caffeinemc.gfx.api.sync.Fence;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.minecraft.client.MinecraftClient;
+import org.lwjgl.opengl.GL32C;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,5 +21,10 @@ public class MixinMinecraftClient {
             var fence = this.fences.dequeue();
             fence.sync();
         }
+    }
+
+    @Inject(method = "render", at = @At("RETURN"))
+    private void postRender(boolean tick, CallbackInfo ci) {
+        this.fences.enqueue(SodiumClientMod.DEVICE.createFence());
     }
 }

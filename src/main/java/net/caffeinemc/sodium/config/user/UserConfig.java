@@ -61,7 +61,7 @@ public class UserConfig {
     }
 
     public enum GraphicsQuality implements TextProvider {
-        DEFAULT("generator.default"),
+        DEFAULT("generator.minecraft.normal"),
         FANCY("options.clouds.fancy"),
         FAST("options.clouds.fast");
 

@@ -169,18 +169,18 @@ public class ChunkPrep {
         public int maxVertexIndex;
 
         private RenderListBuilder(RenderDevice device, long commandBufferCapacity, long instanceBufferCapacity, int alignment) {
-            var flags = EnumSet.of(MappedBufferFlags.WRITE);
+            var flags = EnumSet.of(MappedBufferFlags.WRITE, MappedBufferFlags.EXPLICIT_FLUSH);
 
             this.commandBuffer = device.createMappedBuffer(commandBufferCapacity, flags);
             this.instanceBuffer = device.createMappedBuffer(instanceBufferCapacity, flags);
 
-            this.commandBufferBuilder = new CommandBufferBuilder(this.commandBuffer.view(), alignment);
-            this.instanceBufferBuilder = new InstanceBufferBuilder(this.instanceBuffer.view(), alignment);
+            this.commandBufferBuilder = new CommandBufferBuilder(this.commandBuffer, alignment);
+            this.instanceBufferBuilder = new InstanceBufferBuilder(this.instanceBuffer, alignment);
         }
     }
 
     private static abstract class BufferBuilder {
-        protected final ByteBuffer buffer;
+        protected final MappedBuffer mappedBuffer;
 
         protected final int alignment;
         protected final int stride;
@@ -192,16 +192,18 @@ public class ChunkPrep {
 
         protected long ptr;
 
-        private BufferBuilder(ByteBuffer buffer, int alignment, int stride) {
-            this.buffer = buffer;
+        private BufferBuilder(MappedBuffer mappedBuffer, int alignment, int stride) {
+            this.mappedBuffer = mappedBuffer;
             this.alignment = alignment;
             this.stride = stride;
-            this.capacity = buffer.capacity();
+
+            ByteBuffer bufferView = mappedBuffer.view();
+            this.capacity = bufferView.capacity();
 
             this.count = 0;
-            this.limit = buffer.limit() / stride;
+            this.limit = bufferView.limit() / stride;
 
-            this.ptr = MemoryUtil.memAddress(this.buffer);
+            this.ptr = MemoryUtil.memAddress(bufferView);
         }
 
         public BufferSlice flush() {
@@ -210,9 +212,11 @@ public class ChunkPrep {
             var length = this.count * this.stride;
             var slice = new BufferSlice(position - length, length);
 
-            this.ptr = MemoryUtil.memAddress(this.buffer, MathUtil.align(position, this.alignment));
+            this.ptr = MemoryUtil.memAddress(this.mappedBuffer.view(), MathUtil.align(position, this.alignment));
             this.limit -= this.count;
             this.count = 0;
+
+            this.mappedBuffer.flush(slice.offset, slice.length);
 
             return slice;
         }
@@ -222,13 +226,13 @@ public class ChunkPrep {
         }
 
         public int position() {
-            return (int) (this.ptr - MemoryUtil.memAddress(this.buffer));
+            return (int) (this.ptr - MemoryUtil.memAddress(this.mappedBuffer.view()));
         }
     }
 
     private static class CommandBufferBuilder extends BufferBuilder {
-        private CommandBufferBuilder(ByteBuffer buffer, int alignment) {
-            super(buffer, alignment, COMMAND_STRUCT_STRIDE);
+        private CommandBufferBuilder(MappedBuffer mappedBuffer, int alignment) {
+            super(mappedBuffer, alignment, COMMAND_STRUCT_STRIDE);
         }
 
         public void push(int vertexCount, int vertexStart, int baseInstance) {
@@ -249,8 +253,8 @@ public class ChunkPrep {
     }
 
     private static class InstanceBufferBuilder extends BufferBuilder {
-        private InstanceBufferBuilder(ByteBuffer buffer, int alignment) {
-            super(buffer, alignment, INSTANCE_STRUCT_STRIDE);
+        private InstanceBufferBuilder(MappedBuffer mappedBuffer, int alignment) {
+            super(mappedBuffer, alignment, INSTANCE_STRUCT_STRIDE);
         }
 
         public void push(float x, float y, float z) {
