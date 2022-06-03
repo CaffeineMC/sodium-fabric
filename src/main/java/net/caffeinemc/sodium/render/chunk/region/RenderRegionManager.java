@@ -3,9 +3,12 @@ package net.caffeinemc.sodium.render.chunk.region;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
+import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.arena.BufferSegment;
 import net.caffeinemc.sodium.render.arena.PendingUpload;
+import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.draw.IntPool;
@@ -23,10 +26,21 @@ public class RenderRegionManager {
 
     private final RenderDevice device;
     private final TerrainVertexType vertexType;
+    private final StreamingBuffer streamingBuffer;
 
     public RenderRegionManager(RenderDevice device, TerrainVertexType vertexType) {
         this.device = device;
         this.vertexType = vertexType;
+
+        var maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
+        this.streamingBuffer = new StreamingBuffer(
+                device,
+                1,
+                0x80000, // start with 512KiB per section and expand from there if needed
+                maxInFlightFrames,
+                MappedBufferFlags.EXPLICIT_FLUSH,
+                MappedBufferFlags.CLIENT_STORAGE
+        );
     }
 
     public RenderRegion getRegion(long regionId) {
@@ -47,9 +61,9 @@ public class RenderRegionManager {
         }
     }
 
-    public void uploadChunks(Iterator<TerrainBuildResult> queue, @Deprecated RenderUpdateCallback callback) {
+    public void uploadChunks(Iterator<TerrainBuildResult> queue, int frameIndex, @Deprecated RenderUpdateCallback callback) {
         for (var entry : this.setupUploadBatches(queue)) {
-            this.uploadGeometryBatch(entry.getLongKey(), entry.getValue());
+            this.uploadGeometryBatch(entry.getLongKey(), entry.getValue(), frameIndex);
 
             for (TerrainBuildResult result : entry.getValue()) {
                 RenderSection section = result.render();
@@ -74,7 +88,7 @@ public class RenderRegionManager {
         void accept(RenderSection section, ChunkRenderData prev, ChunkRenderData next);
     }
 
-    private void uploadGeometryBatch(long regionKey, List<TerrainBuildResult> results) {
+    private void uploadGeometryBatch(long regionKey, List<TerrainBuildResult> results, int frameIndex) {
         List<PendingUpload> uploads = new ArrayList<>();
         List<ChunkGeometryUpload> jobs = new ArrayList<>(results.size());
 
@@ -105,10 +119,10 @@ public class RenderRegionManager {
         RenderRegion region = this.regions.get(regionKey);
 
         if (region == null) {
-            this.regions.put(regionKey, region = new RenderRegion(this.device, this.vertexType, this.idPool.create()));
+            this.regions.put(regionKey, region = new RenderRegion(this.device, this.streamingBuffer, this.vertexType, this.idPool.create()));
         }
 
-        region.vertexBuffers.upload(uploads);
+        region.vertexBuffers.upload(uploads, frameIndex);
 
         // Collect the upload results
         for (ChunkGeometryUpload upload : jobs) {

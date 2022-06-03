@@ -182,7 +182,12 @@ public class GlRenderDevice implements RenderDevice {
         }
 
         var storage = GL45C.GL_MAP_PERSISTENT_BIT | getMappedBufferStorageBits(flags);
-        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | getMappedBufferAccessBits(flags);
+
+        // GL_MAP_INVALIDATE_BUFFER_BIT invalidates the contents of the buffer when it's mapped. Should this be changed to
+        // GL_MAP_INVALIDATE_RANGE_BIT? Also, we're creating a new buffer, not orphaning. What's the deal?
+        //
+        // Why were we combining GL_MAP_PERSISTENT_BIT with GL_MAP_UNSYNCHRONIZED_BIT? It doesn't do anything.
+        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | getMappedBufferAccessBits(flags);
 
         var handle = GL45C.glCreateBuffers();
         GL45C.glNamedBufferStorage(handle, capacity, storage);
@@ -341,40 +346,48 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     private static int getMappedBufferStorageBits(Set<MappedBufferFlags> flags) {
-        int storage = 0;
+        int bits = 0;
 
         if (flags.contains(MappedBufferFlags.READ)) {
-            storage |= GL45C.GL_MAP_READ_BIT;
+            bits |= GL45C.GL_MAP_READ_BIT;
         }
 
         if (flags.contains(MappedBufferFlags.WRITE)) {
-            storage |= GL45C.GL_MAP_WRITE_BIT;
+            bits |= GL45C.GL_MAP_WRITE_BIT;
+            // TODO: the spec and the wiki conflict on how this should be used.
+            // the spec says that this is needed for ANY client modification, but the wiki says that this is only needed
+            // for if you're going to be using glBufferSubData. for now, i'm going to exclude it.
+//            bits |= GL45C.GL_DYNAMIC_STORAGE_BIT;
         }
 
         if (!flags.contains(MappedBufferFlags.EXPLICIT_FLUSH)) {
-            storage |= GL45C.GL_MAP_COHERENT_BIT;
+            bits |= GL45C.GL_MAP_COHERENT_BIT;
         }
 
-        return storage;
+        if (flags.contains(MappedBufferFlags.CLIENT_STORAGE)) {
+            bits |= GL45C.GL_CLIENT_STORAGE_BIT;
+        }
+
+        return bits;
     }
 
     private static int getMappedBufferAccessBits(Set<MappedBufferFlags> flags) {
-        int access = 0;
+        int bits = 0;
 
         if (flags.contains(MappedBufferFlags.READ)) {
-            access |= GL45C.GL_MAP_READ_BIT;
+            bits |= GL45C.GL_MAP_READ_BIT;
         }
 
         if (flags.contains(MappedBufferFlags.WRITE)) {
-            access |= GL45C.GL_MAP_WRITE_BIT;
+            bits |= GL45C.GL_MAP_WRITE_BIT;
         }
 
         if (flags.contains(MappedBufferFlags.EXPLICIT_FLUSH)) {
-            access |= GL45C.GL_MAP_FLUSH_EXPLICIT_BIT;
+            bits |= GL45C.GL_MAP_FLUSH_EXPLICIT_BIT;
         } else {
-            access |= GL45C.GL_MAP_COHERENT_BIT;
+            bits |= GL45C.GL_MAP_COHERENT_BIT;
         }
 
-        return access;
+        return bits;
     }
 }

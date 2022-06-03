@@ -10,6 +10,7 @@ import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.SodiumWorldRenderer;
+import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.render.chunk.compile.ChunkBuilder;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
@@ -55,6 +56,8 @@ public class RenderSectionManager {
 
     private final ChunkBuilder builder;
 
+    private final RenderListBuilder renderListBuilder;
+
     private final RenderRegionManager regions;
     private final ClonedChunkSectionCache sectionCache;
 
@@ -70,12 +73,12 @@ public class RenderSectionManager {
     private final SequenceIndexBuffer indexBuffer;
 
     private boolean needsUpdate;
-    private int currentFrame = 0;
+    private int frameIndex = 0;
 
     private final ChunkTracker tracker;
     private final RenderDevice device;
 
-    private Map<ChunkRenderPass, ChunkPrep.PreparedRenderList> renderLists;
+    private Map<ChunkRenderPass, RenderListBuilder.RenderList> renderLists;
     private ChunkCameraContext camera;
 
     private final ReferenceArrayList<RenderSection> visibleMeshedSections = new ReferenceArrayList<>();
@@ -95,10 +98,22 @@ public class RenderSectionManager {
         this.device = device;
         this.chunkRenderers = new Reference2ReferenceOpenHashMap<>();
 
+        this.renderListBuilder = new RenderListBuilder(device);
+
         this.indexBuffer = new SequenceIndexBuffer(device, SequenceBuilder.QUADS);
 
         for (var renderPass : DefaultRenderPasses.ALL) {
-            this.chunkRenderers.put(renderPass, createChunkRenderer(device, this.indexBuffer, vertexType, renderPass));
+            this.chunkRenderers.put(
+                    renderPass,
+                    createChunkRenderer(
+                            device,
+                            this.renderListBuilder.getInstanceBuffer(),
+                            this.renderListBuilder.getCommandBuffer(),
+                            this.indexBuffer,
+                            vertexType,
+                            renderPass
+                    )
+            );
         }
 
         this.world = world;
@@ -125,16 +140,12 @@ public class RenderSectionManager {
                 .forEach(pos -> this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
     }
 
-    public void setFrameIndex(int frame) {
-        this.currentFrame = frame;
+    public void setFrameIndex(int frameIndex) {
+        this.frameIndex = frameIndex;
     }
 
     public void update(ChunkCameraContext camera, Frustum frustum, boolean spectator) {
         this.camera = camera;
-
-        if (this.renderLists != null) {
-            ChunkPrep.deleteRenderLists(this.device, this.renderLists);
-        }
 
         BlockPos origin = camera.getBlockPos();
         var useOcclusionCulling = !spectator || !this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin);
@@ -145,7 +156,7 @@ public class RenderSectionManager {
 
         var chunks = new SortedChunkLists(this.regions, this.visibleMeshedSections);
 
-        this.renderLists = ChunkPrep.createRenderLists(this.device, chunks, this.camera);
+        this.renderLists = this.renderListBuilder.createRenderLists(chunks, this.camera, this.frameIndex);
         this.needsUpdate = false;
     }
 
@@ -256,7 +267,7 @@ public class RenderSectionManager {
         var chunkRenderer = this.chunkRenderers.get(renderPass);
 
         if (chunkRenderer != null) {
-            chunkRenderer.render(this.renderLists.get(renderPass), renderPass, matrices, this.currentFrame);
+            chunkRenderer.render(this.renderLists.get(renderPass), renderPass, matrices, this.frameIndex);
         }
     }
 
@@ -289,7 +300,14 @@ public class RenderSectionManager {
 
         if (!blockingFutures.isEmpty()) {
             this.needsUpdate = true;
-            this.regions.uploadChunks(new WorkStealingFutureDrain<>(blockingFutures, this.builder::stealTask), this::onChunkDataChanged);
+            this.regions.uploadChunks(
+                    new WorkStealingFutureDrain<>(
+                            blockingFutures,
+                            this.builder::stealTask
+                    ),
+                    this.frameIndex,
+                    this::onChunkDataChanged
+            );
         }
 
         this.regions.cleanup();
@@ -341,7 +359,7 @@ public class RenderSectionManager {
             return false;
         }
 
-        this.regions.uploadChunks(it, this::onChunkDataChanged);
+        this.regions.uploadChunks(it, this.frameIndex, this::onChunkDataChanged);
 
         return true;
     }
@@ -354,7 +372,7 @@ public class RenderSectionManager {
 
     public AbstractBuilderTask createTerrainBuildTask(RenderSection render) {
         WorldSliceData data = WorldSliceData.prepare(this.world, render.getChunkPos(), this.sectionCache);
-        int frame = this.currentFrame;
+        int frame = this.frameIndex;
 
         if (data == null) {
             return new EmptyTerrainBuildTask(render, frame);
@@ -441,8 +459,8 @@ public class RenderSectionManager {
         return strings;
     }
 
-    private static ChunkRenderer createChunkRenderer(RenderDevice device, SequenceIndexBuffer indexBuffer, TerrainVertexType vertexType, ChunkRenderPass pass) {
-        return new DefaultChunkRenderer(device, indexBuffer, vertexType, pass);
+    private static ChunkRenderer createChunkRenderer(RenderDevice device, StreamingBuffer instanceBuffer, StreamingBuffer commandBuffer, SequenceIndexBuffer indexBuffer, TerrainVertexType vertexType, ChunkRenderPass pass) {
+        return new DefaultChunkRenderer(device, instanceBuffer, commandBuffer, indexBuffer, vertexType, pass);
     }
 
     private static TerrainVertexType createVertexType() {

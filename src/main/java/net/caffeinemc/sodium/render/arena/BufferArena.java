@@ -5,9 +5,9 @@ import net.caffeinemc.gfx.api.buffer.Buffer;
 import java.util.List;
 
 public interface BufferArena {
-    int getDeviceUsedMemory();
+    long getDeviceUsedMemory();
 
-    int getDeviceAllocatedMemory();
+    long getDeviceAllocatedMemory();
 
     void free(BufferSegment entry);
 
@@ -17,7 +17,7 @@ public interface BufferArena {
 
     Buffer getBufferObject();
 
-    void upload(List<PendingUpload> uploads);
+    void upload(List<PendingUpload> uploads, int frameIndex);
 
     int getStride();
 }

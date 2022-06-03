@@ -3,17 +3,21 @@ package net.caffeinemc.sodium.render.arena;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
+import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
+import org.lwjgl.system.MemoryUtil;
 
 import java.util.*;
 
 // TODO: handle alignment
 // TODO: handle element vs pointers
+// TODO: convert to longs
 public class AsyncBufferArena implements BufferArena {
     static final boolean CHECK_ASSERTIONS = false;
 
     private final int resizeIncrement;
 
     private final RenderDevice device;
+    private final StreamingBuffer streamingBuffer;
     private Buffer arenaBuffer;
 
     private BufferSegment head;
@@ -23,8 +27,9 @@ public class AsyncBufferArena implements BufferArena {
 
     private final int stride;
 
-    public AsyncBufferArena(RenderDevice device, int capacity, int stride) {
+    public AsyncBufferArena(RenderDevice device, StreamingBuffer streamingBuffer, int capacity, int stride) {
         this.device = device;
+        this.streamingBuffer = streamingBuffer;
         this.resizeIncrement = capacity / 16;
         this.capacity = capacity;
 
@@ -45,9 +50,9 @@ public class AsyncBufferArena implements BufferArena {
         int base = newCapacity - this.used;
 
         List<BufferSegment> usedSegments = this.getUsedSegments();
-        List<PendingBufferCopyCommand> pendingCopies = this.buildTransferList(usedSegments, base);
+        List<PendingResizeCopy> pendingCopies = this.buildTransferList(usedSegments, base);
 
-        this.transferSegments(pendingCopies, newCapacity);
+        this.moveSegments(pendingCopies, newCapacity);
 
         this.head = new BufferSegment(this, 0, base);
         this.head.setFree(true);
@@ -63,9 +68,9 @@ public class AsyncBufferArena implements BufferArena {
         this.checkAssertions();
     }
 
-    private List<PendingBufferCopyCommand> buildTransferList(List<BufferSegment> usedSegments, int base) {
-        List<PendingBufferCopyCommand> pendingCopies = new ArrayList<>();
-        PendingBufferCopyCommand currentCopyCommand = null;
+    private List<PendingResizeCopy> buildTransferList(List<BufferSegment> usedSegments, int base) {
+        List<PendingResizeCopy> pendingCopies = new ArrayList<>();
+        PendingResizeCopy currentCopyCommand = null;
 
         int writeOffset = base;
 
@@ -77,7 +82,7 @@ public class AsyncBufferArena implements BufferArena {
                     pendingCopies.add(currentCopyCommand);
                 }
 
-                currentCopyCommand = new PendingBufferCopyCommand(s.getOffset(), writeOffset, s.getLength());
+                currentCopyCommand = new PendingResizeCopy(s.getOffset(), writeOffset, s.getLength());
             } else {
                 currentCopyCommand.length += s.getLength();
             }
@@ -106,12 +111,12 @@ public class AsyncBufferArena implements BufferArena {
         return pendingCopies;
     }
 
-    private void transferSegments(Collection<PendingBufferCopyCommand> list, int capacity) {
+    private void moveSegments(Collection<PendingResizeCopy> list, int capacity) {
         var srcBufferObj = this.arenaBuffer;
         var dstBufferObj = this.device.createBuffer(this.toBytes(capacity), EnumSet.noneOf(ImmutableBufferFlags.class));
 
-        for (PendingBufferCopyCommand cmd : list) {
-            this.device.copyBuffer(srcBufferObj, dstBufferObj, this.toBytes(cmd.readOffset), this.toBytes(cmd.writeOffset), this.toBytes(cmd.length));
+        for (PendingResizeCopy pendingCopy : list) {
+            this.device.copyBuffer(srcBufferObj, dstBufferObj, this.toBytes(pendingCopy.readOffset), this.toBytes(pendingCopy.writeOffset), this.toBytes(pendingCopy.length));
         }
 
         this.device.deleteBuffer(srcBufferObj);
@@ -138,12 +143,12 @@ public class AsyncBufferArena implements BufferArena {
     }
 
     @Override
-    public int getDeviceUsedMemory() {
+    public long getDeviceUsedMemory() {
         return this.toBytes(this.used);
     }
 
     @Override
-    public int getDeviceAllocatedMemory() {
+    public long getDeviceAllocatedMemory() {
         return this.toBytes(this.capacity);
     }
 
@@ -244,18 +249,50 @@ public class AsyncBufferArena implements BufferArena {
     }
 
     @Override
-    public void upload(List<PendingUpload> uploads) {
-        var batch = new UploadBatch(this.device, uploads);
+    public void upload(List<PendingUpload> uploads, int frameIndex) {
+        // A linked list is used as we'll be randomly removing elements and want O(1) performance
+        var pendingTransfers = new LinkedList<PendingTransfer>();
+
+        StreamingBuffer.WritableSection section = this.streamingBuffer.getSection(
+                frameIndex,
+                uploads.stream().mapToInt(u -> u.data.getLength()).sum(),
+                true
+        );
+
+        // Write the PendingUploads to the mapped streaming buffer
+        // Also create the pending transfers to go from streaming buffer -> arena buffer
+        long sectionOffset = section.getOffset();
+        int transferOffset = 0;
+        for (var upload : uploads) {
+            int length = upload.data.getLength();
+            pendingTransfers.add(
+                    new PendingTransfer(
+                            upload.holder,
+                            sectionOffset + transferOffset,
+                            length
+                    )
+            );
+
+            long src = MemoryUtil.memAddress(upload.data.getDirectBuffer());
+            long dst = MemoryUtil.memAddress(section.getView()) + transferOffset;
+            MemoryUtil.memCopy(src, dst, length);
+
+            transferOffset += length;
+        }
+        section.getView().position(section.getView().position() + transferOffset);
+        section.flushPartial();
+
+        Buffer backingStreamingBuffer = section.getBuffer();
 
         // Try to upload all of the data into free segments first
-        batch.queue.removeIf(entry -> this.tryUpload(batch, entry));
+        pendingTransfers.removeIf(transfer -> this.tryUpload(backingStreamingBuffer, transfer));
 
         // If we weren't able to upload some buffers, they will have been left behind in the queue
-        if (!batch.queue.isEmpty()) {
+        if (!pendingTransfers.isEmpty()) {
             // Calculate the amount of memory needed for the remaining uploads
-            int remainingElements = batch.queue
+            int remainingElements = (int) pendingTransfers
                     .stream()
-                    .mapToInt(upload -> this.toElements(upload.length()))
+                    .mapToLong(transfer -> this.toElements(transfer.length()))
                     .sum();
 
             // Ask the arena to grow to accommodate the remaining uploads
@@ -264,34 +301,26 @@ public class AsyncBufferArena implements BufferArena {
             this.ensureCapacity(remainingElements);
 
             // Try again to upload any buffers that failed last time
-            batch.queue.removeIf(entry -> this.tryUpload(batch, entry));
+            pendingTransfers.removeIf(transfer -> this.tryUpload(backingStreamingBuffer, transfer));
 
             // If we still had failures, something has gone wrong
-            if (!batch.queue.isEmpty()) {
+            if (!pendingTransfers.isEmpty()) {
                 throw new RuntimeException("Failed to upload all buffers");
             }
         }
-
-        this.device.deleteBuffer(batch.buffer);
     }
 
-    @Override
-    public int getStride() {
-        return this.stride;
-    }
-
-    private boolean tryUpload(UploadBatch batch, UploadBatch.Entry entry) {
-        Buffer src = batch.buffer;
-        BufferSegment segment = this.alloc(this.toElements(entry.length()));
+    private boolean tryUpload(Buffer streamingBuffer, PendingTransfer transfer) {
+        BufferSegment segment = this.alloc((int) this.toElements(transfer.length()));
 
         if (segment == null) {
             return false;
         }
 
-        // Copy the data into our staging buffer, then copy it into the arena's buffer
-        this.device.copyBuffer(src, this.arenaBuffer, entry.offset(), this.toBytes(segment.getOffset()), entry.length());
+        // Copy the uploads from the streaming buffer to the arena buffer
+        this.device.copyBuffer(streamingBuffer, this.arenaBuffer, transfer.offset(), this.toBytes(segment.getOffset()), transfer.length());
 
-        entry.holder().set(segment);
+        transfer.holder().set(segment);
 
         return true;
     }
@@ -373,12 +402,17 @@ public class AsyncBufferArena implements BufferArena {
         }
     }
 
-
-    private int toBytes(int index) {
+    private long toBytes(long index) {
         return index * this.stride;
     }
 
-    private int toElements(int bytes) {
+    private long toElements(long bytes) {
         return bytes / this.stride;
     }
+
+    @Override
+    public int getStride() {
+        return this.stride;
+    }
+
 }
