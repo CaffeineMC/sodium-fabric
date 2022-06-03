@@ -5,7 +5,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import net.caffeinemc.gfx.api.sync.Fence;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.minecraft.client.MinecraftClient;
-import org.lwjgl.opengl.GL32C;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

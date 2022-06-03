@@ -1,8 +1,6 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
-import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2ReferenceSortedMaps;
-import it.unimi.dsi.fastutil.objects.*;
+import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;

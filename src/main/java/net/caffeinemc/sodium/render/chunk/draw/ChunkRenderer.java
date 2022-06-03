@@ -14,7 +14,7 @@ public interface ChunkRenderer {
      * @param matrices The camera matrices to use for rendering
      * @param frameIndex The monotonic index of the current frame being rendered
      */
-    void render(ChunkPrep.PreparedRenderList renderLists, ChunkRenderPass renderPass, ChunkRenderMatrices matrices, int frameIndex);
+    void render(RenderListBuilder.RenderList renderLists, ChunkRenderPass renderPass, ChunkRenderMatrices matrices, int frameIndex);
 
     /**
      * Deletes this render backend and any resources attached to it.

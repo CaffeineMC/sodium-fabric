@@ -3,6 +3,7 @@ package net.caffeinemc.sodium.render.chunk.region;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.render.arena.AsyncBufferArena;
 import net.caffeinemc.sodium.render.arena.BufferArena;
+import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -32,8 +33,8 @@ public class RenderRegion {
     public final BufferArena vertexBuffers;
     public final int id;
 
-    public RenderRegion(RenderDevice device, TerrainVertexType vertexType, int id) {
-        this.vertexBuffers = new AsyncBufferArena(device, REGION_SIZE * 756, vertexType.getBufferVertexFormat().stride());
+    public RenderRegion(RenderDevice device, StreamingBuffer streamingBuffer, TerrainVertexType vertexType, int id) {
+        this.vertexBuffers = new AsyncBufferArena(device, streamingBuffer, REGION_SIZE * 756, vertexType.getBufferVertexFormat().stride());
         this.id = id;
     }
 
