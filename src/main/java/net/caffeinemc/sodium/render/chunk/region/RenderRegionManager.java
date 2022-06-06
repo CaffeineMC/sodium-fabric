@@ -154,8 +154,9 @@ public class RenderRegionManager {
         for (RenderRegion region : this.regions.values()) {
             this.deleteRegion(region);
         }
-
         this.regions.clear();
+
+        this.streamingBuffer.delete();
     }
 
     private void deleteRegion(RenderRegion region) {

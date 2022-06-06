@@ -64,22 +64,24 @@ public class RenderListBuilder {
             return null;
         }
 
-        var commandBufferSize = commandBufferSize(1, chunks);
-        StreamingBuffer.WritableSection commandBufferSection = this.commandBuffer.getSection(frameIndex, (int) commandBufferSize, true);
+        final int totalPasses = DefaultRenderPasses.ALL.length;
+
+        var commandBufferPassSize = commandBufferPassSize(1, chunks);
+        StreamingBuffer.WritableSection commandBufferSection = this.commandBuffer.getSection(frameIndex, (int) commandBufferPassSize * totalPasses, true);
         ByteBuffer commandBufferSectionView = commandBufferSection.getView();
         long commandBufferSectionAddress = MemoryUtil.memAddress0(commandBufferSectionView);
 
-        var instanceBufferSize = instanceBufferSize(this.instanceBuffer.getAlignment(), chunks);
-        StreamingBuffer.WritableSection instanceBufferSection = this.instanceBuffer.getSection(frameIndex, (int) instanceBufferSize, true);
+        var instanceBufferPassSize = instanceBufferPassSize(this.instanceBuffer.getAlignment(), chunks);
+        StreamingBuffer.WritableSection instanceBufferSection = this.instanceBuffer.getSection(frameIndex, (int) instanceBufferPassSize * totalPasses, true);
         ByteBuffer instanceBufferSectionView = instanceBufferSection.getView();
         long instanceBufferSectionAddress = MemoryUtil.memAddress0(instanceBufferSectionView);
 
         var renderLists = new Reference2ReferenceArrayMap<ChunkRenderPass, RenderList>();
 
-        int stackSize = (int) ((commandBufferSize + instanceBufferSize) * DefaultRenderPasses.ALL.length);
+        int stackSize = commandBufferSectionView.capacity() + instanceBufferSectionView.capacity();
         if (this.stackBuffer == null || this.stackBuffer.capacity() < stackSize) {
             MemoryUtil.memFree(this.stackBuffer); // this does nothing if the buffer is null
-            this.stackBuffer = MemoryUtil.memAlloc((int) ((commandBufferSize + instanceBufferSize) * DefaultRenderPasses.ALL.length));
+            this.stackBuffer = MemoryUtil.memAlloc(stackSize);
         }
 
         try (MemoryStack stack = MemoryStack.create(this.stackBuffer).push()) {
@@ -87,8 +89,8 @@ public class RenderListBuilder {
                 renderLists.put(
                         pass,
                         new RenderList(
-                                stack.nmalloc(1, (int) commandBufferSize),
-                                stack.nmalloc(1, (int) instanceBufferSize)
+                                stack.nmalloc(1, (int) commandBufferPassSize),
+                                stack.nmalloc(1, (int) instanceBufferPassSize)
                         )
                 );
             }
@@ -113,7 +115,7 @@ public class RenderListBuilder {
 
                         var renderList = renderLists.get(model.pass);
 
-                        if (renderList == null) {
+                        if (renderList == null) { // very bad
                             continue;
                         }
 
@@ -313,7 +315,7 @@ public class RenderListBuilder {
         }
     }
 
-    private static long commandBufferSize(int alignment, SortedChunkLists list) {
+    private static long commandBufferPassSize(int alignment, SortedChunkLists list) {
         int size = 0;
 
         for (var bucket : list.unsorted()) {
@@ -323,7 +325,7 @@ public class RenderListBuilder {
         return size;
     }
 
-    private static long instanceBufferSize(int alignment, SortedChunkLists list) {
+    private static long instanceBufferPassSize(int alignment, SortedChunkLists list) {
         int size = 0;
 
         for (var bucket : list.unsorted()) {

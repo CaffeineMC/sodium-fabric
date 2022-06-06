@@ -118,7 +118,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
         public void bindBufferBlock(BufferBlock block, Buffer buffer, long offset, long length) {
             if (RenderConfiguration.API_CHECKS) {
                 Validate.isTrue(offset >= 0, "Offset must be greater-than or equal to zero");
-                Validate.isTrue(offset + length <= buffer.capacity(), "Range is out of buffer bounds");
+//                Validate.isTrue(offset + length <= buffer.capacity(), "Range is out of buffer bounds");
             }
 
             GL32C.glBindBufferRange(GlEnum.from(block.type()), block.index(), GlAbstractBuffer.handle(buffer), offset, length);
