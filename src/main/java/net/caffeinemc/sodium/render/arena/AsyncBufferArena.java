@@ -261,7 +261,9 @@ public class AsyncBufferArena implements BufferArena {
 
         // Write the PendingUploads to the mapped streaming buffer
         // Also create the pending transfers to go from streaming buffer -> arena buffer
-        long sectionOffset = section.getOffset();
+        long sectionOffset = section.getOffset() + section.getView().position();
+        // this is basically the address of what sectionOffset points to
+        long sectionAddress = MemoryUtil.memAddress(section.getView());
         int transferOffset = 0;
         for (var upload : uploads) {
             int length = upload.data.getLength();
@@ -273,9 +275,11 @@ public class AsyncBufferArena implements BufferArena {
                     )
             );
 
-            long src = MemoryUtil.memAddress(upload.data.getDirectBuffer());
-            long dst = MemoryUtil.memAddress(section.getView()) + transferOffset;
-            MemoryUtil.memCopy(src, dst, length);
+            MemoryUtil.memCopy(
+                    upload.data.getAddress(),
+                    sectionAddress + transferOffset,
+                    length
+            );
 
             transferOffset += length;
         }

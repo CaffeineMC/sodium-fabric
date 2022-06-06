@@ -24,15 +24,12 @@ import org.lwjgl.system.MemoryUtil;
 
 public class RenderListBuilder {
     private static final int COMMAND_STRUCT_STRIDE = 20;
-    private static final int COMMAND_STRUCT_SIZE = Integer.BYTES * 5;
-    private static final int COMMAND_STRUCT_PADDING = COMMAND_STRUCT_STRIDE - COMMAND_STRUCT_SIZE;
-
     private static final int INSTANCE_STRUCT_STRIDE = 16;
-    private static final int INSTANCE_STRUCT_SIZE = Float.BYTES * 3;
-    private static final int INSTANCE_STRUCT_PADDING = INSTANCE_STRUCT_STRIDE - INSTANCE_STRUCT_SIZE;
 
     private final StreamingBuffer commandBuffer;
     private final StreamingBuffer instanceBuffer;
+
+    private ByteBuffer stackBuffer;
 
     public RenderListBuilder(RenderDevice device) {
         var maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
@@ -69,23 +66,29 @@ public class RenderListBuilder {
 
         var commandBufferSize = commandBufferSize(1, chunks);
         StreamingBuffer.WritableSection commandBufferSection = this.commandBuffer.getSection(frameIndex, (int) commandBufferSize, true);
-        ByteBuffer commandBufferView = commandBufferSection.getView();
+        ByteBuffer commandBufferSectionView = commandBufferSection.getView();
+        long commandBufferSectionAddress = MemoryUtil.memAddress0(commandBufferSectionView);
 
         var instanceBufferSize = instanceBufferSize(this.instanceBuffer.getAlignment(), chunks);
         StreamingBuffer.WritableSection instanceBufferSection = this.instanceBuffer.getSection(frameIndex, (int) instanceBufferSize, true);
-        ByteBuffer instanceBufferView = instanceBufferSection.getView();
+        ByteBuffer instanceBufferSectionView = instanceBufferSection.getView();
+        long instanceBufferSectionAddress = MemoryUtil.memAddress0(instanceBufferSectionView);
 
         var renderLists = new Reference2ReferenceArrayMap<ChunkRenderPass, RenderList>();
 
-        // this may be able to go on the main stack, but i don't wanna risk it
-        ByteBuffer stackBuffer = MemoryUtil.memAlloc((int) ((commandBufferSize + instanceBufferSize) * DefaultRenderPasses.ALL.length));
-        try (MemoryStack stack = MemoryStack.create(stackBuffer).push()) {
+        int stackSize = (int) ((commandBufferSize + instanceBufferSize) * DefaultRenderPasses.ALL.length);
+        if (this.stackBuffer == null || this.stackBuffer.capacity() < stackSize) {
+            MemoryUtil.memFree(this.stackBuffer); // this does nothing if the buffer is null
+            this.stackBuffer = MemoryUtil.memAlloc((int) ((commandBufferSize + instanceBufferSize) * DefaultRenderPasses.ALL.length));
+        }
+
+        try (MemoryStack stack = MemoryStack.create(this.stackBuffer).push()) {
             for (var pass : DefaultRenderPasses.ALL) {
                 renderLists.put(
                         pass,
                         new RenderList(
-                                stack.malloc(1, (int) commandBufferSize),
-                                stack.malloc(1, (int) instanceBufferSize)
+                                stack.nmalloc(1, (int) commandBufferSize),
+                                stack.nmalloc(1, (int) instanceBufferSize)
                         )
                 );
             }
@@ -122,16 +125,13 @@ public class RenderListBuilder {
                             var vertexCount = ModelPart.unpackVertexCount(range);
                             var firstVertex = baseVertex + ModelPart.unpackFirstVertex(range);
 
-                            ByteBuffer tempCommandBuffer = renderList.tempCommandBuffer;
-                            tempCommandBuffer
-                                    .putInt(vertexCount)
-                                    .putInt(1)
-                                    .putInt(0)
-                                    .putInt(firstVertex) // baseVertex
-                                    .putInt(renderList.currentInstanceCount); // baseInstance
-                            if (COMMAND_STRUCT_PADDING > 0) {
-                                tempCommandBuffer.position(tempCommandBuffer.position() + COMMAND_STRUCT_PADDING);
-                            }
+                            long ptr = renderList.tempCommandBufferAddress + renderList.tempCommandBufferPosition;
+                            MemoryUtil.memPutInt(ptr + 0, vertexCount);
+                            MemoryUtil.memPutInt(ptr + 4, 1);
+                            MemoryUtil.memPutInt(ptr + 8, 0);
+                            MemoryUtil.memPutInt(ptr + 12, firstVertex); // baseVertex
+                            MemoryUtil.memPutInt(ptr + 16, renderList.currentInstanceCount); // baseInstance
+                            renderList.tempCommandBufferPosition += COMMAND_STRUCT_STRIDE;
                             renderList.currentCommandCount++;
                         }
 
@@ -139,14 +139,11 @@ public class RenderListBuilder {
                         float y = getCameraTranslation(ChunkSectionPos.getBlockCoord(section.getChunkY()), camera.blockY, camera.deltaY);
                         float z = getCameraTranslation(ChunkSectionPos.getBlockCoord(section.getChunkZ()), camera.blockZ, camera.deltaZ);
 
-                        ByteBuffer tempInstanceBuffer = renderList.tempInstanceBuffer;
-                        tempInstanceBuffer
-                                .putFloat(x)
-                                .putFloat(y)
-                                .putFloat(z);
-                        if (INSTANCE_STRUCT_PADDING > 0) {
-                            tempInstanceBuffer.position(tempInstanceBuffer.position() + INSTANCE_STRUCT_PADDING);
-                        }
+                        long ptr = renderList.tempInstanceBufferAddress + renderList.tempInstanceBufferPosition;
+                        MemoryUtil.memPutFloat(ptr + 0, x);
+                        MemoryUtil.memPutFloat(ptr + 4, y);
+                        MemoryUtil.memPutFloat(ptr + 8, z);
+                        renderList.tempInstanceBufferPosition += INSTANCE_STRUCT_STRIDE;
                         renderList.currentInstanceCount++;
 
                         renderList.largestVertexIndex = Math.max(renderList.largestVertexIndex, geometry.segment.getLength());
@@ -163,21 +160,16 @@ public class RenderListBuilder {
                         continue;
                     }
 
-
-                    ByteBuffer tempCommandBuffer = renderList.tempCommandBuffer;
-
-                    var commandCurrentPosition = tempCommandBuffer.position();
+                    var commandCurrentPosition = renderList.tempCommandBufferPosition;
                     var commandSectionLength = commandCount * COMMAND_STRUCT_STRIDE;
                     var commandSectionStart = commandCurrentPosition - commandSectionLength;
 
-                    ByteBuffer tempInstanceBuffer = renderList.tempInstanceBuffer;
-
-                    var instanceCurrentPosition = tempInstanceBuffer.position();
+                    var instanceCurrentPosition = renderList.tempInstanceBufferPosition;
                     var instanceSectionLength = instanceCount * INSTANCE_STRUCT_STRIDE;
                     var instanceSectionStart = instanceCurrentPosition - instanceSectionLength;
 
                     // don't need to align command buffer data, only instance data
-                    tempInstanceBuffer.position(MathUtil.align(instanceCurrentPosition, this.instanceBuffer.getAlignment()));
+                    renderList.tempInstanceBufferPosition = MathUtil.align(instanceCurrentPosition, this.instanceBuffer.getAlignment());
 
                     var region = bucket.region();
 
@@ -194,6 +186,8 @@ public class RenderListBuilder {
                 }
             }
 
+            int commandBufferCurrentPos = commandBufferSectionView.position();
+            int instanceBufferCurrentPos = instanceBufferSectionView.position();
             for (var renderListIterator = renderLists.values().iterator(); renderListIterator.hasNext(); ) {
                 var renderList = renderListIterator.next();
 
@@ -202,18 +196,33 @@ public class RenderListBuilder {
                     continue;
                 }
 
-                int mainCommandBufferOffset = commandBufferView.position();
-                int mainInstanceBufferOffset = instanceBufferView.position();
-                commandBufferView.put(renderList.tempCommandBuffer.flip());
-                instanceBufferView.put(renderList.tempInstanceBuffer.flip());
-
+                long mainCommandBufferOffset = commandBufferSection.getOffset() + commandBufferCurrentPos;
+                long mainInstanceBufferOffset = instanceBufferSection.getOffset() + instanceBufferCurrentPos;
                 for (var batch : renderList.batches) {
                     batch.commandBufferOffset += mainCommandBufferOffset;
                     batch.instanceBufferOffset += mainInstanceBufferOffset;
                 }
+
+                long tempCommandBufferLength = renderList.tempCommandBufferPosition;
+                MemoryUtil.memCopy(
+                        renderList.tempCommandBufferAddress,
+                        commandBufferSectionAddress + commandBufferCurrentPos,
+                        tempCommandBufferLength
+                );
+                commandBufferCurrentPos += tempCommandBufferLength;
+
+                long tempInstanceBufferLength = renderList.tempInstanceBufferPosition;
+                MemoryUtil.memCopy(
+                        renderList.tempInstanceBufferAddress,
+                        instanceBufferSectionAddress + instanceBufferCurrentPos,
+                        tempInstanceBufferLength
+                );
+                instanceBufferCurrentPos += tempInstanceBufferLength;
+
             }
+            commandBufferSectionView.position(commandBufferCurrentPos);
+            instanceBufferSectionView.position(instanceBufferCurrentPos);
         }
-        MemoryUtil.memFree(stackBuffer);
 
         commandBufferSection.flushPartial();
         instanceBufferSection.flushPartial();
@@ -221,20 +230,28 @@ public class RenderListBuilder {
         return renderLists;
     }
 
+    public void delete() {
+        MemoryUtil.memFree(this.stackBuffer);
+        this.commandBuffer.delete();
+        this.instanceBuffer.delete();
+    }
+
     public static class RenderList {
         private final Deque<ChunkRenderBatch> batches;
         private int largestVertexIndex;
 
         // these will be deallocated by the time construction is done
-        private final ByteBuffer tempCommandBuffer;
-        private final ByteBuffer tempInstanceBuffer;
+        private final long tempCommandBufferAddress;
+        private long tempCommandBufferPosition;
+        private final long tempInstanceBufferAddress;
+        private long tempInstanceBufferPosition;
 
         private int currentInstanceCount;
         private int currentCommandCount;
 
-        public RenderList(ByteBuffer tempCommandBuffer, ByteBuffer tempInstanceBuffer) {
-            this.tempCommandBuffer = tempCommandBuffer;
-            this.tempInstanceBuffer = tempInstanceBuffer;
+        public RenderList(long tempCommandBufferAddress, long tempInstanceBufferAddress) {
+            this.tempCommandBufferAddress = tempCommandBufferAddress;
+            this.tempInstanceBufferAddress = tempInstanceBufferAddress;
             this.batches = new ArrayDeque<>();
         }
 
@@ -253,15 +270,15 @@ public class RenderListBuilder {
         private final int vertexStride;
         private final int instanceCount;
         private final int commandCount;
-        private int instanceBufferOffset;
-        private int commandBufferOffset;
+        private long instanceBufferOffset;
+        private long commandBufferOffset;
 
         public ChunkRenderBatch(Buffer vertexBuffer,
                                 int vertexStride,
                                 int instanceCount,
                                 int commandCount,
-                                int instanceBufferOffset,
-                                int commandBufferOffset
+                                long instanceBufferOffset,
+                                long commandBufferOffset
         ) {
             this.vertexBuffer = vertexBuffer;
             this.vertexStride = vertexStride;
@@ -287,11 +304,11 @@ public class RenderListBuilder {
             return this.commandCount;
         }
 
-        public int getInstanceBufferOffset() {
+        public long getInstanceBufferOffset() {
             return this.instanceBufferOffset;
         }
 
-        public int getCommandBufferOffset() {
+        public long getCommandBufferOffset() {
             return this.commandBufferOffset;
         }
     }

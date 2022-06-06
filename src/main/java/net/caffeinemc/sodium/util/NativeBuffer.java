@@ -44,6 +44,10 @@ public class NativeBuffer {
         return MemoryUtil.memByteBuffer(this.ref.address, this.ref.length);
     }
 
+    public long getAddress() {
+        return this.ref.address;
+    }
+
     public void free() {
         deallocate(this.ref);
     }
