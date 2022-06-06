@@ -174,6 +174,7 @@ public class StreamingBuffer {
         public ByteBuffer getView() {
             return this.view;
         }
+
         public long getOffset() {
             return this.offset;
         }

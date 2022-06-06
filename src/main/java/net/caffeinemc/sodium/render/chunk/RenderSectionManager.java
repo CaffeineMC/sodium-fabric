@@ -403,6 +403,8 @@ public class RenderSectionManager {
 
         this.chunkRenderers.clear();
         this.indexBuffer.delete();
+
+        this.renderListBuilder.delete();
     }
 
     public int getTotalSections() {

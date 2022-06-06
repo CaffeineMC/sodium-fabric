@@ -309,7 +309,7 @@ public class GlRenderDevice implements RenderDevice {
         }
 
         @Override
-        public void multiDrawElementsIndirect(PrimitiveType primitiveType, ElementFormat elementType, int indirectOffset, int indirectCount) {
+        public void multiDrawElementsIndirect(PrimitiveType primitiveType, ElementFormat elementType, long indirectOffset, int indirectCount) {
             if (RenderConfiguration.API_CHECKS) {
                 Validate.notNull(this.elementBuffer, "Element buffer target not bound");
                 Validate.notNull(this.commandBuffer, "Command buffer target not bound");
