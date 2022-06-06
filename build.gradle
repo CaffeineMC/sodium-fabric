@@ -1,5 +1,6 @@
 plugins {
     id 'fabric-loom' version '0.12-SNAPSHOT'
+    id 'io.github.juuxel.loom-quiltflower' version '1.7.2'
 }
 
 apply from: "${rootProject.projectDir}/gradle/fabric.gradle"
