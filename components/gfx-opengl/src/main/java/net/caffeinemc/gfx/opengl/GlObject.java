@@ -23,7 +23,7 @@ public abstract class GlObject {
         this.handle = handle;
     }
 
-    public final int handle() {
+    public final int getHandle() {
         if (this.handle == INVALID_HANDLE) {
             throw new IllegalStateException("%s handle is not valid"
                     .formatted(this.getClass().getSimpleName()));

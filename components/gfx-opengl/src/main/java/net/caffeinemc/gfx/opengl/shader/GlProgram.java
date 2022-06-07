@@ -91,7 +91,7 @@ public class GlProgram<T> extends GlObject implements Program<T> {
     }
 
     private class BindingContext implements ShaderBindingContext, AutoCloseable {
-        private final int handle = GlProgram.this.handle();
+        private final int handle = GlProgram.this.getHandle();
 
         private boolean disposed;
 
@@ -115,6 +115,6 @@ public class GlProgram<T> extends GlObject implements Program<T> {
     }
 
     public static int getHandle(Program<?> program) {
-        return ((GlProgram<?>) program).handle();
+        return ((GlProgram<?>) program).getHandle();
     }
 }

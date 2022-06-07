@@ -4,7 +4,7 @@ import net.caffeinemc.gfx.api.buffer.*;
 import net.caffeinemc.gfx.api.device.RenderConfiguration;
 import net.caffeinemc.gfx.api.device.commands.PipelineGate;
 import net.caffeinemc.gfx.opengl.array.GlVertexArray;
-import net.caffeinemc.gfx.opengl.buffer.GlAbstractBuffer;
+import net.caffeinemc.gfx.opengl.buffer.GlBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlDynamicBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlImmutableBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlMappedBuffer;
@@ -70,10 +70,10 @@ public class GlRenderDevice implements RenderDevice {
 
     @Override
     public void copyBuffer(Buffer srcBuffer, Buffer dstBuffer, long srcOffset, long dstOffset, long length) {
-        this.copyBuffer0((GlAbstractBuffer) srcBuffer, (GlAbstractBuffer) dstBuffer, srcOffset, dstOffset, length);
+        this.copyBuffer0((GlBuffer) srcBuffer, (GlBuffer) dstBuffer, srcOffset, dstOffset, length);
     }
 
-    private void copyBuffer0(GlAbstractBuffer srcBuffer, GlAbstractBuffer dstBuffer, long srcOffset, long dstOffset, long length) {
+    private void copyBuffer0(GlBuffer srcBuffer, GlBuffer dstBuffer, long srcOffset, long dstOffset, long length) {
         if (RenderConfiguration.API_CHECKS) {
             Validate.isTrue(srcOffset >= 0, "Source offset must be greater than or equal to zero");
             Validate.isTrue(dstOffset >= 0, "Destination offset must be greater than or equal to zero");
@@ -82,16 +82,16 @@ public class GlRenderDevice implements RenderDevice {
             Validate.isTrue(dstOffset + length <= dstBuffer.capacity(), "Destination buffer range is out-of-bounds");
         }
 
-        GL45C.glCopyNamedBufferSubData(srcBuffer.handle(), dstBuffer.handle(), srcOffset, dstOffset, length);
+        GL45C.glCopyNamedBufferSubData(srcBuffer.getHandle(), dstBuffer.getHandle(), srcOffset, dstOffset, length);
     }
 
     @Override
     public void deleteBuffer(Buffer buffer) {
-        this.deleteBuffer0((GlAbstractBuffer) buffer);
+        this.deleteBuffer0((GlBuffer) buffer);
     }
 
-    private void deleteBuffer0(GlAbstractBuffer buffer) {
-        int handle = buffer.handle();
+    private void deleteBuffer0(GlBuffer buffer) {
+        int handle = buffer.getHandle();
         buffer.invalidateHandle();
 
         GL20C.glDeleteBuffers(handle);
@@ -103,7 +103,7 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     private void deleteProgram0(GlProgram<?> program) {
-        GL20C.glDeleteProgram(program.handle());
+        GL20C.glDeleteProgram(program.getHandle());
         program.invalidateHandle();
     }
 
@@ -146,7 +146,7 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     @Override
-    public ImmutableBuffer createBuffer(long capacity, Consumer<ByteBuffer> consumer, Set<ImmutableBufferFlags> flags) {
+    public ImmutableBuffer createBuffer(long capacity, Consumer<ByteBuffer> preUnmapConsumer, Set<ImmutableBufferFlags> flags) {
         var handle = GL45C.glCreateBuffers();
         GL45C.glNamedBufferStorage(handle, capacity, GL45C.GL_MAP_WRITE_BIT | getBufferStorageBits(flags));
 
@@ -157,7 +157,7 @@ public class GlRenderDevice implements RenderDevice {
             throw new RuntimeException("Failed to map buffer for writing");
         }
 
-        consumer.accept(mapping);
+        preUnmapConsumer.accept(mapping);
 
         if (!GL45C.glUnmapNamedBuffer(handle)) {
             throw new RuntimeException("Failed to unmap buffer after writing data (contents corrupt?)");
@@ -181,31 +181,53 @@ public class GlRenderDevice implements RenderDevice {
                     "Read-only, write-only, or read-write flags must be specified");
         }
 
-        var storage = GL45C.GL_MAP_PERSISTENT_BIT | getMappedBufferStorageBits(flags);
-
-        // GL_MAP_INVALIDATE_BUFFER_BIT invalidates the contents of the buffer when it's mapped. Should this be changed to
-        // GL_MAP_INVALIDATE_RANGE_BIT? Also, we're creating a new buffer, not orphaning. What's the deal?
-        //
-        // Why were we combining GL_MAP_PERSISTENT_BIT with GL_MAP_UNSYNCHRONIZED_BIT? It doesn't do anything.
-        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | getMappedBufferAccessBits(flags);
-
         var handle = GL45C.glCreateBuffers();
+
+        var storage = GL45C.GL_MAP_PERSISTENT_BIT | getMappedBufferStorageBits(flags);
         GL45C.glNamedBufferStorage(handle, capacity, storage);
 
-        ByteBuffer data = GL45C.glMapNamedBufferRange(handle, 0, capacity, access);
+        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | getMappedBufferAccessBits(flags);
+        // for some reason, this works but glMapNamedBuffer doesn't
+        ByteBuffer mapping = GL45C.glMapNamedBufferRange(handle, 0, capacity, access);
 
-        if (data == null) {
+        if (mapping == null) {
             throw new RuntimeException("Failed to map buffer");
         }
 
-        return new GlMappedBuffer(handle, data, flags);
+        return new GlMappedBuffer(handle, mapping, flags);
+    }
+
+    @Override
+    public MappedBuffer createMappedBuffer(long capacity, Consumer<Buffer> preMapConsumer, Set<MappedBufferFlags> flags) {
+        if (RenderConfiguration.API_CHECKS) {
+            Validate.isTrue(flags.contains(MappedBufferFlags.READ) || flags.contains(MappedBufferFlags.WRITE),
+                    "Read-only, write-only, or read-write flags must be specified");
+        }
+
+        var handle = GL45C.glCreateBuffers();
+
+        var storage = GL45C.GL_MAP_PERSISTENT_BIT | getMappedBufferStorageBits(flags);
+        GL45C.glNamedBufferStorage(handle, capacity, storage);
+
+        // just make a temporary generic buffer
+        preMapConsumer.accept(new GlBuffer(handle, capacity));
+
+        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | getMappedBufferAccessBits(flags);
+        // for some reason, this works but glMapNamedBuffer doesn't
+        ByteBuffer mapping = GL45C.glMapNamedBufferRange(handle, 0, capacity, access);
+
+        if (mapping == null) {
+            throw new RuntimeException("Failed to map buffer");
+        }
+
+        return new GlMappedBuffer(handle, mapping, flags);
     }
 
     @Override
     public <PROGRAM, ARRAY extends Enum<ARRAY>> void usePipeline(Pipeline<PROGRAM, ARRAY> pipeline, PipelineGate<PROGRAM, ARRAY> gate) {
-        this.pipelineManager.bindPipeline(pipeline, (state) -> {
-            gate.run(new ImmediateRenderCommandList<>((GlVertexArray<ARRAY>) pipeline.getVertexArray()), pipeline.getProgram().getInterface(), state);
-        });
+        this.pipelineManager.bindPipeline(pipeline, (state) ->
+                gate.run(new ImmediateRenderCommandList<>((GlVertexArray<ARRAY>) pipeline.getVertexArray()), pipeline.getProgram().getInterface(), state)
+        );
     }
 
     @Override
@@ -221,7 +243,7 @@ public class GlRenderDevice implements RenderDevice {
             Validate.isTrue(offset + data.remaining() > buffer.capacity(), "Range is out of bounds");
         }
 
-        GL45C.glNamedBufferSubData(GlAbstractBuffer.handle(buffer), offset, data);
+        GL45C.glNamedBufferSubData(GlBuffer.getHandle(buffer), offset, data);
     }
 
     @Override
@@ -235,7 +257,7 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     private void deleteSampler0(GlSampler sampler) {
-        GL45C.glDeleteSamplers(sampler.handle());
+        GL45C.glDeleteSamplers(sampler.getHandle());
         sampler.invalidateHandle();
     }
 
@@ -245,7 +267,7 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     private void deleteVertexArray0(GlVertexArray<?> array) {
-        GL30C.glDeleteVertexArrays(array.handle());
+        GL30C.glDeleteVertexArrays(array.getHandle());
         array.invalidateHandle();
     }
 
@@ -258,7 +280,7 @@ public class GlRenderDevice implements RenderDevice {
         private final Buffer[] vertexBuffers;
 
         public ImmediateRenderCommandList(GlVertexArray<T> array) {
-            this.array = array.handle();
+            this.array = array.getHandle();
             this.vertexBuffers = new Buffer[array.getBufferTargets().length];
         }
 
@@ -269,7 +291,7 @@ public class GlRenderDevice implements RenderDevice {
             }
 
             if (this.elementBuffer != buffer) {
-                GL45C.glVertexArrayElementBuffer(this.array, GlAbstractBuffer.handle(buffer));
+                GL45C.glVertexArrayElementBuffer(this.array, GlBuffer.getHandle(buffer));
 
                 this.elementBuffer = buffer;
             }
@@ -289,7 +311,7 @@ public class GlRenderDevice implements RenderDevice {
 
             if (this.vertexBuffers[index] != buffer) {
                 GL45C.glVertexArrayVertexBuffer(this.array, index,
-                        GlAbstractBuffer.handle(buffer), offset, stride);
+                        GlBuffer.getHandle(buffer), offset, stride);
 
                 this.vertexBuffers[index] = buffer;
             }
@@ -302,7 +324,7 @@ public class GlRenderDevice implements RenderDevice {
             }
 
             if (this.commandBuffer != buffer) {
-                GL45C.glBindBuffer(GL45C.GL_DRAW_INDIRECT_BUFFER, GlAbstractBuffer.handle(buffer));
+                GL45C.glBindBuffer(GL45C.GL_DRAW_INDIRECT_BUFFER, GlBuffer.getHandle(buffer));
 
                 this.commandBuffer = buffer;
             }

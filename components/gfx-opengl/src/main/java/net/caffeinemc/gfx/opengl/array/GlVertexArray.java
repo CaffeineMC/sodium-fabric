@@ -21,7 +21,7 @@ public class GlVertexArray<T extends Enum<T>> extends GlObject implements Vertex
     }
 
     private void setAttributeBindings(List<VertexArrayResourceBinding<T>> bindings) {
-        var handle = this.handle();
+        var handle = this.getHandle();
 
         for (var bufferIndex = 0; bufferIndex < bindings.size(); bufferIndex++) {
             var bufferBinding = bindings.get(bufferIndex);
@@ -50,7 +50,7 @@ public class GlVertexArray<T extends Enum<T>> extends GlObject implements Vertex
         return this.desc.targets();
     }
 
-    public static int handle(VertexArray<?> array) {
-        return ((GlVertexArray<?>) array).handle();
+    public static int getHandle(VertexArray<?> array) {
+        return ((GlVertexArray<?>) array).getHandle();
     }
 }

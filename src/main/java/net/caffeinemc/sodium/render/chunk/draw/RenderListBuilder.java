@@ -11,6 +11,7 @@ import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.DefaultRenderPasses;
+import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry.ModelPart;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
@@ -38,14 +39,14 @@ public class RenderListBuilder {
         this.commandBuffer = new StreamingBuffer(
                 device,
                 1,
-                0x10000, // start with 64KiB per section and expand from there if needed (this is a complete guess lol)
+                0x80000, // start with 512KiB per section and expand from there if needed (should cover most cases)
                 maxInFlightFrames,
                 MappedBufferFlags.EXPLICIT_FLUSH
         );
         this.instanceBuffer = new StreamingBuffer(
                 device,
                 device.properties().uniformBufferOffsetAlignment,
-                8 * 4 * 8 * uboAlignment, // worst case
+                RenderRegion.REGION_LENGTH * RenderRegion.REGION_HEIGHT * RenderRegion.REGION_WIDTH * uboAlignment, // worst case
                 maxInFlightFrames,
                 MappedBufferFlags.EXPLICIT_FLUSH
         );
@@ -67,12 +68,13 @@ public class RenderListBuilder {
         final int totalPasses = DefaultRenderPasses.ALL.length;
 
         var commandBufferPassSize = commandBufferPassSize(1, chunks);
-        StreamingBuffer.WritableSection commandBufferSection = this.commandBuffer.getSection(frameIndex, (int) commandBufferPassSize * totalPasses, true);
+        StreamingBuffer.WritableSection commandBufferSection = this.commandBuffer.getSectionWithSize(frameIndex, (int) commandBufferPassSize * totalPasses, false);
         ByteBuffer commandBufferSectionView = commandBufferSection.getView();
         long commandBufferSectionAddress = MemoryUtil.memAddress0(commandBufferSectionView);
 
         var instanceBufferPassSize = instanceBufferPassSize(this.instanceBuffer.getAlignment(), chunks);
-        StreamingBuffer.WritableSection instanceBufferSection = this.instanceBuffer.getSection(frameIndex, (int) instanceBufferPassSize * totalPasses, true);
+        // shouldn't need to resize instance buffer section, but crashes if not? look into this
+        StreamingBuffer.WritableSection instanceBufferSection = this.instanceBuffer.getSectionWithSize(frameIndex, (int) instanceBufferPassSize * totalPasses, false);
         ByteBuffer instanceBufferSectionView = instanceBufferSection.getView();
         long instanceBufferSectionAddress = MemoryUtil.memAddress0(instanceBufferSectionView);
 

@@ -22,11 +22,13 @@ public interface ResourceFactory {
 
     ImmutableBuffer createBuffer(long capacity, Set<ImmutableBufferFlags> flags);
 
-    ImmutableBuffer createBuffer(long capacity, Consumer<ByteBuffer> data, Set<ImmutableBufferFlags> flags);
+    ImmutableBuffer createBuffer(long capacity, Consumer<ByteBuffer> preUnmapConsumer, Set<ImmutableBufferFlags> flags);
 
     DynamicBuffer createDynamicBuffer(long capacity, Set<DynamicBufferFlags> flags);
 
     MappedBuffer createMappedBuffer(long capacity, Set<MappedBufferFlags> flags);
+
+    MappedBuffer createMappedBuffer(long capacity, Consumer<Buffer> preMapConsumer, Set<MappedBufferFlags> flags);
 
     <PROGRAM, ARRAY extends Enum<ARRAY>> Pipeline<PROGRAM, ARRAY> createPipeline(PipelineDescription state, Program<PROGRAM> program, VertexArrayDescription<ARRAY> vertexArray);
 

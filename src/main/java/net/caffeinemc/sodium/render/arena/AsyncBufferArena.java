@@ -253,7 +253,7 @@ public class AsyncBufferArena implements BufferArena {
         // A linked list is used as we'll be randomly removing elements and want O(1) performance
         var pendingTransfers = new LinkedList<PendingTransfer>();
 
-        StreamingBuffer.WritableSection section = this.streamingBuffer.getSection(
+        StreamingBuffer.WritableSection section = this.streamingBuffer.getSectionWithSize(
                 frameIndex,
                 uploads.stream().mapToInt(u -> u.data.getLength()).sum(),
                 true

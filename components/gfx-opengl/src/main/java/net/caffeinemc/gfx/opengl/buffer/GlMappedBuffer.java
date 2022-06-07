@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Set;
 
-public class GlMappedBuffer extends GlAbstractBuffer implements MappedBuffer {
+public class GlMappedBuffer extends GlBuffer implements MappedBuffer {
     private final ByteBuffer view;
     private final Set<MappedBufferFlags> flags;
 
@@ -30,7 +30,7 @@ public class GlMappedBuffer extends GlAbstractBuffer implements MappedBuffer {
             Validate.isTrue(offset + length <= this.capacity(), "Range is outside of buffer bounds");
         }
 
-        GL45C.glFlushMappedNamedBufferRange(this.handle(), offset, length);
+        GL45C.glFlushMappedNamedBufferRange(this.getHandle(), offset, length);
     }
 
     @Override

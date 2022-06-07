@@ -6,7 +6,7 @@ import net.caffeinemc.gfx.api.buffer.DynamicBufferFlags;
 import java.util.Collections;
 import java.util.Set;
 
-public class GlDynamicBuffer extends GlAbstractBuffer implements DynamicBuffer {
+public class GlDynamicBuffer extends GlBuffer implements DynamicBuffer {
     private final Set<DynamicBufferFlags> flags;
 
     public GlDynamicBuffer(int handle, long capacity, Set<DynamicBufferFlags> flags) {

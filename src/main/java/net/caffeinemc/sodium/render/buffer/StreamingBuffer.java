@@ -55,16 +55,29 @@ public class StreamingBuffer {
             int newAlignedStride = MathUtil.align(newSectionCapacity, this.alignment);
             long newBufferCapacity = (long) newAlignedStride * this.sectionCount;
 
+            MappedBuffer newBuffer;
             // create new buffer
-            MappedBuffer newBuffer = this.device.createMappedBuffer(newBufferCapacity, this.bufferFlags);
-
-            // copy old contents to new buffer
             if (copyContents) {
-                for (int idx = 0; idx < this.sectionCount; idx++) {
-                    int oldSectionStart = this.alignedStride * idx;
-                    int newSectionStart = newAlignedStride * idx;
-                    this.device.copyBuffer(this.buffer, newBuffer, oldSectionStart, newSectionStart,  this.sectionCapacity);
-                }
+                // copy old contents to new buffer before mapping
+                newBuffer = this.device.createMappedBuffer(
+                        newBufferCapacity,
+                        buffer -> {
+                            for (int idx = 0; idx < this.sectionCount; idx++) {
+                                int oldSectionStart = this.alignedStride * idx;
+                                int newSectionStart = newAlignedStride * idx;
+                                this.device.copyBuffer(
+                                        this.buffer,
+                                        buffer,
+                                        oldSectionStart,
+                                        newSectionStart,
+                                        this.sectionCapacity
+                                );
+                            }
+                        },
+                        this.bufferFlags
+                );
+            } else {
+                newBuffer = this.device.createMappedBuffer(newBufferCapacity, this.bufferFlags);
             }
 
             // delete old buffer
@@ -109,7 +122,7 @@ public class StreamingBuffer {
      * Obtains a mapped section of the streaming buffer which can be written to.
      * If needed, this buffer will be resized to fit the extra size needed.
      */
-    public WritableSection getSection(int frameIndex, int extraSize, boolean copyContents) {
+    public WritableSection getSectionWithSize(int frameIndex, int extraSize, boolean copyContents) {
         StreamingBuffer.WritableSection section = this.getSection(frameIndex);
 
         // resize if needed

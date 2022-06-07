@@ -6,7 +6,7 @@ import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import java.util.Collections;
 import java.util.Set;
 
-public class GlImmutableBuffer extends GlAbstractBuffer implements ImmutableBuffer {
+public class GlImmutableBuffer extends GlBuffer implements ImmutableBuffer {
     private final Set<ImmutableBufferFlags> flags;
 
     public GlImmutableBuffer(int handle, long capacity, Set<ImmutableBufferFlags> flags) {

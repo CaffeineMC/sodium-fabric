@@ -13,7 +13,7 @@ import net.caffeinemc.gfx.api.texture.Sampler;
 import net.caffeinemc.gfx.api.pipeline.state.CullMode;
 import net.caffeinemc.gfx.api.pipeline.state.DepthFunc;
 import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
-import net.caffeinemc.gfx.opengl.buffer.GlAbstractBuffer;
+import net.caffeinemc.gfx.opengl.buffer.GlBuffer;
 import net.caffeinemc.gfx.opengl.pipeline.GlPipelineManager;
 import net.caffeinemc.gfx.opengl.shader.GlProgram;
 import net.caffeinemc.gfx.opengl.texture.GlSampler;
@@ -30,11 +30,11 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
 
     @Override
     public <ARRAY extends Enum<ARRAY>, PROGRAM> void bindPipeline(Pipeline<PROGRAM, ARRAY> pipeline, Consumer<PipelineState> gate) {
-        // why is this here? used to null the current buffer renderer vertex format.
+        // FIXME: why is this here? used to null the current buffer renderer vertex format.
         BufferRenderer.resetCurrentVertexBuffer();
 
         GL45C.glUseProgram(GlProgram.getHandle(pipeline.getProgram()));
-        GL45C.glBindVertexArray(GlVertexArray.handle(pipeline.getVertexArray()));
+        GL45C.glBindVertexArray(GlVertexArray.getHandle(pipeline.getVertexArray()));
 
         setRenderState(pipeline.getDescription());
 
@@ -106,7 +106,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
             this.changedTextures.set(unit);
 
             GL45C.glBindTextureUnit(unit, texture);
-            GL45C.glBindSampler(unit, GlSampler.handle(sampler));
+            GL45C.glBindSampler(unit, GlSampler.getHandle(sampler));
         }
 
         @Override
@@ -121,7 +121,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
 //                Validate.isTrue(offset + length <= buffer.capacity(), "Range is out of buffer bounds");
             }
 
-            GL32C.glBindBufferRange(GlEnum.from(block.type()), block.index(), GlAbstractBuffer.handle(buffer), offset, length);
+            GL32C.glBindBufferRange(GlEnum.from(block.type()), block.index(), GlBuffer.getHandle(buffer), offset, length);
         }
 
         public void restore() {

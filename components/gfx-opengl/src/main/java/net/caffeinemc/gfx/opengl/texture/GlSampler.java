@@ -12,15 +12,15 @@ public class GlSampler extends GlObject implements Sampler {
 
     @Override
     public void setParameter(int parameter, int value) {
-        GL45C.glSamplerParameteri(this.handle(), parameter, value);
+        GL45C.glSamplerParameteri(this.getHandle(), parameter, value);
     }
 
     @Override
     public void setParameter(int parameter, float value) {
-        GL45C.glSamplerParameterf(this.handle(), parameter, value);
+        GL45C.glSamplerParameterf(this.getHandle(), parameter, value);
     }
 
-    public static int handle(Sampler sampler) {
-        return ((GlSampler) sampler).handle();
+    public static int getHandle(Sampler sampler) {
+        return ((GlSampler) sampler).getHandle();
     }
 }
