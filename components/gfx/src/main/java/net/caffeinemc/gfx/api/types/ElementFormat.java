@@ -14,4 +14,14 @@ public enum ElementFormat {
     public int getSize() {
         return this.size;
     }
+
+    public static ElementFormat getSmallestType(int count) {
+        if ((count & 0xFFFF0000) != 0) {
+            return UNSIGNED_INT;
+        } else if ((count & 0xFF00) != 0) {
+            return UNSIGNED_SHORT;
+        } else {
+            return UNSIGNED_BYTE;
+        }
+    }
 }

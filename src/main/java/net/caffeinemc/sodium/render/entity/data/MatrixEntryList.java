@@ -1,16 +1,16 @@
 package net.caffeinemc.sodium.render.entity.data;
 
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Matrix3f;
+import net.minecraft.util.math.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.util.Arrays;
 
 public class MatrixEntryList {
     private static final int DEFAULT_SIZE = 16;
-    public static final int ENTRY_SIZE_BYTES = 16 * Float.BYTES + 12 * Float.BYTES;
+    public static final int STRUCT_SIZE_BYTES = 16 * Float.BYTES + 12 * Float.BYTES;
 
     private static final int EMPTY_ID = -1;
 
@@ -23,22 +23,9 @@ public class MatrixEntryList {
         this.elementWrittenArray = new boolean[DEFAULT_SIZE];
     }
 
-    public MatrixEntryList(int initialPartId) {
-        int size;
-        if (initialPartId > DEFAULT_SIZE) {
-            size = initialPartId;
-            size |= (size >> 16);
-            size |= (size >> 8);
-            size |= (size >> 4);
-            size |= (size >> 2);
-            size |= (size >> 1);
-            size++;
-        } else {
-            size = DEFAULT_SIZE;
-        }
-
-        this.elementArray = new MatrixStack.Entry[size];
-        this.elementWrittenArray = new boolean[size];
+    public MatrixEntryList(int initialSize) {
+        this.elementArray = new MatrixStack.Entry[initialSize];
+        this.elementWrittenArray = new boolean[initialSize];
     }
 
     public void set(int partId, MatrixStack.Entry element) {
@@ -99,37 +86,62 @@ public class MatrixEntryList {
     public void writeToBuffer(ByteBuffer buffer, MatrixStack.Entry baseMatrixEntry) {
         int matrixCount = this.largestPartId + 1;
 
-        if (matrixCount * ENTRY_SIZE_BYTES > buffer.remaining()) {
+        if (matrixCount * STRUCT_SIZE_BYTES > buffer.remaining()) {
             throw new IndexOutOfBoundsException("Matrix entries could not be written to buffer, not enough room");
         }
 
+        long pointer = MemoryUtil.memAddress(buffer);
         // USED TO BE idx < this.elementArray.length
         for (int idx = 0; idx < matrixCount; idx++) {
             if (this.elementWrittenArray[idx]) {
                 MatrixStack.Entry matrixEntry = this.elementArray[idx];
                 if (matrixEntry != null) {
-                    writeMatrixEntry(buffer, matrixEntry);
+                    writeMatrixEntry(pointer + (long) idx * STRUCT_SIZE_BYTES, matrixEntry);
                 } else {
-                    writeNullEntry(buffer);
+                    writeNullEntry(pointer + (long) idx * STRUCT_SIZE_BYTES);
                 }
             } else {
-                writeMatrixEntry(buffer, baseMatrixEntry);
+                writeMatrixEntry(pointer + (long) idx * STRUCT_SIZE_BYTES, baseMatrixEntry);
             }
         }
+        buffer.position(buffer.position() + (matrixCount * STRUCT_SIZE_BYTES));
     }
 
-    private static void writeMatrixEntry(ByteBuffer buffer, MatrixStack.Entry matrixEntry) {
-        // TODO: if this is slow, consider re-implementing the direct set functions in the extended versions of the matrices.
-        FloatBuffer floatBuffer = buffer.asFloatBuffer();
+    private static void writeMatrixEntry(long pointer, MatrixStack.Entry matrixEntry) {
+        Matrix4f model = matrixEntry.getPositionMatrix();
+        MemoryUtil.memPutFloat(pointer, model.a00);
+        MemoryUtil.memPutFloat(pointer + 4, model.a10);
+        MemoryUtil.memPutFloat(pointer + 8, model.a20);
+        MemoryUtil.memPutFloat(pointer + 12, model.a30);
+        MemoryUtil.memPutFloat(pointer + 16, model.a01);
+        MemoryUtil.memPutFloat(pointer + 20, model.a11);
+        MemoryUtil.memPutFloat(pointer + 24, model.a21);
+        MemoryUtil.memPutFloat(pointer + 28, model.a31);
+        MemoryUtil.memPutFloat(pointer + 32, model.a02);
+        MemoryUtil.memPutFloat(pointer + 36, model.a12);
+        MemoryUtil.memPutFloat(pointer + 40, model.a22);
+        MemoryUtil.memPutFloat(pointer + 44, model.a32);
+        MemoryUtil.memPutFloat(pointer + 48, model.a03);
+        MemoryUtil.memPutFloat(pointer + 52, model.a13);
+        MemoryUtil.memPutFloat(pointer + 56, model.a23);
+        MemoryUtil.memPutFloat(pointer + 60, model.a33);
 
-        // mat4 ModelViewMat
-        matrixEntry.getPositionMatrix().writeColumnMajor(floatBuffer);
-        // mat3x4 NormalMat
-        MatrixUtil.getExtendedMatrix(matrixEntry.getNormalMatrix()).writeColumnMajor3x4(floatBuffer);
+        Matrix3f normal = matrixEntry.getNormalMatrix();
+        MemoryUtil.memPutFloat(pointer + 64, normal.a00);
+        MemoryUtil.memPutFloat(pointer + 68, normal.a10);
+        MemoryUtil.memPutFloat(pointer + 72, normal.a20);
+        // padding
+        MemoryUtil.memPutFloat(pointer + 80, normal.a01);
+        MemoryUtil.memPutFloat(pointer + 84, normal.a11);
+        MemoryUtil.memPutFloat(pointer + 88, normal.a21);
+        // padding
+        MemoryUtil.memPutFloat(pointer + 96, normal.a02);
+        MemoryUtil.memPutFloat(pointer + 100, normal.a12);
+        MemoryUtil.memPutFloat(pointer + 104, normal.a22);
+        // padding
     }
 
-    private static void writeNullEntry(ByteBuffer buffer) {
-        MemoryUtil.memSet(MemoryUtil.memAddress(buffer), 0, ENTRY_SIZE_BYTES);
-        buffer.position(buffer.position() + ENTRY_SIZE_BYTES);
+    private static void writeNullEntry(long pointer) {
+        MemoryUtil.memSet(pointer, 0, STRUCT_SIZE_BYTES);
     }
 }

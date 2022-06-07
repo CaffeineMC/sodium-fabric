@@ -186,14 +186,14 @@ public class ShaderTransformer {
                 "\nuniform int " + PREFIX + "InstanceOffset;"
         );
 
-        Transformation<EntityParameters> retrieveModelAndModelPart = new Transformation<>() {
+        Transformation<EntityParameters> retrieveModelInstanceAndModelPart = new Transformation<>() {
             @Override
             protected void setupGraph() {
                 this.addEndDependent(new AddToMainHeadPhase<>() {
                     @Override
                     protected ParseTree createNodeToAdd(CompoundStatementContext methodBody) {
                         return createLocalRoot(
-                                "\n    ModelPart " + PREFIX + "modelPart = " + PREFIX + "ModelPartsBuffer.modelParts[" + PREFIX + "model.PartOffset + " + PREFIX + "PartId];",
+                                "\n    ModelPart " + PREFIX + "modelPart = " + PREFIX + "ModelPartsBuffer.modelParts[" + PREFIX + "modelInstance.PartOffset + " + PREFIX + "PartId];",
                                 methodBody,
                                 GLSLParser::statement
                         );
@@ -204,7 +204,7 @@ public class ShaderTransformer {
                     @Override
                     protected ParseTree createNodeToAdd(CompoundStatementContext methodBody) {
                         return createLocalRoot(
-                                "\n    Model " + PREFIX + "model = " + PREFIX + "ModelsBuffer.models[" + PREFIX + "InstanceOffset + gl_InstanceID];",
+                                "\n    ModelInstance " + PREFIX + "modelInstance = " + PREFIX + "ModelInstancesBuffer.modelInstances[" + PREFIX + "InstanceOffset + gl_InstanceID];",
                                 methodBody,
                                 GLSLParser::statement
                         );
@@ -220,9 +220,9 @@ public class ShaderTransformer {
                         "    ModelPart[] modelParts;\n" +
                         "} " + PREFIX + "ModelPartsBuffer;",
                 "\n" +
-                        "layout(std140, binding = 2) readonly restrict buffer " + PREFIX + "ModelsLayout {\n" +
-                        "    Model[] models;\n" +
-                        "} " + PREFIX + "ModelsBuffer;"
+                        "layout(std140, binding = 2) readonly restrict buffer " + PREFIX + "ModelInstancesLayout {\n" +
+                        "    ModelInstance[] ModelInstances;\n" +
+                        "} " + PREFIX + "ModelInstancesBuffer;"
         );
 
         Transformation<EntityParameters> createModelPartStruct = new Transformation<>() {
@@ -273,11 +273,11 @@ public class ShaderTransformer {
         };
 
         // TODO: allow adding more to this and dynamically removing stuff
-        TransformationPhase<EntityParameters> createModelStruct = RunPhase.withInjectExternalDeclarations(
+        TransformationPhase<EntityParameters> createModelInstanceStruct = RunPhase.withInjectExternalDeclarations(
                 InjectionPoint.BEFORE_FUNCTIONS,
                 """
                                                 
-                        struct Model {
+                        struct ModelInstance {
                             vec4 Color;
                             ivec2 UV1;
                             ivec2 UV2;
@@ -295,10 +295,10 @@ public class ShaderTransformer {
                 this.chainDependent(replaceVertexInputs);
                 this.chainDependent(addVertexInputs);
                 this.chainDependent(addUniforms);
-                this.chainDependent(createModelStruct);
+                this.chainDependent(createModelInstanceStruct);
                 this.chainDependent(createModelPartStruct);
                 this.chainDependent(createBuffers);
-                this.chainDependent(retrieveModelAndModelPart);
+                this.chainDependent(retrieveModelInstanceAndModelPart);
             }
         });
 
@@ -317,7 +317,7 @@ public class ShaderTransformer {
 
         public EntityParameters(Set<String> skippedVertexInputs, Set<String> skippedUniforms) {
             // TODO: add parameters for adding custom vert inputs / uniforms to the buffers
-            // uniforms should probably be put into per model by default, vertex inputs should stay out by default
+            // uniforms should probably be put into per model instance by default, vertex inputs should stay out by default
             // TODO: add a mode switch for vert divisor vs buffer instancing, add a mode switch for translucency w/ vertex pulling
             // TODO: add a boolean for if vulkan is being used or not
             this.skippedVertexInputs = skippedVertexInputs;

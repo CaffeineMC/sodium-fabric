@@ -7,6 +7,8 @@ import net.caffeinemc.gfx.api.types.ElementFormat;
 
 import java.util.EnumSet;
 
+import org.lwjgl.system.MemoryUtil;
+
 public class SequenceIndexBuffer {
     private final RenderDevice device;
     private final SequenceBuilder builder;
@@ -34,15 +36,16 @@ public class SequenceIndexBuffer {
 
         var verticesPerPrimitive = this.builder.getVerticesPerPrimitive();
         var indicesPerPrimitive = this.builder.getIndicesPerPrimitive();
+        var bytesPerIndex = this.builder.getElementFormat().getSize();
 
         var primitiveCount = vertexCount / verticesPerPrimitive;
-        var bufferSize = (long) indicesPerPrimitive * primitiveCount * 4L;
+        var bufferSize = (long) indicesPerPrimitive * primitiveCount * bytesPerIndex;
 
         this.buffer = this.device.createBuffer(bufferSize, (buffer) -> {
-            var intBuffer = buffer.asIntBuffer();
+            var pointer = MemoryUtil.memAddress(buffer);
 
             for (int primitiveIndex = 0; primitiveIndex < primitiveCount; primitiveIndex++) {
-                this.builder.write(intBuffer, primitiveIndex * verticesPerPrimitive);
+                this.builder.write(pointer + ((long) primitiveIndex * indicesPerPrimitive * bytesPerIndex), primitiveIndex * verticesPerPrimitive);
             }
         }, EnumSet.noneOf(ImmutableBufferFlags.class));
 
@@ -60,7 +63,7 @@ public class SequenceIndexBuffer {
         }
     }
 
-    public ElementFormat getElementDataType() {
+    public ElementFormat getElementFormat() {
         return ElementFormat.UNSIGNED_INT;
     }
 }

@@ -100,7 +100,7 @@ public class RenderSectionManager {
 
         this.renderListBuilder = new RenderListBuilder(device);
 
-        this.indexBuffer = new SequenceIndexBuffer(device, SequenceBuilder.QUADS);
+        this.indexBuffer = new SequenceIndexBuffer(device, SequenceBuilder.QUADS_INT);
 
         for (var renderPass : DefaultRenderPasses.ALL) {
             this.chunkRenderers.put(
