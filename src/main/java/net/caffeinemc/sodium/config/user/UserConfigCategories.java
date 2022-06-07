@@ -38,7 +38,7 @@ public class UserConfigCategories {
                         .setName(Text.translatable("options.simulationDistance"))
                         .setTooltip(Text.translatable("sodium.options.simulation_distance.tooltip"))
                         .setControl(option -> new SliderControl(option, 5, 32, 1, ControlValueFormatter.translateVariable("options.chunks")))
-                        .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getViewDistance()))
+                        .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getSimulationDistance()))
                         .setImpact(OptionImpact.HIGH)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
