@@ -48,12 +48,15 @@ public class StreamingBuffer {
      *
      * @return true if the buffer was resized;
      */
-    public boolean resizeIfNeeded(int sectionCapacity, boolean copyContents) {
+    public boolean resizeIfNeeded(WritableSection currentSection, int sectionCapacity, boolean copyContents) {
         // TODO: add path for if sectioncapacity is still smaller than alignedstride
         if (sectionCapacity > this.sectionCapacity) {
             int newSectionCapacity = Math.max(sectionCapacity, this.sectionCapacity * 2);
             int newAlignedStride = MathUtil.align(newSectionCapacity, this.alignment);
             long newBufferCapacity = (long) newAlignedStride * this.sectionCount;
+
+            // flush pending data for current section, previous sections should already be flushed
+            currentSection.flushPartial();
 
             MappedBuffer newBuffer;
             // create new buffer
@@ -106,15 +109,14 @@ public class StreamingBuffer {
      * Obtains a mapped section of the streaming buffer which can be written to.
      */
     public WritableSection getSection(int frameIndex) {
+        int sectionIdx = frameIndex % this.sectionCount;
+
         // not good, but whatever
         if (frameIndex != this.lastFrameIdx) {
-            if (this.lastFrameIdx != -1) {
-                this.sections[this.lastFrameIdx % this.sectionCount].reset();
-            }
+            this.sections[sectionIdx].reset();
             this.lastFrameIdx = frameIndex;
         }
 
-        int sectionIdx = frameIndex % this.sectionCount;
         return this.sections[sectionIdx];
     }
 
@@ -127,7 +129,7 @@ public class StreamingBuffer {
 
         // resize if needed
         int requiredSize = section.getView().position() + extraSize;
-        boolean resized = this.resizeIfNeeded(requiredSize, copyContents);
+        boolean resized = this.resizeIfNeeded(section, requiredSize, copyContents);
 
         // need to account for if sections were updated
         if (resized) {
