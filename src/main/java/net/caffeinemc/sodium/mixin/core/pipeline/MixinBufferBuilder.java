@@ -55,8 +55,9 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
 
         LOGGER.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.buffer.capacity(), newSize);
 
-        GlAllocationUtils.resizeByteBuffer(this.buffer, newSize);
-        this.buffer.rewind();
+        ByteBuffer byteBuffer = GlAllocationUtils.resizeByteBuffer(this.buffer, newSize);
+        byteBuffer.rewind();
+        this.buffer = byteBuffer;
 
         return true;
     }

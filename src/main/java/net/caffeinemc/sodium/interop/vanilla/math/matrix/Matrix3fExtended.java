@@ -69,6 +69,4 @@ public interface Matrix3fExtended {
     float getA22();
 
     void setA22(float value);
-
-    void writeColumnMajor3x4(FloatBuffer buffer);
 }

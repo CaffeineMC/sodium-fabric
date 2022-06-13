@@ -1,15 +1,13 @@
 package net.caffeinemc.sodium.mixin.core.matrix;
 
-import net.caffeinemc.sodium.util.packed.Normal3b;
 import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix3fExtended;
+import net.caffeinemc.sodium.util.packed.Normal3b;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Matrix3f;
 import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3i;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-
-import java.nio.FloatBuffer;
 
 @Mixin(Matrix3f.class)
 public class MixinMatrix3f implements Matrix3fExtended {
@@ -318,22 +316,5 @@ public class MixinMatrix3f implements Matrix3fExtended {
     @Override
     public void setA22(float value) {
         this.a22 = value;
-    }
-
-    @Override
-    public void writeColumnMajor3x4(FloatBuffer buf) {
-        buf.put(pack3x4(0, 0), this.a00);
-        buf.put(pack3x4(0, 1), this.a01);
-        buf.put(pack3x4(0, 2), this.a02);
-        buf.put(pack3x4(1, 0), this.a10);
-        buf.put(pack3x4(1, 1), this.a11);
-        buf.put(pack3x4(1, 2), this.a12);
-        buf.put(pack3x4(2, 0), this.a20);
-        buf.put(pack3x4(2, 1), this.a21);
-        buf.put(pack3x4(2, 2), this.a22);
-    }
-
-    private static int pack3x4(int x, int y) {
-        return (y * 4) + x;
     }
 }

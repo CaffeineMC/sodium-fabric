@@ -271,14 +271,6 @@ public class UserConfigCategories {
                         .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
                         .build()
                 )
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(Text.translatable("sodium.options.use_model_instancing.name"))
-                        .setTooltip(Text.translatable("sodium.options.use_model_instancing.tooltip"))
-                        .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.HIGH)
-                        .setBinding((opts, value) -> opts.performance.useModelInstancing = value, opts -> opts.performance.useModelInstancing)
-                        .build()
-                )
                 .build());
 
         return new OptionPage(Text.translatable("sodium.options.pages.performance"), ImmutableList.copyOf(groups));
