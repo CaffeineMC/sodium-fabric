@@ -1,8 +1,10 @@
 package net.caffeinemc.sodium.render.entity.data;
 
+import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix3fExtended;
+import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
+import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
+import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Matrix3f;
-import net.minecraft.util.math.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -34,13 +36,8 @@ public class MatrixEntryList {
 
             if (partId >= this.elementArray.length) {
                 // expand the array to the closest power of 2 that will fit the partId
-                int newSize = partId;
-                newSize |= (newSize >> 16);
-                newSize |= (newSize >> 8);
-                newSize |= (newSize >> 4);
-                newSize |= (newSize >> 2);
-                newSize |= (newSize >> 1);
-                newSize++;
+                int newSize = MathUtil.findNextPositivePowerOfTwo(partId);
+
                 this.elementWrittenArray = Arrays.copyOf(this.elementWrittenArray, newSize);
                 this.elementArray = Arrays.copyOf(this.elementArray, newSize);
             }
@@ -108,36 +105,36 @@ public class MatrixEntryList {
     }
 
     private static void writeMatrixEntry(long pointer, MatrixStack.Entry matrixEntry) {
-        Matrix4f model = matrixEntry.getPositionMatrix();
-        MemoryUtil.memPutFloat(pointer, model.a00);
-        MemoryUtil.memPutFloat(pointer + 4, model.a10);
-        MemoryUtil.memPutFloat(pointer + 8, model.a20);
-        MemoryUtil.memPutFloat(pointer + 12, model.a30);
-        MemoryUtil.memPutFloat(pointer + 16, model.a01);
-        MemoryUtil.memPutFloat(pointer + 20, model.a11);
-        MemoryUtil.memPutFloat(pointer + 24, model.a21);
-        MemoryUtil.memPutFloat(pointer + 28, model.a31);
-        MemoryUtil.memPutFloat(pointer + 32, model.a02);
-        MemoryUtil.memPutFloat(pointer + 36, model.a12);
-        MemoryUtil.memPutFloat(pointer + 40, model.a22);
-        MemoryUtil.memPutFloat(pointer + 44, model.a32);
-        MemoryUtil.memPutFloat(pointer + 48, model.a03);
-        MemoryUtil.memPutFloat(pointer + 52, model.a13);
-        MemoryUtil.memPutFloat(pointer + 56, model.a23);
-        MemoryUtil.memPutFloat(pointer + 60, model.a33);
+        Matrix4fExtended model = MatrixUtil.getExtendedMatrix(matrixEntry.getPositionMatrix());
+        MemoryUtil.memPutFloat(pointer, model.getA00());
+        MemoryUtil.memPutFloat(pointer + 4, model.getA10());
+        MemoryUtil.memPutFloat(pointer + 8, model.getA20());
+        MemoryUtil.memPutFloat(pointer + 12, model.getA30());
+        MemoryUtil.memPutFloat(pointer + 16, model.getA01());
+        MemoryUtil.memPutFloat(pointer + 20, model.getA11());
+        MemoryUtil.memPutFloat(pointer + 24, model.getA21());
+        MemoryUtil.memPutFloat(pointer + 28, model.getA31());
+        MemoryUtil.memPutFloat(pointer + 32, model.getA02());
+        MemoryUtil.memPutFloat(pointer + 36, model.getA12());
+        MemoryUtil.memPutFloat(pointer + 40, model.getA22());
+        MemoryUtil.memPutFloat(pointer + 44, model.getA32());
+        MemoryUtil.memPutFloat(pointer + 48, model.getA03());
+        MemoryUtil.memPutFloat(pointer + 52, model.getA13());
+        MemoryUtil.memPutFloat(pointer + 56, model.getA23());
+        MemoryUtil.memPutFloat(pointer + 60, model.getA33());
 
-        Matrix3f normal = matrixEntry.getNormalMatrix();
-        MemoryUtil.memPutFloat(pointer + 64, normal.a00);
-        MemoryUtil.memPutFloat(pointer + 68, normal.a10);
-        MemoryUtil.memPutFloat(pointer + 72, normal.a20);
+        Matrix3fExtended normal = MatrixUtil.getExtendedMatrix(matrixEntry.getNormalMatrix());
+        MemoryUtil.memPutFloat(pointer + 64, normal.getA00());
+        MemoryUtil.memPutFloat(pointer + 68, normal.getA10());
+        MemoryUtil.memPutFloat(pointer + 72, normal.getA20());
         // padding
-        MemoryUtil.memPutFloat(pointer + 80, normal.a01);
-        MemoryUtil.memPutFloat(pointer + 84, normal.a11);
-        MemoryUtil.memPutFloat(pointer + 88, normal.a21);
+        MemoryUtil.memPutFloat(pointer + 80, normal.getA01());
+        MemoryUtil.memPutFloat(pointer + 84, normal.getA11());
+        MemoryUtil.memPutFloat(pointer + 88, normal.getA21());
         // padding
-        MemoryUtil.memPutFloat(pointer + 96, normal.a02);
-        MemoryUtil.memPutFloat(pointer + 100, normal.a12);
-        MemoryUtil.memPutFloat(pointer + 104, normal.a22);
+        MemoryUtil.memPutFloat(pointer + 96, normal.getA02());
+        MemoryUtil.memPutFloat(pointer + 100, normal.getA12());
+        MemoryUtil.memPutFloat(pointer + 104, normal.getA22());
         // padding
     }
 

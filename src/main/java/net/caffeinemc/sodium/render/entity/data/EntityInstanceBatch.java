@@ -3,6 +3,8 @@ package net.caffeinemc.sodium.render.entity.data;
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.caffeinemc.gfx.api.types.ElementFormat;
+import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
+import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.render.entity.compile.BuiltEntityModel;
 import net.caffeinemc.sodium.render.sequence.SequenceBuilder;
@@ -88,13 +90,13 @@ public class EntityInstanceBatch {
             int partIds = this.matrices.getLargestPartId() + 1;
             float[] cameraPositions = new float[partIds * 3];
             for (int partId = 0; partId < partIds; partId++) {
-                Matrix4f mv;
+                Matrix4fExtended mv;
                 if (!this.matrices.getElementWritten(partId)) {
-                    mv = baseMatrixEntry.getPositionMatrix();
+                    mv = MatrixUtil.getExtendedMatrix(baseMatrixEntry.getPositionMatrix());
                 } else {
                     MatrixStack.Entry entry = this.matrices.get(partId);
                     if (entry != null) {
-                        mv = entry.getPositionMatrix();
+                        mv = MatrixUtil.getExtendedMatrix(entry.getPositionMatrix());
                     } else {
                         // skip empty part
                         continue;
@@ -112,14 +114,14 @@ public class EntityInstanceBatch {
                 // to get the actual inverse.
 
                 // Using fastInverseSqrt might be playing with fire here
-                double undoScaleX = 1.0 / Math.sqrt(mv.a00 * mv.a00 + mv.a10 * mv.a10 + mv.a20 * mv.a20);
-                double undoScaleY = 1.0 / Math.sqrt(mv.a01 * mv.a01 + mv.a11 * mv.a11 + mv.a21 * mv.a21);
-                double undoScaleZ = 1.0 / Math.sqrt(mv.a02 * mv.a02 + mv.a12 * mv.a12 + mv.a22 * mv.a22);
+                double undoScaleX = 1.0 / Math.sqrt(mv.getA00() * mv.getA00() + mv.getA10() * mv.getA10() + mv.getA20() * mv.getA20());
+                double undoScaleY = 1.0 / Math.sqrt(mv.getA01() * mv.getA01() + mv.getA11() * mv.getA11() + mv.getA21() * mv.getA21());
+                double undoScaleZ = 1.0 / Math.sqrt(mv.getA02() * mv.getA02() + mv.getA12() * mv.getA12() + mv.getA22() * mv.getA22());
 
                 int arrayIdx = partId * 3;
-                cameraPositions[arrayIdx] = (float) (-(mv.a00 * mv.a03 + mv.a10 * mv.a13 + mv.a20 * mv.a23) * undoScaleX * undoScaleX);
-                cameraPositions[arrayIdx + 1] = (float) (-(mv.a01 * mv.a03 + mv.a11 * mv.a13 + mv.a21 * mv.a23) * undoScaleY * undoScaleY);
-                cameraPositions[arrayIdx + 2] = (float) (-(mv.a02 * mv.a03 + mv.a12 * mv.a13 + mv.a22 * mv.a23) * undoScaleZ * undoScaleZ);
+                cameraPositions[arrayIdx] = (float) (-(mv.getA00() * mv.getA03() + mv.getA10() * mv.getA13() + mv.getA20() * mv.getA23()) * undoScaleX * undoScaleX);
+                cameraPositions[arrayIdx + 1] = (float) (-(mv.getA01() * mv.getA03() + mv.getA11() * mv.getA13() + mv.getA21() * mv.getA23()) * undoScaleY * undoScaleY);
+                cameraPositions[arrayIdx + 2] = (float) (-(mv.getA02() * mv.getA03() + mv.getA12() * mv.getA13() + mv.getA22() * mv.getA23()) * undoScaleZ * undoScaleZ);
             }
 
             float[] primitivePositions = this.model.primitivePositions();
@@ -191,6 +193,7 @@ public class EntityInstanceBatch {
         sectionView.position(sectionPos + sizeBytes);
         // sectioned pointer also has to be aligned
         long pointer = MemoryUtil.memAddress0(section.getView()) + sectionPos;
+        long pointerIncrement = (long) drawMode.getIndexCount(drawMode.additionalVertexCount) * this.elementFormat.getSize();
 
         SequenceBuilder sequenceBuilder = SequenceBuilder.map(drawMode, this.elementFormat);
         int lastIndex = 0;
@@ -201,7 +204,7 @@ public class EntityInstanceBatch {
             for (int i = skippedPrimitivesStart; i < primitiveIndices.length - skippedPrimitivesEnd; i++) {
                 int baseVertex = lastIndex + primitiveIndices[i] * drawMode.additionalVertexCount;
                 sequenceBuilder.write(pointer, baseVertex);
-                pointer += (long) drawMode.getIndexCount(drawMode.additionalVertexCount) * this.elementFormat.getSize();
+                pointer += pointerIncrement;
             }
             // we want to include the skipped primitives because the index needs to be calculated to the corresponding instance
             lastIndex += primitiveIndices.length * drawMode.additionalVertexCount;

@@ -62,6 +62,8 @@
   "sodium.options.always_defer_chunk_updates.tooltip": "If enabled, terrain rendering will never wait for chunk updates to finish, even if they are important. This can greatly improve frame rates in some scenarios, but it may create significant visual lag in the world.",
   "sodium.options.use_compact_vertex_format.name": "Use Compact Vertex Format",
   "sodium.options.use_compact_vertex_format.tooltip": "If enabled, block geometry will be stored in video memory using a more compact representation. This greatly reduces memory usage and bandwidth requirements, but may cause issues with some resource packs and graphics drivers.",
+  "sodium.options.use_model_instancing.name": "Use Model Instancing",
+  "sodium.options.use_model_instancing.tooltip": "If enabled, supported models will be packed into VBOs and instanced. This removes unnecessary uploads to the GPU by only sending transformations for existing vertices. This also removes many unnecessary draw calls by batching together many similar entities. This can drastically improve framerate when many entities are visible.",
   "sodium.options.buttons.undo": "Undo",
   "sodium.options.buttons.apply": "Apply",
   "sodium.options.buttons.donate": "Buy us a coffee!"

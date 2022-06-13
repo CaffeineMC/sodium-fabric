@@ -31,4 +31,12 @@ public class MathUtil {
     public static long align(long position, long alignment) {
         return ((position - 1) + alignment) & -alignment;
     }
+
+    public static int findNextPositivePowerOfTwo(int value) {
+        return 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(value - 1));
+    }
+
+    public static long findNextPositivePowerOfTwo(long value) {
+        return 1L << (Long.SIZE - Long.numberOfLeadingZeros(value - 1));
+    }
 }

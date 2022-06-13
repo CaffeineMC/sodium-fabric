@@ -11,6 +11,7 @@ import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.util.GlAllocationUtils;
+import org.lwjgl.BufferUtils;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -54,13 +55,8 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
 
         LOGGER.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.buffer.capacity(), newSize);
 
-        this.buffer.position(0);
-
-        ByteBuffer byteBuffer = GlAllocationUtils.allocateByteBuffer(newSize);
-        byteBuffer.put(this.buffer);
-        byteBuffer.rewind();
-
-        this.buffer = byteBuffer;
+        GlAllocationUtils.resizeByteBuffer(this.buffer, newSize);
+        this.buffer.rewind();
 
         return true;
     }

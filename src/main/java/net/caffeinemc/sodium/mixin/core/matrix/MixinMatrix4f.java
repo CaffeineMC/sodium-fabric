@@ -57,14 +57,6 @@ public class MixinMatrix4f implements Matrix4fExtended {
     protected float a33;
 
     @Override
-    public void translate(float x, float y, float z) {
-        this.a03 = this.a00 * x + this.a01 * y + this.a02 * z + this.a03;
-        this.a13 = this.a10 * x + this.a11 * y + this.a12 * z + this.a13;
-        this.a23 = this.a20 * x + this.a21 * y + this.a22 * z + this.a23;
-        this.a33 = this.a30 * x + this.a31 * y + this.a32 * z + this.a33;
-    }
-
-    @Override
     public float transformVecX(float x, float y, float z) {
         return (this.a00 * x) + (this.a01 * y) + (this.a02 * z) + (this.a03 * 1.0f);
     }
@@ -101,6 +93,166 @@ public class MixinMatrix4f implements Matrix4fExtended {
         } else if (z) {
             this.rotateZ(quaternion);
         }
+    }
+
+    @Override
+    public float getA00() {
+        return this.a00;
+    }
+
+    @Override
+    public void setA00(float a00) {
+        this.a00 = a00;
+    }
+
+    @Override
+    public float getA01() {
+        return this.a01;
+    }
+
+    @Override
+    public void setA01(float a01) {
+        this.a01 = a01;
+    }
+
+    @Override
+    public float getA02() {
+        return this.a02;
+    }
+
+    @Override
+    public void setA02(float a02) {
+        this.a02 = a02;
+    }
+
+    @Override
+    public float getA03() {
+        return this.a03;
+    }
+
+    @Override
+    public void setA03(float a03) {
+        this.a03 = a03;
+    }
+
+    @Override
+    public float getA10() {
+        return this.a10;
+    }
+
+    @Override
+    public void setA10(float a10) {
+        this.a10 = a10;
+    }
+
+    @Override
+    public float getA11() {
+        return this.a11;
+    }
+
+    @Override
+    public void setA11(float a11) {
+        this.a11 = a11;
+    }
+
+    @Override
+    public float getA12() {
+        return this.a12;
+    }
+
+    @Override
+    public void setA12(float a12) {
+        this.a12 = a12;
+    }
+
+    @Override
+    public float getA13() {
+        return this.a13;
+    }
+
+    @Override
+    public void setA13(float a13) {
+        this.a13 = a13;
+    }
+
+    @Override
+    public float getA20() {
+        return this.a20;
+    }
+
+    @Override
+    public void setA20(float a20) {
+        this.a20 = a20;
+    }
+
+    @Override
+    public float getA21() {
+        return this.a21;
+    }
+
+    @Override
+    public void setA21(float a21) {
+        this.a21 = a21;
+    }
+
+    @Override
+    public float getA22() {
+        return this.a22;
+    }
+
+    @Override
+    public void setA22(float a22) {
+        this.a22 = a22;
+    }
+
+    @Override
+    public float getA23() {
+        return this.a23;
+    }
+
+    @Override
+    public void setA23(float a23) {
+        this.a23 = a23;
+    }
+
+    @Override
+    public float getA30() {
+        return this.a30;
+    }
+
+    @Override
+    public void setA30(float a30) {
+        this.a30 = a30;
+    }
+
+    @Override
+    public float getA31() {
+        return this.a31;
+    }
+
+    @Override
+    public void setA31(float a31) {
+        this.a31 = a31;
+    }
+
+    @Override
+    public float getA32() {
+        return this.a32;
+    }
+
+    @Override
+    public void setA32(float a32) {
+        this.a32 = a32;
+    }
+
+    @Override
+    public float getA33() {
+        return this.a33;
+    }
+
+    @Override
+    public void setA33(float a33) {
+        this.a33 = a33;
     }
 
     private void rotateX(Quaternion quaternion) {

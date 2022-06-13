@@ -7,6 +7,10 @@
   "authors": [
     "JellySquid"
   ],
+  "contributors": [
+    "burgerdude",
+    "IMS"
+  ],
   "contact": {
     "sources": "https://github.com/CaffeineMC/sodium-fabric",
     "issues": "https://github.com/CaffeineMC/sodium-fabric/issues"

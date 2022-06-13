@@ -36,21 +36,39 @@ public interface Matrix3fExtended {
 
     float getA00();
 
+    void setA00(float value);
+
     float getA10();
+
+    void setA10(float value);
 
     float getA20();
 
+    void setA20(float value);
+
     float getA01();
+
+    void setA01(float value);
 
     float getA11();
 
+    void setA11(float value);
+
     float getA21();
+
+    void setA21(float value);
 
     float getA02();
 
+    void setA02(float value);
+
     float getA12();
 
+    void setA12(float value);
+
     float getA22();
+
+    void setA22(float value);
 
     void writeColumnMajor3x4(FloatBuffer buffer);
 }

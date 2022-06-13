@@ -23,18 +23,6 @@ public class MixinMatrixStack {
      * @author JellySquid
      */
     @Overwrite
-    public void translate(double x, double y, double z) {
-        MatrixStack.Entry entry = this.stack.getLast();
-
-        Matrix4fExtended mat = MatrixUtil.getExtendedMatrix(entry.getPositionMatrix());
-        mat.translate((float) x, (float) y, (float) z);
-    }
-
-    /**
-     * @reason Use our faster specialized function
-     * @author JellySquid
-     */
-    @Overwrite
     public void multiply(Quaternion q) {
         MatrixStack.Entry entry = this.stack.getLast();
 

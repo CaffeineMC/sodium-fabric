@@ -87,9 +87,8 @@ public class VertexBufferBuilder implements VertexBufferView {
     }
 
     public void destroy() {
-        if (this.buffer != null) {
-            MemoryUtil.memFree(this.buffer);
-        }
+        // this does nothing if the buffer reference is null
+        MemoryUtil.memFree(this.buffer);
 
         this.buffer = null;
     }

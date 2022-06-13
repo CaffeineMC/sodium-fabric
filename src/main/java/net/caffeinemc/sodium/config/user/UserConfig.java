@@ -39,6 +39,7 @@ public class UserConfig {
         public boolean useParticleCulling = true;
         public boolean useBlockFaceCulling = true;
         public boolean useCompactVertexFormat = true;
+        public boolean useModelInstancing = true;
     }
 
     public static class AdvancedSettings {
