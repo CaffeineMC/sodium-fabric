@@ -236,8 +236,18 @@ public class MixinMatrix3f implements Matrix3fExtended {
     }
 
     @Override
+    public void setA00(float value) {
+        this.a00 = value;
+    }
+
+    @Override
     public float getA10() {
         return this.a10;
+    }
+
+    @Override
+    public void setA10(float value) {
+        this.a10 = value;
     }
 
     @Override
@@ -246,8 +256,18 @@ public class MixinMatrix3f implements Matrix3fExtended {
     }
 
     @Override
+    public void setA20(float value) {
+        this.a20 = value;
+    }
+
+    @Override
     public float getA01() {
         return this.a01;
+    }
+
+    @Override
+    public void setA01(float value) {
+        this.a01 = value;
     }
 
     @Override
@@ -256,8 +276,18 @@ public class MixinMatrix3f implements Matrix3fExtended {
     }
 
     @Override
+    public void setA11(float value) {
+        this.a11 = value;
+    }
+
+    @Override
     public float getA21() {
         return this.a21;
+    }
+
+    @Override
+    public void setA21(float value) {
+        this.a21 = value;
     }
 
     @Override
@@ -266,13 +296,28 @@ public class MixinMatrix3f implements Matrix3fExtended {
     }
 
     @Override
+    public void setA02(float value) {
+        this.a02 = value;
+    }
+
+    @Override
     public float getA12() {
         return this.a12;
     }
 
     @Override
+    public void setA12(float value) {
+        this.a12 = value;
+    }
+
+    @Override
     public float getA22() {
         return this.a22;
+    }
+
+    @Override
+    public void setA22(float value) {
+        this.a22 = value;
     }
 
     @Override
