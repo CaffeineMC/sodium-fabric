@@ -107,6 +107,7 @@ public class MixinModelPart {
         matrices.translate(this.pivotX * NORM, this.pivotY * NORM, this.pivotZ * NORM);
 
         MatrixStack.Entry currentStackEntry = matrices.peek();
+
         Matrix4fExtended modelMat = MatrixUtil.getExtendedMatrix(currentStackEntry.getPositionMatrix());
 
         float sx = MathHelper.sin(this.pitch);
@@ -116,7 +117,7 @@ public class MixinModelPart {
         float sz = MathHelper.sin(this.roll);
         float cz = MathHelper.cos(this.roll);
 
-        // create entries for rotation matrix that go along 3 axis
+        // create 3-axis combined rotation matrix, individual entries are stored here (that weren't 0s)
         float rot00 = cy * cz;
         float rot01 = (sx * sy * cz) - (cx * sz);
         float rot02 = (cx * sy * cz) + (sx * sz);
@@ -127,6 +128,7 @@ public class MixinModelPart {
         float rot21 = sx * cy;
         float rot22 = cx * cy;
 
+        // multiply components (that don't result in an equivalent value) individually. pray for autovectorization.
         float newModel00 = modelMat.getA00() * rot00 + modelMat.getA01() * rot10 + modelMat.getA02() * rot20;
         float newModel01 = modelMat.getA00() * rot01 + modelMat.getA01() * rot11 + modelMat.getA02() * rot21;
         float newModel02 = modelMat.getA00() * rot02 + modelMat.getA01() * rot12 + modelMat.getA02() * rot22;
@@ -139,47 +141,18 @@ public class MixinModelPart {
         float newModel30 = modelMat.getA30() * rot00 + modelMat.getA31() * rot10 + modelMat.getA32() * rot20;
         float newModel31 = modelMat.getA30() * rot01 + modelMat.getA31() * rot11 + modelMat.getA32() * rot21;
         float newModel32 = modelMat.getA30() * rot02 + modelMat.getA31() * rot12 + modelMat.getA32() * rot22;
-
-        Matrix3fExtended normalMat = MatrixUtil.getExtendedMatrix(currentStackEntry.getNormalMatrix());
-        // TODO: are the checks really faster?
-        if (modelMat.getA00() == normalMat.getA00() && modelMat.getA01() == normalMat.getA01() && modelMat.getA02() == normalMat.getA02()) {
-            normalMat.setA00(newModel00);
-            normalMat.setA01(newModel01);
-            normalMat.setA02(newModel02);
-        } else {
-            float newNormal00 = normalMat.getA00() * rot00 + normalMat.getA01() * rot10 + normalMat.getA02() * rot20;
-            float newNormal01 = normalMat.getA00() * rot01 + normalMat.getA01() * rot11 + normalMat.getA02() * rot21;
-            float newNormal02 = normalMat.getA00() * rot02 + normalMat.getA01() * rot12 + normalMat.getA02() * rot22;
-            normalMat.setA00(newNormal00);
-            normalMat.setA01(newNormal01);
-            normalMat.setA02(newNormal02);
-        }
-
-        if (modelMat.getA10() == normalMat.getA10() && modelMat.getA11() == normalMat.getA11() && modelMat.getA12() == normalMat.getA12()) {
-            normalMat.setA10(newModel10);
-            normalMat.setA11(newModel11);
-            normalMat.setA12(newModel12);
-        } else {
-            float newNormal10 = normalMat.getA10() * rot00 + normalMat.getA11() * rot10 + normalMat.getA12() * rot20;
-            float newNormal11 = normalMat.getA10() * rot01 + normalMat.getA11() * rot11 + normalMat.getA12() * rot21;
-            float newNormal12 = normalMat.getA10() * rot02 + normalMat.getA11() * rot12 + normalMat.getA12() * rot22;
-            normalMat.setA10(newNormal10);
-            normalMat.setA11(newNormal11);
-            normalMat.setA12(newNormal12);
-        }
-
-        if (modelMat.getA20() == normalMat.getA20() && modelMat.getA21() == normalMat.getA21() && modelMat.getA22() == normalMat.getA22()) {
-            normalMat.setA20(newModel20);
-            normalMat.setA21(newModel21);
-            normalMat.setA22(newModel22);
-        } else {
-            float newNormal20 = normalMat.getA20() * rot00 + normalMat.getA21() * rot10 + normalMat.getA22() * rot20;
-            float newNormal21 = normalMat.getA20() * rot01 + normalMat.getA21() * rot11 + normalMat.getA22() * rot21;
-            float newNormal22 = normalMat.getA20() * rot02 + normalMat.getA21() * rot12 + normalMat.getA22() * rot22;
-            normalMat.setA20(newNormal20);
-            normalMat.setA21(newNormal21);
-            normalMat.setA22(newNormal22);
-        }
+//        float newModel00 = Math.fma(modelMat.getA00(), rot00, Math.fma(modelMat.getA01(), rot10, modelMat.getA02() * rot20));
+//        float newModel01 = Math.fma(modelMat.getA00(), rot01, Math.fma(modelMat.getA01(), rot11, modelMat.getA02() * rot21));
+//        float newModel02 = Math.fma(modelMat.getA00(), rot02, Math.fma(modelMat.getA01(), rot12, modelMat.getA02() * rot22));
+//        float newModel10 = Math.fma(modelMat.getA10(), rot00, Math.fma(modelMat.getA11(), rot10, modelMat.getA12() * rot20));
+//        float newModel11 = Math.fma(modelMat.getA10(), rot01, Math.fma(modelMat.getA11(), rot11, modelMat.getA12() * rot21));
+//        float newModel12 = Math.fma(modelMat.getA10(), rot02, Math.fma(modelMat.getA11(), rot12, modelMat.getA12() * rot22));
+//        float newModel20 = Math.fma(modelMat.getA20(), rot00, Math.fma(modelMat.getA21(), rot10, modelMat.getA22() * rot20));
+//        float newModel21 = Math.fma(modelMat.getA20(), rot01, Math.fma(modelMat.getA21(), rot11, modelMat.getA22() * rot21));
+//        float newModel22 = Math.fma(modelMat.getA20(), rot02, Math.fma(modelMat.getA21(), rot12, modelMat.getA22() * rot22));
+//        float newModel30 = Math.fma(modelMat.getA30(), rot00, Math.fma(modelMat.getA31(), rot10, modelMat.getA32() * rot20));
+//        float newModel31 = Math.fma(modelMat.getA30(), rot01, Math.fma(modelMat.getA31(), rot11, modelMat.getA32() * rot21));
+//        float newModel32 = Math.fma(modelMat.getA30(), rot02, Math.fma(modelMat.getA31(), rot12, modelMat.getA32() * rot22));
 
         modelMat.setA00(newModel00);
         modelMat.setA01(newModel01);
@@ -193,6 +166,38 @@ public class MixinModelPart {
         modelMat.setA30(newModel30);
         modelMat.setA31(newModel31);
         modelMat.setA32(newModel32);
+
+        Matrix3fExtended normalMat = MatrixUtil.getExtendedMatrix(currentStackEntry.getNormalMatrix());
+
+        // multiply all components and pray for autovectorization
+        float newNormal00 = normalMat.getA00() * rot00 + normalMat.getA01() * rot10 + normalMat.getA02() * rot20;
+        float newNormal01 = normalMat.getA00() * rot01 + normalMat.getA01() * rot11 + normalMat.getA02() * rot21;
+        float newNormal02 = normalMat.getA00() * rot02 + normalMat.getA01() * rot12 + normalMat.getA02() * rot22;
+        float newNormal10 = normalMat.getA10() * rot00 + normalMat.getA11() * rot10 + normalMat.getA12() * rot20;
+        float newNormal11 = normalMat.getA10() * rot01 + normalMat.getA11() * rot11 + normalMat.getA12() * rot21;
+        float newNormal12 = normalMat.getA10() * rot02 + normalMat.getA11() * rot12 + normalMat.getA12() * rot22;
+        float newNormal20 = normalMat.getA20() * rot00 + normalMat.getA21() * rot10 + normalMat.getA22() * rot20;
+        float newNormal21 = normalMat.getA20() * rot01 + normalMat.getA21() * rot11 + normalMat.getA22() * rot21;
+        float newNormal22 = normalMat.getA20() * rot02 + normalMat.getA21() * rot12 + normalMat.getA22() * rot22;
+//        float newNormal00 = Math.fma(normalMat.getA00(), rot00, Math.fma(normalMat.getA01(), rot10, normalMat.getA02() * rot20));
+//        float newNormal01 = Math.fma(normalMat.getA00(), rot01, Math.fma(normalMat.getA01(), rot11, normalMat.getA02() * rot21));
+//        float newNormal02 = Math.fma(normalMat.getA00(), rot02, Math.fma(normalMat.getA01(), rot12, normalMat.getA02() * rot22));
+//        float newNormal10 = Math.fma(normalMat.getA10(), rot00, Math.fma(normalMat.getA11(), rot10, normalMat.getA12() * rot20));
+//        float newNormal11 = Math.fma(normalMat.getA10(), rot01, Math.fma(normalMat.getA11(), rot11, normalMat.getA12() * rot21));
+//        float newNormal12 = Math.fma(normalMat.getA10(), rot02, Math.fma(normalMat.getA11(), rot12, normalMat.getA12() * rot22));
+//        float newNormal20 = Math.fma(normalMat.getA20(), rot00, Math.fma(normalMat.getA21(), rot10, normalMat.getA22() * rot20));
+//        float newNormal21 = Math.fma(normalMat.getA20(), rot01, Math.fma(normalMat.getA21(), rot11, normalMat.getA22() * rot21));
+//        float newNormal22 = Math.fma(normalMat.getA20(), rot02, Math.fma(normalMat.getA21(), rot12, normalMat.getA22() * rot22));
+
+        normalMat.setA00(newNormal00);
+        normalMat.setA01(newNormal01);
+        normalMat.setA02(newNormal02);
+        normalMat.setA10(newNormal10);
+        normalMat.setA11(newNormal11);
+        normalMat.setA12(newNormal12);
+        normalMat.setA20(newNormal20);
+        normalMat.setA21(newNormal21);
+        normalMat.setA22(newNormal22);
 
         if (this.xScale != 1.0F || this.yScale != 1.0F || this.zScale != 1.0F) {
             matrices.scale(this.xScale, this.yScale, this.zScale);
