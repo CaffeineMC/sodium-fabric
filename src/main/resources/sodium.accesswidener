@@ -24,5 +24,7 @@ accessible field net/minecraft/client/texture/NativeImage pointer J
 
 accessible field net/minecraft/client/render/VertexFormat offsets Lit/unimi/dsi/fastutil/ints/IntList;
 
+accessible field net/minecraft/state/State owner Ljava/lang/Object;
+
 accessible field com/mojang/blaze3d/platform/GlStateManager TEXTURES [Lcom/mojang/blaze3d/platform/GlStateManager$Texture2DState;
 accessible class com/mojang/blaze3d/platform/GlStateManager$Texture2DState

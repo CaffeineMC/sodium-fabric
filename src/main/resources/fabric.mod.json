@@ -27,7 +27,11 @@
     ]
   },
   "custom": {
-    "fabric-renderer-api-v1:contains_renderer": true
+    "fabric-renderer-api-v1:contains_renderer": true,
+    "loom:injected_interfaces": {
+      "net/minecraft/class_2248": ["net/caffeinemc/sodium/render/terrain/color/blender/SodiumColorBlendable"],
+      "net/minecraft/class_3611": ["net/caffeinemc/sodium/render/terrain/color/blender/SodiumColorBlendable"]
+    }
   },
   "accessWidener": "sodium.accesswidener",
   "mixins": [

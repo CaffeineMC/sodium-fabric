@@ -23,6 +23,8 @@
     "core.pipeline.MixinVertexFormat",
     "features.block.MixinBlockModelRenderer",
     "features.block.MixinWorldRenderer",
+    "features.block.MixinBlock",
+    "features.block.MixinFluid",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinSpriteTexturedVertexConsumer",

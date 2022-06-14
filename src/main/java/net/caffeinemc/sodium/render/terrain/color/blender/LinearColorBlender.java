@@ -4,6 +4,7 @@ import net.caffeinemc.sodium.render.terrain.color.ColorSampler;
 import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
 import net.caffeinemc.sodium.util.packed.ColorARGB;
 import net.caffeinemc.sodium.util.color.ColorMixer;
+import net.minecraft.state.State;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockRenderView;
@@ -31,6 +32,14 @@ public class LinearColorBlender implements ColorBlender {
 
     private <T> int getVertexColor(BlockRenderView world, BlockPos origin, ModelQuadView quad, ColorSampler<T> sampler, T state,
                                    int vertexIdx) {
+        if (state instanceof State<?,?> state1 && state1.owner instanceof SodiumColorBlendable blendable) {
+            if (!blendable.enableSodiumColorBlending()) {
+                //If the block or fluid is set to disable the color blending, gets the color only from the current position.
+                int color = getBlockColor(world, state, sampler, origin.getX(), origin.getY(), origin.getZ(), quad.getColorIndex());
+                return ColorARGB.toABGR(color);
+            }
+        }
+
         // Clamp positions to the range -1.0f to +2.0f to prevent crashes with badly behaved
         // block models and mods causing out-of-bounds array accesses in BiomeColorCache.
         // Offset the position by -0.5f after clamping to align smooth blending with flat blending.
