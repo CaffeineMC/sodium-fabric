@@ -34,7 +34,7 @@ public class RenderListBuilder {
 
     public RenderListBuilder(RenderDevice device) {
         var maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
-        var uboAlignment = device.properties().uniformBufferOffsetAlignment;
+        var ssboAlignment = device.properties().storageBufferOffsetAlignment;
 
         this.commandBuffer = new StreamingBuffer(
                 device,
@@ -45,8 +45,8 @@ public class RenderListBuilder {
         );
         this.instanceBuffer = new StreamingBuffer(
                 device,
-                device.properties().uniformBufferOffsetAlignment,
-                RenderRegion.REGION_LENGTH * RenderRegion.REGION_HEIGHT * RenderRegion.REGION_WIDTH * uboAlignment, // worst case
+                ssboAlignment,
+                0x80000, // start with 512KiB per section and expand from there if needed (should cover most cases)
                 maxInFlightFrames,
                 MappedBufferFlags.EXPLICIT_FLUSH
         );
@@ -67,12 +67,12 @@ public class RenderListBuilder {
 
         final int totalPasses = DefaultRenderPasses.ALL.length;
 
-        var commandBufferPassSize = commandBufferPassSize(1, chunks);
+        var commandBufferPassSize = commandBufferPassSize(this.commandBuffer.getSectionAlignment(), chunks);
         StreamingBuffer.WritableSection commandBufferSection = this.commandBuffer.getSectionWithSize(frameIndex, (int) commandBufferPassSize * totalPasses, false);
         ByteBuffer commandBufferSectionView = commandBufferSection.getView();
         long commandBufferSectionAddress = MemoryUtil.memAddress0(commandBufferSectionView);
 
-        var instanceBufferPassSize = instanceBufferPassSize(this.instanceBuffer.getAlignment(), chunks);
+        var instanceBufferPassSize = instanceBufferPassSize(this.instanceBuffer.getSectionAlignment(), chunks);
         // shouldn't need to resize instance buffer section, but crashes if not? look into this
         StreamingBuffer.WritableSection instanceBufferSection = this.instanceBuffer.getSectionWithSize(frameIndex, (int) instanceBufferPassSize * totalPasses, false);
         ByteBuffer instanceBufferSectionView = instanceBufferSection.getView();
@@ -173,7 +173,7 @@ public class RenderListBuilder {
                     var instanceSubsectionStart = instanceCurrentPosition - instanceSubsectionLength;
 
                     // don't need to align command buffer data, only instance data
-                    renderList.tempInstanceBufferPosition = MathUtil.align(instanceCurrentPosition, this.instanceBuffer.getAlignment());
+                    renderList.tempInstanceBufferPosition = MathUtil.align(instanceCurrentPosition, this.instanceBuffer.getSectionAlignment());
 
                     var region = bucket.region();
 

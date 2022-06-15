@@ -16,7 +16,7 @@ public class StreamingBuffer {
     private final RenderDevice device;
     private final EnumSet<MappedBufferFlags> bufferFlags;
     private final int sectionCount;
-    private final int alignment;
+    private final int sectionAlignment;
 
     private final WritableSection[] sections;
     private MappedBuffer buffer;
@@ -25,15 +25,15 @@ public class StreamingBuffer {
 
     private int lastFrameIdx = -1;
 
-    public StreamingBuffer(RenderDevice device, int alignment, int sectionCapacity, int sectionCount, MappedBufferFlags... extraFlags) {
+    public StreamingBuffer(RenderDevice device, int sectionAlignment, int sectionCapacity, int sectionCount, MappedBufferFlags... extraFlags) {
         this.device = device;
         this.sectionCount = sectionCount;
-        this.alignment = alignment;
+        this.sectionAlignment = sectionAlignment;
         this.bufferFlags = EnumSet.of(MappedBufferFlags.WRITE);
         Collections.addAll(this.bufferFlags, extraFlags);
 
         this.sectionCapacity = sectionCapacity;
-        this.alignedStride = MathUtil.align(sectionCapacity, alignment);
+        this.alignedStride = MathUtil.align(sectionCapacity, sectionAlignment);
         this.buffer = this.device.createMappedBuffer((long) this.alignedStride * sectionCount, this.bufferFlags);
         this.sections = new WritableSection[sectionCount];
         this.updateSections();
@@ -52,7 +52,7 @@ public class StreamingBuffer {
         // TODO: add path for if sectioncapacity is still smaller than alignedstride
         if (sectionCapacity > this.sectionCapacity) {
             int newSectionCapacity = Math.max(sectionCapacity, this.sectionCapacity * 2);
-            int newAlignedStride = MathUtil.align(newSectionCapacity, this.alignment);
+            int newAlignedStride = MathUtil.align(newSectionCapacity, this.sectionAlignment);
             long newBufferCapacity = (long) newAlignedStride * this.sectionCount;
 
             // flush pending data for current section, previous sections should already be flushed
@@ -143,8 +143,8 @@ public class StreamingBuffer {
         return this.buffer;
     }
 
-    public int getAlignment() {
-        return this.alignment;
+    public int getSectionAlignment() {
+        return this.sectionAlignment;
     }
 
     public void delete() {

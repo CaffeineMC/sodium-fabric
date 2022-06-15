@@ -112,8 +112,6 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
             cmd.bindElementBuffer(this.indexBuffer.getBuffer());
 
             for (var batch : lists.getBatches()) {
-                // this may *technically* be out of range of the buffer, but at the same time, we aren't using
-                // the contents of the invalid part anyway, so it may be fine :tm: :tm:
                 pipelineState.bindBufferBlock(
                         programInterface.storageInstanceData,
                         this.bufferInstanceData.getBuffer(),
