@@ -41,12 +41,12 @@ public class GlFence implements Fence {
     }
 
     @Override
-    public void sync() {
+    public void sync(boolean flush) {
         if (this.poll()) {
             return;
         }
 
-        GL32C.glClientWaitSync(this.id, 0, GL32C.GL_TIMEOUT_IGNORED);
+        GL32C.glClientWaitSync(this.id, flush ? GL32C.GL_SYNC_FLUSH_COMMANDS_BIT : 0, GL32C.GL_TIMEOUT_IGNORED);
         GL32C.glDeleteSync(this.id);
 
         this.signaled = true;

@@ -18,7 +18,7 @@ public class MixinMinecraftClient {
     private void preRender(boolean tick, CallbackInfo ci) {
         while (this.fences.size() > SodiumClientMod.options().advanced.cpuRenderAheadLimit) {
             var fence = this.fences.dequeue();
-            fence.sync();
+            fence.sync(true);
         }
     }
 
