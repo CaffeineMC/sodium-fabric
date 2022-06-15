@@ -34,7 +34,6 @@ import java.util.List;
 public class DefaultChunkRenderer extends AbstractChunkRenderer {
     // TODO: should these be moved?
     public static final int CAMERA_MATRICES_SIZE = 192;
-    public static final int INSTANCE_DATA_SIZE = 4096;
     public static final int FOG_PARAMETERS_SIZE = 32;
 
     private final Pipeline<ChunkShaderInterface, BufferTarget> pipeline;
@@ -116,10 +115,10 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
                 // this may *technically* be out of range of the buffer, but at the same time, we aren't using
                 // the contents of the invalid part anyway, so it may be fine :tm: :tm:
                 pipelineState.bindBufferBlock(
-                        programInterface.uniformInstanceData,
+                        programInterface.storageInstanceData,
                         this.bufferInstanceData.getBuffer(),
                         batch.getInstanceBufferOffset(),
-                        INSTANCE_DATA_SIZE // the spec requires that the entire part of the UBO is filled completely, so lets just make the range the right size
+                        batch.getInstanceBufferLength()
                 );
 
                 cmd.bindVertexBuffer(

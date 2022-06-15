@@ -165,12 +165,12 @@ public class RenderListBuilder {
                     }
 
                     var commandCurrentPosition = renderList.tempCommandBufferPosition;
-                    var commandSectionLength = commandCount * COMMAND_STRUCT_STRIDE;
-                    var commandSectionStart = commandCurrentPosition - commandSectionLength;
+                    var commandSubsectionLength = commandCount * COMMAND_STRUCT_STRIDE;
+                    var commandSubsectionStart = commandCurrentPosition - commandSubsectionLength;
 
                     var instanceCurrentPosition = renderList.tempInstanceBufferPosition;
-                    var instanceSectionLength = instanceCount * INSTANCE_STRUCT_STRIDE;
-                    var instanceSectionStart = instanceCurrentPosition - instanceSectionLength;
+                    var instanceSubsectionLength = instanceCount * INSTANCE_STRUCT_STRIDE;
+                    var instanceSubsectionStart = instanceCurrentPosition - instanceSubsectionLength;
 
                     // don't need to align command buffer data, only instance data
                     renderList.tempInstanceBufferPosition = MathUtil.align(instanceCurrentPosition, this.instanceBuffer.getAlignment());
@@ -183,8 +183,9 @@ public class RenderListBuilder {
                                     region.vertexBuffers.getStride(),
                                     instanceCount,
                                     commandCount,
-                                    instanceSectionStart,
-                                    commandSectionStart
+                                    instanceSubsectionStart,
+                                    instanceSubsectionLength,
+                                    commandSubsectionStart
                             )
                     );
                 }
@@ -274,7 +275,9 @@ public class RenderListBuilder {
         private final int vertexStride;
         private final int instanceCount;
         private final int commandCount;
+
         private long instanceBufferOffset;
+        private final long instanceBufferLength;
         private long commandBufferOffset;
 
         public ChunkRenderBatch(Buffer vertexBuffer,
@@ -282,6 +285,7 @@ public class RenderListBuilder {
                                 int instanceCount,
                                 int commandCount,
                                 long instanceBufferOffset,
+                                long instanceBufferLength,
                                 long commandBufferOffset
         ) {
             this.vertexBuffer = vertexBuffer;
@@ -289,6 +293,7 @@ public class RenderListBuilder {
             this.instanceCount = instanceCount;
             this.commandCount = commandCount;
             this.instanceBufferOffset = instanceBufferOffset;
+            this.instanceBufferLength = instanceBufferLength;
             this.commandBufferOffset = commandBufferOffset;
         }
 
@@ -310,6 +315,10 @@ public class RenderListBuilder {
 
         public long getInstanceBufferOffset() {
             return this.instanceBufferOffset;
+        }
+
+        public long getInstanceBufferLength() {
+            return this.instanceBufferLength;
         }
 
         public long getCommandBufferOffset() {
