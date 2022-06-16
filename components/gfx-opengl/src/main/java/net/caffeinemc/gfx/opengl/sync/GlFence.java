@@ -28,10 +28,10 @@ public class GlFence implements Fence {
         int result;
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            IntBuffer values = stack.callocInt(1);
-            GL32C.nglGetSynciv(this.id, GL32C.GL_SYNC_STATUS, 1, MemoryUtil.NULL, MemoryUtil.memAddress(values));
+            long statusPointer = stack.ncalloc(Integer.BYTES, 0, Integer.BYTES);
+            GL32C.nglGetSynciv(this.id, GL32C.GL_SYNC_STATUS, 1, MemoryUtil.NULL, statusPointer);
 
-            result = values.get(0);
+            result = MemoryUtil.memGetInt(statusPointer);
         }
 
         if (result == GL32C.GL_SIGNALED) {
