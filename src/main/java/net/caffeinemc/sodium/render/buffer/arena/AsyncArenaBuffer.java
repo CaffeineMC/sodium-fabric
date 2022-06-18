@@ -1,9 +1,10 @@
-package net.caffeinemc.sodium.render.arena;
+package net.caffeinemc.sodium.render.buffer.arena;
 
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.streaming.SectionedStreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.streaming.StreamingBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.*;
@@ -11,13 +12,13 @@ import java.util.*;
 // TODO: handle alignment
 // TODO: handle element vs pointers
 // TODO: convert to longs
-public class AsyncBufferArena implements BufferArena {
+public class AsyncArenaBuffer implements ArenaBuffer {
     static final boolean CHECK_ASSERTIONS = false;
 
     private final int resizeIncrement;
 
     private final RenderDevice device;
-    private final StreamingBuffer streamingBuffer;
+    private final SectionedStreamingBuffer stagingBuffer;
     private Buffer arenaBuffer;
 
     private BufferSegment head;
@@ -27,9 +28,9 @@ public class AsyncBufferArena implements BufferArena {
 
     private final int stride;
 
-    public AsyncBufferArena(RenderDevice device, StreamingBuffer streamingBuffer, int capacity, int stride) {
+    public AsyncArenaBuffer(RenderDevice device, SectionedStreamingBuffer stagingBuffer, int capacity, int stride) {
         this.device = device;
-        this.streamingBuffer = streamingBuffer;
+        this.stagingBuffer = stagingBuffer;
         this.resizeIncrement = capacity / 16;
         this.capacity = capacity;
 
@@ -253,7 +254,7 @@ public class AsyncBufferArena implements BufferArena {
         // A linked list is used as we'll be randomly removing elements and want O(1) performance
         var pendingTransfers = new LinkedList<PendingTransfer>();
 
-        StreamingBuffer.WritableSection section = this.streamingBuffer.getSectionWithSize(
+        var section = this.stagingBuffer.getSection(
                 frameIndex,
                 uploads.stream().mapToInt(u -> u.data.getLength()).sum(),
                 true
@@ -286,7 +287,7 @@ public class AsyncBufferArena implements BufferArena {
         section.getView().position(section.getView().position() + transferOffset);
         section.flushPartial();
 
-        Buffer backingStreamingBuffer = section.getBuffer();
+        var backingStreamingBuffer = this.stagingBuffer.getBufferObject();
 
         // Try to upload all of the data into free segments first
         pendingTransfers.removeIf(transfer -> this.tryUpload(backingStreamingBuffer, transfer));

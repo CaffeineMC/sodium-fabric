@@ -10,7 +10,7 @@ import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.SodiumWorldRenderer;
-import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.render.chunk.compile.ChunkBuilder;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
@@ -98,7 +98,7 @@ public class RenderSectionManager {
         this.device = device;
         this.chunkRenderers = new Reference2ReferenceOpenHashMap<>();
 
-        this.renderListBuilder = new RenderListBuilder(device);
+        this.renderListBuilder = new RenderListBuilder(device, chunkViewDistance, world);
 
         this.indexBuffer = new SequenceIndexBuffer(device, SequenceBuilder.QUADS_INT);
 
@@ -453,6 +453,10 @@ public class RenderSectionManager {
 
             count++;
         }
+
+        deviceUsed += this.renderListBuilder.getDeviceUsedMemory();
+        deviceAllocated += this.renderListBuilder.getDeviceAllocatedMemory();
+        count += this.renderListBuilder.getDeviceBufferObjects();
 
         List<String> strings = new ArrayList<>();
         strings.add(String.format("Device buffer objects: %d", count));

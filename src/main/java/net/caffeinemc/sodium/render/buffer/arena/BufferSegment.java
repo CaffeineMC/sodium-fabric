@@ -1,7 +1,7 @@
-package net.caffeinemc.sodium.render.arena;
+package net.caffeinemc.sodium.render.buffer.arena;
 
 public class BufferSegment {
-    private final BufferArena arena;
+    private final ArenaBuffer arena;
 
     private boolean free = false;
 
@@ -11,7 +11,7 @@ public class BufferSegment {
     private BufferSegment next;
     private BufferSegment prev;
 
-    public BufferSegment(BufferArena arena, int offset, int length) {
+    public BufferSegment(ArenaBuffer arena, int offset, int length) {
         this.arena = arena;
         this.offset = offset;
         this.length = length;

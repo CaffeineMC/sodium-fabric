@@ -1,4 +1,4 @@
-package net.caffeinemc.sodium.render.arena;
+package net.caffeinemc.sodium.render.buffer.arena;
 
 import java.util.concurrent.atomic.AtomicReference;
 

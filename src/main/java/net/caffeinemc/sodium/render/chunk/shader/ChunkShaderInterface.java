@@ -9,12 +9,12 @@ import net.caffeinemc.gfx.api.shader.BufferBlock;
  */
 public class ChunkShaderInterface {
     public final BufferBlock uniformCameraMatrices;
-    public final BufferBlock storageInstanceData;
+    public final BufferBlock uniformInstanceData;
     public final BufferBlock uniformFogParameters;
 
     public ChunkShaderInterface(ShaderBindingContext context) {
         this.uniformCameraMatrices = context.bindBufferBlock(BufferBlockType.UNIFORM, 0);
-        this.storageInstanceData = context.bindBufferBlock(BufferBlockType.STORAGE, 1);
+        this.uniformInstanceData = context.bindBufferBlock(BufferBlockType.UNIFORM, 1);
         this.uniformFogParameters = context.bindBufferBlock(BufferBlockType.UNIFORM, 2);
     }
 }

@@ -1,55 +1,74 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
-
-import java.util.*;
-
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.SodiumClientMod;
-import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.streaming.DualStreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.streaming.SectionedStreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.DefaultRenderPasses;
-import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry.ModelPart;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.caffeinemc.sodium.util.MathUtil;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.ChunkSectionPos;
-
-import java.nio.ByteBuffer;
-
+import net.minecraft.util.math.MathHelper;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
+import java.nio.ByteBuffer;
+import java.util.*;
+
 public class RenderListBuilder {
-    private static final int COMMAND_STRUCT_STRIDE = 20;
-    private static final int INSTANCE_STRUCT_STRIDE = 16;
+    public static final int COMMAND_STRUCT_STRIDE = 5 * Integer.BYTES;
+    public static final int INSTANCE_STRUCT_STRIDE = 4 * Float.BYTES;
 
     private final StreamingBuffer commandBuffer;
     private final StreamingBuffer instanceBuffer;
 
     private ByteBuffer stackBuffer;
 
-    public RenderListBuilder(RenderDevice device) {
+    public RenderListBuilder(RenderDevice device, int chunkViewDistance, ClientWorld world) {
         var maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
-        var ssboAlignment = device.properties().storageBufferOffsetAlignment;
+        var uboAlignment = device.properties().uniformBufferOffsetAlignment;
 
-        this.commandBuffer = new StreamingBuffer(
+//        var maxSections = MathHelper.square((chunkViewDistance * 2) + 1) * world.countVerticalSections();
+//        var maxRenderPasses = DefaultRenderPasses.ALL.length;
+//
+//        var maxInstanceBufferSize = maxSections * maxRenderPasses * Math.max(INSTANCE_STRUCT_STRIDE, uboAlignment);
+//
+//        var share3CoordsSections = 1; // the section the player is in, all faces possible
+//        var share2CoordsSections = (chunkViewDistance * 4) + (world.countVerticalSections() - 1); // cardinal direction vectors from the player section, 5+1 faces possible
+//        var share1CoordsSections = (MathHelper.square(chunkViewDistance) * 4) + (chunkViewDistance * (world.countVerticalSections() - 1) * 2); // cardinal planes intersecting the player section, 4+1 faces possible
+//        var share0CoordsSections = maxSections - share3CoordsSections - share2CoordsSections - share1CoordsSections; // all other sections, 3+1 faces possible
+//        var maxFaces = share3CoordsSections * ChunkMeshFace.COUNT
+//                + share2CoordsSections * (ChunkMeshFace.COUNT - 1)
+//                + share1CoordsSections * (ChunkMeshFace.COUNT - 2)
+//                + share0CoordsSections * (ChunkMeshFace.COUNT - 3);
+//        var maxCommandBufferSize = maxFaces * maxRenderPasses * COMMAND_STRUCT_STRIDE;
+
+        this.commandBuffer = new DualStreamingBuffer(
                 device,
                 1,
-                0x80000, // start with 512KiB per section and expand from there if needed (should cover most cases)
+                1048576, // start with 1 MiB and expand from there if needed
                 maxInFlightFrames,
-                MappedBufferFlags.EXPLICIT_FLUSH
+                EnumSet.of(
+                        MappedBufferFlags.EXPLICIT_FLUSH,
+                        MappedBufferFlags.CLIENT_STORAGE
+                )
         );
-        this.instanceBuffer = new StreamingBuffer(
+        this.instanceBuffer = new SectionedStreamingBuffer(
                 device,
-                ssboAlignment,
-                0x80000, // start with 512KiB per section and expand from there if needed (should cover most cases)
+                uboAlignment,
+                1048576, // start with 1 MiB and expand from there if needed
                 maxInFlightFrames,
-                MappedBufferFlags.EXPLICIT_FLUSH
+                EnumSet.of(MappedBufferFlags.EXPLICIT_FLUSH)
         );
+
     }
 
     public StreamingBuffer getInstanceBuffer() {
@@ -60,6 +79,20 @@ public class RenderListBuilder {
         return this.commandBuffer;
     }
 
+    public int getDeviceBufferObjects() {
+        return 3;
+    }
+
+    public long getDeviceUsedMemory() {
+        return this.instanceBuffer.getDeviceUsedMemory()
+                + this.commandBuffer.getDeviceUsedMemory();
+    }
+
+    public long getDeviceAllocatedMemory() {
+        return this.instanceBuffer.getDeviceAllocatedMemory()
+                + this.commandBuffer.getDeviceAllocatedMemory();
+    }
+
     public Map<ChunkRenderPass, RenderList> createRenderLists(SortedChunkLists chunks, ChunkCameraContext camera, int frameIndex) {
         if (chunks.isEmpty()) {
             return null;
@@ -67,20 +100,19 @@ public class RenderListBuilder {
 
         final int totalPasses = DefaultRenderPasses.ALL.length;
 
-        var commandBufferPassSize = commandBufferPassSize(this.commandBuffer.getSectionAlignment(), chunks);
-        StreamingBuffer.WritableSection commandBufferSection = this.commandBuffer.getSectionWithSize(frameIndex, (int) commandBufferPassSize * totalPasses, false);
+        var commandBufferPassSize = commandBufferPassSize(this.commandBuffer.getAlignment(), chunks);
+        StreamingBuffer.WritableSection commandBufferSection = this.commandBuffer.getSection(frameIndex, commandBufferPassSize * totalPasses, false);
         ByteBuffer commandBufferSectionView = commandBufferSection.getView();
         long commandBufferSectionAddress = MemoryUtil.memAddress0(commandBufferSectionView);
 
-        var instanceBufferPassSize = instanceBufferPassSize(this.instanceBuffer.getSectionAlignment(), chunks);
-        // shouldn't need to resize instance buffer section, but crashes if not? look into this
-        StreamingBuffer.WritableSection instanceBufferSection = this.instanceBuffer.getSectionWithSize(frameIndex, (int) instanceBufferPassSize * totalPasses, false);
+        var instanceBufferPassSize = instanceBufferPassSize(this.instanceBuffer.getAlignment(), chunks);
+        StreamingBuffer.WritableSection instanceBufferSection = this.instanceBuffer.getSection(frameIndex, instanceBufferPassSize * totalPasses, false);
         ByteBuffer instanceBufferSectionView = instanceBufferSection.getView();
         long instanceBufferSectionAddress = MemoryUtil.memAddress0(instanceBufferSectionView);
 
         var renderLists = new Reference2ReferenceArrayMap<ChunkRenderPass, RenderList>();
 
-        int stackSize = commandBufferSectionView.capacity() + instanceBufferSectionView.capacity();
+        int stackSize = (instanceBufferPassSize + commandBufferPassSize) * totalPasses;
         if (this.stackBuffer == null || this.stackBuffer.capacity() < stackSize) {
             MemoryUtil.memFree(this.stackBuffer); // this does nothing if the buffer is null
             this.stackBuffer = MemoryUtil.memAlloc(stackSize);
@@ -91,8 +123,8 @@ public class RenderListBuilder {
                 renderLists.put(
                         pass,
                         new RenderList(
-                                stack.nmalloc(1, (int) commandBufferPassSize),
-                                stack.nmalloc(1, (int) instanceBufferPassSize)
+                                stack.nmalloc(1, commandBufferPassSize),
+                                stack.nmalloc(1, instanceBufferPassSize)
                         )
                 );
             }
@@ -165,15 +197,15 @@ public class RenderListBuilder {
                     }
 
                     var commandCurrentPosition = renderList.tempCommandBufferPosition;
-                    var commandSubsectionLength = commandCount * COMMAND_STRUCT_STRIDE;
-                    var commandSubsectionStart = commandCurrentPosition - commandSubsectionLength;
+                    var commandSectionLength = commandCount * COMMAND_STRUCT_STRIDE;
+                    var commandSectionStart = commandCurrentPosition - commandSectionLength;
 
                     var instanceCurrentPosition = renderList.tempInstanceBufferPosition;
-                    var instanceSubsectionLength = instanceCount * INSTANCE_STRUCT_STRIDE;
-                    var instanceSubsectionStart = instanceCurrentPosition - instanceSubsectionLength;
+                    var instanceSectionLength = instanceCount * INSTANCE_STRUCT_STRIDE;
+                    var instanceSectionStart = instanceCurrentPosition - instanceSectionLength;
 
                     // don't need to align command buffer data, only instance data
-                    renderList.tempInstanceBufferPosition = MathUtil.align(instanceCurrentPosition, this.instanceBuffer.getSectionAlignment());
+                    renderList.tempInstanceBufferPosition = MathUtil.align(instanceCurrentPosition, this.instanceBuffer.getAlignment());
 
                     var region = bucket.region();
 
@@ -183,9 +215,8 @@ public class RenderListBuilder {
                                     region.vertexBuffers.getStride(),
                                     instanceCount,
                                     commandCount,
-                                    instanceSubsectionStart,
-                                    instanceSubsectionLength,
-                                    commandSubsectionStart
+                                    instanceSectionStart,
+                                    commandSectionStart
                             )
                     );
                 }
@@ -275,9 +306,7 @@ public class RenderListBuilder {
         private final int vertexStride;
         private final int instanceCount;
         private final int commandCount;
-
         private long instanceBufferOffset;
-        private final long instanceBufferLength;
         private long commandBufferOffset;
 
         public ChunkRenderBatch(Buffer vertexBuffer,
@@ -285,7 +314,6 @@ public class RenderListBuilder {
                                 int instanceCount,
                                 int commandCount,
                                 long instanceBufferOffset,
-                                long instanceBufferLength,
                                 long commandBufferOffset
         ) {
             this.vertexBuffer = vertexBuffer;
@@ -293,7 +321,6 @@ public class RenderListBuilder {
             this.instanceCount = instanceCount;
             this.commandCount = commandCount;
             this.instanceBufferOffset = instanceBufferOffset;
-            this.instanceBufferLength = instanceBufferLength;
             this.commandBufferOffset = commandBufferOffset;
         }
 
@@ -317,16 +344,12 @@ public class RenderListBuilder {
             return this.instanceBufferOffset;
         }
 
-        public long getInstanceBufferLength() {
-            return this.instanceBufferLength;
-        }
-
         public long getCommandBufferOffset() {
             return this.commandBufferOffset;
         }
     }
 
-    private static long commandBufferPassSize(int alignment, SortedChunkLists list) {
+    private static int commandBufferPassSize(int alignment, SortedChunkLists list) {
         int size = 0;
 
         for (var bucket : list.unsorted()) {
@@ -336,7 +359,7 @@ public class RenderListBuilder {
         return size;
     }
 
-    private static long instanceBufferPassSize(int alignment, SortedChunkLists list) {
+    private static int instanceBufferPassSize(int alignment, SortedChunkLists list) {
         int size = 0;
 
         for (var bucket : list.unsorted()) {

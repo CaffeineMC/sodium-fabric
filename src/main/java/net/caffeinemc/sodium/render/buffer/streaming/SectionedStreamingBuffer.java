@@ -1,4 +1,6 @@
-package net.caffeinemc.sodium.render.buffer;
+package net.caffeinemc.sodium.render.buffer.streaming;
+
+import java.util.EnumSet;
 
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.MappedBuffer;
@@ -8,32 +10,31 @@ import net.caffeinemc.sodium.util.MathUtil;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.EnumSet;
+import java.util.Set;
 
 // TODO: convert to all longs
-public class StreamingBuffer {
-    private final RenderDevice device;
-    private final EnumSet<MappedBufferFlags> bufferFlags;
+public class SectionedStreamingBuffer implements StreamingBuffer {
+    protected final RenderDevice device;
+    private final Set<MappedBufferFlags> bufferFlags;
     private final int sectionCount;
-    private final int sectionAlignment;
+    private final int alignment;
 
     private final WritableSection[] sections;
-    private MappedBuffer buffer;
-    private int sectionCapacity;
+    protected MappedBuffer buffer;
+    protected int sectionCapacity;
     private int alignedStride;
 
     private int lastFrameIdx = -1;
 
-    public StreamingBuffer(RenderDevice device, int sectionAlignment, int sectionCapacity, int sectionCount, MappedBufferFlags... extraFlags) {
+    public SectionedStreamingBuffer(RenderDevice device, int alignment, int sectionCapacity, int sectionCount, Set<MappedBufferFlags> extraFlags) {
         this.device = device;
         this.sectionCount = sectionCount;
-        this.sectionAlignment = sectionAlignment;
+        this.alignment = alignment;
         this.bufferFlags = EnumSet.of(MappedBufferFlags.WRITE);
-        Collections.addAll(this.bufferFlags, extraFlags);
+        this.bufferFlags.addAll(extraFlags);
 
         this.sectionCapacity = sectionCapacity;
-        this.alignedStride = MathUtil.align(sectionCapacity, sectionAlignment);
+        this.alignedStride = MathUtil.align(sectionCapacity, alignment);
         this.buffer = this.device.createMappedBuffer((long) this.alignedStride * sectionCount, this.bufferFlags);
         this.sections = new WritableSection[sectionCount];
         this.updateSections();
@@ -43,16 +44,16 @@ public class StreamingBuffer {
      * WARNING: RESIZING PERSISTENT BUFFERS IS *SUPER SLOW*!!!!
      * ONLY USE THIS METHOD IF *ABSOLUTELY NECESSARY*!!!!
      *
-     * This method will also invalidate any existing Slices, so
-     * make sure none are in use before this is called.
+     * This method will also invalidate any existing WritableSections,
+     * so make sure none are in use before this is called.
      *
-     * @return true if the buffer was resized;
+     * @return true if the buffer was resized
      */
     public boolean resizeIfNeeded(WritableSection currentSection, int sectionCapacity, boolean copyContents) {
         // TODO: add path for if sectioncapacity is still smaller than alignedstride
         if (sectionCapacity > this.sectionCapacity) {
             int newSectionCapacity = Math.max(sectionCapacity, this.sectionCapacity * 2);
-            int newAlignedStride = MathUtil.align(newSectionCapacity, this.sectionAlignment);
+            int newAlignedStride = MathUtil.align(newSectionCapacity, this.alignment);
             long newBufferCapacity = (long) newAlignedStride * this.sectionCount;
 
             // flush pending data for current section, previous sections should already be flushed
@@ -101,13 +102,14 @@ public class StreamingBuffer {
             int start = this.alignedStride * idx;
             var view = MemoryUtil.memSlice(this.buffer.view(), start, this.sectionCapacity);
 
-            this.sections[idx] = new WritableSection(this.buffer, view, start);
+            this.sections[idx] = this.createSection(view, start);
         }
     }
 
     /**
-     * Obtains a mapped section of the streaming buffer which can be written to.
+     * Obtains an aligned, mapped section of the streaming buffer which can be written to.
      */
+    @Override
     public WritableSection getSection(int frameIndex) {
         int sectionIdx = frameIndex % this.sectionCount;
 
@@ -117,15 +119,21 @@ public class StreamingBuffer {
             this.lastFrameIdx = frameIndex;
         }
 
-        return this.sections[sectionIdx];
+        WritableSection section = this.sections[sectionIdx];
+
+        ByteBuffer view = section.getView();
+        int alignedPosition = MathUtil.align(view.position(), this.alignment);
+        view.position(alignedPosition);
+        return section;
     }
 
     /**
      * Obtains a mapped section of the streaming buffer which can be written to.
      * If needed, this buffer will be resized to fit the extra size needed.
      */
-    public WritableSection getSectionWithSize(int frameIndex, int extraSize, boolean copyContents) {
-        StreamingBuffer.WritableSection section = this.getSection(frameIndex);
+    @Override
+    public WritableSection getSection(int frameIndex, int extraSize, boolean copyContents) {
+        WritableSection section = this.getSection(frameIndex);
 
         // resize if needed
         int requiredSize = section.getView().position() + extraSize;
@@ -139,27 +147,52 @@ public class StreamingBuffer {
         return section;
     }
 
-    public Buffer getBuffer() {
+    @Override
+    public Buffer getBufferObject() {
         return this.buffer;
     }
 
-    public int getSectionAlignment() {
-        return this.sectionAlignment;
+    @Override
+    public int getAlignment() {
+        return this.alignment;
     }
 
+    @Override
+    public long getDeviceUsedMemory() {
+        long deviceUsed = 0;
+        for (WritableSection section : this.sections) {
+            deviceUsed += section.getView().position();
+        }
+        return deviceUsed;
+    }
+
+    @Override
+    public long getDeviceAllocatedMemory() {
+        return (long) this.alignedStride * this.sectionCount;
+    }
+
+    @Override
     public void delete() {
         this.device.deleteBuffer(this.buffer);
     }
 
-    public static final class WritableSection {
-        private final MappedBuffer buffer;
-        private final ByteBuffer view;
+    // FIXME: this is gross
+    protected WritableSection createSection(ByteBuffer view, long offset) {
+        return new SectionImpl(this.buffer, view, offset);
+    }
 
-        private final long offset;
 
-        private int lastFlushEndPos;
+    protected static class SectionImpl implements StreamingBuffer.WritableSection {
+        // we hold onto the buffer so if the parent's gets changed, this won't update.
+        // this causes an error to happen if we try to flush after the buffer has been deleted already.
+        protected final MappedBuffer buffer;
+        protected final ByteBuffer view;
 
-        public WritableSection(MappedBuffer buffer, ByteBuffer view, long offset) {
+        protected final long offset;
+
+        protected int lastFlushEndPos;
+
+        public SectionImpl(MappedBuffer buffer, ByteBuffer view, long offset) {
             this.buffer = buffer;
             this.view = view;
             this.offset = offset;
@@ -180,10 +213,6 @@ public class StreamingBuffer {
 
         public void flushFull() {
             this.buffer.flush(this.offset, this.view.capacity());
-        }
-
-        public MappedBuffer getBuffer() {
-            return this.buffer;
         }
 
         public ByteBuffer getView() {

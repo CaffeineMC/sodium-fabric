@@ -8,5 +8,5 @@ public enum DepthFunc {
     NOT_EQUAL,
     GREATER,
     GREATER_THAN_OR_EQUAL,
-    ALWAYS;
+    ALWAYS
 }

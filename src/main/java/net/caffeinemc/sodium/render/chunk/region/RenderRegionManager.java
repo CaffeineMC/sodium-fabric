@@ -6,9 +6,9 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.SodiumClientMod;
-import net.caffeinemc.sodium.render.arena.BufferSegment;
-import net.caffeinemc.sodium.render.arena.PendingUpload;
-import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
+import net.caffeinemc.sodium.render.buffer.arena.PendingUpload;
+import net.caffeinemc.sodium.render.buffer.streaming.SectionedStreamingBuffer;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.draw.IntPool;
@@ -26,20 +26,22 @@ public class RenderRegionManager {
 
     private final RenderDevice device;
     private final TerrainVertexType vertexType;
-    private final StreamingBuffer streamingBuffer;
+    private final SectionedStreamingBuffer stagingBuffer;
 
     public RenderRegionManager(RenderDevice device, TerrainVertexType vertexType) {
         this.device = device;
         this.vertexType = vertexType;
 
         var maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
-        this.streamingBuffer = new StreamingBuffer(
+        this.stagingBuffer = new SectionedStreamingBuffer(
                 device,
                 1,
                 0x80000, // start with 512KiB per section and expand from there if needed
                 maxInFlightFrames,
-                MappedBufferFlags.EXPLICIT_FLUSH,
-                MappedBufferFlags.CLIENT_STORAGE
+                EnumSet.of(
+                        MappedBufferFlags.EXPLICIT_FLUSH,
+                        MappedBufferFlags.CLIENT_STORAGE
+                )
         );
     }
 
@@ -119,7 +121,7 @@ public class RenderRegionManager {
         RenderRegion region = this.regions.get(regionKey);
 
         if (region == null) {
-            this.regions.put(regionKey, region = new RenderRegion(this.device, this.streamingBuffer, this.vertexType, this.idPool.create()));
+            this.regions.put(regionKey, region = new RenderRegion(this.device, this.stagingBuffer, this.vertexType, this.idPool.create()));
         }
 
         region.vertexBuffers.upload(uploads, frameIndex);
@@ -156,7 +158,7 @@ public class RenderRegionManager {
         }
         this.regions.clear();
 
-        this.streamingBuffer.delete();
+        this.stagingBuffer.delete();
     }
 
     private void deleteRegion(RenderRegion region) {

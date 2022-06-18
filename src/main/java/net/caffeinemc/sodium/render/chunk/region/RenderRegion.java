@@ -1,9 +1,9 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.sodium.render.arena.AsyncBufferArena;
-import net.caffeinemc.sodium.render.arena.BufferArena;
-import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.arena.AsyncArenaBuffer;
+import net.caffeinemc.sodium.render.buffer.arena.ArenaBuffer;
+import net.caffeinemc.sodium.render.buffer.streaming.SectionedStreamingBuffer;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -30,11 +30,11 @@ public class RenderRegion {
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_LENGTH));
     }
 
-    public final BufferArena vertexBuffers;
+    public final ArenaBuffer vertexBuffers;
     public final int id;
 
-    public RenderRegion(RenderDevice device, StreamingBuffer streamingBuffer, TerrainVertexType vertexType, int id) {
-        this.vertexBuffers = new AsyncBufferArena(device, streamingBuffer, REGION_SIZE * 756, vertexType.getBufferVertexFormat().stride());
+    public RenderRegion(RenderDevice device, SectionedStreamingBuffer stagingBuffer, TerrainVertexType vertexType, int id) {
+        this.vertexBuffers = new AsyncArenaBuffer(device, stagingBuffer, REGION_SIZE * 756, vertexType.getBufferVertexFormat().stride());
         this.id = id;
     }
 

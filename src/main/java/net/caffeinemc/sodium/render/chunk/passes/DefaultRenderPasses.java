@@ -15,3 +15,4 @@ public class DefaultRenderPasses {
 
     public static final ChunkRenderPass[] ALL = new ChunkRenderPass[] { SOLID, CUTOUT_MIPPED, CUTOUT, TRANSLUCENT, TRIPWIRE };
 }
+

@@ -1,9 +1,13 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+
+import java.util.EnumSet;
+
 import net.caffeinemc.gfx.api.array.VertexArrayDescription;
 import net.caffeinemc.gfx.api.array.VertexArrayResourceBinding;
 import net.caffeinemc.gfx.api.array.attribute.VertexAttributeBinding;
+import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.pipeline.Pipeline;
@@ -14,8 +18,10 @@ import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.sodium.SodiumClientMod;
-import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.streaming.SectionedStreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
+import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.sodium.render.sequence.SequenceIndexBuffer;
@@ -35,6 +41,7 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
     // TODO: should these be moved?
     public static final int CAMERA_MATRICES_SIZE = 192;
     public static final int FOG_PARAMETERS_SIZE = 32;
+    public static final int INSTANCE_DATA_SIZE = RenderRegion.REGION_SIZE * RenderListBuilder.INSTANCE_STRUCT_STRIDE;
 
     private final Pipeline<ChunkShaderInterface, BufferTarget> pipeline;
     private final Program<ChunkShaderInterface> program;
@@ -53,19 +60,19 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
         var maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
 
         final int alignment = device.properties().uniformBufferOffsetAlignment;
-        this.bufferCameraMatrices = new StreamingBuffer(
+        this.bufferCameraMatrices = new SectionedStreamingBuffer(
                 device,
                 alignment,
                 CAMERA_MATRICES_SIZE,
                 maxInFlightFrames,
-                MappedBufferFlags.EXPLICIT_FLUSH
+                EnumSet.of(MappedBufferFlags.EXPLICIT_FLUSH)
         );
-        this.bufferFogParameters = new StreamingBuffer(
+        this.bufferFogParameters = new SectionedStreamingBuffer(
                 device,
                 alignment,
                 FOG_PARAMETERS_SIZE,
                 maxInFlightFrames,
-                MappedBufferFlags.EXPLICIT_FLUSH
+                EnumSet.of(MappedBufferFlags.EXPLICIT_FLUSH)
         );
         this.bufferInstanceData = instanceBuffer;
 
@@ -108,15 +115,15 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
             this.setupTextures(renderPass, pipelineState);
             this.setupUniforms(matrices, programInterface, pipelineState, frameIndex);
 
-            cmd.bindCommandBuffer(this.commandBuffer.getBuffer());
+            cmd.bindCommandBuffer(this.commandBuffer.getBufferObject());
             cmd.bindElementBuffer(this.indexBuffer.getBuffer());
 
             for (var batch : lists.getBatches()) {
                 pipelineState.bindBufferBlock(
-                        programInterface.storageInstanceData,
-                        this.bufferInstanceData.getBuffer(),
+                        programInterface.uniformInstanceData,
+                        this.bufferInstanceData.getBufferObject(),
                         batch.getInstanceBufferOffset(),
-                        batch.getInstanceBufferLength()
+                        INSTANCE_DATA_SIZE // the spec requires that the entire part of the UBO is filled completely, so lets just make the range the right size
                 );
 
                 cmd.bindVertexBuffer(
@@ -158,7 +165,7 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
 
         matricesSection.flushFull();
 
-        state.bindBufferBlock(programInterface.uniformCameraMatrices, matricesSection.getBuffer(), matricesSection.getOffset(), matricesSection.getView().capacity());
+        state.bindBufferBlock(programInterface.uniformCameraMatrices, this.bufferCameraMatrices.getBufferObject(), matricesSection.getOffset(), matricesSection.getView().capacity());
 
         var fogParamsSection = this.bufferFogParameters.getSection(frameIndex);
         var fogParamsBuf = fogParamsSection.getView();
@@ -174,7 +181,7 @@ public class DefaultChunkRenderer extends AbstractChunkRenderer {
 
         fogParamsSection.flushFull();
 
-        state.bindBufferBlock(programInterface.uniformFogParameters, fogParamsSection.getBuffer(), fogParamsSection.getOffset(), fogParamsSection.getView().capacity());
+        state.bindBufferBlock(programInterface.uniformFogParameters, this.bufferFogParameters.getBufferObject(), fogParamsSection.getOffset(), fogParamsSection.getView().capacity());
     }
 
     private static ShaderConstants getShaderConstants(ChunkRenderPass pass, TerrainVertexType vertexType) {

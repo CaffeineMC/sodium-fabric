@@ -5,7 +5,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
 import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
-import net.caffeinemc.sodium.render.buffer.StreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.streaming.SectionedStreamingBuffer;
 import net.caffeinemc.sodium.render.entity.compile.BuiltEntityModel;
 import net.caffeinemc.sodium.render.sequence.SequenceBuilder;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -23,13 +23,13 @@ public class EntityInstanceBatch {
 
     private BuiltEntityModel model;
     private boolean indexed;
-    private StreamingBuffer partBuffer;
+    private SectionedStreamingBuffer partBuffer;
 
     private ElementFormat elementFormat;
     private long indexStartingPos;
     private int indexCount;
 
-    public EntityInstanceBatch(BuiltEntityModel model, boolean indexed, int initialSize, StreamingBuffer partBuffer) {
+    public EntityInstanceBatch(BuiltEntityModel model, boolean indexed, int initialSize, SectionedStreamingBuffer partBuffer) {
         this.instances = new ObjectArrayList<>(initialSize);
         this.matrices = new MatrixEntryList(initialSize);
         this.model = model;
@@ -37,7 +37,7 @@ public class EntityInstanceBatch {
         this.partBuffer = partBuffer;
     }
 
-    public void reset(BuiltEntityModel model, boolean indexed, StreamingBuffer partBuffer) {
+    public void reset(BuiltEntityModel model, boolean indexed, SectionedStreamingBuffer partBuffer) {
         this.model = model;
         this.indexed = indexed;
         this.partBuffer = partBuffer;
@@ -58,7 +58,7 @@ public class EntityInstanceBatch {
         return this.matrices;
     }
 
-    public void writeInstancesToBuffer(StreamingBuffer buffer, int frameIndex) {
+    public void writeInstancesToBuffer(SectionedStreamingBuffer buffer, int frameIndex) {
         ByteBuffer sectionView = buffer.getSection(frameIndex).getView();
         long pointer = MemoryUtil.memAddress(sectionView);
         int offset = 0;
@@ -171,7 +171,7 @@ public class EntityInstanceBatch {
         return this.instances.size();
     }
 
-    public void writeElements(VertexFormat.DrawMode drawMode, StreamingBuffer elementBuffer, int frameIndex) {
+    public void writeElements(VertexFormat.DrawMode drawMode, SectionedStreamingBuffer elementBuffer, int frameIndex) {
         if (!this.isIndexed()) return;
 
         if (drawMode.shareVertices) {

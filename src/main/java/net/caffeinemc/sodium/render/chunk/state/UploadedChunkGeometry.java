@@ -1,7 +1,7 @@
 package net.caffeinemc.sodium.render.chunk.state;
 
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import net.caffeinemc.sodium.render.arena.BufferSegment;
+import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 

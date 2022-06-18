@@ -95,7 +95,7 @@ public class SliderControl implements Control<Integer> {
             int sliderWidth = this.sliderBounds.getWidth();
             int sliderHeight = this.sliderBounds.getHeight();
 
-            this.thumbPosition = this.getThumbPositionForValue(option.getValue());
+            this.thumbPosition = this.getThumbPositionForValue(this.option.getValue());
 
             double thumbOffset = MathHelper.clamp((double) (this.getIntValue() - this.min) / this.range * sliderWidth, 0, sliderWidth);
 
