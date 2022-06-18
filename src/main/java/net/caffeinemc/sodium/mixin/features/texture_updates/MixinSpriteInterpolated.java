@@ -73,9 +73,9 @@ public class MixinSpriteInterpolated {
 
             for (int i = 0; i < pixelCount; i++) {
                 int s1 = MemoryUtil.memGetInt(s1p);
-                int s2 = MemoryUtil.memGetInt(s2p);
 
-                MemoryUtil.memPutInt(dp, (ColorMixer.mixARGB(s1, s2, f1, f2) & 0xFFFFFF) + (s1 & 0xFF << 24));
+                MemoryUtil.memPutInt(dp,
+                        (ColorMixer.mixARGB(s1, MemoryUtil.memGetInt(s2p), f1, f2) & 0xFFFFFF) + (s1 & 0xFF << 24));
 
                 s1p += STRIDE;
                 s2p += STRIDE;
