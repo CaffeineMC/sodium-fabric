@@ -50,6 +50,7 @@ public class MixinItemRenderer {
             }
         }
 
+        random.setSeed(42L);
         List<BakedQuad> quads = model.getQuads(null, null, random);
 
         if (!quads.isEmpty()) {
