@@ -61,6 +61,7 @@ public class MixinBlockModelRenderer {
         int defaultColor = ColorABGR.pack(red, green, blue, 1.0F);
 
         for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {
+            random.setSeed(42L);
             List<BakedQuad> quads = bakedModel.getQuads(blockState, direction, random);
 
             if (!quads.isEmpty()) {
@@ -68,6 +69,7 @@ public class MixinBlockModelRenderer {
             }
         }
 
+        random.setSeed(42L);
         List<BakedQuad> quads = bakedModel.getQuads(blockState, null, random);
 
         if (!quads.isEmpty()) {
