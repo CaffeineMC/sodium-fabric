@@ -8,6 +8,6 @@ import net.minecraft.client.MinecraftClient;
 @Deprecated
 public class TerrainRenderCache {
     protected ColorBlender createBiomeColorBlender() {
-        return MinecraftClient.getInstance().options.getBiomeBlendRadius().getValue() <= 0 ? new FlatColorBlender() : new LinearColorBlender();
+        return ColorBlender.create(MinecraftClient.getInstance());
     }
 }

@@ -4,6 +4,7 @@ import net.caffeinemc.sodium.render.terrain.color.ColorSampler;
 import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
 import net.caffeinemc.sodium.util.packed.ColorARGB;
 import net.caffeinemc.sodium.util.color.ColorMixer;
+import net.minecraft.state.State;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockRenderView;
@@ -14,7 +15,7 @@ public class LinearColorBlender implements ColorBlender {
     private final BlockPos.Mutable mpos = new BlockPos.Mutable();
 
     @Override
-    public <T> int[] getColors(BlockRenderView world, BlockPos origin, ModelQuadView quad, ColorSampler<T> sampler, T state) {
+    public <T extends State<O, ?>, O> int[] getColors(BlockRenderView world, BlockPos origin, ModelQuadView quad, ColorSampler<T> sampler, T state) {
         final int[] colors = this.cachedRet;
 
         for (int vertexIndex = 0; vertexIndex < 4; vertexIndex++) {

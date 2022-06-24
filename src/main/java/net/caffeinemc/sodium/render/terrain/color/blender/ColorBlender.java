@@ -2,6 +2,8 @@ package net.caffeinemc.sodium.render.terrain.color.blender;
 
 import net.caffeinemc.sodium.render.terrain.color.ColorSampler;
 import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.state.State;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockRenderView;
 
@@ -19,5 +21,9 @@ public interface ColorBlender {
      * @param state The block state being rendered
      * @return An array of ABGR colors
      */
-    <T> int[] getColors(BlockRenderView world, BlockPos origin, ModelQuadView quad, ColorSampler<T> sampler, T state);
+    <T extends State<O, ?>, O> int[] getColors(BlockRenderView world, BlockPos origin, ModelQuadView quad, ColorSampler<T> sampler, T state);
+
+    static ColorBlender create(MinecraftClient client) {
+        return new ConfigurableColorBlender(client);
+    }
 }
