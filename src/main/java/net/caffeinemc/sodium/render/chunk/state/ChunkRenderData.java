@@ -2,15 +2,17 @@ package net.caffeinemc.sodium.render.chunk.state;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.IntFunction;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
-import net.caffeinemc.sodium.util.DirectionUtil;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
-
-import java.util.*;
-import java.util.function.IntFunction;
 
 /**
  * The render data for a chunk render container containing all the information about which meshes are attached, the

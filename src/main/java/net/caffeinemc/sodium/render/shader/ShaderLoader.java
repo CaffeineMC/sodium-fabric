@@ -1,18 +1,10 @@
 package net.caffeinemc.sodium.render.shader;
 
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-
-import java.util.List;
-import java.util.Set;
-
-import net.caffeinemc.sodium.render.entity.shader.ShaderTransformer;
-import net.minecraft.client.gl.GLImportProcessor;
-import net.minecraft.util.Identifier;
-import org.apache.commons.io.IOUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import net.minecraft.util.Identifier;
+import org.apache.commons.io.IOUtils;
 
 public interface ShaderLoader<T> {
     ShaderLoader<Identifier> MINECRAFT_ASSETS = new ShaderLoader<>() {

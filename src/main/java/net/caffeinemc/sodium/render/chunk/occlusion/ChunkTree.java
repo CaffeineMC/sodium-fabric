@@ -1,18 +1,18 @@
-package net.caffeinemc.sodium.render.chunk.draw;
+package net.caffeinemc.sodium.render.chunk.occlusion;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrays;
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrays;
+import java.util.NoSuchElementException;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.util.DirectionUtil;
+import net.caffeinemc.sodium.util.IntPool;
 import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.ArrayUtils;
-
-import java.util.NoSuchElementException;
 
 public class ChunkTree {
     public static final int ABSENT_VALUE = 0;

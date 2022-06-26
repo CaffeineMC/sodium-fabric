@@ -1,19 +1,18 @@
 package net.caffeinemc.gfx.opengl.array;
 
-import net.caffeinemc.gfx.opengl.GlObject;
-import net.caffeinemc.gfx.opengl.GlEnum;
+import java.util.List;
 import net.caffeinemc.gfx.api.array.VertexArray;
 import net.caffeinemc.gfx.api.array.VertexArrayDescription;
 import net.caffeinemc.gfx.api.array.VertexArrayResourceBinding;
+import net.caffeinemc.gfx.opengl.GlEnum;
+import net.caffeinemc.gfx.opengl.GlObject;
 import org.lwjgl.opengl.GL45C;
-
-import java.util.List;
 
 public class GlVertexArray<T extends Enum<T>> extends GlObject implements VertexArray<T> {
     private final VertexArrayDescription<T> desc;
 
-    public GlVertexArray(int id, VertexArrayDescription<T> desc) {
-        this.setHandle(id);
+    public GlVertexArray(VertexArrayDescription<T> desc) {
+        this.setHandle(GL45C.glCreateVertexArrays());
 
         this.setAttributeBindings(desc.vertexBindings());
 

@@ -5,14 +5,12 @@ import org.lwjgl.opengl.GL32C;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
-import java.nio.IntBuffer;
-
 public class GlFence implements Fence {
     private final long id;
     private boolean signaled;
 
-    public GlFence(long id) {
-        this.id = id;
+    public GlFence() {
+        this.id = GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     }
 
     @Override

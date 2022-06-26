@@ -1,12 +1,10 @@
-package net.caffeinemc.sodium.render.sequence;
+package net.caffeinemc.gfx.util.buffer;
 
+import java.util.EnumSet;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.types.ElementFormat;
-
-import java.util.EnumSet;
-
 import org.lwjgl.system.MemoryUtil;
 
 public class SequenceIndexBuffer {
@@ -15,6 +13,7 @@ public class SequenceIndexBuffer {
 
     private Buffer buffer;
     private int maxVertices;
+    private long bufferSize;
 
     public SequenceIndexBuffer(RenderDevice device, SequenceBuilder builder) {
         this.device = device;
@@ -39,9 +38,9 @@ public class SequenceIndexBuffer {
         var bytesPerIndex = this.builder.getElementFormat().getSize();
 
         var primitiveCount = vertexCount / verticesPerPrimitive;
-        var bufferSize = (long) indicesPerPrimitive * primitiveCount * bytesPerIndex;
+        this.bufferSize = (long) indicesPerPrimitive * primitiveCount * bytesPerIndex;
 
-        this.buffer = this.device.createBuffer(bufferSize, (buffer) -> {
+        this.buffer = this.device.createBuffer(this.bufferSize, (buffer) -> {
             var pointer = MemoryUtil.memAddress(buffer);
 
             for (int primitiveIndex = 0; primitiveIndex < primitiveCount; primitiveIndex++) {
@@ -50,6 +49,14 @@ public class SequenceIndexBuffer {
         }, EnumSet.noneOf(ImmutableBufferFlags.class));
 
         this.maxVertices = vertexCount;
+    }
+
+    public long getDeviceUsedMemory() {
+        return this.bufferSize;
+    }
+
+    public long getDeviceAllocatedMemory() {
+        return this.bufferSize;
     }
 
     public Buffer getBuffer() {
@@ -64,6 +71,6 @@ public class SequenceIndexBuffer {
     }
 
     public ElementFormat getElementFormat() {
-        return ElementFormat.UNSIGNED_INT;
+        return this.builder.getElementFormat();
     }
 }

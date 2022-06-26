@@ -1,12 +1,10 @@
 package net.caffeinemc.sodium.render.chunk.compile.tasks;
 
-import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
-import net.caffeinemc.sodium.render.terrain.TerrainBuildContext;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
+import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.caffeinemc.sodium.render.terrain.TerrainBuildContext;
 import net.caffeinemc.sodium.util.tasks.CancellationSource;
-
-import java.util.Collections;
 
 /**
  * A build task which does no computation and always return an empty build result. These tasks are created whenever

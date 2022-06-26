@@ -1,8 +1,7 @@
-package net.caffeinemc.sodium.render.buffer.streaming;
-
-import net.caffeinemc.gfx.api.buffer.Buffer;
+package net.caffeinemc.gfx.util.buffer;
 
 import java.nio.ByteBuffer;
+import net.caffeinemc.gfx.api.buffer.Buffer;
 
 public interface StreamingBuffer {
     long getDeviceUsedMemory();
@@ -22,7 +21,7 @@ public interface StreamingBuffer {
     interface WritableSection {
         ByteBuffer getView();
 
-        long getOffset();
+        long getDeviceOffset();
 
         void flushFull();
 

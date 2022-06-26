@@ -16,6 +16,7 @@ public class MixinLeavesBlock extends Block {
         throw new AssertionError("Mixin constructor called!");
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public boolean isSideInvisible(BlockState state, BlockState stateFrom, Direction direction) {
         if (SodiumClientMod.options().quality.leavesQuality.isFancy(MinecraftClient.getInstance().options.getGraphicsMode().getValue())) {

@@ -2,19 +2,19 @@ package net.caffeinemc.sodium.render.entity.data;
 
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.nio.ByteBuffer;
+import java.util.List;
 import net.caffeinemc.gfx.api.types.ElementFormat;
+import net.caffeinemc.gfx.util.buffer.SequenceBuilder;
+import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
 import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
-import net.caffeinemc.sodium.render.buffer.streaming.SectionedStreamingBuffer;
+import net.caffeinemc.sodium.interop.vanilla.sequence.Blaze3DSequences;
 import net.caffeinemc.sodium.render.entity.compile.BuiltEntityModel;
-import net.caffeinemc.sodium.render.sequence.SequenceBuilder;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.system.MemoryUtil;
-
-import java.nio.ByteBuffer;
-import java.util.List;
 
 public class EntityInstanceBatch {
 
@@ -23,13 +23,13 @@ public class EntityInstanceBatch {
 
     private BuiltEntityModel model;
     private boolean indexed;
-    private SectionedStreamingBuffer partBuffer;
+    private StreamingBuffer partBuffer;
 
     private ElementFormat elementFormat;
     private long indexStartingPos;
     private int indexCount;
 
-    public EntityInstanceBatch(BuiltEntityModel model, boolean indexed, int initialSize, SectionedStreamingBuffer partBuffer) {
+    public EntityInstanceBatch(BuiltEntityModel model, boolean indexed, int initialSize, StreamingBuffer partBuffer) {
         this.instances = new ObjectArrayList<>(initialSize);
         this.matrices = new MatrixEntryList(initialSize);
         this.model = model;
@@ -37,7 +37,7 @@ public class EntityInstanceBatch {
         this.partBuffer = partBuffer;
     }
 
-    public void reset(BuiltEntityModel model, boolean indexed, SectionedStreamingBuffer partBuffer) {
+    public void reset(BuiltEntityModel model, boolean indexed, StreamingBuffer partBuffer) {
         this.model = model;
         this.indexed = indexed;
         this.partBuffer = partBuffer;
@@ -58,7 +58,7 @@ public class EntityInstanceBatch {
         return this.matrices;
     }
 
-    public void writeInstancesToBuffer(SectionedStreamingBuffer buffer, int frameIndex) {
+    public void writeInstancesToBuffer(StreamingBuffer buffer, int frameIndex) {
         ByteBuffer sectionView = buffer.getSection(frameIndex).getView();
         long pointer = MemoryUtil.memAddress(sectionView);
         int offset = 0;
@@ -171,7 +171,7 @@ public class EntityInstanceBatch {
         return this.instances.size();
     }
 
-    public void writeElements(VertexFormat.DrawMode drawMode, SectionedStreamingBuffer elementBuffer, int frameIndex) {
+    public void writeElements(VertexFormat.DrawMode drawMode, StreamingBuffer elementBuffer, int frameIndex) {
         if (!this.isIndexed()) return;
 
         if (drawMode.shareVertices) {
@@ -194,7 +194,7 @@ public class EntityInstanceBatch {
         long pointer = MemoryUtil.memAddress0(section.getView()) + sectionPos;
         long pointerIncrement = (long) drawMode.getIndexCount(drawMode.additionalVertexCount) * this.elementFormat.getSize();
 
-        SequenceBuilder sequenceBuilder = SequenceBuilder.map(drawMode, this.elementFormat);
+        SequenceBuilder sequenceBuilder = Blaze3DSequences.map(drawMode, this.elementFormat);
         int lastIndex = 0;
         for (PerInstanceData instanceData : this.instances) {
             int[] primitiveIndices = instanceData.primitiveIndices();

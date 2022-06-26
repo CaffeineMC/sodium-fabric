@@ -1,16 +1,14 @@
-package net.caffeinemc.sodium.render.buffer.streaming;
+package net.caffeinemc.gfx.util.buffer;
 
+import java.nio.ByteBuffer;
 import java.util.EnumSet;
-
+import java.util.Set;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.MappedBuffer;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.sodium.util.MathUtil;
+import net.caffeinemc.gfx.internal.MathUtil;
 import org.lwjgl.system.MemoryUtil;
-
-import java.nio.ByteBuffer;
-import java.util.Set;
 
 // TODO: convert to all longs
 public class SectionedStreamingBuffer implements StreamingBuffer {
@@ -219,7 +217,7 @@ public class SectionedStreamingBuffer implements StreamingBuffer {
             return this.view;
         }
 
-        public long getOffset() {
+        public long getDeviceOffset() {
             return this.offset;
         }
 

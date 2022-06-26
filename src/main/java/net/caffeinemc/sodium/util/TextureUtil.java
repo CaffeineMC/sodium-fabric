@@ -1,5 +1,7 @@
 package net.caffeinemc.sodium.util;
 
+import net.caffeinemc.gfx.api.texture.Texture;
+import net.caffeinemc.gfx.opengl.texture.GlTexture;
 import net.caffeinemc.sodium.interop.vanilla.mixin.LightmapTextureManagerAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.AbstractTexture;
@@ -7,18 +9,19 @@ import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.texture.TextureManager;
 import org.apache.commons.lang3.Validate;
 
+// TODO: can we cache these?
 public class TextureUtil {
-    public static int getBlockAtlasTexture() {
+    public static Texture getBlockAtlasTexture() {
         MinecraftClient client = MinecraftClient.getInstance();
         TextureManager textureManager = client.getTextureManager();
 
         AbstractTexture blockAtlasTex = textureManager.getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
         Validate.notNull(blockAtlasTex, "Block atlas texture isn't available?");
 
-        return blockAtlasTex.getGlId();
+        return GlTexture.wrap(blockAtlasTex.getGlId());
     }
 
-    public static int getLightTexture() {
+    public static Texture getLightTexture() {
         MinecraftClient client = MinecraftClient.getInstance();
 
         LightmapTextureManagerAccessor lightmapTextureManager =
@@ -27,7 +30,7 @@ public class TextureUtil {
         AbstractTexture lightTex = lightmapTextureManager.getTexture();
         Validate.notNull(lightTex, "Lightmap texture isn't available?");
 
-        return lightTex.getGlId();
+        return GlTexture.wrap(lightTex.getGlId());
     }
 
     public static int encodeLightMapTexCoord(int light) {

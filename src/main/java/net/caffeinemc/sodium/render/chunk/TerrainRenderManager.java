@@ -4,27 +4,31 @@ import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.SodiumWorldRenderer;
-import net.caffeinemc.sodium.render.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.render.chunk.compile.ChunkBuilder;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildTask;
-import net.caffeinemc.sodium.render.chunk.draw.*;
+import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
+import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderMatrices;
+import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderer;
+import net.caffeinemc.sodium.render.chunk.draw.MdiChunkRenderer;
+import net.caffeinemc.sodium.render.chunk.draw.MdiCountChunkRenderer;
+import net.caffeinemc.sodium.render.chunk.draw.SortedChunkLists;
+import net.caffeinemc.sodium.render.chunk.occlusion.ChunkOcclusion;
+import net.caffeinemc.sodium.render.chunk.occlusion.ChunkTree;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
-import net.caffeinemc.sodium.render.chunk.passes.DefaultRenderPasses;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderFlag;
-import net.caffeinemc.sodium.render.sequence.SequenceBuilder;
-import net.caffeinemc.sodium.render.sequence.SequenceIndexBuffer;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.texture.SpriteUtil;
@@ -45,18 +49,13 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-
-public class RenderSectionManager {
+public class TerrainRenderManager {
     /**
      * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
      */
     private static final float NEARBY_BLOCK_UPDATE_DISTANCE = 32.0f;
 
     private final ChunkBuilder builder;
-
-    private final RenderListBuilder renderListBuilder;
 
     private final RenderRegionManager regions;
     private final ClonedChunkSectionCache sectionCache;
@@ -66,11 +65,9 @@ public class RenderSectionManager {
 
     private final Map<ChunkUpdateType, PriorityQueue<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
 
-    private final Map<ChunkRenderPass, ChunkRenderer> chunkRenderers;
+    private final ChunkRenderer chunkRenderer;
 
     private final ClientWorld world;
-
-    private final SequenceIndexBuffer indexBuffer;
 
     private boolean needsUpdate;
     private int frameIndex = 0;
@@ -78,7 +75,6 @@ public class RenderSectionManager {
     private final ChunkTracker tracker;
     private final RenderDevice device;
 
-    private Map<ChunkRenderPass, RenderListBuilder.RenderList> renderLists;
     private ChunkCameraContext camera;
 
     private final ReferenceArrayList<RenderSection> visibleMeshedSections = new ReferenceArrayList<>();
@@ -92,29 +88,12 @@ public class RenderSectionManager {
     @Deprecated
     private BitArray sectionVisibility = null;
 
-    public RenderSectionManager(RenderDevice device, SodiumWorldRenderer worldRenderer, ChunkRenderPassManager renderPassManager, ClientWorld world, int chunkViewDistance) {
-        var vertexType = createVertexType();
+    public TerrainRenderManager(RenderDevice device, SodiumWorldRenderer worldRenderer, ChunkRenderPassManager renderPassManager, ClientWorld world, int chunkViewDistance) {
+        TerrainVertexType vertexType = createVertexType();
 
         this.device = device;
-        this.chunkRenderers = new Reference2ReferenceOpenHashMap<>();
 
-        this.renderListBuilder = new RenderListBuilder(device, chunkViewDistance, world);
-
-        this.indexBuffer = new SequenceIndexBuffer(device, SequenceBuilder.QUADS_INT);
-
-        for (var renderPass : DefaultRenderPasses.ALL) {
-            this.chunkRenderers.put(
-                    renderPass,
-                    createChunkRenderer(
-                            device,
-                            this.renderListBuilder.getInstanceBuffer(),
-                            this.renderListBuilder.getCommandBuffer(),
-                            this.indexBuffer,
-                            vertexType,
-                            renderPass
-                    )
-            );
-        }
+        this.chunkRenderer = createChunkRenderer(device, renderPassManager, vertexType);
 
         this.world = world;
 
@@ -156,7 +135,7 @@ public class RenderSectionManager {
 
         var chunks = new SortedChunkLists(this.regions, this.visibleMeshedSections);
 
-        this.renderLists = this.renderListBuilder.createRenderLists(chunks, this.camera, this.frameIndex);
+        this.chunkRenderer.createRenderLists(chunks, this.camera, this.frameIndex);
         this.needsUpdate = false;
     }
 
@@ -260,15 +239,7 @@ public class RenderSectionManager {
     }
 
     public void renderLayer(ChunkRenderMatrices matrices, ChunkRenderPass renderPass) {
-        if (this.renderLists == null || !this.renderLists.containsKey(renderPass)) {
-            return;
-        }
-
-        var chunkRenderer = this.chunkRenderers.get(renderPass);
-
-        if (chunkRenderer != null) {
-            chunkRenderer.render(this.renderLists.get(renderPass), renderPass, matrices, this.frameIndex);
-        }
+        this.chunkRenderer.render(renderPass, matrices, this.frameIndex);
     }
 
     public void tickVisibleRenders() {
@@ -386,7 +357,7 @@ public class RenderSectionManager {
     }
 
     public boolean isGraphDirty() {
-        return true;
+        return this.needsUpdate;
     }
 
     public ChunkBuilder getBuilder() {
@@ -396,15 +367,7 @@ public class RenderSectionManager {
     public void destroy() {
         this.regions.delete();
         this.builder.stopWorkers();
-
-        for (var renderer : this.chunkRenderers.values()) {
-            renderer.delete();
-        }
-
-        this.chunkRenderers.clear();
-        this.indexBuffer.delete();
-
-        this.renderListBuilder.delete();
+        this.chunkRenderer.delete();
     }
 
     public int getTotalSections() {
@@ -454,9 +417,9 @@ public class RenderSectionManager {
             count++;
         }
 
-        deviceUsed += this.renderListBuilder.getDeviceUsedMemory();
-        deviceAllocated += this.renderListBuilder.getDeviceAllocatedMemory();
-        count += this.renderListBuilder.getDeviceBufferObjects();
+        deviceUsed += this.chunkRenderer.getDeviceUsedMemory();
+        deviceAllocated += this.chunkRenderer.getDeviceAllocatedMemory();
+        count += this.chunkRenderer.getDeviceBufferObjects();
 
         List<String> strings = new ArrayList<>();
         strings.add(String.format("Device buffer objects: %d", count));
@@ -465,8 +428,12 @@ public class RenderSectionManager {
         return strings;
     }
 
-    private static ChunkRenderer createChunkRenderer(RenderDevice device, StreamingBuffer instanceBuffer, StreamingBuffer commandBuffer, SequenceIndexBuffer indexBuffer, TerrainVertexType vertexType, ChunkRenderPass pass) {
-        return new DefaultChunkRenderer(device, instanceBuffer, commandBuffer, indexBuffer, vertexType, pass);
+    private static ChunkRenderer createChunkRenderer(RenderDevice device, ChunkRenderPassManager renderPassManager, TerrainVertexType vertexType) {
+        if (device.properties().driverWorkarounds.forceIndirectCount) {
+            return new MdiCountChunkRenderer(device, renderPassManager, vertexType);
+        } else {
+            return new MdiChunkRenderer(device, renderPassManager, vertexType);
+        }
     }
 
     private static TerrainVertexType createVertexType() {

@@ -1,5 +1,9 @@
 package net.caffeinemc.gfx.api.device;
 
+import java.nio.ByteBuffer;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import net.caffeinemc.gfx.api.array.VertexArrayDescription;
 import net.caffeinemc.gfx.api.buffer.*;
 import net.caffeinemc.gfx.api.pipeline.Pipeline;
@@ -9,12 +13,12 @@ import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
 import net.caffeinemc.gfx.api.shader.ShaderDescription;
 import net.caffeinemc.gfx.api.sync.Fence;
 import net.caffeinemc.gfx.api.texture.Sampler;
+import net.caffeinemc.gfx.api.texture.parameters.AddressMode;
+import net.caffeinemc.gfx.api.texture.parameters.FilterMode;
+import net.caffeinemc.gfx.api.texture.parameters.MipmapMode;
+import org.jetbrains.annotations.Nullable;
 
-import java.nio.ByteBuffer;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-
+// TODO: add orphanBuffer and use it with SequenceIndexBuffer
 public interface ResourceFactory {
     <T> Program<T> createProgram(ShaderDescription desc, Function<ShaderBindingContext, T> interfaceFactory);
 
@@ -32,7 +36,17 @@ public interface ResourceFactory {
 
     <PROGRAM, ARRAY extends Enum<ARRAY>> Pipeline<PROGRAM, ARRAY> createPipeline(PipelineDescription state, Program<PROGRAM> program, VertexArrayDescription<ARRAY> vertexArray);
 
-    Sampler createSampler();
+    /**
+     * If any of the parameters provided are null, the default value will be used.
+     */
+    Sampler createSampler(
+            @Nullable FilterMode minFilter,
+            @Nullable MipmapMode mipmapMode,
+            @Nullable FilterMode magFilter,
+            @Nullable AddressMode addressModeU,
+            @Nullable AddressMode addressModeV,
+            @Nullable AddressMode addressModeW
+    );
 
     Fence createFence();
 }

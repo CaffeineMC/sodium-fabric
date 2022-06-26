@@ -3,8 +3,6 @@ package net.caffeinemc.sodium.util;
 import net.minecraft.util.math.Direction;
 import org.apache.commons.lang3.Validate;
 
-import java.util.Arrays;
-
 /**
  * Contains a number of cached arrays to avoid allocations since calling Enum#values() requires the backing array to
  * be cloned every time.

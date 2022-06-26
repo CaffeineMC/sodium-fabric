@@ -1,13 +1,15 @@
 package net.caffeinemc.sodium.render.buffer.arena;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.sodium.render.buffer.streaming.SectionedStreamingBuffer;
-import net.caffeinemc.sodium.render.buffer.streaming.StreamingBuffer;
+import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
 import org.lwjgl.system.MemoryUtil;
-
-import java.util.*;
 
 // TODO: handle alignment
 // TODO: handle element vs pointers
@@ -18,7 +20,7 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     private final int resizeIncrement;
 
     private final RenderDevice device;
-    private final SectionedStreamingBuffer stagingBuffer;
+    private final StreamingBuffer stagingBuffer;
     private Buffer arenaBuffer;
 
     private BufferSegment head;
@@ -28,7 +30,7 @@ public class AsyncArenaBuffer implements ArenaBuffer {
 
     private final int stride;
 
-    public AsyncArenaBuffer(RenderDevice device, SectionedStreamingBuffer stagingBuffer, int capacity, int stride) {
+    public AsyncArenaBuffer(RenderDevice device, StreamingBuffer stagingBuffer, int capacity, int stride) {
         this.device = device;
         this.stagingBuffer = stagingBuffer;
         this.resizeIncrement = capacity / 16;
@@ -262,7 +264,7 @@ public class AsyncArenaBuffer implements ArenaBuffer {
 
         // Write the PendingUploads to the mapped streaming buffer
         // Also create the pending transfers to go from streaming buffer -> arena buffer
-        long sectionOffset = section.getOffset() + section.getView().position();
+        long sectionOffset = section.getDeviceOffset() + section.getView().position();
         // this is basically the address of what sectionOffset points to
         long sectionAddress = MemoryUtil.memAddress(section.getView());
         int transferOffset = 0;
@@ -289,7 +291,7 @@ public class AsyncArenaBuffer implements ArenaBuffer {
 
         var backingStreamingBuffer = this.stagingBuffer.getBufferObject();
 
-        // Try to upload all of the data into free segments first
+        // Try to upload all the data into free segments first
         pendingTransfers.removeIf(transfer -> this.tryUpload(backingStreamingBuffer, transfer));
 
         // If we weren't able to upload some buffers, they will have been left behind in the queue

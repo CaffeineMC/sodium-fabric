@@ -1,7 +1,9 @@
-package net.caffeinemc.sodium.render.chunk.draw;
+package net.caffeinemc.sodium.util;
 
-import it.unimi.dsi.fastutil.ints.*;
-
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntPriorityQueue;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.NoSuchElementException;
 
 public class IntPool {

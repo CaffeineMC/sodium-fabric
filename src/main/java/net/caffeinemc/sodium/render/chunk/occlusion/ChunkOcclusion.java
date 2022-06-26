@@ -1,22 +1,15 @@
-package net.caffeinemc.sodium.render.chunk.draw;
+package net.caffeinemc.sodium.render.chunk.occlusion;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrays;
-import it.unimi.dsi.fastutil.ints.IntComparator;
-import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.state.ChunkGraphIterationQueue;
 import net.caffeinemc.sodium.util.DirectionUtil;
-import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
-
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.function.ToDoubleFunction;
 
 public class ChunkOcclusion {
     public static IntArrayList calculateVisibleSections(ChunkTree tree, Frustum frustum, World world, BlockPos origin,

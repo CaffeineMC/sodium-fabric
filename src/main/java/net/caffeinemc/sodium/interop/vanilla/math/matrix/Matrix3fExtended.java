@@ -4,8 +4,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3f;
 
-import java.nio.FloatBuffer;
-
 public interface Matrix3fExtended {
     /**
      * Applies the specified rotation to this matrix in-place.

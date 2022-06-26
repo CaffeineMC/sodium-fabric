@@ -1,11 +1,12 @@
 package net.caffeinemc.sodium.render.chunk;
 
+import java.util.concurrent.CompletableFuture;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
-import net.caffeinemc.sodium.render.chunk.state.*;
+import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
+import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry;
 import net.minecraft.util.math.ChunkSectionPos;
-
-import java.util.concurrent.CompletableFuture;
 
 /**
  * The render state object for a chunk section. This contains all the graphics state for each render pass along with
@@ -126,7 +127,6 @@ public class RenderSection {
     public void onBuildSubmitted(CompletableFuture<?> task) {
         if (this.rebuildTask != null) {
             this.rebuildTask.cancel(false);
-            this.rebuildTask = null;
         }
 
         this.rebuildTask = task;

@@ -1,32 +1,39 @@
-package net.caffeinemc.sodium.interop.vanilla;
+package net.caffeinemc.sodium.interop.vanilla.pipeline;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import java.util.function.Consumer;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.device.RenderConfiguration;
-import net.caffeinemc.gfx.api.shader.BufferBlock;
-import net.caffeinemc.gfx.opengl.array.GlVertexArray;
-import net.caffeinemc.gfx.opengl.GlEnum;
+import net.caffeinemc.gfx.api.device.RenderDeviceProperties;
 import net.caffeinemc.gfx.api.pipeline.Pipeline;
+import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
 import net.caffeinemc.gfx.api.pipeline.PipelineState;
-import net.caffeinemc.gfx.api.texture.Sampler;
 import net.caffeinemc.gfx.api.pipeline.state.CullMode;
 import net.caffeinemc.gfx.api.pipeline.state.DepthFunc;
-import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
+import net.caffeinemc.gfx.api.shader.BufferBlock;
+import net.caffeinemc.gfx.api.texture.Sampler;
+import net.caffeinemc.gfx.api.texture.Texture;
+import net.caffeinemc.gfx.opengl.GlEnum;
+import net.caffeinemc.gfx.opengl.array.GlVertexArray;
 import net.caffeinemc.gfx.opengl.buffer.GlBuffer;
 import net.caffeinemc.gfx.opengl.pipeline.GlPipelineManager;
 import net.caffeinemc.gfx.opengl.shader.GlProgram;
 import net.caffeinemc.gfx.opengl.texture.GlSampler;
+import net.caffeinemc.gfx.opengl.texture.GlTexture;
 import net.minecraft.client.render.BufferRenderer;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.opengl.GL32C;
 import org.lwjgl.opengl.GL45C;
-
-import java.util.BitSet;
-import java.util.function.Consumer;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 public class Blaze3DPipelineManager implements GlPipelineManager {
-    private final Blaze3DPipelineState state = new Blaze3DPipelineState();
+    private final Blaze3DPipelineState state;
+
+    public Blaze3DPipelineManager(RenderDeviceProperties properties) {
+        this.state = new Blaze3DPipelineState(properties.values.maxCombinedTextureImageUnits);
+    }
 
     @Override
     public <ARRAY extends Enum<ARRAY>, PROGRAM> void bindPipeline(Pipeline<PROGRAM, ARRAY> pipeline, Consumer<PipelineState> gate) {
@@ -99,13 +106,20 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
     }
 
     private static class Blaze3DPipelineState implements PipelineState {
-        private final BitSet changedTextures = new BitSet(GL45C.glGetInteger(GL45C.GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS));
+
+        private final int maxTextureUnits;
+
+        public Blaze3DPipelineState(int maxTextureUnits) {
+            this.maxTextureUnits = maxTextureUnits;
+        }
 
         @Override
-        public void bindTexture(int unit, int texture, Sampler sampler) {
-            this.changedTextures.set(unit);
+        public void bindTexture(int unit, Texture texture, Sampler sampler) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.isTrue(unit >= 0 && unit < this.maxTextureUnits, "Texture unit index is invalid");
+            }
 
-            GL45C.glBindTextureUnit(unit, texture);
+            GL45C.glBindTextureUnit(unit, GlTexture.getHandle(texture));
             GL45C.glBindSampler(unit, GlSampler.getHandle(sampler));
         }
 
@@ -125,13 +139,16 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
         }
 
         public void restore() {
-            // TODO: use multi-bind and just reset everything no matter what? it's probably faster
-            for (int unit = this.changedTextures.nextSetBit(0); unit != -1; unit = this.changedTextures.nextSetBit(unit + 1)) {
-                GL45C.glBindTextureUnit(unit, GlStateManager.TEXTURES[unit].boundTexture);
-                GL45C.glBindSampler(unit, 0);
+            try (MemoryStack memoryStack = MemoryStack.stackPush()) {
+                int textureCount = GlStateManager.TEXTURE_COUNT;
+                long texturesPtr = memoryStack.nmalloc(Integer.BYTES * textureCount);
+                for (int unit = 0; unit < textureCount; unit++) {
+                    MemoryUtil.memPutInt(texturesPtr + (unit * Integer.BYTES), GlStateManager.TEXTURES[unit].boundTexture);
+                }
+                GL45C.nglBindTextures(0, textureCount, texturesPtr);
             }
 
-            this.changedTextures.clear();
+            GL45C.nglBindSamplers(0, this.maxTextureUnits, MemoryUtil.NULL);
         }
     }
 }

@@ -1,7 +1,6 @@
-package net.caffeinemc.sodium.render.sequence;
+package net.caffeinemc.gfx.util.buffer;
 
 import net.caffeinemc.gfx.api.types.ElementFormat;
-import net.minecraft.client.render.VertexFormat;
 import org.lwjgl.system.MemoryUtil;
 
 public abstract class SequenceBuilder {
@@ -120,25 +119,5 @@ public abstract class SequenceBuilder {
 
     public ElementFormat getElementFormat() {
         return this.elementFormat;
-    }
-
-    public static SequenceBuilder map(VertexFormat.DrawMode drawMode, ElementFormat elementFormat) {
-        return switch (elementFormat) {
-            case UNSIGNED_BYTE -> switch (drawMode) {
-                case LINES -> LINES_BYTE;
-                case QUADS -> QUADS_BYTE;
-                default -> DEFAULT_BYTE;
-            };
-            case UNSIGNED_SHORT -> switch (drawMode) {
-                case LINES -> LINES_SHORT;
-                case QUADS -> QUADS_SHORT;
-                default -> DEFAULT_SHORT;
-            };
-            case UNSIGNED_INT -> switch (drawMode) {
-                case LINES -> LINES_INT;
-                case QUADS -> QUADS_INT;
-                default -> DEFAULT_INT;
-            };
-        };
     }
 }

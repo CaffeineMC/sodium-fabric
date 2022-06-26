@@ -2,10 +2,12 @@ package net.caffeinemc.sodium.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import java.util.Collection;
+import java.util.SortedSet;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.interop.vanilla.mixin.WorldRendererHolder;
-import net.caffeinemc.sodium.render.chunk.RenderSectionManager;
+import net.caffeinemc.sodium.render.chunk.TerrainRenderManager;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderMatrices;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
@@ -22,11 +24,12 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
-
-import java.util.Collection;
-import java.util.SortedSet;
 
 /**
  * Provides an extension to vanilla's {@link WorldRenderer}.
@@ -43,7 +46,7 @@ public class SodiumWorldRenderer {
 
     private boolean useEntityCulling;
 
-    private RenderSectionManager renderSectionManager;
+    private TerrainRenderManager terrainRenderManager;
     private ChunkRenderPassManager renderPassManager;
     private ChunkTracker chunkTracker;
 
@@ -106,9 +109,9 @@ public class SodiumWorldRenderer {
     private void unloadWorld() {
         ImmediateTerrainRenderCache.destroyRenderContext(this.world);
 
-        if (this.renderSectionManager != null) {
-            this.renderSectionManager.destroy();
-            this.renderSectionManager = null;
+        if (this.terrainRenderManager != null) {
+            this.terrainRenderManager.destroy();
+            this.terrainRenderManager = null;
         }
 
         this.chunkTracker = null;
@@ -119,7 +122,7 @@ public class SodiumWorldRenderer {
      * @return The number of chunk renders which are visible in the current camera's frustum
      */
     public int getVisibleChunkCount() {
-        return this.renderSectionManager.getVisibleSectionCount();
+        return this.terrainRenderManager.getVisibleSectionCount();
     }
 
     /**
@@ -127,8 +130,8 @@ public class SodiumWorldRenderer {
      */
     public void scheduleTerrainUpdate() {
         // BUG: seems to be called before init
-        if (this.renderSectionManager != null) {
-            this.renderSectionManager.markGraphDirty();
+        if (this.terrainRenderManager != null) {
+            this.terrainRenderManager.markGraphDirty();
         }
     }
 
@@ -136,7 +139,7 @@ public class SodiumWorldRenderer {
      * @return True if no chunks are pending rebuilds
      */
     public boolean isTerrainRenderComplete() {
-        return this.renderSectionManager.getBuilder().isBuildQueueEmpty();
+        return this.terrainRenderManager.getBuilder().isBuildQueueEmpty();
     }
 
     /**
@@ -169,7 +172,7 @@ public class SodiumWorldRenderer {
                 pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
 
         if (dirty) {
-            this.renderSectionManager.markGraphDirty();
+            this.terrainRenderManager.markGraphDirty();
         }
 
         this.lastCameraX = pos.x;
@@ -183,18 +186,18 @@ public class SodiumWorldRenderer {
 
         this.chunkTracker.update();
 
-        this.renderSectionManager.setFrameIndex(frame);
-        this.renderSectionManager.updateChunks();
+        this.terrainRenderManager.setFrameIndex(frame);
+        this.terrainRenderManager.updateChunks();
 
-        if (this.renderSectionManager.isGraphDirty()) {
+        if (this.terrainRenderManager.isGraphDirty()) {
             profiler.swap("chunk_graph_rebuild");
 
-            this.renderSectionManager.update(new ChunkCameraContext(camera), frustum, spectator);
+            this.terrainRenderManager.update(new ChunkCameraContext(camera), frustum, spectator);
         }
 
         profiler.swap("visible_chunk_tick");
 
-        this.renderSectionManager.tickVisibleRenders();
+        this.terrainRenderManager.tickVisibleRenders();
 
         profiler.pop();
 
@@ -206,7 +209,7 @@ public class SodiumWorldRenderer {
      */
     public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack) {
         ChunkRenderPass renderPass = this.renderPassManager.getRenderPassForLayer(renderLayer);
-        this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), renderPass);
+        this.terrainRenderManager.renderLayer(ChunkRenderMatrices.from(matrixStack), renderPass);
     }
 
     public void reload() {
@@ -218,17 +221,17 @@ public class SodiumWorldRenderer {
     }
 
     private void initRenderer() {
-        if (this.renderSectionManager != null) {
-            this.renderSectionManager.destroy();
-            this.renderSectionManager = null;
+        if (this.terrainRenderManager != null) {
+            this.terrainRenderManager.destroy();
+            this.terrainRenderManager = null;
         }
 
         this.renderDistance = this.client.options.getClampedViewDistance();
 
         this.renderPassManager = ChunkRenderPassManager.createDefaultMappings();
 
-        this.renderSectionManager = new RenderSectionManager(SodiumClientMod.DEVICE, this, this.renderPassManager, this.world, this.renderDistance);
-        this.renderSectionManager.reloadChunks(this.chunkTracker);
+        this.terrainRenderManager = new TerrainRenderManager(SodiumClientMod.DEVICE, this, this.renderPassManager, this.world, this.renderDistance);
+        this.terrainRenderManager.reloadChunks(this.chunkTracker);
     }
 
     public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
@@ -242,7 +245,7 @@ public class SodiumWorldRenderer {
 
         BlockEntityRenderDispatcher blockEntityRenderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
 
-        for (BlockEntity blockEntity : this.renderSectionManager.getVisibleBlockEntities()) {
+        for (BlockEntity blockEntity : this.terrainRenderManager.getVisibleBlockEntities()) {
             BlockPos pos = blockEntity.getPos();
 
             matrices.push();
@@ -267,7 +270,7 @@ public class SodiumWorldRenderer {
             matrices.pop();
         }
 
-        for (BlockEntity blockEntity : this.renderSectionManager.getGlobalBlockEntities()) {
+        for (BlockEntity blockEntity : this.terrainRenderManager.getGlobalBlockEntities()) {
             BlockPos pos = blockEntity.getPos();
 
             matrices.push();
@@ -281,7 +284,7 @@ public class SodiumWorldRenderer {
 
     public void onChunkAdded(int x, int z) {
         if (this.chunkTracker.loadChunk(x, z)) {
-            this.renderSectionManager.onChunkAdded(x, z);
+            this.terrainRenderManager.onChunkAdded(x, z);
         }
     }
 
@@ -291,7 +294,7 @@ public class SodiumWorldRenderer {
 
     public void onChunkRemoved(int x, int z) {
         if (this.chunkTracker.unloadChunk(x, z)) {
-            this.renderSectionManager.onChunkRemoved(x, z);
+            this.terrainRenderManager.onChunkRemoved(x, z);
         }
     }
 
@@ -336,7 +339,7 @@ public class SodiumWorldRenderer {
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
                 for (int y = minY; y <= maxY; y++) {
-                    if (this.renderSectionManager.isSectionVisible(x, y, z)) {
+                    if (this.terrainRenderManager.isSectionVisible(x, y, z)) {
                         return true;
                     }
                 }
@@ -349,7 +352,7 @@ public class SodiumWorldRenderer {
     public String getChunksDebugString() {
         // C: visible/total
         // TODO: add dirty and queued counts
-        return String.format("C: %s/%s", this.renderSectionManager.getVisibleSectionCount(), this.renderSectionManager.getTotalSections());
+        return String.format("C: %s/%s", this.terrainRenderManager.getVisibleSectionCount(), this.terrainRenderManager.getTotalSections());
     }
 
     /**
@@ -376,11 +379,11 @@ public class SodiumWorldRenderer {
      * Schedules a chunk rebuild for the render belonging to the given chunk section position.
      */
     public void scheduleRebuildForChunk(int x, int y, int z, boolean important) {
-        this.renderSectionManager.scheduleRebuild(x, y, z, important);
+        this.terrainRenderManager.scheduleRebuild(x, y, z, important);
     }
 
     public Collection<String> getMemoryDebugStrings() {
-        return this.renderSectionManager.getDebugStrings();
+        return this.terrainRenderManager.getDebugStrings();
     }
 
     public ChunkTracker getChunkTracker() {

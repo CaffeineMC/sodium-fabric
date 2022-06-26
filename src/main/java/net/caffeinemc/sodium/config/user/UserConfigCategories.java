@@ -1,23 +1,26 @@
 package net.caffeinemc.sodium.config.user;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import net.caffeinemc.sodium.config.user.binding.compat.VanillaOptionBinding;
-import net.caffeinemc.sodium.config.user.options.*;
+import net.caffeinemc.sodium.config.user.options.OptionFlag;
+import net.caffeinemc.sodium.config.user.options.OptionGroup;
+import net.caffeinemc.sodium.config.user.options.OptionImpact;
+import net.caffeinemc.sodium.config.user.options.OptionImpl;
+import net.caffeinemc.sodium.config.user.options.OptionPage;
 import net.caffeinemc.sodium.config.user.options.storage.UserConfigStorage;
 import net.caffeinemc.sodium.gui.config.ControlValueFormatter;
 import net.caffeinemc.sodium.gui.config.CyclingControl;
 import net.caffeinemc.sodium.gui.config.SliderControl;
 import net.caffeinemc.sodium.gui.config.TickBoxControl;
 import net.caffeinemc.sodium.interop.vanilla.options.MinecraftOptionsStorage;
-import net.caffeinemc.sodium.config.user.options.storage.UserConfigStorage;
-import net.caffeinemc.sodium.config.user.options.*;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.option.*;
+import net.minecraft.client.option.AoMode;
+import net.minecraft.client.option.AttackIndicator;
+import net.minecraft.client.option.CloudRenderMode;
+import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.text.Text;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class UserConfigCategories {
     private static final UserConfigStorage sodiumOpts = new UserConfigStorage();
