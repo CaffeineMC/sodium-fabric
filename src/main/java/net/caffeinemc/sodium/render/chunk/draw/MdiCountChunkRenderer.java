@@ -130,12 +130,10 @@ public class MdiCountChunkRenderer extends MdiChunkRenderer {
             
             boolean reverseOrder = false; // TODO: fix me
             
-            for (Iterator<SortedChunkLists.Bucket> bucketIterator = chunks.sorted(reverseOrder); bucketIterator.hasNext(); )
-            {
+            for (Iterator<SortedChunkLists.Bucket> bucketIterator = chunks.sorted(reverseOrder); bucketIterator.hasNext(); ) {
                 SortedChunkLists.Bucket bucket = bucketIterator.next();
                 
-                for (Iterator<RenderSection> sectionIterator = bucket.sorted(reverseOrder); sectionIterator.hasNext(); )
-                {
+                for (Iterator<RenderSection> sectionIterator = bucket.sorted(reverseOrder); sectionIterator.hasNext(); ) {
                     RenderSection section = sectionIterator.next();
                     
                     UploadedChunkGeometry geometry = section.getGeometry();
@@ -252,8 +250,7 @@ public class MdiCountChunkRenderer extends MdiChunkRenderer {
             int commandBufferCurrentPos = commandBufferSectionView.position();
             int instanceBufferCurrentPos = instanceBufferSectionView.position();
             for (Iterator<RenderList<MdiCountChunkRenderBatch>> renderListIterator = renderLists.values()
-                                                                                                .iterator(); renderListIterator.hasNext(); )
-            {
+                                                                                                .iterator(); renderListIterator.hasNext(); ) {
                 RenderList<MdiCountChunkRenderBatch> renderList = renderListIterator.next();
                 
                 if (renderList.getBatches().size() <= 0) {

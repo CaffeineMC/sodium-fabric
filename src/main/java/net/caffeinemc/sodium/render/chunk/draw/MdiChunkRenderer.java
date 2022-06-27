@@ -81,31 +81,38 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
         int uboAlignment = device.properties().values.uniformBufferOffsetAlignment;
         
         this.pipelines = new Object2ObjectOpenHashMap<>();
+    
+        var vertexFormat = vertexType.getCustomVertexFormat();
+        var vertexArray = new VertexArrayDescription<>(
+                BufferTarget.values(),
+                List.of(new VertexArrayResourceBinding<>(
+                        BufferTarget.VERTICES,
+                        new VertexAttributeBinding[] {
+                                new VertexAttributeBinding(
+                                        ChunkShaderBindingPoints.ATTRIBUTE_POSITION,
+                                        vertexFormat.getAttribute(
+                                                TerrainMeshAttribute.POSITION)
+                                ),
+                                new VertexAttributeBinding(
+                                        ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
+                                        vertexFormat.getAttribute(
+                                                TerrainMeshAttribute.COLOR)
+                                ),
+                                new VertexAttributeBinding(
+                                        ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
+                                        vertexFormat.getAttribute(
+                                                TerrainMeshAttribute.BLOCK_TEXTURE)
+                                ),
+                                new VertexAttributeBinding(
+                                        ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,
+                                        vertexFormat.getAttribute(
+                                                TerrainMeshAttribute.LIGHT_TEXTURE)
+                                )
+                        }
+               ))
+        );
         
         for (ChunkRenderPass renderPass : renderPassManager.getAllRenderPasses()) {
-            var vertexFormat = vertexType.getCustomVertexFormat();
-            var vertexArray = new VertexArrayDescription<>(
-                    BufferTarget.values(),
-                    List.of(new VertexArrayResourceBinding<>(
-                            BufferTarget.VERTICES,
-                            new VertexAttributeBinding[]{
-                                    new VertexAttributeBinding(
-                                            ChunkShaderBindingPoints.ATTRIBUTE_POSITION,
-                                            vertexFormat.getAttribute(TerrainMeshAttribute.POSITION)
-                                    ), new VertexAttributeBinding(
-                                    ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
-                                    vertexFormat.getAttribute(TerrainMeshAttribute.COLOR)
-                            ), new VertexAttributeBinding(
-                                    ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
-                                    vertexFormat.getAttribute(TerrainMeshAttribute.BLOCK_TEXTURE)
-                            ), new VertexAttributeBinding(
-                                    ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,
-                                    vertexFormat.getAttribute(TerrainMeshAttribute.LIGHT_TEXTURE)
-                            )
-                            }
-                    ))
-            );
-            
             var constants = getShaderConstants(renderPass, vertexType);
             
             var vertShader = ShaderParser.parseSodiumShader(
@@ -241,12 +248,10 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
             
             boolean reverseOrder = false; // TODO: fix me
             
-            for (Iterator<SortedChunkLists.Bucket> bucketIterator = chunks.sorted(reverseOrder); bucketIterator.hasNext(); )
-            {
+            for (Iterator<SortedChunkLists.Bucket> bucketIterator = chunks.sorted(reverseOrder); bucketIterator.hasNext(); ) {
                 SortedChunkLists.Bucket bucket = bucketIterator.next();
                 
-                for (Iterator<RenderSection> sectionIterator = bucket.sorted(reverseOrder); sectionIterator.hasNext(); )
-                {
+                for (Iterator<RenderSection> sectionIterator = bucket.sorted(reverseOrder); sectionIterator.hasNext(); ) {
                     RenderSection section = sectionIterator.next();
                     
                     UploadedChunkGeometry geometry = section.getGeometry();
@@ -355,9 +360,7 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
             // copy all temporary instance and command subsections to their corresponding streaming buffer sections
             int commandBufferCurrentPos = commandBufferSectionView.position();
             int instanceBufferCurrentPos = instanceBufferSectionView.position();
-            for (Iterator<RenderList<MdiChunkRenderBatch>> renderListIterator = renderLists.values()
-                                                                                           .iterator(); renderListIterator.hasNext(); )
-            {
+            for (Iterator<RenderList<MdiChunkRenderBatch>> renderListIterator = renderLists.values().iterator(); renderListIterator.hasNext(); ) {
                 RenderList<MdiChunkRenderBatch> renderList = renderListIterator.next();
                 
                 if (renderList.batches.size() <= 0) {
