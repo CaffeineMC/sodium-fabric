@@ -4,7 +4,6 @@ import java.util.Objects;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
-import net.fabricmc.loader.impl.util.version.VersionParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.Configuration;
@@ -48,9 +47,9 @@ public class SodiumPreLaunch implements PreLaunchEntrypoint {
         Version cur, min, max;
 
         try {
-            cur = VersionParser.parseSemantic(curStr);
-            min = VersionParser.parseSemantic(minStr);
-            max = VersionParser.parseSemantic(maxStr);
+            cur = Version.parse(curStr);
+            min = Version.parse(minStr);
+            max = Version.parse(maxStr);
         } catch (VersionParsingException e) {
             LOGGER.warn("Unable to parse version string", e);
             return false;
