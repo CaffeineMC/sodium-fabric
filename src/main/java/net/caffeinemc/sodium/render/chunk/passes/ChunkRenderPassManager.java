@@ -46,7 +46,14 @@ public class ChunkRenderPassManager {
             new Identifier("sodium", "translucent")
     );
     private static final ChunkRenderPass TRIPWIRE = new ChunkRenderPass(
-            PipelineDescription.defaults(),
+            PipelineDescription.builder()
+                               .setBlendFunction(BlendFunc.separate(
+                                       BlendFunc.SrcFactor.SRC_ALPHA,
+                                       BlendFunc.DstFactor.ONE_MINUS_SRC_ALPHA,
+                                       BlendFunc.SrcFactor.ONE,
+                                       BlendFunc.DstFactor.ONE_MINUS_SRC_ALPHA
+                               ))
+                               .build(),
             true,
             0.1f,
             new Identifier("sodium", "tripwire")
