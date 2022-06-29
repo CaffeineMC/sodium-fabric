@@ -407,8 +407,8 @@ public class ShaderTransformer {
         }
 
         @Override
-        public boolean isFinished() {
-            return this.found.getValue();
+        public boolean canStop() {
+            return super.canStop() && this.found.getValue();
         }
     }
 }

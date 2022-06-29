@@ -61,15 +61,16 @@ dependencies {
     includeModImplementation fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version)
     includeModImplementation fabricApi.module("fabric-resource-loader-v0", project.fabric_version)
 
-    includeImplementation "io.github.douira:glsl-transformer:0.25.2"
+    includeImplementation 'io.github.douira:glsl-transformer:0.27.0'
     includeImplementation "org.joml:joml:1.10.4"
     includeImplementation project(":components:gfx")
     includeImplementation project(":components:gfx-opengl")
 
     if (findProperty("sodium.use_third_party_mods") != "false") {
-        // lazydfu not updated yet
-//        modRuntimeOnly "maven.modrinth:lazydfu:0.1.3"
+        modRuntimeOnly "maven.modrinth:lazydfu:0.1.3"
         modRuntimeOnly "maven.modrinth:starlight:1.1.0+1.19"
+        // lithium seems to have some issues in a dev env at the moment, disable for now
+//        modRuntimeOnly "maven.modrinth:lithium:mc1.19-0.8.0"
     }
 }
 
