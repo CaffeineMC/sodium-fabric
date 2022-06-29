@@ -602,26 +602,16 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
     ) {
         StreamingBuffer.WritableSection matricesSection = this.uniformBufferCameraMatrices.getSection(frameIndex);
         long matricesPtr = MemoryUtil.memAddress(matricesSection.getView());
+    
+        renderMatrices.projection().getToAddress(matricesPtr);
+        renderMatrices.modelView().getToAddress(matricesPtr + 64);
         
-        // We write everything into a temporary buffer and check equality with the existing buffer to avoid unnecessary
-        // flushes, which require api calls.
-        try (MemoryStack memoryStack = MemoryStack.stackPush()) {
-            long tempPtr = memoryStack.nmalloc(128);
-            renderMatrices.projection().getToAddress(tempPtr);
-            renderMatrices.modelView().getToAddress(tempPtr + 64);
-            boolean equalContents = UnsafeUtil.nmemEquals(tempPtr, matricesPtr, 128);
-            
-            if (!equalContents) {
-                MemoryUtil.memCopy(tempPtr, matricesPtr, 128);
-                
-                Matrix4f mvpMatrix = new Matrix4f();
-                mvpMatrix.set(renderMatrices.projection());
-                mvpMatrix.mul(renderMatrices.modelView());
-                mvpMatrix.getToAddress(matricesPtr + 128);
-                
-                matricesSection.flushFull();
-            }
-        }
+        Matrix4f mvpMatrix = new Matrix4f();
+        mvpMatrix.set(renderMatrices.projection());
+        mvpMatrix.mul(renderMatrices.modelView());
+        mvpMatrix.getToAddress(matricesPtr + 128);
+    
+        matricesSection.flushFull();
         
         state.bindBufferBlock(
                 programInterface.uniformCameraMatrices,
@@ -632,24 +622,17 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
         
         StreamingBuffer.WritableSection fogParamsSection = this.uniformBufferFogParameters.getSection(frameIndex);
         long fogParamsPtr = MemoryUtil.memAddress(fogParamsSection.getView());
-        
-        try (MemoryStack memoryStack = MemoryStack.stackPush()) {
-            long tempPtr = memoryStack.nmalloc(28);
-            float[] paramFogColor = RenderSystem.getShaderFogColor();
-            MemoryUtil.memPutFloat(tempPtr + 0, paramFogColor[0]);
-            MemoryUtil.memPutFloat(tempPtr + 4, paramFogColor[1]);
-            MemoryUtil.memPutFloat(tempPtr + 8, paramFogColor[2]);
-            MemoryUtil.memPutFloat(tempPtr + 12, paramFogColor[3]);
-            MemoryUtil.memPutFloat(tempPtr + 16, RenderSystem.getShaderFogStart());
-            MemoryUtil.memPutFloat(tempPtr + 20, RenderSystem.getShaderFogEnd());
-            MemoryUtil.memPutInt(tempPtr + 24, RenderSystem.getShaderFogShape().getId());
-            boolean equalContents = UnsafeUtil.nmemEquals(tempPtr, fogParamsPtr, 28);
-            
-            if (!equalContents) {
-                MemoryUtil.memCopy(tempPtr, fogParamsPtr, 28);
-                fogParamsSection.flushFull();
-            }
-        }
+    
+        float[] paramFogColor = RenderSystem.getShaderFogColor();
+        MemoryUtil.memPutFloat(fogParamsPtr + 0, paramFogColor[0]);
+        MemoryUtil.memPutFloat(fogParamsPtr + 4, paramFogColor[1]);
+        MemoryUtil.memPutFloat(fogParamsPtr + 8, paramFogColor[2]);
+        MemoryUtil.memPutFloat(fogParamsPtr + 12, paramFogColor[3]);
+        MemoryUtil.memPutFloat(fogParamsPtr + 16, RenderSystem.getShaderFogStart());
+        MemoryUtil.memPutFloat(fogParamsPtr + 20, RenderSystem.getShaderFogEnd());
+        MemoryUtil.memPutInt(  fogParamsPtr + 24, RenderSystem.getShaderFogShape().getId());
+    
+        fogParamsSection.flushFull();
         
         state.bindBufferBlock(
                 programInterface.uniformFogParameters,
