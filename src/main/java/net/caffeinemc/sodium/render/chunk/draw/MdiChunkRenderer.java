@@ -144,7 +144,7 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
         this.uniformBufferCameraMatrices = new DualStreamingBuffer(
                 device,
                 uboAlignment,
-                CAMERA_MATRICES_SIZE * totalPasses,
+                MathUtil.align(CAMERA_MATRICES_SIZE, uboAlignment) * totalPasses,
                 maxInFlightFrames,
                 EnumSet.of(MappedBufferFlags.EXPLICIT_FLUSH)
         );
@@ -158,7 +158,7 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
         this.uniformBufferFogParameters = new DualStreamingBuffer(
                 device,
                 uboAlignment,
-                FOG_PARAMETERS_SIZE * totalPasses,
+                MathUtil.align(FOG_PARAMETERS_SIZE, uboAlignment) * totalPasses,
                 maxInFlightFrames,
                 EnumSet.of(MappedBufferFlags.EXPLICIT_FLUSH)
         );
