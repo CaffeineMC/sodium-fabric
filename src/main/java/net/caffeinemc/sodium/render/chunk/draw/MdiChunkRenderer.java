@@ -39,7 +39,6 @@ import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.caffeinemc.sodium.util.TextureUtil;
-import net.caffeinemc.sodium.util.UnsafeUtil;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
@@ -76,10 +75,7 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
         super(device);
         
         this.renderPassManager = renderPassManager;
-        
-        int maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
-        int uboAlignment = device.properties().values.uniformBufferOffsetAlignment;
-        
+    
         this.pipelines = new Object2ObjectOpenHashMap<>();
     
         var vertexFormat = vertexType.getCustomVertexFormat();
@@ -111,10 +107,10 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
                         }
                ))
         );
-        
+    
         for (ChunkRenderPass renderPass : renderPassManager.getAllRenderPasses()) {
             var constants = getShaderConstants(renderPass, vertexType);
-            
+    
             var vertShader = ShaderParser.parseSodiumShader(
                     ShaderLoader.MINECRAFT_ASSETS,
                     new Identifier("sodium", "terrain/terrain_opaque.vert"),
@@ -125,26 +121,30 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
                     new Identifier("sodium", "terrain/terrain_opaque.frag"),
                     constants
             );
-            
+    
             var desc = ShaderDescription.builder()
                                         .addShaderSource(ShaderType.VERTEX, vertShader)
                                         .addShaderSource(ShaderType.FRAGMENT, fragShader)
                                         .build();
-            
+    
             Program<ChunkShaderInterface> program = this.device.createProgram(desc, ChunkShaderInterface::new);
             Pipeline<ChunkShaderInterface, BufferTarget> pipeline = this.device.createPipeline(
                     renderPass.pipelineDescription(),
                     program,
                     vertexArray
             );
-            
+    
             this.pipelines.put(renderPass, pipeline);
         }
-        
+    
+        int maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
+        int uboAlignment = device.properties().values.uniformBufferOffsetAlignment;
+        int totalPasses = renderPassManager.getRenderPassCount();
+    
         this.uniformBufferCameraMatrices = new DualStreamingBuffer(
                 device,
                 uboAlignment,
-                CAMERA_MATRICES_SIZE,
+                CAMERA_MATRICES_SIZE * totalPasses,
                 maxInFlightFrames,
                 EnumSet.of(MappedBufferFlags.EXPLICIT_FLUSH)
         );
@@ -158,7 +158,7 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
         this.uniformBufferFogParameters = new DualStreamingBuffer(
                 device,
                 uboAlignment,
-                FOG_PARAMETERS_SIZE,
+                FOG_PARAMETERS_SIZE * totalPasses,
                 maxInFlightFrames,
                 EnumSet.of(MappedBufferFlags.EXPLICIT_FLUSH)
         );
@@ -600,8 +600,9 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
             PipelineState state,
             int frameIndex
     ) {
-        StreamingBuffer.WritableSection matricesSection = this.uniformBufferCameraMatrices.getSection(frameIndex);
-        long matricesPtr = MemoryUtil.memAddress(matricesSection.getView());
+        StreamingBuffer.WritableSection matricesSection = this.uniformBufferCameraMatrices.getSection(frameIndex, CAMERA_MATRICES_SIZE, true);
+        ByteBuffer matricesView = matricesSection.getView();
+        long matricesPtr = MemoryUtil.memAddress(matricesView);
     
         renderMatrices.projection().getToAddress(matricesPtr);
         renderMatrices.modelView().getToAddress(matricesPtr + 64);
@@ -610,8 +611,9 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
         mvpMatrix.set(renderMatrices.projection());
         mvpMatrix.mul(renderMatrices.modelView());
         mvpMatrix.getToAddress(matricesPtr + 128);
+        matricesView.position(matricesView.position() + CAMERA_MATRICES_SIZE);
     
-        matricesSection.flushFull();
+        matricesSection.flushPartial();
         
         state.bindBufferBlock(
                 programInterface.uniformCameraMatrices,
@@ -620,8 +622,9 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
                 matricesSection.getView().capacity()
         );
         
-        StreamingBuffer.WritableSection fogParamsSection = this.uniformBufferFogParameters.getSection(frameIndex);
-        long fogParamsPtr = MemoryUtil.memAddress(fogParamsSection.getView());
+        StreamingBuffer.WritableSection fogParamsSection = this.uniformBufferFogParameters.getSection(frameIndex, FOG_PARAMETERS_SIZE, true);
+        ByteBuffer fogParamsView = fogParamsSection.getView();
+        long fogParamsPtr = MemoryUtil.memAddress(fogParamsView);
     
         float[] paramFogColor = RenderSystem.getShaderFogColor();
         MemoryUtil.memPutFloat(fogParamsPtr + 0, paramFogColor[0]);
@@ -631,8 +634,9 @@ public class MdiChunkRenderer extends AbstractChunkRenderer {
         MemoryUtil.memPutFloat(fogParamsPtr + 16, RenderSystem.getShaderFogStart());
         MemoryUtil.memPutFloat(fogParamsPtr + 20, RenderSystem.getShaderFogEnd());
         MemoryUtil.memPutInt(  fogParamsPtr + 24, RenderSystem.getShaderFogShape().getId());
+        fogParamsView.position(fogParamsView.position() + FOG_PARAMETERS_SIZE);
     
-        fogParamsSection.flushFull();
+        fogParamsSection.flushPartial();
         
         state.bindBufferBlock(
                 programInterface.uniformFogParameters,

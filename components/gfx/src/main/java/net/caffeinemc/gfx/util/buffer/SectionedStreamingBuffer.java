@@ -97,11 +97,29 @@ public class SectionedStreamingBuffer implements StreamingBuffer {
 
     private void updateSections() {
         for (int idx = 0; idx < this.sectionCount; idx++) {
+            WritableSection prevSection = this.sections[idx];
+    
             int start = this.alignedStride * idx;
-            var view = MemoryUtil.memSlice(this.buffer.view(), start, this.sectionCapacity);
+            ByteBuffer view = MemoryUtil.memSlice(this.buffer.view(), start, this.sectionCapacity);
+            // warning: only works when updates are larger than prior
+            if (prevSection != null) {
+                view.position(prevSection.getView().position());
+            }
 
             this.sections[idx] = this.createSection(view, start);
         }
+    }
+    
+    private WritableSection getSectionUnaligned(int frameIndex) {
+        int sectionIdx = frameIndex % this.sectionCount;
+    
+        // not good, but whatever
+        if (frameIndex != this.lastFrameIdx) {
+            this.sections[sectionIdx].reset();
+            this.lastFrameIdx = frameIndex;
+        }
+    
+       return this.sections[sectionIdx];
     }
 
     /**
@@ -109,15 +127,7 @@ public class SectionedStreamingBuffer implements StreamingBuffer {
      */
     @Override
     public WritableSection getSection(int frameIndex) {
-        int sectionIdx = frameIndex % this.sectionCount;
-
-        // not good, but whatever
-        if (frameIndex != this.lastFrameIdx) {
-            this.sections[sectionIdx].reset();
-            this.lastFrameIdx = frameIndex;
-        }
-
-        WritableSection section = this.sections[sectionIdx];
+        WritableSection section = this.getSectionUnaligned(frameIndex);
 
         ByteBuffer view = section.getView();
         int alignedPosition = MathUtil.align(view.position(), this.alignment);
@@ -131,15 +141,19 @@ public class SectionedStreamingBuffer implements StreamingBuffer {
      */
     @Override
     public WritableSection getSection(int frameIndex, int extraSize, boolean copyContents) {
-        WritableSection section = this.getSection(frameIndex);
+        WritableSection section = this.getSectionUnaligned(frameIndex);
 
         // resize if needed
-        int requiredSize = section.getView().position() + extraSize;
+        ByteBuffer view = section.getView();
+        int alignedPosition = MathUtil.align(view.position(), this.alignment);
+        int requiredSize = alignedPosition + extraSize;
         boolean resized = this.resizeIfNeeded(section, requiredSize, copyContents);
 
         // need to account for if sections were updated
         if (resized) {
             section = this.getSection(frameIndex);
+        } else {
+            view.position(alignedPosition);
         }
 
         return section;
