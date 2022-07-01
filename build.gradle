@@ -66,8 +66,8 @@ dependencies {
 
     // Because we need the subprojects to be build as jars prior to their inclusion, we need to separate them to
     // order them correctly.
-    implementation(project(":components").subprojects)
-    include(project(":components").subprojects)
+    implementation project(":components").subprojects
+    include project(":components").subprojects
 
     if (findProperty("sodium.use_third_party_mods") != "false") {
         modRuntimeOnly "maven.modrinth:lazydfu:0.1.3"
