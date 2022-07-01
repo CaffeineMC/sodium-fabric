@@ -63,8 +63,11 @@ dependencies {
 
     includeImplementation 'io.github.douira:glsl-transformer:0.27.0'
     includeImplementation "org.joml:joml:1.10.4"
-    includeImplementation project(":components:gfx")
-    includeImplementation project(":components:gfx-opengl")
+
+    // Because we need the subprojects to be build as jars prior to their inclusion, we need to separate them to
+    // order them correctly.
+    implementation(project(":components").subprojects)
+    include(project(":components").subprojects)
 
     if (findProperty("sodium.use_third_party_mods") != "false") {
         modRuntimeOnly "maven.modrinth:lazydfu:0.1.3"
