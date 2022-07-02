@@ -103,7 +103,7 @@ public class RenderRegionManager {
             var geometry = result.geometry();
 
             // De-allocate all storage for the meshes we're about to replace
-            // This will allow it to be cheaply re-allocated later
+            // This will allow it to be cheaply re-allocated later (hopefully)
             render.deleteGeometry();
 
             // Only submit an upload job if there is data in the first place
