@@ -16,6 +16,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: 17
+          distribution: adopt
       - name: Build artifacts
         run: ./gradlew build -PreleaseType=stable
       - name: Upload release artifacts to GitHub
