@@ -33,4 +33,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: sodium-artifacts-${{ steps.ref.outputs.branch }}
-        path: build/libs/*.jar
+        path: build/libs/*-unstable.jar
