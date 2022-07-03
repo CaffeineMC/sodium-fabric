@@ -12,6 +12,6 @@ layout(std140, binding = 1) uniform ModelTransforms {
 };
 
 vec3 _apply_view_transform(vec3 position) {
-    ModelTransform transform = transforms[gl_BaseInstance];
+    ModelTransform transform = transforms[gl_BaseInstanceARB];
     return transform.translation + position;
 }
