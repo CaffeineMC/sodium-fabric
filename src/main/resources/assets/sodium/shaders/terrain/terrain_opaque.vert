@@ -1,4 +1,4 @@
-#version 460 core
+#version 450 core
 
 #import <sodium:include/terrain_draw.vert>
 #import <sodium:include/terrain_fog.vert>

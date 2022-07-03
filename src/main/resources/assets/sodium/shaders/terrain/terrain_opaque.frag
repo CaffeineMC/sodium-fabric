@@ -1,4 +1,4 @@
-#version 460 core
+#version 450 core
 
 #import <sodium:include/terrain_fog.frag>
 #import <sodium:include/terrain_buffers.frag>
