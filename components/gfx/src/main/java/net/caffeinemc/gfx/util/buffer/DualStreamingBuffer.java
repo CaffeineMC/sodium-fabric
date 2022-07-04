@@ -25,14 +25,13 @@ public class DualStreamingBuffer extends SectionedStreamingBuffer {
     private static Set<MappedBufferFlags> addNeededFlags(Set<MappedBufferFlags> extraFlags) {
         // client storage is added to the staging buffer because the copy will go from cpu -> gpu
         extraFlags.add(MappedBufferFlags.CLIENT_STORAGE);
-        extraFlags.add(MappedBufferFlags.EXPLICIT_FLUSH);
         return extraFlags;
     }
 
     @Override
-    public boolean resizeIfNeeded(WritableSection currentSection, int sectionCapacity, boolean copyContents) {
+    public boolean resizeIfNeeded(int sectionCapacity, boolean copyContents) {
         // don't need to copy contents of staging buffer, only the device-resident buffer
-        boolean resized = super.resizeIfNeeded(currentSection, sectionCapacity, false);
+        boolean resized = super.resizeIfNeeded(sectionCapacity, false);
         if (resized) {
             var newBuffer = this.device.createBuffer(
                     this.sectionCapacity,

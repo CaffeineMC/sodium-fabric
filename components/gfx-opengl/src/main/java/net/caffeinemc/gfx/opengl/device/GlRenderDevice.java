@@ -234,7 +234,6 @@ public class GlRenderDevice implements RenderDevice {
         GL45C.glNamedBufferStorage(handle, capacity, storage);
 
         var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | getMappedBufferAccessBits(flags);
-        // for some reason, this works but glMapNamedBuffer doesn't
         ByteBuffer mapping = GL45C.glMapNamedBufferRange(handle, 0, capacity, access);
 
         if (mapping == null) {
@@ -259,8 +258,10 @@ public class GlRenderDevice implements RenderDevice {
         // just make a temporary generic buffer
         preMapConsumer.accept(new GlBuffer(handle, capacity));
 
-        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | getMappedBufferAccessBits(flags);
-        // for some reason, this works but glMapNamedBuffer doesn't
+        // If we were to use GL_MAP_INVALIDATE_BIT on this, it would invalidate all the stuff we just wrote to it.
+        // We also need to omit GL_MAP_UNSYNCHRONIZED_BIT because we want to need for the data to finish copying before
+        // we map it.
+        var access = GL45C.GL_MAP_PERSISTENT_BIT | getMappedBufferAccessBits(flags);
         ByteBuffer mapping = GL45C.glMapNamedBufferRange(handle, 0, capacity, access);
 
         if (mapping == null) {
