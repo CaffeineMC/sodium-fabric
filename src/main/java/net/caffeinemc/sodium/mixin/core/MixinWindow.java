@@ -34,16 +34,6 @@ public class MixinWindow {
         GLFW.glfwSetErrorCallback(MixinWindow::sodium$throwGlError);
     }
 
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void init(WindowEventHandler eventHandler, MonitorTracker monitorTracker, WindowSettings settings, String videoMode, String title, CallbackInfo ci) {
-        SodiumClientMod.DEVICE = new GlRenderDevice(
-                Blaze3DPipelineManager::new,
-                new RenderConfiguration(
-                        SodiumClientMod.options().advanced.enableApiDebug
-                )
-        );
-    }
-
     private static void sodium$throwGlError(int error, long description) {
         RenderSystem.assertInInitPhase();
         String string = "GLFW error " + error + ": " + MemoryUtil.memUTF8(description);
