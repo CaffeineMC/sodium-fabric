@@ -4,6 +4,7 @@
   "sodium.option_impact.high": "High",
   "sodium.option_impact.extreme": "Extreme",
   "sodium.option_impact.varies": "Varies",
+  "sodium.option_flag.requires_game_restart": "Requires Restart",
   "sodium.options.pages.quality": "Quality",
   "sodium.options.pages.performance": "Performance",
   "sodium.options.pages.advanced": "Advanced",
@@ -64,6 +65,8 @@
   "sodium.options.use_compact_vertex_format.tooltip": "If enabled, block geometry will be stored in video memory using a more compact representation. This greatly reduces memory usage and bandwidth requirements, but may cause issues with some resource packs and graphics drivers.",
   "sodium.options.use_model_instancing.name": "Use Model Instancing",
   "sodium.options.use_model_instancing.tooltip": "If enabled, supported models will be packed into VBOs and instanced. This removes unnecessary uploads to the GPU by only sending transformations for existing vertices. This also removes many unnecessary draw calls by batching together many similar entities. This can drastically improve framerate when many entities are visible.",
+  "sodium.options.enable_api_debug.name": "Enable API Debug",
+  "sodium.options.enable_api_debug.tooltip": "If enabled, the graphics API will be placed into debug mode, which will produce more detailed and useful logs for developers. This may have some overhead when enabled, so disable it unless necessary.",
   "sodium.options.buttons.undo": "Undo",
   "sodium.options.buttons.apply": "Apply",
   "sodium.options.buttons.donate": "Buy us a coffee!"

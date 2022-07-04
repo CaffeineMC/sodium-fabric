@@ -303,6 +303,18 @@ public class UserConfigCategories {
                         .build()
                 )
                 .build());
+    
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                .setName(Text.translatable("sodium.options.enable_api_debug.name"))
+                .setTooltip(Text.translatable("sodium.options.enable_api_debug.tooltip"))
+                .setControl(TickBoxControl::new)
+                .setImpact(OptionImpact.LOW)
+                .setBinding((opts, value) -> opts.advanced.enableApiDebug = value, opts -> opts.advanced.enableApiDebug)
+                .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
+                .build()
+                )
+                .build());
 
         return new OptionPage(Text.translatable("sodium.options.pages.advanced"), ImmutableList.copyOf(groups));
     }

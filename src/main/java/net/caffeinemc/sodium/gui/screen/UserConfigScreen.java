@@ -224,6 +224,10 @@ public class UserConfigScreen extends Screen {
         if (impact != null) {
             tooltip.add(Language.getInstance().reorder(Text.translatable("sodium.options.performance_impact_string", impact.getLocalizedName()).formatted(Formatting.GRAY)));
         }
+        
+        if (option.getFlags().contains(OptionFlag.REQUIRES_GAME_RESTART)) {
+            tooltip.add(Language.getInstance().reorder(Text.translatable("sodium.option_flag.requires_game_restart").formatted(Formatting.RED)));
+        }
 
         int boxHeight = (tooltip.size() * 12) + boxPadding;
         int boxYLimit = boxY + boxHeight;

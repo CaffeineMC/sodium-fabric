@@ -46,7 +46,8 @@ public class UserConfig {
         public boolean allowDirectMemoryAccess = true;
 
         public boolean enableMemoryTracing = false;
-
+        public boolean enableApiDebug = false;
+    
         public int cpuRenderAheadLimit = 3;
     }
 

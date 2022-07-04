@@ -49,11 +49,17 @@ import org.lwjgl.system.MathUtil;
 public class GlRenderDevice implements RenderDevice {
     private final GlPipelineManager pipelineManager;
     private final RenderDeviceProperties properties;
+    private final RenderConfiguration renderConfiguration;
 
-    public GlRenderDevice(Function<RenderDeviceProperties, GlPipelineManager> pipelineManagerFactory) {
+    public GlRenderDevice(Function<RenderDeviceProperties, GlPipelineManager> pipelineManagerFactory, RenderConfiguration renderConfiguration) {
         // TODO: move this into platform code
         this.properties = getDeviceProperties();
+        this.renderConfiguration = renderConfiguration;
         this.pipelineManager = pipelineManagerFactory.apply(this.properties);
+        
+        if (renderConfiguration.apiDebug) {
+            GlDebug.enableDebugMessages();
+        }
     }
 
     private static RenderDeviceProperties getDeviceProperties() {
@@ -152,7 +158,12 @@ public class GlRenderDevice implements RenderDevice {
     public RenderDeviceProperties properties() {
         return this.properties;
     }
-
+    
+    @Override
+    public RenderConfiguration configuration() {
+        return this.renderConfiguration;
+    }
+    
     @Override
     public <PROGRAM, ARRAY extends Enum<ARRAY>> Pipeline<PROGRAM, ARRAY> createPipeline(PipelineDescription state, Program<PROGRAM> program, VertexArrayDescription<ARRAY> vertexArrayDescription) {
         var vertexArray = new GlVertexArray<>(vertexArrayDescription);
