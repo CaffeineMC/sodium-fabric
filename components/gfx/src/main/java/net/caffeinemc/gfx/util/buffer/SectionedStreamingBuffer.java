@@ -86,7 +86,6 @@ public class SectionedStreamingBuffer implements StreamingBuffer {
             this.buffer = newBuffer;
 
             this.updateSections(copyContents);
-            System.out.println("Streaming Buffer Resized.................................");
             return true;
         }
         return false;
