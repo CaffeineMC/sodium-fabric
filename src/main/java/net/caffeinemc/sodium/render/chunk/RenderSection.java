@@ -125,9 +125,7 @@ public class RenderSection {
     }
 
     public void onBuildSubmitted(CompletableFuture<?> task) {
-        if (this.rebuildTask != null) {
-            this.rebuildTask.cancel(false);
-        }
+        this.cancelRebuildTask();
 
         this.rebuildTask = task;
         this.pendingUpdate = null;

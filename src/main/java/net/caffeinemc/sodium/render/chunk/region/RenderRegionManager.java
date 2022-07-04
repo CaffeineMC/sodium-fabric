@@ -143,9 +143,9 @@ public class RenderRegionManager {
             TerrainBuildResult result = renders.next();
             RenderSection render = result.render();
 
+            // TODO: this is kinda gross, maybe find a way to make the Future dispose of the result when cancelled?
             if (render.isDisposed() || result.buildTime() <= render.getLastAcceptedBuildTime()) {
                 result.delete();
-
                 continue;
             }
 
