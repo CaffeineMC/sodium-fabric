@@ -40,6 +40,7 @@ public class SectionedStreamingBuffer implements StreamingBuffer {
 
     /**
      * WARNING: RESIZING PERSISTENT BUFFERS IS *SUPER SLOW*!!!! ONLY USE THIS METHOD IF *ABSOLUTELY NECESSARY*!!!!
+     * IT CAN CAUSE FULL PIPELINE STALLS!!!!!!!
      *
      * This method will also invalidate any existing WritableSections, so make sure none are in use before this is
      * called. All needed data associated with any sections should be flushed prior to calling this.

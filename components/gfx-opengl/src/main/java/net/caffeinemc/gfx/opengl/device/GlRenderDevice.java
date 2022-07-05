@@ -207,6 +207,7 @@ public class GlRenderDevice implements RenderDevice {
         preUnmapConsumer.accept(mapping);
 
         if (!GL45C.glUnmapNamedBuffer(handle)) {
+            // TODO: retry if this happens
             throw new RuntimeException("Failed to unmap buffer after writing data (contents corrupt?)");
         }
 
@@ -257,11 +258,15 @@ public class GlRenderDevice implements RenderDevice {
 
         // just make a temporary generic buffer
         preMapConsumer.accept(new GlBuffer(handle, capacity));
+        
+        //// Do the synchronization for the buffer ourselves
+        // TODO: add a memory barrier function to RenderDevice
+        // do we need GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT?
+        GL45C.glMemoryBarrier(GL45C.GL_BUFFER_UPDATE_BARRIER_BIT);
+        this.createFence().sync(true);
 
         // If we were to use GL_MAP_INVALIDATE_BIT on this, it would invalidate all the stuff we just wrote to it.
-        // We also need to omit GL_MAP_UNSYNCHRONIZED_BIT because we want to need for the data to finish copying before
-        // we map it.
-        var access = GL45C.GL_MAP_PERSISTENT_BIT | getMappedBufferAccessBits(flags);
+        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | getMappedBufferAccessBits(flags);
         ByteBuffer mapping = GL45C.glMapNamedBufferRange(handle, 0, capacity, access);
 
         if (mapping == null) {
