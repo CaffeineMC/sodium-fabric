@@ -1,11 +1,14 @@
 package net.caffeinemc.sodium.render.chunk.occlusion;
 
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrays;
+import it.unimi.dsi.fastutil.ints.IntIterator;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.state.ChunkGraphIterationQueue;
 import net.caffeinemc.sodium.util.DirectionUtil;
+import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
@@ -14,26 +17,26 @@ import net.minecraft.world.World;
 public class ChunkOcclusion {
     public static IntArrayList calculateVisibleSections(ChunkTree tree, Frustum frustum, World world, BlockPos origin,
                                                         int chunkViewDistance, boolean useOcclusionCulling) {
-        var queue = new ChunkGraphIterationQueue();
-        var startingNodes = ChunkOcclusion.getStartingNodes(tree, frustum, world, origin, chunkViewDistance);
+        ChunkGraphIterationQueue queue = new ChunkGraphIterationQueue();
+        IntArrayList startingNodes = ChunkOcclusion.getStartingNodes(tree, frustum, world, origin, chunkViewDistance);
 
-        for (var it = startingNodes.intIterator(); it.hasNext(); ) {
+        for (IntIterator it = startingNodes.intIterator(); it.hasNext(); ) {
             queue.enqueue(it.nextInt(), -1);
         }
-
-        var nodeVisitable = tree.findVisibleSections(frustum);
-        var nodeState = new byte[nodeVisitable.capacity()];
-
-        var visibleSections = new int[nodeVisitable.count() + startingNodes.size()];
-        var visibleSectionCount = 0;
-
-        var visibilityDataMask = useOcclusionCulling ? Integer.MAX_VALUE : 0;
+    
+        BitArray nodeVisitable = tree.findVisibleSections(frustum);
+        byte[] nodeState = new byte[nodeVisitable.capacity()];
+    
+        int[] visibleSections = new int[nodeVisitable.count() + startingNodes.size()];
+        int visibleSectionCount = 0;
+    
+        int visibilityDataMask = useOcclusionCulling ? Integer.MAX_VALUE : 0;
 
         while (!queue.isEmpty()) {
-            var index = queue.dequeIndex();
-
-            var sectionId = queue.getSectionId(index);
-            var sectionIncomingDirection = queue.getDirection(index);
+            int index = queue.dequeIndex();
+    
+            int sectionId = queue.getSectionId(index);
+            int sectionIncomingDirection = queue.getDirection(index);
 
             visibleSections[visibleSectionCount++] = sectionId;
 
@@ -44,9 +47,9 @@ public class ChunkOcclusion {
             } else {
                 visibilityData = 0;
             }
-
-            var traversalState = nodeState[sectionId];
-            var cullState = traversalState | (visibilityData & visibilityDataMask);
+    
+            byte traversalState = nodeState[sectionId];
+            int cullState = traversalState | (visibilityData & visibilityDataMask);
 
             for (int outgoingDirection = 0; outgoingDirection < DirectionUtil.COUNT; outgoingDirection++) {
                 if (hasDirection(cullState, outgoingDirection)) {
@@ -58,8 +61,8 @@ public class ChunkOcclusion {
                 if (adjacentNodeId == ChunkTree.ABSENT_VALUE || !nodeVisitable.getAndUnset(adjacentNodeId)) {
                     continue;
                 }
-
-                var reverseDirection = DirectionUtil.getOppositeId(outgoingDirection);
+    
+                int reverseDirection = DirectionUtil.getOppositeId(outgoingDirection);
                 nodeState[adjacentNodeId] = (byte) markDirection(traversalState, reverseDirection);
 
                 queue.enqueue(adjacentNodeId, reverseDirection);
@@ -80,44 +83,44 @@ public class ChunkOcclusion {
     }
 
     private static IntArrayList getStartingNodesFallback(ChunkTree tree, Frustum frustum, World world, BlockPos origin, int renderDistance) {
-        var capacity = MathHelper.square(renderDistance * 2);
-        var count = 0;
-
-        var sections = new int[capacity];
-        var distances = new float[capacity];
-
-        var chunkPos = ChunkSectionPos.from(origin);
-        var chunkX = chunkPos.getX();
-        var chunkY = MathHelper.clamp(chunkPos.getY(), world.getBottomSectionCoord(), world.getTopSectionCoord() - 1);
-        var chunkZ = chunkPos.getZ();
+        int estimatedCapacity = MathHelper.square(renderDistance * 2);
+        int count = 0;
+    
+        IntArrayList sections = new IntArrayList(estimatedCapacity);
+        FloatArrayList distances = new FloatArrayList(estimatedCapacity);
+    
+        ChunkSectionPos chunkPos = ChunkSectionPos.from(origin);
+        int chunkX = chunkPos.getX();
+        int chunkY = MathHelper.clamp(chunkPos.getY(), world.getBottomSectionCoord(), world.getTopSectionCoord() - 1);
+        int chunkZ = chunkPos.getZ();
 
         final float originX = origin.getX();
         final float originZ = origin.getZ();
 
         for (int x2 = -renderDistance; x2 <= renderDistance; ++x2) {
             for (int z2 = -renderDistance; z2 <= renderDistance; ++z2) {
-                var node = tree.getSection(chunkX + x2, chunkY, chunkZ + z2);
+                RenderSection node = tree.getSection(chunkX + x2, chunkY, chunkZ + z2);
 
                 if (node != null && node.isWithinFrustum(frustum)) {
-                    var index = count++;
-                    sections[index] = node.id();
-                    distances[index] = node.getDistance(originX, originZ);
+                    sections.add(node.id());
+                    distances.add(node.getDistance(originX, originZ));
+                    count++;
                 }
             }
         }
-
-        var sortedIndices = new int[count];
+    
+        int[] sortedIndices = new int[count];
 
         for (int i = 0; i < count; i++) {
             sortedIndices[i] = i;
         }
 
-        IntArrays.mergeSort(sortedIndices, (k1, k2) -> Float.compare(distances[k1], distances[k2]));
-
-        var sortedSections = new int[count];
+        IntArrays.mergeSort(sortedIndices, (k1, k2) -> Float.compare(distances.getFloat(k1), distances.getFloat(k2)));
+    
+        int[] sortedSections = new int[count];
 
         for (int i = 0; i < count; i++) {
-            sortedSections[i] = sections[sortedIndices[i]];
+            sortedSections[i] = sections.getInt(sortedIndices[i]);
         }
 
         return IntArrayList.wrap(sortedSections, count);
