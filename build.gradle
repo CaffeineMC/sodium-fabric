@@ -73,7 +73,7 @@ dependencies {
         modRuntimeOnly "maven.modrinth:lazydfu:0.1.3"
         modRuntimeOnly "maven.modrinth:starlight:1.1.0+1.19"
         // lithium seems to have some issues in a dev env at the moment, disable for now
-//        modRuntimeOnly "maven.modrinth:lithium:mc1.19-0.8.0"
+        modRuntimeOnly "maven.modrinth:lithium:mc1.19-0.8.0"
     }
 }
 
