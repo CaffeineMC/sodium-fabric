@@ -1,72 +1,93 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import java.util.Iterator;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.util.IteratorUtils;
 
-import java.util.Iterator;
-
 public class SortedChunkLists {
-    private final ReferenceArrayList<RenderSection> sections;
-    private final ReferenceArrayList<Bucket> buckets;
+    private final ReferenceArrayList<RegionBucket> regionBuckets;
+    private final int sectionCount;
 
-    @SuppressWarnings("unchecked")
-    public SortedChunkLists(RenderRegionManager regionManager, ReferenceArrayList<RenderSection> sortedSections) {
-        ReferenceArrayList<Bucket> bucketList = new ReferenceArrayList<>();
-        ReferenceArrayList<RenderSection>[] bucketTable = new ReferenceArrayList[regionManager.getRegionTableSize()];
-
+    public SortedChunkLists(ReferenceArrayList<RenderSection> sortedSections, RenderRegionManager regionManager) {
+        ReferenceArrayList<RegionBucket> sortedRegionBuckets = new ReferenceArrayList<>();
+        // table with efficient lookups for creation, not sorted
+        RegionBucket[] bucketTable = new RegionBucket[regionManager.getRegionTableSize()];
+        
         for (RenderSection section : sortedSections) {
-            var region = section.getRegion();
-            var list = bucketTable[region.id];
-
-            if (list == null) {
-                list = new ReferenceArrayList<>(RenderRegion.REGION_SIZE / 4);
-
-                bucketList.add(new Bucket(region, list));
-                bucketTable[region.id] = list;
+            RenderRegion region = section.getRegion();
+            if (region == null) {
+                // TODO: why was this not needed before? were we just too slow? lol
+                // I think this hits when an upload gets dispatched but isn't quite finished by the time this gets
+                // called.
+                continue;
             }
+            
+            RegionBucket bucket = bucketTable[region.id];
 
-            list.add(section);
+            if (bucket == null) {
+                bucket = new RegionBucket(region);
+                sortedRegionBuckets.add(bucket);
+                bucketTable[region.id] = bucket;
+            }
+    
+            bucket.addSection(section);
         }
 
-        this.buckets = bucketList;
-        this.sections = sortedSections;
+        this.regionBuckets = sortedRegionBuckets;
+        this.sectionCount = sortedSections.size();
     }
 
-    public void add(RenderSection render) {
-        this.sections.add(render);
+    public int getSectionCount() {
+        return this.sectionCount;
     }
 
-    public int sectionCount() {
-        return this.sections.size();
+    public int getRegionCount() {
+        return this.regionBuckets.size();
     }
 
-    public int regionCount() {
-        return this.buckets.size();
+    public Iterator<RegionBucket> sortedRegionBuckets(boolean reverse) {
+        return IteratorUtils.reversibleIterator(this.regionBuckets, reverse);
     }
 
-    public Iterator<Bucket> sorted(boolean reverse) {
-        return IteratorUtils.reversibleIterator(this.buckets, reverse);
-    }
-
-    public Iterable<Bucket> unsorted() {
-        return this.buckets;
+    public Iterable<RegionBucket> unsortedRegionBuckets() {
+        return this.regionBuckets;
     }
 
     public boolean isEmpty() {
-        return this.sections.isEmpty();
+        return this.sectionCount == 0;
     }
-
-    public record Bucket(RenderRegion region,
-                         ReferenceArrayList<RenderSection> sections) {
-        public int size() {
+    
+    public static class RegionBucket {
+        private final RenderRegion region;
+        private final ReferenceArrayList<RenderSection> sections;
+        
+        public RegionBucket(RenderRegion region) {
+            this.region = region;
+            // estimate that the region will have about 1/4 of non-empty sections
+            this.sections = new ReferenceArrayList<>(RenderRegion.REGION_SIZE / 4);
+        }
+        
+        public int sectionCount() {
             return this.sections.size();
         }
-
-        public Iterator<RenderSection> sorted(boolean reverse) {
+    
+        public RenderRegion getRegion() {
+            return this.region;
+        }
+    
+        public Iterator<RenderSection> sortedSections(boolean reverse) {
             return IteratorUtils.reversibleIterator(this.sections, reverse);
+        }
+        
+        public ReferenceArrayList<RenderSection> unsortedSections() {
+            return this.sections;
+        }
+        
+        private void addSection(RenderSection section) {
+            this.sections.add(section);
         }
     }
 }

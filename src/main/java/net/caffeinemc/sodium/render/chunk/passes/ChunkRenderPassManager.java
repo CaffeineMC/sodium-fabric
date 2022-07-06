@@ -1,13 +1,11 @@
 package net.caffeinemc.sodium.render.chunk.passes;
 
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import java.util.Collection;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceSortedMap;
 import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
 import net.caffeinemc.gfx.api.pipeline.state.BlendFunc;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.util.Identifier;
 
 /**
  * Maps vanilla render layers to render passes used by Sodium. This provides compatibility with the render layers
@@ -17,20 +15,17 @@ public class ChunkRenderPassManager {
     private static final ChunkRenderPass SOLID = new ChunkRenderPass(
             PipelineDescription.defaults(),
             true,
-            0.0f,
-            new Identifier("sodium", "solid")
+            0.0f
     );
     private static final ChunkRenderPass CUTOUT_MIPPED = new ChunkRenderPass(
             PipelineDescription.defaults(),
             true,
-            0.5f,
-            new Identifier("sodium", "cutout_mipped")
+            0.5f
     );
     private static final ChunkRenderPass CUTOUT = new ChunkRenderPass(
             PipelineDescription.defaults(),
             false,
-            0.1f,
-            new Identifier("sodium", "cutout")
+            0.1f
     );
     private static final ChunkRenderPass TRANSLUCENT = new ChunkRenderPass(
             PipelineDescription.builder()
@@ -42,8 +37,7 @@ public class ChunkRenderPassManager {
                                ))
                                .build(),
             true,
-            0.0f,
-            new Identifier("sodium", "translucent")
+            0.0f
     );
     private static final ChunkRenderPass TRIPWIRE = new ChunkRenderPass(
             PipelineDescription.builder()
@@ -55,28 +49,19 @@ public class ChunkRenderPassManager {
                                ))
                                .build(),
             true,
-            0.1f,
-            new Identifier("sodium", "tripwire")
+            0.1f
     );
     
-    private final Reference2ReferenceMap<RenderLayer, ChunkRenderPass> mappings;
+    private final Reference2ReferenceSortedMap<RenderLayer, ChunkRenderPass> layerMappings;
+    private ChunkRenderPass[] idMappings;
     
-    private ChunkRenderPassManager() {
-        this.mappings = new Reference2ReferenceOpenHashMap<>();
+    public ChunkRenderPassManager() {
+        this.layerMappings = new Reference2ReferenceLinkedOpenHashMap<>();
     }
     
     /**
-     * Note: This won't take effect until after a renderer reload.
-     */
-    public void addMapping(RenderLayer layer, ChunkRenderPass type) {
-        if (this.mappings.putIfAbsent(layer, type) != null) {
-            SodiumClientMod.logger().info("Render layer " + layer.toString() + " bound to render pass " + type);
-        }
-    }
-    
-    /**
-     * Creates a set of render pass mappings to vanilla render layers which closely mirrors the rendering behavior of
-     * vanilla.
+     * Creates a manager with a set of render pass mappings to vanilla render layers which closely mirrors the rendering
+     * behavior of vanilla.
      */
     public static ChunkRenderPassManager createDefaultMappings() {
         ChunkRenderPassManager mapper = new ChunkRenderPassManager();
@@ -89,15 +74,34 @@ public class ChunkRenderPassManager {
         return mapper;
     }
     
-    public ChunkRenderPass getRenderPassForLayer(RenderLayer layer) {
-        return this.mappings.get(layer);
+    /**
+     * Note: This won't take effect until after a renderer reload.
+     */
+    public void addMapping(RenderLayer layer, ChunkRenderPass renderPass) {
+        int nextId = this.layerMappings.size();
+        renderPass.setId(nextId);
+        
+        ChunkRenderPass oldRenderPass = this.layerMappings.put(layer, renderPass);
+        this.idMappings = this.layerMappings.values().toArray(new ChunkRenderPass[0]);
+        
+        if (oldRenderPass != null) {
+            SodiumClientMod.logger().info("Render layer %s bound to render pass %s, overriding %s".formatted(
+                    layer.toString(),
+                    renderPass,
+                    oldRenderPass
+            ));
+        }
     }
     
-    public Collection<ChunkRenderPass> getAllRenderPasses() {
-        return this.mappings.values();
+    public ChunkRenderPass getRenderPassForLayer(RenderLayer layer) {
+        return this.layerMappings.get(layer);
+    }
+    
+    public ChunkRenderPass[] getAllRenderPasses() {
+        return this.idMappings;
     }
     
     public int getRenderPassCount() {
-        return this.mappings.size();
+        return this.idMappings.length;
     }
 }

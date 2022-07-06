@@ -1,26 +1,18 @@
 package net.caffeinemc.sodium.render.chunk.state;
 
 import net.caffeinemc.sodium.render.buffer.VertexRange;
-import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 
-public final class ChunkModel {
-    private final ChunkRenderPass pass;
+public final class ChunkPassModel {
     private final VertexRange[] ranges;
-
     private final int visibilityBits;
 
-    public ChunkModel(ChunkRenderPass pass, VertexRange[] ranges) {
-        this.pass = pass;
+    public ChunkPassModel(VertexRange[] ranges) {
         this.ranges = ranges;
 
         this.visibilityBits = calculateVisibilityBits(ranges);
     }
 
-    public ChunkRenderPass getRenderPass() {
-        return this.pass;
-    }
-
-    public VertexRange[] getModelRanges() {
+    public VertexRange[] getModelParts() {
         return this.ranges;
     }
 

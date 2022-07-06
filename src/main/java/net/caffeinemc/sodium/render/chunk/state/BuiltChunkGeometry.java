@@ -3,13 +3,13 @@ package net.caffeinemc.sodium.render.chunk.state;
 import net.caffeinemc.sodium.render.buffer.VertexData;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.List;
-
 public record BuiltChunkGeometry(@Nullable VertexData vertices,
-                                 List<ChunkModel> models) {
+                                 ChunkPassModel[] models) {
+    
+    private static final ChunkPassModel[] EMPTY_MODELS = new ChunkPassModel[0];
+    
     public static BuiltChunkGeometry empty() {
-        return new BuiltChunkGeometry(null, Collections.emptyList());
+        return new BuiltChunkGeometry(null, EMPTY_MODELS);
     }
 
     public void delete() {

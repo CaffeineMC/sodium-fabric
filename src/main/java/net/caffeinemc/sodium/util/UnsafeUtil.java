@@ -17,6 +17,7 @@ public class UnsafeUtil {
     private static final int LOG2_LONG_BYTES = Integer.numberOfTrailingZeros(Long.BYTES);
     private static final int TRUNCATE_TAIL_LENGTH_MASK = -1 << LOG2_LONG_BYTES;
     private static final int TAIL_LENGTH_MASK = ~(TRUNCATE_TAIL_LENGTH_MASK);
+    private static final boolean UNSAFE_ARRAY_LENGTH = canUseUnsafeLength();
 
     private static Unsafe getUnsafe() {
         Field[] unsafeFields = Unsafe.class.getDeclaredFields();
@@ -96,6 +97,12 @@ public class UnsafeUtil {
             throw new RuntimeException(e);
         }
     }
+    
+    private static boolean canUseUnsafeLength() {
+        int magicLength = 427;
+        Object[] array = new Object[magicLength];
+        return UNSAFE.getInt(array, Unsafe.ARRAY_OBJECT_BASE_OFFSET - Integer.BYTES) == magicLength;
+    }
 
     /**
      * Compares the contents of the two buffers across a given length to see if they're equal.
@@ -159,6 +166,21 @@ public class UnsafeUtil {
         } catch (Throwable t) {
             // shouldn't ever hit
             throw new RuntimeException("Unable to compare data", t);
+        }
+    }
+    
+    public static <T> T[] shrinkArray(T[] array, int length) {
+        if (length >= array.length) {
+            return array;
+        }
+        if (UNSAFE_ARRAY_LENGTH) {
+            UNSAFE.putInt(array, Unsafe.ARRAY_OBJECT_BASE_OFFSET - Integer.BYTES, length);
+            return array;
+        } else {
+            @SuppressWarnings("unchecked")
+            T[] newArray = (T[]) new Object[length];
+            System.arraycopy(array, 0, newArray, 0, length);
+            return newArray;
         }
     }
 }
