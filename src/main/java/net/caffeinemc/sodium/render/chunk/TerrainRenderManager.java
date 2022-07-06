@@ -20,6 +20,7 @@ import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderMatrices;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderer;
 import net.caffeinemc.sodium.render.chunk.draw.MdiChunkRenderer;
+import net.caffeinemc.sodium.render.chunk.draw.MdiCountChunkRenderer;
 import net.caffeinemc.sodium.render.chunk.draw.SortedChunkLists;
 import net.caffeinemc.sodium.render.chunk.occlusion.ChunkOcclusion;
 import net.caffeinemc.sodium.render.chunk.occlusion.ChunkTree;
@@ -429,7 +430,7 @@ public class TerrainRenderManager {
 
     private static ChunkRenderer createChunkRenderer(RenderDevice device, ChunkRenderPassManager renderPassManager, TerrainVertexType vertexType) {
         if (device.properties().driverWorkarounds.forceIndirectCount) {
-            return null;//new MdiCountChunkRenderer(device, renderPassManager, vertexType);
+            return new MdiCountChunkRenderer(device, renderPassManager, vertexType);
         } else {
             return new MdiChunkRenderer(device, renderPassManager, vertexType);
         }
