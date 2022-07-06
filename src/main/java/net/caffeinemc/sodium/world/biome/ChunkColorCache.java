@@ -75,7 +75,8 @@ public class ChunkColorCache {
                 biomeData[this.indexXZ(x, z)] = this.biomeAccess.getBiome(pos.set(x + this.baseX, level + this.baseY, z + this.baseZ));
             }
         }
-
+    
+        //noinspection unchecked
         return biomeData;
     }
 

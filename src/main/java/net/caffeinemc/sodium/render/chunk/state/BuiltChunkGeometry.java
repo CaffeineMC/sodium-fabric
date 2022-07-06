@@ -6,10 +6,10 @@ import org.jetbrains.annotations.Nullable;
 public record BuiltChunkGeometry(@Nullable VertexData vertices,
                                  ChunkPassModel[] models) {
     
-    private static final ChunkPassModel[] EMPTY_MODELS = new ChunkPassModel[0];
+    private static final BuiltChunkGeometry EMPTY_INSTANCE = new BuiltChunkGeometry(null, null);
     
     public static BuiltChunkGeometry empty() {
-        return new BuiltChunkGeometry(null, EMPTY_MODELS);
+        return EMPTY_INSTANCE;
     }
 
     public void delete() {

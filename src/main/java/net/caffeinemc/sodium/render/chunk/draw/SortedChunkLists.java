@@ -18,13 +18,6 @@ public class SortedChunkLists {
         
         for (RenderSection section : sortedSections) {
             RenderRegion region = section.getRegion();
-            if (region == null) {
-                // TODO: why was this not needed before? were we just too slow? lol
-                // I think this hits when an upload gets dispatched but isn't quite finished by the time this gets
-                // called.
-                continue;
-            }
-            
             RegionBucket bucket = bucketTable[region.id];
 
             if (bucket == null) {
