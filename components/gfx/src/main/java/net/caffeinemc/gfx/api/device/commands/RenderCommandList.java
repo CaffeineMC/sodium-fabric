@@ -11,11 +11,12 @@ public interface RenderCommandList<T extends Enum<T>> {
     void bindVertexBuffer(T target, Buffer buffer, int offset, int stride);
 
     void bindCommandBuffer(Buffer buffer);
+    
+    void multiDrawElementsBaseVertex(PrimitiveType primitiveType, ElementFormat elementType, int drawCount, long indexCountsPtr, long indexOffsetsPtr, long baseVerticesPtr);
 
     void multiDrawElementsIndirect(PrimitiveType primitiveType, ElementFormat elementType, long indirectOffset, int indirectCount, int stride);
 
     // REQUIRES 4.6 OR ARB_indirect_parameters
-    // TODO: separate these into a separate class and bar them with glcaps?
 
     void bindParameterBuffer(Buffer buffer);
 

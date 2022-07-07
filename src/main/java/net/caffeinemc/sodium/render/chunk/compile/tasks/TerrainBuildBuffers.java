@@ -1,7 +1,7 @@
 package net.caffeinemc.sodium.render.chunk.compile.tasks;
 
+import net.caffeinemc.sodium.render.buffer.ModelRange;
 import net.caffeinemc.sodium.render.buffer.VertexData;
-import net.caffeinemc.sodium.render.buffer.VertexRange;
 import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.caffeinemc.sodium.render.vertex.buffer.VertexBufferBuilder;
@@ -100,7 +100,7 @@ public class TerrainBuildBuffers {
         for (int i = 0; i < buffers.length; i++) {
             VertexBufferBuilder[] sidedBuffers = buffers[i];
             
-            var ranges = new VertexRange[ChunkMeshFace.COUNT];
+            var ranges = new ModelRange[ChunkMeshFace.COUNT];
             
             for (ChunkMeshFace facing : ChunkMeshFace.VALUES) {
                 var index = facing.ordinal();
@@ -126,7 +126,7 @@ public class TerrainBuildBuffers {
                 chunkVertexBufferPosition += length;
                 
                 // convert to index count because that's the value we actually need
-                ranges[index] = new VertexRange(vertexCount, 6 * (sidedVertexCount >> 2));
+                ranges[index] = new ModelRange(vertexCount, 6 * (sidedVertexCount >> 2));
                 
                 vertexCount += sidedVertexCount;
             }

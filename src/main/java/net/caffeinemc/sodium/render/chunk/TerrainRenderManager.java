@@ -16,12 +16,7 @@ import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildTask;
-import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
-import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderMatrices;
-import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderer;
-import net.caffeinemc.sodium.render.chunk.draw.MdiChunkRenderer;
-import net.caffeinemc.sodium.render.chunk.draw.MdiCountChunkRenderer;
-import net.caffeinemc.sodium.render.chunk.draw.SortedChunkLists;
+import net.caffeinemc.sodium.render.chunk.draw.*;
 import net.caffeinemc.sodium.render.chunk.occlusion.ChunkOcclusion;
 import net.caffeinemc.sodium.render.chunk.occlusion.ChunkTree;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
@@ -46,6 +41,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 
@@ -430,9 +426,9 @@ public class TerrainRenderManager {
 
     private static ChunkRenderer createChunkRenderer(RenderDevice device, ChunkRenderPassManager renderPassManager, TerrainVertexType vertexType) {
         if (device.properties().driverWorkarounds.forceIndirectCount) {
-            return new MdiCountChunkRenderer(device, renderPassManager, vertexType);
+            return new MdbvChunkRenderer(device, renderPassManager, vertexType);
         } else {
-            return new MdiChunkRenderer(device, renderPassManager, vertexType);
+            return new MdiChunkRenderer<>(device, renderPassManager, vertexType);
         }
     }
 

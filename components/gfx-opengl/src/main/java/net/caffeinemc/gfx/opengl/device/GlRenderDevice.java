@@ -45,6 +45,7 @@ import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL43C;
 import org.lwjgl.opengl.GL45C;
 import org.lwjgl.system.MathUtil;
+import org.lwjgl.system.MemoryUtil;
 
 public class GlRenderDevice implements RenderDevice {
     private final GlPipelineManager pipelineManager;
@@ -410,6 +411,27 @@ public class GlRenderDevice implements RenderDevice {
                 this.parameterBuffer = buffer;
             }
         }
+        
+        @Override
+        public void multiDrawElementsBaseVertex(PrimitiveType primitiveType, ElementFormat elementType, int drawCount, long indexCountsPtr, long indexOffsetsPtr, long baseVerticesPtr) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.notNull(this.elementBuffer, "Element buffer target not bound");
+                Validate.noNullElements(this.vertexBuffers, "One or more vertex buffer targets are not bound");
+                Validate.isTrue(drawCount >= 0, "Draw count must be equal to or greater than 0");
+                Validate.isTrue(indexCountsPtr != MemoryUtil.NULL, "Index counts pointer is null");
+                Validate.isTrue(indexOffsetsPtr != MemoryUtil.NULL, "Index offsets pointer is null");
+                Validate.isTrue(baseVerticesPtr != MemoryUtil.NULL, "Base vertices pointer is null");
+            }
+            
+            GL45C.nglMultiDrawElementsBaseVertex(
+                    GlEnum.from(primitiveType),
+                    indexCountsPtr,
+                    GlEnum.from(elementType),
+                    indexOffsetsPtr,
+                    drawCount,
+                    baseVerticesPtr
+            );
+        }
 
         @Override
         public void multiDrawElementsIndirect(PrimitiveType primitiveType, ElementFormat elementType, long indirectOffset, int indirectCount, int stride) {
@@ -425,7 +447,13 @@ public class GlRenderDevice implements RenderDevice {
                 Validate.isTrue(stride >= 0, "Stride must be greater than or equal to 0");
             }
 
-            GL43C.glMultiDrawElementsIndirect(GlEnum.from(primitiveType), GlEnum.from(elementType), indirectOffset, indirectCount, stride);
+            GL45C.glMultiDrawElementsIndirect(
+                    GlEnum.from(primitiveType),
+                    GlEnum.from(elementType),
+                    indirectOffset,
+                    indirectCount,
+                    stride
+            );
         }
 
         @Override
@@ -433,6 +461,7 @@ public class GlRenderDevice implements RenderDevice {
             if (RenderConfiguration.API_CHECKS) {
                 Validate.notNull(this.elementBuffer, "Element buffer target not bound");
                 Validate.notNull(this.commandBuffer, "Command buffer target not bound");
+                Validate.notNull(this.parameterBuffer, "Parameter buffer target not bound");
                 Validate.noNullElements(this.vertexBuffers, "One or more vertex buffer targets are not bound");
 
                 Validate.isTrue(indirectOffset >= 0, "Command offset must be greater than or equal to zero");

@@ -63,7 +63,7 @@ public class SortedChunkLists {
             this.sections = new ReferenceArrayList<>(RenderRegion.REGION_SIZE / 4);
         }
         
-        public int sectionCount() {
+        public int getSectionCount() {
             return this.sections.size();
         }
     
