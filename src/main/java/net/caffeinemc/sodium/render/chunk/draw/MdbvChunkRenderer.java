@@ -13,6 +13,7 @@ import net.caffeinemc.gfx.api.pipeline.PipelineState;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
+import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.buffer.ModelRange;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
@@ -73,6 +74,8 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
     
         ChunkRenderPass[] chunkRenderPasses = this.renderPassManager.getAllRenderPasses();
         int totalPasses = chunkRenderPasses.length;
+        
+        boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
     
         // setup buffers, resizing as needed
         int transformsBufferPassSize = unindexedTransformsBufferSize(this.uniformBufferChunkTransforms.getAlignment(), chunks);
@@ -147,7 +150,7 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
                 
                     ModelRange[] modelParts = model.getModelParts();
                     for (int dir = 0; dir < modelParts.length; dir++) {
-                        if ((visibility & (1 << dir)) == 0) {
+                        if (useBlockFaceCulling && (visibility & (1 << dir)) == 0) {
                             continue;
                         }
                     

@@ -80,6 +80,8 @@ public class MdiCountChunkRenderer extends MdiChunkRenderer<MdiCountChunkRendere
         ChunkRenderPass[] chunkRenderPasses = this.renderPassManager.getAllRenderPasses();
         int totalPasses = chunkRenderPasses.length;
     
+        boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
+    
         // setup buffers, resizing as needed
         int commandBufferPassSize = commandBufferPassSize(this.commandBuffer.getAlignment(), chunks);
         StreamingBuffer.WritableSection commandBufferSection = this.commandBuffer.getSection(
@@ -149,7 +151,7 @@ public class MdiCountChunkRenderer extends MdiChunkRenderer<MdiCountChunkRendere
                 
                     ModelRange[] modelParts = model.getModelParts();
                     for (int dir = 0; dir < modelParts.length; dir++) {
-                        if ((visibility & (1 << dir)) == 0) {
+                        if (useBlockFaceCulling && (visibility & (1 << dir)) == 0) {
                             continue;
                         }
                     
