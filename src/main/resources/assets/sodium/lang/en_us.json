@@ -67,6 +67,13 @@
   "sodium.options.use_model_instancing.tooltip": "If enabled, supported models will be packed into VBOs and instanced. This removes unnecessary uploads to the GPU by only sending transformations for existing vertices. This also removes many unnecessary draw calls by batching together many similar entities. This can drastically improve framerate when many entities are visible.",
   "sodium.options.enable_api_debug.name": "Enable API Debug",
   "sodium.options.enable_api_debug.tooltip": "If enabled, the graphics API will be placed into debug mode, which will produce more detailed and useful logs for developers. This may have some overhead when enabled, so disable it unless necessary.",
+  "sodium.options.terrain_draw_mode.name": "Terrain Draw Mode",
+  "sodium.options.terrain_draw_mode.tooltip": "Selects the draw mode that will be used for terrain rendering.\n- Default: Attempts to select the best option for your GPU.\n- BaseVertex: Most compatible option, but consumes slightly more video memory and may be slightly slower.\n- Indirect: Fastest option for some GPUs, but may cause graphical glitches on buggy drivers.\n- IndirectCount: Slower than Indirect, but may fix graphical issues for some GPUs. (Requires OpenGL 4.6 core or ARB_indirect_parameters)",
+  "sodium.options.terrain_draw_mode.base_vertex": "BaseVertex",
+  "sodium.options.terrain_draw_mode.indirect": "Indirect",
+  "sodium.options.terrain_draw_mode.indirect_count": "IndirectCount",
+  "sodium.options.translucent_face_sorting.name": "Translucent Face Sorting",
+  "sodium.options.translucent_face_sorting.tooltip": "If enabled, translucent effects from surfaces such as stained glass and water will be applied correctly.",
   "sodium.options.buttons.undo": "Undo",
   "sodium.options.buttons.apply": "Apply",
   "sodium.options.buttons.donate": "Buy us a coffee!"

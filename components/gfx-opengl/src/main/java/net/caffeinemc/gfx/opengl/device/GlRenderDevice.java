@@ -40,9 +40,6 @@ import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.ARBIndirectParameters;
 import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL20C;
-import org.lwjgl.opengl.GL30C;
-import org.lwjgl.opengl.GL43C;
 import org.lwjgl.opengl.GL45C;
 import org.lwjgl.system.MathUtil;
 import org.lwjgl.system.MemoryUtil;
@@ -87,6 +84,11 @@ public class GlRenderDevice implements RenderDevice {
         boolean isVendorIntel = vendorName != null && vendorName.toLowerCase(Locale.ROOT).contains("intel");
         boolean hasIndirectCountSupport = glCaps.GL_ARB_indirect_parameters;
         boolean forceIndirectCount = isVendorIntel && hasIndirectCountSupport;
+        // My guess is that most devices that support 4.5 but not 4.6 likely have worse indirect performance, because
+        // they're likely more dated and have faster paths for more traditional draw calls.
+        // Because we can't query 4.6 support accurately, lets just check if it has indirect count support. That's
+        // probably a decent indicator.
+        boolean preferDirectRendering = isVendorIntel || !hasIndirectCountSupport;
 
         boolean hasShaderDrawParametersSupport = glCaps.GL_ARB_shader_draw_parameters;
 
@@ -107,6 +109,9 @@ public class GlRenderDevice implements RenderDevice {
                 ),
                 new RenderDeviceProperties.DriverWorkarounds(
                         forceIndirectCount
+                ),
+                new RenderDeviceProperties.Preferences(
+                        preferDirectRendering
                 )
         );
     }
@@ -137,7 +142,7 @@ public class GlRenderDevice implements RenderDevice {
         int handle = buffer.getHandle();
         buffer.invalidateHandle();
 
-        GL20C.glDeleteBuffers(handle);
+        GL45C.glDeleteBuffers(handle);
     }
 
     @Override
@@ -146,7 +151,7 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     private void deleteProgram0(GlProgram<?> program) {
-        GL20C.glDeleteProgram(program.getHandle());
+        GL45C.glDeleteProgram(program.getHandle());
         program.invalidateHandle();
     }
 
@@ -335,7 +340,7 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     private void deleteVertexArray0(GlVertexArray<?> array) {
-        GL30C.glDeleteVertexArrays(array.getHandle());
+        GL45C.glDeleteVertexArrays(array.getHandle());
         array.invalidateHandle();
     }
 

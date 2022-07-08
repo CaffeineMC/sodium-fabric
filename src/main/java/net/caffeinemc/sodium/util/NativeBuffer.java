@@ -88,7 +88,7 @@ public class NativeBuffer {
     
     private static final int UNNEEDED_STACK_FRAMES = 3;
     
-    private static StackWalker.StackFrame[] getStackTraceString() {
+    private static StackWalker.StackFrame[] getStackTrace() {
         if (SodiumClientMod.options().advanced.enableMemoryTracing) {
             return StackWalker.getInstance()
                               .walk(stackFrameStream -> stackFrameStream.skip(UNNEEDED_STACK_FRAMES)
@@ -125,7 +125,7 @@ public class NativeBuffer {
             throw new OutOfMemoryError("Couldn't allocate %s bytes after %s attempts".formatted(bytes, attempts));
         }
     
-        StackWalker.StackFrame[] stackTrace = getStackTraceString();
+        StackWalker.StackFrame[] stackTrace = getStackTrace();
 
         BufferReference ref = new BufferReference(address, bytes, stackTrace);
         ALLOCATED += ref.length;

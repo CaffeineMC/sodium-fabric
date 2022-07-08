@@ -8,6 +8,15 @@ import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
  */
 public interface ChunkRenderer {
     
+    /**
+     * Creates and sets the current render lists for all render passes using the given inputs.
+     * These will be used by the {@link #render(ChunkRenderPass, ChunkRenderMatrices, int) render}
+     * function until this is called again.
+     *
+     * @param chunks the list of sorted chunks to create the render lists from
+     * @param camera the camera of the player
+     * @param frameIndex  The monotonic index of the current frame being rendered
+     */
     void createRenderLists(SortedChunkLists chunks, ChunkCameraContext camera, int frameIndex);
     
     /**
@@ -30,4 +39,6 @@ public interface ChunkRenderer {
     long getDeviceUsedMemory();
     
     long getDeviceAllocatedMemory();
+    
+    String getDebugName();
 }

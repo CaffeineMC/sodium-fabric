@@ -17,6 +17,11 @@ public final class RenderDeviceProperties {
      * A list of workarounds for driver bugs/issues that should be active on the current device.
      */
     public final DriverWorkarounds driverWorkarounds;
+    
+    /**
+     * A list of preferences that this device has, including fast paths, that this device can use to perform better.
+     */
+    public final Preferences preferences;
 
     /**
      * The name of the vendor that created the renderer/device, as reported by the driver.
@@ -45,7 +50,8 @@ public final class RenderDeviceProperties {
             String apiVersion,
             Values values,
             Capabilities capabilities,
-            DriverWorkarounds driverWorkarounds
+            DriverWorkarounds driverWorkarounds,
+            Preferences preferences
     ) {
         this.vendorName = vendorName;
         this.deviceName = deviceName;
@@ -54,6 +60,7 @@ public final class RenderDeviceProperties {
         this.values = values;
         this.capabilities = capabilities;
         this.driverWorkarounds = driverWorkarounds;
+        this.preferences = preferences;
     }
 
     public static class Values {
@@ -120,6 +127,20 @@ public final class RenderDeviceProperties {
                 boolean forceIndirectCount
         ) {
             this.forceIndirectCount = forceIndirectCount;
+        }
+    }
+    
+    public static class Preferences {
+        
+        /**
+         * If true, this device performs better when using direct rendering over indirect rendering.
+         */
+        public final boolean directRendering;
+        
+        public Preferences(
+                boolean directRendering
+        ) {
+            this.directRendering = directRendering;
         }
     }
 }

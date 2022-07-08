@@ -90,7 +90,7 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
         BlittableVertexType<T> blittable = factory.asBlittable();
 
         if (blittable != null && blittable.getBufferVertexFormat() == this.getVertexFormat())  {
-            return blittable.createBufferWriter(this, SodiumClientMod.isDirectMemoryAccessEnabled());
+            return blittable.createBufferWriter(this, SodiumClientMod.options().advanced.allowDirectMemoryAccess);
         }
 
         return factory.createFallbackWriter((VertexConsumer) this);

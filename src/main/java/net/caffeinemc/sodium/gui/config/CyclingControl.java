@@ -78,6 +78,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
             this.names = names;
             this.currentIndex = 0;
 
+            // select first allowed option
             for (int i = 0; i < allowedValues.length; i++) {
                 if (allowedValues[i] == option.getValue()) {
                     this.currentIndex = i;

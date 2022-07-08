@@ -361,4 +361,9 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
                 0
         );
     }
+    
+    @Override
+    public String getDebugName() {
+        return "MDI";
+    }
 }

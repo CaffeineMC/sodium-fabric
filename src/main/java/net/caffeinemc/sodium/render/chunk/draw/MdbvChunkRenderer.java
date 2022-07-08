@@ -327,4 +327,9 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
         super.delete();
         this.freeCPUBuffers();
     }
+    
+    @Override
+    public String getDebugName() {
+        return "MDBV";
+    }
 }

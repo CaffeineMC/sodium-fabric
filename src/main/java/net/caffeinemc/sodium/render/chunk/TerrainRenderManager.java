@@ -41,7 +41,6 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 
@@ -80,6 +79,10 @@ public class TerrainRenderManager {
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
     private final boolean alwaysDeferChunkUpdates = SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
+    
+    private double lastComputeUpdateX = 0;
+    private double lastComputeUpdateY = 0;
+    private double lastComputeUpdateZ = 0;
 
     @Deprecated
     private BitArray sectionVisibility = null;
@@ -418,6 +421,7 @@ public class TerrainRenderManager {
         count += this.chunkRenderer.getDeviceBufferObjects();
 
         List<String> strings = new ArrayList<>();
+        strings.add(String.format("Chunk Renderer: %s", this.chunkRenderer.getDebugName()));
         strings.add(String.format("Device buffer objects: %d", count));
         strings.add(String.format("Device memory: %d MiB used/%d MiB alloc", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
 
@@ -425,11 +429,17 @@ public class TerrainRenderManager {
     }
 
     private static ChunkRenderer createChunkRenderer(RenderDevice device, ChunkRenderPassManager renderPassManager, TerrainVertexType vertexType) {
-        if (device.properties().driverWorkarounds.forceIndirectCount) {
-            return new MdbvChunkRenderer(device, renderPassManager, vertexType);
-        } else {
-            return new MdiChunkRenderer<>(device, renderPassManager, vertexType);
-        }
+        return switch (SodiumClientMod.options().advanced.terrainDrawMode) {
+            case DEFAULT -> device.properties().preferences.directRendering
+                            ? new MdbvChunkRenderer(device, renderPassManager, vertexType)
+                            : new MdiChunkRenderer<>(device, renderPassManager, vertexType);
+            
+            case BASEVERTEX -> new MdbvChunkRenderer(device, renderPassManager, vertexType);
+            
+            case INDIRECT -> new MdiChunkRenderer<>(device, renderPassManager, vertexType);
+            
+            case INDIRECTCOUNT -> new MdiCountChunkRenderer(device, renderPassManager, vertexType);
+        };
     }
 
     private static TerrainVertexType createVertexType() {

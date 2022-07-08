@@ -381,8 +381,8 @@ public class SodiumWorldRenderer {
     public void scheduleRebuildForChunk(int x, int y, int z, boolean important) {
         this.terrainRenderManager.scheduleRebuild(x, y, z, important);
     }
-
-    public Collection<String> getMemoryDebugStrings() {
+    
+    public Collection<String> getDebugStrings() {
         return this.terrainRenderManager.getDebugStrings();
     }
 

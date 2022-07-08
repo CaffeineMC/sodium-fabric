@@ -331,4 +331,9 @@ public class MdiCountChunkRenderer extends MdiChunkRenderer<MdiCountChunkRendere
                 0
         );
     }
+    
+    @Override
+    public String getDebugName() {
+        return "MDIC";
+    }
 }

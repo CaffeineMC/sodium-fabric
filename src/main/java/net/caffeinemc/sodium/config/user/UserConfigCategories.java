@@ -3,6 +3,7 @@ package net.caffeinemc.sodium.config.user;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.config.user.binding.compat.VanillaOptionBinding;
 import net.caffeinemc.sodium.config.user.options.OptionFlag;
 import net.caffeinemc.sodium.config.user.options.OptionGroup;
@@ -182,6 +183,15 @@ public class UserConfigCategories {
                         .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getEntityShadows()))
                         .setImpact(OptionImpact.LOW)
                         .build())
+//                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+//                        .setName(Text.translatable("sodium.options.translucent_face_sorting.name"))
+//                        .setTooltip(Text.translatable("sodium.options.translucent_face_sorting.tooltip"))
+//                        .setControl(TickBoxControl::new)
+//                        .setImpact(OptionImpact.HIGH)
+//                        .setBinding((opts, value) -> opts.quality.useTranslucentFaceSorting = value, opts -> opts.quality.useTranslucentFaceSorting)
+//                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+//                        .build()
+//                )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(Text.translatable("sodium.options.vignette.name"))
                         .setTooltip(Text.translatable("sodium.options.vignette.tooltip"))
@@ -213,7 +223,7 @@ public class UserConfigCategories {
                 .add(OptionImpl.createBuilder(int.class, sodiumOpts)
                         .setName(Text.translatable("sodium.options.chunk_update_threads.name"))
                         .setTooltip(Text.translatable("sodium.options.chunk_update_threads.tooltip"))
-                        .setControl(o -> new SliderControl(o, 0, Runtime.getRuntime().availableProcessors(), 1, ControlValueFormatter.quantityOrDisabled("threads", "Default")))
+                        .setControl(option -> new SliderControl(option, 0, Runtime.getRuntime().availableProcessors(), 1, ControlValueFormatter.quantityOrDisabled("threads", "Default")))
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.chunkBuilderThreads = value, opts -> opts.performance.chunkBuilderThreads)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -281,6 +291,24 @@ public class UserConfigCategories {
 
     public static OptionPage advanced() {
         List<OptionGroup> groups = new ArrayList<>();
+    
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(UserConfig.TerrainDrawMode.class, sodiumOpts)
+                         .setName(Text.translatable("sodium.options.terrain_draw_mode.name"))
+                         .setTooltip(Text.translatable("sodium.options.terrain_draw_mode.tooltip"))
+                         .setControl(option -> new CyclingControl<>(
+                                 option,
+                                 UserConfig.TerrainDrawMode.class,
+                                 UserConfig.TerrainDrawMode.getSupportedValues(
+                                         SodiumClientMod.DEVICE.properties()
+                                 )
+                         ))
+                         .setImpact(OptionImpact.VARIES)
+                         .setBinding((opts, value) -> opts.advanced.terrainDrawMode = value, opts -> opts.advanced.terrainDrawMode)
+                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                         .build()
+                )
+                .build());
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, sodiumOpts)
@@ -302,17 +330,14 @@ public class UserConfigCategories {
                         .setBinding((opts, value) -> opts.advanced.allowDirectMemoryAccess = value, opts -> opts.advanced.allowDirectMemoryAccess)
                         .build()
                 )
-                .build());
-    
-        groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                .setName(Text.translatable("sodium.options.enable_api_debug.name"))
-                .setTooltip(Text.translatable("sodium.options.enable_api_debug.tooltip"))
-                .setControl(TickBoxControl::new)
-                .setImpact(OptionImpact.LOW)
-                .setBinding((opts, value) -> opts.advanced.enableApiDebug = value, opts -> opts.advanced.enableApiDebug)
-                .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
-                .build()
+                         .setName(Text.translatable("sodium.options.enable_api_debug.name"))
+                         .setTooltip(Text.translatable("sodium.options.enable_api_debug.tooltip"))
+                         .setControl(TickBoxControl::new)
+                         .setImpact(OptionImpact.LOW)
+                         .setBinding((opts, value) -> opts.advanced.enableApiDebug = value, opts -> opts.advanced.enableApiDebug)
+                         .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
+                         .build()
                 )
                 .build());
 
