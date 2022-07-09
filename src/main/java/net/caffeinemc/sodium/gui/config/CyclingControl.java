@@ -3,6 +3,7 @@ package net.caffeinemc.sodium.gui.config;
 import net.caffeinemc.sodium.config.user.options.Option;
 import net.caffeinemc.sodium.config.user.options.TextProvider;
 import net.caffeinemc.sodium.interop.vanilla.math.vector.Dim2i;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.TranslatableOption;
@@ -101,7 +102,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
-                this.currentIndex = (this.option.getValue().ordinal() + 1) % this.allowedValues.length;
+                this.currentIndex = Math.floorMod(this.option.getValue().ordinal() + (Screen.hasShiftDown() ? -1 : 1), this.allowedValues.length);
                 this.option.setValue(this.allowedValues[this.currentIndex]);
                 this.playClickSound();
 
