@@ -18,13 +18,13 @@ import net.caffeinemc.gfx.util.buffer.DualStreamingBuffer;
 import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.buffer.ModelRange;
+import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
-import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -133,17 +133,20 @@ public class MdiCountChunkRenderer extends MdiChunkRenderer<MdiCountChunkRendere
             
                 for (Iterator<RenderSection> sectionIterator = regionBucket.sortedSections(reverseOrder); sectionIterator.hasNext(); ) {
                     RenderSection section = sectionIterator.next();
-                
-                    UploadedChunkGeometry geometry = section.getGeometry();
-                    if (geometry.models == null) {
+    
+                    BufferSegment uploadedSegment = section.getUploadedGeometrySegment();
+    
+                    if (uploadedSegment == null) {
                         continue;
                     }
+    
+                    ChunkPassModel[] models = section.getData().models;
+                    
+                    int baseVertex = uploadedSegment.getOffset();
                 
-                    int baseVertex = geometry.segment.getOffset();
+                    int visibility = calculateVisibilityFlags(section.getData().bounds, camera);
                 
-                    int visibility = calculateVisibilityFlags(section.getBounds(), camera);
-                
-                    ChunkPassModel model = geometry.models[passId];
+                    ChunkPassModel model = models[passId];
                 
                     if (model == null || (model.getVisibilityBits() & visibility) == 0) {
                         continue;
@@ -196,7 +199,7 @@ public class MdiCountChunkRenderer extends MdiChunkRenderer<MdiCountChunkRendere
                     transformsBufferPosition += TRANSFORM_STRUCT_STRIDE;
                     batchTransformCount++;
                 
-                    largestVertexIndex = Math.max(largestVertexIndex, geometry.segment.getLength());
+                    largestVertexIndex = Math.max(largestVertexIndex, uploadedSegment.getLength());
                 }
             
                 if (batchCommandCount == 0) {

@@ -2,10 +2,9 @@ package net.caffeinemc.sodium.render.chunk;
 
 import java.util.concurrent.CompletableFuture;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
-import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
+import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
-import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry;
+import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -25,7 +24,7 @@ public class RenderSection {
     private CompletableFuture<?> rebuildTask = null;
 
     private ChunkUpdateType pendingUpdate;
-    private UploadedChunkGeometry uploadedGeometry;
+    private BufferSegment uploadedGeometrySegment;
 
     private boolean disposed;
 
@@ -56,7 +55,7 @@ public class RenderSection {
         }
     }
 
-    public ChunkRenderData data() {
+    public ChunkRenderData getData() {
         return this.data;
     }
 
@@ -100,10 +99,6 @@ public class RenderSection {
         return this.chunkZ;
     }
 
-    public ChunkRenderBounds getBounds() {
-        return this.data.bounds;
-    }
-
     public boolean isDisposed() {
         return this.disposed;
     }
@@ -144,24 +139,24 @@ public class RenderSection {
     }
 
     public void deleteGeometry() {
-        if (this.uploadedGeometry != null) {
-            this.uploadedGeometry.delete();
-            this.uploadedGeometry = null;
+        if (this.uploadedGeometrySegment != null) {
+            this.uploadedGeometrySegment.delete();
+            this.uploadedGeometrySegment = null;
 
             this.region = null;
         }
     }
 
-    public void updateGeometry(RenderRegion region, UploadedChunkGeometry geometry) {
+    public void updateGeometry(RenderRegion region, BufferSegment segment) {
         this.deleteGeometry();
-        this.uploadedGeometry = geometry;
+        this.uploadedGeometrySegment = segment;
         this.region = region;
     }
-
-    public UploadedChunkGeometry getGeometry() {
-        return this.uploadedGeometry;
+    
+    public BufferSegment getUploadedGeometrySegment() {
+        return this.uploadedGeometrySegment;
     }
-
+    
     public int id() {
         return this.id;
     }

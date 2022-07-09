@@ -20,7 +20,6 @@ import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
-import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.IntPool;
 
@@ -74,8 +73,8 @@ public class RenderRegionManager {
             for (TerrainBuildResult result : entry.getValue()) {
                 RenderSection section = result.render();
 
-                if (section.data() != null) {
-                    callback.accept(section, section.data(), result.data());
+                if (section.getData() != null) {
+                    callback.accept(section, section.getData(), result.data());
                 }
 
                 section.setData(result.data());
@@ -132,7 +131,7 @@ public class RenderRegionManager {
 
         // Collect the upload results
         for (ChunkGeometryUpload upload : jobs) {
-            upload.section.updateGeometry(region, new UploadedChunkGeometry(upload.result.get(), upload.geometry.models()));
+            upload.section.updateGeometry(region, upload.result.get());
         }
     }
 

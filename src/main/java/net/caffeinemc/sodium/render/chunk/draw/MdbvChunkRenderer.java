@@ -15,13 +15,13 @@ import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.buffer.ModelRange;
+import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
-import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry;
 import net.caffeinemc.sodium.render.shader.ShaderConstants;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
@@ -123,17 +123,20 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
             
                 for (Iterator<RenderSection> sectionIterator = regionBucket.sortedSections(reverseOrder); sectionIterator.hasNext(); ) {
                     RenderSection section = sectionIterator.next();
-                
-                    UploadedChunkGeometry geometry = section.getGeometry();
-                    if (geometry.models == null) {
+    
+                    BufferSegment uploadedSegment = section.getUploadedGeometrySegment();
+                    
+                    if (uploadedSegment == null) {
                         continue;
                     }
+                    
+                    ChunkPassModel[] models = section.getData().models;
                 
-                    int baseVertex = geometry.segment.getOffset();
+                    int baseVertex = uploadedSegment.getOffset();
                 
-                    int visibility = calculateVisibilityFlags(section.getBounds(), camera);
+                    int visibility = calculateVisibilityFlags(section.getData().bounds, camera);
                 
-                    ChunkPassModel model = geometry.models[passId];
+                    ChunkPassModel model = models[passId];
                 
                     if (model == null || (model.getVisibilityBits() & visibility) == 0) {
                         continue;
@@ -181,7 +184,7 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
                         batchCommandCount++;
                     }
                 
-                    largestVertexIndex = Math.max(largestVertexIndex, geometry.segment.getLength());
+                    largestVertexIndex = Math.max(largestVertexIndex, uploadedSegment.getLength());
                 }
             
                 if (batchCommandCount == 0) {
@@ -270,7 +273,7 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
     
         for (SortedChunkLists.RegionBucket regionBucket : list.unsortedRegionBuckets()) {
             for (RenderSection section : regionBucket.unsortedSections()) {
-                for (ChunkPassModel model : section.getGeometry().models) {
+                for (ChunkPassModel model : section.getData().models) {
                     // each bit set represents a model, so we can just count the set bits
                     size += Integer.bitCount(model.getVisibilityBits()) * TRANSFORM_STRUCT_STRIDE;
                 }

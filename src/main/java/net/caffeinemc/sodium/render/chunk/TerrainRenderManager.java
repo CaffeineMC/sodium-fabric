@@ -79,10 +79,6 @@ public class TerrainRenderManager {
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
     private final boolean alwaysDeferChunkUpdates = SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
-    
-    private double lastComputeUpdateX = 0;
-    private double lastComputeUpdateY = 0;
-    private double lastComputeUpdateZ = 0;
 
     @Deprecated
     private BitArray sectionVisibility = null;
@@ -193,7 +189,7 @@ public class TerrainRenderManager {
 
     public Iterable<BlockEntity> getVisibleBlockEntities() {
         return () -> this.visibleBlockEntitySections.stream()
-                .flatMap(section -> Arrays.stream(section.data().blockEntities))
+                .flatMap(section -> Arrays.stream(section.getData().blockEntities))
                 .iterator();
     }
 
@@ -225,7 +221,7 @@ public class TerrainRenderManager {
             render.markForUpdate(ChunkUpdateType.INITIAL_BUILD);
         }
 
-        this.onChunkDataChanged(render, ChunkRenderData.ABSENT, render.data());
+        this.onChunkDataChanged(render, ChunkRenderData.ABSENT, render.getData());
 
         return true;
     }
@@ -243,7 +239,7 @@ public class TerrainRenderManager {
 
     public void tickVisibleRenders() {
         for (RenderSection render : this.visibleTickingSections) {
-            for (Sprite sprite : render.data().animatedSprites) {
+            for (Sprite sprite : render.getData().animatedSprites) {
                 SpriteUtil.markSpriteActive(sprite);
             }
         }
