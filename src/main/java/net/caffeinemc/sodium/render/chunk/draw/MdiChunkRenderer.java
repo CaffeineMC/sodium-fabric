@@ -58,6 +58,7 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
     @Override
     protected ShaderConstants.Builder addAdditionalShaderConstants(ShaderConstants.Builder constants) {
         constants.add("BASE_INSTANCE_INDEX");
+        constants.add("MAX_BATCH_SIZE", String.valueOf(RenderRegion.REGION_SIZE));
         return constants;
     }
 

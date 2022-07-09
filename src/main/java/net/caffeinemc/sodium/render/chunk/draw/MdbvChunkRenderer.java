@@ -22,6 +22,7 @@ import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
 import net.caffeinemc.sodium.render.chunk.state.UploadedChunkGeometry;
+import net.caffeinemc.sodium.render.shader.ShaderConstants;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.caffeinemc.sodium.util.MathUtil;
@@ -63,6 +64,12 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
         this.indexCountsBufferPtr = MemoryUtil.NULL;
         this.indexOffsetsBufferPtr = MemoryUtil.NULL;
         this.baseVerticesBufferPtr = MemoryUtil.NULL;
+    }
+    
+    @Override
+    protected ShaderConstants.Builder addAdditionalShaderConstants(ShaderConstants.Builder constants) {
+        constants.add("MAX_BATCH_SIZE", String.valueOf(RenderRegion.REGION_SIZE * ChunkMeshFace.COUNT));
+        return constants;
     }
     
     @Override
