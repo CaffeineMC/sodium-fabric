@@ -72,6 +72,10 @@ public class ChunkGeometrySorter {
     public void removeSection(RenderSection section) {
         for (int translucentPassId = 0; translucentPassId < this.translucentPasses.length; translucentPassId++) {
             int key = this.createKey(section, translucentPassId);
+            if (key >= this.nodes.length) {
+                // out of bounds, skip
+                continue;
+            }
             SortNode node = this.nodes[key];
             if (node != null) {
                 node.delete();

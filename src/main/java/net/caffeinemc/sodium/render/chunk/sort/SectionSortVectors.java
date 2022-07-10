@@ -26,6 +26,7 @@ package net.caffeinemc.sodium.render.chunk.sort;
 
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.MathHelper;
 import org.joml.Math;
 import org.joml.Vector3fc;
 
@@ -74,81 +75,58 @@ public class SectionSortVectors {
     }
     
     public boolean compareAndSet(ChunkCameraContext camera, float angleCosThreshold) {
-        float n0x = ((float) (this.blockX - camera.posX));
-        float n0y = ((float) (this.blockY - camera.posY));
-        float n0z = ((float) (this.blockZ - camera.posZ));
+        float nx0 = ((float) (this.blockX - camera.posX));
+        float nx1 = ((float) (this.blockX - camera.posX + 16.0));
         
-        float n1x = ((float) (this.blockX - camera.posX + 16.0));
-        float n1y = ((float) (this.blockY - camera.posY));
-        float n1z = ((float) (this.blockZ - camera.posZ));
+        float ny0 = ((float) (this.blockY - camera.posY));
+        float ny1 = ((float) (this.blockY - camera.posY + 16.0));
         
-        float n2x = ((float) (this.blockX - camera.posX));
-        float n2y = ((float) (this.blockY - camera.posY));
-        float n2z = ((float) (this.blockZ - camera.posZ + 16.0));
+        float nz0 = ((float) (this.blockZ - camera.posZ));
+        float nz1 = ((float) (this.blockZ - camera.posZ + 16.0));
     
-        float n3x = ((float) (this.blockX - camera.posX + 16.0));
-        float n3y = ((float) (this.blockY - camera.posY));
-        float n3z = ((float) (this.blockZ - camera.posZ + 16.0));
-        
-        float n4x = ((float) (this.blockX - camera.posX));
-        float n4y = ((float) (this.blockY - camera.posY + 16.0));
-        float n4z = ((float) (this.blockZ - camera.posZ));
-    
-        float n5x = ((float) (this.blockX - camera.posX + 16.0));
-        float n5y = ((float) (this.blockY - camera.posY + 16.0));
-        float n5z = ((float) (this.blockZ - camera.posZ));
-    
-        float n6x = ((float) (this.blockX - camera.posX));
-        float n6y = ((float) (this.blockY - camera.posY + 16.0));
-        float n6z = ((float) (this.blockZ - camera.posZ + 16.0));
-    
-        float n7x = ((float) (this.blockX - camera.posX + 16.0));
-        float n7y = ((float) (this.blockY - camera.posY + 16.0));
-        float n7z = ((float) (this.blockZ - camera.posZ + 16.0));
-        
         if (!this.hasRun ||
-            angleCos(this.c0x, this.c0y, this.c0z, n0x, n0y, n0z) < angleCosThreshold ||
-            angleCos(this.c1x, this.c1y, this.c1z, n1x, n1y, n1z) < angleCosThreshold ||
-            angleCos(this.c2x, this.c2y, this.c2z, n2x, n2y, n2z) < angleCosThreshold ||
-            angleCos(this.c3x, this.c3y, this.c3z, n3x, n3y, n3z) < angleCosThreshold ||
-            angleCos(this.c4x, this.c4y, this.c4z, n4x, n4y, n4z) < angleCosThreshold ||
-            angleCos(this.c5x, this.c5y, this.c5z, n5x, n5y, n5z) < angleCosThreshold ||
-            angleCos(this.c6x, this.c6y, this.c6z, n6x, n6y, n6z) < angleCosThreshold ||
-            angleCos(this.c7x, this.c7y, this.c7z, n7x, n7y, n7z) < angleCosThreshold) {
+            angleCos(this.c0x, this.c0y, this.c0z, nx0, ny0, nz0) < angleCosThreshold ||
+            angleCos(this.c1x, this.c1y, this.c1z, nx1, ny0, nz0) < angleCosThreshold ||
+            angleCos(this.c2x, this.c2y, this.c2z, nx0, ny0, nz1) < angleCosThreshold ||
+            angleCos(this.c3x, this.c3y, this.c3z, nx1, ny0, nz1) < angleCosThreshold ||
+            angleCos(this.c4x, this.c4y, this.c4z, nx0, ny1, nz0) < angleCosThreshold ||
+            angleCos(this.c5x, this.c5y, this.c5z, nx1, ny1, nz0) < angleCosThreshold ||
+            angleCos(this.c6x, this.c6y, this.c6z, nx0, ny1, nz1) < angleCosThreshold ||
+            angleCos(this.c7x, this.c7y, this.c7z, nx1, ny1, nz1) < angleCosThreshold) {
             
             this.hasRun = true;
             
-            this.c0x = n0x;
-            this.c0y = n0y;
-            this.c0z = n0z;
+            this.c0x = nx0;
+            this.c0y = ny0;
+            this.c0z = nz0;
 
-            this.c1x = n1x;
-            this.c1y = n1y;
-            this.c1z = n1z;
+            this.c1x = nx1;
+            this.c1y = ny0;
+            this.c1z = nz0;
 
-            this.c2x = n2x;
-            this.c2y = n2y;
-            this.c2z = n2z;
+            this.c2x = nx0;
+            this.c2y = ny0;
+            this.c2z = nz1;
 
-            this.c3x = n3x;
-            this.c3y = n3y;
-            this.c3z = n3z;
+            this.c3x = nx1;
+            this.c3y = ny0;
+            this.c3z = nz1;
 
-            this.c4x = n4x;
-            this.c4y = n4y;
-            this.c4z = n4z;
+            this.c4x = nx0;
+            this.c4y = ny1;
+            this.c4z = nz0;
 
-            this.c5x = n5x;
-            this.c5y = n5y;
-            this.c5z = n5z;
+            this.c5x = nx1;
+            this.c5y = ny1;
+            this.c5z = nz0;
 
-            this.c6x = n6x;
-            this.c6y = n6y;
-            this.c6z = n6z;
+            this.c6x = nx0;
+            this.c6y = ny1;
+            this.c6z = nz1;
 
-            this.c7x = n7x;
-            this.c7y = n7y;
-            this.c7z = n7z;
+            this.c7x = nx1;
+            this.c7y = ny1;
+            this.c7z = nz1;
             
             return true;
         }
@@ -158,12 +136,13 @@ public class SectionSortVectors {
     
     /**
      * An adaptation to JOML's {@link org.joml.Vector3f#angleCos(Vector3fc)} which has primitive
-     * inputs for inlining and auto-vectorization.
+     * inputs for inlining and auto-vectorization. It also uses fast inverse square root with a
+     * multiplication, rather than a square root and a division.
      */
     private static float angleCos(float v1x, float v1y, float v1z, float v2x, float v2y, float v2z) {
         float length1Squared = Math.fma(v1x, v1x, Math.fma(v1y, v1y, v1z * v1z));
         float length2Squared = Math.fma(v2x, v2x, Math.fma(v2y, v2y, v2z * v2z));
         float dot = Math.fma(v1x, v2x, Math.fma(v1y, v2y, v1z * v2z));
-        return dot / Math.sqrt(length1Squared * length2Squared);
+        return dot * MathHelper.fastInverseSqrt(length1Squared * length2Squared);
     }
 }
