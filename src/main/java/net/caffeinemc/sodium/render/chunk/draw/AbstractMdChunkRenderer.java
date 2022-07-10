@@ -325,6 +325,9 @@ public abstract class AbstractMdChunkRenderer<B extends AbstractMdChunkRenderer.
         for (SortedChunkLists.RegionBucket regionBucket : list.unsortedRegionBuckets()) {
             for (RenderSection section : regionBucket.unsortedSections()) {
                 for (ChunkPassModel model : section.getData().models) {
+                    if (model == null) {
+                        continue;
+                    }
                     // each bit set represents a model, so we can just count the set bits
                     faces += Integer.bitCount(model.getVisibilityBits());
                 }
