@@ -190,8 +190,6 @@ public class SodiumWorldRenderer {
         this.terrainRenderManager.updateChunks();
 
         if (this.terrainRenderManager.isGraphDirty()) {
-            profiler.swap("chunk_graph_rebuild");
-
             this.terrainRenderManager.update(new ChunkCameraContext(camera), frustum, spectator);
         }
 

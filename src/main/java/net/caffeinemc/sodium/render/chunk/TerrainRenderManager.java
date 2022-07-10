@@ -37,11 +37,13 @@ import net.caffeinemc.sodium.world.ChunkTracker;
 import net.caffeinemc.sodium.world.slice.WorldSliceData;
 import net.caffeinemc.sodium.world.slice.cloned.ClonedChunkSectionCache;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.profiler.Profiler;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 
@@ -111,7 +113,7 @@ public class TerrainRenderManager {
         this.tracker = worldRenderer.getChunkTracker();
         this.tree = new ChunkTree(4, RenderSection::new);
         
-        this.chunkGeometrySorter = new ChunkGeometrySorter(device, (float) Math.toRadians(5.0f));
+        this.chunkGeometrySorter = new ChunkGeometrySorter(device, renderPassManager, (float) Math.toRadians(5.0f));
     }
 
     public void reloadChunks(ChunkTracker tracker) {
@@ -124,8 +126,11 @@ public class TerrainRenderManager {
     }
 
     public void update(ChunkCameraContext camera, Frustum frustum, boolean spectator) {
+        Profiler profiler = MinecraftClient.getInstance().getProfiler();
+    
         this.camera = camera;
-
+    
+        profiler.swap("chunk_graph_rebuild");
         BlockPos origin = camera.getBlockPos();
         var useOcclusionCulling = !spectator || !this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin);
 
@@ -133,8 +138,10 @@ public class TerrainRenderManager {
 
         this.updateVisibilityLists(visibleSections, camera);
     
+        profiler.swap("translucency_sort");
         this.chunkGeometrySorter.sortGeometry(this.visibleMeshedSections, camera);
 
+        profiler.swap("create_render_lists");
         var chunkLists = new SortedChunkLists(this.visibleMeshedSections, this.regionManager);
         this.chunkRenderer.createRenderLists(chunkLists, camera, this.frameIndex);
         
@@ -234,8 +241,9 @@ public class TerrainRenderManager {
     }
 
     private boolean unloadSection(int x, int y, int z) {
-        RenderSection chunk = this.tree.remove(x, y, z);
-        chunk.delete();
+        RenderSection section = this.tree.remove(x, y, z);
+        this.chunkGeometrySorter.removeSection(section);
+        section.delete();
 
         return true;
     }

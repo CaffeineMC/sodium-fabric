@@ -4,10 +4,8 @@ import java.util.concurrent.CompletableFuture;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
-import net.caffeinemc.sodium.render.chunk.sort.SectionSortVectors;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.minecraft.util.math.ChunkSectionPos;
-import org.joml.Vector3f;
 
 /**
  * The render state object for a chunk section. This contains all the graphics state for each render pass along with
@@ -32,8 +30,6 @@ public class RenderSection {
 
     private int lastAcceptedBuildTime = -1;
     private int flags;
-    
-    private final SectionSortVectors sortVectors;
 
     public RenderSection(int chunkX, int chunkY, int chunkZ, int id) {
         this.chunkX = chunkX;
@@ -46,8 +42,6 @@ public class RenderSection {
 
         this.id = id;
         this.regionKey = RenderRegion.getRegionCoord(this.chunkX, this.chunkY, this.chunkZ);
-        
-        this.sortVectors = new SectionSortVectors(chunkX, chunkY, chunkZ);
     }
 
     /**
@@ -203,9 +197,5 @@ public class RenderSection {
 
     public int getFlags() {
         return this.flags;
-    }
-    
-    public SectionSortVectors getSortVectors() {
-        return this.sortVectors;
     }
 }
