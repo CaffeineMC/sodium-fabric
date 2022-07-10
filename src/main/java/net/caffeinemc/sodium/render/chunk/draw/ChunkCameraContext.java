@@ -6,7 +6,7 @@ import net.minecraft.util.math.BlockPos;
 public class ChunkCameraContext {
     public final int blockX, blockY, blockZ;
     public final float deltaX, deltaY, deltaZ;
-    public final float posX, posY, posZ;
+    public final double posX, posY, posZ;
 
     public ChunkCameraContext(double x, double y, double z) {
         this.blockX = (int) x;
@@ -18,9 +18,9 @@ public class ChunkCameraContext {
         this.deltaY = (float) Math.round((y - this.blockY) * 0x1p14f) * 0x1p-14f;
         this.deltaZ = (float) Math.round((z - this.blockZ) * 0x1p14f) * 0x1p-14f;
 
-        this.posX = (float) x;
-        this.posY = (float) y;
-        this.posZ = (float) z;
+        this.posX = x;
+        this.posY = y;
+        this.posZ = z;
     }
 
     public ChunkCameraContext(Camera camera) {

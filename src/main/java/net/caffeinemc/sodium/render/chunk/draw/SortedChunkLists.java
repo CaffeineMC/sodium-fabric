@@ -2,17 +2,18 @@ package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.util.Iterator;
+import java.util.List;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.util.IteratorUtils;
 
 public class SortedChunkLists {
-    private final ReferenceArrayList<RegionBucket> regionBuckets;
+    private final List<RegionBucket> regionBuckets;
     private final int sectionCount;
 
-    public SortedChunkLists(ReferenceArrayList<RenderSection> sortedSections, RenderRegionManager regionManager) {
-        ReferenceArrayList<RegionBucket> sortedRegionBuckets = new ReferenceArrayList<>();
+    public SortedChunkLists(List<RenderSection> sortedSections, RenderRegionManager regionManager) {
+        List<RegionBucket> sortedRegionBuckets = new ReferenceArrayList<>();
         // table with efficient lookups for creation, not sorted
         RegionBucket[] bucketTable = new RegionBucket[regionManager.getRegionTableSize()];
         
@@ -55,7 +56,7 @@ public class SortedChunkLists {
     
     public static class RegionBucket {
         private final RenderRegion region;
-        private final ReferenceArrayList<RenderSection> sections;
+        private final List<RenderSection> sections;
         
         public RegionBucket(RenderRegion region) {
             this.region = region;
@@ -75,7 +76,7 @@ public class SortedChunkLists {
             return IteratorUtils.reversibleIterator(this.sections, reverse);
         }
         
-        public ReferenceArrayList<RenderSection> unsortedSections() {
+        public List<RenderSection> unsortedSections() {
             return this.sections;
         }
         

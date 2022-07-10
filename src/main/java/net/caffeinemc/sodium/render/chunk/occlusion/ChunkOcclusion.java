@@ -94,8 +94,8 @@ public class ChunkOcclusion {
         int chunkY = MathHelper.clamp(chunkPos.getY(), world.getBottomSectionCoord(), world.getTopSectionCoord() - 1);
         int chunkZ = chunkPos.getZ();
 
-        final float originX = origin.getX();
-        final float originZ = origin.getZ();
+        final double originX = origin.getX();
+        final double originZ = origin.getZ();
 
         for (int x2 = -renderDistance; x2 <= renderDistance; ++x2) {
             for (int z2 = -renderDistance; z2 <= renderDistance; ++z2) {
@@ -103,7 +103,7 @@ public class ChunkOcclusion {
 
                 if (node != null && node.isWithinFrustum(frustum)) {
                     sections.add(node.id());
-                    distances.add(node.getDistance(originX, originZ));
+                    distances.add((float) node.getDistance(originX, originZ));
                     count++;
                 }
             }

@@ -137,14 +137,12 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
                     if (uploadedSegment == null) {
                         continue;
                     }
-    
-                    ChunkPassModel[] models = section.getData().models;
                     
                     int baseVertex = uploadedSegment.getOffset();
                 
                     int visibility = calculateVisibilityFlags(section.getData().bounds, camera);
                     
-                    ChunkPassModel model = models[passId];
+                    ChunkPassModel model = section.getData().models[passId];
                     
                     if (model == null || (model.getVisibilityBits() & visibility) == 0) {
                         continue;

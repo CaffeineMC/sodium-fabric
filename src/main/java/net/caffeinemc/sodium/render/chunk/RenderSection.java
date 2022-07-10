@@ -3,9 +3,11 @@ package net.caffeinemc.sodium.render.chunk;
 import java.util.concurrent.CompletableFuture;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
+import net.caffeinemc.sodium.render.chunk.sort.SectionSortVectors;
+import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.minecraft.util.math.ChunkSectionPos;
+import org.joml.Vector3f;
 
 /**
  * The render state object for a chunk section. This contains all the graphics state for each render pass along with
@@ -18,7 +20,7 @@ public class RenderSection {
     private RenderRegion region;
 
     private final int chunkX, chunkY, chunkZ;
-    private final float originX, originY, originZ;
+    private final double originX, originY, originZ;
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<?> rebuildTask = null;
@@ -30,6 +32,8 @@ public class RenderSection {
 
     private int lastAcceptedBuildTime = -1;
     private int flags;
+    
+    private final SectionSortVectors sortVectors;
 
     public RenderSection(int chunkX, int chunkY, int chunkZ, int id) {
         this.chunkX = chunkX;
@@ -42,6 +46,8 @@ public class RenderSection {
 
         this.id = id;
         this.regionKey = RenderRegion.getRegionCoord(this.chunkX, this.chunkY, this.chunkZ);
+        
+        this.sortVectors = new SectionSortVectors(chunkX, chunkY, chunkZ);
     }
 
     /**
@@ -161,17 +167,17 @@ public class RenderSection {
         return this.id;
     }
 
-    public float getDistance(float x, float y, float z) {
-        float xDist = x - this.originX;
-        float yDist = y - this.originY;
-        float zDist = z - this.originZ;
+    public double getDistance(double x, double y, double z) {
+        double xDist = x - this.originX;
+        double yDist = y - this.originY;
+        double zDist = z - this.originZ;
 
         return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
 
-    public float getDistance(float x, float z) {
-        float xDist = x - this.originX;
-        float zDist = z - this.originZ;
+    public double getDistance(double x, double z) {
+        double xDist = x - this.originX;
+        double zDist = z - this.originZ;
 
         return (xDist * xDist) + (zDist * zDist);
     }
@@ -185,11 +191,21 @@ public class RenderSection {
     }
 
     public boolean isWithinFrustum(Frustum frustum) {
-        return frustum.isBoxVisible(this.originX - 8.0f, this.originY - 8.0f, this.originZ - 8.0f,
-                this.originX + 8.0f, this.originY + 8.0f, this.originZ + 8.0f);
+        return frustum.isBoxVisible(
+                (float) (this.originX - 8.0),
+                (float) (this.originY - 8.0),
+                (float) (this.originZ - 8.0),
+                (float) (this.originX + 8.0),
+                (float) (this.originY + 8.0),
+                (float) (this.originZ + 8.0)
+        );
     }
 
     public int getFlags() {
         return this.flags;
+    }
+    
+    public SectionSortVectors getSortVectors() {
+        return this.sortVectors;
     }
 }

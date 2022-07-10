@@ -22,6 +22,7 @@ import net.caffeinemc.sodium.render.chunk.occlusion.ChunkTree;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
+import net.caffeinemc.sodium.render.chunk.sort.ChunkGeometrySorter;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderFlag;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
@@ -48,7 +49,7 @@ public class TerrainRenderManager {
     /**
      * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
      */
-    private static final float NEARBY_BLOCK_UPDATE_DISTANCE = 32.0f;
+    private static final double NEARBY_BLOCK_UPDATE_DISTANCE = 32.0;
 
     private final ChunkBuilder builder;
 
@@ -72,13 +73,15 @@ public class TerrainRenderManager {
 
     private ChunkCameraContext camera;
 
-    private final ReferenceArrayList<RenderSection> visibleMeshedSections = new ReferenceArrayList<>();
-    private final ReferenceArrayList<RenderSection> visibleTickingSections = new ReferenceArrayList<>();
-    private final ReferenceArrayList<RenderSection> visibleBlockEntitySections = new ReferenceArrayList<>();
+    private final List<RenderSection> visibleMeshedSections = new ReferenceArrayList<>();
+    private final List<RenderSection> visibleTickingSections = new ReferenceArrayList<>();
+    private final List<RenderSection> visibleBlockEntitySections = new ReferenceArrayList<>();
 
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
     private final boolean alwaysDeferChunkUpdates = SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
+    
+    private final ChunkGeometrySorter chunkGeometrySorter;
 
     @Deprecated
     private BitArray sectionVisibility = null;
@@ -107,6 +110,8 @@ public class TerrainRenderManager {
 
         this.tracker = worldRenderer.getChunkTracker();
         this.tree = new ChunkTree(4, RenderSection::new);
+        
+        this.chunkGeometrySorter = new ChunkGeometrySorter(device, (float) Math.toRadians(5.0f));
     }
 
     public void reloadChunks(ChunkTracker tracker) {
@@ -127,6 +132,8 @@ public class TerrainRenderManager {
         var visibleSections = ChunkOcclusion.calculateVisibleSections(this.tree, frustum, this.world, origin, this.chunkViewDistance, useOcclusionCulling);
 
         this.updateVisibilityLists(visibleSections, camera);
+    
+        this.chunkGeometrySorter.sortGeometry(this.visibleMeshedSections, camera);
 
         var chunkLists = new SortedChunkLists(this.visibleMeshedSections, this.regionManager);
         this.chunkRenderer.createRenderLists(chunkLists, camera, this.frameIndex);
