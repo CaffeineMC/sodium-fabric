@@ -1,12 +1,10 @@
 package net.caffeinemc.sodium.render.chunk.sort;
 
-import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
-import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrays;
 import java.util.Arrays;
 import java.util.List;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.sync.Fence;
-import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
@@ -16,23 +14,26 @@ import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
 public class ChunkGeometrySorter {
     private final RenderDevice device;
     private final ChunkRenderPass[] translucentPasses;
+    private final int passCount;
     
     private final float angleThreshold;
     
-    private final Long2ReferenceMap<SortNode> sortNodes;
+    private SortNode[] nodes;
     
     public ChunkGeometrySorter(RenderDevice device, ChunkRenderPassManager renderPassManager, float angleThreshold) {
         this.device = device;
         this.translucentPasses = Arrays.stream(renderPassManager.getAllRenderPasses())
                                        .filter(ChunkRenderPass::isTranslucent)
                                        .toArray(ChunkRenderPass[]::new);
+        this.passCount = this.translucentPasses.length;
         this.angleThreshold = (float) Math.cos(angleThreshold);
         // make an estimate for size based on inputs (render distance?)
-        this.sortNodes = new Long2ReferenceOpenHashMap<>();
+        this.nodes = new SortNode[4096 * this.passCount];
     }
     
     public void sortGeometry(List<RenderSection> sortedSections, ChunkCameraContext camera) {
-        for (ChunkRenderPass renderPass : this.translucentPasses) {
+        for (int translucentPassId = 0; translucentPassId < this.translucentPasses.length; translucentPassId++) {
+            ChunkRenderPass renderPass = this.translucentPasses[translucentPassId];
             int passId = renderPass.getId();
     
             for (RenderSection section : sortedSections) {
@@ -43,12 +44,8 @@ public class ChunkGeometrySorter {
                     continue;
                 }
                 
-                long key = createKey(section, passId);
-                SortNode sortNode = this.sortNodes.computeIfAbsent(key, unused -> new SortNode(
-                        section.getChunkX(),
-                        section.getChunkY(),
-                        section.getChunkZ()
-                ));
+                int key = this.createKey(section, translucentPassId);
+                SortNode sortNode = this.computeNodeIfAbsent(key, section);
     
                 if (sortNode.isProcessing()) {
                     // sort is not done, queue for later?
@@ -73,14 +70,32 @@ public class ChunkGeometrySorter {
     }
     
     public void removeSection(RenderSection section) {
-        for (ChunkRenderPass pass : this.translucentPasses) {
-            long key = createKey(section, pass.getId());
-            this.sortNodes.remove(key);
+        for (int translucentPassId = 0; translucentPassId < this.translucentPasses.length; translucentPassId++) {
+            int key = this.createKey(section, translucentPassId);
+            SortNode node = this.nodes[key];
+            if (node != null) {
+                node.delete();
+            }
+            this.nodes[key] = null;
         }
     }
     
-    private static long createKey(RenderSection section, int passId) {
-        return ((long) section.id() << 32) | passId;
+    private int createKey(RenderSection section, int passId) {
+        return (section.id() * this.passCount) + passId;
+    }
+    
+    private SortNode computeNodeIfAbsent(int key, RenderSection section) {
+        if (this.nodes.length <= key) {
+            this.nodes = ObjectArrays.grow(this.nodes, key + 1);
+        } else {
+            SortNode existingNode = this.nodes[key];
+            if(existingNode != null) {
+                return existingNode;
+            }
+        }
+        SortNode sortNode = new SortNode(section.getChunkX(), section.getChunkY(), section.getChunkZ());
+        this.nodes[key] = sortNode;
+        return sortNode;
     }
     
     public static final class SortNode {
@@ -96,6 +111,10 @@ public class ChunkGeometrySorter {
                 return false;
             }
             return !this.fence.poll();
+        }
+        
+        public void delete() {
+            this.fence.delete();
         }
         
         public SectionSortVectors getSortVectors() {
