@@ -43,10 +43,6 @@ public class ChunkGeometrySorter {
                     continue;
                 }
                 
-                if (model.getVisibilityBits() == 0) {
-                    System.out.println("BAD");
-                }
-                
                 long key = createKey(section, passId);
                 SortNode sortNode = this.sortNodes.computeIfAbsent(key, unused -> new SortNode(
                         section.getChunkX(),
