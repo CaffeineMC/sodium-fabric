@@ -131,7 +131,7 @@ public class TerrainBuildBuffers {
                 vertexCount += sidedVertexCount;
             }
             
-            if (!ArrayUtils.isEmpty(ranges)) {
+            if (Arrays.stream(ranges).anyMatch(Objects::nonNull)) {
                 models[i] = new ChunkPassModel(ranges);
             }
         }

@@ -26,7 +26,7 @@ public class ChunkGeometrySorter {
         this.translucentPasses = Arrays.stream(renderPassManager.getAllRenderPasses())
                                        .filter(ChunkRenderPass::isTranslucent)
                                        .toArray(ChunkRenderPass[]::new);
-        this.angleThreshold = angleThreshold;
+        this.angleThreshold = (float) Math.cos(angleThreshold);
         // make an estimate for size based on inputs (render distance?)
         this.sortNodes = new Long2ReferenceOpenHashMap<>();
     }
@@ -37,10 +37,14 @@ public class ChunkGeometrySorter {
     
             for (RenderSection section : sortedSections) {
                 ChunkPassModel model = section.getData().models[passId];
-                
+    
                 if (model == null) {
                     // section doesn't have a model for this render pass
                     continue;
+                }
+                
+                if (model.getVisibilityBits() == 0) {
+                    System.out.println("BAD");
                 }
                 
                 long key = createKey(section, passId);
@@ -80,7 +84,7 @@ public class ChunkGeometrySorter {
     }
     
     private static long createKey(RenderSection section, int passId) {
-        return ((long) section.id() << 32) & passId;
+        return ((long) section.id() << 32) | passId;
     }
     
     public static final class SortNode {

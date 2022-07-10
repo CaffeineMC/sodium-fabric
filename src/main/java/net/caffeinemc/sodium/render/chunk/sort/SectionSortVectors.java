@@ -28,7 +28,7 @@ public class SectionSortVectors {
         this.c7 = new Vector3f();
     }
     
-    public boolean compareAndSet(ChunkCameraContext camera, float angleThreshold) {
+    public boolean compareAndSet(ChunkCameraContext camera, float angleCosThreshold) {
         Vector3fc n0 = new Vector3f(
                 (float) (this.blockX - camera.posX),
                 (float) (this.blockY - camera.posY),
@@ -78,14 +78,14 @@ public class SectionSortVectors {
         );
         
         if (!this.hasRun ||
-            this.c0.angle(n0) > angleThreshold ||
-            this.c1.angle(n1) > angleThreshold ||
-            this.c2.angle(n2) > angleThreshold ||
-            this.c3.angle(n3) > angleThreshold ||
-            this.c4.angle(n4) > angleThreshold ||
-            this.c5.angle(n5) > angleThreshold ||
-            this.c6.angle(n6) > angleThreshold ||
-            this.c7.angle(n7) > angleThreshold) {
+            this.c0.angleCos(n0) < angleCosThreshold ||
+            this.c1.angleCos(n1) < angleCosThreshold ||
+            this.c2.angleCos(n2) < angleCosThreshold ||
+            this.c3.angleCos(n3) < angleCosThreshold ||
+            this.c4.angleCos(n4) < angleCosThreshold ||
+            this.c5.angleCos(n5) < angleCosThreshold ||
+            this.c6.angleCos(n6) < angleCosThreshold ||
+            this.c7.angleCos(n7) < angleCosThreshold) {
             
             this.hasRun = true;
             this.c0.set(n0);
