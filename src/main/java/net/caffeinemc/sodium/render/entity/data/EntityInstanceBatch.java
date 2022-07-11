@@ -102,6 +102,8 @@ public class EntityInstanceBatch {
                     }
                 }
 
+                // TODO: update with mathutil version
+                
                 // The translation of the inverse of a transform matrix is the negation of
                 // the transposed rotation times the transform of the original matrix.
                 //

@@ -25,10 +25,8 @@
 package net.caffeinemc.sodium.render.chunk.sort;
 
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
+import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.MathHelper;
-import org.joml.Math;
-import org.joml.Vector3fc;
 
 public class SectionSortVectors {
     private final double blockX, blockY, blockZ;
@@ -85,14 +83,14 @@ public class SectionSortVectors {
         float nz1 = ((float) (this.blockZ - camera.posZ + 16.0));
     
         if (!this.hasRun ||
-            angleCos(this.c0x, this.c0y, this.c0z, nx0, ny0, nz0) < angleCosThreshold ||
-            angleCos(this.c1x, this.c1y, this.c1z, nx1, ny0, nz0) < angleCosThreshold ||
-            angleCos(this.c2x, this.c2y, this.c2z, nx0, ny0, nz1) < angleCosThreshold ||
-            angleCos(this.c3x, this.c3y, this.c3z, nx1, ny0, nz1) < angleCosThreshold ||
-            angleCos(this.c4x, this.c4y, this.c4z, nx0, ny1, nz0) < angleCosThreshold ||
-            angleCos(this.c5x, this.c5y, this.c5z, nx1, ny1, nz0) < angleCosThreshold ||
-            angleCos(this.c6x, this.c6y, this.c6z, nx0, ny1, nz1) < angleCosThreshold ||
-            angleCos(this.c7x, this.c7y, this.c7z, nx1, ny1, nz1) < angleCosThreshold) {
+            MathUtil.angleCos(this.c0x, this.c0y, this.c0z, nx0, ny0, nz0) < angleCosThreshold ||
+            MathUtil.angleCos(this.c1x, this.c1y, this.c1z, nx1, ny0, nz0) < angleCosThreshold ||
+            MathUtil.angleCos(this.c2x, this.c2y, this.c2z, nx0, ny0, nz1) < angleCosThreshold ||
+            MathUtil.angleCos(this.c3x, this.c3y, this.c3z, nx1, ny0, nz1) < angleCosThreshold ||
+            MathUtil.angleCos(this.c4x, this.c4y, this.c4z, nx0, ny1, nz0) < angleCosThreshold ||
+            MathUtil.angleCos(this.c5x, this.c5y, this.c5z, nx1, ny1, nz0) < angleCosThreshold ||
+            MathUtil.angleCos(this.c6x, this.c6y, this.c6z, nx0, ny1, nz1) < angleCosThreshold ||
+            MathUtil.angleCos(this.c7x, this.c7y, this.c7z, nx1, ny1, nz1) < angleCosThreshold) {
             
             this.hasRun = true;
             
@@ -132,17 +130,5 @@ public class SectionSortVectors {
         }
         
         return false;
-    }
-    
-    /**
-     * An adaptation to JOML's {@link org.joml.Vector3f#angleCos(Vector3fc)} which has primitive
-     * inputs for inlining and auto-vectorization. It also uses fast inverse square root with a
-     * multiplication, rather than a square root and a division.
-     */
-    private static float angleCos(float v1x, float v1y, float v1z, float v2x, float v2y, float v2z) {
-        float length1Squared = Math.fma(v1x, v1x, Math.fma(v1y, v1y, v1z * v1z));
-        float length2Squared = Math.fma(v2x, v2x, Math.fma(v2y, v2y, v2z * v2z));
-        float dot = Math.fma(v1x, v2x, Math.fma(v1y, v2y, v1z * v2z));
-        return dot * MathHelper.fastInverseSqrt(length1Squared * length2Squared);
     }
 }

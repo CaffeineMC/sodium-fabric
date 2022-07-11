@@ -22,15 +22,15 @@ struct PrimitiveIndices {
     uint i3;
 };
 
+struct Primitive {
+    PrimitiveIndices indexGroup;
+    float distance;
+};
+
 struct GeometryRange {
     uint DataOffset; // Offset into the vertex buffer that this chunk section starts
     uint DataCount; // Total number of vertices in the chunk section
     uint DataIndexCount; // The count of all indicies referenced by this chunk.
-};
-
-struct IndexDistancePair {
-    IndexGroup indexGroup;
-    float distance;
 };
 
 /*
@@ -51,7 +51,7 @@ Invocation or Thread -  The smallest unit of a compute shader. There are LOCAL_S
 */
 
 layout(std430, binding = 0) uniform SortParameters {
-    mat4 mat_modelview;
+    vec4 cameraPos;
     float modelScale;
     float modelOffset;
     int indexBytes = 4;//Number of bytes referenced per array entry in regionIndex
@@ -60,33 +60,33 @@ layout(std430, binding = 0) uniform SortParameters {
     int sortHeight;
 };
 
-layout(std430, binding = 1) restrict readonly buffer region_mesh_buffer {
+layout(std430, binding = 1) restrict readonly buffer RegionMesh {
     VertexData regionMesh[];
 };
 
-layout(std430, binding = 2) coherent buffer region_index_buffer {
+layout(std430, binding = 3) restrict readonly buffer SectionGeometryRanges {
+    GeometryRange sectionGeometryRanges[];
+};
+
+layout(std430, binding = 2) coherent buffer RegionIndexBuffer {
     uint regionIndex[];
 };
 
-layout(std430, binding = 3) restrict readonly buffer chunk_sub_count {
-    GeometryRange geometryRanges[];
-};
-
-layout(std430, binding = 4) restrict readonly buffer index_offset_buffer {
+layout(std430, binding = 4) restrict readonly buffer IndexOffsets {
     int indexOffset[];
 };
 
-layout(std430, binding = 5) restrict readonly buffer index_length_buffer {
+layout(std430, binding = 5) restrict readonly buffer IndexLengths {
     int indexBytes[];
 };
 
-layout(std430, binding = 6) restrict readonly buffer vertex_offset_buffer {
+layout(std430, binding = 6) restrict readonly buffer VertexOffsets {
     int vertexOffset[];
 };
 
 
 //Workgroup memory.
-shared IndexDistancePair local_value[LOCAL_SIZE_X * 2];
+shared Primitive currentPrimitives[LOCAL_SIZE_X * 2];
 
 uint getIndexOffset(uint i) {
     return indexOffset[i] / indexBytes;
@@ -96,11 +96,11 @@ uint getIndexLength(uint i) {
     return indexBytes[i] / indicesPerPrim;
 }
 
-GeometryRange getSubInfo() {
+GeometryRange getCurrentSection() {
     return geometryRanges[gl_WorkGroupID.y];
 }
 
-vec4 unpackPos(Packed p) {
+vec4 unpackPos(VertexData p) {
     uint x = p.a_Pos1 & uint(0xFFFF);
     uint y = (p.a_Pos1 >> 16);
     uint z = p.a_Pos2 & uint(0xFFFF);
@@ -108,14 +108,14 @@ vec4 unpackPos(Packed p) {
     return vec4(x,y,z,w);
 }
 
-float getAverageDistance(IndexGroup indexGroup) {
-    ChunkMultiDrawRange subInfo = getSubInfo();
-    uint vOffset = vertexOffset[subInfo.DataOffset];
+float getAverageDistance(PrimitiveIndices indexGroup) {
+    GeometryRange currentSection = getCurrentSection();
+    uint vOffset = vertexOffset[currentSection.DataOffset];
 
     //Nvidia drivers need these variables defined before unpackPos
-    Packed rm1 = regionMesh[indexGroup.i1 + vOffset];
-    Packed rm2 = regionMesh[indexGroup.i2 + vOffset];
-    Packed rm3 = regionMesh[indexGroup.i3 + vOffset];
+    VertexData rm1 = regionMesh[indexGroup.i1 + vOffset];
+    VertexData rm2 = regionMesh[indexGroup.i2 + vOffset];
+    VertexData rm3 = regionMesh[indexGroup.i3 + vOffset];
     vec4 rawPosition1 = unpackPos(rm1);
     vec4 rawPosition2 = unpackPos(rm2);
     vec4 rawPosition3 = unpackPos(rm3);
@@ -173,10 +173,10 @@ void writeIndexGroup(uint fullIndex, IndexGroup indexGroup) {
 
 // Performs compare-and-swap over elements held in shared, workgroup-local memory
 void local_compare_and_swap(uvec2 idx){
-    if (local_value[idx.x].distance < local_value[idx.y].distance) {
-        IndexDistancePair tmp = local_value[idx.x];
-        local_value[idx.x] = local_value[idx.y];
-        local_value[idx.y] = tmp;
+    if (currentPrimitives[idx.x].distance < currentPrimitives[idx.y].distance) {
+        Primitive tmp = currentPrimitives[idx.x];
+        currentPrimitives[idx.x] = currentPrimitives[idx.y];
+        currentPrimitives[idx.y] = tmp;
     }
 }
 
@@ -280,8 +280,8 @@ void local_main(uint executionType, uint height) {
 
     // Each local worker must save two elements to local memory, as there
     // are twice as many elments as workers.
-    local_value[t*2]   = IndexDistancePair(rig1, distance1);
-    local_value[t*2+1] = IndexDistancePair(rig2, distance2);
+    currentPrimitives[t*2]   = IndexDistancePair(rig1, distance1);
+    currentPrimitives[t*2+1] = IndexDistancePair(rig2, distance2);
 
     if (executionType == LOCAL_BMS) {
         local_bms(height);
@@ -292,8 +292,8 @@ void local_main(uint executionType, uint height) {
 
     barrier();
     //Write local memory back to buffer
-    IndexGroup ig1 = local_value[t*2].indexGroup;
-    IndexGroup ig2 = local_value[t*2+1].indexGroup;
+    IndexGroup ig1 = currentPrimitives[t*2].indexGroup;
+    IndexGroup ig2 = currentPrimitives[t*2+1].indexGroup;
 
     if (fullIndex1 != DUMMY_INDEX) {
         writeIndexGroup(fullIndex1, ig1);
