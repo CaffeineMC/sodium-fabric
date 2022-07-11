@@ -65,7 +65,7 @@ public class SmoothLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction face, boolean shade) {
+    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction face, boolean shade) {
         this.updateCachedData(pos.asLong());
 
         int flags = quad.getFlags();
@@ -75,29 +75,85 @@ public class SmoothLightPipeline implements LightPipeline {
         // If the model quad is aligned to the block's face and covers it entirely, we can take a fast path and directly
         // map the corner values onto this quad's vertices. This covers most situations during rendering and provides
         // a modest speed-up.
-        if (flags == ModelQuadFlags.IS_ALIGNED) {
-            this.applyAlignedFullFace(neighborInfo, pos, face, out, flags);
+        // To match vanilla behavior, also treat the face as aligned if it is parallel and the block state is a full cube
+        if ((flags & ModelQuadFlags.IS_ALIGNED) != 0 || ((flags & ModelQuadFlags.IS_PARALLEL) != 0 && LightDataAccess.unpackFC(this.lightCache.get(pos)))) {
+            if ((flags & ModelQuadFlags.IS_PARTIAL) == 0) {
+                this.applyAlignedFullFace(neighborInfo, pos, face, out);
+            } else {
+                this.applyAlignedPartialFace(neighborInfo, quad, pos, face, out);
+            }
+        } else if ((flags & ModelQuadFlags.IS_PARALLEL) != 0) {
+            this.applyParallelFace(neighborInfo, quad, pos, face, out);
         } else {
-            this.applyComplex(neighborInfo, quad, pos, face, out, flags);
+            this.applyNonParallelFace(neighborInfo, quad, pos, face, out);
         }
 
         this.applySidedBrightness(out, face, shade);
     }
 
-    private void applySidedBrightness(QuadLightData out, Direction face, boolean shade) {
-        float brightness = this.lightCache.getWorld().getBrightness(face, shade);
-        float[] br = out.br;
+    /**
+     * Quickly calculates the light data for a full grid-aligned quad. This represents the most common case (outward
+     * facing quads on a full-block model) and avoids interpolation between neighbors as each corner will only ever
+     * have two contributing sides.
+     * Flags: IS_ALIGNED, !IS_PARTIAL
+     */
+    private void applyAlignedFullFace(AoNeighborInfo neighborInfo, BlockPos pos, Direction dir, QuadLightData out) {
+        AoFaceData faceData = this.getCachedFaceData(pos, dir, true);
+        neighborInfo.mapCorners(faceData.lm, faceData.ao, out.lm, out.br);
+    }
 
-        for (int i = 0; i < br.length; i++) {
-            br[i] *= brightness;
+    /**
+     * Calculates the light data for a grid-aligned quad that does not cover the entire block volume's face.
+     * Flags: IS_ALIGNED, IS_PARTIAL
+     */
+    private void applyAlignedPartialFace(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, Direction dir, QuadLightData out) {
+        for (int i = 0; i < 4; i++) {
+            // Clamp the vertex positions to the block's boundaries to prevent weird errors in lighting
+            float cx = clamp(quad.getX(i));
+            float cy = clamp(quad.getY(i));
+            float cz = clamp(quad.getZ(i));
+
+            float[] weights = this.weights;
+            neighborInfo.calculateCornerWeights(cx, cy, cz, weights);
+            this.applyAlignedPartialFaceVertex(pos, dir, weights, i, out, true);
         }
     }
 
-    private void applyComplex(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, Direction dir, QuadLightData out, int flags) {
-        // If the model quad is aligned to the block face, use the corner blocks above this face
-        // TODO: is this correct for outset faces? do we even handle that case at all?
-        boolean offset = ModelQuadFlags.contains(flags, ModelQuadFlags.IS_ALIGNED);
+    /**
+     * This method is the same as {@link #applyNonParallelFace(AoNeighborInfo, ModelQuadView, BlockPos, Direction,
+     * QuadLightData)} but with the check for a depth of approximately 0 removed. If the quad is parallel but not
+     * aligned, all of its vertices will have the same depth and this depth must be approximately greater than 0,
+     * meaning the check for 0 will always return false.
+     * Flags: !IS_ALIGNED, IS_PARALLEL
+     */
+    private void applyParallelFace(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, Direction dir, QuadLightData out) {
+        for (int i = 0; i < 4; i++) {
+            // Clamp the vertex positions to the block's boundaries to prevent weird errors in lighting
+            float cx = clamp(quad.getX(i));
+            float cy = clamp(quad.getY(i));
+            float cz = clamp(quad.getZ(i));
 
+            float[] weights = this.weights;
+            neighborInfo.calculateCornerWeights(cx, cy, cz, weights);
+
+            float depth = neighborInfo.getDepth(cx, cy, cz);
+
+            // If the quad is approximately grid-aligned (not inset) to the other side of the block, avoid unnecessary
+            // computation by treating it is as aligned
+            if (MathHelper.approximatelyEquals(depth, 1.0F)) {
+                this.applyAlignedPartialFaceVertex(pos, dir, weights, i, out, false);
+            } else {
+                // Blend the occlusion factor between the blocks directly beside this face and the blocks above it
+                // based on how inset the face is. This fixes a few issues with blocks such as farmland and paths.
+                this.applyInsetPartialFaceVertex(pos, dir, depth, 1.0f - depth, weights, i, out);
+            }
+        }
+    }
+
+    /**
+     * Flags: !IS_ALIGNED, !IS_PARALLEL
+     */
+    private void applyNonParallelFace(AoNeighborInfo neighborInfo, ModelQuadView quad, BlockPos pos, Direction dir, QuadLightData out) {
         for (int i = 0; i < 4; i++) {
             // Clamp the vertex positions to the block's boundaries to prevent weird errors in lighting
             float cx = clamp(quad.getX(i));
@@ -111,43 +167,18 @@ public class SmoothLightPipeline implements LightPipeline {
 
             // If the quad is approximately grid-aligned (not inset), avoid unnecessary computation by treating it is as aligned
             if (MathHelper.approximatelyEquals(depth, 0.0F)) {
-                this.applyAlignedPartialFace(pos, dir, weights, i, out, offset);
+                this.applyAlignedPartialFaceVertex(pos, dir, weights, i, out, true);
             } else if (MathHelper.approximatelyEquals(depth, 1.0F)) {
-                this.applyAlignedPartialFace(pos, dir, weights, i, out, offset);
+                this.applyAlignedPartialFaceVertex(pos, dir, weights, i, out, false);
             } else {
                 // Blend the occlusion factor between the blocks directly beside this face and the blocks above it
                 // based on how inset the face is. This fixes a few issues with blocks such as farmland and paths.
-                this.applyInsetPartialFace(pos, dir, depth, 1.0f - depth, weights, i, out);
+                this.applyInsetPartialFaceVertex(pos, dir, depth, 1.0f - depth, weights, i, out);
             }
         }
     }
 
-    private void applyInsetPartialFace(BlockPos pos, Direction dir, float n1d, float n2d, float[] w, int i, QuadLightData out) {
-        AoFaceData n1 = this.getCachedFaceData(pos, dir, false);
-
-        if (!n1.hasUnpackedLightData()) {
-            n1.unpackLightData();
-        }
-
-        AoFaceData n2 = this.getCachedFaceData(pos, dir, true);
-
-        if (!n2.hasUnpackedLightData()) {
-            n2.unpackLightData();
-        }
-
-        // Blend between the direct neighobors and above based on the passed weights
-        float ao = (n1.getBlendedShade(w) * n1d) + (n2.getBlendedShade(w) * n2d);
-        float sl = (n1.getBlendedSkyLight(w) * n1d) + (n2.getBlendedSkyLight(w) * n2d);
-        float bl = (n1.getBlendedBlockLight(w) * n1d) + (n2.getBlendedBlockLight(w) * n2d);
-
-        out.br[i] = ao;
-        out.lm[i] = getLightMapCoord(sl, bl);
-    }
-
-    /**
-     * Calculates the light data for a grid-aligned quad that does not cover the entire block volume's face.
-     */
-    private void applyAlignedPartialFace(BlockPos pos, Direction dir, float[] w, int i, QuadLightData out, boolean offset) {
+    private void applyAlignedPartialFaceVertex(BlockPos pos, Direction dir, float[] w, int i, QuadLightData out, boolean offset) {
         AoFaceData faceData = this.getCachedFaceData(pos, dir, offset);
 
         if (!faceData.hasUnpackedLightData()) {
@@ -162,14 +193,35 @@ public class SmoothLightPipeline implements LightPipeline {
         out.lm[i] = getLightMapCoord(sl, bl);
     }
 
-    /**
-     * Quickly calculates the light data for a full grid-aligned quad. This represents the most common case (outward
-     * facing quads on a full-block model) and avoids interpolation between neighbors as each corner will only ever
-     * have two contributing sides.
-     */
-    private void applyAlignedFullFace(AoNeighborInfo neighborInfo, BlockPos pos, Direction dir, QuadLightData out, int flags) {
-        AoFaceData faceData = this.getCachedFaceData(pos, dir, ModelQuadFlags.contains(flags, ModelQuadFlags.IS_ALIGNED));
-        neighborInfo.mapCorners(faceData.lm, faceData.ao, out.lm, out.br);
+    private void applyInsetPartialFaceVertex(BlockPos pos, Direction dir, float n1d, float n2d, float[] w, int i, QuadLightData out) {
+        AoFaceData n1 = this.getCachedFaceData(pos, dir, false);
+
+        if (!n1.hasUnpackedLightData()) {
+            n1.unpackLightData();
+        }
+
+        AoFaceData n2 = this.getCachedFaceData(pos, dir, true);
+
+        if (!n2.hasUnpackedLightData()) {
+            n2.unpackLightData();
+        }
+
+        // Blend between the direct neighbors and above based on the passed weights
+        float ao = (n1.getBlendedShade(w) * n1d) + (n2.getBlendedShade(w) * n2d);
+        float sl = (n1.getBlendedSkyLight(w) * n1d) + (n2.getBlendedSkyLight(w) * n2d);
+        float bl = (n1.getBlendedBlockLight(w) * n1d) + (n2.getBlendedBlockLight(w) * n2d);
+
+        out.br[i] = ao;
+        out.lm[i] = getLightMapCoord(sl, bl);
+    }
+
+    private void applySidedBrightness(QuadLightData out, Direction face, boolean shade) {
+        float brightness = this.lightCache.getWorld().getBrightness(face, shade);
+        float[] br = out.br;
+
+        for (int i = 0; i < br.length; i++) {
+            br[i] *= brightness;
+        }
     }
 
     /**
