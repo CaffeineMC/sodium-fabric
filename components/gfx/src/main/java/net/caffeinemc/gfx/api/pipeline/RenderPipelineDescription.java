@@ -8,13 +8,13 @@ import net.caffeinemc.gfx.api.pipeline.state.WriteMask;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 
-public class PipelineDescription {
+public class RenderPipelineDescription {
     public final CullMode cullMode;
     @Nullable public final BlendFunc blendFunc;
     public final DepthFunc depthFunc;
     public final WriteMask writeMask;
 
-    private PipelineDescription(CullMode cullMode, @Nullable BlendFunc blendFunc, DepthFunc depthFunc, WriteMask writeMask) {
+    private RenderPipelineDescription(CullMode cullMode, @Nullable BlendFunc blendFunc, DepthFunc depthFunc, WriteMask writeMask) {
         this.cullMode = Validate.notNull(cullMode);
         this.blendFunc = blendFunc;
         this.depthFunc = Validate.notNull(depthFunc);
@@ -25,7 +25,7 @@ public class PipelineDescription {
         return new Builder();
     }
 
-    public static PipelineDescription defaults() {
+    public static RenderPipelineDescription defaults() {
         return builder().build();
     }
 
@@ -33,7 +33,7 @@ public class PipelineDescription {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
-        PipelineDescription that = (PipelineDescription) o;
+        RenderPipelineDescription that = (RenderPipelineDescription) o;
         return this.cullMode == that.cullMode &&
                 Objects.equals(this.blendFunc, that.blendFunc) &&
                 this.depthFunc == that.depthFunc &&
@@ -71,9 +71,9 @@ public class PipelineDescription {
             return this;
         }
 
-        public PipelineDescription build() {
-            return new PipelineDescription(this.cullMode, this.blendFunc,
-                    this.depthFunc, this.writeMask);
+        public RenderPipelineDescription build() {
+            return new RenderPipelineDescription(this.cullMode, this.blendFunc,
+                                                 this.depthFunc, this.writeMask);
         }
     }
 }

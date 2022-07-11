@@ -10,7 +10,7 @@ import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.device.commands.RenderCommandList;
-import net.caffeinemc.gfx.api.pipeline.Pipeline;
+import net.caffeinemc.gfx.api.pipeline.RenderPipeline;
 import net.caffeinemc.gfx.api.pipeline.PipelineState;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
@@ -298,7 +298,7 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
             ChunkRenderPass renderPass,
             ChunkRenderMatrices matrices,
             int frameIndex,
-            Pipeline<ChunkShaderInterface, BufferTarget> pipeline,
+            RenderPipeline<ChunkShaderInterface, BufferTarget> renderPipeline,
             RenderCommandList<BufferTarget> commandList,
             ChunkShaderInterface programInterface,
             PipelineState pipelineState
@@ -307,7 +307,7 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
                 renderPass,
                 matrices,
                 frameIndex,
-                pipeline,
+                renderPipeline,
                 commandList,
                 programInterface,
                 pipelineState
@@ -321,7 +321,7 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
             ChunkRenderPass renderPass,
             ChunkRenderMatrices matrices,
             int frameIndex,
-            Pipeline<ChunkShaderInterface, BufferTarget> pipeline,
+            RenderPipeline<ChunkShaderInterface, BufferTarget> renderPipeline,
             RenderCommandList<BufferTarget> commandList,
             ChunkShaderInterface programInterface,
             PipelineState pipelineState,
@@ -331,7 +331,7 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
                 renderPass,
                 matrices,
                 frameIndex,
-                pipeline,
+                renderPipeline,
                 commandList,
                 programInterface,
                 pipelineState,
@@ -351,7 +351,7 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
             ChunkRenderPass renderPass,
             ChunkRenderMatrices matrices,
             int frameIndex,
-            Pipeline<ChunkShaderInterface, BufferTarget> pipeline,
+            RenderPipeline<ChunkShaderInterface, BufferTarget> renderPipeline,
             RenderCommandList<BufferTarget> commandList,
             ChunkShaderInterface programInterface,
             PipelineState pipelineState,

@@ -3,26 +3,12 @@
 #define DUMMY_INDEX 10000000
 #define DUMMY_DISTANCE -1000000
 
-//These constants must match the definitions in me.jellysquid.mods.sodium.client.render.chunk.shader.ComputeshaderInterface
-#define LOCAL_SIZE_X 1024
-#define LOCAL_BMS 0
-#define LOCAL_DISPERSE 1
-#define GLOBAL_FLIP 2
-#define GLOBAL_DISPERSE 3
-
 #import <sodium:include/terrain_draw.vert>
 
 layout(local_size_x = LOCAL_SIZE_X) in;
 
-struct DrawParameters {
-// Older AMD drivers can't handle vec3 in std140 layouts correctly
-// The alignment requirement is 16 bytes (4 float components) anyways, so we're not wasting extra memory with this,
-// only fixing broken drivers.
-    vec4 Offset;
-};
-
 //Define packed vertex data
-struct Packed {
+struct VertexData {
     uint a_Pos1; //ushort[2] //x,y //The position of the vertex around the model origin
     uint a_Pos2; //ushort[2] //z,w
     uint a_Color; //The color of the vertex
@@ -30,28 +16,21 @@ struct Packed {
     uint a_LightCoord; // The light texture coordinate of the vertex
 };
 
-struct IndexGroup {
+struct PrimitiveIndices {
     uint i1;
     uint i2;
     uint i3;
 };
 
-struct ChunkMultiDrawRange {
-    uint DataOffset; //Offset into the MultiDrawEntry array that this chunk starts
-    uint DataCount; //How many entries in the MultiDrawEntry array this chunk covers
-    uint DataIndexCount; //The count of all indicies referenced by this chunk.
+struct GeometryRange {
+    uint DataOffset; // Offset into the vertex buffer that this chunk section starts
+    uint DataCount; // Total number of vertices in the chunk section
+    uint DataIndexCount; // The count of all indicies referenced by this chunk.
 };
 
-uniform mat4 u_ModelViewMatrix;
-uniform float u_ModelScale;
-uniform float u_ModelOffset;
-uniform int u_IndexOffsetStride = 4; //Number of bits referenced per array entry in regionIndex
-uniform int u_IndexLengthStride = 3; //Number of vertices referenced per IndexGroup
-uniform int u_ExecutionType;
-uniform int u_SortHeight;
-
-layout(std140, binding = 0) uniform ubo_DrawParameters {
-    DrawParameters Chunks[256];
+struct IndexDistancePair {
+    IndexGroup indexGroup;
+    float distance;
 };
 
 /*
@@ -71,8 +50,18 @@ Invocation or Thread -  The smallest unit of a compute shader. There are LOCAL_S
                         within their work group and also are able to sync execution within their work group.
 */
 
+layout(std430, binding = 0) uniform SortParameters {
+    mat4 mat_modelview;
+    float modelScale;
+    float modelOffset;
+    int indexBytes = 4;//Number of bytes referenced per array entry in regionIndex
+    int indicesPerPrim = 3;//Number of vertices referenced per IndexGroup
+    int executionType;
+    int sortHeight;
+};
+
 layout(std430, binding = 1) restrict readonly buffer region_mesh_buffer {
-    Packed regionMesh[];
+    VertexData regionMesh[];
 };
 
 layout(std430, binding = 2) coherent buffer region_index_buffer {
@@ -80,7 +69,7 @@ layout(std430, binding = 2) coherent buffer region_index_buffer {
 };
 
 layout(std430, binding = 3) restrict readonly buffer chunk_sub_count {
-    ChunkMultiDrawRange chunkMultiDrawRange[];
+    GeometryRange geometryRanges[];
 };
 
 layout(std430, binding = 4) restrict readonly buffer index_offset_buffer {
@@ -88,31 +77,27 @@ layout(std430, binding = 4) restrict readonly buffer index_offset_buffer {
 };
 
 layout(std430, binding = 5) restrict readonly buffer index_length_buffer {
-    int indexLength[];
+    int indexBytes[];
 };
 
 layout(std430, binding = 6) restrict readonly buffer vertex_offset_buffer {
     int vertexOffset[];
 };
 
-struct IndexDistancePair {
-    IndexGroup indexGroup;
-    float distance;
-};
 
 //Workgroup memory.
 shared IndexDistancePair local_value[LOCAL_SIZE_X * 2];
 
 uint getIndexOffset(uint i) {
-    return indexOffset[i] / u_IndexOffsetStride;
+    return indexOffset[i] / indexBytes;
 }
 
 uint getIndexLength(uint i) {
-    return indexLength[i] / u_IndexLengthStride;
+    return indexBytes[i] / indicesPerPrim;
 }
 
-ChunkMultiDrawRange getSubInfo() {
-    return chunkMultiDrawRange[gl_WorkGroupID.y];
+GeometryRange getSubInfo() {
+    return geometryRanges[gl_WorkGroupID.y];
 }
 
 vec4 unpackPos(Packed p) {
@@ -154,9 +139,9 @@ float getAverageDistance(IndexGroup indexGroup) {
         }
     }
 
-    vec3 vertexPosition = rawPosition.xyz * u_ModelScale + u_ModelOffset;
+    vec3 vertexPosition = rawPosition.xyz * modelScale + modelOffset;
     vec3 chunkOffset = Chunks[int(rawPosition1.w)].Offset.xyz;
-    vec4 pos = u_ModelViewMatrix * vec4(chunkOffset + vertexPosition, 1.0);
+    vec4 pos = mat_modelview * vec4(chunkOffset + vertexPosition, 1.0);
 
     return length(pos);
 }
@@ -168,7 +153,7 @@ uint getFullIndex(uint index) {
     while(i < subInfo.DataCount) {
         uint data = subInfo.DataOffset + i;
         if(index < getIndexLength(data)) {
-            return getIndexOffset(data) + index * u_IndexLengthStride;
+            return getIndexOffset(data) + index * indicesPerPrim;
         }
         index = index - getIndexLength(data);
         i = i + 1;
@@ -320,7 +305,7 @@ void local_main(uint executionType, uint height) {
 
 void main(){
     uint height = gl_WorkGroupSize.x * 2;
-    uint indexLength = getSubInfo().DataIndexCount / u_IndexLengthStride;
+    uint indexLength = getSubInfo().DataIndexCount / indicesPerPrim;
     uint computeSize = uint(pow(2, ceil(log(indexLength)/log(2))));
     uint usedWorkgroups = (computeSize / (gl_WorkGroupSize.x * 2)) + 1;
 
@@ -329,14 +314,14 @@ void main(){
         return;
     }
 
-    if(u_ExecutionType == LOCAL_BMS || u_ExecutionType == LOCAL_DISPERSE) {
-        local_main(u_ExecutionType, u_SortHeight);
+    if(executionType == LOCAL_BMS || executionType == LOCAL_DISPERSE) {
+        local_main(executionType, sortHeight);
     }
 
-    if(u_ExecutionType == GLOBAL_FLIP) {
-        global_flip(u_SortHeight);
+    if(executionType == GLOBAL_FLIP) {
+        global_flip(sortHeight);
     }
-    if(u_ExecutionType == GLOBAL_DISPERSE) {
-        global_disperse(u_SortHeight);
+    if(executionType == GLOBAL_DISPERSE) {
+        global_disperse(sortHeight);
     }
 }

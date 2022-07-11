@@ -2,7 +2,7 @@ package net.caffeinemc.sodium.render.chunk.passes;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceSortedMap;
-import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
+import net.caffeinemc.gfx.api.pipeline.RenderPipelineDescription;
 import net.caffeinemc.gfx.api.pipeline.state.BlendFunc;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.minecraft.client.render.RenderLayer;
@@ -13,41 +13,41 @@ import net.minecraft.client.render.RenderLayer;
  */
 public class ChunkRenderPassManager {
     private static final ChunkRenderPass SOLID = new ChunkRenderPass(
-            PipelineDescription.defaults(),
+            RenderPipelineDescription.defaults(),
             true,
             0.0f
     );
     private static final ChunkRenderPass CUTOUT_MIPPED = new ChunkRenderPass(
-            PipelineDescription.defaults(),
+            RenderPipelineDescription.defaults(),
             true,
             0.5f
     );
     private static final ChunkRenderPass CUTOUT = new ChunkRenderPass(
-            PipelineDescription.defaults(),
+            RenderPipelineDescription.defaults(),
             false,
             0.1f
     );
     private static final ChunkRenderPass TRANSLUCENT = new ChunkRenderPass(
-            PipelineDescription.builder()
-                               .setBlendFunction(BlendFunc.separate(
+            RenderPipelineDescription.builder()
+                                     .setBlendFunction(BlendFunc.separate(
                                        BlendFunc.SrcFactor.SRC_ALPHA,
                                        BlendFunc.DstFactor.ONE_MINUS_SRC_ALPHA,
                                        BlendFunc.SrcFactor.ONE,
                                        BlendFunc.DstFactor.ONE_MINUS_SRC_ALPHA
                                ))
-                               .build(),
+                                     .build(),
             true,
             0.0f
     );
     private static final ChunkRenderPass TRIPWIRE = new ChunkRenderPass(
-            PipelineDescription.builder()
-                               .setBlendFunction(BlendFunc.separate(
+            RenderPipelineDescription.builder()
+                                     .setBlendFunction(BlendFunc.separate(
                                        BlendFunc.SrcFactor.SRC_ALPHA,
                                        BlendFunc.DstFactor.ONE_MINUS_SRC_ALPHA,
                                        BlendFunc.SrcFactor.ONE,
                                        BlendFunc.DstFactor.ONE_MINUS_SRC_ALPHA
                                ))
-                               .build(),
+                                     .build(),
             true,
             0.1f
     );

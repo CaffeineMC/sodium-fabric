@@ -113,7 +113,11 @@ public class TerrainRenderManager {
         this.tracker = worldRenderer.getChunkTracker();
         this.tree = new ChunkTree(4, RenderSection::new);
         
-        this.chunkGeometrySorter = new ChunkGeometrySorter(device, renderPassManager, (float) Math.toRadians(5.0f));
+        if (SodiumClientMod.options().quality.useTranslucentFaceSorting) {
+            this.chunkGeometrySorter = new ChunkGeometrySorter(device, renderPassManager, (float) Math.toRadians(5.0f));
+        } else {
+            this.chunkGeometrySorter = null;
+        }
     }
 
     public void reloadChunks(ChunkTracker tracker) {
@@ -138,8 +142,10 @@ public class TerrainRenderManager {
 
         this.updateVisibilityLists(visibleSections, camera);
     
-        profiler.swap("translucency_sort");
-        this.chunkGeometrySorter.sortGeometry(this.visibleMeshedSections, camera);
+        if (this.chunkGeometrySorter != null) {
+            profiler.swap("translucency_sort");
+            this.chunkGeometrySorter.sortGeometry(this.visibleMeshedSections, camera);
+        }
 
         profiler.swap("create_render_lists");
         var chunkLists = new SortedChunkLists(this.visibleMeshedSections, this.regionManager);
@@ -378,6 +384,7 @@ public class TerrainRenderManager {
         this.regionManager.delete();
         this.builder.stopWorkers();
         this.chunkRenderer.delete();
+        this.chunkGeometrySorter.delete();
     }
 
     public int getTotalSections() {

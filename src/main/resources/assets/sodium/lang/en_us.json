@@ -73,7 +73,7 @@
   "sodium.options.terrain_draw_mode.indirect": "Indirect",
   "sodium.options.terrain_draw_mode.indirect_count": "IndirectCount",
   "sodium.options.translucent_face_sorting.name": "Translucent Face Sorting",
-  "sodium.options.translucent_face_sorting.tooltip": "If enabled, translucent effects from surfaces such as stained glass and water will be applied correctly.",
+  "sodium.options.translucent_face_sorting.tooltip": "If enabled, translucent effects from surfaces such as stained glass and water will be applied correctly. This uses a compute shader that is run on the GPU, but the CPU will still be impacted somewhat for dispatching.",
   "sodium.options.buttons.undo": "Undo",
   "sodium.options.buttons.apply": "Apply",
   "sodium.options.buttons.donate": "Buy us a coffee!"

@@ -1,23 +1,22 @@
 package net.caffeinemc.sodium.render.chunk.passes;
 
 import java.util.Objects;
-import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
-import net.minecraft.util.Identifier;
+import net.caffeinemc.gfx.api.pipeline.RenderPipelineDescription;
 
 public final class ChunkRenderPass {
-    private final PipelineDescription pipelineDescription;
+    private final RenderPipelineDescription pipelineDescription;
     private final boolean mipped;
     private final float alphaCutoff;
     
     private int id;
     
-    public ChunkRenderPass(PipelineDescription pipelineDescription, boolean mipped, float alphaCutoff) {
+    public ChunkRenderPass(RenderPipelineDescription pipelineDescription, boolean mipped, float alphaCutoff) {
         this.pipelineDescription = pipelineDescription;
         this.mipped = mipped;
         this.alphaCutoff = alphaCutoff;
     }
     
-    public PipelineDescription getPipelineDescription() {
+    public RenderPipelineDescription getPipelineDescription() {
         return this.pipelineDescription;
     }
     

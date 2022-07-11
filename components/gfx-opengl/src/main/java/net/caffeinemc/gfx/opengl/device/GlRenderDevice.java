@@ -11,10 +11,13 @@ import net.caffeinemc.gfx.api.buffer.*;
 import net.caffeinemc.gfx.api.device.RenderConfiguration;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.device.RenderDeviceProperties;
-import net.caffeinemc.gfx.api.device.commands.PipelineGate;
+import net.caffeinemc.gfx.api.device.commands.ComputeCommandList;
+import net.caffeinemc.gfx.api.device.commands.ComputePipelineGate;
+import net.caffeinemc.gfx.api.device.commands.RenderPipelineGate;
 import net.caffeinemc.gfx.api.device.commands.RenderCommandList;
-import net.caffeinemc.gfx.api.pipeline.Pipeline;
-import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
+import net.caffeinemc.gfx.api.pipeline.ComputePipeline;
+import net.caffeinemc.gfx.api.pipeline.RenderPipeline;
+import net.caffeinemc.gfx.api.pipeline.RenderPipelineDescription;
 import net.caffeinemc.gfx.api.shader.Program;
 import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
 import net.caffeinemc.gfx.api.shader.ShaderDescription;
@@ -31,7 +34,8 @@ import net.caffeinemc.gfx.opengl.buffer.GlBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlDynamicBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlImmutableBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlMappedBuffer;
-import net.caffeinemc.gfx.opengl.pipeline.GlPipeline;
+import net.caffeinemc.gfx.opengl.pipeline.GlComputePipeline;
+import net.caffeinemc.gfx.opengl.pipeline.GlRenderPipeline;
 import net.caffeinemc.gfx.opengl.pipeline.GlPipelineManager;
 import net.caffeinemc.gfx.opengl.shader.GlProgram;
 import net.caffeinemc.gfx.opengl.sync.GlFence;
@@ -171,10 +175,16 @@ public class GlRenderDevice implements RenderDevice {
     }
     
     @Override
-    public <PROGRAM, ARRAY extends Enum<ARRAY>> Pipeline<PROGRAM, ARRAY> createPipeline(PipelineDescription state, Program<PROGRAM> program, VertexArrayDescription<ARRAY> vertexArrayDescription) {
+    public <PROGRAM, ARRAY extends Enum<ARRAY>> RenderPipeline<PROGRAM, ARRAY> createRenderPipeline(
+            RenderPipelineDescription state, Program<PROGRAM> program, VertexArrayDescription<ARRAY> vertexArrayDescription) {
         var vertexArray = new GlVertexArray<>(vertexArrayDescription);
 
-        return new GlPipeline<>(state, program, vertexArray);
+        return new GlRenderPipeline<>(state, program, vertexArray);
+    }
+    
+    @Override
+    public <PROGRAM> ComputePipeline<PROGRAM> createComputePipeline(Program<PROGRAM> program) {
+        return new GlComputePipeline<>(program);
     }
 
     @Override
@@ -281,19 +291,39 @@ public class GlRenderDevice implements RenderDevice {
 
         return new GlMappedBuffer(handle, mapping, flags);
     }
-
+    
     @Override
-    public <PROGRAM, ARRAY extends Enum<ARRAY>> void usePipeline(Pipeline<PROGRAM, ARRAY> pipeline, PipelineGate<PROGRAM, ARRAY> gate) {
-        this.pipelineManager.bindPipeline(pipeline, (state) ->
-            gate.run(new ImmediateRenderCommandList<>((GlVertexArray<ARRAY>) pipeline.getVertexArray()), pipeline.getProgram().getInterface(), state)
+    public <PROGRAM> void useComputePipeline(ComputePipeline<PROGRAM> pipeline, ComputePipelineGate<PROGRAM> gate) {
+        this.pipelineManager.bindComputePipeline(pipeline, (state) ->
+                gate.run(
+                        new ImmediateComputeCommandList(),
+                        pipeline.getProgram().getInterface(),
+                        state
+                )
         );
     }
 
     @Override
-    public void deletePipeline(Pipeline<?, ?> pipeline) {
-        this.deleteVertexArray(pipeline.getVertexArray());
+    public <PROGRAM, ARRAY extends Enum<ARRAY>> void useRenderPipeline(RenderPipeline<PROGRAM, ARRAY> pipeline, RenderPipelineGate<PROGRAM, ARRAY> gate) {
+        this.pipelineManager.bindRenderPipeline(pipeline, (state) ->
+                gate.run(
+                        new ImmediateRenderCommandList<>((GlVertexArray<ARRAY>) pipeline.getVertexArray()),
+                        pipeline.getProgram().getInterface(),
+                        state
+                )
+        );
     }
 
+    @Override
+    public void deleteRenderPipeline(RenderPipeline<?, ?> renderPipeline) {
+        this.deleteVertexArray(renderPipeline.getVertexArray());
+    }
+    
+    @Override
+    public void deleteComputePipeline(ComputePipeline<?> computePipeline) {
+        // we have nothing to destroy for opengl
+    }
+    
     @Override
     public void updateBuffer(DynamicBuffer buffer, int offset, ByteBuffer data) {
         if (RenderConfiguration.API_CHECKS) {
@@ -342,6 +372,42 @@ public class GlRenderDevice implements RenderDevice {
     private void deleteVertexArray0(GlVertexArray<?> array) {
         GL45C.glDeleteVertexArrays(array.getHandle());
         array.invalidateHandle();
+    }
+    
+    private static class ImmediateComputeCommandList implements ComputeCommandList {
+        protected Buffer dispatchIndirectBuffer;
+    
+        @Override
+        public void dispatchCompute(int numGroupsX, int numGroupsY, int numGroupsZ) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.isTrue(numGroupsX * numGroupsY * numGroupsZ > 0, "Total groups must be greater than 0");
+            }
+            
+            GL45C.glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+        }
+    
+        @Override
+        public void bindDispatchIndirectBuffer(Buffer buffer) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.notNull(buffer, "Buffer must be non-null");
+            }
+        
+            if (this.dispatchIndirectBuffer != buffer) {
+                GL45C.glBindBuffer(GL45C.GL_DISPATCH_INDIRECT_BUFFER, GlBuffer.getHandle(buffer));
+            
+                this.dispatchIndirectBuffer = buffer;
+            }
+        }
+    
+        @Override
+        public void dispatchComputeIndirect(long indirectOffset) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.isTrue(indirectOffset >= 0, "Indirect offset must be greater than or equal to zero");
+                Validate.isTrue(indirectOffset % 4 == 0, "Indirect offset must be a multiple of 4");
+            }
+            
+            GL45C.glDispatchComputeIndirect(indirectOffset);
+        }
     }
 
     private static class ImmediateRenderCommandList<T extends Enum<T>> implements RenderCommandList<T> {

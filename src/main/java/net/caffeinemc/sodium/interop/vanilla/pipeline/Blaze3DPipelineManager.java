@@ -6,8 +6,9 @@ import java.util.function.Consumer;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.device.RenderConfiguration;
 import net.caffeinemc.gfx.api.device.RenderDeviceProperties;
-import net.caffeinemc.gfx.api.pipeline.Pipeline;
-import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
+import net.caffeinemc.gfx.api.pipeline.ComputePipeline;
+import net.caffeinemc.gfx.api.pipeline.RenderPipeline;
+import net.caffeinemc.gfx.api.pipeline.RenderPipelineDescription;
 import net.caffeinemc.gfx.api.pipeline.PipelineState;
 import net.caffeinemc.gfx.api.pipeline.state.CullMode;
 import net.caffeinemc.gfx.api.pipeline.state.DepthFunc;
@@ -34,16 +35,29 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
     public Blaze3DPipelineManager(RenderDeviceProperties properties) {
         this.state = new Blaze3DPipelineState(properties.values.maxCombinedTextureImageUnits);
     }
-
+    
     @Override
-    public <ARRAY extends Enum<ARRAY>, PROGRAM> void bindPipeline(Pipeline<PROGRAM, ARRAY> pipeline, Consumer<PipelineState> gate) {
+    public <PROGRAM> void bindComputePipeline(ComputePipeline<PROGRAM> renderPipeline, Consumer<PipelineState> gate) {
+        GL45C.glUseProgram(GlProgram.getHandle(renderPipeline.getProgram()));
+    
+        // compute shaders can use textures, so we have to do this too
+        try {
+            gate.accept(this.state);
+        } finally {
+            this.state.restore();
+        }
+    }
+    
+    @Override
+    public <ARRAY extends Enum<ARRAY>, PROGRAM> void bindRenderPipeline(RenderPipeline<PROGRAM, ARRAY> renderPipeline, Consumer<PipelineState> gate) {
         // FIXME: why is this here? used to null the current buffer renderer vertex format.
+        // should this be BufferRenderer.unbindAll?
         BufferRenderer.resetCurrentVertexBuffer();
 
-        GL45C.glUseProgram(GlProgram.getHandle(pipeline.getProgram()));
-        GL45C.glBindVertexArray(GlVertexArray.getHandle(pipeline.getVertexArray()));
+        GL45C.glUseProgram(GlProgram.getHandle(renderPipeline.getProgram()));
+        GL45C.glBindVertexArray(GlVertexArray.getHandle(renderPipeline.getVertexArray()));
 
-        setRenderState(pipeline.getDescription());
+        setRenderState(renderPipeline.getDescription());
 
         try {
             gate.accept(this.state);
@@ -51,10 +65,10 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
             this.state.restore();
         }
 
-        unsetRenderState(pipeline.getDescription());
+        unsetRenderState(renderPipeline.getDescription());
     }
 
-    private static void setRenderState(PipelineDescription desc) {
+    private static void setRenderState(RenderPipelineDescription desc) {
         if (desc.cullMode == CullMode.ENABLE) {
             RenderSystem.enableCull();
         } else {
@@ -87,7 +101,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
     }
 
 
-    private static void unsetRenderState(PipelineDescription pipelineDescription) {
+    private static void unsetRenderState(RenderPipelineDescription pipelineDescription) {
         // VANILLA BUG: Some code paths rely on the depth function being GL_LEQUAL by default
         // Not setting this causes graphical corruption when certain effects are being rendered (i.e. items with glint)
         // If we changed the depth function, we need to be sure to restore it
