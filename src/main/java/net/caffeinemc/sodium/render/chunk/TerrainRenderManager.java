@@ -248,7 +248,9 @@ public class TerrainRenderManager {
 
     private boolean unloadSection(int x, int y, int z) {
         RenderSection section = this.tree.remove(x, y, z);
-        this.chunkGeometrySorter.removeSection(section);
+        if (this.chunkGeometrySorter != null) {
+            this.chunkGeometrySorter.removeSection(section);
+        }
         section.delete();
 
         return true;
@@ -384,7 +386,9 @@ public class TerrainRenderManager {
         this.regionManager.delete();
         this.builder.stopWorkers();
         this.chunkRenderer.delete();
-        this.chunkGeometrySorter.delete();
+        if (this.chunkGeometrySorter != null) {
+            this.chunkGeometrySorter.delete();
+        }
     }
 
     public int getTotalSections() {

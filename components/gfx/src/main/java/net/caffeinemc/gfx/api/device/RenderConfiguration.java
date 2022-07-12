@@ -7,7 +7,7 @@ public class RenderConfiguration {
      *
      * This is left as a static final field so it can be optimized out by the JIT when not used.
      */
-    public static final boolean API_CHECKS = true;
+    public static final boolean API_CHECKS = false;
     
     /**
      * If enabled, will ask the API to perform extra debug checks and produce more readable information for errors
