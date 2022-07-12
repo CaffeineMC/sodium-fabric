@@ -3,6 +3,9 @@
 #define DUMMY_INDEX 10000000
 #define DUMMY_DISTANCE -1000000
 
+#define INDICES_PER_PRIM 3
+#define VERTICES_PER_PRIM 3
+
 layout(local_size_x = LOCAL_SIZE_X) in;
 
 //Define packed vertex data
@@ -29,9 +32,8 @@ struct Primitive {
 struct GeometryRange {
     vec4 translation;
     uint vertexOffset; // Offset into the vertex buffer that this chunk section starts, in vertex strides
-    uint vertexCount; // Total number of vertices in the chunk section
     uint indexOffset; // Offset into the index buffer that this range starts in, where indexOffset * BYTES_PER_INDEX = byte offset
-    uint indexCount; // The count of all indicies referenced by this range
+    uint primCount; // The count of all primitives referenced by this range
 };
 
 /*
@@ -52,11 +54,11 @@ Invocation or Thread -  The smallest unit of a compute shader. There are LOCAL_S
 */
 
 // this rarely updates, treat it like a push constant
-layout(std430, binding = 1) uniform CameraPosition {
+layout(std140, binding = 1) uniform CameraPosition {
     vec4 cameraPos;
 };
 
-layout(std430, binding = 1) uniform SortParameters {
+layout(std140, binding = 1) uniform SortParameters {
     int executionType;
     int sortHeight;
 };
@@ -76,17 +78,8 @@ layout(std430, binding = 4) coherent buffer RegionIndexBuffer {
 //Workgroup memory.
 shared Primitive currentPrimitives[LOCAL_SIZE_X * 2];
 
-
-uint getIndexOffset(uint i) {
-    return indexOffset[i] / BYTES_PER_INDEX;
-}
-
-uint getIndexLength(uint i) {
-    return indexBytes[i] / INDICES_PER_PRIM;
-}
-
 GeometryRange getCurrentRange() {
-    return geometryRanges[gl_WorkGroupID.y];
+    return sectionGeometryRanges[gl_WorkGroupID.y];
 }
 
 vec4 unpackPos(VertexData v) {
@@ -108,7 +101,7 @@ float getAverageDistanceSq(GeometryRange geometryRange, PrimitiveIndices indexGr
 
     vec4 averagePos = (rawPosition1 + rawPosition2 + rawPosition3) / 3;
 
-    vec3 offsetPos = (averagePos.xyz * MODEL_SCALE) + MODEL_POS_OFFSET + Chunks[int(rawPosition1.w)].Offset.xyz - cameraPos;
+    vec3 offsetPos = (averagePos.xyz * VERT_SCALE) + geometryRange.translation.xyz - cameraPos.xyz;
 
     return dot(offsetPos, offsetPos);
 }
@@ -116,25 +109,25 @@ float getAverageDistanceSq(GeometryRange geometryRange, PrimitiveIndices indexGr
 //Convert an index into the indices array from [0..IndicesInChunk] to [0..IndicesInBuffer]
 uint getBufferIndex(GeometryRange geometryRange, uint index) {
     uint bufferIndex = geometryRange.indexOffset + index;
-    return bufferIndex > geometryRange.indexOffset + geometryRange.indexCount ? DUMMY_INDEX : bufferIndex;
+    return bufferIndex > (geometryRange.primCount * INDICES_PER_PRIM) + geometryRange.indexOffset ? DUMMY_INDEX : bufferIndex;
 }
 
 PrimitiveIndices readPrimitiveIndices(uint bufferIndex) {
-    return PrimitiveIndices(regionIndex[fullIndex], regionIndex[fullIndex + 1], regionIndex[fullIndex + 2]);
+    return PrimitiveIndices(regionIndices[bufferIndex], regionIndices[bufferIndex + 1], regionIndices[bufferIndex + 2]);
 }
 
-void writePrimitiveIndices(uint fullIndex, PrimitiveIndices primitiveIndices) {
-    regionIndex[fullIndex + 0] = primitiveIndices.i1;
-    regionIndex[fullIndex + 1] = primitiveIndices.i2;
-    regionIndex[fullIndex + 2] = primitiveIndices.i3;
+void writePrimitiveIndices(uint bufferIndex, PrimitiveIndices primitiveIndices) {
+    regionIndices[bufferIndex + 0] = primitiveIndices.i1;
+    regionIndices[bufferIndex + 1] = primitiveIndices.i2;
+    regionIndices[bufferIndex + 2] = primitiveIndices.i3;
 }
 
 // Performs compare-and-swap over elements held in shared, workgroup-local memory
 void local_compare_and_swap(uint idx1, uint idx2){
-    if (currentPrimitives[idx.x].distance < currentPrimitives[idx.y].distance) {
-        Primitive tmp = currentPrimitives[idx.x];
-        currentPrimitives[idx.x] = currentPrimitives[idx.y];
-        currentPrimitives[idx.y] = tmp;
+    if (currentPrimitives[idx1].distance < currentPrimitives[idx2].distance) {
+        Primitive tmp = currentPrimitives[idx1];
+        currentPrimitives[idx1] = currentPrimitives[idx2];
+        currentPrimitives[idx2] = tmp;
     }
 }
 
@@ -179,8 +172,8 @@ void local_bms(uint h){
 }
 
 void global_compare_and_swap(GeometryRange geometryRange, uint idx1, uint idx2){
-    uint i1 = getBufferIndex(idx1);
-    uint i2 = getBufferIndex(idx2);
+    uint i1 = getBufferIndex(geometryRange, idx1);
+    uint i2 = getBufferIndex(geometryRange, idx2);
     if(i1 != DUMMY_INDEX && i2 != DUMMY_INDEX) {
         PrimitiveIndices primInd1 = readPrimitiveIndices(i1);
         PrimitiveIndices primInd2 = readPrimitiveIndices(i2);
@@ -223,18 +216,18 @@ void local_main(GeometryRange geometryRange, uint executionType, uint height) {
     uint t = gl_LocalInvocationID.x;
     uint offset = gl_WorkGroupSize.x * 2 * gl_WorkGroupID.x;
 
-    uint fullIndex1 = getBufferIndex(geometryRange, offset+t*2);
-    uint fullIndex2 = getBufferIndex(geometryRange, offset+t*2+1);
-    PrimitiveIndices primIdx1 = readPrimitiveIndices(fullIndex1);
-    PrimitiveIndices primIdx2 = readPrimitiveIndices(fullIndex2);
+    uint bufferIndex1 = getBufferIndex(geometryRange, offset+t*2);
+    uint bufferIndex2 = getBufferIndex(geometryRange, offset+t*2+1);
+    PrimitiveIndices primIdx1 = readPrimitiveIndices(bufferIndex1);
+    PrimitiveIndices primIdx2 = readPrimitiveIndices(bufferIndex2);
     float distance1 = getAverageDistanceSq(geometryRange, primIdx1);
     float distance2 = getAverageDistanceSq(geometryRange, primIdx2);
 
-    if (fullIndex1 == DUMMY_INDEX) {
+    if (bufferIndex1 == DUMMY_INDEX) {
         primIdx1 = PrimitiveIndices(DUMMY_INDEX, DUMMY_INDEX, DUMMY_INDEX);
         distance1 = DUMMY_DISTANCE;
     }
-    if (fullIndex2 == DUMMY_INDEX) {
+    if (bufferIndex2 == DUMMY_INDEX) {
         primIdx2 = PrimitiveIndices(DUMMY_INDEX, DUMMY_INDEX, DUMMY_INDEX);
         distance2 = DUMMY_DISTANCE;
     }
@@ -256,19 +249,18 @@ void local_main(GeometryRange geometryRange, uint executionType, uint height) {
     PrimitiveIndices ig1 = currentPrimitives[t*2].indices;
     PrimitiveIndices ig2 = currentPrimitives[t*2+1].indices;
 
-    if (fullIndex1 != DUMMY_INDEX) {
-        writePrimitiveIndices(fullIndex1, ig1);
+    if (bufferIndex1 != DUMMY_INDEX) {
+        writePrimitiveIndices(bufferIndex1, ig1);
     }
-    if (fullIndex2 != DUMMY_INDEX) {
-        writePrimitiveIndices(fullIndex2, ig2);
+    if (bufferIndex2 != DUMMY_INDEX) {
+        writePrimitiveIndices(bufferIndex2, ig2);
     }
 }
 
 void main(){
     uint height = gl_WorkGroupSize.x * 2;
     GeometryRange geometryRange = getCurrentRange();
-    uint primitiveCount = geometryRange.indexCount / INDICES_PER_PRIM;
-    uint computeSize = uint(pow(2, ceil(log(primitiveCount) / log(2))));
+    uint computeSize = uint(pow(2, ceil(log(geometryRange.primCount) / log(2))));
     uint usedWorkgroups = (computeSize / (gl_WorkGroupSize.x * 2)) + 1;
 
     //Exit early for unneeded work groups
@@ -281,9 +273,9 @@ void main(){
     }
 
     if(executionType == GLOBAL_FLIP) {
-        global_flip(sortHeight);
+        global_flip(geometryRange, sortHeight);
     }
     if(executionType == GLOBAL_DISPERSE) {
-        global_disperse(sortHeight);
+        global_disperse(geometryRange, sortHeight);
     }
 }

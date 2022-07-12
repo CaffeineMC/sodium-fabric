@@ -114,7 +114,7 @@ public class TerrainRenderManager {
         this.tree = new ChunkTree(4, RenderSection::new);
         
         if (SodiumClientMod.options().quality.useTranslucentFaceSorting) {
-            this.chunkGeometrySorter = new ChunkGeometrySorter(device, renderPassManager, (float) Math.toRadians(5.0f));
+            this.chunkGeometrySorter = new ChunkGeometrySorter(device, renderPassManager, vertexType, (float) Math.toRadians(5.0f));
         } else {
             this.chunkGeometrySorter = null;
         }

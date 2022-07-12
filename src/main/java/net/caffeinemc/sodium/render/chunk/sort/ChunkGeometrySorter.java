@@ -11,6 +11,8 @@ import net.caffeinemc.gfx.api.shader.Program;
 import net.caffeinemc.gfx.api.shader.ShaderDescription;
 import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.api.sync.Fence;
+import net.caffeinemc.gfx.api.types.ElementFormat;
+import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.draw.AbstractChunkRenderer;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
