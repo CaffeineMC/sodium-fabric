@@ -2,6 +2,7 @@ package net.caffeinemc.sodium.render.chunk.draw;
 
 import net.minecraft.client.render.Camera;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 
 public class ChunkCameraContext {
     public final int blockX, blockY, blockZ;
@@ -9,9 +10,9 @@ public class ChunkCameraContext {
     public final double posX, posY, posZ;
 
     public ChunkCameraContext(double x, double y, double z) {
-        this.blockX = (int) x;
-        this.blockY = (int) y;
-        this.blockZ = (int) z;
+        this.blockX = MathHelper.floor(x);
+        this.blockY = MathHelper.floor(y);
+        this.blockZ = MathHelper.floor(z);
 
         // Reduce camera delta precision to 14 bits to avoid seams along chunk/region boundaries
         this.deltaX = (float) Math.round((x - this.blockX) * 0x1p14f) * 0x1p-14f;
