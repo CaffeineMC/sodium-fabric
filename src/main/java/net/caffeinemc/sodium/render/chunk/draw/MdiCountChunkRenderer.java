@@ -134,15 +134,15 @@ public class MdiCountChunkRenderer extends MdiChunkRenderer<MdiCountChunkRendere
                 for (Iterator<RenderSection> sectionIterator = regionBucket.sortedSections(reverseOrder); sectionIterator.hasNext(); ) {
                     RenderSection section = sectionIterator.next();
     
-                    BufferSegment uploadedSegment = section.getUploadedGeometrySegment();
+                    long uploadedSegment = section.getUploadedGeometrySegment();
     
-                    if (uploadedSegment == null) {
+                    if (uploadedSegment == BufferSegment.INVALID) {
                         continue;
                     }
     
                     ChunkPassModel[] models = section.getData().models;
                     
-                    int baseVertex = uploadedSegment.getOffset();
+                    int baseVertex = BufferSegment.getOffset(uploadedSegment);
                 
                     int visibility = calculateVisibilityFlags(section.getData().bounds, camera);
                 
@@ -199,7 +199,7 @@ public class MdiCountChunkRenderer extends MdiChunkRenderer<MdiCountChunkRendere
                     transformsBufferPosition += TRANSFORM_STRUCT_STRIDE;
                     batchTransformCount++;
                 
-                    largestVertexIndex = Math.max(largestVertexIndex, uploadedSegment.getLength());
+                    largestVertexIndex = Math.max(largestVertexIndex, BufferSegment.getLength(uploadedSegment));
                 }
             
                 if (batchCommandCount == 0) {

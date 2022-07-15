@@ -1,5 +1,7 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
+import it.unimi.dsi.fastutil.PriorityQueue;
+import java.util.Collection;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.render.buffer.arena.ArenaBuffer;
@@ -32,10 +34,22 @@ public class RenderRegion {
 
     public final ArenaBuffer vertexBuffers;
     public final int id;
+    
+    public RenderRegion(AsyncArenaBuffer vertexBuffers, int id) {
+        this.vertexBuffers = vertexBuffers;
+        this.id = id;
+    }
 
     public RenderRegion(RenderDevice device, StreamingBuffer stagingBuffer, TerrainVertexType vertexType, int id) {
         this.vertexBuffers = new AsyncArenaBuffer(device, stagingBuffer, REGION_SIZE * 756, vertexType.getBufferVertexFormat().stride());
         this.id = id;
+    }
+    
+    // TODO: include index buffer cache too
+    public void recycle(PriorityQueue<ArenaBuffer> vertexBufferCache) {
+        ArenaBuffer buffer = this.vertexBuffers;
+        buffer.reset();
+        vertexBufferCache.enqueue(buffer);
     }
 
     public void delete() {

@@ -1,7 +1,6 @@
 package net.caffeinemc.sodium.render.buffer.arena;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceAVLTreeMap;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -23,9 +22,11 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     private final StreamingBuffer stagingBuffer;
     private Buffer arenaBuffer;
 
-    private BufferSegment head;
+    private Int2ReferenceAVLTreeMap<FreedSegment> freedSegments = new Int2ReferenceAVLTreeMap<>();
+    private FreedSegment head;
 
     private int capacity;
+    private int position;
     private int used;
 
     private final int stride;
@@ -33,14 +34,16 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     public AsyncArenaBuffer(RenderDevice device, StreamingBuffer stagingBuffer, int capacity, int stride) {
         this.device = device;
         this.stagingBuffer = stagingBuffer;
-        this.resizeIncrement = capacity / 16;
+        this.resizeIncrement = capacity / 8;
         this.capacity = capacity;
-
-        this.head = new BufferSegment(this, 0, capacity);
-        this.head.setFree(true);
-
         this.arenaBuffer = device.createBuffer((long) capacity * stride, EnumSet.noneOf(ImmutableBufferFlags.class));
         this.stride = stride;
+    }
+    
+    public void reset() {
+        this.head = null;
+        this.used = 0;
+        this.position = 0;
     }
 
     private void resize(int newCapacity) {
@@ -49,100 +52,24 @@ public class AsyncArenaBuffer implements ArenaBuffer {
         }
 
         this.checkAssertions();
-
-        int base = newCapacity - this.used;
-
-        List<BufferSegment> usedSegments = this.getUsedSegments();
-        List<PendingResizeCopy> pendingCopies = this.buildTransferList(usedSegments, base);
-
-        this.moveSegments(pendingCopies, newCapacity);
-
-        this.head = new BufferSegment(this, 0, base);
-        this.head.setFree(true);
-
-        if (usedSegments.isEmpty()) {
-            this.head.setNext(null);
-        } else {
-            this.head.setNext(usedSegments.get(0));
-            this.head.getNext()
-                    .setPrev(this.head);
-        }
+    
+        var srcBufferObj = this.arenaBuffer;
+        var dstBufferObj = this.device.createBuffer(this.toBytes(this.capacity), EnumSet.noneOf(ImmutableBufferFlags.class));
+        
+        this.device.copyBuffer(
+                srcBufferObj,
+                dstBufferObj,
+                0,
+                0,
+                this.toBytes(this.position)
+        );
+    
+        this.device.deleteBuffer(srcBufferObj);
+    
+        this.arenaBuffer = dstBufferObj;
+        this.capacity = newCapacity;
 
         this.checkAssertions();
-    }
-
-    private List<PendingResizeCopy> buildTransferList(List<BufferSegment> usedSegments, int base) {
-        List<PendingResizeCopy> pendingCopies = new ArrayList<>();
-        PendingResizeCopy currentCopyCommand = null;
-
-        int writeOffset = base;
-
-        for (int i = 0; i < usedSegments.size(); i++) {
-            BufferSegment s = usedSegments.get(i);
-
-            if (currentCopyCommand == null || currentCopyCommand.readOffset + currentCopyCommand.length != s.getOffset()) {
-                if (currentCopyCommand != null) {
-                    pendingCopies.add(currentCopyCommand);
-                }
-
-                currentCopyCommand = new PendingResizeCopy(s.getOffset(), writeOffset, s.getLength());
-            } else {
-                currentCopyCommand.length += s.getLength();
-            }
-
-            s.setOffset(writeOffset);
-
-            if (i + 1 < usedSegments.size()) {
-                s.setNext(usedSegments.get(i + 1));
-            } else {
-                s.setNext(null);
-            }
-
-            if (i - 1 < 0) {
-                s.setPrev(null);
-            } else {
-                s.setPrev(usedSegments.get(i - 1));
-            }
-
-            writeOffset += s.getLength();
-        }
-
-        if (currentCopyCommand != null) {
-            pendingCopies.add(currentCopyCommand);
-        }
-
-        return pendingCopies;
-    }
-
-    private void moveSegments(Collection<PendingResizeCopy> list, int capacity) {
-        var srcBufferObj = this.arenaBuffer;
-        var dstBufferObj = this.device.createBuffer(this.toBytes(capacity), EnumSet.noneOf(ImmutableBufferFlags.class));
-
-        for (PendingResizeCopy pendingCopy : list) {
-            this.device.copyBuffer(srcBufferObj, dstBufferObj, this.toBytes(pendingCopy.readOffset), this.toBytes(pendingCopy.writeOffset), this.toBytes(pendingCopy.length));
-        }
-
-        this.device.deleteBuffer(srcBufferObj);
-
-        this.arenaBuffer = dstBufferObj;
-        this.capacity = capacity;
-    }
-
-    private ArrayList<BufferSegment> getUsedSegments() {
-        ArrayList<BufferSegment> used = new ArrayList<>();
-        BufferSegment seg = this.head;
-
-        while (seg != null) {
-            BufferSegment next = seg.getNext();
-
-            if (!seg.isFree()) {
-                used.add(seg);
-            }
-
-            seg = next;
-        }
-
-        return used;
     }
 
     @Override
@@ -155,79 +82,78 @@ public class AsyncArenaBuffer implements ArenaBuffer {
         return this.toBytes(this.capacity);
     }
 
-    private BufferSegment alloc(int size) {
-        BufferSegment a = this.findFree(size);
+    private long alloc(int size) {
+        FreedSegment a = this.findFree(size);
+        
+        long result = BufferSegment.INVALID;
 
-        if (a == null) {
-            return null;
-        }
-
-        BufferSegment result;
-
-        if (a.getLength() == size) {
-            a.setFree(false);
-
-            result = a;
-        } else {
-            BufferSegment b = new BufferSegment(this, a.getEnd() - size, size);
-            b.setNext(a.getNext());
-            b.setPrev(a);
-
-            if (b.getNext() != null) {
-                b.getNext()
-                        .setPrev(b);
+        if (a != null) {
+            if (a.length == size) {
+                result = BufferSegment.createKey(size, a.offset);
+                
+                // get rid of element from linked list
+                if (a.next != null) {
+                    a.next.prev = null;
+                }
+                if (a.prev != null) {
+                    a.prev.next = a.next;
+                }
+            } else {
+                result = BufferSegment.createKey(size, a.offset);
+        
+                a.offset += size;
             }
-
-            a.setLength(a.getLength() - size);
-            a.setNext(b);
-
-            result = b;
+        } else if (this.capacity - this.position >= size) {
+            result = BufferSegment.createKey(size, this.position);
+            
+            this.position += size;
         }
 
-        this.used += result.getLength();
+        // will be 0 if invalid
+        this.used += BufferSegment.getLength(result);
+        
         this.checkAssertions();
 
         return result;
     }
 
-    private BufferSegment findFree(int size) {
-        BufferSegment entry = this.head;
-        BufferSegment best = null;
+    private FreedSegment findFree(int size) {
+        FreedSegment entry = this.head;
+        FreedSegment best = null;
 
         while (entry != null) {
-            if (entry.isFree()) {
-                if (entry.getLength() == size) {
-                    return entry;
-                } else if (entry.getLength() >= size) {
-                    if (best == null || best.getLength() > entry.getLength()) {
-                        best = entry;
-                    }
+            if (entry.length == size) {
+                return entry;
+            } else if (entry.length >= size) {
+                if (best == null || entry.length < best.length) {
+                    best = entry;
                 }
             }
 
-            entry = entry.getNext();
+            entry = entry.next;
         }
 
         return best;
     }
 
     @Override
-    public void free(BufferSegment entry) {
+    public void free(long key) {
+        FreedSegment freedSegment = this.freedSegments.get(BufferSegment.getOffset(key));
         if (entry.isFree()) {
             throw new IllegalStateException("Already freed");
         }
 
         entry.setFree(true);
 
-        this.used -= entry.getLength();
+        this.used -= entry.length;
 
-        BufferSegment next = entry.getNext();
+        BufferSegment next = entry.next;
 
         if (next != null && next.isFree()) {
             entry.mergeInto(next);
         }
 
-        BufferSegment prev = entry.getPrev();
+        BufferSegment prev = entry.prev;
 
         if (prev != null && prev.isFree()) {
             prev.mergeInto(entry);
@@ -272,7 +198,7 @@ public class AsyncArenaBuffer implements ArenaBuffer {
             int length = upload.data.getLength();
             pendingTransfers.add(
                     new PendingTransfer(
-                            upload.holder,
+                            upload.bufferSegmentHolder,
                             sectionOffset + transferOffset,
                             length
                     )
@@ -318,16 +244,22 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     }
 
     private boolean tryUpload(Buffer streamingBuffer, PendingTransfer transfer) {
-        BufferSegment segment = this.alloc((int) this.toElements(transfer.length()));
+        long segment = this.alloc((int) this.toElements(transfer.length()));
 
-        if (segment == null) {
+        if (segment == BufferSegment.INVALID) {
             return false;
         }
 
         // Copy the uploads from the streaming buffer to the arena buffer
-        this.device.copyBuffer(streamingBuffer, this.arenaBuffer, transfer.offset(), this.toBytes(segment.getOffset()), transfer.length());
+        this.device.copyBuffer(
+                streamingBuffer,
+                this.arenaBuffer,
+                transfer.offset(),
+                this.toBytes(BufferSegment.getOffset(segment)),
+                transfer.length()
+        );
 
-        transfer.holder().set(segment);
+        transfer.bufferSegmentHolder().set(segment);
 
         return true;
     }
@@ -349,49 +281,35 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     }
 
     private void checkAssertions0() {
-        BufferSegment seg = this.head;
+        FreedSegment seg = this.head;
         int used = 0;
 
         while (seg != null) {
-            if (seg.getOffset() < 0) {
+            if (seg.offset < 0) {
                 throw new IllegalStateException("segment.start < 0: out of bounds");
             } else if (seg.getEnd() > this.capacity) {
                 throw new IllegalStateException("segment.end > arena.capacity: out of bounds");
             }
-
-            if (!seg.isFree()) {
-                used += seg.getLength();
-            }
-
-            BufferSegment next = seg.getNext();
+    
+            used += seg.length;
+    
+            FreedSegment next = seg.next;
 
             if (next != null) {
-                if (next.getOffset() < seg.getEnd()) {
+                if (next.offset < seg.getEnd()) {
                     throw new IllegalStateException("segment.next.start < segment.end: overlapping segments (corrupted)");
-                } else if (next.getOffset() > seg.getEnd()) {
+                } else if (next.offset > seg.getEnd()) {
                     throw new IllegalStateException("segment.next.start > segment.end: not truly connected (sparsity error)");
                 }
-
-                if (next.isFree() && next.getNext() != null) {
-                    if (next.getNext().isFree()) {
-                        throw new IllegalStateException("segment.free && segment.next.free: not merged consecutive segments");
-                    }
-                }
             }
-
-            BufferSegment prev = seg.getPrev();
+    
+            FreedSegment prev = seg.prev;
 
             if (prev != null) {
-                if (prev.getEnd() > seg.getOffset()) {
+                if (prev.getEnd() > seg.offset) {
                     throw new IllegalStateException("segment.prev.end > segment.start: overlapping segments (corrupted)");
-                } else if (prev.getEnd() < seg.getOffset()) {
+                } else if (prev.getEnd() < seg.offset) {
                     throw new IllegalStateException("segment.prev.end < segment.start: not truly connected (sparsity error)");
-                }
-
-                if (prev.isFree() && prev.getPrev() != null) {
-                    if (prev.getPrev().isFree()) {
-                        throw new IllegalStateException("segment.free && segment.prev.free: not merged consecutive segments");
-                    }
                 }
             }
 
@@ -421,5 +339,33 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     public int getStride() {
         return this.stride;
     }
-
+    
+    private static class FreedSegment {
+    
+        protected int offset;
+        protected int length;
+    
+        protected FreedSegment next;
+        protected FreedSegment prev;
+        
+        public FreedSegment(int offset, int length) {
+            this.offset = offset;
+            this.length = length;
+        }
+        
+        protected int getEnd() {
+            return this.offset + this.length;
+        }
+        
+        protected void mergeInto(FreedSegment entry) {
+            this.length = this.length + entry.length;
+            this.next = entry.next;
+            
+            if (this.next != null) {
+                this.next.prev = this;
+            }
+        }
+    }
+    
+    
 }

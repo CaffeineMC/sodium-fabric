@@ -9,9 +9,11 @@ public interface ArenaBuffer {
 
     long getDeviceAllocatedMemory();
 
-    void free(BufferSegment entry);
+    void free(long key);
 
     void delete();
+    
+    void reset();
 
     boolean isEmpty();
 

@@ -1,20 +1,22 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
+import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicLong;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.util.buffer.SectionedStreamingBuffer;
 import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.SodiumClientMod;
-import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
+import net.caffeinemc.sodium.render.buffer.arena.ArenaBuffer;
 import net.caffeinemc.sodium.render.buffer.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
@@ -26,6 +28,8 @@ import net.caffeinemc.sodium.util.IntPool;
 public class RenderRegionManager {
     private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
     private final IntPool idPool = new IntPool();
+    
+    private final PriorityQueue<ArenaBuffer> vertexBufferCache = new ObjectArrayFIFOQueue<>();
 
     private final RenderDevice device;
     private final TerrainVertexType vertexType;
@@ -110,7 +114,7 @@ public class RenderRegionManager {
             // Only submit an upload job if there is data in the first place
             if (vertices != null) {
                 var upload = new PendingUpload(vertices.buffer());
-                jobs.add(new ChunkGeometryUpload(render, geometry, upload.holder));
+                jobs.add(new ChunkGeometryUpload(render, geometry, upload.bufferSegmentHolder));
 
                 uploads.add(upload);
             }
@@ -131,7 +135,7 @@ public class RenderRegionManager {
 
         // Collect the upload results
         for (ChunkGeometryUpload upload : jobs) {
-            upload.section.updateGeometry(region, upload.result.get());
+            upload.section.updateGeometry(region, upload.bufferSegmentResult.get());
         }
     }
 
@@ -170,12 +174,19 @@ public class RenderRegionManager {
 
         this.idPool.free(id);
     }
+    
+    private void recycleRegion(RenderRegion region) {
+        var id = region.id;
+        region.recycle(this.vertexBufferCache);
+        
+        this.idPool.free(id);
+    }
 
     public Collection<RenderRegion> getLoadedRegions() {
         return this.regions.values();
     }
 
-    private record ChunkGeometryUpload(RenderSection section, BuiltChunkGeometry geometry, AtomicReference<BufferSegment> result) {
+    private record ChunkGeometryUpload(RenderSection section, BuiltChunkGeometry geometry, AtomicLong bufferSegmentResult) {
 
     }
 }

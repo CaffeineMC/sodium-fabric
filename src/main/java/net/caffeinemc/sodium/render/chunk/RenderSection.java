@@ -24,7 +24,7 @@ public class RenderSection {
     private CompletableFuture<?> rebuildTask = null;
 
     private ChunkUpdateType pendingUpdate;
-    private BufferSegment uploadedGeometrySegment;
+    private long uploadedGeometrySegment = BufferSegment.INVALID;
 
     private boolean disposed;
 
@@ -139,21 +139,22 @@ public class RenderSection {
     }
 
     public void deleteGeometry() {
-        if (this.uploadedGeometrySegment != null) {
-            this.uploadedGeometrySegment.delete();
-            this.uploadedGeometrySegment = null;
-
+        long uploadedGeometrySegment = this.uploadedGeometrySegment;
+        
+        if (uploadedGeometrySegment != BufferSegment.INVALID) {
+            this.region.vertexBuffers.free(uploadedGeometrySegment);
+            this.uploadedGeometrySegment = BufferSegment.INVALID;
             this.region = null;
         }
     }
 
-    public void updateGeometry(RenderRegion region, BufferSegment segment) {
+    public void updateGeometry(RenderRegion region, long segment) {
         this.deleteGeometry();
         this.uploadedGeometrySegment = segment;
         this.region = region;
     }
     
-    public BufferSegment getUploadedGeometrySegment() {
+    public long getUploadedGeometrySegment() {
         return this.uploadedGeometrySegment;
     }
     

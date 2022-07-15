@@ -1,6 +1,6 @@
 package net.caffeinemc.sodium.render.buffer.arena;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicLong;
 
-public record PendingTransfer(AtomicReference<BufferSegment> holder, long offset, long length) {
+public record PendingTransfer(AtomicLong bufferSegmentHolder, long offset, long length) {
 }
