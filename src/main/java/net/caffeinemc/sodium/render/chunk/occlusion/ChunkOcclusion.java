@@ -1,12 +1,12 @@
 package net.caffeinemc.sodium.render.chunk.occlusion;
 
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
-import net.caffeinemc.sodium.render.chunk.state.ChunkGraphIterationQueue;
 import net.caffeinemc.sodium.util.DirectionUtil;
 import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.util.math.BlockPos;
@@ -17,55 +17,69 @@ import net.minecraft.world.World;
 public class ChunkOcclusion {
     public static IntArrayList calculateVisibleSections(ChunkTree tree, Frustum frustum, World world, BlockPos origin,
                                                         int chunkViewDistance, boolean useOcclusionCulling) {
-        ChunkGraphIterationQueue queue = new ChunkGraphIterationQueue();
+        BitArray nodeVisitable = tree.findVisibleSections(frustum);
+        byte[] allowedTraversalDirections = new byte[nodeVisitable.capacity()];
+        byte[] visibleTraversalDirections = new byte[nodeVisitable.capacity()];
+
+        int visibilityOverride = useOcclusionCulling ? 0 : -1;
+
+        IntArrayFIFOQueue queue = new IntArrayFIFOQueue(256);
         IntArrayList startingNodes = ChunkOcclusion.getStartingNodes(tree, frustum, world, origin, chunkViewDistance);
 
         for (IntIterator it = startingNodes.intIterator(); it.hasNext(); ) {
-            queue.enqueue(it.nextInt(), -1);
+            int sectionId = it.nextInt();
+            queue.enqueue(sectionId);
+
+            byte visible = (byte)visibilityOverride;
+
+            for (int direction = 0; direction < DirectionUtil.COUNT; direction++) {
+                visible |= tree.getVisibilityData(sectionId, direction);
+            }
+
+            allowedTraversalDirections[sectionId] = -1;
+            visibleTraversalDirections[sectionId] = visible;
         }
-    
-        BitArray nodeVisitable = tree.findVisibleSections(frustum);
-        byte[] nodeState = new byte[nodeVisitable.capacity()];
-    
+
+
         int[] visibleSections = new int[nodeVisitable.count() + startingNodes.size()];
         int visibleSectionCount = 0;
-    
-        int visibilityDataMask = useOcclusionCulling ? Integer.MAX_VALUE : 0;
+
 
         while (!queue.isEmpty()) {
-            int index = queue.dequeIndex();
-    
-            int sectionId = queue.getSectionId(index);
-            int sectionIncomingDirection = queue.getDirection(index);
+            int sectionId = queue.dequeueInt();
 
             visibleSections[visibleSectionCount++] = sectionId;
 
-            int visibilityData;
-
-            if (sectionIncomingDirection != -1) {
-                visibilityData = tree.getVisibilityData(sectionId, sectionIncomingDirection);
-            } else {
-                visibilityData = 0;
-            }
-    
-            byte traversalState = nodeState[sectionId];
-            int cullState = traversalState | (visibilityData & visibilityDataMask);
+            byte allowedTraversalDirection = allowedTraversalDirections[sectionId];
+            byte visibleTraversalDirection = visibleTraversalDirections[sectionId];
 
             for (int outgoingDirection = 0; outgoingDirection < DirectionUtil.COUNT; outgoingDirection++) {
-                if (hasDirection(cullState, outgoingDirection)) {
+                if ((visibleTraversalDirection & (1 << outgoingDirection)) == 0) {
                     continue;
                 }
 
                 int adjacentNodeId = tree.getAdjacent(sectionId, outgoingDirection);
 
-                if (adjacentNodeId == ChunkTree.ABSENT_VALUE || !nodeVisitable.getAndUnset(adjacentNodeId)) {
+                if (adjacentNodeId == ChunkTree.ABSENT_VALUE || !nodeVisitable.get(adjacentNodeId)) {
                     continue;
                 }
-    
-                int reverseDirection = DirectionUtil.getOppositeId(outgoingDirection);
-                nodeState[adjacentNodeId] = (byte) markDirection(traversalState, reverseDirection);
 
-                queue.enqueue(adjacentNodeId, reverseDirection);
+                int reverseDirection = DirectionUtil.getOppositeId(outgoingDirection);
+
+                int visible = tree.getVisibilityData(adjacentNodeId, reverseDirection) | visibilityOverride;
+                byte oldAllowed = allowedTraversalDirections[adjacentNodeId];
+                int newAllowed = allowedTraversalDirection & ~(1 << reverseDirection);
+
+                if (oldAllowed == 0) {
+                    queue.enqueue(adjacentNodeId);
+                    if (newAllowed == 0) {
+                        // avoid adding it twice to the list!
+                        newAllowed = 0b1000_0000; // not 0 but doesn't set any of the direction bits
+                    }
+                }
+
+                allowedTraversalDirections[adjacentNodeId] = (byte) (oldAllowed | newAllowed);
+                visibleTraversalDirections[adjacentNodeId] |= (byte) (newAllowed & visible);
             }
         }
 
@@ -85,10 +99,10 @@ public class ChunkOcclusion {
     private static IntArrayList getStartingNodesFallback(ChunkTree tree, Frustum frustum, World world, BlockPos origin, int renderDistance) {
         int estimatedCapacity = MathHelper.square(renderDistance * 2);
         int count = 0;
-    
+
         IntArrayList sections = new IntArrayList(estimatedCapacity);
         FloatArrayList distances = new FloatArrayList(estimatedCapacity);
-    
+
         ChunkSectionPos chunkPos = ChunkSectionPos.from(origin);
         int chunkX = chunkPos.getX();
         int chunkY = MathHelper.clamp(chunkPos.getY(), world.getBottomSectionCoord(), world.getTopSectionCoord() - 1);
@@ -108,7 +122,7 @@ public class ChunkOcclusion {
                 }
             }
         }
-    
+
         int[] sortedIndices = new int[count];
 
         for (int i = 0; i < count; i++) {
@@ -116,7 +130,7 @@ public class ChunkOcclusion {
         }
 
         IntArrays.mergeSort(sortedIndices, (k1, k2) -> Float.compare(distances.getFloat(k1), distances.getFloat(k2)));
-    
+
         int[] sortedSections = new int[count];
 
         for (int i = 0; i < count; i++) {
