@@ -1,15 +1,10 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
-import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
@@ -26,10 +21,11 @@ import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.IntPool;
 
 public class RenderRegionManager {
-    private final Long2ReferenceOpenHashMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
+    private final Long2ReferenceMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
     private final IntPool idPool = new IntPool();
     
-    private final PriorityQueue<ArenaBuffer> vertexBufferCache = new ObjectArrayFIFOQueue<>();
+    // add to last, poll first to act like a FIFO queue
+    private final Deque<ArenaBuffer> recycledVertexBuffers = new ArrayDeque<>();
 
     private final RenderDevice device;
     private final TerrainVertexType vertexType;
@@ -64,7 +60,7 @@ public class RenderRegionManager {
             RenderRegion region = it.next();
 
             if (region.isEmpty()) {
-                this.deleteRegion(region);
+                this.recycleRegion(region);
                 it.remove();
             }
         }
@@ -106,7 +102,7 @@ public class RenderRegionManager {
             var geometry = result.geometry();
 
             // De-allocate all storage for the meshes we're about to replace
-            // This will allow it to be cheaply re-allocated later (hopefully)
+            // This will allow it to be cheaply re-allocated later
             render.deleteGeometry();
 
             var vertices = geometry.vertices();
@@ -128,7 +124,7 @@ public class RenderRegionManager {
         RenderRegion region = this.regions.get(regionKey);
 
         if (region == null) {
-            this.regions.put(regionKey, region = new RenderRegion(this.device, this.stagingBuffer, this.vertexType, this.idPool.create()));
+            this.regions.put(regionKey, region = this.createRegion());
         }
 
         region.vertexBuffers.upload(uploads, frameIndex);
@@ -177,13 +173,27 @@ public class RenderRegionManager {
     
     private void recycleRegion(RenderRegion region) {
         var id = region.id;
-        region.recycle(this.vertexBufferCache);
+        region.recycle(this.recycledVertexBuffers);
         
         this.idPool.free(id);
     }
-
+    
+    private RenderRegion createRegion() {
+        int id = this.idPool.create();
+        
+        if (!this.recycledVertexBuffers.isEmpty()) {
+            return new RenderRegion(this.recycledVertexBuffers.pollLast(), id);
+        } else {
+            return new RenderRegion(this.device, this.stagingBuffer, this.vertexType, this.idPool.create());
+        }
+    }
+    
     public Collection<RenderRegion> getLoadedRegions() {
         return this.regions.values();
+    }
+    
+    public Collection<ArenaBuffer> getRecycledBuffers() {
+        return this.recycledVertexBuffers;
     }
 
     private record ChunkGeometryUpload(RenderSection section, BuiltChunkGeometry geometry, AtomicLong bufferSegmentResult) {

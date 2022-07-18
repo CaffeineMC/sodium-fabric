@@ -1,6 +1,8 @@
 package net.caffeinemc.sodium.render.buffer.arena;
 
-import it.unimi.dsi.fastutil.ints.Int2ReferenceAVLTreeMap;
+import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongRBTreeSet;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -8,22 +10,23 @@ import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryUtil;
 
 // TODO: handle alignment
 // TODO: handle element vs pointers
 // TODO: convert to longs
 public class AsyncArenaBuffer implements ArenaBuffer {
-    static final boolean CHECK_ASSERTIONS = false;
+    private static final boolean CHECK_ASSERTIONS = false;
 
-    private final int resizeIncrement;
+    private final float resizeMultiplier;
 
     private final RenderDevice device;
     private final StreamingBuffer stagingBuffer;
     private Buffer arenaBuffer;
 
-    private Int2ReferenceAVLTreeMap<FreedSegment> freedSegments = new Int2ReferenceAVLTreeMap<>();
-    private FreedSegment head;
+    private final LongRBTreeSet freedSegmentsByOffset = new LongRBTreeSet(BufferSegment::compareOffset);
+    private final LongRBTreeSet freedSegmentsByLength = new LongRBTreeSet(BufferSegment::compareLengthOffset);
 
     private int capacity;
     private int position;
@@ -34,27 +37,34 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     public AsyncArenaBuffer(RenderDevice device, StreamingBuffer stagingBuffer, int capacity, int stride) {
         this.device = device;
         this.stagingBuffer = stagingBuffer;
-        this.resizeIncrement = capacity / 8;
+        this.resizeMultiplier = .5f; // add 50% each resize
         this.capacity = capacity;
-        this.arenaBuffer = device.createBuffer((long) capacity * stride, EnumSet.noneOf(ImmutableBufferFlags.class));
         this.stride = stride;
+        this.arenaBuffer = device.createBuffer(
+                this.toBytes(capacity),
+                EnumSet.noneOf(ImmutableBufferFlags.class)
+        );
     }
     
     public void reset() {
-        this.head = null;
+        this.freedSegmentsByOffset.clear();
+        this.freedSegmentsByLength.clear();
         this.used = 0;
         this.position = 0;
     }
 
     private void resize(int newCapacity) {
-        if (this.used > newCapacity) {
-            throw new UnsupportedOperationException("New capacity must be larger than used size");
+        if (this.position > newCapacity) {
+            throw new UnsupportedOperationException("New capacity must be larger than position");
         }
 
         this.checkAssertions();
     
         var srcBufferObj = this.arenaBuffer;
-        var dstBufferObj = this.device.createBuffer(this.toBytes(this.capacity), EnumSet.noneOf(ImmutableBufferFlags.class));
+        var dstBufferObj = this.device.createBuffer(
+                this.toBytes(newCapacity),
+                EnumSet.noneOf(ImmutableBufferFlags.class)
+        );
         
         this.device.copyBuffer(
                 srcBufferObj,
@@ -83,25 +93,34 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     }
 
     private long alloc(int size) {
-        FreedSegment a = this.findFree(size);
-        
         long result = BufferSegment.INVALID;
-
-        if (a != null) {
-            if (a.length == size) {
-                result = BufferSegment.createKey(size, a.offset);
-                
-                // get rid of element from linked list
-                if (a.next != null) {
-                    a.next.prev = null;
-                }
-                if (a.prev != null) {
-                    a.prev.next = a.next;
-                }
-            } else {
-                result = BufferSegment.createKey(size, a.offset);
+    
+        // this is used to get the closest in the tree
+        long tempKey = BufferSegment.createKey(size, 0);
+        LongIterator itr = this.freedSegmentsByLength.iterator(tempKey);
         
-                a.offset += size;
+        if (itr.hasNext()) {
+            long freeSegment = itr.nextLong();
+            // the segment will always need to be removed from here
+            this.freedSegmentsByLength.remove(freeSegment);
+            this.freedSegmentsByOffset.remove(freeSegment);
+            
+            if (BufferSegment.getLength(freeSegment) == size) {
+                // no need to add back to tree
+                result = freeSegment;
+            } else {
+                result = BufferSegment.createKey(
+                        size,
+                        BufferSegment.getEnd(freeSegment) - size
+                );
+                
+                long newFreeSegment = BufferSegment.createKey(
+                        BufferSegment.getLength(freeSegment) - size,
+                        BufferSegment.getOffset(freeSegment)
+                );
+                
+                this.freedSegmentsByLength.add(newFreeSegment);
+                this.freedSegmentsByOffset.add(newFreeSegment);
             }
         } else if (this.capacity - this.position >= size) {
             result = BufferSegment.createKey(size, this.position);
@@ -117,48 +136,49 @@ public class AsyncArenaBuffer implements ArenaBuffer {
         return result;
     }
 
-    private FreedSegment findFree(int size) {
-        FreedSegment entry = this.head;
-        FreedSegment best = null;
-
-        while (entry != null) {
-            if (entry.length == size) {
-                return entry;
-            } else if (entry.length >= size) {
-                if (best == null || entry.length < best.length) {
-                    best = entry;
-                }
-            }
-
-            entry = entry.next;
-        }
-
-        return best;
-    }
-
     @Override
     public void free(long key) {
-        FreedSegment freedSegment = this.freedSegments.get(BufferSegment.getOffset(key));
-        if (entry.isFree()) {
-            throw new IllegalStateException("Already freed");
+        this.used -= BufferSegment.getLength(key);
+        
+        LongBidirectionalIterator itr = this.freedSegmentsByOffset.iterator(key);
+        
+        if (itr.hasPrevious()) {
+            long prev = itr.previousLong();
+            
+            if (BufferSegment.getEnd(prev) == BufferSegment.getOffset(key)) {
+                itr.remove();
+                this.freedSegmentsByLength.remove(prev);
+        
+                // merge key
+                key = BufferSegment.createKey(
+                        BufferSegment.getLength(prev) + BufferSegment.getLength(key),
+                        BufferSegment.getOffset(prev)
+                );
+            } else {
+                // need to skip one in the iterator to cancel out the previous() call
+                itr.nextLong();
+            }
         }
-
-        entry.setFree(true);
-
-        this.used -= entry.length;
-
-        BufferSegment next = entry.next;
-
-        if (next != null && next.isFree()) {
-            entry.mergeInto(next);
+    
+    
+        if (itr.hasNext()) {
+            long next = itr.nextLong();
+            
+            if (BufferSegment.getEnd(key) == BufferSegment.getOffset(next)) {
+                itr.remove();
+                this.freedSegmentsByLength.remove(next);
+        
+                // merge key
+                key = BufferSegment.createKey(
+                        BufferSegment.getLength(key) + BufferSegment.getLength(next),
+                        BufferSegment.getOffset(key)
+                );
+            }
         }
-
-        BufferSegment prev = entry.prev;
-
-        if (prev != null && prev.isFree()) {
-            prev.mergeInto(entry);
-        }
-
+        
+        this.freedSegmentsByOffset.add(key);
+        this.freedSegmentsByLength.add(key);
+    
         this.checkAssertions();
     }
 
@@ -265,13 +285,13 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     }
 
     public void ensureCapacity(int elementCount) {
-        // Re-sizing the arena results in a compaction, so any free space in the arena will be
-        // made into one contiguous segment, joined with the new segment of free space we're asking for
-        // We calculate the number of free elements in our arena and then subtract that from the total requested
-        int elementsNeeded = elementCount - (this.capacity - this.used);
+        // Re-sizing the arena no longer results in a compaction, so we need to go from the current pointer
+        // to make sure we have enough capacity. Any extra caused by allocations filling freed areas is just
+        // a bonus :tiny_potato:.
+        int elementsNeeded = elementCount - (this.capacity - this.position);
 
         // Try to allocate some extra buffer space unless this is an unusually large allocation
-        this.resize(Math.max(this.capacity + this.resizeIncrement, this.capacity + elementsNeeded));
+        this.resize(Math.max(this.capacity + (int) (this.capacity * this.resizeMultiplier), this.capacity + elementsNeeded));
     }
 
     private void checkAssertions() {
@@ -281,50 +301,38 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     }
 
     private void checkAssertions0() {
-        FreedSegment seg = this.head;
         int used = 0;
-
-        while (seg != null) {
-            if (seg.offset < 0) {
-                throw new IllegalStateException("segment.start < 0: out of bounds");
-            } else if (seg.getEnd() > this.capacity) {
-                throw new IllegalStateException("segment.end > arena.capacity: out of bounds");
-            }
+        
+        long prev = BufferSegment.INVALID;
+        
+        for(long freedSegment : this.freedSegmentsByOffset) {
+            int offset = BufferSegment.getOffset(freedSegment);
+            int length = BufferSegment.getLength(freedSegment);
+            int end = BufferSegment.getEnd(freedSegment);
+            
+            Validate.isTrue(offset >= 0, "segment.offset < 0: out of bounds");
+            // TODO: is it actually valid for a freed section to be past the position?
+            Validate.isTrue(end <= this.position, "segment.end > arena.position: out of bounds");
+            
+            used += length;
+            
+            if (prev != BufferSegment.INVALID) {
+                int prevEnd = BufferSegment.getEnd(prev);
     
-            used += seg.length;
-    
-            FreedSegment next = seg.next;
-
-            if (next != null) {
-                if (next.offset < seg.getEnd()) {
-                    throw new IllegalStateException("segment.next.start < segment.end: overlapping segments (corrupted)");
-                } else if (next.offset > seg.getEnd()) {
-                    throw new IllegalStateException("segment.next.start > segment.end: not truly connected (sparsity error)");
-                }
+                Validate.isTrue(prevEnd <= offset,
+                                "segment.prev.end > segment.offset: overlapping segments (corrupted)");
             }
+            
+            prev = freedSegment;
+        }
     
-            FreedSegment prev = seg.prev;
-
-            if (prev != null) {
-                if (prev.getEnd() > seg.offset) {
-                    throw new IllegalStateException("segment.prev.end > segment.start: overlapping segments (corrupted)");
-                } else if (prev.getEnd() < seg.offset) {
-                    throw new IllegalStateException("segment.prev.end < segment.start: not truly connected (sparsity error)");
-                }
-            }
-
-            seg = next;
-        }
-
-        if (this.used < 0) {
-            throw new IllegalStateException("arena.used < 0: failure to track");
-        } else if (this.used > this.capacity) {
-            throw new IllegalStateException("arena.used > arena.capacity: failure to track");
-        }
-
-        if (this.used != used) {
-            throw new IllegalStateException("arena.used is invalid");
-        }
+        Validate.isTrue(this.used >= 0, "arena.used < 0: failure to track");
+        Validate.isTrue(this.position <= this.capacity,
+                        "arena.position > arena.capacity: failure to track");
+        Validate.isTrue(this.used <= this.position, "arena.used > arena.position: failure to track");
+        Validate.isTrue(this.position - this.used == used, "arena.used is invalid");
+        Validate.isTrue(this.freedSegmentsByLength.size() == this.freedSegmentsByOffset.size(),
+                        "freedSegmentsByLength.size != freedSegmentsByOffset.size, mismatched add/remove");
     }
 
     private long toBytes(long index) {
@@ -339,33 +347,5 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     public int getStride() {
         return this.stride;
     }
-    
-    private static class FreedSegment {
-    
-        protected int offset;
-        protected int length;
-    
-        protected FreedSegment next;
-        protected FreedSegment prev;
-        
-        public FreedSegment(int offset, int length) {
-            this.offset = offset;
-            this.length = length;
-        }
-        
-        protected int getEnd() {
-            return this.offset + this.length;
-        }
-        
-        protected void mergeInto(FreedSegment entry) {
-            this.length = this.length + entry.length;
-            this.next = entry.next;
-            
-            if (this.next != null) {
-                this.next.prev = this;
-            }
-        }
-    }
-    
     
 }

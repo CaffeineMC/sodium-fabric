@@ -437,6 +437,13 @@ public class TerrainRenderManager {
 
             count++;
         }
+    
+        for (var recycledBuffer : this.regionManager.getRecycledBuffers()) {
+            deviceUsed += recycledBuffer.getDeviceUsedMemory(); // should be 0, but add just in case
+            deviceAllocated += recycledBuffer.getDeviceAllocatedMemory();
+        
+            count++;
+        }
 
         deviceUsed += this.chunkRenderer.getDeviceUsedMemory();
         deviceAllocated += this.chunkRenderer.getDeviceAllocatedMemory();
