@@ -18,7 +18,7 @@ import org.lwjgl.system.MemoryUtil;
 // TODO: handle element vs pointers
 // TODO: convert to longs
 public class AsyncArenaBuffer implements ArenaBuffer {
-    private static final boolean CHECK_ASSERTIONS = false;
+    private static final boolean CHECK_ASSERTIONS = true;
 
     private final float resizeMultiplier;
 
@@ -41,7 +41,7 @@ public class AsyncArenaBuffer implements ArenaBuffer {
             RenderDevice device,
             StreamingBuffer stagingBuffer,
             BufferPool<ImmutableBuffer> bufferPool,
-            int capacity,
+            int initialCapacityTarget,
             float resizeMultiplier,
             int stride
     ) {
@@ -49,9 +49,8 @@ public class AsyncArenaBuffer implements ArenaBuffer {
         this.stagingBuffer = stagingBuffer;
         this.bufferPool = bufferPool;
         this.resizeMultiplier = resizeMultiplier;
-        this.capacity = capacity;
         this.stride = stride;
-        this.arenaBuffer = bufferPool.getBufferLenient(this.toBytes(capacity));
+        this.setBuffer(bufferPool.getBufferLenient(this.toBytes(initialCapacityTarget)));
     }
     
     public void reset() {
@@ -82,8 +81,7 @@ public class AsyncArenaBuffer implements ArenaBuffer {
         
         this.bufferPool.recycleBuffer(srcBufferObj);
     
-        this.arenaBuffer = dstBufferObj;
-        this.capacity = this.toElements(dstBufferObj.capacity());
+        this.setBuffer(dstBufferObj);
 
         this.checkAssertions();
     }
@@ -298,6 +296,11 @@ public class AsyncArenaBuffer implements ArenaBuffer {
 
         // Try to allocate some extra buffer space unless this is an unusually large allocation
         this.resize(Math.max(this.capacity + (int) (this.capacity * this.resizeMultiplier), this.capacity + elementsNeeded));
+    }
+    
+    private void setBuffer(ImmutableBuffer buffer) {
+        this.arenaBuffer = buffer;
+        this.capacity = this.toElements(buffer.capacity());
     }
 
     private void checkAssertions() {
