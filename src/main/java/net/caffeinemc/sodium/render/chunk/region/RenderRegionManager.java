@@ -2,16 +2,21 @@ package net.caffeinemc.sodium.render.chunk.region;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import net.caffeinemc.gfx.api.buffer.ImmutableBuffer;
+import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.util.buffer.SectionedStreamingBuffer;
 import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
 import net.caffeinemc.sodium.SodiumClientMod;
-import net.caffeinemc.sodium.render.buffer.arena.ArenaBuffer;
+import net.caffeinemc.sodium.render.buffer.BufferPool;
 import net.caffeinemc.sodium.render.buffer.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
@@ -23,9 +28,7 @@ import net.caffeinemc.sodium.util.IntPool;
 public class RenderRegionManager {
     private final Long2ReferenceMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
     private final IntPool idPool = new IntPool();
-    
-    // add to last, poll first to act like a FIFO queue
-    private final Deque<ArenaBuffer> recycledVertexBuffers = new ArrayDeque<>();
+    private final BufferPool<ImmutableBuffer> vertexBufferPool;
 
     private final RenderDevice device;
     private final TerrainVertexType vertexType;
@@ -34,6 +37,14 @@ public class RenderRegionManager {
     public RenderRegionManager(RenderDevice device, TerrainVertexType vertexType) {
         this.device = device;
         this.vertexType = vertexType;
+    
+        this.vertexBufferPool = new BufferPool<>(
+                device,
+                c -> device.createBuffer(
+                        c,
+                        EnumSet.noneOf(ImmutableBufferFlags.class)
+                )
+        );
 
         var maxInFlightFrames = SodiumClientMod.options().advanced.cpuRenderAheadLimit + 1;
         this.stagingBuffer = new SectionedStreamingBuffer(
@@ -60,10 +71,14 @@ public class RenderRegionManager {
             RenderRegion region = it.next();
 
             if (region.isEmpty()) {
-                this.recycleRegion(region);
+                this.deleteRegion(region);
                 it.remove();
             }
         }
+    }
+    
+    public void compact() {
+        // TODO: impl
     }
 
     public void uploadChunks(Iterator<TerrainBuildResult> queue, int frameIndex, @Deprecated RenderUpdateCallback callback) {
@@ -124,7 +139,15 @@ public class RenderRegionManager {
         RenderRegion region = this.regions.get(regionKey);
 
         if (region == null) {
-            this.regions.put(regionKey, region = this.createRegion());
+            region = new RenderRegion(
+                    this.device,
+                    this.stagingBuffer,
+                    this.vertexBufferPool,
+                    this.vertexType,
+                    this.idPool.create()
+            );
+            
+            this.regions.put(regionKey, region);
         }
 
         region.vertexBuffers.upload(uploads, frameIndex);
@@ -157,10 +180,11 @@ public class RenderRegionManager {
 
     public void delete() {
         for (RenderRegion region : this.regions.values()) {
-            this.deleteRegion(region);
+            region.delete();
         }
         this.regions.clear();
-
+        
+        this.vertexBufferPool.delete();
         this.stagingBuffer.delete();
     }
 
@@ -171,29 +195,12 @@ public class RenderRegionManager {
         this.idPool.free(id);
     }
     
-    private void recycleRegion(RenderRegion region) {
-        var id = region.id;
-        region.recycle(this.recycledVertexBuffers);
-        
-        this.idPool.free(id);
-    }
-    
-    private RenderRegion createRegion() {
-        int id = this.idPool.create();
-        
-        if (!this.recycledVertexBuffers.isEmpty()) {
-            return new RenderRegion(this.recycledVertexBuffers.pollLast(), id);
-        } else {
-            return new RenderRegion(this.device, this.stagingBuffer, this.vertexType, this.idPool.create());
-        }
-    }
-    
     public Collection<RenderRegion> getLoadedRegions() {
         return this.regions.values();
     }
     
-    public Collection<ArenaBuffer> getRecycledBuffers() {
-        return this.recycledVertexBuffers;
+    public BufferPool<ImmutableBuffer> getVertexBufferPool() {
+        return this.vertexBufferPool;
     }
 
     private record ChunkGeometryUpload(RenderSection section, BuiltChunkGeometry geometry, AtomicLong bufferSegmentResult) {

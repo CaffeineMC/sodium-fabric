@@ -1,5 +1,7 @@
 package net.caffeinemc.gfx.opengl;
 
+import it.unimi.dsi.fastutil.HashCommon;
+
 /**
  * An abstract object used to represent objects in OpenGL code safely. This class hides the direct handle to a OpenGL
  * object, requiring that it first be checked by all callers to prevent null pointer de-referencing. However, this will
@@ -34,5 +36,18 @@ public abstract class GlObject {
 
     public final void invalidateHandle() {
         this.handle = INVALID_HANDLE;
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+        GlObject glObject = (GlObject) o;
+        return this.handle == glObject.handle;
+    }
+    
+    @Override
+    public int hashCode() {
+        return HashCommon.mix(this.handle);
     }
 }

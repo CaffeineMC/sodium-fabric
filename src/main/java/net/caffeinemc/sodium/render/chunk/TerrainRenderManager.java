@@ -11,6 +11,7 @@ import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.SodiumWorldRenderer;
+import net.caffeinemc.sodium.render.buffer.BufferPool;
 import net.caffeinemc.sodium.render.chunk.compile.ChunkBuilder;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
@@ -438,12 +439,9 @@ public class TerrainRenderManager {
             count++;
         }
     
-        for (var recycledBuffer : this.regionManager.getRecycledBuffers()) {
-            deviceUsed += recycledBuffer.getDeviceUsedMemory(); // should be 0, but add just in case
-            deviceAllocated += recycledBuffer.getDeviceAllocatedMemory();
-        
-            count++;
-        }
+        BufferPool<?> reserves = this.regionManager.getVertexBufferPool();
+        deviceAllocated += reserves.getDeviceAllocatedMemory();
+        count += reserves.getDeviceBufferObjects();
 
         deviceUsed += this.chunkRenderer.getDeviceUsedMemory();
         deviceAllocated += this.chunkRenderer.getDeviceAllocatedMemory();

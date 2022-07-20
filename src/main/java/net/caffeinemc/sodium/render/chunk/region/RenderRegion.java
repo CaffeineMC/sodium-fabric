@@ -1,8 +1,9 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
-import java.util.Queue;
+import net.caffeinemc.gfx.api.buffer.ImmutableBuffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
+import net.caffeinemc.sodium.render.buffer.BufferPool;
 import net.caffeinemc.sodium.render.buffer.arena.ArenaBuffer;
 import net.caffeinemc.sodium.render.buffer.arena.AsyncArenaBuffer;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
@@ -33,22 +34,17 @@ public class RenderRegion {
 
     public final ArenaBuffer vertexBuffers;
     public final int id;
-    
-    public RenderRegion(ArenaBuffer vertexBuffers, int id) {
-        this.vertexBuffers = vertexBuffers;
-        this.id = id;
-    }
 
-    public RenderRegion(RenderDevice device, StreamingBuffer stagingBuffer, TerrainVertexType vertexType, int id) {
-        this.vertexBuffers = new AsyncArenaBuffer(device, stagingBuffer, REGION_SIZE * 756, vertexType.getBufferVertexFormat().stride());
+    public RenderRegion(RenderDevice device, StreamingBuffer stagingBuffer, BufferPool<ImmutableBuffer> vertexBufferPool, TerrainVertexType vertexType, int id) {
+        this.vertexBuffers = new AsyncArenaBuffer(
+                device,
+                stagingBuffer,
+                vertexBufferPool,
+                REGION_SIZE * 756, // 756 is the average-ish amount of vertices in a section
+                .25f, // add 25% each resize
+                vertexType.getBufferVertexFormat().stride()
+        );
         this.id = id;
-    }
-    
-    // TODO: include index buffer cache too
-    public void recycle(Queue<ArenaBuffer> vertexBufferCache) {
-        ArenaBuffer buffer = this.vertexBuffers;
-        buffer.reset();
-        vertexBufferCache.add(buffer);
     }
 
     public void delete() {
