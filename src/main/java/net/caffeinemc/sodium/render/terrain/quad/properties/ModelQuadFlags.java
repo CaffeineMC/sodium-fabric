@@ -58,23 +58,23 @@ public class ModelQuadFlags {
         }
 
         boolean partial = switch (face.getAxis()) {
-            case X -> minY >= 0.0001f || minZ >= 0.0001f || maxY <= 0.9999F || maxZ <= 0.9999F;
-            case Y -> minX >= 0.0001f || minZ >= 0.0001f || maxX <= 0.9999F || maxZ <= 0.9999F;
-            case Z -> minX >= 0.0001f || minY >= 0.0001f || maxX <= 0.9999F || maxY <= 0.9999F;
+            case X -> minY >= 0.0001F || minZ >= 0.0001F || maxY <= 0.9999F || maxZ <= 0.9999F;
+            case Y -> minX >= 0.0001F || minZ >= 0.0001F || maxX <= 0.9999F || maxZ <= 0.9999F;
+            case Z -> minX >= 0.0001F || minY >= 0.0001F || maxX <= 0.9999F || maxY <= 0.9999F;
         };
 
-        boolean parallel = switch(face.getAxis()) {
+        boolean parallel = switch (face.getAxis()) {
             case X -> minX == maxX;
             case Y -> minY == maxY;
             case Z -> minZ == maxZ;
         };
 
         boolean aligned = parallel && switch (face) {
-            case DOWN -> minY < 0.0001f;
+            case DOWN -> minY < 0.0001F;
             case UP -> maxY > 0.9999F;
-            case NORTH -> minZ < 0.0001f;
+            case NORTH -> minZ < 0.0001F;
             case SOUTH -> maxZ > 0.9999F;
-            case WEST -> minX < 0.0001f;
+            case WEST -> minX < 0.0001F;
             case EAST -> maxX > 0.9999F;
         };
 
