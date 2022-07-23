@@ -1,4 +1,4 @@
-package net.caffeinemc.gfx.internal;
+package net.caffeinemc.gfx.util.internal;
 
 public class MathUtil {
     /**

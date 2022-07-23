@@ -13,10 +13,10 @@ import net.caffeinemc.gfx.api.buffer.ImmutableBuffer;
 import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.gfx.util.buffer.SectionedStreamingBuffer;
-import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
+import net.caffeinemc.gfx.util.buffer.streaming.SectionedStreamingBuffer;
+import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.SodiumClientMod;
-import net.caffeinemc.sodium.render.buffer.BufferPool;
+import net.caffeinemc.gfx.util.buffer.BufferPool;
 import net.caffeinemc.sodium.render.buffer.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
@@ -40,6 +40,7 @@ public class RenderRegionManager {
     
         this.vertexBufferPool = new BufferPool<>(
                 device,
+                100,
                 c -> device.createBuffer(
                         c,
                         EnumSet.noneOf(ImmutableBufferFlags.class)
@@ -77,8 +78,8 @@ public class RenderRegionManager {
         }
     }
     
-    public void compact() {
-        // TODO: impl
+    public void prune() {
+        this.vertexBufferPool.prune();
     }
 
     public void uploadChunks(Iterator<TerrainBuildResult> queue, int frameIndex, @Deprecated RenderUpdateCallback callback) {

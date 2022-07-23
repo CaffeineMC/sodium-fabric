@@ -12,7 +12,7 @@ import net.caffeinemc.gfx.api.pipeline.RenderPipeline;
 import net.caffeinemc.gfx.api.pipeline.PipelineState;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
-import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
+import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.buffer.ModelRange;
 import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;

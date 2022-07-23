@@ -1,7 +1,7 @@
 package net.caffeinemc.sodium.interop.vanilla.sequence;
 
 import net.caffeinemc.gfx.api.types.ElementFormat;
-import net.caffeinemc.gfx.util.buffer.SequenceBuilder;
+import net.caffeinemc.gfx.util.buffer.streaming.SequenceBuilder;
 import net.minecraft.client.render.VertexFormat;
 
 public class Blaze3DSequences {

@@ -1,4 +1,4 @@
-package net.caffeinemc.gfx.util.buffer;
+package net.caffeinemc.gfx.util.buffer.streaming;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;

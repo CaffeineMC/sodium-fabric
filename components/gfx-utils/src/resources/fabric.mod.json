@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "sodium-gfx-utils",
+  "version": "${version}",
+  "description": "Utilities built with sodium-gfx",
+  "license": "LGPL-3.0-only",
+  "custom": {
+    "modmenu": {
+      "parent": {
+        "id": "sodium"
+      }
+    }
+  }
+}

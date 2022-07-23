@@ -9,8 +9,8 @@ import java.util.List;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.ImmutableBuffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
-import net.caffeinemc.sodium.render.buffer.BufferPool;
+import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
+import net.caffeinemc.gfx.util.buffer.BufferPool;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryUtil;
 

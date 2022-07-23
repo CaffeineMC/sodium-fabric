@@ -1,4 +1,4 @@
-package net.caffeinemc.gfx.util.buffer;
+package net.caffeinemc.gfx.util.buffer.streaming;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
@@ -7,7 +7,7 @@ import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.MappedBuffer;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.gfx.internal.MathUtil;
+import net.caffeinemc.gfx.util.internal.MathUtil;
 import org.lwjgl.system.MemoryUtil;
 
 // TODO: convert to all longs

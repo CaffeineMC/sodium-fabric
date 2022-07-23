@@ -2,8 +2,8 @@ package net.caffeinemc.sodium.render.chunk.region;
 
 import net.caffeinemc.gfx.api.buffer.ImmutableBuffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.gfx.util.buffer.StreamingBuffer;
-import net.caffeinemc.sodium.render.buffer.BufferPool;
+import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
+import net.caffeinemc.gfx.util.buffer.BufferPool;
 import net.caffeinemc.sodium.render.buffer.arena.ArenaBuffer;
 import net.caffeinemc.sodium.render.buffer.arena.AsyncArenaBuffer;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;

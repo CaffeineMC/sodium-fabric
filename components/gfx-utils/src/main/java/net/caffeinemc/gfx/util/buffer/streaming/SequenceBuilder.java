@@ -1,4 +1,4 @@
-package net.caffeinemc.gfx.util.buffer;
+package net.caffeinemc.gfx.util.buffer.streaming;
 
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import org.lwjgl.system.MemoryUtil;
