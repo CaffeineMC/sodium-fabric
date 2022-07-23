@@ -2,8 +2,6 @@ package net.caffeinemc.sodium.render.terrain.light.data;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockRenderView;
@@ -18,14 +16,13 @@ import net.minecraft.world.BlockRenderView;
  * Each long integer contains the following fields:
  * - OP: Block opacity test, true if opaque
  * - FO: Full block opaque test, true if opaque
- * - AO: Ambient occlusion, floating point value in the range of 0.0..1.0 encoded as an 12-bit unsigned integer
+ * - FC: Full block test, true if full cube
+ * - AO: Ambient occlusion, floating point value in the range of 0.0..1.0 encoded as a 12-bit unsigned integer
  * - LM: Light map texture coordinates, two packed UV shorts in an integer
  *
  * You can use the various static pack/unpack methods to extract these values in a usable format.
  */
 public abstract class LightDataAccess {
-    protected static final FluidState EMPTY_FLUID_STATE = Fluids.EMPTY.getDefaultState();
-
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
     protected BlockRenderView world;
 
@@ -74,12 +71,13 @@ public abstract class LightDataAccess {
 
         boolean op = !state.shouldBlockVision(world, pos) || state.getOpacity(world, pos) == 0;
         boolean fo = state.isOpaqueFullCube(world, pos);
+        boolean fc = state.isFullCube(world, pos);
 
         // OPTIMIZE: Do not calculate lightmap data if the block is full and opaque.
         // FIX: Calculate lightmap data for light-emitting or emissive blocks, even though they are full and opaque.
         int lm = (fo && !em) ? 0 : WorldRenderer.getLightmapCoordinates(world, state, pos);
 
-        return packAO(ao) | packLM(lm) | packOP(op) | packFO(fo) | (1L << 60);
+        return packAO(ao) | packLM(lm) | packOP(op) | packFO(fo) | packFC(fc) | (1L << 60);
     }
 
     public static long packOP(boolean opaque) {
@@ -96,6 +94,14 @@ public abstract class LightDataAccess {
 
     public static boolean unpackFO(long word) {
         return ((word >>> 57) & 0b1) != 0;
+    }
+
+    public static long packFC(boolean fullCube) {
+        return (fullCube ? 1L : 0L) << 58;
+    }
+
+    public static boolean unpackFC(long word) {
+        return ((word >>> 58) & 0b1) != 0;
     }
 
     public static long packLM(int lm) {
