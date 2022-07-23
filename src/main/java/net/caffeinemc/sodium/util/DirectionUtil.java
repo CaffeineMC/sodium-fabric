@@ -14,12 +14,19 @@ public class DirectionUtil {
     // Provides the same order as enumerating Direction and checking the axis of each value
     public static final Direction[] HORIZONTAL_DIRECTIONS = new Direction[] { Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST };
 
-    private static final int DOWN = 0;
-    private static final int UP = 1;
-    private static final int NORTH = 2;
-    private static final int SOUTH = 3;
-    private static final int WEST = 4;
-    private static final int EAST = 5;
+    public static final int DOWN = 0;
+    public static final int UP = 1;
+    public static final int NORTH = 2;
+    public static final int SOUTH = 3;
+    public static final int WEST = 4;
+    public static final int EAST = 5;
+
+    public static final int X_PLUS = EAST;
+    public static final int X_MIN = WEST;
+    public static final int Y_PLUS = UP;
+    public static final int Y_MIN = DOWN;
+    public static final int Z_PLUS = SOUTH;
+    public static final int Z_MIN = NORTH;
 
     static {
         Validate.isTrue(DOWN == Direction.DOWN.getId());
@@ -28,6 +35,13 @@ public class DirectionUtil {
         Validate.isTrue(SOUTH == Direction.SOUTH.getId());
         Validate.isTrue(WEST == Direction.WEST.getId());
         Validate.isTrue(EAST == Direction.EAST.getId());
+
+        Validate.isTrue(Direction.EAST.getOffsetX() == 1);
+        Validate.isTrue(Direction.WEST.getOffsetX() == -1);
+        Validate.isTrue(Direction.UP.getOffsetY() == 1);
+        Validate.isTrue(Direction.DOWN.getOffsetY() == -1);
+        Validate.isTrue(Direction.SOUTH.getOffsetZ() == 1);
+        Validate.isTrue(Direction.NORTH.getOffsetZ() == -1);
     }
 
     public static int getOppositeId(int dir) {

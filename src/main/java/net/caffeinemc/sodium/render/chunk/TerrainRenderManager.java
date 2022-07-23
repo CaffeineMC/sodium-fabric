@@ -5,8 +5,6 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
@@ -47,6 +45,9 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 public class TerrainRenderManager {
     /**
@@ -141,7 +142,8 @@ public class TerrainRenderManager {
     
         profiler.swap("chunk_graph_rebuild");
         BlockPos origin = camera.getBlockPos();
-        var useOcclusionCulling = !spectator || !this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin);
+        var useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled &&
+                (!spectator || !this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin));
 
         var visibleSections = ChunkOcclusion.calculateVisibleSections(this.tree, frustum, this.world, origin, this.chunkViewDistance, useOcclusionCulling);
 
