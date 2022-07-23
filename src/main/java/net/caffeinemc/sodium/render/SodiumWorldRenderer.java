@@ -193,12 +193,7 @@ public class SodiumWorldRenderer {
             this.terrainRenderManager.update(new ChunkCameraContext(camera), frustum, spectator);
         }
         
-//        if (this.terrainRenderManager.needsPrune()) {
-//            this.terrainRenderManager.prune();
-//        }
-        
-        boolean test = false;
-        if (test) {
+        if (this.terrainRenderManager.needsPrune()) {
             this.terrainRenderManager.prune();
         }
 

@@ -69,7 +69,7 @@ public class TerrainRenderManager {
     private final ClientWorld world;
     
     private static final int PRUNE_COMPLETED = -1;
-    private static final int PRUNE_DELAY_FRAMES = 0;
+    private static final int PRUNE_DELAY_FRAMES = 10;
 
     private boolean needsUpdate;
     private int pruneFrameIndex = PRUNE_COMPLETED;
@@ -161,6 +161,9 @@ public class TerrainRenderManager {
     }
     
     public void prune() {
+        Profiler profiler = MinecraftClient.getInstance().getProfiler();
+        
+        profiler.swap("prune_buffers");
         this.regionManager.prune();
         
         this.pruneFrameIndex = PRUNE_COMPLETED;
