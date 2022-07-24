@@ -53,7 +53,11 @@ public class ChunkOcclusion {
         }
 
 
-        int[] visibleSections = new int[nodeVisitable.count()];
+        // It's possible that due to the near clip plane, the chunk the camera is in,
+        // isn't actually visible, however since we still need to use it as a starting
+        // point for iterating, we make it always visible, which means we need one extra
+        // slot in the array
+        int[] visibleSections = new int[nodeVisitable.count() + 1];
         int visibleSectionCount = 0;
 
         int fallbackIndex = 0;
