@@ -192,10 +192,6 @@ public class SodiumWorldRenderer {
         if (this.terrainRenderManager.isGraphDirty()) {
             this.terrainRenderManager.update(new ChunkCameraContext(camera), frustum, spectator);
         }
-        
-        if (this.terrainRenderManager.needsPrune()) {
-            this.terrainRenderManager.prune();
-        }
 
         profiler.swap("visible_chunk_tick");
 

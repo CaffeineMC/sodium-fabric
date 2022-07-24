@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -26,9 +25,13 @@ import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.IntPool;
 
 public class RenderRegionManager {
+    // both found from experimentation
+    private static final double PRUNE_RATIO_THRESHOLD = .35;
+    private static final float PRUNE_PERCENT_MODIFIER = -.2f;
+    
     private final Long2ReferenceMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
     private final IntPool idPool = new IntPool();
-    private final BufferPool<ImmutableBuffer> vertexBufferPool;
+    private final BufferPool<ImmutableBuffer> bufferPool;
 
     private final RenderDevice device;
     private final TerrainVertexType vertexType;
@@ -38,7 +41,7 @@ public class RenderRegionManager {
         this.device = device;
         this.vertexType = vertexType;
     
-        this.vertexBufferPool = new BufferPool<>(
+        this.bufferPool = new BufferPool<>(
                 device,
                 100,
                 c -> device.createBuffer(
@@ -76,10 +79,17 @@ public class RenderRegionManager {
                 it.remove();
             }
         }
+    
+        long activeSize = this.getDeviceAllocatedMemoryActive();
+        long reserveSize = this.bufferPool.getDeviceAllocatedMemory();
+        
+        if ((double) reserveSize / activeSize > PRUNE_RATIO_THRESHOLD) {
+            this.prune();
+        }
     }
     
     public void prune() {
-        this.vertexBufferPool.prune();
+        this.bufferPool.prune(PRUNE_PERCENT_MODIFIER);
     }
 
     public void uploadChunks(Iterator<TerrainBuildResult> queue, int frameIndex, @Deprecated RenderUpdateCallback callback) {
@@ -143,7 +153,7 @@ public class RenderRegionManager {
             region = new RenderRegion(
                     this.device,
                     this.stagingBuffer,
-                    this.vertexBufferPool,
+                    this.bufferPool,
                     this.vertexType,
                     this.idPool.create()
             );
@@ -185,7 +195,7 @@ public class RenderRegionManager {
         }
         this.regions.clear();
         
-        this.vertexBufferPool.delete();
+        this.bufferPool.delete();
         this.stagingBuffer.delete();
     }
 
@@ -196,12 +206,20 @@ public class RenderRegionManager {
         this.idPool.free(id);
     }
     
-    public Collection<RenderRegion> getLoadedRegions() {
-        return this.regions.values();
+    private long getDeviceAllocatedMemoryActive() {
+        return this.regions.values().stream().mapToLong(RenderRegion::getDeviceAllocatedMemory).sum();
     }
     
-    public BufferPool<ImmutableBuffer> getVertexBufferPool() {
-        return this.vertexBufferPool;
+    public int getDeviceBufferObjects() {
+        return this.regions.size() + this.bufferPool.getDeviceBufferObjects();
+    }
+    
+    public long getDeviceUsedMemory() {
+        return this.regions.values().stream().mapToLong(RenderRegion::getDeviceUsedMemory).sum();
+    }
+    
+    public long getDeviceAllocatedMemory() {
+        return this.getDeviceAllocatedMemoryActive() + this.bufferPool.getDeviceAllocatedMemory();
     }
 
     private record ChunkGeometryUpload(RenderSection section, BuiltChunkGeometry geometry, AtomicLong bufferSegmentResult) {

@@ -68,12 +68,8 @@ public class TerrainRenderManager {
     private final ChunkRenderer chunkRenderer;
 
     private final ClientWorld world;
-    
-    private static final int PRUNE_COMPLETED = -1;
-    private static final int PRUNE_DELAY_FRAMES = 10;
 
     private boolean needsUpdate;
-    private int pruneFrameIndex = PRUNE_COMPLETED;
     private int frameIndex = 0;
 
     private final ChunkTracker tracker;
@@ -159,16 +155,6 @@ public class TerrainRenderManager {
         this.chunkRenderer.createRenderLists(chunkLists, camera, this.frameIndex);
         
         this.needsUpdate = false;
-        this.pruneFrameIndex = this.frameIndex + PRUNE_DELAY_FRAMES;
-    }
-    
-    public void prune() {
-        Profiler profiler = MinecraftClient.getInstance().getProfiler();
-        
-        profiler.swap("prune_buffers");
-        this.regionManager.prune();
-        
-        this.pruneFrameIndex = PRUNE_COMPLETED;
     }
 
     private void updateVisibilityLists(IntArrayList visible, ChunkCameraContext camera) {
@@ -296,6 +282,8 @@ public class TerrainRenderManager {
     }
 
     public void updateChunks() {
+        Profiler profiler = MinecraftClient.getInstance().getProfiler();
+        
         var blockingFutures = this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD);
 
         this.submitRebuildTasks(ChunkUpdateType.INITIAL_BUILD);
@@ -315,7 +303,8 @@ public class TerrainRenderManager {
                     this::onChunkDataChanged
             );
         }
-
+    
+        profiler.swap("chunk_cleanup");
         this.regionManager.cleanup();
     }
 
@@ -394,10 +383,6 @@ public class TerrainRenderManager {
     public boolean isGraphDirty() {
         return this.needsUpdate;
     }
-    
-    public boolean needsPrune() {
-        return this.pruneFrameIndex != PRUNE_COMPLETED && this.pruneFrameIndex <= this.frameIndex;
-    }
 
     public ChunkBuilder getBuilder() {
         return this.builder;
@@ -451,17 +436,10 @@ public class TerrainRenderManager {
 
         long deviceUsed = 0;
         long deviceAllocated = 0;
-
-        for (var region : this.regionManager.getLoadedRegions()) {
-            deviceUsed += region.getDeviceUsedMemory();
-            deviceAllocated += region.getDeviceAllocatedMemory();
-
-            count++;
-        }
-    
-        BufferPool<?> reserves = this.regionManager.getVertexBufferPool();
-        deviceAllocated += reserves.getDeviceAllocatedMemory();
-        count += reserves.getDeviceBufferObjects();
+        
+        deviceAllocated += this.regionManager.getDeviceAllocatedMemory();
+        deviceUsed += this.regionManager.getDeviceUsedMemory();
+        count += this.regionManager.getDeviceBufferObjects();
 
         deviceUsed += this.chunkRenderer.getDeviceUsedMemory();
         deviceAllocated += this.chunkRenderer.getDeviceAllocatedMemory();
