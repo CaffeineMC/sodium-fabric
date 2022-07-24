@@ -1,22 +1,22 @@
 package net.caffeinemc.sodium.render.terrain;
 
+import net.caffeinemc.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
+import net.caffeinemc.sodium.render.terrain.color.ColorSampler;
+import net.caffeinemc.sodium.render.terrain.color.blender.ColorBlender;
 import net.caffeinemc.sodium.render.terrain.light.LightMode;
 import net.caffeinemc.sodium.render.terrain.light.LightPipeline;
 import net.caffeinemc.sodium.render.terrain.light.LightPipelineProvider;
 import net.caffeinemc.sodium.render.terrain.light.data.QuadLightData;
 import net.caffeinemc.sodium.render.terrain.quad.ModelQuad;
-import net.caffeinemc.sodium.render.terrain.color.ColorSampler;
 import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
 import net.caffeinemc.sodium.render.terrain.quad.ModelQuadViewMutable;
-import net.caffeinemc.sodium.render.terrain.color.blender.ColorBlender;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ModelQuadFlags;
-import net.caffeinemc.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
-import net.caffeinemc.sodium.util.packed.Normal3b;
-import net.caffeinemc.sodium.util.packed.ColorABGR;
 import net.caffeinemc.sodium.util.DirectionUtil;
+import net.caffeinemc.sodium.util.packed.ColorABGR;
+import net.caffeinemc.sodium.util.packed.Normal3b;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
-import net.fabricmc.fabric.impl.client.rendering.fluid.FluidRenderHandlerRegistryImpl;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SideShapeType;
 import net.minecraft.client.MinecraftClient;
@@ -24,6 +24,7 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -45,8 +46,6 @@ public class FluidRenderer {
     private final MutableFloat scratchHeight = new MutableFloat(0);
     private final MutableInt scratchSamples = new MutableInt();
 
-    private final Sprite waterOverlaySprite;
-
     private final ModelQuadViewMutable quad = new ModelQuad();
 
     private final LightPipelineProvider lighters;
@@ -59,8 +58,6 @@ public class FluidRenderer {
     private final int[] quadColors = new int[4];
 
     public FluidRenderer(LightPipelineProvider lighters, ColorBlender colorBlender) {
-        this.waterOverlaySprite = ModelLoader.WATER_OVERLAY.getSprite();
-
         int normal = Normal3b.pack(0.0f, 1.0f, 0.0f);
 
         for (int i = 0; i < 4; i++) {
@@ -77,9 +74,10 @@ public class FluidRenderer {
         BlockPos adjPos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
 
         if (blockState.isOpaque()) {
-            return world.getFluidState(adjPos).getFluid().matchesType(fluid) || blockState.isSideSolid(world,pos,dir, SideShapeType.FULL);
             // fluidlogged or next to water, occlude sides that are solid or the same liquid
-            }
+            return world.getFluidState(adjPos).getFluid().matchesType(fluid) || blockState.isSideSolid(world, pos, dir, SideShapeType.FULL);
+        }
+
         return world.getFluidState(adjPos).getFluid().matchesType(fluid);
     }
 
@@ -127,7 +125,14 @@ public class FluidRenderer {
 
         boolean isWater = fluidState.isIn(FluidTags.WATER);
 
-        FluidRenderHandler handler = FluidRenderHandlerRegistryImpl.INSTANCE.get(fluidState.getFluid());
+        FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getFluid());
+
+        // Match the vanilla FluidRenderer's behavior if the handler is null
+        if (handler == null) {
+            boolean isLava = fluidState.isIn(FluidTags.LAVA);
+            handler = FluidRenderHandlerRegistry.INSTANCE.get(isLava ? Fluids.LAVA : Fluids.WATER);
+        }
+
         ColorSampler<FluidState> colorizer = this.createColorProviderAdapter(handler);
 
         Sprite[] sprites = handler.getFluidSprites(world, pos, fluidState);
@@ -326,15 +331,15 @@ public class FluidRenderer {
                 int adjZ = posZ + dir.getOffsetZ();
 
                 Sprite sprite = sprites[1];
+                boolean isOverlay = false;
 
-                if (isWater) {
+                if (sprites.length > 2) {
                     BlockPos adjPos = this.scratchPos.set(adjX, adjY, adjZ);
                     BlockState adjBlock = world.getBlockState(adjPos);
 
-                    if (!adjBlock.isOpaque() && !adjBlock.isAir()) {
-                        // ice, glass, stained glass, tinted glass
-                        sprite = this.waterOverlaySprite;
-
+                    if (FluidRenderHandlerRegistry.INSTANCE.isBlockTransparent(adjBlock.getBlock())) {
+                        sprite = sprites[2];
+                        isOverlay = true;
                     }
                 }
 
@@ -358,7 +363,7 @@ public class FluidRenderer {
                 this.calculateQuadColors(quad, world, pos, lighter, dir, br, colorizer, fluidState);
                 this.flushQuad(buffers, offset, quad, facing, false);
 
-                if (sprite != this.waterOverlaySprite) {
+                if (!isOverlay) {
                     this.setVertex(quad, 0, x1, c1, z1, u1, v1);
                     this.setVertex(quad, 1, x1, yOffset, z1, u1, v3);
                     this.setVertex(quad, 2, x2, yOffset, z2, u2, v3);
