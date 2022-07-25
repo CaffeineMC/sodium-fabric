@@ -13,6 +13,10 @@ public interface ArenaBuffer {
 
     void delete();
     
+    void compact();
+    
+    float getFragmentation();
+    
     void reset();
 
     boolean isEmpty();

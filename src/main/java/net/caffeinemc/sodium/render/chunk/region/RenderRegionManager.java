@@ -16,6 +16,7 @@ import net.caffeinemc.gfx.util.buffer.streaming.SectionedStreamingBuffer;
 import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.gfx.util.buffer.BufferPool;
+import net.caffeinemc.sodium.render.buffer.arena.ArenaBuffer;
 import net.caffeinemc.sodium.render.buffer.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
@@ -28,6 +29,7 @@ public class RenderRegionManager {
     // both found from experimentation
     private static final double PRUNE_RATIO_THRESHOLD = .35;
     private static final float PRUNE_PERCENT_MODIFIER = -.2f;
+    private static final float DEFRAG_PERCENT = .08f;
     
     private final Long2ReferenceMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
     private final IntPool idPool = new IntPool();
@@ -89,6 +91,14 @@ public class RenderRegionManager {
     }
     
     public void prune() {
+        // defrag so we efficiently use the existing buffers, then prune
+        for (RenderRegion region : this.regions.values()) {
+            ArenaBuffer arenaBuffer = region.vertexBuffers;
+            if (arenaBuffer.getFragmentation() >= DEFRAG_PERCENT) {
+                arenaBuffer.compact();
+            }
+        }
+        
         this.bufferPool.prune(PRUNE_PERCENT_MODIFIER);
     }
 
@@ -215,6 +225,7 @@ public class RenderRegionManager {
     }
     
     public long getDeviceUsedMemory() {
+        // the buffer pool doesn't actively use any memory
         return this.regions.values().stream().mapToLong(RenderRegion::getDeviceUsedMemory).sum();
     }
     
