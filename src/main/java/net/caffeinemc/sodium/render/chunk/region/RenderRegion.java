@@ -1,11 +1,16 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
+import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import net.caffeinemc.gfx.api.buffer.ImmutableBuffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.gfx.util.buffer.BufferPool;
+import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.render.buffer.arena.ArenaBuffer;
 import net.caffeinemc.sodium.render.buffer.arena.AsyncArenaBuffer;
+import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -31,12 +36,15 @@ public class RenderRegion {
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_HEIGHT));
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_LENGTH));
     }
+    
+    // TODO: private these vars, add methods
+    public final Object2LongMap<RenderSection> sectionMap = new Object2LongOpenHashMap<>(REGION_SIZE);
 
-    public final ArenaBuffer vertexBuffers;
+    public final ArenaBuffer vertexBuffer;
     public final int id;
 
     public RenderRegion(RenderDevice device, StreamingBuffer stagingBuffer, BufferPool<ImmutableBuffer> vertexBufferPool, TerrainVertexType vertexType, int id) {
-        this.vertexBuffers = new AsyncArenaBuffer(
+        this.vertexBuffer = new AsyncArenaBuffer(
                 device,
                 stagingBuffer,
                 vertexBufferPool,
@@ -48,19 +56,19 @@ public class RenderRegion {
     }
 
     public void delete() {
-        this.vertexBuffers.delete();
+        this.vertexBuffer.delete();
     }
 
     public boolean isEmpty() {
-        return this.vertexBuffers.isEmpty();
+        return this.vertexBuffer.isEmpty();
     }
 
     public long getDeviceUsedMemory() {
-        return this.vertexBuffers.getDeviceUsedMemory();
+        return this.vertexBuffer.getDeviceUsedMemory();
     }
 
     public long getDeviceAllocatedMemory() {
-        return this.vertexBuffers.getDeviceAllocatedMemory();
+        return this.vertexBuffer.getDeviceAllocatedMemory();
     }
 
     public static long getRegionCoord(int chunkX, int chunkY, int chunkZ) {

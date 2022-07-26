@@ -1,17 +1,14 @@
 package net.caffeinemc.sodium.render.buffer.arena;
 
-import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
-import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongRBTreeSet;
-import it.unimi.dsi.fastutil.longs.LongSortedSet;
-import java.util.Iterator;
+import it.unimi.dsi.fastutil.longs.*;
 import java.util.LinkedList;
 import java.util.List;
+import javax.annotation.Nullable;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.ImmutableBuffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.gfx.util.buffer.BufferPool;
+import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryUtil;
 
@@ -28,8 +25,8 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     
     private ImmutableBuffer deviceBuffer;
 
-    private final LongSortedSet freedSegmentsByOffset = new LongRBTreeSet(BufferSegment::compareOffset);
-    private final LongSortedSet freedSegmentsByLength = new LongRBTreeSet(BufferSegment::compareLengthOffset);
+    private final LongRBTreeSet freedSegmentsByOffset = new LongRBTreeSet(BufferSegment::compareOffset);
+    private final LongRBTreeSet freedSegmentsByLength = new LongRBTreeSet(BufferSegment::compareLengthOffset);
 
     private int capacity;
     private int position;
@@ -185,25 +182,26 @@ public class AsyncArenaBuffer implements ArenaBuffer {
         this.checkAssertions();
     }
     
-    public void compact() {
+    @Nullable
+    public LongSortedSet compact() {
         if (this.freedSegmentsByOffset.isEmpty()) {
-            return;
+            return null;
         }
-    
+
         this.checkAssertions();
-    
+
         var srcBufferObj = this.deviceBuffer;
         var dstBufferObj = this.bufferPool.getBufferLenient(this.toBytes(this.used));
-    
+
         long dstOffset = 0;
         long prevFreedSegmentEnd = 0;
-        
+
         for (long freedSegment : this.freedSegmentsByOffset) {
             long freedOffset = this.toBytes(BufferSegment.getOffset(freedSegment));
             long freedLength = this.toBytes(BufferSegment.getLength(freedSegment));
-            
+
             long copyLength = freedOffset - prevFreedSegmentEnd;
-            
+
             // if all freed segments are merged correctly, then this should only be able to be false on the first
             // segment
             if(copyLength != 0) {
@@ -214,18 +212,27 @@ public class AsyncArenaBuffer implements ArenaBuffer {
                         dstOffset,
                         copyLength
                 );
-    
+
                 dstOffset += copyLength;
             }
-            
+
             prevFreedSegmentEnd = freedOffset + freedLength;
         }
-        
-        this.bufferPool.recycleBuffer(srcBufferObj);
-        
-        this.setDeviceBuffer(dstBufferObj);
     
+        this.bufferPool.recycleBuffer(srcBufferObj);
+        this.setDeviceBuffer(dstBufferObj);
+        this.position = this.used;
+    
+        // TODO: check if this is expensive
+        // if it is, just provide an immutable view and hope the caller doesn't hold on to it for too long
+        LongSortedSet removedSegmentsByOffset = (LongRBTreeSet) this.freedSegmentsByOffset.clone();
+    
+        this.freedSegmentsByOffset.clear();
+        this.freedSegmentsByLength.clear();
+
         this.checkAssertions();
+
+        return removedSegmentsByOffset;
     }
     
     @Override

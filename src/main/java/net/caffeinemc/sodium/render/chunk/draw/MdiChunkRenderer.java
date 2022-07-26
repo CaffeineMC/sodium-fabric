@@ -223,8 +223,8 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
                 // WHY IS THIS NEEDED???
                 //noinspection unchecked
                 renderList.add((B) new MdiChunkRenderBatch(
-                        region.vertexBuffers.getBufferObject(),
-                        region.vertexBuffers.getStride(),
+                        region.vertexBuffer.getBufferObject(),
+                        region.vertexBuffer.getStride(),
                         batchCommandCount,
                         transformSubsectionStart,
                         commandSubsectionStart

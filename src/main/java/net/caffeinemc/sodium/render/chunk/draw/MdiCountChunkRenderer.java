@@ -230,8 +230,8 @@ public class MdiCountChunkRenderer extends MdiChunkRenderer<MdiCountChunkRendere
                 RenderRegion region = regionBucket.getRegion();
             
                 renderList.add(new MdiCountChunkRenderBatch(
-                        region.vertexBuffers.getBufferObject(),
-                        region.vertexBuffers.getStride(),
+                        region.vertexBuffer.getBufferObject(),
+                        region.vertexBuffer.getStride(),
                         batchCommandCount,
                         transformsSubsectionStart,
                         commandSubsectionStart,

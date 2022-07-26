@@ -1,5 +1,6 @@
 package net.caffeinemc.sodium.render.chunk;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
@@ -67,7 +68,10 @@ public class RenderSection {
     public void delete() {
         this.cancelRebuildTask();
         this.deleteGeometry();
-
+        
+        if (this.region != null) {
+            this.region.sectionMap.removeLong(this);
+        }
         this.disposed = true;
     }
 
@@ -142,16 +146,20 @@ public class RenderSection {
         long uploadedGeometrySegment = this.uploadedGeometrySegment;
         
         if (uploadedGeometrySegment != BufferSegment.INVALID) {
-            this.region.vertexBuffers.free(uploadedGeometrySegment);
+            this.region.vertexBuffer.free(uploadedGeometrySegment);
             this.uploadedGeometrySegment = BufferSegment.INVALID;
             this.region = null;
         }
     }
 
-    public void updateGeometry(RenderRegion region, long segment) {
+    public void updateGeometry(RenderRegion region, long bufferSegment) {
         this.deleteGeometry();
-        this.uploadedGeometrySegment = segment;
+        this.uploadedGeometrySegment = bufferSegment;
         this.region = region;
+    }
+    
+    public void setBufferSegment(long bufferSegment) {
+        this.uploadedGeometrySegment = bufferSegment;
     }
     
     public long getUploadedGeometrySegment() {
@@ -198,5 +206,20 @@ public class RenderSection {
 
     public int getFlags() {
         return this.flags;
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+        RenderSection section = (RenderSection) o;
+        return this.chunkX == section.chunkX &&
+               this.chunkY == section.chunkY &&
+               this.chunkZ == section.chunkZ;
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.chunkX, this.chunkY, this.chunkZ);
     }
 }
