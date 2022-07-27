@@ -32,7 +32,7 @@ import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.system.MemoryUtil;
 
-public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> extends AbstractMdChunkRenderer<B> {
+public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.MdiChunkRenderBatch> {
     public static final int COMMAND_STRUCT_STRIDE = 5 * Integer.BYTES;
 
     protected final StreamingBuffer commandBuffer;
@@ -115,11 +115,11 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
         int transformBufferPosition = transformBufferSectionView.position();
     
         @SuppressWarnings("unchecked")
-        Collection<B>[] renderLists = new Collection[totalPasses];
+        Collection<MdiChunkRenderBatch>[] renderLists = new Collection[totalPasses];
     
         for (int passId = 0; passId < chunkRenderPasses.length; passId++) {
             ChunkRenderPass renderPass = chunkRenderPasses[passId];
-            Deque<B> renderList = new ArrayDeque<>(16); // just an estimate
+            Deque<MdiChunkRenderBatch> renderList = new ArrayDeque<>(16); // just an estimate
     
             boolean reverseOrder = renderPass.isTranslucent();
             
@@ -219,10 +219,8 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
                 );
             
                 RenderRegion region = regionBucket.getRegion();
-    
-                // WHY IS THIS NEEDED???
-                //noinspection unchecked
-                renderList.add((B) new MdiChunkRenderBatch(
+                
+                renderList.add(new MdiChunkRenderBatch(
                         region.getVertexBuffer().getBufferObject(),
                         region.getVertexBuffer().getStride(),
                         batchCommandCount,
@@ -325,7 +323,7 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
             RenderCommandList<BufferTarget> commandList,
             ChunkShaderInterface programInterface,
             PipelineState pipelineState,
-            B batch
+            MdiChunkRenderBatch batch
     ) {
         super.setupPerBatch(
                 renderPass,
@@ -355,7 +353,7 @@ public class MdiChunkRenderer<B extends MdiChunkRenderer.MdiChunkRenderBatch> ex
             RenderCommandList<BufferTarget> commandList,
             ChunkShaderInterface programInterface,
             PipelineState pipelineState,
-            B batch
+            MdiChunkRenderBatch batch
     ) {
         commandList.multiDrawElementsIndirect(
                 PrimitiveType.TRIANGLES,

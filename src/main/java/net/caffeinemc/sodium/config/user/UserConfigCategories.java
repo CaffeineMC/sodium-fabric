@@ -293,18 +293,18 @@ public class UserConfigCategories {
         List<OptionGroup> groups = new ArrayList<>();
     
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(UserConfig.TerrainDrawMode.class, sodiumOpts)
-                         .setName(Text.translatable("sodium.options.terrain_draw_mode.name"))
-                         .setTooltip(Text.translatable("sodium.options.terrain_draw_mode.tooltip"))
+                .add(OptionImpl.createBuilder(UserConfig.ChunkRendererBackend.class, sodiumOpts)
+                         .setName(Text.translatable("sodium.options.chunk_renderer_backend.name"))
+                         .setTooltip(Text.translatable("sodium.options.chunk_renderer_backend.tooltip"))
                          .setControl(option -> new CyclingControl<>(
                                  option,
-                                 UserConfig.TerrainDrawMode.class,
-                                 UserConfig.TerrainDrawMode.getSupportedValues(
+                                 UserConfig.ChunkRendererBackend.class,
+                                 UserConfig.ChunkRendererBackend.getSupportedValues(
                                          SodiumClientMod.DEVICE.properties()
                                  )
                          ))
                          .setImpact(OptionImpact.VARIES)
-                         .setBinding((opts, value) -> opts.advanced.terrainDrawMode = value, opts -> opts.advanced.terrainDrawMode)
+                         .setBinding((opts, value) -> opts.advanced.chunkRendererBackend = value, opts -> opts.advanced.chunkRendererBackend)
                          .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                          .build()
                 )

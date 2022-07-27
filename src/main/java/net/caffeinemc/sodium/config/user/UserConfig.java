@@ -51,7 +51,7 @@ public class UserConfig {
         public boolean enableMemoryTracing = false;
         public boolean enableApiDebug = false;
         
-        public TerrainDrawMode terrainDrawMode = TerrainDrawMode.DEFAULT;
+        public ChunkRendererBackend chunkRendererBackend = ChunkRendererBackend.DEFAULT;
     }
 
     public static class QualitySettings {
@@ -67,16 +67,15 @@ public class UserConfig {
         public boolean hideDonationButton = false;
     }
     
-    public enum TerrainDrawMode implements TextProvider {
+    public enum ChunkRendererBackend implements TextProvider {
         DEFAULT("options.gamma.default", p -> true),
-        BASEVERTEX("sodium.options.terrain_draw_mode.base_vertex", p -> true),
-        INDIRECT("sodium.options.terrain_draw_mode.indirect", p -> true),
-        INDIRECTCOUNT("sodium.options.terrain_draw_mode.indirect_count", p -> p.capabilities.indirectCount);
+        BASEVERTEX("sodium.options.chunk_renderer_backend.base_vertex", p -> true),
+        INDIRECT("sodium.options.chunk_renderer_backend.indirect", p -> true);
         
         private final Text name;
         private final Predicate<RenderDeviceProperties> supportedSupplier;
     
-        TerrainDrawMode(String name, Predicate<RenderDeviceProperties> supportedSupplier) {
+        ChunkRendererBackend(String name, Predicate<RenderDeviceProperties> supportedSupplier) {
             this.name = Text.translatable(name);
             this.supportedSupplier = supportedSupplier;
         }
@@ -90,10 +89,10 @@ public class UserConfig {
             return this.supportedSupplier.test(deviceProperties);
         }
         
-        public static TerrainDrawMode[] getSupportedValues(RenderDeviceProperties deviceProperties) {
-            return Arrays.stream(TerrainDrawMode.values())
-                         .filter(cdm -> cdm.isSupported(deviceProperties))
-                         .toArray(TerrainDrawMode[]::new);
+        public static ChunkRendererBackend[] getSupportedValues(RenderDeviceProperties deviceProperties) {
+            return Arrays.stream(ChunkRendererBackend.values())
+                         .filter(tdm -> tdm.isSupported(deviceProperties))
+                         .toArray(ChunkRendererBackend[]::new);
         }
     }
 
