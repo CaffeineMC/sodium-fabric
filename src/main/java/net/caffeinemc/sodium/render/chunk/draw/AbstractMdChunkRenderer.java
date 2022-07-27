@@ -344,36 +344,6 @@ public abstract class AbstractMdChunkRenderer<B extends AbstractMdChunkRenderer.
         return (chunkBlockPos - cameraBlockPos) - cameraPos;
     }
     
-    protected static int calculateVisibilityFlags(ChunkRenderBounds bounds, ChunkCameraContext camera) {
-        int flags = ChunkMeshFace.UNASSIGNED_BITS;
-        
-        if (camera.posY > bounds.y1) {
-            flags |= ChunkMeshFace.UP_BITS;
-        }
-        
-        if (camera.posY < bounds.y2) {
-            flags |= ChunkMeshFace.DOWN_BITS;
-        }
-        
-        if (camera.posX > bounds.x1) {
-            flags |= ChunkMeshFace.EAST_BITS;
-        }
-        
-        if (camera.posX < bounds.x2) {
-            flags |= ChunkMeshFace.WEST_BITS;
-        }
-        
-        if (camera.posZ > bounds.z1) {
-            flags |= ChunkMeshFace.SOUTH_BITS;
-        }
-        
-        if (camera.posZ < bounds.z2) {
-            flags |= ChunkMeshFace.NORTH_BITS;
-        }
-        
-        return flags;
-    }
-    
     //// OVERRIDABLE BATCH
     
     protected static class MdChunkRenderBatch {

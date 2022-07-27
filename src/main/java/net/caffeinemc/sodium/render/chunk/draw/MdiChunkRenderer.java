@@ -139,8 +139,8 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
                     }
                     
                     int baseVertex = BufferSegment.getOffset(uploadedSegment);
-                
-                    int visibility = calculateVisibilityFlags(section.getData().bounds, camera);
+    
+                    int visibility = useBlockFaceCulling ? calculateVisibilityFlags(section.getData().bounds, camera) : ChunkMeshFace.ALL_BITS;
                     
                     ChunkPassModel model = section.getData().models[passId];
                     
@@ -148,9 +148,9 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
                         continue;
                     }
                 
-                    ModelRange[] modelParts = model.getModelParts();
+                    ModelRange[] modelParts = model.getModelPartSegments();
                     for (int dir = 0; dir < modelParts.length; dir++) {
-                        if (useBlockFaceCulling && (visibility & (1 << dir)) == 0) {
+                        if ((visibility & (1 << dir)) == 0) {
                             continue;
                         }
                         
@@ -161,7 +161,7 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
                         }
                     
                         long ptr = commandBufferSectionAddress + commandBufferPosition;
-                        MemoryUtil.memPutInt(ptr + 0, modelPart.indexCount());
+                        MemoryUtil.memPutInt(ptr + 0, 6 * (sidedVertexCount >> 2)); // go from vertex count -> index count
                         MemoryUtil.memPutInt(ptr + 4, 1);
                         MemoryUtil.memPutInt(ptr + 8, 0);
                         MemoryUtil.memPutInt(ptr + 12, baseVertex + modelPart.firstVertex()); // baseVertex

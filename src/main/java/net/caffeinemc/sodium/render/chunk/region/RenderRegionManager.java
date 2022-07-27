@@ -3,9 +3,8 @@ package net.caffeinemc.sodium.render.chunk.region;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import it.unimi.dsi.fastutil.objects.ReferenceList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -103,7 +102,7 @@ public class RenderRegionManager {
         profiler.push("chunk_upload");
         
         // we have to use a list with a varied size here, because the upload method can create new regions
-        ObjectList<RenderRegion> writtenRegions = new ObjectArrayList<>(Math.max(this.getRegionTableSize(), 16));
+        ReferenceList<RenderRegion> writtenRegions = new ReferenceArrayList<>(Math.max(this.getRegionTableSize(), 16));
         
         for (var entry : this.setupUploadBatches(queue)) {
             this.uploadGeometryBatch(entry.getLongKey(), entry.getValue(), frameIndex);
@@ -178,7 +177,7 @@ public class RenderRegionManager {
     }
 
     private void uploadGeometryBatch(long regionKey, List<TerrainBuildResult> results, int frameIndex) {
-        List<PendingUpload> uploads = new ObjectArrayList<>(results.size());
+        List<PendingUpload> uploads = new ReferenceArrayList<>(results.size());
 
         for (TerrainBuildResult result : results) {
             var section = result.render();

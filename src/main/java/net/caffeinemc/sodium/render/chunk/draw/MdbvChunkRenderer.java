@@ -14,7 +14,6 @@ import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.SodiumClientMod;
-import net.caffeinemc.sodium.render.buffer.ModelRange;
 import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
@@ -131,14 +130,21 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
                     }
                     
                     ChunkPassModel[] models = section.getData().models;
-                
+                    
+                    // this works because the segment is in units of vertices
                     int baseVertex = BufferSegment.getOffset(uploadedSegment);
                 
-                    int visibility = calculateVisibilityFlags(section.getData().bounds, camera);
+                    int cameraVisibilityBits = useBlockFaceCulling ? calculateVisibilityFlags(section.getData().bounds, camera) : ChunkMeshFace.ALL_BITS;
                 
                     ChunkPassModel model = models[passId];
-                
-                    if (model == null || (model.getVisibilityBits() & visibility) == 0) {
+    
+                    if (model == null) {
+                        continue;
+                    }
+                    
+                    int combinedVisibilityBits = cameraVisibilityBits & model.getVisibilityBits();
+                    
+                    if (combinedVisibilityBits == 0) {
                         continue;
                     }
     
@@ -158,21 +164,18 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
                             camera.deltaZ
                     );
                 
-                    ModelRange[] modelParts = model.getModelParts();
-                    for (int dir = 0; dir < modelParts.length; dir++) {
-                        if (useBlockFaceCulling && (visibility & (1 << dir)) == 0) {
+                    long[] modelPartSegments = model.getModelPartSegments();
+                    for (int dirIdx = 0; dirIdx < modelPartSegments.length; dirIdx++) {
+                        if ((combinedVisibilityBits & (1 << dirIdx)) == 0) {
                             continue;
                         }
                     
-                        ModelRange modelPart = modelParts[dir];
-                    
-                        if (modelPart == null) {
-                            continue;
-                        }
+                        long modelPartSegment = modelPartSegments[dirIdx];
                         
-                        MemoryUtil.memPutInt(this.indexCountsBufferPtr + indexCountsBufferPosition, modelPart.indexCount());
+                        // go from vertex count -> index count
+                        MemoryUtil.memPutInt(this.indexCountsBufferPtr + indexCountsBufferPosition, 6 * (BufferSegment.getLength(modelPartSegment) >> 2));
                         indexCountsBufferPosition += Integer.BYTES;
-                        MemoryUtil.memPutInt(this.baseVerticesBufferPtr + baseVerticesBufferPosition, baseVertex + modelPart.firstVertex());
+                        MemoryUtil.memPutInt(this.baseVerticesBufferPtr + baseVerticesBufferPosition, baseVertex + BufferSegment.getOffset(modelPartSegment));
                         baseVerticesBufferPosition += Integer.BYTES;
     
                         long ptr = transformsBufferSectionAddress + transformsBufferPosition;

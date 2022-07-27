@@ -1,22 +1,20 @@
 package net.caffeinemc.sodium.render.chunk.compile.tasks;
 
-import net.caffeinemc.sodium.render.buffer.ModelRange;
+import java.util.Arrays;
 import net.caffeinemc.sodium.render.buffer.VertexData;
-import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
-import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
-import net.caffeinemc.sodium.render.vertex.buffer.VertexBufferBuilder;
-import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
-import net.caffeinemc.sodium.render.chunk.compile.buffers.DefaultChunkMeshBuilder;
+import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
+import net.caffeinemc.sodium.render.chunk.compile.buffers.DefaultChunkMeshBuilder;
+import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
+import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexSink;
-import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
+import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
+import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
+import net.caffeinemc.sodium.render.vertex.buffer.VertexBufferBuilder;
 import net.caffeinemc.sodium.util.NativeBuffer;
 import net.minecraft.client.render.RenderLayer;
-import org.apache.commons.lang3.ArrayUtils;
-
-import java.util.*;
 import org.lwjgl.system.MemoryUtil;
 
 /**
@@ -90,7 +88,7 @@ public class TerrainBuildBuffers {
         }
         
         var vertexFormat = this.vertexType.getCustomVertexFormat();
-        var vertexCount = 0;
+        var totalVertexCount = 0;
         
         NativeBuffer chunkVertexBuffer = null;
         int chunkVertexBufferPosition = 0;
@@ -99,8 +97,9 @@ public class TerrainBuildBuffers {
         
         for (int i = 0; i < buffers.length; i++) {
             VertexBufferBuilder[] sidedBuffers = buffers[i];
-            
-            var ranges = new ModelRange[ChunkMeshFace.COUNT];
+    
+            long[] modelPartRanges = new long[ChunkMeshFace.COUNT];
+            boolean isEmpty = true;
             
             for (ChunkMeshFace facing : ChunkMeshFace.VALUES) {
                 var index = facing.ordinal();
@@ -109,6 +108,7 @@ public class TerrainBuildBuffers {
                 var sidedVertexCount = sidedVertexBuffer.getCount();
                 
                 if (sidedVertexCount == 0) {
+                    modelPartRanges[index] = BufferSegment.INVALID;
                     continue;
                 }
                 
@@ -126,13 +126,14 @@ public class TerrainBuildBuffers {
                 chunkVertexBufferPosition += length;
                 
                 // convert to index count because that's the value we actually need
-                ranges[index] = new ModelRange(vertexCount, 6 * (sidedVertexCount >> 2));
+                modelPartRanges[index] = BufferSegment.createKey(totalVertexCount, sidedVertexCount);
+                isEmpty = false;
                 
-                vertexCount += sidedVertexCount;
+                totalVertexCount += sidedVertexCount;
             }
             
-            if (Arrays.stream(ranges).anyMatch(Objects::nonNull)) {
-                models[i] = new ChunkPassModel(ranges);
+            if (!isEmpty) {
+                models[i] = new ChunkPassModel(modelPartRanges);
             }
         }
         
