@@ -67,11 +67,7 @@ public class RenderSection {
      */
     public void delete() {
         this.cancelRebuildTask();
-        this.deleteGeometry();
-        
-        if (this.region != null) {
-            this.region.sectionMap.removeLong(this);
-        }
+        this.ensureGeometryDeleted();
         this.disposed = true;
     }
 
@@ -142,23 +138,28 @@ public class RenderSection {
         this.lastAcceptedBuildTime = time;
     }
 
-    public void deleteGeometry() {
+    public void ensureGeometryDeleted() {
         long uploadedGeometrySegment = this.uploadedGeometrySegment;
         
         if (uploadedGeometrySegment != BufferSegment.INVALID) {
-            this.region.vertexBuffer.free(uploadedGeometrySegment);
+            this.region.removeSection(this);
             this.uploadedGeometrySegment = BufferSegment.INVALID;
             this.region = null;
         }
     }
-
-    public void updateGeometry(RenderRegion region, long bufferSegment) {
-        this.deleteGeometry();
-        this.uploadedGeometrySegment = bufferSegment;
+    
+    /**
+     * Make sure to call {@link #ensureGeometryDeleted()} before calling this!
+     */
+    public void setGeometry(RenderRegion region, long bufferSegment) {
+        this.setBufferSegment(bufferSegment);
         this.region = region;
     }
     
     public void setBufferSegment(long bufferSegment) {
+        if (bufferSegment == BufferSegment.INVALID) {
+            throw new IllegalArgumentException("Segment cannot be invalid");
+        }
         this.uploadedGeometrySegment = bufferSegment;
     }
     

@@ -3,12 +3,11 @@ package net.caffeinemc.sodium.render.chunk.region;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import net.caffeinemc.gfx.api.buffer.ImmutableBuffer;
 import net.caffeinemc.gfx.api.buffer.ImmutableBufferFlags;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
@@ -22,7 +21,6 @@ import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.buffer.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
-import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.IntPool;
@@ -95,7 +93,7 @@ public class RenderRegionManager {
     public void prune() {
         // defrag so we efficiently use the existing buffers, then prune
         for (RenderRegion region : this.regions.values()) {
-            ArenaBuffer arenaBuffer = region.vertexBuffer;
+            ArenaBuffer arenaBuffer = region.getVertexBuffer();
             if (arenaBuffer.getFragmentation() >= DEFRAG_THRESHOLD) {
                 LongSortedSet removedSegments = arenaBuffer.compact();
                 
@@ -104,9 +102,8 @@ public class RenderRegionManager {
                 }
                 
                 // fix existing sections' buffer segment locations after the defrag
-                for (var entry : region.sectionMap.object2LongEntrySet()) {
-                    RenderSection section = entry.getKey();
-                    long currentBufferSegment = entry.getLongValue();
+                for (RenderSection section : region.getSections()) {
+                    long currentBufferSegment = section.getUploadedGeometrySegment();
                     int currentSegmentOffset = BufferSegment.getOffset(currentBufferSegment);
                     int currentSegmentLength = BufferSegment.getLength(currentBufferSegment);
                     
@@ -115,8 +112,7 @@ public class RenderRegionManager {
                     }
                     
                     long newBufferSegment = BufferSegment.createKey(currentSegmentLength, currentSegmentOffset);
-                    section.setBufferSegment(newBufferSegment);
-                    entry.setValue(newBufferSegment);
+                    section.setBufferSegment(newBufferSegment); // TODO: in the future, if something extra happens when this method is called, we should check if cur = new
                 }
             }
         }
@@ -152,30 +148,26 @@ public class RenderRegionManager {
     }
 
     private void uploadGeometryBatch(long regionKey, List<TerrainBuildResult> results, int frameIndex) {
-        List<PendingUpload> uploads = new ArrayList<>();
-        List<ChunkGeometryUpload> jobs = new ArrayList<>(results.size());
+        List<PendingUpload> uploads = new ObjectArrayList<>(results.size());
 
         for (TerrainBuildResult result : results) {
-            var render = result.render();
+            var section = result.render();
             var geometry = result.geometry();
 
             // De-allocate all storage for the meshes we're about to replace
             // This will allow it to be cheaply re-allocated later
-            render.deleteGeometry();
+            section.ensureGeometryDeleted();
 
             var vertices = geometry.vertices();
     
             // Only submit an upload job if there is data in the first place
             if (vertices != null) {
-                var upload = new PendingUpload(vertices.buffer());
-                jobs.add(new ChunkGeometryUpload(render, geometry, upload.bufferSegmentHolder));
-
-                uploads.add(upload);
+                uploads.add(new PendingUpload(section, vertices.buffer()));
             }
         }
 
-        // If we have nothing to upload, don't allocate a region
-        if (jobs.isEmpty()) {
+        // If we have nothing to upload, don't attempt to allocate a region
+        if (uploads.isEmpty()) {
             return;
         }
 
@@ -192,17 +184,8 @@ public class RenderRegionManager {
             
             this.regions.put(regionKey, region);
         }
-
-        region.vertexBuffer.upload(uploads, frameIndex);
-
-        // Collect the upload results
-        for (ChunkGeometryUpload upload : jobs) {
-            long bufferSegment = upload.bufferSegmentResult.get();
-            RenderSection section = upload.section;
-            
-            section.updateGeometry(region, bufferSegment);
-            region.sectionMap.put(section, bufferSegment);
-        }
+        
+        region.submitUploads(uploads, frameIndex);
     }
 
     private Iterable<Long2ReferenceMap.Entry<List<TerrainBuildResult>>> setupUploadBatches(Iterator<TerrainBuildResult> renders) {
@@ -236,7 +219,7 @@ public class RenderRegionManager {
     }
 
     private void deleteRegion(RenderRegion region) {
-        var id = region.id;
+        var id = region.getId();
         region.delete();
 
         this.idPool.free(id);
@@ -257,9 +240,5 @@ public class RenderRegionManager {
     
     public long getDeviceAllocatedMemory() {
         return this.getDeviceAllocatedMemoryActive() + this.bufferPool.getDeviceAllocatedMemory();
-    }
-
-    private record ChunkGeometryUpload(RenderSection section, BuiltChunkGeometry geometry, AtomicLong bufferSegmentResult) {
-
     }
 }

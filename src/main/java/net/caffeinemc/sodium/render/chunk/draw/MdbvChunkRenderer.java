@@ -211,8 +211,8 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
                 RenderRegion region = regionBucket.getRegion();
             
                 renderList.add(new MdbvChunkRenderBatch(
-                        region.vertexBuffer.getBufferObject(),
-                        region.vertexBuffer.getStride(),
+                        region.getVertexBuffer().getBufferObject(),
+                        region.getVertexBuffer().getStride(),
                         batchCommandCount,
                         transformSubsectionStart,
                         indexCountsSubsectionStart,

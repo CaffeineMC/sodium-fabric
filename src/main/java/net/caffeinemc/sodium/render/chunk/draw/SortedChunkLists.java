@@ -19,12 +19,13 @@ public class SortedChunkLists {
         
         for (RenderSection section : sortedSections) {
             RenderRegion region = section.getRegion();
-            RegionBucket bucket = bucketTable[region.id];
+            int regionId = region.getId();
+            RegionBucket bucket = bucketTable[regionId];
 
             if (bucket == null) {
                 bucket = new RegionBucket(region);
                 sortedRegionBuckets.add(bucket);
-                bucketTable[region.id] = bucket;
+                bucketTable[regionId] = bucket;
             }
     
             bucket.addSection(section);

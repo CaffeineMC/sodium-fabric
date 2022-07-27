@@ -142,6 +142,7 @@ public class AsyncArenaBuffer implements ArenaBuffer {
         
         LongBidirectionalIterator itr = this.freedSegmentsByOffset.iterator(key);
         
+        // get and attempt to merge with left key
         if (itr.hasPrevious()) {
             long prev = itr.previousLong();
             
@@ -154,13 +155,24 @@ public class AsyncArenaBuffer implements ArenaBuffer {
                         BufferSegment.getLength(prev) + BufferSegment.getLength(key),
                         BufferSegment.getOffset(prev)
                 );
+                
             } else {
                 // need to skip one in the iterator to cancel out the previous() call
                 itr.nextLong();
             }
         }
     
+        // fast path if we happen to be on the far right, touching the bump allocator position
+        // this is checked after we merge with the left key to guarantee that there won't be a freed segment
+        // touching the bump allocator position.
+        if (BufferSegment.getEnd(key) == this.position) {
+            this.position -= BufferSegment.getLength(key);
     
+            this.checkAssertions();
+            return;
+        }
+        
+        // get and attempt to merge with right key
         if (itr.hasNext()) {
             long next = itr.nextLong();
             
@@ -194,12 +206,12 @@ public class AsyncArenaBuffer implements ArenaBuffer {
         var dstBufferObj = this.bufferPool.getBufferLenient(this.toBytes(this.used));
 
         long dstOffset = 0;
+        // the end of the previous freed segment (exclusive) is also the start of the next allocated segment (inclusive)
         long prevFreedSegmentEnd = 0;
 
         for (long freedSegment : this.freedSegmentsByOffset) {
             long freedOffset = this.toBytes(BufferSegment.getOffset(freedSegment));
             long freedLength = this.toBytes(BufferSegment.getLength(freedSegment));
-
             long copyLength = freedOffset - prevFreedSegmentEnd;
 
             // if all freed segments are merged correctly, then this should only be able to be false on the first
@@ -218,6 +230,16 @@ public class AsyncArenaBuffer implements ArenaBuffer {
 
             prevFreedSegmentEnd = freedOffset + freedLength;
         }
+        
+        // because free guarantees that we will never have a segment touching the bump position, there will always be
+        // an allocated segment after the last freed segment.
+        this.device.copyBuffer(
+                srcBufferObj,
+                dstBufferObj,
+                prevFreedSegmentEnd,
+                dstOffset,
+                this.toBytes(this.position) - prevFreedSegmentEnd
+        );
     
         this.bufferPool.recycleBuffer(srcBufferObj);
         this.setDeviceBuffer(dstBufferObj);
@@ -276,7 +298,7 @@ public class AsyncArenaBuffer implements ArenaBuffer {
             int length = upload.data.getLength();
             pendingTransfers.add(
                     new PendingTransfer(
-                            upload.bufferSegmentHolder,
+                            upload.bufferSegmentResult,
                             sectionOffset + transferOffset,
                             length
                     )
@@ -374,8 +396,8 @@ public class AsyncArenaBuffer implements ArenaBuffer {
             int end = BufferSegment.getEnd(freedSegment);
             
             Validate.isTrue(offset >= 0, "segment.offset < 0: out of bounds");
-            // TODO: is it actually valid for a freed section to be past the position?
-            Validate.isTrue(end <= this.position, "segment.end > arena.position: out of bounds");
+            Validate.isTrue(end != this.position, "segment.end == arena.position: segment touches bump pos (failure to track)");
+            Validate.isTrue(end < this.position, "segment.end > arena.position: out of bounds");
             
             used += length;
             

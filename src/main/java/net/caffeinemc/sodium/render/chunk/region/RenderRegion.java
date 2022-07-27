@@ -1,15 +1,15 @@
 package net.caffeinemc.sodium.render.chunk.region;
 
-import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
-import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2LongMap;
-import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import java.util.List;
+import java.util.Set;
 import net.caffeinemc.gfx.api.buffer.ImmutableBuffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.util.buffer.BufferPool;
 import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.render.buffer.arena.ArenaBuffer;
 import net.caffeinemc.sodium.render.buffer.arena.AsyncArenaBuffer;
+import net.caffeinemc.sodium.render.buffer.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.MathUtil;
@@ -37,11 +37,10 @@ public class RenderRegion {
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_LENGTH));
     }
     
-    // TODO: private these vars, add methods
-    public final Object2LongMap<RenderSection> sectionMap = new Object2LongOpenHashMap<>(REGION_SIZE);
-
-    public final ArenaBuffer vertexBuffer;
-    public final int id;
+    private final Set<RenderSection> sections = new ObjectOpenHashSet<>(REGION_SIZE);
+    
+    private final ArenaBuffer vertexBuffer;
+    private final int id;
 
     public RenderRegion(RenderDevice device, StreamingBuffer stagingBuffer, BufferPool<ImmutableBuffer> vertexBufferPool, TerrainVertexType vertexType, int id) {
         this.vertexBuffer = new AsyncArenaBuffer(
@@ -53,6 +52,30 @@ public class RenderRegion {
                 vertexType.getBufferVertexFormat().stride()
         );
         this.id = id;
+    }
+    
+    /**
+     * Uploads the given pending uploads to the buffers, adding sections to this region as necessary.
+     */
+    public void submitUploads(List<PendingUpload> pendingUploads, int frameIndex) {
+        this.vertexBuffer.upload(pendingUploads, frameIndex);
+        
+        // Collect the upload results
+        for (PendingUpload pendingUpload : pendingUploads) {
+            long bufferSegment = pendingUpload.bufferSegmentResult.get();
+            RenderSection section = pendingUpload.section;
+    
+            section.setGeometry(this, bufferSegment);
+            this.sections.add(section);
+        }
+    }
+    
+    /**
+     * Removes the given section from the region, and frees the vertex buffer segment associated with the section.
+     */
+    public void removeSection(RenderSection section) {
+        this.vertexBuffer.free(section.getUploadedGeometrySegment());
+        this.sections.remove(section);
     }
 
     public void delete() {
@@ -73,5 +96,17 @@ public class RenderRegion {
 
     public static long getRegionCoord(int chunkX, int chunkY, int chunkZ) {
         return ChunkSectionPos.asLong(chunkX >> REGION_WIDTH_SH, chunkY >> REGION_HEIGHT_SH, chunkZ >> REGION_LENGTH_SH);
+    }
+    
+    public Set<RenderSection> getSections() {
+        return this.sections;
+    }
+    
+    public ArenaBuffer getVertexBuffer() {
+        return this.vertexBuffer;
+    }
+    
+    public int getId() {
+        return this.id;
     }
 }

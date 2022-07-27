@@ -1,15 +1,16 @@
 package net.caffeinemc.sodium.render.buffer.arena;
 
 import java.util.concurrent.atomic.AtomicLong;
+import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.util.NativeBuffer;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 public class PendingUpload {
+    public final RenderSection section;
     public final NativeBuffer data;
-    public final AtomicLong bufferSegmentHolder = new AtomicLong(BufferSegment.INVALID);
+    public final AtomicLong bufferSegmentResult = new AtomicLong(BufferSegment.INVALID);
 
-    public PendingUpload(NativeBuffer data) {
+    public PendingUpload(RenderSection section, NativeBuffer data) {
+        this.section = section;
         this.data = data;
     }
 }
