@@ -1,6 +1,9 @@
 package net.caffeinemc.sodium.render.buffer.arena;
 
-import it.unimi.dsi.fastutil.longs.*;
+import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongRBTreeSet;
+import it.unimi.dsi.fastutil.longs.LongSortedSet;
 import java.util.LinkedList;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -257,9 +260,29 @@ public class AsyncArenaBuffer implements ArenaBuffer {
         return removedSegmentsByOffset;
     }
     
+    // TODO: should this use bytes?
     @Override
     public float getFragmentation() {
-        return 1.0f - ((float) this.used / this.position);
+        // original algorithm
+//        return 1.0f - ((float) this.used / this.position);
+    
+        // yoinked from here: https://stackoverflow.com/a/4587077/4563900
+//        try {
+//            int largestFreedLength = BufferSegment.getLength(this.freedSegmentsByLength.lastLong());
+//            int free = this.capacity - this.used;
+//            return (float) (free - largestFreedLength) / free;
+//        } catch (NoSuchElementException ignored) {
+//            // no freed segments, fragmentation is 0%
+//            return 0.0f;
+//        }
+    
+        // a buffer with alternating length 1 free and length 1 alloc segments should have a 100% fragmentation rate.
+        // a buffer with alternating length 2 free and length 2 alloc segments should have a 50% fragmentation rate.
+        long freeBytes = this.toBytes(this.position - this.used);
+        long totalBytes = this.toBytes(this.position);
+        double segmentRatio = (double) this.freedSegmentsByOffset.size() / freeBytes;
+        double sizeRatio = (double) (freeBytes * 2) / totalBytes;
+        return (float) (segmentRatio * sizeRatio);
     }
     
     @Override

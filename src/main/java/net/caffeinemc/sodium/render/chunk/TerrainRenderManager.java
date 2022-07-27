@@ -5,11 +5,12 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.SodiumWorldRenderer;
-import net.caffeinemc.gfx.util.buffer.BufferPool;
 import net.caffeinemc.sodium.render.chunk.compile.ChunkBuilder;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
@@ -45,9 +46,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
-
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 public class TerrainRenderManager {
     /**
