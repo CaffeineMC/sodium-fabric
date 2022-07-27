@@ -144,7 +144,6 @@ public class RenderRegionManager {
             
             ArenaBuffer arenaBuffer = region.getVertexBuffer();
             if (arenaBuffer.getFragmentation() >= DEFRAG_THRESHOLD) {
-                System.out.println("defragged");
                 LongSortedSet removedSegments = arenaBuffer.compact();
             
                 if (removedSegments == null) {
