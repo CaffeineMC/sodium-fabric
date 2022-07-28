@@ -97,6 +97,10 @@ public class ChunkRenderPassManager {
         return this.layerMappings.get(layer);
     }
     
+    public ChunkRenderPass getRenderPassForId(int passId) {
+        return this.idMappings[passId];
+    }
+    
     public ChunkRenderPass[] getAllRenderPasses() {
         return this.idMappings;
     }

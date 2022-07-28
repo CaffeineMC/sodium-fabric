@@ -1,6 +1,7 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import it.unimi.dsi.fastutil.longs.LongList;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -22,19 +23,15 @@ import net.caffeinemc.gfx.util.buffer.streaming.SequenceBuilder;
 import net.caffeinemc.gfx.util.buffer.streaming.SequenceIndexBuffer;
 import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
 import net.caffeinemc.sodium.SodiumClientMod;
-import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderBindingPoints;
 import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
-import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.shader.ShaderConstants;
 import net.caffeinemc.sodium.render.shader.ShaderLoader;
 import net.caffeinemc.sodium.render.shader.ShaderParser;
 import net.caffeinemc.sodium.render.terrain.format.TerrainMeshAttribute;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
-import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.caffeinemc.sodium.util.TextureUtil;
 import net.minecraft.util.Identifier;
@@ -322,18 +319,12 @@ public abstract class AbstractMdChunkRenderer<B extends AbstractMdChunkRenderer.
     
     //// UTILITY METHODS
     
-    protected static int getMaxSectionFaces(SortedChunkLists list) {
+    protected static int getMaxSectionFaces(SortedTerrainLists list) {
         int faces = 0;
     
-        for (SortedChunkLists.RegionBucket regionBucket : list.unsortedRegionBuckets()) {
-            for (RenderSection section : regionBucket.unsortedSections()) {
-                for (ChunkPassModel model : section.getData().models) {
-                    if (model == null) {
-                        continue;
-                    }
-                    // each bit set represents a model, so we can just count the set bits
-                    faces += Integer.bitCount(model.getVisibilityBits());
-                }
+        for (List<LongList> passModelPartSegments : list.modelPartSegments) {
+            for (LongList regionModelPartSegments : passModelPartSegments) {
+                faces += regionModelPartSegments.size();
             }
         }
         

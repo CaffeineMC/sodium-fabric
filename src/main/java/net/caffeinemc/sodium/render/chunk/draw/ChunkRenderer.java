@@ -13,11 +13,11 @@ public interface ChunkRenderer {
      * These will be used by the {@link #render(ChunkRenderPass, ChunkRenderMatrices, int) render}
      * function until this is called again.
      *
-     * @param chunks the list of sorted chunks to create the render lists from
+     * @param lists the sorted lists used to render the terrain
      * @param camera the camera of the player
      * @param frameIndex  The monotonic index of the current frame being rendered
      */
-    void createRenderLists(SortedChunkLists chunks, ChunkCameraContext camera, int frameIndex);
+    void createRenderLists(SortedTerrainLists lists, ChunkCameraContext camera, int frameIndex);
     
     /**
      * Renders the last created render list for the current pass to the active framebuffer.

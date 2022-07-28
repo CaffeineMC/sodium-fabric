@@ -126,7 +126,7 @@ public class TerrainBuildBuffers {
                 chunkVertexBufferPosition += length;
                 
                 // convert to index count because that's the value we actually need
-                modelPartRanges[index] = BufferSegment.createKey(totalVertexCount, sidedVertexCount);
+                modelPartRanges[index] = BufferSegment.createKey(sidedVertexCount, totalVertexCount);
                 isEmpty = false;
                 
                 totalVertexCount += sidedVertexCount;
