@@ -110,25 +110,28 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
             ChunkRenderPass renderPass = chunkRenderPasses[passId];
             Deque<MdbvChunkRenderBatch> renderList = new ArrayDeque<>(128); // just an estimate, should be plenty
             
-            List<LongList> passModelPartSegments = lists.modelPartSegments[passId];
+            IntList passRegionIndices = lists.regionIndices[passId];
             List<IntList> passModelPartCounts = lists.modelPartCounts[passId];
-            // yoink count data from the model part counts list
-            int passRegionCount = passModelPartCounts.size();
+            List<LongList> passModelPartSegments = lists.modelPartSegments[passId];
+            int passRegionCount = passRegionIndices.size();
     
             boolean reverseOrder = renderPass.isTranslucent();
             
             int regionIdx = reverseOrder ? passRegionCount - 1 : 0;
             while (reverseOrder ? (regionIdx >= 0) : (regionIdx < passRegionCount)) {
-                IntList regionModelPartCounts = passModelPartCounts.get(regionIdx);
-                LongList regionModelPartSegments = passModelPartSegments.get(regionIdx);
-                RenderRegion region = lists.regions.get(regionIdx);
-                IntList regionSectionCoords = lists.sectionCoords.get(regionIdx);
-                LongList regionUploadedSegments = lists.uploadedSegments.get(regionIdx);
+                IntList regionPassModelPartCounts = passModelPartCounts.get(regionIdx);
+                LongList regionPassModelPartSegments = passModelPartSegments.get(regionIdx);
+    
+                int fullRegionIdx = passRegionIndices.getInt(regionIdx);
+                RenderRegion region = lists.regions.get(fullRegionIdx);
+                IntList regionSectionCoords = lists.sectionCoords.get(fullRegionIdx);
+                LongList regionUploadedSegments = lists.uploadedSegments.get(fullRegionIdx);
+                
                 // yoink count data from the model part counts list because it doesn't scale the sizes, and it takes
                 // into account the current pass
-                int regionSectionCount = regionModelPartSegments.size();
+                int regionSectionCount = regionPassModelPartCounts.size();
                 
-                // don't use regionIdx past here
+                // don't use regionIdx or fullRegionIdx past here
                 if (reverseOrder) {
                     regionIdx--;
                 } else {
@@ -138,7 +141,7 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
                 int modelPartIdx = 0;
                 int sectionIdx = reverseOrder ? regionSectionCount - 1 : 0;
                 while (reverseOrder ? (sectionIdx >= 0) : (sectionIdx < regionSectionCount)) {
-                    int sectionModelPartCount = regionModelPartCounts.getInt(sectionIdx);
+                    int sectionModelPartCount = regionPassModelPartCounts.getInt(sectionIdx);
                     long sectionUploadedSegment = regionUploadedSegments.getLong(sectionIdx);
                     
                     int sectionCoordsIdx = sectionIdx * 3;
@@ -172,8 +175,8 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
                             camera.deltaZ
                     );
                     
-                    for (int i = 0; i < sectionModelPartCount; i++) {
-                        long modelPartSegment = regionModelPartSegments.getLong(modelPartIdx + i);
+                    for (int j = 0; j < sectionModelPartCount; j++) {
+                        long modelPartSegment = regionPassModelPartSegments.getLong(modelPartIdx + j);
                         
                         // go from vertex count -> index count
                         MemoryUtil.memPutInt(this.indexCountsBufferPtr + indexCountsBufferPosition, 6 * (BufferSegment.getLength(modelPartSegment) >> 2));
@@ -221,9 +224,7 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
                 ));
             }
     
-            if (!renderList.isEmpty()) {
-                renderLists[passId] = renderList;
-            }
+            renderLists[passId] = renderList;
         }
         
         transformsBufferSectionView.position(transformsBufferPosition);

@@ -2,10 +2,13 @@ package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import net.caffeinemc.sodium.SodiumClientMod;
@@ -16,6 +19,7 @@ import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
+import net.caffeinemc.sodium.util.collections.BitArray;
 
 public class SortedTerrainLists {
     private static final int REGIONS_ESTIMATE = 32; // idk lol
@@ -28,9 +32,11 @@ public class SortedTerrainLists {
     public final List<RenderRegion> regions;
     public final List<LongList> uploadedSegments;
     public final List<IntList> sectionCoords;
+    public final IntList[] regionIndices;
     public final List<IntList>[] modelPartCounts;
     public final List<LongList>[] modelPartSegments;
     
+    // pools to save on many list allocations
     private final Deque<LongList> uploadedSegmentsListPool;
     private final Deque<IntList> sectionCoordsListPool;
     private final Deque<IntList> modelPartCountsListPool;
@@ -48,10 +54,12 @@ public class SortedTerrainLists {
         this.regions = new ReferenceArrayList<>(REGIONS_ESTIMATE);
         this.uploadedSegments = new ReferenceArrayList<>(REGIONS_ESTIMATE);
         this.sectionCoords = new ReferenceArrayList<>(REGIONS_ESTIMATE);
+        this.regionIndices = new IntList[totalPasses];
         this.modelPartCounts = new List[totalPasses];
         this.modelPartSegments = new List[totalPasses];
         
         for (int passId = 0; passId < totalPasses; passId++) {
+            this.regionIndices[passId] = new IntArrayList(REGIONS_ESTIMATE);
             this.modelPartCounts[passId] = new ReferenceArrayList<>(REGIONS_ESTIMATE);
             this.modelPartSegments[passId] = new ReferenceArrayList<>(REGIONS_ESTIMATE);
         }
@@ -64,6 +72,10 @@ public class SortedTerrainLists {
     
     private void reset() {
         this.regions.clear();
+    
+        for (IntList list : this.regionIndices) {
+            list.clear();
+        }
     
         // flush everything out to the list caches
         this.uploadedSegmentsListPool.addAll(this.uploadedSegments);
@@ -126,6 +138,10 @@ public class SortedTerrainLists {
     public void update(List<RenderSection> sortedSections, ChunkCameraContext camera) {
         this.reset();
         
+        if (sortedSections.isEmpty()) {
+            return;
+        }
+        
         boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
         int totalPasses = this.renderPassManager.getRenderPassCount();
         int regionTableSize = this.regionManager.getRegionTableSize();
@@ -135,9 +151,11 @@ public class SortedTerrainLists {
         IntList[] sectionCoordsTable = new IntList[regionTableSize];
         IntList[][] modelPartCountsTable = new IntList[regionTableSize][totalPasses];
         LongList[][] modelPartSegmentsTable = new LongList[regionTableSize][totalPasses];
-        
-        int sectionCount = 0;
+        // start with -1 so the first index will become 0 after the increment
+        int sequentialRegionIdx = -1;
     
+        int totalSectionCount = 0;
+        
         for (RenderSection section : sortedSections) {
             boolean sectionAdded = false;
     
@@ -147,24 +165,24 @@ public class SortedTerrainLists {
             for (int passId = 0; passId < totalPasses; passId++) {
                 // prior checks to avoid any unnecessary allocation
                 ChunkPassModel model = section.getData().models[passId];
-                
+    
                 if (model == null) {
                     continue;
                 }
-                
+    
                 int visibilityBits = model.getVisibilityBits();
-                
+
                 if (useBlockFaceCulling) {
                     visibilityBits &= calculateCameraVisibilityBits(section.getData().bounds, camera);
                 }
-    
+
                 if (visibilityBits == 0) {
                     continue;
                 }
     
                 RenderRegion region = section.getRegion();
                 int regionId = region.getId();
-                
+    
                 // lazily allocate everything here
                 
                 // add per-section data, and make sure to only add once
@@ -186,6 +204,8 @@ public class SortedTerrainLists {
                         this.sectionCoords.add(regionSectionCoordsList);
                         
                         this.regions.add(region);
+    
+                        sequentialRegionIdx++;
                     }
     
                     regionUploadedSegmentsList.add(section.getUploadedGeometrySegment());
@@ -194,39 +214,47 @@ public class SortedTerrainLists {
                     regionSectionCoordsList.add(section.getChunkY());
                     regionSectionCoordsList.add(section.getChunkZ());
                     
-                    sectionCount++;
-                    
+                    totalSectionCount++;
                     sectionAdded = true;
                 }
     
                 // add per-section-pass data
-                IntList passModelPartCountsList = regionModelPartCounts[passId];
-                LongList passModelPartSegmentsList = regionModelPartSegments[passId];
+                IntList regionPassModelPartCountsList = regionModelPartCounts[passId];
+                LongList regionPassModelPartSegmentsList = regionModelPartSegments[passId];
     
                 // if one is null, the region + pass combination hasn't been processed yet
-                if (passModelPartSegmentsList == null) {        
-                    passModelPartSegmentsList = this.getModelPartSegmentsList();
-                    regionModelPartSegments[passId] = passModelPartSegmentsList;
-                    this.modelPartSegments[passId].add(passModelPartSegmentsList);
+                if (regionPassModelPartCountsList == null) {
+                    regionPassModelPartCountsList = this.getModelPartCountsList();
+                    regionModelPartCounts[passId] = regionPassModelPartCountsList;
+                    this.modelPartCounts[passId].add(regionPassModelPartCountsList);
+                    
+                    regionPassModelPartSegmentsList = this.getModelPartSegmentsList();
+                    regionModelPartSegments[passId] = regionPassModelPartSegmentsList;
+                    this.modelPartSegments[passId].add(regionPassModelPartSegmentsList);
     
-                    passModelPartCountsList = this.getModelPartCountsList();
-                    regionModelPartCounts[passId] = passModelPartCountsList;
-                    this.modelPartCounts[passId].add(passModelPartCountsList);
+                    this.regionIndices[passId].add(sequentialRegionIdx);
                 }
     
                 int modelPartCount = 0;
                 long[] modelPartSegments = model.getModelPartSegments();
                 for (int dirIdx = 0; dirIdx < ChunkMeshFace.COUNT; dirIdx++) {
                     if ((visibilityBits & (1 << dirIdx)) != 0) {
-                        passModelPartSegmentsList.add(modelPartSegments[dirIdx]);
+                        regionPassModelPartSegmentsList.add(modelPartSegments[dirIdx]);
                         modelPartCount++;
                     }
                 }
-                passModelPartCountsList.add(modelPartCount);
+                regionPassModelPartCountsList.add(modelPartCount);
             }
         }
         
-        this.totalSectionCount = sectionCount;
+        for (IntList list : this.regionIndices) {
+            IntSet set = new IntOpenHashSet(list);
+            if (list.size() != set.size()) {
+                System.err.println("problem");
+            }
+        }
+        
+        this.totalSectionCount = totalSectionCount;
     }
     
     protected static int calculateCameraVisibilityBits(ChunkRenderBounds bounds, ChunkCameraContext camera) {
