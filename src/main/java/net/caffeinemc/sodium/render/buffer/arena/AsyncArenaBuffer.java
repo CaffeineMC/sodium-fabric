@@ -260,7 +260,6 @@ public class AsyncArenaBuffer implements ArenaBuffer {
         return removedSegmentsByOffset;
     }
     
-    // TODO: should this use bytes?
     @Override
     public float getFragmentation() {
         // original algorithm

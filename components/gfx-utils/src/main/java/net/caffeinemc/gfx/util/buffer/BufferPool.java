@@ -99,7 +99,7 @@ public class BufferPool<B extends Buffer> {
         // in the request samples and use an exponential decay to see how much they relate to the buffer group.
         //
         // Because larger buffers can be used in place of smaller buffers in many cases, we add weight to larger buffers
-        // with the requests from smaller buffers. We call this method avalanching. To avalanche correctly, we need to
+        // with the requests from smaller buffers. We call this method avalanche. To avalanche correctly, we need to
         // take into account all the previous percentages. This strategy helps save a lot of potentially useful buffers
         // that can be used in place of smaller requests.
         

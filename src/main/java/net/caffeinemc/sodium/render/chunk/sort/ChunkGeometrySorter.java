@@ -6,19 +6,14 @@ import java.util.List;
 import java.util.Objects;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.pipeline.ComputePipeline;
-import net.caffeinemc.gfx.api.pipeline.RenderPipeline;
 import net.caffeinemc.gfx.api.shader.Program;
 import net.caffeinemc.gfx.api.shader.ShaderDescription;
 import net.caffeinemc.gfx.api.shader.ShaderType;
 import net.caffeinemc.gfx.api.sync.Fence;
-import net.caffeinemc.gfx.api.types.ElementFormat;
-import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
-import net.caffeinemc.sodium.render.chunk.draw.AbstractChunkRenderer;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
-import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.sodium.render.chunk.shader.SortShaderInterface;
 import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
 import net.caffeinemc.sodium.render.shader.ShaderConstants;
@@ -145,7 +140,7 @@ public class ChunkGeometrySorter {
     }
     
     private int createKey(RenderSection section, int passId) {
-        return (section.id() * this.passCount) + passId;
+        return (section.getId() * this.passCount) + passId;
     }
     
     private SortNode computeNodeIfAbsent(int key, RenderSection section) {

@@ -366,7 +366,7 @@ public class TerrainRenderManager {
     private void onChunkDataChanged(RenderSection section, ChunkRenderData prev, ChunkRenderData next) {
         ListUtil.updateList(this.globalBlockEntities, prev.globalBlockEntities, next.globalBlockEntities);
 
-        this.tree.setVisibilityData(section.id(), next.occlusionData);
+        this.tree.setVisibilityData(section.getId(), next.occlusionData);
     }
 
     public AbstractBuilderTask createTerrainBuildTask(RenderSection render) {

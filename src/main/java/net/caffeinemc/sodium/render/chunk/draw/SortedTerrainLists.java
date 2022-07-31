@@ -2,13 +2,10 @@ package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import net.caffeinemc.sodium.SodiumClientMod;
@@ -19,7 +16,6 @@ import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
-import net.caffeinemc.sodium.util.collections.BitArray;
 
 public class SortedTerrainLists {
     private static final int REGIONS_ESTIMATE = 32; // idk lol
@@ -93,6 +89,8 @@ public class SortedTerrainLists {
             this.modelPartSegmentsListPool.addAll(list);
             list.clear();
         }
+        
+        this.totalSectionCount = 0;
     }
     
     private LongList getUploadedSegmentsList() {
@@ -136,6 +134,8 @@ public class SortedTerrainLists {
     }
     
     public void update(List<RenderSection> sortedSections, ChunkCameraContext camera) {
+//        StringBuilder debugStringBuilder = new StringBuilder("start generate lists");
+        
         this.reset();
         
         if (sortedSections.isEmpty()) {
@@ -146,23 +146,32 @@ public class SortedTerrainLists {
         int totalPasses = this.renderPassManager.getRenderPassCount();
         int regionTableSize = this.regionManager.getRegionTableSize();
     
-        // lookup tables, indexed by region id
+        // lookup tables indexed by region id
         LongList[] uploadedSegmentsTable = new LongList[regionTableSize];
         IntList[] sectionCoordsTable = new IntList[regionTableSize];
+        int[] sequentialRegionIdxTable = new int[regionTableSize];
+        
+        int sequentialRegionIdx = 0;
+        
+        // lookup tables indexed by region id and pass id
         IntList[][] modelPartCountsTable = new IntList[regionTableSize][totalPasses];
         LongList[][] modelPartSegmentsTable = new LongList[regionTableSize][totalPasses];
-        // start with -1 so the first index will become 0 after the increment
-        int sequentialRegionIdx = -1;
-    
+        
         int totalSectionCount = 0;
         
         for (RenderSection section : sortedSections) {
+//            debugStringBuilder.append("\n--------------------------------------------sectionId ")
+//                              .append(section.getId())
+//                              .append(", regionId ")
+//                              .append(section.getRegion().getId())
+//                              .append("\npasses: ");
             boolean sectionAdded = false;
     
             IntList[] regionModelPartCounts = null;
             LongList[] regionModelPartSegments = null;
     
             for (int passId = 0; passId < totalPasses; passId++) {
+//                debugStringBuilder.append(passId).append("    , "); // we leave space that can be replaced with nsrp
                 // prior checks to avoid any unnecessary allocation
                 ChunkPassModel model = section.getData().models[passId];
     
@@ -180,6 +189,7 @@ public class SortedTerrainLists {
                     continue;
                 }
     
+//                debugStringBuilder.setCharAt(debugStringBuilder.length() - 6, 'n');
                 RenderRegion region = section.getRegion();
                 int regionId = region.getId();
     
@@ -188,6 +198,7 @@ public class SortedTerrainLists {
                 // add per-section data, and make sure to only add once
                 // warning: don't use passId in here
                 if (!sectionAdded) {
+//                    debugStringBuilder.setCharAt(debugStringBuilder.length() - 5, 's');
                     LongList regionUploadedSegmentsList = uploadedSegmentsTable[regionId];
                     IntList regionSectionCoordsList = sectionCoordsTable[regionId];
                     regionModelPartCounts = modelPartCountsTable[regionId];
@@ -204,8 +215,10 @@ public class SortedTerrainLists {
                         this.sectionCoords.add(regionSectionCoordsList);
                         
                         this.regions.add(region);
-    
-                        sequentialRegionIdx++;
+                        
+                        // set, then increment
+//                        debugStringBuilder.setCharAt(debugStringBuilder.length() - 4, Integer.toString(sequentialRegionIdx).charAt(0));
+                        sequentialRegionIdxTable[regionId] = sequentialRegionIdx++;
                     }
     
                     regionUploadedSegmentsList.add(section.getUploadedGeometrySegment());
@@ -227,32 +240,33 @@ public class SortedTerrainLists {
                     regionPassModelPartCountsList = this.getModelPartCountsList();
                     regionModelPartCounts[passId] = regionPassModelPartCountsList;
                     this.modelPartCounts[passId].add(regionPassModelPartCountsList);
-                    
+    
                     regionPassModelPartSegmentsList = this.getModelPartSegmentsList();
                     regionModelPartSegments[passId] = regionPassModelPartSegmentsList;
                     this.modelPartSegments[passId].add(regionPassModelPartSegmentsList);
-    
-                    this.regionIndices[passId].add(sequentialRegionIdx);
+                    
+//                    debugStringBuilder.setCharAt(debugStringBuilder.length() - 3, Integer.toString(sequentialRegionIdxTable[regionId]).charAt(0));
+                    this.regionIndices[passId].add(sequentialRegionIdxTable[regionId]);
                 }
-    
-                int modelPartCount = 0;
+                
                 long[] modelPartSegments = model.getModelPartSegments();
-                for (int dirIdx = 0; dirIdx < ChunkMeshFace.COUNT; dirIdx++) {
-                    if ((visibilityBits & (1 << dirIdx)) != 0) {
-                        regionPassModelPartSegmentsList.add(modelPartSegments[dirIdx]);
-                        modelPartCount++;
-                    }
+    
+                regionPassModelPartCountsList.add(Integer.bitCount(visibilityBits));
+                
+                // faster way to iterate through indices of set bits in an integer
+                // warning: don't use visibilityBits after this function, because the function is destructive
+                while (visibilityBits != 0) {
+                    int dirIdx = Integer.numberOfTrailingZeros(visibilityBits);
+                    regionPassModelPartSegmentsList.add(modelPartSegments[dirIdx]);
+                    visibilityBits &= visibilityBits - 1;
                 }
-                regionPassModelPartCountsList.add(modelPartCount);
             }
+    
+            // remove the final comma
+//            debugStringBuilder.setLength(debugStringBuilder.length() - 2);
         }
         
-        for (IntList list : this.regionIndices) {
-            IntSet set = new IntOpenHashSet(list);
-            if (list.size() != set.size()) {
-                System.err.println("problem");
-            }
-        }
+//        System.out.println(debugStringBuilder);
         
         this.totalSectionCount = totalSectionCount;
     }

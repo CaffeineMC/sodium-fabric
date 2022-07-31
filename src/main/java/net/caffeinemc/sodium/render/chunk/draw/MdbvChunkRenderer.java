@@ -176,7 +176,7 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
                     );
                     
                     for (int j = 0; j < sectionModelPartCount; j++) {
-                        long modelPartSegment = regionPassModelPartSegments.getLong(modelPartIdx + j);
+                        long modelPartSegment = regionPassModelPartSegments.getLong(modelPartIdx++);
                         
                         // go from vertex count -> index count
                         MemoryUtil.memPutInt(this.indexCountsBufferPtr + indexCountsBufferPosition, 6 * (BufferSegment.getLength(modelPartSegment) >> 2));
@@ -190,8 +190,6 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
                         MemoryUtil.memPutFloat(ptr + 8, z);
                         transformsBufferPosition += TRANSFORM_STRUCT_STRIDE;
                     }
-                    
-                    modelPartIdx += sectionModelPartCount;
                 
                     largestVertexIndex = Math.max(largestVertexIndex, BufferSegment.getLength(sectionUploadedSegment));
                 }

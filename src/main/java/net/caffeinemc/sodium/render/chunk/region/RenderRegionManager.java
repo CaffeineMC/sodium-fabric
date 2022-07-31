@@ -29,6 +29,7 @@ import net.minecraft.util.profiler.Profiler;
 
 public class RenderRegionManager {
     // these constants have been found from experimentation
+    private static final int PRUNE_SAMPLE_SIZE = 100;
     private static final double PRUNE_RATIO_THRESHOLD = .35;
     private static final float PRUNE_PERCENT_MODIFIER = -.2f;
     private static final float DEFRAG_THRESHOLD = 0.000008f; // this may look dumb, but keep in mind that 1.0 is the absolute maximum
@@ -47,7 +48,7 @@ public class RenderRegionManager {
     
         this.bufferPool = new BufferPool<>(
                 device,
-                100,
+                PRUNE_SAMPLE_SIZE,
                 c -> device.createBuffer(
                         c,
                         EnumSet.noneOf(ImmutableBufferFlags.class)
