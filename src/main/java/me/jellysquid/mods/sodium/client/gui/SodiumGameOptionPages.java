@@ -14,11 +14,14 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.*;
+import net.minecraft.client.util.Monitor;
+import net.minecraft.client.util.VideoMode;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class SodiumGameOptionPages {
     private static final SodiumOptionsStorage sodiumOpts = new SodiumOptionsStorage();
@@ -63,6 +66,30 @@ public class SodiumGameOptionPages {
                             MinecraftClient client = MinecraftClient.getInstance();
                             client.onResolutionChanged();
                         }, opts -> opts.getGuiScale().getValue())
+                        .build())
+                .add(OptionImpl.createBuilder(int.class, vanillaOpts)
+                        .setName(Text.translatable("options.fullscreen.resolution"))
+                        .setTooltip(Text.translatable("sodium.options.fullscreen.resolution.tooltip"))
+                        .setImpact(OptionImpact.VARIES)
+                        .setControl(option -> new SliderControl(option, 0, MinecraftClient.getInstance().getWindow().getMonitor() != null ? MinecraftClient.getInstance().getWindow().getMonitor().getVideoModeCount() : 0, 1, ControlValueFormatter.resolution()))
+                        .setBinding((options, value) -> {
+                            Window window = MinecraftClient.getInstance().getWindow();
+                            Monitor monitor = window.getMonitor();
+                            if (monitor != null) {
+                                if (value == 0) {
+                                    window.setVideoMode(Optional.empty());
+                                } else {
+                                    window.setVideoMode(Optional.of(monitor.getVideoMode(value)));
+                                }
+                            }
+                        }, options -> {
+                            if (MinecraftClient.getInstance().getWindow().getMonitor() != null) {
+                                Optional<VideoMode> optional = MinecraftClient.getInstance().getWindow().getVideoMode();
+                                return optional.map(MinecraftClient.getInstance().getWindow().getMonitor()::findClosestVideoModeIndex).orElse(-1);
+                            } else {
+                                return 0;
+                            }
+                        })
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName(Text.translatable("options.fullscreen"))

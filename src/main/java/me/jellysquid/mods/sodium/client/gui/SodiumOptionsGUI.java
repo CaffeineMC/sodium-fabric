@@ -140,7 +140,7 @@ public class SodiumOptionsGUI extends Screen {
             // Add each option's control element
             for (Option<?> option : group.getOptions()) {
                 Control<?> control = option.getControl();
-                ControlElement<?> element = control.createElement(new Dim2i(x, y, 200, 18));
+                ControlElement<?> element = control.createElement(new Dim2i(x, y, 250, 18));
 
                 this.addDrawableChild(element);
 
