@@ -11,10 +11,11 @@ public class SliderControl implements Control<Integer> {
     private final Option<Integer> option;
 
     private final int min, max, interval;
+    private final boolean showValue;
 
     private final ControlValueFormatter mode;
 
-    public SliderControl(Option<Integer> option, int min, int max, int interval, ControlValueFormatter mode) {
+    public SliderControl(Option<Integer> option, int min, int max, int interval, ControlValueFormatter mode, boolean showValue) {
         Validate.isTrue(max > min, "The maximum value must be greater than the minimum value");
         Validate.isTrue(interval > 0, "The slider interval must be greater than zero");
         Validate.isTrue(((max - min) % interval) == 0, "The maximum value must be divisable by the interval");
@@ -25,11 +26,12 @@ public class SliderControl implements Control<Integer> {
         this.max = max;
         this.interval = interval;
         this.mode = mode;
+        this.showValue = showValue;
     }
 
     @Override
     public ControlElement<Integer> createElement(Dim2i dim) {
-        return new Button(this.option, dim, this.min, this.max, this.interval, this.mode);
+        return new Button(this.option, dim, this.min, this.max, this.interval, this.mode, this.showValue);
     }
 
     @Override
@@ -52,9 +54,11 @@ public class SliderControl implements Control<Integer> {
         private final int range;
         private final int interval;
 
+        private final boolean showValue;
+
         private double thumbPosition;
 
-        public Button(Option<Integer> option, Dim2i dim, int min, int max, int interval, ControlValueFormatter formatter) {
+        public Button(Option<Integer> option, Dim2i dim, int min, int max, int interval, ControlValueFormatter formatter, boolean showValue) {
             super(option, dim);
 
             this.min = min;
@@ -62,6 +66,7 @@ public class SliderControl implements Control<Integer> {
             this.interval = interval;
             this.thumbPosition = this.getThumbPositionForValue(option.getValue());
             this.formatter = formatter;
+            this.showValue = showValue;
 
             this.sliderBounds = new Rect2i(dim.getLimitX() - 96, dim.getCenterY() - 5, 90, 10);
         }
@@ -105,7 +110,7 @@ public class SliderControl implements Control<Integer> {
             this.drawRect(thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
             this.drawRect(sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
 
-            String label = String.valueOf(this.getIntValue());
+            String label = this.showValue ? this.formatter.format(this.option.getValue()) : String.valueOf(this.getIntValue());
 
             int labelWidth = this.font.getWidth(label);
 
