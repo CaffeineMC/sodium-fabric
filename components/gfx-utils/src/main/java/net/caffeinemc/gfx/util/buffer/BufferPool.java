@@ -215,7 +215,12 @@ public class BufferPool<B extends Buffer> {
     }
     
     public int getDeviceBufferObjects() {
-        return this.recycledBuffers.values().stream().mapToInt(Deque::size).sum();
+        int buffers = 0;
+        for (Deque<B> bs : this.recycledBuffers.values()) {
+            int groupCount = bs.size();
+            buffers += groupCount;
+        }
+        return buffers;
     }
     
     public long getDeviceAllocatedMemory() {

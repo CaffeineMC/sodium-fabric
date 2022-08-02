@@ -256,7 +256,12 @@ public class RenderRegionManager {
     }
     
     private long getDeviceAllocatedMemoryActive() {
-        return this.regions.values().stream().mapToLong(RenderRegion::getDeviceAllocatedMemory).sum();
+        long sum = 0L;
+        for (RenderRegion region : this.regions.values()) {
+            long deviceAllocatedMemory = region.getDeviceAllocatedMemory();
+            sum += deviceAllocatedMemory;
+        }
+        return sum;
     }
     
     public int getDeviceBufferObjects() {
@@ -265,7 +270,12 @@ public class RenderRegionManager {
     
     public long getDeviceUsedMemory() {
         // the buffer pool doesn't actively use any memory
-        return this.regions.values().stream().mapToLong(RenderRegion::getDeviceUsedMemory).sum();
+        long sum = 0L;
+        for (RenderRegion region : this.regions.values()) {
+            long deviceUsedMemory = region.getDeviceUsedMemory();
+            sum += deviceUsedMemory;
+        }
+        return sum;
     }
     
     public long getDeviceAllocatedMemory() {

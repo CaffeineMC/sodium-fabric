@@ -5,8 +5,7 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import java.util.ArrayDeque;
-import java.util.Deque;
+import it.unimi.dsi.fastutil.objects.ReferenceList;
 import java.util.List;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
@@ -19,27 +18,27 @@ import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 
 public class SortedTerrainLists {
-    private static final int REGIONS_ESTIMATE = 32; // idk lol
+    private static final int REGIONS_ESTIMATE = 128;
     private static final int SECTIONS_PER_REGION_ESTIMATE = RenderRegion.REGION_SIZE / 2;
     private static final int INITIAL_CACHE_SIZE = 256;
     
     private final RenderRegionManager regionManager;
     private final ChunkRenderPassManager renderPassManager;
     
-    public final List<RenderRegion> regions;
+    public final ReferenceList<RenderRegion> regions;
     public final IntList[] regionIndices;
-    public final List<LongList> uploadedSegments;
-    public final List<IntList> sectionCoords;
-    public final List<IntList>[] sectionIndices;
-    public final List<IntList>[] modelPartCounts;
-    public final List<LongList>[] modelPartSegments;
+    public final ReferenceList<LongList> uploadedSegments;
+    public final ReferenceList<IntList> sectionCoords;
+    public final ReferenceList<IntList>[] sectionIndices;
+    public final ReferenceList<IntList>[] modelPartCounts;
+    public final ReferenceList<LongList>[] modelPartSegments;
     
     // pools to save on many list allocations
-    private final Deque<LongList> uploadedSegmentsListPool;
-    private final Deque<IntList> sectionCoordsListPool;
-    private final Deque<IntList> sectionIndicesListPool;
-    private final Deque<IntList> modelPartCountsListPool;
-    private final Deque<LongList> modelPartSegmentsListPool;
+    private final ReferenceArrayList<LongList> uploadedSegmentsListPool;
+    private final ReferenceArrayList<IntList> sectionCoordsListPool;
+    private final ReferenceArrayList<IntList> sectionIndicesListPool;
+    private final ReferenceArrayList<IntList> modelPartCountsListPool;
+    private final ReferenceArrayList<LongList> modelPartSegmentsListPool;
     
     private int totalSectionCount;
 
@@ -54,9 +53,9 @@ public class SortedTerrainLists {
         this.uploadedSegments = new ReferenceArrayList<>(REGIONS_ESTIMATE);
         this.sectionCoords = new ReferenceArrayList<>(REGIONS_ESTIMATE);
         this.regionIndices = new IntList[totalPasses];
-        this.sectionIndices = new List[totalPasses];
-        this.modelPartCounts = new List[totalPasses];
-        this.modelPartSegments = new List[totalPasses];
+        this.sectionIndices = new ReferenceList[totalPasses];
+        this.modelPartCounts = new ReferenceList[totalPasses];
+        this.modelPartSegments = new ReferenceList[totalPasses];
         
         for (int passId = 0; passId < totalPasses; passId++) {
             this.regionIndices[passId] = new IntArrayList(REGIONS_ESTIMATE);
@@ -65,11 +64,11 @@ public class SortedTerrainLists {
             this.modelPartSegments[passId] = new ReferenceArrayList<>(REGIONS_ESTIMATE);
         }
         
-        this.uploadedSegmentsListPool = new ArrayDeque<>(INITIAL_CACHE_SIZE);
-        this.sectionCoordsListPool = new ArrayDeque<>(INITIAL_CACHE_SIZE);
-        this.sectionIndicesListPool = new ArrayDeque<>(INITIAL_CACHE_SIZE);
-        this.modelPartCountsListPool = new ArrayDeque<>(INITIAL_CACHE_SIZE);
-        this.modelPartSegmentsListPool = new ArrayDeque<>(INITIAL_CACHE_SIZE);
+        this.uploadedSegmentsListPool = new ReferenceArrayList<>(INITIAL_CACHE_SIZE);
+        this.sectionCoordsListPool = new ReferenceArrayList<>(INITIAL_CACHE_SIZE);
+        this.sectionIndicesListPool = new ReferenceArrayList<>(INITIAL_CACHE_SIZE);
+        this.modelPartCountsListPool = new ReferenceArrayList<>(INITIAL_CACHE_SIZE);
+        this.modelPartSegmentsListPool = new ReferenceArrayList<>(INITIAL_CACHE_SIZE);
     }
     
     private void reset() {
@@ -86,17 +85,17 @@ public class SortedTerrainLists {
         this.sectionCoordsListPool.addAll(this.sectionCoords);
         this.sectionCoords.clear();
     
-        for (List<IntList> list : this.sectionIndices) {
+        for (ReferenceList<IntList> list : this.sectionIndices) {
             this.sectionIndicesListPool.addAll(list);
             list.clear();
         }
         
-        for (List<IntList> list : this.modelPartCounts) {
+        for (ReferenceList<IntList> list : this.modelPartCounts) {
             this.modelPartCountsListPool.addAll(list);
             list.clear();
         }
         
-        for (List<LongList> list : this.modelPartSegments) {
+        for (ReferenceList<LongList> list : this.modelPartSegments) {
             this.modelPartSegmentsListPool.addAll(list);
             list.clear();
         }
@@ -105,52 +104,52 @@ public class SortedTerrainLists {
     }
     
     private LongList getUploadedSegmentsList() {
-        LongList cachedList = this.uploadedSegmentsListPool.pollLast();
-        if (cachedList != null) {
+        if (this.uploadedSegmentsListPool.isEmpty()) {
+            return new LongArrayList(SECTIONS_PER_REGION_ESTIMATE);
+        } else {
+            LongList cachedList = this.uploadedSegmentsListPool.pop();
             cachedList.clear();
             return cachedList;
-        } else {
-            return new LongArrayList(SECTIONS_PER_REGION_ESTIMATE);
         }
     }
     
     private IntList getSectionCoordsList() {
-        IntList cachedList = this.sectionCoordsListPool.pollLast();
-        if (cachedList != null) {
+        if (this.sectionCoordsListPool.isEmpty()) {
+            return new IntArrayList(SECTIONS_PER_REGION_ESTIMATE * 3); // component count for position (x, y, z)
+        } else {
+            IntList cachedList = this.sectionCoordsListPool.pop();
             cachedList.clear();
             return cachedList;
-        } else {
-            return new IntArrayList(SECTIONS_PER_REGION_ESTIMATE * 3); // component count for position (x, y, z)
         }
     }
     
     private IntList getSectionIndicesList() {
-        IntList cachedList = this.sectionIndicesListPool.pollLast();
-        if (cachedList != null) {
+        if (this.sectionIndicesListPool.isEmpty()) {
+            return new IntArrayList(SECTIONS_PER_REGION_ESTIMATE);
+        } else {
+            IntList cachedList = this.sectionIndicesListPool.pop();
             cachedList.clear();
             return cachedList;
-        } else {
-            return new IntArrayList(SECTIONS_PER_REGION_ESTIMATE);
         }
     }
     
     private IntList getModelPartCountsList() {
-        IntList cachedList = this.modelPartCountsListPool.pollLast();
-        if (cachedList != null) {
+        if (this.modelPartCountsListPool.isEmpty()) {
+            return new IntArrayList(SECTIONS_PER_REGION_ESTIMATE);
+        } else {
+            IntList cachedList = this.modelPartCountsListPool.pop();
             cachedList.clear();
             return cachedList;
-        } else {
-            return new IntArrayList(SECTIONS_PER_REGION_ESTIMATE);
         }
     }
     
     private LongList getModelPartSegmentsList() {
-        LongList cachedList = this.modelPartSegmentsListPool.pollLast();
-        if (cachedList != null) {
+        if (this.modelPartSegmentsListPool.isEmpty()) {
+            return new LongArrayList(SECTIONS_PER_REGION_ESTIMATE * ChunkMeshFace.COUNT);
+        } else {
+            LongList cachedList = this.modelPartSegmentsListPool.pop();
             cachedList.clear();
             return cachedList;
-        } else {
-            return new LongArrayList(SECTIONS_PER_REGION_ESTIMATE * ChunkMeshFace.COUNT);
         }
     }
     
