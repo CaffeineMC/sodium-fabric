@@ -1,8 +1,7 @@
 package net.caffeinemc.sodium.mixin.features.block;
 
 import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
-import net.caffeinemc.sodium.render.terrain.quad.ModelQuadUtil;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.ModelQuadVertexSink;
 import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
 import net.caffeinemc.sodium.render.texture.SpriteUtil;
 import net.caffeinemc.sodium.render.vertex.VertexDrain;
@@ -48,7 +47,7 @@ public class MixinBlockModelRenderer {
      */
     @Overwrite
     public void render(MatrixStack.Entry entry, VertexConsumer vertexConsumer, BlockState blockState, BakedModel bakedModel, float red, float green, float blue, int light, int overlay) {
-        QuadVertexSink drain = VertexDrain.of(vertexConsumer)
+        ModelQuadVertexSink drain = VertexDrain.of(vertexConsumer)
                 .createSink(VanillaVertexFormats.QUADS);
         Xoroshiro128PlusPlusRandom random = this.random;
 
@@ -78,7 +77,7 @@ public class MixinBlockModelRenderer {
         drain.flush();
     }
 
-    private static void renderQuad(MatrixStack.Entry entry, QuadVertexSink drain, int defaultColor, List<BakedQuad> list, int light, int overlay) {
+    private static void renderQuad(MatrixStack.Entry entry, ModelQuadVertexSink drain, int defaultColor, List<BakedQuad> list, int light, int overlay) {
         if (list.isEmpty()) {
             return;
         }
@@ -92,7 +91,7 @@ public class MixinBlockModelRenderer {
 
             for (int i = 0; i < 4; i++) {
                 drain.writeQuad(entry, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),
-                        light, overlay, ModelQuadUtil.getFacingNormal(bakedQuad.getFace()));
+                        light, overlay, bakedQuad.getFace());
             }
 
             SpriteUtil.markSpriteActive(quad.getSprite());

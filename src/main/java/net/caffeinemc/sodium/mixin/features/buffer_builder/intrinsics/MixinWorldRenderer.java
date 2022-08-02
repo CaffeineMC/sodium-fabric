@@ -3,7 +3,7 @@ package net.caffeinemc.sodium.mixin.features.buffer_builder.intrinsics;
 import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fUtil;
 import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
 import net.caffeinemc.sodium.render.vertex.VertexDrain;
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.line.LineVertexSink;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.LineVertexSink;
 import net.caffeinemc.sodium.util.packed.Normal3b;
 import net.caffeinemc.sodium.util.packed.ColorABGR;
 import net.minecraft.client.render.VertexConsumer;

@@ -4,8 +4,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.generic.PositionColorSink;
 import net.caffeinemc.sodium.render.vertex.VertexDrain;
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.screen.BasicScreenQuadVertexSink;
 import net.caffeinemc.sodium.util.packed.ColorABGR;
 import net.caffeinemc.sodium.util.packed.ColorARGB;
 import net.minecraft.client.gui.WorldGenerationProgressTracker;
@@ -63,7 +63,7 @@ public class MixinLevelLoadingScreen {
         BufferBuilder buffer = tessellator.getBuffer();
         buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
-        BasicScreenQuadVertexSink sink = VertexDrain.of(buffer).createSink(VanillaVertexFormats.BASIC_SCREEN_QUADS);
+        PositionColorSink sink = VertexDrain.of(buffer).createSink(VanillaVertexFormats.POSITION_COLOR);
 
         int centerSize = tracker.getCenterSize();
         int size = tracker.getSize();
@@ -118,7 +118,7 @@ public class MixinLevelLoadingScreen {
         RenderSystem.disableBlend();
     }
 
-    private static void addRect(Matrix4f matrix, BasicScreenQuadVertexSink sink, int x1, int y1, int x2, int y2, int color) {
+    private static void addRect(Matrix4f matrix, PositionColorSink sink, int x1, int y1, int x2, int y2, int color) {
         sink.writeQuad(matrix, x1, y2, 0, color);
         sink.writeQuad(matrix, x2, y2, 0, color);
         sink.writeQuad(matrix, x2, y1, 0, color);

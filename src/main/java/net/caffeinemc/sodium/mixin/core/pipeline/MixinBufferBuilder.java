@@ -3,6 +3,8 @@ package net.caffeinemc.sodium.mixin.core.pipeline;
 import java.nio.ByteBuffer;
 import net.caffeinemc.gfx.api.buffer.BufferVertexFormat;
 import net.caffeinemc.sodium.SodiumClientMod;
+import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
+import net.caffeinemc.sodium.interop.vanilla.vertex.adapter.ModelQuadOverlayAdapter;
 import net.caffeinemc.sodium.render.vertex.VertexDrain;
 import net.caffeinemc.sodium.render.vertex.VertexSink;
 import net.caffeinemc.sodium.render.vertex.buffer.VertexBufferView;
@@ -11,6 +13,7 @@ import net.caffeinemc.sodium.render.vertex.type.VertexType;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.GlAllocationUtils;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
@@ -85,12 +88,19 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
         this.elementOffset += vertexCount * format.stride();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T extends VertexSink> T createSink(VertexType<T> factory) {
         BlittableVertexType<T> blittable = factory.asBlittable();
 
-        if (blittable != null && blittable.getBufferVertexFormat() == this.getVertexFormat())  {
-            return blittable.createBufferWriter(this, SodiumClientMod.options().advanced.allowDirectMemoryAccess);
+        if (blittable != null)  {
+            if (blittable.getBufferVertexFormat() == this.getVertexFormat()) {
+                return blittable.createBufferWriter(this, SodiumClientMod.options().advanced.allowDirectMemoryAccess);
+            } else if (factory == VanillaVertexFormats.QUADS) {
+                if (this.format == VertexFormats.POSITION_TEXTURE) {
+                    return (T) new ModelQuadOverlayAdapter(VanillaVertexFormats.POSITION_TEXTURE.asBlittable().createBufferWriter(this));
+                }
+            }
         }
 
         return factory.createFallbackWriter((VertexConsumer) this);

@@ -2,7 +2,7 @@ package net.caffeinemc.sodium.mixin.features.gui.font;
 
 import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
 import net.caffeinemc.sodium.render.vertex.VertexDrain;
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.glyph.GlyphVertexSink;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.GlyphVertexSink;
 import net.caffeinemc.sodium.util.packed.ColorABGR;
 import net.minecraft.client.font.GlyphRenderer;
 import net.minecraft.client.render.VertexConsumer;

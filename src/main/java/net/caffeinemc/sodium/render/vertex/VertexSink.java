@@ -1,11 +1,11 @@
 package net.caffeinemc.sodium.render.vertex;
 
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.ModelQuadVertexSink;
 
 /**
  * Vertex sinks allow vertex data to be quickly written out to a {@link VertexDrain} while providing
  * compile-time data format contracts. Generally, you will want a format-specific vertex sink, such as
- * {@link QuadVertexSink} in order to write
+ * {@link ModelQuadVertexSink} in order to write
  * vertex data.
  */
 public interface VertexSink {

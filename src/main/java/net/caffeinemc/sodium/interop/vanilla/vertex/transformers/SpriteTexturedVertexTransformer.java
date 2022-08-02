@@ -1,9 +1,9 @@
 package net.caffeinemc.sodium.interop.vanilla.vertex.transformers;
 
 import net.caffeinemc.sodium.render.vertex.VertexSink;
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.glyph.GlyphVertexSink;
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.particle.ParticleVertexSink;
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.GlyphVertexSink;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.ParticleVertexSink;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.ModelQuadVertexSink;
 import net.minecraft.client.texture.Sprite;
 
 /**
@@ -36,8 +36,8 @@ public abstract class SpriteTexturedVertexTransformer<T extends VertexSink> exte
         return (this.vMaxMin * v) + this.vMin;
     }
 
-    public static class Quad extends SpriteTexturedVertexTransformer<QuadVertexSink> implements QuadVertexSink {
-        public Quad(QuadVertexSink delegate, Sprite sprite) {
+    public static class ModelQuad extends SpriteTexturedVertexTransformer<ModelQuadVertexSink> implements ModelQuadVertexSink {
+        public ModelQuad(ModelQuadVertexSink delegate, Sprite sprite) {
             super(delegate, sprite);
         }
 

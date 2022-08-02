@@ -2,7 +2,7 @@ package net.caffeinemc.sodium.mixin.features.particle.fast_render;
 
 import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
 import net.caffeinemc.sodium.render.vertex.VertexDrain;
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.particle.ParticleVertexSink;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.ParticleVertexSink;
 import net.caffeinemc.sodium.util.packed.ColorABGR;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;

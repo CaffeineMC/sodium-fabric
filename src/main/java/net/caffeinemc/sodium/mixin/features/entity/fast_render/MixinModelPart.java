@@ -4,7 +4,7 @@ import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix3fUtil;
 import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fUtil;
 import net.caffeinemc.sodium.interop.vanilla.mixin.ModelCuboidAccessor;
 import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
-import net.caffeinemc.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
+import net.caffeinemc.sodium.interop.vanilla.vertex.formats.ModelQuadVertexSink;
 import net.caffeinemc.sodium.render.vertex.VertexDrain;
 import net.caffeinemc.sodium.util.packed.ColorABGR;
 import net.minecraft.client.model.ModelPart;
@@ -66,7 +66,7 @@ public class MixinModelPart {
         Matrix3f normalMatrix = matrices.getNormalMatrix();
         Matrix4f positionMatrix = matrices.getPositionMatrix();
 
-        QuadVertexSink drain = VertexDrain.of(vertexConsumer).createSink(VanillaVertexFormats.QUADS);
+        ModelQuadVertexSink drain = VertexDrain.of(vertexConsumer).createSink(VanillaVertexFormats.QUADS);
         drain.ensureCapacity(this.cuboids.size() * 6 * 4);
 
         int color = ColorABGR.pack(red, green, blue, alpha);
