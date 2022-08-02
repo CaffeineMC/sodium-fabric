@@ -34,7 +34,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.renderDistance"))
                         .setTooltip(Text.translatable("sodium.options.view_distance.tooltip"))
-                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.translateVariable("options.chunks")))
+                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.translateVariable("options.chunks"), false))
                         .setBinding((options, value) -> options.getViewDistance().setValue(value), options -> options.getViewDistance().getValue())
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -42,7 +42,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.simulationDistance"))
                         .setTooltip(Text.translatable("sodium.options.simulation_distance.tooltip"))
-                        .setControl(option -> new SliderControl(option, 5, 32, 1, ControlValueFormatter.translateVariable("options.chunks")))
+                        .setControl(option -> new SliderControl(option, 5, 32, 1, ControlValueFormatter.translateVariable("options.chunks"), false))
                         .setBinding((options, value) -> options.getSimulationDistance().setValue(value), options -> options.getSimulationDistance().getValue())
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -50,7 +50,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.gamma"))
                         .setTooltip(Text.translatable("sodium.options.brightness.tooltip"))
-                        .setControl(opt -> new SliderControl(opt, 0, 100, 1, ControlValueFormatter.brightness()))
+                        .setControl(opt -> new SliderControl(opt, 0, 100, 1, ControlValueFormatter.brightness(), false))
                         .setBinding((opts, value) -> opts.getGamma().setValue(value * 0.01D), (opts) -> (int) (opts.getGamma().getValue() / 0.01D))
                         .build())
                 .build());
@@ -59,7 +59,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.guiScale"))
                         .setTooltip(Text.translatable("sodium.options.gui_scale.tooltip"))
-                        .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.guiScale()))
+                        .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.guiScale(), false))
                         .setBinding((opts, value) -> {
                             opts.getGuiScale().setValue(value);
 
@@ -70,8 +70,8 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.fullscreen.resolution"))
                         .setTooltip(Text.translatable("sodium.options.fullscreen.resolution.tooltip"))
-                        .setImpact(OptionImpact.VARIES)
-                        .setControl(option -> new SliderControl(option, 0, MinecraftClient.getInstance().getWindow().getMonitor() != null ? MinecraftClient.getInstance().getWindow().getMonitor().getVideoModeCount() : 0, 1, ControlValueFormatter.resolution()))
+                        .setControl(option -> new SliderControl(option, 0, MinecraftClient.getInstance().getWindow().getMonitor() != null ?
+                                MinecraftClient.getInstance().getWindow().getMonitor().getVideoModeCount() : 0, 1, ControlValueFormatter.resolution(), true))
                         .setBinding((options, value) -> {
                             Window window = MinecraftClient.getInstance().getWindow();
                             Monitor monitor = window.getMonitor();
@@ -79,17 +79,19 @@ public class SodiumGameOptionPages {
                                 if (value == 0) {
                                     window.setVideoMode(Optional.empty());
                                 } else {
-                                    window.setVideoMode(Optional.of(monitor.getVideoMode(value)));
+                                    window.setVideoMode(Optional.of(monitor.getVideoMode(value - 1)));
                                 }
                             }
                         }, options -> {
-                            if (MinecraftClient.getInstance().getWindow().getMonitor() != null) {
-                                Optional<VideoMode> optional = MinecraftClient.getInstance().getWindow().getVideoMode();
-                                return optional.map(MinecraftClient.getInstance().getWindow().getMonitor()::findClosestVideoModeIndex).orElse(-1);
-                            } else {
+                            if (MinecraftClient.getInstance().getWindow().getMonitor() == null) {
                                 return 0;
+                            } else {
+                                Optional<VideoMode> optional = MinecraftClient.getInstance().getWindow().getVideoMode();
+                                return optional.map((videoMode) -> MinecraftClient.getInstance().getWindow().getMonitor().findClosestVideoModeIndex(videoMode) + 1).orElse(0); // Thank you Madis0
                             }
                         })
+                        .setImpact(OptionImpact.VARIES)
+                        .setFlags(OptionFlag.REQUIRES_VIDEO_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName(Text.translatable("options.fullscreen"))
@@ -119,7 +121,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.framerateLimit"))
                         .setTooltip(Text.translatable("sodium.options.fps_limit.tooltip"))
-                        .setControl(option -> new SliderControl(option, 5, 260, 5, ControlValueFormatter.fpsLimit()))
+                        .setControl(option -> new SliderControl(option, 5, 260, 5, ControlValueFormatter.fpsLimit(), false))
                         .setBinding((opts, value) -> {
                             opts.getMaxFps().setValue(value);
                             MinecraftClient.getInstance().getWindow().setFramerateLimit(value);
@@ -217,7 +219,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.biomeBlendRadius"))
                         .setTooltip(Text.translatable("sodium.options.biome_blend.tooltip"))
-                        .setControl(option -> new SliderControl(option, 0, 7, 1, ControlValueFormatter.biomeBlend()))
+                        .setControl(option -> new SliderControl(option, 0, 7, 1, ControlValueFormatter.biomeBlend(), false))
                         .setBinding((opts, value) -> opts.getBiomeBlendRadius().setValue(value), opts -> opts.getBiomeBlendRadius().getValue())
                         .setImpact(OptionImpact.LOW)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -225,7 +227,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.entityDistanceScaling"))
                         .setTooltip(Text.translatable("sodium.options.entity_distance.tooltip"))
-                        .setControl(option -> new SliderControl(option, 50, 500, 25, ControlValueFormatter.percentage()))
+                        .setControl(option -> new SliderControl(option, 50, 500, 25, ControlValueFormatter.percentage(), false))
                         .setBinding((opts, value) -> opts.getEntityDistanceScaling().setValue(value / 100.0), opts -> Math.round(opts.getEntityDistanceScaling().getValue().floatValue() * 100.0F))
                         .setImpact(OptionImpact.MEDIUM)
                         .build()
@@ -251,7 +253,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.mipmapLevels"))
                         .setTooltip(Text.translatable("sodium.options.mipmap_levels.tooltip"))
-                        .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.multiplier()))
+                        .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.multiplier(), false))
                         .setBinding((opts, value) -> opts.getMipmapLevels().setValue(value), opts -> opts.getMipmapLevels().getValue())
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_ASSET_RELOAD)
@@ -269,7 +271,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, sodiumOpts)
                         .setName(Text.translatable("sodium.options.chunk_update_threads.name"))
                         .setTooltip(Text.translatable("sodium.options.chunk_update_threads.tooltip"))
-                        .setControl(o -> new SliderControl(o, 0, Runtime.getRuntime().availableProcessors(), 1, ControlValueFormatter.quantityOrDisabled("threads", "Default")))
+                        .setControl(o -> new SliderControl(o, 0, Runtime.getRuntime().availableProcessors(), 1, ControlValueFormatter.quantityOrDisabled("threads", "Default"), false))
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.chunkBuilderThreads = value, opts -> opts.performance.chunkBuilderThreads)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -364,7 +366,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, sodiumOpts)
                         .setName(Text.translatable("sodium.options.cpu_render_ahead_limit.name"))
                         .setTooltip(Text.translatable("sodium.options.cpu_render_ahead_limit.tooltip"))
-                        .setControl(opt -> new SliderControl(opt, 0, 9, 1, ControlValueFormatter.translateVariable("sodium.options.cpu_render_ahead_limit.value")))
+                        .setControl(opt -> new SliderControl(opt, 0, 9, 1, ControlValueFormatter.translateVariable("sodium.options.cpu_render_ahead_limit.value"), false))
                         .setBinding((opts, value) -> opts.advanced.cpuRenderAheadLimit = value, opts -> opts.advanced.cpuRenderAheadLimit)
                         .build()
                 )
