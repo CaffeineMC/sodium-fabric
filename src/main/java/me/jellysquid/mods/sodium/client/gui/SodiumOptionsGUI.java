@@ -140,7 +140,7 @@ public class SodiumOptionsGUI extends Screen {
             // Add each option's control element
             for (Option<?> option : group.getOptions()) {
                 Control<?> control = option.getControl();
-                ControlElement<?> element = control.createElement(new Dim2i(x, y, 250, 18));
+                ControlElement<?> element = control.createElement(new Dim2i(x, y, 350, 18));
 
                 this.addDrawableChild(element);
 
@@ -265,6 +265,11 @@ public class SodiumOptionsGUI extends Screen {
             client.setMipmapLevels(client.options.getMipmapLevels().getValue());
             client.reloadResourcesConcurrently();
         }
+
+        if (flags.contains(OptionFlag.REQUIRES_VIDEO_RELOAD)) {
+            client.getWindow().applyVideoMode();
+        }
+
 
         for (OptionStorage<?> storage : dirtyStorages) {
             storage.save();
