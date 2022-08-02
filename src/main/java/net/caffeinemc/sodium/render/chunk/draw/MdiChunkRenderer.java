@@ -86,8 +86,6 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
 
         ChunkRenderPass[] chunkRenderPasses = this.renderPassManager.getAllRenderPasses();
         int totalPasses = chunkRenderPasses.length;
-    
-        boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
 
         // setup buffers, resizing as needed
         int commandBufferPassSize = commandBufferPassSize(this.commandBuffer.getAlignment(), lists);
