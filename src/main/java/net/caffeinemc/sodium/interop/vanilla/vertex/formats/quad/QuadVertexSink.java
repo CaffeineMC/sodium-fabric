@@ -1,11 +1,12 @@
 package net.caffeinemc.sodium.interop.vanilla.vertex.formats.quad;
 
+import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix3fUtil;
+import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fUtil;
 import net.caffeinemc.sodium.render.vertex.VertexSink;
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Matrix4f;
 
 public interface QuadVertexSink extends VertexSink {
     VertexFormat VERTEX_FORMAT = VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL;
@@ -31,14 +32,7 @@ public interface QuadVertexSink extends VertexSink {
      * @param matrices The matrices to transform the vertex's position and normal vectors by
      */
     default void writeQuad(MatrixStack.Entry matrices, float x, float y, float z, int color, float u, float v, int light, int overlay, int normal) {
-        Matrix4fExtended positionMatrix = MatrixUtil.getExtendedMatrix(matrices.getPositionMatrix());
-
-        float x2 = positionMatrix.transformVecX(x, y, z);
-        float y2 = positionMatrix.transformVecY(x, y, z);
-        float z2 = positionMatrix.transformVecZ(x, y, z);
-
-        int norm = MatrixUtil.transformPackedNormal(normal, matrices.getNormalMatrix());
-
-        this.writeQuad(x2, y2, z2, color, u, v, light, overlay, norm);
+        Matrix4f positionMatrix = matrices.getPositionMatrix();
+        this.writeQuad(Matrix4fUtil.transformVectorX(positionMatrix, x, y, z), Matrix4fUtil.transformVectorY(positionMatrix, x, y, z), Matrix4fUtil.transformVectorZ(positionMatrix, x, y, z), color, u, v, light, overlay, Matrix3fUtil.transformPackedNormal(matrices.getNormalMatrix(), normal));
     }
 }

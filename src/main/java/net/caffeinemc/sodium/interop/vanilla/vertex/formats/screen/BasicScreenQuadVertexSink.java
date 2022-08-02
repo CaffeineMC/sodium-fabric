@@ -1,8 +1,7 @@
 package net.caffeinemc.sodium.interop.vanilla.vertex.formats.screen;
 
+import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fUtil;
 import net.caffeinemc.sodium.render.vertex.VertexSink;
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.util.math.Matrix4f;
@@ -26,12 +25,6 @@ public interface BasicScreenQuadVertexSink extends VertexSink {
      * @param matrix The matrix to transform the vertex's position by
      */
     default void writeQuad(Matrix4f matrix, float x, float y, float z, int color) {
-        Matrix4fExtended modelMatrix = MatrixUtil.getExtendedMatrix(matrix);
-
-        float x2 = modelMatrix.transformVecX(x, y, z);
-        float y2 = modelMatrix.transformVecY(x, y, z);
-        float z2 = modelMatrix.transformVecZ(x, y, z);
-
-        this.writeQuad(x2, y2, z2, color);
+        this.writeQuad(Matrix4fUtil.transformVectorX(matrix, x, y, z), Matrix4fUtil.transformVectorY(matrix, x, y, z), Matrix4fUtil.transformVectorZ(matrix, x, y, z), color);
     }
 }

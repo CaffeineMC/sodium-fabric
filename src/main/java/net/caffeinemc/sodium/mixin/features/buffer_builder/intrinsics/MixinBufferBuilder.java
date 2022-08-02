@@ -1,19 +1,15 @@
 package net.caffeinemc.sodium.mixin.features.buffer_builder.intrinsics;
 
-import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
 import net.caffeinemc.sodium.interop.vanilla.vertex.VanillaVertexFormats;
-import net.caffeinemc.sodium.render.vertex.VertexDrain;
 import net.caffeinemc.sodium.interop.vanilla.vertex.formats.quad.QuadVertexSink;
+import net.caffeinemc.sodium.render.terrain.quad.ModelQuadView;
+import net.caffeinemc.sodium.render.vertex.VertexDrain;
+import net.caffeinemc.sodium.util.DirectionUtil;
 import net.caffeinemc.sodium.util.packed.ColorABGR;
-import net.caffeinemc.sodium.util.packed.ColorU8;
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Matrix3f;
-import net.minecraft.util.math.Matrix4f;
-import net.minecraft.util.math.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
@@ -35,53 +31,25 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
             throw new IllegalStateException();
         }
 
-        ModelQuadView quadView = (ModelQuadView) quad;
-
-        Matrix4f positionMatrix = matrices.getPositionMatrix();
-        Matrix3f normalMatrix = matrices.getNormalMatrix();
-
-        int norm = MatrixUtil.computeNormal(normalMatrix, quad.getFace());
+        ModelQuadView q = (ModelQuadView) quad;
 
         QuadVertexSink drain = VertexDrain.of(this)
                 .createSink(VanillaVertexFormats.QUADS);
         drain.ensureCapacity(4);
 
         for (int i = 0; i < 4; i++) {
-            float x = quadView.getX(i);
-            float y = quadView.getY(i);
-            float z = quadView.getZ(i);
-
-            float fR;
-            float fG;
-            float fB;
+            float x = q.getX(i);
+            float y = q.getY(i);
+            float z = q.getZ(i);
 
             float brightness = brightnessTable[i];
+            int color = ColorABGR.mul(colorize ? q.getColor(i) : 0xFFFFFFFF, brightness * r, brightness * g, brightness * b);
 
-            if (colorize) {
-                int color = quadView.getColor(i);
+            float u = q.getTexU(i);
+            float v = q.getTexV(i);
 
-                float oR = ColorU8.normalize(ColorABGR.unpackRed(color));
-                float oG = ColorU8.normalize(ColorABGR.unpackGreen(color));
-                float oB = ColorU8.normalize(ColorABGR.unpackBlue(color));
-
-                fR = oR * brightness * r;
-                fG = oG * brightness * g;
-                fB = oB * brightness * b;
-            } else {
-                fR = brightness * r;
-                fG = brightness * g;
-                fB = brightness * b;
-            }
-
-            float u = quadView.getTexU(i);
-            float v = quadView.getTexV(i);
-
-            int color = ColorABGR.pack(fR, fG, fB, 1.0F);
-
-            Vector4f pos = new Vector4f(x, y, z, 1.0F);
-            pos.transform(positionMatrix);
-
-            drain.writeQuad(pos.getX(), pos.getY(), pos.getZ(), color, u, v, light[i], overlay, norm);
+            drain.writeQuad(matrices, x, y, z, color, u, v, light[i], overlay,
+                    DirectionUtil.getOppositeId(quad.getFace().getId()));
         }
 
         drain.flush();

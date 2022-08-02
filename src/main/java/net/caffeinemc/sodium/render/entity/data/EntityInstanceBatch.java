@@ -7,13 +7,12 @@ import java.util.List;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.util.buffer.streaming.SequenceBuilder;
 import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.caffeinemc.sodium.interop.vanilla.sequence.Blaze3DSequences;
 import net.caffeinemc.sodium.render.entity.compile.BuiltEntityModel;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
 public class EntityInstanceBatch {
@@ -89,13 +88,13 @@ public class EntityInstanceBatch {
             int partIds = this.matrices.getLargestPartId() + 1;
             float[] cameraPositions = new float[partIds * 3];
             for (int partId = 0; partId < partIds; partId++) {
-                Matrix4fExtended mv;
+                Matrix4f mv;
                 if (!this.matrices.getElementWritten(partId)) {
-                    mv = MatrixUtil.getExtendedMatrix(baseMatrixEntry.getPositionMatrix());
+                    mv = baseMatrixEntry.getPositionMatrix();
                 } else {
                     MatrixStack.Entry entry = this.matrices.get(partId);
                     if (entry != null) {
-                        mv = MatrixUtil.getExtendedMatrix(entry.getPositionMatrix());
+                        mv = entry.getPositionMatrix();
                     } else {
                         // skip empty part
                         continue;
@@ -115,14 +114,14 @@ public class EntityInstanceBatch {
                 // to get the actual inverse.
 
                 // Using fastInverseSqrt might be playing with fire here
-                double undoScaleX = 1.0 / Math.sqrt(mv.getA00() * mv.getA00() + mv.getA10() * mv.getA10() + mv.getA20() * mv.getA20());
-                double undoScaleY = 1.0 / Math.sqrt(mv.getA01() * mv.getA01() + mv.getA11() * mv.getA11() + mv.getA21() * mv.getA21());
-                double undoScaleZ = 1.0 / Math.sqrt(mv.getA02() * mv.getA02() + mv.getA12() * mv.getA12() + mv.getA22() * mv.getA22());
+                double undoScaleX = 1.0 / Math.sqrt(mv.a00 * mv.a00 + mv.a10 * mv.a10 + mv.a20 * mv.a20);
+                double undoScaleY = 1.0 / Math.sqrt(mv.a01 * mv.a01 + mv.a11 * mv.a11 + mv.a21 * mv.a21);
+                double undoScaleZ = 1.0 / Math.sqrt(mv.a02 * mv.a02 + mv.a12 * mv.a12 + mv.a22 * mv.a22);
 
                 int arrayIdx = partId * 3;
-                cameraPositions[arrayIdx] = (float) (-(mv.getA00() * mv.getA03() + mv.getA10() * mv.getA13() + mv.getA20() * mv.getA23()) * undoScaleX * undoScaleX);
-                cameraPositions[arrayIdx + 1] = (float) (-(mv.getA01() * mv.getA03() + mv.getA11() * mv.getA13() + mv.getA21() * mv.getA23()) * undoScaleY * undoScaleY);
-                cameraPositions[arrayIdx + 2] = (float) (-(mv.getA02() * mv.getA03() + mv.getA12() * mv.getA13() + mv.getA22() * mv.getA23()) * undoScaleZ * undoScaleZ);
+                cameraPositions[arrayIdx] = (float) (-(mv.a00 * mv.a03 + mv.a10 * mv.a13 + mv.a20 * mv.a23) * undoScaleX * undoScaleX);
+                cameraPositions[arrayIdx + 1] = (float) (-(mv.a01 * mv.a03 + mv.a11 * mv.a13 + mv.a21 * mv.a23) * undoScaleY * undoScaleY);
+                cameraPositions[arrayIdx + 2] = (float) (-(mv.a02 * mv.a03 + mv.a12 * mv.a13 + mv.a22 * mv.a23) * undoScaleZ * undoScaleZ);
             }
 
             float[] primitivePositions = this.model.primitivePositions();
