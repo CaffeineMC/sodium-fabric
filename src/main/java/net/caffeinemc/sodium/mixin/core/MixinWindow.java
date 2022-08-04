@@ -1,9 +1,10 @@
 package net.caffeinemc.sodium.mixin.core;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.caffeinemc.sodium.SodiumClientMod;
-import net.caffeinemc.sodium.interop.vanilla.Blaze3DPipelineManager;
+import net.caffeinemc.gfx.api.device.RenderConfiguration;
 import net.caffeinemc.gfx.opengl.device.GlRenderDevice;
+import net.caffeinemc.sodium.SodiumClientMod;
+import net.caffeinemc.sodium.interop.vanilla.pipeline.Blaze3DPipelineManager;
 import net.minecraft.client.WindowEventHandler;
 import net.minecraft.client.WindowSettings;
 import net.minecraft.client.util.MonitorTracker;
@@ -24,14 +25,13 @@ public class MixinWindow {
             return;
         }
 
+        // TODO: move window creation to GFX (or at least this part of it)
         GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
-        GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 6);
+        GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 5);
+        if (SodiumClientMod.options().advanced.enableApiDebug) {
+            GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_DEBUG_CONTEXT, GLFW.GLFW_TRUE);
+        }
         GLFW.glfwSetErrorCallback(MixinWindow::sodium$throwGlError);
-    }
-
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void init(WindowEventHandler eventHandler, MonitorTracker monitorTracker, WindowSettings settings, String videoMode, String title, CallbackInfo ci) {
-        SodiumClientMod.DEVICE = new GlRenderDevice(new Blaze3DPipelineManager());
     }
 
     private static void sodium$throwGlError(int error, long description) {
@@ -39,7 +39,7 @@ public class MixinWindow {
         String string = "GLFW error " + error + ": " + MemoryUtil.memUTF8(description);
         TinyFileDialogs.tinyfd_messageBox("Minecraft",
                 string +
-                        "\n\nSodium requires a graphics card driver with support for OpenGL 4.6 Core." +
+                        "\n\nSodium requires a graphics card driver with support for OpenGL 4.5 Core." +
                         "\nPlease make sure you have up-to-date drivers (see aka.ms/mcdriver for instructions).",
                 "ok",
                 "error",

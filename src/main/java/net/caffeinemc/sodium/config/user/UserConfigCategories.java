@@ -1,23 +1,27 @@
 package net.caffeinemc.sodium.config.user;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
+import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.config.user.binding.compat.VanillaOptionBinding;
-import net.caffeinemc.sodium.config.user.options.*;
+import net.caffeinemc.sodium.config.user.options.OptionFlag;
+import net.caffeinemc.sodium.config.user.options.OptionGroup;
+import net.caffeinemc.sodium.config.user.options.OptionImpact;
+import net.caffeinemc.sodium.config.user.options.OptionImpl;
+import net.caffeinemc.sodium.config.user.options.OptionPage;
 import net.caffeinemc.sodium.config.user.options.storage.UserConfigStorage;
 import net.caffeinemc.sodium.gui.config.ControlValueFormatter;
 import net.caffeinemc.sodium.gui.config.CyclingControl;
 import net.caffeinemc.sodium.gui.config.SliderControl;
 import net.caffeinemc.sodium.gui.config.TickBoxControl;
 import net.caffeinemc.sodium.interop.vanilla.options.MinecraftOptionsStorage;
-import net.caffeinemc.sodium.config.user.options.storage.UserConfigStorage;
-import net.caffeinemc.sodium.config.user.options.*;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.option.*;
+import net.minecraft.client.option.AoMode;
+import net.minecraft.client.option.AttackIndicator;
+import net.minecraft.client.option.CloudRenderMode;
+import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.client.option.ParticlesMode;
 import net.minecraft.text.Text;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class UserConfigCategories {
     private static final UserConfigStorage sodiumOpts = new UserConfigStorage();
@@ -180,6 +184,15 @@ public class UserConfigCategories {
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(Text.translatable("sodium.options.translucent_face_sorting.name"))
+                        .setTooltip(Text.translatable("sodium.options.translucent_face_sorting.tooltip"))
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.quality.useTranslucentFaceSorting = value, opts -> opts.quality.useTranslucentFaceSorting)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(Text.translatable("sodium.options.vignette.name"))
                         .setTooltip(Text.translatable("sodium.options.vignette.tooltip"))
                         .setControl(TickBoxControl::new)
@@ -210,7 +223,7 @@ public class UserConfigCategories {
                 .add(OptionImpl.createBuilder(int.class, sodiumOpts)
                         .setName(Text.translatable("sodium.options.chunk_update_threads.name"))
                         .setTooltip(Text.translatable("sodium.options.chunk_update_threads.tooltip"))
-                        .setControl(o -> new SliderControl(o, 0, Runtime.getRuntime().availableProcessors(), 1, ControlValueFormatter.quantityOrDisabled("threads", "Default")))
+                        .setControl(option -> new SliderControl(option, 0, Runtime.getRuntime().availableProcessors(), 1, ControlValueFormatter.quantityOrDisabled("threads", "Default")))
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.chunkBuilderThreads = value, opts -> opts.performance.chunkBuilderThreads)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -278,6 +291,24 @@ public class UserConfigCategories {
 
     public static OptionPage advanced() {
         List<OptionGroup> groups = new ArrayList<>();
+    
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(UserConfig.ChunkRendererBackend.class, sodiumOpts)
+                         .setName(Text.translatable("sodium.options.chunk_renderer_backend.name"))
+                         .setTooltip(Text.translatable("sodium.options.chunk_renderer_backend.tooltip"))
+                         .setControl(option -> new CyclingControl<>(
+                                 option,
+                                 UserConfig.ChunkRendererBackend.class,
+                                 UserConfig.ChunkRendererBackend.getSupportedValues(
+                                         SodiumClientMod.DEVICE.properties()
+                                 )
+                         ))
+                         .setImpact(OptionImpact.VARIES)
+                         .setBinding((opts, value) -> opts.advanced.chunkRendererBackend = value, opts -> opts.advanced.chunkRendererBackend)
+                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                         .build()
+                )
+                .build());
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, sodiumOpts)
@@ -298,6 +329,15 @@ public class UserConfigCategories {
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.advanced.allowDirectMemoryAccess = value, opts -> opts.advanced.allowDirectMemoryAccess)
                         .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                         .setName(Text.translatable("sodium.options.enable_api_debug.name"))
+                         .setTooltip(Text.translatable("sodium.options.enable_api_debug.tooltip"))
+                         .setControl(TickBoxControl::new)
+                         .setImpact(OptionImpact.LOW)
+                         .setBinding((opts, value) -> opts.advanced.enableApiDebug = value, opts -> opts.advanced.enableApiDebug)
+                         .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
+                         .build()
                 )
                 .build());
 

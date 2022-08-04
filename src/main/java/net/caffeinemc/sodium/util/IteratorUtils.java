@@ -1,23 +1,21 @@
 package net.caffeinemc.sodium.util;
 
-import it.unimi.dsi.fastutil.objects.ObjectList;
-import it.unimi.dsi.fastutil.objects.ReferenceList;
-
 import java.util.Iterator;
+import java.util.List;
 
 public class IteratorUtils {
-    public static <T> Iterator<T> reversibleIterator(ReferenceList<T> list, boolean reverse) {
-        var iterator = list.listIterator(reverse ? list.size() : 0);
-
-        return new Iterator<T>() {
+    public static <T> Iterator<T> reverse(List<T> list) {
+        var iterator = list.listIterator(list.size());
+    
+        return new Iterator<>() {
             @Override
             public boolean hasNext() {
-                return reverse ? iterator.hasPrevious() : iterator.hasNext();
+                return iterator.hasPrevious();
             }
-
+    
             @Override
             public T next() {
-                return reverse ? iterator.previous() : iterator.next();
+                return iterator.previous();
             }
         };
     }

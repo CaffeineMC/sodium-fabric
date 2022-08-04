@@ -92,8 +92,4 @@ public class VertexBufferBuilder implements VertexBufferView {
 
         this.buffer = null;
     }
-
-    public ByteBuffer slice() {
-        return MemoryUtil.memByteBuffer(MemoryUtil.memAddress(this.buffer), this.writerOffset);
-    }
 }

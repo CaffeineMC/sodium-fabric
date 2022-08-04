@@ -1,6 +1,7 @@
 package net.caffeinemc.sodium.world.biome;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import java.util.Map;
 import net.caffeinemc.sodium.util.image.BoxBlur;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -9,8 +10,6 @@ import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.level.ColorResolver;
-
-import java.util.Map;
 
 public class ChunkColorCache {
     private static final int BORDER = 1;
@@ -55,11 +54,7 @@ public class ChunkColorCache {
         var y = MathHelper.clamp(posY - this.baseY, 0, this.sizeVertical);
         var z = MathHelper.clamp(posZ - this.baseZ, 0, this.sizeHorizontal);
 
-        int[][] colors = this.colors.get(resolver);
-
-        if (colors == null) {
-            this.colors.put(resolver, colors = new int[this.sizeVertical][]);
-        }
+        int[][] colors = this.colors.computeIfAbsent(resolver, k -> new int[this.sizeVertical][]);
 
         var layer = colors[y];
 
@@ -80,7 +75,8 @@ public class ChunkColorCache {
                 biomeData[this.indexXZ(x, z)] = this.biomeAccess.getBiome(pos.set(x + this.baseX, level + this.baseY, z + this.baseZ));
             }
         }
-
+    
+        //noinspection unchecked
         return biomeData;
     }
 

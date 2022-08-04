@@ -3,17 +3,16 @@ package net.caffeinemc.sodium.util;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMaps;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import net.caffeinemc.sodium.SodiumClientMod;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.lwjgl.system.MemoryUtil;
-
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import net.caffeinemc.sodium.SodiumClientMod;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.lwjgl.system.MemoryUtil;
 
 public class NativeBuffer {
     private static final Logger LOGGER = LogManager.getLogger(NativeBuffer.class);
@@ -45,15 +44,17 @@ public class NativeBuffer {
     }
 
     public long getAddress() {
+        this.ref.checkFreed();
+        
         return this.ref.address;
+    }
+    
+    public int getLength() {
+        return this.ref.length;
     }
 
     public void free() {
         deallocate(this.ref);
-    }
-
-    public int getLength() {
-        return this.ref.length;
     }
 
     public static void reclaim(boolean forceGc) {
@@ -74,24 +75,30 @@ public class NativeBuffer {
 
             if (buf.allocationSite != null) {
                 LOGGER.warn("Reclaimed {} bytes at address {} that were leaked from allocation site:\n{}",
-                        buf.length, buf.address,
-                        Arrays.stream(buf.allocationSite)
-                                .map(StackTraceElement::toString)
-                                .collect(Collectors.joining("\n")));
+                            buf.length, buf.address,
+                            Arrays.stream(buf.allocationSite)
+                                  .map(StackWalker.StackFrame::toString)
+                                  .collect(Collectors.joining("\n")));
             } else {
                 LOGGER.warn("Reclaimed {} bytes at address {} that were leaked from an unknown location (logging is disabled)",
                         buf.length, buf.address);
             }
         }
     }
+    
+    private static final int UNNEEDED_STACK_FRAMES = 3;
+    
+    private static StackWalker.StackFrame[] getStackTrace() {
+        if (SodiumClientMod.options().advanced.enableMemoryTracing) {
+            return StackWalker.getInstance()
+                              .walk(stackFrameStream -> stackFrameStream.skip(UNNEEDED_STACK_FRAMES)
+                                                                        .toArray(StackWalker.StackFrame[]::new));
+        }
+        return null;
+    }
 
     public static long getTotalAllocated() {
         return ALLOCATED;
-    }
-
-    private static StackTraceElement[] getStackTrace() {
-        return SodiumClientMod.options().advanced.enableMemoryTracing ? Thread.currentThread()
-                .getStackTrace() : null;
     }
 
     private static final int MAX_ALLOCATION_ATTEMPTS = 3;
@@ -117,8 +124,8 @@ public class NativeBuffer {
         if (address == MemoryUtil.NULL) {
             throw new OutOfMemoryError("Couldn't allocate %s bytes after %s attempts".formatted(bytes, attempts));
         }
-
-        StackTraceElement[] stackTrace = getStackTrace();
+    
+        StackWalker.StackFrame[] stackTrace = getStackTrace();
 
         BufferReference ref = new BufferReference(address, bytes, stackTrace);
         ALLOCATED += ref.length;
@@ -139,11 +146,11 @@ public class NativeBuffer {
         public final long address;
         public final int length;
 
-        public final StackTraceElement[] allocationSite;
+        public final StackWalker.StackFrame[] allocationSite;
 
         public boolean freed;
 
-        private BufferReference(long address, int length, StackTraceElement[] allocationSite) {
+        private BufferReference(long address, int length, StackWalker.StackFrame[] allocationSite) {
             this.address = address;
             this.length = length;
             this.allocationSite = allocationSite;

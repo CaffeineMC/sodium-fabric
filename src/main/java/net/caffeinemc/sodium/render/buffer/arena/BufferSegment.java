@@ -1,85 +1,52 @@
 package net.caffeinemc.sodium.render.buffer.arena;
 
 public class BufferSegment {
-    private final ArenaBuffer arena;
-
-    private boolean free = false;
-
-    private int offset;
-    private int length;
-
-    private BufferSegment next;
-    private BufferSegment prev;
-
-    public BufferSegment(ArenaBuffer arena, int offset, int length) {
-        this.arena = arena;
-        this.offset = offset;
-        this.length = length;
+    
+    public static final long INVALID = createKey(0, -1);
+    
+    /**
+     * Creates a buffer segment key, which holds the offset and length.
+     *
+     * @param length The unsigned length of the segment
+     * @param offset The unsigned offset of the beginning of the segment into the buffer
+     */
+    public static long createKey(int length, int offset) {
+        return ((long) length << Integer.SIZE) | Integer.toUnsignedLong(offset);
     }
-
-    public void delete() {
-        this.arena.free(this);
+    
+    public static int getLength(long key) {
+        return (int) (key >>> Integer.SIZE);
     }
-
-    protected int getEnd() {
-        return this.offset + this.length;
+    
+    public static int getOffset(long key) {
+        return (int) key;
     }
-
-    public int getLength() {
-        return this.length;
+    
+    /**
+     * Returns the end (exclusive) of the segment.
+     */
+    public static int getEnd(long key) {
+        return getOffset(key) + getLength(key);
     }
-
-    protected void setLength(int len) {
-        if (len <= 0) {
-            throw new IllegalArgumentException("len <= 0");
-        }
-
-        this.length = len;
+    
+    public static int compareLengthOffset(long key1, long key2) {
+        // if we know that 0b1xxx is larger than any 0b0xxx, we know that length will always be prioritized over offset
+        return Long.compareUnsigned(key1, key2);
     }
-
-    public int getOffset() {
-        return this.offset;
+    
+    public static int compareOffsetLength(long key1, long key2) {
+        // same strategy as compareLengthOffset, but we flop the offset and length
+        return Long.compareUnsigned(
+                (key1 >>> Integer.SIZE) | (key1 << Integer.SIZE),
+                (key2 >>> Integer.SIZE) | (key2 << Integer.SIZE)
+        );
     }
-
-    protected void setOffset(int offset) {
-        if (offset < 0) {
-            throw new IllegalArgumentException("start < 0");
-        }
-
-        this.offset = offset;
+    
+    public static int compareOffset(long key1, long key2) {
+        return Integer.compareUnsigned(getOffset(key1), getOffset(key2));
     }
-
-    protected void setFree(boolean free) {
-        this.free = free;
-    }
-
-    protected boolean isFree() {
-        return this.free;
-    }
-
-    protected void setNext(BufferSegment next) {
-        this.next = next;
-    }
-
-    protected BufferSegment getNext() {
-        return this.next;
-    }
-
-    protected BufferSegment getPrev() {
-        return this.prev;
-    }
-
-    protected void setPrev(BufferSegment prev) {
-        this.prev = prev;
-    }
-
-    protected void mergeInto(BufferSegment entry) {
-        this.setLength(this.getLength() + entry.getLength());
-        this.setNext(entry.getNext());
-
-        if (this.getNext() != null) {
-            this.getNext()
-                    .setPrev(this);
-        }
+    
+    public static int compareLength(long key1, long key2) {
+        return Integer.compareUnsigned(getLength(key1), getLength(key2));
     }
 }

@@ -8,6 +8,7 @@ import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3i;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.joml.Math;
 
 @Mixin(Matrix3f.class)
 public class MixinMatrix3f implements Matrix3fExtended {
@@ -40,17 +41,17 @@ public class MixinMatrix3f implements Matrix3fExtended {
 
     @Override
     public float transformVecX(float x, float y, float z) {
-        return this.a00 * x + this.a01 * y + this.a02 * z;
+        return Math.fma(this.a00, x, Math.fma(this.a01, y, this.a02 * z));
     }
 
     @Override
     public float transformVecY(float x, float y, float z) {
-        return this.a10 * x + this.a11 * y + this.a12 * z;
+        return Math.fma(this.a10, x, Math.fma(this.a11, y, this.a12 * z));
     }
 
     @Override
     public float transformVecZ(float x, float y, float z) {
-        return this.a20 * x + this.a21 * y + this.a22 * z;
+        return Math.fma(this.a20, x, Math.fma(this.a21, y, this.a22 * z));
     }
 
     @Override
@@ -85,9 +86,9 @@ public class MixinMatrix3f implements Matrix3fExtended {
         float y = faceNorm.getY();
         float z = faceNorm.getZ();
 
-        float x2 = this.a00 * x + this.a01 * y + this.a02 * z;
-        float y2 = this.a10 * x + this.a11 * y + this.a12 * z;
-        float z2 = this.a20 * x + this.a21 * y + this.a22 * z;
+        float x2 = Math.fma(this.a00, x, Math.fma(this.a01, y, this.a02 * z));
+        float y2 = Math.fma(this.a10, x, Math.fma(this.a11, y, this.a12 * z));
+        float z2 = Math.fma(this.a20, x, Math.fma(this.a21, y, this.a22 * z));
 
         return Normal3b.pack(x2, y2, z2);
     }
@@ -105,12 +106,12 @@ public class MixinMatrix3f implements Matrix3fExtended {
         float ta21 = 2.0F * xw;
         float ta12 = 2.0F * -xw;
 
-        float a01 = this.a01 * ta11 + this.a02 * ta21;
-        float a02 = this.a01 * ta12 + this.a02 * ta22;
-        float a11 = this.a11 * ta11 + this.a12 * ta21;
-        float a12 = this.a11 * ta12 + this.a12 * ta22;
-        float a21 = this.a21 * ta11 + this.a22 * ta21;
-        float a22 = this.a21 * ta12 + this.a22 * ta22;
+        float a01 = Math.fma(this.a01, ta11, this.a02 * ta21);
+        float a02 = Math.fma(this.a01, ta12, this.a02 * ta22);
+        float a11 = Math.fma(this.a11, ta11, this.a12 * ta21);
+        float a12 = Math.fma(this.a11, ta12, this.a12 * ta22);
+        float a21 = Math.fma(this.a21, ta11, this.a22 * ta21);
+        float a22 = Math.fma(this.a21, ta12, this.a22 * ta22);
 
         this.a01 = a01;
         this.a02 = a02;
@@ -134,12 +135,12 @@ public class MixinMatrix3f implements Matrix3fExtended {
         float ta20 = 2.0F * (-yw);
         float ta02 = 2.0F * (+yw);
 
-        float a00 = this.a00 * ta00 + this.a02 * ta20;
-        float a02 = this.a00 * ta02 + this.a02 * ta22;
-        float a10 = this.a10 * ta00 + this.a12 * ta20;
-        float a12 = this.a10 * ta02 + this.a12 * ta22;
-        float a20 = this.a20 * ta00 + this.a22 * ta20;
-        float a22 = this.a20 * ta02 + this.a22 * ta22;
+        float a00 = Math.fma(this.a00, ta00, this.a02 * ta20);
+        float a02 = Math.fma(this.a00, ta02, this.a02 * ta22);
+        float a10 = Math.fma(this.a10, ta00, this.a12 * ta20);
+        float a12 = Math.fma(this.a10, ta02, this.a12 * ta22);
+        float a20 = Math.fma(this.a20, ta00, this.a22 * ta20);
+        float a22 = Math.fma(this.a20, ta02, this.a22 * ta22);
 
         this.a00 = a00;
         this.a02 = a02;
@@ -163,12 +164,12 @@ public class MixinMatrix3f implements Matrix3fExtended {
         float ta10 = 2.0F * (0.0F + zw);
         float ta01 = 2.0F * (0.0F - zw);
 
-        float a00 = this.a00 * ta00 + this.a01 * ta10;
-        float a01 = this.a00 * ta01 + this.a01 * ta11;
-        float a10 = this.a10 * ta00 + this.a11 * ta10;
-        float a11 = this.a10 * ta01 + this.a11 * ta11;
-        float a20 = this.a20 * ta00 + this.a21 * ta10;
-        float a21 = this.a20 * ta01 + this.a21 * ta11;
+        float a00 = Math.fma(this.a00, ta00, this.a01 * ta10);
+        float a01 = Math.fma(this.a00, ta01, this.a01 * ta11);
+        float a10 = Math.fma(this.a10, ta00, this.a11 * ta10);
+        float a11 = Math.fma(this.a10, ta01, this.a11 * ta11);
+        float a20 = Math.fma(this.a20, ta00, this.a21 * ta10);
+        float a21 = Math.fma(this.a20, ta01, this.a21 * ta11);
 
         this.a00 = a00;
         this.a01 = a01;
@@ -206,15 +207,15 @@ public class MixinMatrix3f implements Matrix3fExtended {
         float ta21 = 2.0F * (yz + xw);
         float ta12 = 2.0F * (yz - xw);
 
-        float a00 = this.a00 * ta00 + this.a01 * ta10 + this.a02 * ta20;
-        float a01 = this.a00 * ta01 + this.a01 * ta11 + this.a02 * ta21;
-        float a02 = this.a00 * ta02 + this.a01 * ta12 + this.a02 * ta22;
-        float a10 = this.a10 * ta00 + this.a11 * ta10 + this.a12 * ta20;
-        float a11 = this.a10 * ta01 + this.a11 * ta11 + this.a12 * ta21;
-        float a12 = this.a10 * ta02 + this.a11 * ta12 + this.a12 * ta22;
-        float a20 = this.a20 * ta00 + this.a21 * ta10 + this.a22 * ta20;
-        float a21 = this.a20 * ta01 + this.a21 * ta11 + this.a22 * ta21;
-        float a22 = this.a20 * ta02 + this.a21 * ta12 + this.a22 * ta22;
+        float a00 = Math.fma(this.a00, ta00, Math.fma(this.a01, ta10, this.a02 * ta20));
+        float a01 = Math.fma(this.a00, ta01, Math.fma(this.a01, ta11, this.a02 * ta21));
+        float a02 = Math.fma(this.a00, ta02, Math.fma(this.a01, ta12, this.a02 * ta22));
+        float a10 = Math.fma(this.a10, ta00, Math.fma(this.a11, ta10, this.a12 * ta20));
+        float a11 = Math.fma(this.a10, ta01, Math.fma(this.a11, ta11, this.a12 * ta21));
+        float a12 = Math.fma(this.a10, ta02, Math.fma(this.a11, ta12, this.a12 * ta22));
+        float a20 = Math.fma(this.a20, ta00, Math.fma(this.a21, ta10, this.a22 * ta20));
+        float a21 = Math.fma(this.a20, ta01, Math.fma(this.a21, ta11, this.a22 * ta21));
+        float a22 = Math.fma(this.a20, ta02, Math.fma(this.a21, ta12, this.a22 * ta22));
 
         this.a00 = a00;
         this.a01 = a01;

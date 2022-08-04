@@ -10,3 +10,4 @@ pluginManagement {
 
 include ":components:gfx"
 include ":components:gfx-opengl"
+include ":components:gfx-utils"

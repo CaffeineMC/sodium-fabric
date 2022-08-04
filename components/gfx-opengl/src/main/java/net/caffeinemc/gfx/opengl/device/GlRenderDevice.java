@@ -1,70 +1,122 @@
 package net.caffeinemc.gfx.opengl.device;
 
+import java.nio.ByteBuffer;
+import java.util.Locale;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import net.caffeinemc.gfx.api.array.VertexArray;
+import net.caffeinemc.gfx.api.array.VertexArrayDescription;
 import net.caffeinemc.gfx.api.buffer.*;
 import net.caffeinemc.gfx.api.device.RenderConfiguration;
-import net.caffeinemc.gfx.api.device.commands.PipelineGate;
+import net.caffeinemc.gfx.api.device.RenderDevice;
+import net.caffeinemc.gfx.api.device.RenderDeviceProperties;
+import net.caffeinemc.gfx.api.device.commands.ComputeCommandList;
+import net.caffeinemc.gfx.api.device.commands.ComputePipelineGate;
+import net.caffeinemc.gfx.api.device.commands.RenderPipelineGate;
+import net.caffeinemc.gfx.api.device.commands.RenderCommandList;
+import net.caffeinemc.gfx.api.pipeline.ComputePipeline;
+import net.caffeinemc.gfx.api.pipeline.RenderPipeline;
+import net.caffeinemc.gfx.api.pipeline.RenderPipelineDescription;
+import net.caffeinemc.gfx.api.shader.Program;
+import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
+import net.caffeinemc.gfx.api.shader.ShaderDescription;
+import net.caffeinemc.gfx.api.sync.Fence;
+import net.caffeinemc.gfx.api.texture.Sampler;
+import net.caffeinemc.gfx.api.texture.parameters.AddressMode;
+import net.caffeinemc.gfx.api.texture.parameters.FilterMode;
+import net.caffeinemc.gfx.api.texture.parameters.MipmapMode;
+import net.caffeinemc.gfx.api.types.ElementFormat;
+import net.caffeinemc.gfx.api.types.PrimitiveType;
+import net.caffeinemc.gfx.opengl.GlEnum;
 import net.caffeinemc.gfx.opengl.array.GlVertexArray;
 import net.caffeinemc.gfx.opengl.buffer.GlBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlDynamicBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlImmutableBuffer;
 import net.caffeinemc.gfx.opengl.buffer.GlMappedBuffer;
-import net.caffeinemc.gfx.opengl.GlEnum;
-import net.caffeinemc.gfx.opengl.pipeline.GlPipeline;
+import net.caffeinemc.gfx.opengl.pipeline.GlComputePipeline;
+import net.caffeinemc.gfx.opengl.pipeline.GlRenderPipeline;
 import net.caffeinemc.gfx.opengl.pipeline.GlPipelineManager;
-import net.caffeinemc.gfx.opengl.texture.GlSampler;
 import net.caffeinemc.gfx.opengl.shader.GlProgram;
 import net.caffeinemc.gfx.opengl.sync.GlFence;
-import net.caffeinemc.gfx.api.device.commands.RenderCommandList;
-import net.caffeinemc.gfx.api.array.VertexArray;
-import net.caffeinemc.gfx.api.array.VertexArrayDescription;
-import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.gfx.api.device.RenderDeviceProperties;
-import net.caffeinemc.gfx.api.shader.Program;
-import net.caffeinemc.gfx.api.shader.ShaderBindingContext;
-import net.caffeinemc.gfx.api.shader.ShaderDescription;
-import net.caffeinemc.gfx.api.types.ElementFormat;
-import net.caffeinemc.gfx.api.pipeline.Pipeline;
-import net.caffeinemc.gfx.api.types.PrimitiveType;
-import net.caffeinemc.gfx.api.pipeline.PipelineDescription;
-import net.caffeinemc.gfx.api.sync.Fence;
-import net.caffeinemc.gfx.api.texture.Sampler;
+import net.caffeinemc.gfx.opengl.texture.GlSampler;
 import org.apache.commons.lang3.Validate;
-import org.lwjgl.opengl.*;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.ARBIndirectParameters;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL45C;
 import org.lwjgl.system.MathUtil;
-
-import java.nio.ByteBuffer;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import org.lwjgl.system.MemoryUtil;
 
 public class GlRenderDevice implements RenderDevice {
     private final GlPipelineManager pipelineManager;
     private final RenderDeviceProperties properties;
+    private final RenderConfiguration renderConfiguration;
 
-    public GlRenderDevice(GlPipelineManager pipelineManager) {
+    public GlRenderDevice(Function<RenderDeviceProperties, GlPipelineManager> pipelineManagerFactory, RenderConfiguration renderConfiguration) {
         // TODO: move this into platform code
-        this.pipelineManager = pipelineManager;
         this.properties = getDeviceProperties();
+        this.renderConfiguration = renderConfiguration;
+        this.pipelineManager = pipelineManagerFactory.apply(this.properties);
+        
+        if (renderConfiguration.apiDebug) {
+            GlDebug.enableDebugMessages();
+        }
     }
 
     private static RenderDeviceProperties getDeviceProperties() {
-        var uniformBufferAlignment = GL45C.glGetInteger(GL45C.GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT);
+        var glCaps = GL.getCapabilities();
 
+        int uniformBufferAlignment = GL45C.glGetInteger(GL45C.GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT);
         if (!MathUtil.mathIsPoT(uniformBufferAlignment)) {
             throw new RuntimeException("GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT is not a power-of-two (found value of %s)"
                     .formatted(uniformBufferAlignment));
         }
 
-        var storageBufferAlignment = GL45C.glGetInteger(GL45C.GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT);
-
+        int storageBufferAlignment = GL45C.glGetInteger(GL45C.GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT);
         if (!MathUtil.mathIsPoT(storageBufferAlignment)) {
             throw new RuntimeException("GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT is not a power-of-two (found value of %s)"
                     .formatted(storageBufferAlignment));
         }
 
+        int maxCombinedTextureImageUnits = GL45C.glGetInteger(GL45C.GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+
+        String vendorName = GL45C.glGetString(GL45C.GL_VENDOR);
+        String deviceName = GL45C.glGetString(GL45C.GL_RENDERER);
+        String apiVersion = GL45C.glGetString(GL45C.GL_VERSION);
+
+        boolean isVendorIntel = vendorName != null && vendorName.toLowerCase(Locale.ROOT).contains("intel");
+        boolean hasIndirectCountSupport = glCaps.GL_ARB_indirect_parameters;
+        boolean forceIndirectCount = isVendorIntel && hasIndirectCountSupport;
+        // My guess is that most devices that support 4.5 but not 4.6 likely have worse indirect performance, because
+        // they're likely more dated and have faster paths for more traditional draw calls.
+        // Because we can't query 4.6 support accurately, lets just check if it has indirect count support. That's
+        // probably a decent indicator.
+        boolean preferDirectRendering = isVendorIntel || !hasIndirectCountSupport;
+
+        boolean hasShaderDrawParametersSupport = glCaps.GL_ARB_shader_draw_parameters;
+
         return new RenderDeviceProperties(
-                uniformBufferAlignment,
-                storageBufferAlignment
+                vendorName,
+                deviceName,
+                "OpenGL",
+                apiVersion,
+                new RenderDeviceProperties.Values(
+                        uniformBufferAlignment,
+                        storageBufferAlignment,
+                        maxCombinedTextureImageUnits
+                ),
+                new RenderDeviceProperties.Capabilities(
+                        hasIndirectCountSupport,
+                        hasShaderDrawParametersSupport
+
+                ),
+                new RenderDeviceProperties.DriverWorkarounds(
+                        forceIndirectCount
+                ),
+                new RenderDeviceProperties.Preferences(
+                        preferDirectRendering
+                )
         );
     }
 
@@ -94,7 +146,7 @@ public class GlRenderDevice implements RenderDevice {
         int handle = buffer.getHandle();
         buffer.invalidateHandle();
 
-        GL20C.glDeleteBuffers(handle);
+        GL45C.glDeleteBuffers(handle);
     }
 
     @Override
@@ -103,25 +155,36 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     private void deleteProgram0(GlProgram<?> program) {
-        GL20C.glDeleteProgram(program.getHandle());
+        GL45C.glDeleteProgram(program.getHandle());
         program.invalidateHandle();
     }
 
     @Override
     public Fence createFence() {
-        return new GlFence(GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
+        return new GlFence();
     }
 
     @Override
     public RenderDeviceProperties properties() {
         return this.properties;
     }
-
+    
     @Override
-    public <PROGRAM, ARRAY extends Enum<ARRAY>> Pipeline<PROGRAM, ARRAY> createPipeline(PipelineDescription state, Program<PROGRAM> program, VertexArrayDescription<ARRAY> vertexArrayDescription) {
-        var vertexArray = new GlVertexArray<>(GL45C.glCreateVertexArrays(), vertexArrayDescription);
+    public RenderConfiguration configuration() {
+        return this.renderConfiguration;
+    }
+    
+    @Override
+    public <PROGRAM, ARRAY extends Enum<ARRAY>> RenderPipeline<PROGRAM, ARRAY> createRenderPipeline(
+            RenderPipelineDescription state, Program<PROGRAM> program, VertexArrayDescription<ARRAY> vertexArrayDescription) {
+        var vertexArray = new GlVertexArray<>(vertexArrayDescription);
 
-        return new GlPipeline<>(state, program, vertexArray);
+        return new GlRenderPipeline<>(state, program, vertexArray);
+    }
+    
+    @Override
+    public <PROGRAM> ComputePipeline<PROGRAM> createComputePipeline(Program<PROGRAM> program) {
+        return new GlComputePipeline<>(program);
     }
 
     @Override
@@ -160,6 +223,7 @@ public class GlRenderDevice implements RenderDevice {
         preUnmapConsumer.accept(mapping);
 
         if (!GL45C.glUnmapNamedBuffer(handle)) {
+            // TODO: retry if this happens
             throw new RuntimeException("Failed to unmap buffer after writing data (contents corrupt?)");
         }
 
@@ -187,7 +251,6 @@ public class GlRenderDevice implements RenderDevice {
         GL45C.glNamedBufferStorage(handle, capacity, storage);
 
         var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | getMappedBufferAccessBits(flags);
-        // for some reason, this works but glMapNamedBuffer doesn't
         ByteBuffer mapping = GL45C.glMapNamedBufferRange(handle, 0, capacity, access);
 
         if (mapping == null) {
@@ -211,9 +274,15 @@ public class GlRenderDevice implements RenderDevice {
 
         // just make a temporary generic buffer
         preMapConsumer.accept(new GlBuffer(handle, capacity));
+        
+        //// Do the synchronization for the buffer ourselves
+        // TODO: add a memory barrier function to RenderDevice
+        // do we need GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT?
+        GL45C.glMemoryBarrier(GL45C.GL_BUFFER_UPDATE_BARRIER_BIT);
+        this.createFence().sync(true);
 
-        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | getMappedBufferAccessBits(flags);
-        // for some reason, this works but glMapNamedBuffer doesn't
+        // If we were to use GL_MAP_INVALIDATE_BIT on this, it would invalidate all the stuff we just wrote to it.
+        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | getMappedBufferAccessBits(flags);
         ByteBuffer mapping = GL45C.glMapNamedBufferRange(handle, 0, capacity, access);
 
         if (mapping == null) {
@@ -222,19 +291,39 @@ public class GlRenderDevice implements RenderDevice {
 
         return new GlMappedBuffer(handle, mapping, flags);
     }
-
+    
     @Override
-    public <PROGRAM, ARRAY extends Enum<ARRAY>> void usePipeline(Pipeline<PROGRAM, ARRAY> pipeline, PipelineGate<PROGRAM, ARRAY> gate) {
-        this.pipelineManager.bindPipeline(pipeline, (state) ->
-                gate.run(new ImmediateRenderCommandList<>((GlVertexArray<ARRAY>) pipeline.getVertexArray()), pipeline.getProgram().getInterface(), state)
+    public <PROGRAM> void useComputePipeline(ComputePipeline<PROGRAM> pipeline, ComputePipelineGate<PROGRAM> gate) {
+        this.pipelineManager.bindComputePipeline(pipeline, (state) ->
+                gate.run(
+                        new ImmediateComputeCommandList(),
+                        pipeline.getProgram().getInterface(),
+                        state
+                )
         );
     }
 
     @Override
-    public void deletePipeline(Pipeline<?, ?> pipeline) {
-        this.deleteVertexArray(pipeline.getVertexArray());
+    public <PROGRAM, ARRAY extends Enum<ARRAY>> void useRenderPipeline(RenderPipeline<PROGRAM, ARRAY> pipeline, RenderPipelineGate<PROGRAM, ARRAY> gate) {
+        this.pipelineManager.bindRenderPipeline(pipeline, (state) ->
+                gate.run(
+                        new ImmediateRenderCommandList<>((GlVertexArray<ARRAY>) pipeline.getVertexArray()),
+                        pipeline.getProgram().getInterface(),
+                        state
+                )
+        );
     }
 
+    @Override
+    public void deleteRenderPipeline(RenderPipeline<?, ?> renderPipeline) {
+        this.deleteVertexArray(renderPipeline.getVertexArray());
+    }
+    
+    @Override
+    public void deleteComputePipeline(ComputePipeline<?> computePipeline) {
+        // we have nothing to destroy for opengl
+    }
+    
     @Override
     public void updateBuffer(DynamicBuffer buffer, int offset, ByteBuffer data) {
         if (RenderConfiguration.API_CHECKS) {
@@ -247,8 +336,22 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     @Override
-    public Sampler createSampler() {
-        return new GlSampler();
+    public Sampler createSampler(
+            @Nullable FilterMode minFilter,
+            @Nullable MipmapMode mipmapMode,
+            @Nullable FilterMode magFilter,
+            @Nullable AddressMode addressModeU,
+            @Nullable AddressMode addressModeV,
+            @Nullable AddressMode addressModeW
+    ) {
+        return new GlSampler(
+                minFilter,
+                mipmapMode,
+                magFilter,
+                addressModeU,
+                addressModeV,
+                addressModeW
+        );
     }
 
     @Override
@@ -267,17 +370,54 @@ public class GlRenderDevice implements RenderDevice {
     }
 
     private void deleteVertexArray0(GlVertexArray<?> array) {
-        GL30C.glDeleteVertexArrays(array.getHandle());
+        GL45C.glDeleteVertexArrays(array.getHandle());
         array.invalidateHandle();
+    }
+    
+    private static class ImmediateComputeCommandList implements ComputeCommandList {
+        protected Buffer dispatchIndirectBuffer;
+    
+        @Override
+        public void dispatchCompute(int numGroupsX, int numGroupsY, int numGroupsZ) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.isTrue(numGroupsX * numGroupsY * numGroupsZ > 0, "Total groups must be greater than 0");
+            }
+            
+            GL45C.glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+        }
+    
+        @Override
+        public void bindDispatchIndirectBuffer(Buffer buffer) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.notNull(buffer, "Buffer must be non-null");
+            }
+        
+            if (this.dispatchIndirectBuffer != buffer) {
+                GL45C.glBindBuffer(GL45C.GL_DISPATCH_INDIRECT_BUFFER, GlBuffer.getHandle(buffer));
+            
+                this.dispatchIndirectBuffer = buffer;
+            }
+        }
+    
+        @Override
+        public void dispatchComputeIndirect(long indirectOffset) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.isTrue(indirectOffset >= 0, "Indirect offset must be greater than or equal to zero");
+                Validate.isTrue(indirectOffset % 4 == 0, "Indirect offset must be a multiple of 4");
+            }
+            
+            GL45C.glDispatchComputeIndirect(indirectOffset);
+        }
     }
 
     private static class ImmediateRenderCommandList<T extends Enum<T>> implements RenderCommandList<T> {
-        private final int array;
+        protected final int array;
 
-        private Buffer elementBuffer;
-        private Buffer commandBuffer;
+        protected Buffer elementBuffer;
+        protected Buffer commandBuffer;
+        protected Buffer parameterBuffer;
 
-        private final Buffer[] vertexBuffers;
+        protected final Buffer[] vertexBuffers;
 
         public ImmediateRenderCommandList(GlVertexArray<T> array) {
             this.array = array.getHandle();
@@ -331,7 +471,41 @@ public class GlRenderDevice implements RenderDevice {
         }
 
         @Override
-        public void multiDrawElementsIndirect(PrimitiveType primitiveType, ElementFormat elementType, long indirectOffset, int indirectCount) {
+        public void bindParameterBuffer(Buffer buffer) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.notNull(buffer, "Buffer must be non-null");
+            }
+
+            if (this.parameterBuffer != buffer) {
+                GL45C.glBindBuffer(ARBIndirectParameters.GL_PARAMETER_BUFFER_ARB, GlBuffer.getHandle(buffer));
+
+                this.parameterBuffer = buffer;
+            }
+        }
+        
+        @Override
+        public void multiDrawElementsBaseVertex(PrimitiveType primitiveType, ElementFormat elementType, int drawCount, long indexCountsPtr, long indexOffsetsPtr, long baseVerticesPtr) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.notNull(this.elementBuffer, "Element buffer target not bound");
+                Validate.noNullElements(this.vertexBuffers, "One or more vertex buffer targets are not bound");
+                Validate.isTrue(drawCount >= 0, "Draw count must be equal to or greater than 0");
+                Validate.isTrue(indexCountsPtr != MemoryUtil.NULL, "Index counts pointer is null");
+                Validate.isTrue(indexOffsetsPtr != MemoryUtil.NULL, "Index offsets pointer is null");
+                Validate.isTrue(baseVerticesPtr != MemoryUtil.NULL, "Base vertices pointer is null");
+            }
+            
+            GL45C.nglMultiDrawElementsBaseVertex(
+                    GlEnum.from(primitiveType),
+                    indexCountsPtr,
+                    GlEnum.from(elementType),
+                    indexOffsetsPtr,
+                    drawCount,
+                    baseVerticesPtr
+            );
+        }
+
+        @Override
+        public void multiDrawElementsIndirect(PrimitiveType primitiveType, ElementFormat elementType, long indirectOffset, int indirectCount, int stride) {
             if (RenderConfiguration.API_CHECKS) {
                 Validate.notNull(this.elementBuffer, "Element buffer target not bound");
                 Validate.notNull(this.commandBuffer, "Command buffer target not bound");
@@ -341,9 +515,40 @@ public class GlRenderDevice implements RenderDevice {
                 Validate.isTrue(indirectCount > 0, "Command count must be positive");
                 Validate.isTrue(indirectOffset + (indirectCount * 20L) <= this.commandBuffer.capacity(),
                         "Command buffer range is out of bounds");
+                Validate.isTrue(stride >= 0, "Stride must be greater than or equal to 0");
             }
 
-            GL43C.glMultiDrawElementsIndirect(GlEnum.from(primitiveType), GlEnum.from(elementType), indirectOffset, indirectCount, 0);
+            GL45C.glMultiDrawElementsIndirect(
+                    GlEnum.from(primitiveType),
+                    GlEnum.from(elementType),
+                    indirectOffset,
+                    indirectCount,
+                    stride
+            );
+        }
+
+        @Override
+        public void multiDrawElementsIndirectCount(PrimitiveType primitiveType, ElementFormat elementType, long indirectOffset, long countOffset, int maxCount, int stride) {
+            if (RenderConfiguration.API_CHECKS) {
+                Validate.notNull(this.elementBuffer, "Element buffer target not bound");
+                Validate.notNull(this.commandBuffer, "Command buffer target not bound");
+                Validate.notNull(this.parameterBuffer, "Parameter buffer target not bound");
+                Validate.noNullElements(this.vertexBuffers, "One or more vertex buffer targets are not bound");
+
+                Validate.isTrue(indirectOffset >= 0, "Command offset must be greater than or equal to zero");
+                Validate.isTrue(maxCount > 0, "Maximum command count must be greater than zero");
+                Validate.isTrue(countOffset % 4 == 0, "Count offset is not a multiple of 4");
+                Validate.isTrue(stride >= 0, "Stride must be greater than or equal to 0");
+            }
+
+            ARBIndirectParameters.glMultiDrawElementsIndirectCountARB(
+                    GlEnum.from(primitiveType),
+                    GlEnum.from(elementType),
+                    indirectOffset,
+                    countOffset,
+                    maxCount,
+                    stride
+            );
         }
     }
 

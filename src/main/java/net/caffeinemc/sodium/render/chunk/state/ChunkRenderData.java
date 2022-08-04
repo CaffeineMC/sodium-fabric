@@ -1,20 +1,20 @@
 package net.caffeinemc.sodium.render.chunk.state;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
-import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
-import net.caffeinemc.sodium.util.DirectionUtil;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.IntFunction;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 
-import java.util.*;
-import java.util.function.IntFunction;
-
 /**
- * The render data for a chunk render container containing all the information about which meshes are attached, the
- * block entities contained by it, and any data used for occlusion testing.
+ * The render data for a chunk render container containing all the information about which terrain models are attached,
+ * the block entities contained by it, and any data used for occlusion testing.
  */
 public class ChunkRenderData {
     public static final ChunkRenderData ABSENT = new ChunkRenderData.Builder()
@@ -24,16 +24,16 @@ public class ChunkRenderData {
     public final BlockEntity[] globalBlockEntities;
     public final BlockEntity[] blockEntities;
     public final Sprite[] animatedSprites;
-    public final ChunkRenderPass[] meshes;
+    public final ChunkPassModel[] models;
     public final ChunkRenderBounds bounds;
     public final ChunkOcclusionData occlusionData;
 
     public ChunkRenderData(BlockEntity[] globalBlockEntities, BlockEntity[] blockEntities, Sprite[] animatedSprites,
-                           ChunkRenderPass[] meshes, ChunkRenderBounds bounds, ChunkOcclusionData occlusionData) {
+                           ChunkPassModel[] models, ChunkRenderBounds bounds, ChunkOcclusionData occlusionData) {
         this.globalBlockEntities = globalBlockEntities;
         this.blockEntities = blockEntities;
         this.animatedSprites = animatedSprites;
-        this.meshes = meshes;
+        this.models = models;
         this.bounds = bounds;
         this.occlusionData = occlusionData;
     }
@@ -49,8 +49,8 @@ public class ChunkRenderData {
             flags |= ChunkRenderFlag.HAS_BLOCK_ENTITIES;
         }
 
-        if (this.meshes != null) {
-            flags |= ChunkRenderFlag.HAS_MESHES;
+        if (this.models != null) {
+            flags |= ChunkRenderFlag.HAS_TERRAIN_MODELS;
         }
 
         if (this.animatedSprites != null) {
@@ -64,8 +64,8 @@ public class ChunkRenderData {
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> localBlockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
-        private final Set<ChunkRenderPass> meshes = new ReferenceOpenHashSet<>();
-
+        
+        private ChunkPassModel[] models;
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
 
@@ -75,6 +75,10 @@ public class ChunkRenderData {
 
         public void setOcclusionData(ChunkOcclusionData data) {
             this.occlusionData = data;
+        }
+        
+        public void setModels(ChunkPassModel[] models) {
+            this.models = models;
         }
 
         /**
@@ -97,17 +101,19 @@ public class ChunkRenderData {
             (cull ? this.localBlockEntities : this.globalBlockEntities).add(entity);
         }
 
-        public void addMesh(ChunkRenderPass pass) {
-            this.meshes.add(pass);
-        }
-
         public ChunkRenderData build() {
             var globalBlockEntities = toArray(this.globalBlockEntities, BlockEntity[]::new);
             var blockEntities = toArray(this.localBlockEntities, BlockEntity[]::new);
             var animatedSprites = toArray(this.animatedSprites, Sprite[]::new);
-            var meshes = toArray(this.meshes, ChunkRenderPass[]::new);
 
-            return new ChunkRenderData(globalBlockEntities, blockEntities, animatedSprites, meshes, this.bounds, this.occlusionData);
+            return new ChunkRenderData(
+                    globalBlockEntities,
+                    blockEntities,
+                    animatedSprites,
+                    this.models,
+                    this.bounds,
+                    this.occlusionData
+            );
         }
 
         private static <T> T[] toArray(Collection<T> collection, IntFunction<T[]> factory) {

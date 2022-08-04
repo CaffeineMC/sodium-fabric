@@ -1,6 +1,8 @@
 package net.caffeinemc.sodium;
 
-import net.fabricmc.loader.api.SemanticVersion;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 import org.apache.logging.log4j.LogManager;
@@ -9,17 +11,15 @@ import org.lwjgl.system.Configuration;
 import org.lwjgl.system.Platform;
 import org.lwjgl.system.jemalloc.JEmalloc;
 
-import java.util.Objects;
-
 public class SodiumPreLaunch implements PreLaunchEntrypoint {
     private static final Logger LOGGER = LogManager.getLogger("Sodium");
-
+    
     @Override
     public void onPreLaunch() {
         tryLoadRenderdoc();
         checkJemalloc();
     }
-
+    
     private static void tryLoadRenderdoc() {
         if (System.getProperty("sodium.load_renderdoc") != null) {
             LOGGER.info("Loading renderdoc...");
@@ -45,12 +45,12 @@ public class SodiumPreLaunch implements PreLaunchEntrypoint {
     }
 
     private static boolean isVersionWithinRange(String curStr, String minStr, String maxStr) {
-        SemanticVersion cur, min, max;
+        Version cur, min, max;
 
         try {
-            cur = SemanticVersion.parse(curStr);
-            min = SemanticVersion.parse(minStr);
-            max = SemanticVersion.parse(maxStr);
+            cur = Version.parse(curStr);
+            min = Version.parse(minStr);
+            max = Version.parse(maxStr);
         } catch (VersionParsingException e) {
             LOGGER.warn("Unable to parse version string", e);
             return false;

@@ -1,11 +1,12 @@
 package net.caffeinemc.sodium.render.chunk;
 
-import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
-import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
-import net.caffeinemc.sodium.render.chunk.state.*;
-import net.minecraft.util.math.ChunkSectionPos;
-
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
+import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
+import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
+import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.minecraft.util.math.ChunkSectionPos;
 
 /**
  * The render state object for a chunk section. This contains all the graphics state for each render pass along with
@@ -18,13 +19,13 @@ public class RenderSection {
     private RenderRegion region;
 
     private final int chunkX, chunkY, chunkZ;
-    private final float originX, originY, originZ;
+    private final double originX, originY, originZ;
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<?> rebuildTask = null;
 
     private ChunkUpdateType pendingUpdate;
-    private UploadedChunkGeometry uploadedGeometry;
+    private long uploadedGeometrySegment = BufferSegment.INVALID;
 
     private boolean disposed;
 
@@ -55,7 +56,7 @@ public class RenderSection {
         }
     }
 
-    public ChunkRenderData data() {
+    public ChunkRenderData getData() {
         return this.data;
     }
 
@@ -66,8 +67,7 @@ public class RenderSection {
      */
     public void delete() {
         this.cancelRebuildTask();
-        this.deleteGeometry();
-
+        this.ensureGeometryDeleted();
         this.disposed = true;
     }
 
@@ -99,10 +99,6 @@ public class RenderSection {
         return this.chunkZ;
     }
 
-    public ChunkRenderBounds getBounds() {
-        return this.data.bounds;
-    }
-
     public boolean isDisposed() {
         return this.disposed;
     }
@@ -124,10 +120,7 @@ public class RenderSection {
     }
 
     public void onBuildSubmitted(CompletableFuture<?> task) {
-        if (this.rebuildTask != null) {
-            this.rebuildTask.cancel(false);
-            this.rebuildTask = null;
-        }
+        this.cancelRebuildTask();
 
         this.rebuildTask = task;
         this.pendingUpdate = null;
@@ -145,40 +138,50 @@ public class RenderSection {
         this.lastAcceptedBuildTime = time;
     }
 
-    public void deleteGeometry() {
-        if (this.uploadedGeometry != null) {
-            this.uploadedGeometry.delete();
-            this.uploadedGeometry = null;
-
+    public void ensureGeometryDeleted() {
+        long uploadedGeometrySegment = this.uploadedGeometrySegment;
+        
+        if (uploadedGeometrySegment != BufferSegment.INVALID) {
+            this.region.removeSection(this);
+            this.uploadedGeometrySegment = BufferSegment.INVALID;
             this.region = null;
         }
     }
-
-    public void updateGeometry(RenderRegion region, UploadedChunkGeometry geometry) {
-        this.deleteGeometry();
-        this.uploadedGeometry = geometry;
+    
+    /**
+     * Make sure to call {@link #ensureGeometryDeleted()} before calling this!
+     */
+    public void setGeometry(RenderRegion region, long bufferSegment) {
+        this.setBufferSegment(bufferSegment);
         this.region = region;
     }
-
-    public UploadedChunkGeometry getGeometry() {
-        return this.uploadedGeometry;
+    
+    public void setBufferSegment(long bufferSegment) {
+        if (bufferSegment == BufferSegment.INVALID) {
+            throw new IllegalArgumentException("Segment cannot be invalid");
+        }
+        this.uploadedGeometrySegment = bufferSegment;
     }
-
-    public int id() {
+    
+    public long getUploadedGeometrySegment() {
+        return this.uploadedGeometrySegment;
+    }
+    
+    public int getId() {
         return this.id;
     }
 
-    public float getDistance(float x, float y, float z) {
-        float xDist = x - this.originX;
-        float yDist = y - this.originY;
-        float zDist = z - this.originZ;
+    public double getDistance(double x, double y, double z) {
+        double xDist = x - this.originX;
+        double yDist = y - this.originY;
+        double zDist = z - this.originZ;
 
         return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
 
-    public float getDistance(float x, float z) {
-        float xDist = x - this.originX;
-        float zDist = z - this.originZ;
+    public double getDistance(double x, double z) {
+        double xDist = x - this.originX;
+        double zDist = z - this.originZ;
 
         return (xDist * xDist) + (zDist * zDist);
     }
@@ -192,11 +195,32 @@ public class RenderSection {
     }
 
     public boolean isWithinFrustum(Frustum frustum) {
-        return frustum.isBoxVisible(this.originX - 8.0f, this.originY - 8.0f, this.originZ - 8.0f,
-                this.originX + 8.0f, this.originY + 8.0f, this.originZ + 8.0f);
+        return frustum.isBoxVisible(
+                (float) (this.originX - 8.0),
+                (float) (this.originY - 8.0),
+                (float) (this.originZ - 8.0),
+                (float) (this.originX + 8.0),
+                (float) (this.originY + 8.0),
+                (float) (this.originZ + 8.0)
+        );
     }
 
     public int getFlags() {
         return this.flags;
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+        RenderSection section = (RenderSection) o;
+        return this.chunkX == section.chunkX &&
+               this.chunkY == section.chunkY &&
+               this.chunkZ == section.chunkZ;
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.chunkX, this.chunkY, this.chunkZ);
     }
 }

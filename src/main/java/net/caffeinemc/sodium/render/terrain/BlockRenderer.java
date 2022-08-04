@@ -66,7 +66,7 @@ public class BlockRenderer {
             }
 
             if (!cull || this.occlusionCache.shouldDrawSide(state, world, pos, dir)) {
-                this.renderQuadList(world, state, pos, origin, lighter, offset, buffers, sided, ChunkMeshFace.fromDirection(dir));
+                this.renderQuadList(world, state, pos, origin, lighter, offset, buffers, sided, dir);
 
                 rendered = true;
             }
@@ -77,7 +77,7 @@ public class BlockRenderer {
         List<BakedQuad> all = model.getQuads(state, null, this.random);
 
         if (!all.isEmpty()) {
-            this.renderQuadList(world, state, pos, origin, lighter, offset, buffers, all, ChunkMeshFace.UNASSIGNED);
+            this.renderQuadList(world, state, pos, origin, lighter, offset, buffers, all, null);
 
             rendered = true;
         }
@@ -86,7 +86,8 @@ public class BlockRenderer {
     }
 
     private void renderQuadList(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, LightPipeline lighter, Vec3d offset,
-                                ChunkMeshBuilder buffers, List<BakedQuad> quads, ChunkMeshFace facing) {
+                                ChunkMeshBuilder buffers, List<BakedQuad> quads, Direction cullFace) {
+        ChunkMeshFace facing = cullFace == null ? ChunkMeshFace.UNASSIGNED : ChunkMeshFace.fromDirection(cullFace);
         ColorSampler<BlockState> colorizer = null;
 
         TerrainVertexSink vertices = buffers.getVertexSink(facing);
@@ -98,7 +99,7 @@ public class BlockRenderer {
             BakedQuad quad = quads.get(i);
 
             QuadLightData light = this.cachedQuadLightData;
-            lighter.calculate((ModelQuadView) quad, pos, light, quad.getFace(), quad.hasShade());
+            lighter.calculate((ModelQuadView) quad, pos, light, cullFace, quad.getFace(), quad.hasShade());
 
             if (quad.hasColor() && colorizer == null) {
                 colorizer = this.blockColors.getColorProvider(state);

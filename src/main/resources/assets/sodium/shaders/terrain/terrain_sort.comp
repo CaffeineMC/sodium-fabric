@@ -1,0 +1,281 @@
+#version 450 core
+
+#define DUMMY_INDEX 10000000
+#define DUMMY_DISTANCE -1000000
+
+#define INDICES_PER_PRIM 3
+#define VERTICES_PER_PRIM 3
+
+layout(local_size_x = LOCAL_SIZE_X) in;
+
+//Define packed vertex data
+struct VertexData {
+    // TODO: generate with define on cpu
+    uint a_Pos1; //ushort[2] //x,y //The position of the vertex around the model origin
+    uint a_Pos2; //ushort[2] //z,w
+    uint a_Color; //The color of the vertex
+    uint a_TexCoord; // The block texture coordinate of the vertex
+    uint a_LightCoord; // The light texture coordinate of the vertex
+};
+
+struct PrimitiveIndices {
+    uint i1;
+    uint i2;
+    uint i3;
+};
+
+struct Primitive {
+    PrimitiveIndices indices;
+    float distance;
+};
+
+struct GeometryRange {
+    vec4 translation;
+    uint vertexOffset; // Offset into the vertex buffer that this chunk section starts, in vertex strides
+    uint indexOffset; // Offset into the index buffer that this range starts in, where indexOffset * BYTES_PER_INDEX = byte offset
+    uint primCount; // The count of all primitives referenced by this range
+};
+
+/*
+A chunk is "big" if the number of verts in its translucent mesh is > LOCAL_SIZE_X * 2 * 3.
+If a chunk is "big" multiple dispatches are required to fully sort the chunk and therefor the region.
+
+Compute shaders have 3 levels of granularity:
+Dispatch -  A call to glDispatchCompute creates a Dispatch consisting of multiple work groups.
+            The number of work groups per dispatch are defined when calling the dispatch as X, Y, and Z values.
+
+WorkGroup - For this implementation gl_WorkGroupID.y indicates the chunk within the region that each work group is working on
+            while gl_WorkGroupID.x indicates the position within the chunk, and is only used for regions where
+            at least one chunk is "big"
+
+Invocation or Thread -  The smallest unit of a compute shader. There are LOCAL_SIZE_X Invocations for each WorkGroup
+                        Invocations have the distinct advantage of being able to share memory between other invocations
+                        within their work group and also are able to sync execution within their work group.
+*/
+
+// this rarely updates, treat it like a push constant
+layout(std140, binding = 1) uniform CameraPosition {
+    vec4 cameraPos;
+};
+
+layout(std140, binding = 1) uniform SortParameters {
+    int executionType;
+    int sortHeight;
+};
+
+layout(std430, binding = 2) restrict readonly buffer SectionGeometryRanges {
+    GeometryRange sectionGeometryRanges[];
+};
+
+layout(std430, binding = 3) restrict readonly buffer RegionMesh {
+    VertexData regionMesh[];
+};
+
+layout(std430, binding = 4) coherent buffer RegionIndexBuffer {
+    uint regionIndices[];
+};
+
+//Workgroup memory.
+shared Primitive currentPrimitives[LOCAL_SIZE_X * 2];
+
+GeometryRange getCurrentRange() {
+    return sectionGeometryRanges[gl_WorkGroupID.y];
+}
+
+vec4 unpackPos(VertexData v) {
+    uint x = v.a_Pos1 & uint(0xFFFF);
+    uint y = (v.a_Pos1 >> 16);
+    uint z = v.a_Pos2 & uint(0xFFFF);
+    uint w = (v.a_Pos2 >> 16);
+    return vec4(x,y,z,w);
+}
+
+float getAverageDistanceSq(GeometryRange geometryRange, PrimitiveIndices indexGroup) {
+    //Nvidia drivers need these variables defined before unpackPos
+    VertexData rm1 = regionMesh[indexGroup.i1 + geometryRange.vertexOffset];
+    VertexData rm2 = regionMesh[indexGroup.i2 + geometryRange.vertexOffset];
+    VertexData rm3 = regionMesh[indexGroup.i3 + geometryRange.vertexOffset];
+    vec4 rawPosition1 = unpackPos(rm1);
+    vec4 rawPosition2 = unpackPos(rm2);
+    vec4 rawPosition3 = unpackPos(rm3);
+
+    vec4 averagePos = (rawPosition1 + rawPosition2 + rawPosition3) / 3;
+
+    vec3 offsetPos = (averagePos.xyz * VERT_SCALE) + geometryRange.translation.xyz - cameraPos.xyz;
+
+    return dot(offsetPos, offsetPos);
+}
+
+//Convert an index into the indices array from [0..IndicesInChunk] to [0..IndicesInBuffer]
+uint getBufferIndex(GeometryRange geometryRange, uint index) {
+    uint bufferIndex = geometryRange.indexOffset + index;
+    return bufferIndex > (geometryRange.primCount * INDICES_PER_PRIM) + geometryRange.indexOffset ? DUMMY_INDEX : bufferIndex;
+}
+
+PrimitiveIndices readPrimitiveIndices(uint bufferIndex) {
+    return PrimitiveIndices(regionIndices[bufferIndex], regionIndices[bufferIndex + 1], regionIndices[bufferIndex + 2]);
+}
+
+void writePrimitiveIndices(uint bufferIndex, PrimitiveIndices primitiveIndices) {
+    regionIndices[bufferIndex + 0] = primitiveIndices.i1;
+    regionIndices[bufferIndex + 1] = primitiveIndices.i2;
+    regionIndices[bufferIndex + 2] = primitiveIndices.i3;
+}
+
+// Performs compare-and-swap over elements held in shared, workgroup-local memory
+void local_compare_and_swap(uint idx1, uint idx2){
+    if (currentPrimitives[idx1].distance < currentPrimitives[idx2].distance) {
+        Primitive tmp = currentPrimitives[idx1];
+        currentPrimitives[idx1] = currentPrimitives[idx2];
+        currentPrimitives[idx2] = tmp;
+    }
+}
+
+// Performs full-height flip (h height) over locally available indices.
+void local_flip(uint h){
+    uint t = gl_LocalInvocationID.x;
+
+    barrier(); // FIXME: ouch...
+
+    uint half_h = h >> 1; // Note: h >> 1 is equivalent to h / 2
+    ivec2 indices =
+    ivec2( h * ( ( 2 * t ) / h ) ) +
+    ivec2( t % half_h, h - 1 - ( t % half_h ) );
+
+    local_compare_and_swap(indices.x, indices.y);
+}
+
+// Performs progressively diminishing disperse operations (starting with height h)
+// on locally available indices: e.g. h==8 -> 8 : 4 : 2.
+// One disperse operation for every time we can half h.
+void local_disperse(in uint h){
+    uint t = gl_LocalInvocationID.x;
+    for ( ; h > 1 ; h /= 2 ) {
+
+        barrier(); // FIXME: whyyyyy
+
+        uint half_h = h >> 1; // Note: h >> 1 is equivalent to h / 2
+        ivec2 indices =
+        ivec2( h * ( ( 2 * t ) / h ) ) +
+        ivec2( t % half_h, half_h + ( t % half_h ) );
+
+        local_compare_and_swap(indices.x, indices.y);
+    }
+}
+
+// Perform binary merge sort for local elements, up to a maximum number of elements h.
+void local_bms(uint h){
+    for (uint hh = 2; hh <= h; hh <<= 1) {  // note:  h <<= 1 is same as h *= 2
+        local_flip(hh);
+        local_disperse(hh/2);
+    }
+}
+
+void global_compare_and_swap(GeometryRange geometryRange, uint idx1, uint idx2){
+    uint i1 = getBufferIndex(geometryRange, idx1);
+    uint i2 = getBufferIndex(geometryRange, idx2);
+    if(i1 != DUMMY_INDEX && i2 != DUMMY_INDEX) {
+        PrimitiveIndices primInd1 = readPrimitiveIndices(i1);
+        PrimitiveIndices primInd2 = readPrimitiveIndices(i2);
+        float distance1 = getAverageDistanceSq(geometryRange, primInd1);
+        float distance2 = getAverageDistanceSq(geometryRange, primInd2);
+
+        if (distance1 < distance2) {
+            writePrimitiveIndices(i1, primInd2);
+            writePrimitiveIndices(i2, primInd1);
+        }
+    }
+}
+
+// Performs full-height flip (h height) in buffer
+void global_flip(GeometryRange geometryRange, uint h){
+    uint t = gl_GlobalInvocationID.x;
+
+    uint half_h = h >> 1;
+    uint q = uint((2 * t) / h) * h;
+    uint idx1 = q + (t % half_h);
+    uint idx2 = q + h - (t % half_h) - 1;
+
+    global_compare_and_swap(geometryRange, idx1, idx2);
+}
+
+// Performs progressively diminishing disperse operations (starting with height h)
+// One disperse operation for every time we can half h.
+void global_disperse(GeometryRange geometryRange, uint h){
+    uint t = gl_GlobalInvocationID.x;
+
+    uint half_h = h >> 1;
+    uint q = uint((2 * t) / h) * h;
+    uint idx1 = q + (t % half_h);
+    uint idx2 = q + (t % half_h) + half_h;
+
+    global_compare_and_swap(geometryRange, idx1, idx2);
+}
+
+void local_main(GeometryRange geometryRange, uint executionType, uint height) {
+    uint t = gl_LocalInvocationID.x;
+    uint offset = gl_WorkGroupSize.x * 2 * gl_WorkGroupID.x;
+
+    uint bufferIndex1 = getBufferIndex(geometryRange, offset+t*2);
+    uint bufferIndex2 = getBufferIndex(geometryRange, offset+t*2+1);
+    PrimitiveIndices primIdx1 = readPrimitiveIndices(bufferIndex1);
+    PrimitiveIndices primIdx2 = readPrimitiveIndices(bufferIndex2);
+    float distance1 = getAverageDistanceSq(geometryRange, primIdx1);
+    float distance2 = getAverageDistanceSq(geometryRange, primIdx2);
+
+    if (bufferIndex1 == DUMMY_INDEX) {
+        primIdx1 = PrimitiveIndices(DUMMY_INDEX, DUMMY_INDEX, DUMMY_INDEX);
+        distance1 = DUMMY_DISTANCE;
+    }
+    if (bufferIndex2 == DUMMY_INDEX) {
+        primIdx2 = PrimitiveIndices(DUMMY_INDEX, DUMMY_INDEX, DUMMY_INDEX);
+        distance2 = DUMMY_DISTANCE;
+    }
+
+    // Each local worker must save two elements to local memory, as there
+    // are twice as many elments as workers.
+    currentPrimitives[t*2]   = Primitive(primIdx1, distance1);
+    currentPrimitives[t*2+1] = Primitive(primIdx2, distance2);
+
+    if (executionType == LOCAL_BMS) {
+        local_bms(height);
+    }
+    if (executionType == LOCAL_DISPERSE) {
+        local_disperse(height);
+    }
+
+    barrier();
+    //Write local memory back to buffer
+    PrimitiveIndices ig1 = currentPrimitives[t*2].indices;
+    PrimitiveIndices ig2 = currentPrimitives[t*2+1].indices;
+
+    if (bufferIndex1 != DUMMY_INDEX) {
+        writePrimitiveIndices(bufferIndex1, ig1);
+    }
+    if (bufferIndex2 != DUMMY_INDEX) {
+        writePrimitiveIndices(bufferIndex2, ig2);
+    }
+}
+
+void main(){
+    uint height = gl_WorkGroupSize.x * 2;
+    GeometryRange geometryRange = getCurrentRange();
+    uint computeSize = uint(pow(2, ceil(log(geometryRange.primCount) / log(2))));
+    uint usedWorkgroups = (computeSize / (gl_WorkGroupSize.x * 2)) + 1;
+
+    //Exit early for unneeded work groups
+    if(gl_WorkGroupID.x >= usedWorkgroups) {
+        return;
+    }
+
+    if(executionType == LOCAL_BMS || executionType == LOCAL_DISPERSE) {
+        local_main(geometryRange, executionType, sortHeight);
+    }
+
+    if(executionType == GLOBAL_FLIP) {
+        global_flip(geometryRange, sortHeight);
+    }
+    if(executionType == GLOBAL_DISPERSE) {
+        global_disperse(geometryRange, sortHeight);
+    }
+}

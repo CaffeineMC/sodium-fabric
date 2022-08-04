@@ -15,6 +15,6 @@ public interface BlittableVertexType<T extends VertexSink> extends BufferVertexT
     T createBufferWriter(VertexBufferView buffer, boolean direct);
 
     default T createBufferWriter(VertexBufferView buffer) {
-        return this.createBufferWriter(buffer, SodiumClientMod.isDirectMemoryAccessEnabled());
+        return this.createBufferWriter(buffer, SodiumClientMod.options().advanced.allowDirectMemoryAccess);
     }
 }

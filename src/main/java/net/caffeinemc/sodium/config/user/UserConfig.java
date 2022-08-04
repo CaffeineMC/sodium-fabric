@@ -3,16 +3,18 @@ package net.caffeinemc.sodium.config.user;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.caffeinemc.sodium.config.user.options.TextProvider;
-import net.minecraft.client.option.GraphicsMode;
-import net.minecraft.text.Text;
-
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.function.Predicate;
+import net.caffeinemc.gfx.api.device.RenderDeviceProperties;
+import net.caffeinemc.sodium.config.user.options.TextProvider;
+import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.text.Text;
 
 public class UserConfig {
     public final QualitySettings quality = new QualitySettings();
@@ -43,22 +45,55 @@ public class UserConfig {
     }
 
     public static class AdvancedSettings {
-        public boolean allowDirectMemoryAccess = true;
-
-        public boolean enableMemoryTracing = false;
-
         public int cpuRenderAheadLimit = 3;
+
+        public boolean allowDirectMemoryAccess = true;
+        public boolean enableMemoryTracing = false;
+        public boolean enableApiDebug = false;
+        
+        public ChunkRendererBackend chunkRendererBackend = ChunkRendererBackend.DEFAULT;
     }
 
     public static class QualitySettings {
         public GraphicsQuality weatherQuality = GraphicsQuality.DEFAULT;
         public GraphicsQuality leavesQuality = GraphicsQuality.DEFAULT;
+        
+        public boolean useTranslucentFaceSorting = true;
 
         public boolean enableVignette = true;
     }
 
     public static class NotificationSettings {
         public boolean hideDonationButton = false;
+    }
+    
+    public enum ChunkRendererBackend implements TextProvider {
+        DEFAULT("options.gamma.default", p -> true),
+        BASEVERTEX("sodium.options.chunk_renderer_backend.base_vertex", p -> true),
+        INDIRECT("sodium.options.chunk_renderer_backend.indirect", p -> true);
+        
+        private final Text name;
+        private final Predicate<RenderDeviceProperties> supportedSupplier;
+    
+        ChunkRendererBackend(String name, Predicate<RenderDeviceProperties> supportedSupplier) {
+            this.name = Text.translatable(name);
+            this.supportedSupplier = supportedSupplier;
+        }
+    
+        @Override
+        public Text getLocalizedName() {
+            return this.name;
+        }
+        
+        public boolean isSupported(RenderDeviceProperties deviceProperties) {
+            return this.supportedSupplier.test(deviceProperties);
+        }
+        
+        public static ChunkRendererBackend[] getSupportedValues(RenderDeviceProperties deviceProperties) {
+            return Arrays.stream(ChunkRendererBackend.values())
+                         .filter(tdm -> tdm.isSupported(deviceProperties))
+                         .toArray(ChunkRendererBackend[]::new);
+        }
     }
 
     public enum GraphicsQuality implements TextProvider {

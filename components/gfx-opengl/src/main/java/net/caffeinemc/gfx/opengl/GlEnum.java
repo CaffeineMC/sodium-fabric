@@ -2,16 +2,17 @@ package net.caffeinemc.gfx.opengl;
 
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
+import java.util.function.Consumer;
 import net.caffeinemc.gfx.api.array.attribute.VertexAttributeFormat;
 import net.caffeinemc.gfx.api.pipeline.state.BlendFunc;
 import net.caffeinemc.gfx.api.pipeline.state.DepthFunc;
 import net.caffeinemc.gfx.api.shader.BufferBlockType;
 import net.caffeinemc.gfx.api.shader.ShaderType;
+import net.caffeinemc.gfx.api.texture.parameters.AddressMode;
+import net.caffeinemc.gfx.api.texture.parameters.FilterMode;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import org.lwjgl.opengl.GL45C;
-
-import java.util.function.Consumer;
 
 public class GlEnum {
     private static final int[] PRIMITIVE_TYPES = build(PrimitiveType.class, (map) -> {
@@ -22,7 +23,7 @@ public class GlEnum {
         map.put(PrimitiveType.LINE_STRIP,       GL45C.GL_LINE_STRIP);
     });
 
-    private static final int[] BLEND_SRC_FACTOR = build(BlendFunc.SrcFactor.class, (map) -> {
+    private static final int[] BLEND_SRC_FACTORS = build(BlendFunc.SrcFactor.class, (map) -> {
         map.put(BlendFunc.SrcFactor.ZERO,                       GL45C.GL_ZERO);
         map.put(BlendFunc.SrcFactor.ONE,                        GL45C.GL_ONE);
         map.put(BlendFunc.SrcFactor.SRC_COLOR,                  GL45C.GL_SRC_COLOR);
@@ -40,7 +41,7 @@ public class GlEnum {
         map.put(BlendFunc.SrcFactor.SRC_ALPHA_SATURATE,         GL45C.GL_SRC_ALPHA_SATURATE);
     });
 
-    private static final int[] BLEND_DST_FACTOR = build(BlendFunc.DstFactor.class, (map) -> {
+    private static final int[] BLEND_DST_FACTORS = build(BlendFunc.DstFactor.class, (map) -> {
         map.put(BlendFunc.DstFactor.ZERO,                       GL45C.GL_ZERO);
         map.put(BlendFunc.DstFactor.ONE,                        GL45C.GL_ONE);
         map.put(BlendFunc.DstFactor.SRC_COLOR,                  GL45C.GL_SRC_COLOR);
@@ -57,13 +58,13 @@ public class GlEnum {
         map.put(BlendFunc.DstFactor.ONE_MINUS_CONSTANT_ALPHA,   GL45C.GL_ONE_MINUS_CONSTANT_ALPHA);
     });
 
-    private static final int[] INT_TYPE = build(ElementFormat.class, (map) -> {
+    private static final int[] INT_TYPES = build(ElementFormat.class, (map) -> {
         map.put(ElementFormat.UNSIGNED_BYTE,  GL45C.GL_UNSIGNED_BYTE);
         map.put(ElementFormat.UNSIGNED_SHORT, GL45C.GL_UNSIGNED_SHORT);
         map.put(ElementFormat.UNSIGNED_INT,   GL45C.GL_UNSIGNED_INT);
     });
 
-    private static final int[] DEPTH_FUNC = build(DepthFunc.class, (map) -> {
+    private static final int[] DEPTH_FUNCS = build(DepthFunc.class, (map) -> {
         map.put(DepthFunc.NEVER,                    GL45C.GL_NEVER);
         map.put(DepthFunc.LESS,                     GL45C.GL_LESS);
         map.put(DepthFunc.LESS_THAN_OR_EQUAL,       GL45C.GL_LEQUAL);
@@ -74,7 +75,7 @@ public class GlEnum {
         map.put(DepthFunc.ALWAYS,                   GL45C.GL_ALWAYS);
     });
 
-    private static final int[] ATTRIBUTE_FORMAT = build(VertexAttributeFormat.class, (map) -> {
+    private static final int[] ATTRIBUTE_FORMATS = build(VertexAttributeFormat.class, (map) -> {
         map.put(VertexAttributeFormat.FLOAT,            GL45C.GL_FLOAT);
         map.put(VertexAttributeFormat.BYTE,             GL45C.GL_BYTE);
         map.put(VertexAttributeFormat.UNSIGNED_BYTE,    GL45C.GL_UNSIGNED_BYTE);
@@ -98,28 +99,41 @@ public class GlEnum {
         map.put(BufferBlockType.UNIFORM, GL45C.GL_UNIFORM_BUFFER);
     });
 
+    private static final int[] ADDRESS_MODES = build(AddressMode.class, (map) -> {
+        map.put(AddressMode.CLAMP_TO_EDGE, GL45C.GL_CLAMP_TO_EDGE);
+        map.put(AddressMode.CLAMP_TO_BORDER, GL45C.GL_CLAMP_TO_BORDER);
+        map.put(AddressMode.MIRRORED_REPEAT, GL45C.GL_MIRRORED_REPEAT);
+        map.put(AddressMode.REPEAT, GL45C.GL_REPEAT);
+        map.put(AddressMode.MIRROR_CLAMP_TO_EDGE, GL45C.GL_MIRROR_CLAMP_TO_EDGE);
+    });
+    
+    private static final int[] FILTER_MODES = build(FilterMode.class, (map) -> {
+        map.put(FilterMode.NEAREST, GL45C.GL_NEAREST);
+        map.put(FilterMode.LINEAR, GL45C.GL_LINEAR);
+    });
+
     public static int from(PrimitiveType value) {
         return PRIMITIVE_TYPES[value.ordinal()];
     }
 
     public static int from(BlendFunc.SrcFactor value) {
-        return BLEND_SRC_FACTOR[value.ordinal()];
+        return BLEND_SRC_FACTORS[value.ordinal()];
     }
 
     public static int from(BlendFunc.DstFactor value) {
-        return BLEND_DST_FACTOR[value.ordinal()];
+        return BLEND_DST_FACTORS[value.ordinal()];
     }
 
     public static int from(ElementFormat value) {
-        return INT_TYPE[value.ordinal()];
+        return INT_TYPES[value.ordinal()];
     }
 
     public static int from(DepthFunc value) {
-        return DEPTH_FUNC[value.ordinal()];
+        return DEPTH_FUNCS[value.ordinal()];
     }
 
     public static int from(VertexAttributeFormat value) {
-        return ATTRIBUTE_FORMAT[value.ordinal()];
+        return ATTRIBUTE_FORMATS[value.ordinal()];
     }
 
     public static int from(ShaderType value) {
@@ -128,6 +142,17 @@ public class GlEnum {
 
     public static int from(BufferBlockType value) {
         return BUFFER_BLOCK_TYPES[value.ordinal()];
+    }
+
+    public static int from(AddressMode value) {
+        return ADDRESS_MODES[value.ordinal()];
+    }
+
+    /**
+     * Warning: does not cover all the mipmap values.
+     */
+    public static int from(FilterMode value) {
+        return FILTER_MODES[value.ordinal()];
     }
 
     private static <T extends Enum<T>> int[] build(Class<T> type, Consumer<Reference2IntMap<T>> consumer) {
