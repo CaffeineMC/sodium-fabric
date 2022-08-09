@@ -12,6 +12,9 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class ChunkOcclusion {
+    private static IntList currentQueue = new IntArrayList(128);
+    private static IntList nextQueue = new IntArrayList(128);
+    private static int[] visibleSections = new int[0];
     public static IntArrayList calculateVisibleSections(ChunkTree tree, Frustum frustum, World world, BlockPos origin,
                                                         int chunkViewDistance, boolean useOcclusionCulling) {
         // Run the frustum check early so the fallback can use it too
@@ -31,8 +34,6 @@ public class ChunkOcclusion {
         // Chunks are grouped by manhattan distance to the start chunk, and given
         // the fact that the chunk graph is bipartite, it's possible to simply
         // alternate the lists to form a queue
-        IntList currentQueue = new IntArrayList(128);
-        IntList nextQueue = new IntArrayList(128);
         IntList[] startingNodes = null;
 
         int startSectionId = tree.getSectionId(ChunkSectionPos.toLong(origin));
@@ -57,11 +58,12 @@ public class ChunkOcclusion {
         // isn't actually visible, however since we still need to use it as a starting
         // point for iterating, we make it always visible, which means we need one extra
         // slot in the array
-        int[] visibleSections = new int[nodeVisitable.count() + 1];
+        if (visibleSections.length <= nodeVisitable.count() + 1) {
+            visibleSections = new int[nodeVisitable.count() + 1];
+        }
         int visibleSectionCount = 0;
 
         int fallbackIndex = 0;
-
         while (true) {
             if (startingNodes != null && fallbackIndex < startingNodes.length) {
                 currentQueue.addAll(startingNodes[fallbackIndex]);
