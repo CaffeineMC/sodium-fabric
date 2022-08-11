@@ -8,12 +8,28 @@ import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
+import net.minecraft.world.HeightLimitView;
 
 public class ChunkOcclusion {
-    public static IntArrayList calculateVisibleSections(ChunkTree tree, Frustum frustum, World world, BlockPos origin,
-                                                        int chunkViewDistance, boolean useOcclusionCulling) {
+    
+    private final int chunkViewDistance;
+    private final HeightLimitView heightLimitView;
+    
+    // Chunks are grouped by manhattan distance to the start chunk, and given
+    // the fact that the chunk graph is bipartite, it's possible to simply
+    // alternate the lists to form a queue
+    private IntList currentQueue;
+    private IntList nextQueue;
+    
+    public ChunkOcclusion(int chunkViewDistance, HeightLimitView heightLimitView) {
+        this.chunkViewDistance = chunkViewDistance;
+        this.heightLimitView = heightLimitView;
+        
+        this.currentQueue = new IntArrayList(128);
+        this.nextQueue = new IntArrayList(128);
+    }
+    
+    public IntArrayList calculateVisibleSections(ChunkTree tree, Frustum frustum, BlockPos origin, boolean useOcclusionCulling) {
         // Run the frustum check early so the fallback can use it too
         BitArray nodeVisitable = tree.findVisibleSections(frustum);
 
@@ -27,29 +43,28 @@ public class ChunkOcclusion {
         // on top of the potential slowdown of the normal path seems to outweigh
         // any gains in those rare circumstances
         int visibilityOverride = useOcclusionCulling ? 0 : -1;
-
-        // Chunks are grouped by manhattan distance to the start chunk, and given
-        // the fact that the chunk graph is bipartite, it's possible to simply
-        // alternate the lists to form a queue
-        IntList currentQueue = new IntArrayList(128);
-        IntList nextQueue = new IntArrayList(128);
+        
         IntList[] startingNodes = null;
 
-        int startSectionId = tree.getSectionId(ChunkSectionPos.toLong(origin));
+        int startSectionIdx = tree.getSectionIdx(
+                ChunkSectionPos.getSectionCoord(origin.getX()),
+                ChunkSectionPos.getSectionCoord(origin.getY()),
+                ChunkSectionPos.getSectionCoord(origin.getZ())
+        );
 
-        if (startSectionId == ChunkTree.ABSENT_VALUE) {
-            startingNodes = getStartingNodesFallback(tree, world, origin, chunkViewDistance, nodeVisitable, allowedTraversalDirections, visibleTraversalDirections);
+//        if (startSectionIdx == ChunkTree.ABSENT_VALUE) {
+            startingNodes = this.getStartingNodesFallback(tree, nodeVisitable, allowedTraversalDirections, visibleTraversalDirections);
         } else {
-            currentQueue.add(startSectionId);
+            this.currentQueue.add(startSectionIdx);
 
             byte visible = (byte) visibilityOverride;
 
             for (int direction = 0; direction < DirectionUtil.COUNT; direction++) {
-                visible |= tree.getVisibilityData(startSectionId, direction);
+                visible |= tree.getVisibilityData(startSectionIdx, direction);
             }
 
-            allowedTraversalDirections[startSectionId] = (byte) -1;
-            visibleTraversalDirections[startSectionId] = visible;
+            allowedTraversalDirections[startSectionIdx] = (byte) -1;
+            visibleTraversalDirections[startSectionIdx] = visible;
         }
 
 
@@ -64,17 +79,17 @@ public class ChunkOcclusion {
 
         while (true) {
             if (startingNodes != null && fallbackIndex < startingNodes.length) {
-                currentQueue.addAll(startingNodes[fallbackIndex]);
+                this.currentQueue.addAll(startingNodes[fallbackIndex]);
                 fallbackIndex++;
 
                 // It's possible that due to unloaded chunks, there entries in
                 // the startingNodes array that are empty
-            } else if (currentQueue.isEmpty()) {
+            } else if (this.currentQueue.isEmpty()) {
                 break;
             }
 
-            for (int i = 0, length = currentQueue.size(); i < length; i++) {
-                int sectionId = currentQueue.getInt(i);
+            for (int i = 0, length = this.currentQueue.size(); i < length; i++) {
+                int sectionId = this.currentQueue.getInt(i);
 
                 visibleSections[visibleSectionCount++] = sectionId;
 
@@ -99,7 +114,7 @@ public class ChunkOcclusion {
                     int newAllowed = allowedTraversalDirection & ~(1 << reverseDirection);
 
                     if (allowedTraversalDirections[adjacentNodeId] == 0) {
-                        nextQueue.add(adjacentNodeId);
+                        this.nextQueue.add(adjacentNodeId);
                         if (newAllowed == 0) {
                             // TODO: I don't think it's mathematically possible to trigger this
                             // avoid adding it twice to the list!
@@ -118,23 +133,23 @@ public class ChunkOcclusion {
             }
 
             // swap and reset
-            IntList temp = currentQueue;
-            currentQueue = nextQueue;
-            nextQueue = temp;
-            nextQueue.clear();
+            IntList temp = this.currentQueue;
+            this.currentQueue = this.nextQueue;
+            this.nextQueue = temp;
+            this.nextQueue.clear();
         }
 
         return IntArrayList.wrap(visibleSections, visibleSectionCount);
     }
 
-    private static void tryAdd(int sectionId, ChunkTree tree, int direction, byte directionMask, byte[] allowedTraversalDirections, byte[] visibleTraversalDirections, BitArray visibleSections, IntList sections) {
-        if (sectionId != ChunkTree.ABSENT_VALUE && visibleSections.get(sectionId)) {
-            sections.add(sectionId);
+    private static void tryAdd(int sectionIdx, ChunkTree tree, int direction, byte directionMask, byte[] allowedTraversalDirections, byte[] visibleTraversalDirections, BitArray visibleSections, IntList sections) {
+        if (sectionIdx != ChunkTree.ABSENT_VALUE && visibleSections.get(sectionIdx)) {
+            sections.add(sectionIdx);
 
-            int visible = tree.getVisibilityData(sectionId, direction);
+            int visible = tree.getVisibilityData(sectionIdx, direction);
 
-            allowedTraversalDirections[sectionId] = directionMask;
-            visibleTraversalDirections[sectionId] = (byte) (directionMask & visible);
+            allowedTraversalDirections[sectionIdx] = directionMask;
+            visibleTraversalDirections[sectionIdx] = (byte) (directionMask & visible);
         }
     }
 
@@ -143,15 +158,14 @@ public class ChunkOcclusion {
     private static final int ZP = 1 << DirectionUtil.Z_PLUS;
     private static final int ZN = 1 << DirectionUtil.Z_MIN;
 
-    private static IntList[] getStartingNodesFallback(ChunkTree tree, World world, BlockPos origin, int renderDistance, BitArray visible, byte[] allowedTraversalDirections, byte[] visibleTraversalDirections) {
-        IntList[] sections = new IntList[renderDistance * 2 + 1];
+    private IntList[] getStartingNodesFallback(ChunkTree tree, BitArray visible, byte[] allowedTraversalDirections, byte[] visibleTraversalDirections) {
+        IntList[] sections = new IntList[this.chunkViewDistance * 2 + 1];
+        
+        int sectionX = tree.getOriginSectionX();
+        int sectionY = tree.getOriginSectionY();
+        int sectionZ = tree.getOriginSectionZ();
 
-        ChunkSectionPos chunkPos = ChunkSectionPos.from(origin);
-        int chunkX = chunkPos.getX();
-        int chunkY = MathHelper.clamp(chunkPos.getY(), world.getBottomSectionCoord(), world.getTopSectionCoord() - 1);
-        int chunkZ = chunkPos.getZ();
-
-        int direction = chunkPos.getY() < world.getBottomSectionCoord() ? Direction.UP.getId() : Direction.DOWN.getId();
+        int direction = sectionY < this.heightLimitView.getBottomSectionCoord() ? Direction.UP.getId() : Direction.DOWN.getId();
         int inDirection = DirectionUtil.getOppositeId(direction);
         // in theory useless
         int mask = 1 << direction;
@@ -165,10 +179,18 @@ public class ChunkOcclusion {
         // L L L D K K K
 
         // A
-        tryAdd(tree.getSectionId(chunkX, chunkY, chunkZ), tree, inDirection, (byte) -1,
-                allowedTraversalDirections, visibleTraversalDirections, visible, sections[0] = new IntArrayList(1));
+        tryAdd(
+                tree.getSectionIdx(sectionX, sectionY, sectionZ),
+                tree,
+                inDirection,
+                (byte) -1,
+                allowedTraversalDirections,
+                visibleTraversalDirections,
+                visible,
+                sections[0] = new IntArrayList(1)
+        );
 
-        for (int distance = 1; distance <= renderDistance; distance++) {
+        for (int distance = 1; distance <= this.chunkViewDistance; distance++) {
             IntList inner = sections[distance] = new IntArrayList();
 
             // nodes are checked at the following distances:
@@ -183,13 +205,49 @@ public class ChunkOcclusion {
             {
                 // handle the mayor axis
                 // B (north z-)
-                tryAdd(tree.getSectionId(chunkX, chunkY, chunkZ - distance), tree, inDirection, (byte) (mask | XN | ZN | XP), allowedTraversalDirections, visibleTraversalDirections, visible, inner);
+                tryAdd(
+                        tree.getSectionIdx(sectionX, sectionY, sectionZ - distance),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XN | ZN | XP),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        inner
+                );
                 // C (east x+)
-                tryAdd(tree.getSectionId(chunkX + distance, chunkY, chunkZ), tree, inDirection, (byte) (mask | XP | ZN | ZP), allowedTraversalDirections, visibleTraversalDirections, visible, inner);
+                tryAdd(
+                        tree.getSectionIdx(sectionX + distance, sectionY, sectionZ),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XP | ZN | ZP),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        inner
+                );
                 // D (south z+)
-                tryAdd(tree.getSectionId(chunkX, chunkY, chunkZ + distance), tree, inDirection, (byte) (mask | XP | ZP | XN), allowedTraversalDirections, visibleTraversalDirections, visible, inner);
+                tryAdd(
+                        tree.getSectionIdx(sectionX, sectionY, sectionZ + distance),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XP | ZP | XN),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        inner
+                );
                 // E (west x-)
-                tryAdd(tree.getSectionId(chunkX - distance, chunkY, chunkZ), tree, inDirection, (byte) (mask | XN | ZP | ZN), allowedTraversalDirections, visibleTraversalDirections, visible, inner);
+                tryAdd(
+                        tree.getSectionIdx(sectionX - distance, sectionY, sectionZ),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XN | ZP | ZN),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        inner
+                );
             }
 
             // nodes are checked at the following distances:
@@ -206,17 +264,53 @@ public class ChunkOcclusion {
                 int dz = distance - dx;
 
                 // F (northeast x+ z-)
-                tryAdd(tree.getSectionId(chunkX + dx, chunkY, chunkZ - dz), tree, inDirection, (byte) (mask | XP | ZN), allowedTraversalDirections, visibleTraversalDirections, visible, inner);
+                tryAdd(
+                        tree.getSectionIdx(sectionX + dx, sectionY, sectionZ - dz),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XP | ZN),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        inner
+                );
                 // G (southeast x+ z+)
-                tryAdd(tree.getSectionId(chunkX + dx, chunkY, chunkZ + dz), tree, inDirection, (byte) (mask | XP | ZP), allowedTraversalDirections, visibleTraversalDirections, visible, inner);
+                tryAdd(
+                        tree.getSectionIdx(sectionX + dx, sectionY, sectionZ + dz),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XP | ZP),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        inner
+                );
                 // H (southwest x- z+)
-                tryAdd(tree.getSectionId(chunkX - dx, chunkY, chunkZ + dz), tree, inDirection, (byte) (mask | XN | ZP), allowedTraversalDirections, visibleTraversalDirections, visible, inner);
+                tryAdd(
+                        tree.getSectionIdx(sectionX - dx, sectionY, sectionZ + dz),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XN | ZP),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        inner
+                );
                 // I (northwest x- z-)
-                tryAdd(tree.getSectionId(chunkX - dx, chunkY, chunkZ - dz), tree, inDirection, (byte) (mask | XN | ZN), allowedTraversalDirections, visibleTraversalDirections, visible, inner);
+                tryAdd(
+                        tree.getSectionIdx(sectionX - dx, sectionY, sectionZ - dz),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XN | ZN),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        inner
+                );
             }
         }
 
-        for (int distance = 1; distance <= renderDistance; distance++) {
+        for (int distance = 1; distance <= this.chunkViewDistance; distance++) {
             // nodes are checked at the following distances:
             // 1 2 3 . 3 2 1
             // 2 3 . . . 3 2
@@ -226,20 +320,56 @@ public class ChunkOcclusion {
             // 2 3 . . . 3 2
             // 1 2 3 . 3 2 1
 
-            IntList outer = sections[2 * renderDistance - distance + 1] = new IntArrayList();
+            IntList outer = sections[2 * this.chunkViewDistance - distance + 1] = new IntArrayList();
 
             for (int i = 0; i < distance; i++) {
-                int dx = renderDistance - i;
-                int dz = renderDistance - distance + i + 1;
+                int dx = this.chunkViewDistance - i;
+                int dz = this.chunkViewDistance - distance + i + 1;
 
                 // J (northeast x+ z-)
-                tryAdd(tree.getSectionId(chunkX + dx, chunkY, chunkZ - dz), tree, inDirection, (byte) (mask | XP | ZN), allowedTraversalDirections, visibleTraversalDirections, visible, outer);
+                tryAdd(
+                        tree.getSectionIdx(sectionX + dx, sectionY, sectionZ - dz),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XP | ZN),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        outer
+                );
                 // K (southeast x+ z+)
-                tryAdd(tree.getSectionId(chunkX + dx, chunkY, chunkZ + dz), tree, inDirection, (byte) (mask | XP | ZP), allowedTraversalDirections, visibleTraversalDirections, visible, outer);
+                tryAdd(
+                        tree.getSectionIdx(sectionX + dx, sectionY, sectionZ + dz),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XP | ZP),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        outer
+                );
                 // L (southwest x- z+)
-                tryAdd(tree.getSectionId(chunkX - dx, chunkY, chunkZ + dz), tree, inDirection, (byte) (mask | XN | ZP), allowedTraversalDirections, visibleTraversalDirections, visible, outer);
+                tryAdd(
+                        tree.getSectionIdx(sectionX - dx, sectionY, sectionZ + dz),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XN | ZP),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        outer
+                );
                 // M (northwest x- z-)
-                tryAdd(tree.getSectionId(chunkX - dx, chunkY, chunkZ - dz), tree, inDirection, (byte) (mask | XN | ZN), allowedTraversalDirections, visibleTraversalDirections, visible, outer);
+                tryAdd(
+                        tree.getSectionIdx(sectionX - dx, sectionY, sectionZ - dz),
+                        tree,
+                        inDirection,
+                        (byte) (mask | XN | ZN),
+                        allowedTraversalDirections,
+                        visibleTraversalDirections,
+                        visible,
+                        outer
+                );
             }
         }
 

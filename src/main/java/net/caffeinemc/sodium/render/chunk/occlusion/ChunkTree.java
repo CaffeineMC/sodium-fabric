@@ -1,74 +1,141 @@
 package net.caffeinemc.sodium.render.chunk.occlusion;
 
-import it.unimi.dsi.fastutil.bytes.ByteArrays;
-import it.unimi.dsi.fastutil.ints.IntArrays;
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrays;
+import java.util.Arrays;
+import java.util.NoSuchElementException;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.util.DirectionUtil;
-import net.caffeinemc.sodium.util.IntPool;
 import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.HeightLimitView;
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.util.NoSuchElementException;
-
 public class ChunkTree {
-    public static final int ABSENT_VALUE = 0;
+    public static final int ABSENT_VALUE = 0xFFFFFFFF;
+    
+    private final int sectionHeightMin;
+    private final int sectionHeightMax;
+    
+    private final RenderSection[] sections;
+    private final byte[] sectionVisibilityData;
+    private final int[] sectionAdjacent;
 
-    private final IntPool nodeIdPool = new IntPool();
-    private final IntPool sectionIdPool = new IntPool();
+    private final Node[] nodes;
 
-    private final Long2IntOpenHashMap[] nodeLookup;
-    private final Long2IntOpenHashMap sectionLookup;
+    private final int sectionWidth;
+    private final int sectionWidthOffset;
+    private final int sectionHeight;
+    private final int sectionHeightOffset;
+    private final int sectionTableSize;
+    private final int maxDepth; // inclusive
+    
+    private int loadedSections;
+    
+    private int originSectionX;
+    private int originSectionY;
+    private int originSectionZ;
 
-    private RenderSection[] sections = new RenderSection[4096];
-    private byte[] sectionVisibilityData = new byte[4096 * 6];
-    private int[] sectionAdjacent = new int[4096 * 6];
-
-    private Node[] nodes = new Node[5120];
-
-    private final int maxDepth;
-
-    private final Factory<RenderSection> factory;
-
-    public ChunkTree(int maxDepth, Factory<RenderSection> factory) {
+    public ChunkTree(int maxDepth, int chunkViewDistance, HeightLimitView heightLimitView) {
+        this.sectionHeightMin = heightLimitView.getBottomSectionCoord();
+        this.sectionHeightMax = heightLimitView.getTopSectionCoord() - 1;
+    
         this.maxDepth = maxDepth;
-        this.factory = factory;
-
-        this.nodeLookup = new Long2IntOpenHashMap[maxDepth];
-
-        for (var i = 0; i < maxDepth; i++) {
-            this.nodeLookup[i] = new Long2IntOpenHashMap();
-            this.nodeLookup[i].defaultReturnValue(ABSENT_VALUE);
-        }
-
-        this.sectionLookup = new Long2IntOpenHashMap();
-        this.sectionLookup.defaultReturnValue(ABSENT_VALUE);
+        this.sectionWidth = chunkViewDistance * 2 + 1;
+        this.sectionWidthOffset = chunkViewDistance;
+        this.sectionHeight = heightLimitView.countVerticalSections();
+        this.sectionHeightOffset = -heightLimitView.getBottomSectionCoord();
+        this.sectionTableSize = this.sectionWidth * this.sectionWidth * this.sectionHeight;
+        int nodeTableSize = this.sectionTableSize * 2 - (this.sectionTableSize >> maxDepth + 1);
+    
+        this.nodes = new Node[nodeTableSize];
+        
+        this.sectionVisibilityData = new byte[this.sectionTableSize * DirectionUtil.COUNT];
+        this.sectionAdjacent = new int[this.sectionTableSize * DirectionUtil.COUNT];
+        Arrays.fill(this.sectionAdjacent, ABSENT_VALUE);
+        this.sections = new RenderSection[this.sectionTableSize];
     }
-
+    
+    public int getSectionIdx(int x, int y, int z) {
+        int tableY = this.originSectionY - y + this.sectionHeightOffset;
+        int tableZ = this.originSectionZ - z + this.sectionWidthOffset;
+        int tableX = this.originSectionX - x + this.sectionWidthOffset;
+        if (tableY < 0 || tableY >= this.sectionHeight || tableZ < 0 || tableZ >= this.sectionWidth || tableX < 0 || tableX >= this.sectionWidth) {
+            return ABSENT_VALUE;
+        } else {
+            return tableY * this.sectionWidth * this.sectionWidth
+                   + tableZ * this.sectionWidth
+                   + tableX;
+        }
+    }
+    
+    // TODO: keep track of origin, do bounds check and return absent if outside
+    public int getNodeIdx(int x, int y, int z, int depth) {
+        int yFromOrigin = this.originSectionY - y + this.sectionHeightOffset;
+        int zFromOrigin = this.originSectionZ - z + this.sectionWidthOffset;
+        int xFromOrigin = this.originSectionX - x + this.sectionWidthOffset;
+        int depthSectionWidth = this.sectionWidth >> depth;
+        return this.getNodeDepthOffset(depth)
+               + (yFromOrigin >> depth) * depthSectionWidth * depthSectionWidth
+               + (zFromOrigin >> depth) * depthSectionWidth
+               + (xFromOrigin >> depth);
+    }
+    
+    public int getNodeDepthOffset(int depth) {
+        // should we be doing +depth here?
+        return (this.sectionTableSize * 2) - (this.sectionTableSize >> depth);
+    }
+    
+    public void setOrigin(BlockPos origin) {
+        this.originSectionY = MathHelper.clamp(
+                ChunkSectionPos.getSectionCoord(origin.getY()),
+                this.sectionHeightMin,
+                this.sectionHeightMax
+        );
+        
+        this.originSectionX = ChunkSectionPos.getSectionCoord(origin.getX());
+        this.originSectionZ = ChunkSectionPos.getSectionCoord(origin.getZ());
+    }
+    
+    public int getOriginSectionX() {
+        return this.originSectionX;
+    }
+    
+    public int getOriginSectionY() {
+        return this.originSectionY;
+    }
+    
+    public int getOriginSectionZ() {
+        return this.originSectionZ;
+    }
+    
     public BitArray findVisibleSections(Frustum frustum) {
         var results = new BitArray(this.getSectionTableSize());
 
-        var depth = this.maxDepth - 1;
-        var nodes = this.nodeLookup[depth].values();
-        var iterator = nodes.intIterator();
-
-        while (iterator.hasNext()) {
-            this.checkNode(results, this.nodes[iterator.nextInt()], frustum);
+        int startIdx = this.getNodeDepthOffset(this.maxDepth);
+        int endIdx = this.getNodeDepthOffset(this.maxDepth + 1);
+        for (int idx = startIdx; idx < endIdx; idx++) {
+            this.checkNode(results, this.nodes[idx], frustum);
         }
 
         return results;
     }
 
     private void checkNode(BitArray vis, Node node, Frustum frustum) {
+        if (node == null) {
+            return;
+        }
+        
         switch (node.testBox(frustum)) {
             case Frustum.INTERSECT -> {
-                if (node.sectionId != ABSENT_VALUE) {
-                    vis.set(node.sectionId);
-                }
+                // TODO: reimpl?
+//                if (node.sectionIdx != ABSENT_VALUE) {
+//                    vis.set(node.sectionIdx);
+//                }
+                vis.set(node.sectionIdx);
 
                 for (var child : node.children) {
                     this.checkNode(vis, child, frustum);
@@ -79,9 +146,11 @@ public class ChunkTree {
     }
 
     private void markVisibleRecursive(BitArray vis, Node node) {
-        if (node.sectionId != ABSENT_VALUE) {
-            vis.set(node.sectionId);
-        }
+        // TODO: reimpl?
+//        if (node.sectionId != ABSENT_VALUE) {
+//            vis.set(node.sectionId);
+//        }
+        vis.set(node.sectionIdx);
 
         for (var child : node.children) {
             this.markVisibleRecursive(vis, child);
@@ -89,112 +158,106 @@ public class ChunkTree {
     }
 
     public int getSectionTableSize() {
-        return this.sectionIdPool.capacity();
+        return this.sectionTableSize;
     }
 
-    public RenderSection add(int chunkX, int chunkY, int chunkZ) {
+    public RenderSection add(int x, int y, int z) {
         Node parentNode = null;
+        int sectionIdx = ABSENT_VALUE;
+        
+        for (var depth = this.maxDepth; depth >= 0; depth--) {
+            // TODO: keep track of origin, do bounds check and return absent if outside
+            int nodeIdx = this.getNodeIdx(x, y, z, depth);
+            Node node = this.nodes[nodeIdx];
 
-        for (var depth = this.maxDepth - 1; depth >= 0; depth--) {
-            var nodeX = chunkX >> depth;
-            var nodeY = chunkY >> depth;
-            var nodeZ = chunkZ >> depth;
-
-            var nodeMap = this.nodeLookup[depth];
-            var nodeKey = ChunkSectionPos.asLong(nodeX, nodeY, nodeZ);
-            var nodeId = nodeMap.get(nodeKey);
-
-            Node node;
-
-            if (nodeId == ABSENT_VALUE) {
-                node = this.createNode(nodeX, nodeY, nodeZ, depth, this.nodeIdPool.create());
+            if (node == null) {
+                node = this.createNode(x, y, z, depth, nodeIdx);
 
                 if (parentNode != null) {
                     parentNode.addChild(node);
                 }
-            } else {
-                node = this.nodes[nodeId];
             }
 
             parentNode = node;
+            sectionIdx = nodeIdx;
         }
 
         if (parentNode == null) {
             throw new IllegalStateException();
         }
+    
+        RenderSection section = this.createSection(x, y, z);
 
-        var sectionId = this.sectionIdPool.create();
-        var section = this.createSection(chunkX, chunkY, chunkZ, sectionId);
-
-        parentNode.sectionId = sectionId;
-
-        return section;
-    }
-
-    private RenderSection createSection(int x, int y, int z, int id) {
-        var section = this.factory.create(x, y, z, id);
-
-        if (this.sections.length <= id) {
-            this.sections = ObjectArrays.grow(this.sections, id + 1);
-            this.sectionVisibilityData = ByteArrays.grow(this.sectionVisibilityData, (id * 6) + 6);
-            this.sectionAdjacent = IntArrays.grow(this.sectionAdjacent, (id * 6) + 6);
-        }
-
-        this.sections[id] = section;
-        this.sectionLookup.put(ChunkSectionPos.asLong(x, y, z), id);
-
-        this.connectAdjacentSections(x, y, z);
+        parentNode.sectionIdx = sectionIdx;
 
         return section;
     }
 
-    private void connectAdjacentSections(int x, int y, int z) {
-        var nodePosition = ChunkSectionPos.asLong(x, y, z);
-        var nodeId = this.sectionLookup.get(nodePosition);
+    private RenderSection createSection(int x, int y, int z) {
+        this.loadedSections++;
+    
+        RenderSection section = new RenderSection(x, y, z);
+        int sectionIdx = this.getSectionIdx(x, y, z);
+        
+        this.sections[sectionIdx] = section;
 
-        for (var direction : DirectionUtil.ALL_DIRECTIONS) {
-            var adjacentNodeId = this.sectionLookup.get(ChunkSectionPos.offset(nodePosition, direction));
+        this.connectAdjacentSections(x, y, z, sectionIdx);
 
-            if (adjacentNodeId != ABSENT_VALUE) {
-                this.sectionAdjacent[(adjacentNodeId * 6) + DirectionUtil.getOppositeId(direction.ordinal())] = nodeId;
+        return section;
+    }
+
+    private void connectAdjacentSections(int x, int y, int z, int sectionIdx) {
+        for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {
+            int adjacentSectionIdx = this.getSectionIdx(
+                    x + direction.getOffsetX(),
+                    y + direction.getOffsetY(),
+                    z + direction.getOffsetZ()
+            );
+
+            if (adjacentSectionIdx != ABSENT_VALUE) {
+                this.sectionAdjacent[(adjacentSectionIdx * 6) + DirectionUtil.getOppositeId(direction.ordinal())] = sectionIdx;
             }
 
-            this.sectionAdjacent[(nodeId * 6) + direction.ordinal()] = adjacentNodeId;
+            this.sectionAdjacent[(sectionIdx * 6) + direction.ordinal()] = adjacentSectionIdx;
         }
     }
 
     private void disconnectAdjacentSections(int x, int y, int z) {
-        var nodePosition = ChunkSectionPos.asLong(x, y, z);
-
         for (var direction : DirectionUtil.ALL_DIRECTIONS) {
-            var adjacentNodeId = this.sectionLookup.get(ChunkSectionPos.offset(nodePosition, direction));
+            int adjacentSectionIdx = this.getSectionIdx(
+                    x + direction.getOffsetX(),
+                    y + direction.getOffsetY(),
+                    z + direction.getOffsetZ()
+            );
 
-            if (adjacentNodeId != ABSENT_VALUE) {
-                this.sectionAdjacent[(adjacentNodeId * 6) + DirectionUtil.getOppositeId(direction.ordinal())] = ABSENT_VALUE;
+            if (adjacentSectionIdx != ABSENT_VALUE) {
+                this.sectionAdjacent[(adjacentSectionIdx * 6) + DirectionUtil.getOppositeId(direction.ordinal())] = ABSENT_VALUE;
             }
         }
     }
 
-    public RenderSection remove(int chunkX, int chunkY, int chunkZ) {
-        var sectionId = this.sectionLookup.remove(ChunkSectionPos.asLong(chunkX, chunkY, chunkZ));
+    public RenderSection remove(int x, int y, int z) {
+        this.loadedSections--;
+        
+        int sectionIdx = this.getSectionIdx(x, y, z);
+        
+        // TODO: reimpl?
+//        if (sectionId == ABSENT_VALUE) {
+//            throw new NoSuchElementException();
+//        }
 
-        if (sectionId == ABSENT_VALUE) {
-            throw new NoSuchElementException();
-        }
+        var section = this.sections[sectionIdx];
 
-        var section = this.sections[sectionId];
+        this.sections[sectionIdx] = null;
 
-        this.sections[sectionId] = null;
-        this.sectionIdPool.free(sectionId);
-
-        this.disconnectAdjacentSections(chunkX, chunkY, chunkZ);
+        this.disconnectAdjacentSections(x, y, z);
 
         Node lastChildNode = null;
 
-        for (var depth = 0; depth < this.maxDepth; depth++) {
-            var nodeX = chunkX >> depth;
-            var nodeY = chunkY >> depth;
-            var nodeZ = chunkZ >> depth;
+        for (var depth = 0; depth <= this.maxDepth; depth++) {
+            var nodeX = x >> depth;
+            var nodeY = y >> depth;
+            var nodeZ = z >> depth;
 
             var nodeMap = this.nodeLookup[depth];
             var nodeKey = ChunkSectionPos.asLong(nodeX, nodeY, nodeZ);
@@ -227,12 +290,16 @@ public class ChunkTree {
         return section;
     }
 
-    private Node createNode(int x, int y, int z, int depth, int nodeId) {
+    private Node createNode(int x, int y, int z, int depth, int nodeIdx) {
         int length = (1 << depth) * 16;
+        
+        int nodeX = x >> depth;
+        int nodeY = y >> depth;
+        int nodeZ = z >> depth;
 
-        float minX = x * length;
-        float minY = y * length;
-        float minZ = z * length;
+        float minX = nodeX * length;
+        float minY = nodeY * length;
+        float minZ = nodeZ * length;
 
         float maxX = minX + length;
         float maxY = minY + length;
@@ -240,36 +307,22 @@ public class ChunkTree {
 
         var node = new Node(minX, minY, minZ, maxX, maxY, maxZ);
 
-        if (this.nodes.length <= nodeId) {
-            this.nodes = ObjectArrays.grow(this.nodes, nodeId + 1);
-        }
-
-        this.nodes[nodeId] = node;
-        this.nodeLookup[depth].put(ChunkSectionPos.asLong(x, y, z), nodeId);
+        this.nodes[nodeIdx] = node;
 
         return node;
     }
 
     public RenderSection getSection(int x, int y, int z) {
-        return this.getSection(ChunkSectionPos.asLong(x, y, z));
+        return this.getSection(this.getSectionIdx(x, y, z));
     }
 
-    public RenderSection getSection(long key) {
-        var sectionId = this.getSectionId(key);
+    public RenderSection getSection(int sectionIdx) {
+        // TODO: reimpl?
+//        if (sectionId == ABSENT_VALUE) {
+//            return null;
+//        }
 
-        if (sectionId == ABSENT_VALUE) {
-            return null;
-        }
-
-        return this.sections[sectionId];
-    }
-
-    public int getSectionId(int x, int y, int z) {
-        return this.getSectionId(ChunkSectionPos.asLong(x, y, z));
-    }
-
-    public int getSectionId(long key) {
-        return this.sectionLookup.get(key);
+        return this.sections[sectionIdx];
     }
 
     public RenderSection getSectionById(int id) {
@@ -281,10 +334,10 @@ public class ChunkTree {
     }
 
     public int getLoadedSections() {
-        return this.sectionLookup.size();
+        return this.loadedSections;
     }
 
-    public void setVisibilityData(int id, ChunkOcclusionData data) {
+    public void setVisibilityData(int sectionIdx, ChunkOcclusionData data) {
         for (var from : DirectionUtil.ALL_DIRECTIONS) {
             int bits = 0;
 
@@ -294,12 +347,12 @@ public class ChunkTree {
                 }
             }
 
-            this.sectionVisibilityData[(id * 6) + from.ordinal()] = (byte) bits;
+            this.sectionVisibilityData[(sectionIdx * 6) + from.ordinal()] = (byte) bits;
         }
     }
 
-    public int getVisibilityData(int id, int incomingDirection) {
-        return this.sectionVisibilityData[(id * 6) + incomingDirection];
+    public int getVisibilityData(int sectionIdx, int incomingDirection) {
+        return this.sectionVisibilityData[(sectionIdx * 6) + incomingDirection];
     }
 
     public interface Factory<T> {
@@ -309,7 +362,7 @@ public class ChunkTree {
     public static class Node {
         private static final Node[] EMPTY_CHILDREN = new Node[0];
 
-        private int sectionId;
+        private int sectionIdx;
 
         private final float minX, minY, minZ;
         private final float maxX, maxY, maxZ;

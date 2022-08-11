@@ -242,9 +242,9 @@ public class SortedTerrainLists {
                     sequentialSectionIdx = regionUploadedSegments.size();
                     regionUploadedSegments.add(section.getUploadedGeometrySegment());
                     
-                    regionSectionCoords.add(section.getChunkX());
-                    regionSectionCoords.add(section.getChunkY());
-                    regionSectionCoords.add(section.getChunkZ());
+                    regionSectionCoords.add(section.getSectionX());
+                    regionSectionCoords.add(section.getSectionY());
+                    regionSectionCoords.add(section.getSectionZ());
                     
                     totalSectionCount++;
                     sectionAdded = true;

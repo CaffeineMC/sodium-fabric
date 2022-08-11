@@ -10,7 +10,7 @@ public class IntPool {
     private final IntSet usedIds = new IntOpenHashSet();
     private final IntPriorityQueue freeIds = new IntArrayFIFOQueue();
 
-    private int nextId = 1;
+    private int nextId = 0;
 
     public int create() {
         int id;

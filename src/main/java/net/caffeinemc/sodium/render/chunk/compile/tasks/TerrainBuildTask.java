@@ -54,9 +54,9 @@ public class TerrainBuildTask extends AbstractBuilderTask {
 
         WorldSlice slice = renderCache.getWorldSlice();
 
-        int minX = ChunkSectionPos.getBlockCoord(this.render.getChunkX());
-        int minY = ChunkSectionPos.getBlockCoord(this.render.getChunkY());
-        int minZ = ChunkSectionPos.getBlockCoord(this.render.getChunkZ());
+        int minX = ChunkSectionPos.getBlockCoord(this.render.getSectionX());
+        int minY = ChunkSectionPos.getBlockCoord(this.render.getSectionY());
+        int minZ = ChunkSectionPos.getBlockCoord(this.render.getSectionZ());
 
         int maxX = minX + 16;
         int maxY = minY + 16;

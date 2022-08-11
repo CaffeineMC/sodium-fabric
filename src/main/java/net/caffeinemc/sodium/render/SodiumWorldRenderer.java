@@ -38,7 +38,7 @@ public class SodiumWorldRenderer {
     private final MinecraftClient client;
 
     private ClientWorld world;
-    private int renderDistance;
+    private int chunkViewDistance;
 
     private double lastCameraX, lastCameraY, lastCameraZ;
     private double lastCameraPitch, lastCameraYaw;
@@ -150,7 +150,7 @@ public class SodiumWorldRenderer {
 
         this.useEntityCulling = SodiumClientMod.options().performance.useEntityCulling;
 
-        if (this.client.options.getClampedViewDistance() != this.renderDistance) {
+        if (this.client.options.getClampedViewDistance() != this.chunkViewDistance) {
             this.reload();
         }
 
@@ -224,11 +224,11 @@ public class SodiumWorldRenderer {
             this.terrainRenderManager = null;
         }
 
-        this.renderDistance = this.client.options.getClampedViewDistance();
+        this.chunkViewDistance = this.client.options.getClampedViewDistance();
 
         this.renderPassManager = ChunkRenderPassManager.createDefaultMappings();
 
-        this.terrainRenderManager = new TerrainRenderManager(SodiumClientMod.DEVICE, this, this.renderPassManager, this.world, this.renderDistance);
+        this.terrainRenderManager = new TerrainRenderManager(SodiumClientMod.DEVICE, this, this.renderPassManager, this.world, this.chunkViewDistance);
         this.terrainRenderManager.reloadChunks(this.chunkTracker);
     }
 

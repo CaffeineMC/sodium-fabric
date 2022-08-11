@@ -22,7 +22,6 @@ import net.caffeinemc.sodium.render.chunk.occlusion.ChunkTree;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
-import net.caffeinemc.sodium.render.chunk.sort.ChunkGeometrySorter;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderFlag;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
@@ -63,6 +62,7 @@ public class TerrainRenderManager {
     private final ClonedChunkSectionCache sectionCache;
 
     private final ChunkTree tree;
+    private final ChunkOcclusion chunkOcclusion;
     private final int chunkViewDistance;
 
     private final Map<ChunkUpdateType, PriorityQueue<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
@@ -86,7 +86,7 @@ public class TerrainRenderManager {
 
     private final boolean alwaysDeferChunkUpdates = SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
     
-    private final ChunkGeometrySorter chunkGeometrySorter;
+//    private final ChunkGeometrySorter chunkGeometrySorter;
 
     @Deprecated
     private BitArray sectionVisibility = null;
@@ -116,13 +116,14 @@ public class TerrainRenderManager {
         }
 
         this.tracker = worldRenderer.getChunkTracker();
-        this.tree = new ChunkTree(4, RenderSection::new);
+        this.tree = new ChunkTree(3, chunkViewDistance, world);
+        this.chunkOcclusion = new ChunkOcclusion(chunkViewDistance, world);
         
         // TODO: uncomment when working on translucency sorting
 //        if (SodiumClientMod.options().quality.useTranslucentFaceSorting) {
 //            this.chunkGeometrySorter = new ChunkGeometrySorter(device, renderPassManager, vertexType, (float) Math.toRadians(5.0f));
 //        } else {
-            this.chunkGeometrySorter = null;
+//            this.chunkGeometrySorter = null;
 //        }
     }
 
@@ -145,14 +146,19 @@ public class TerrainRenderManager {
         var useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled &&
                 (!spectator || !this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin));
 
-        var visibleSections = ChunkOcclusion.calculateVisibleSections(this.tree, frustum, this.world, origin, this.chunkViewDistance, useOcclusionCulling);
+        var visibleSections = this.chunkOcclusion.calculateVisibleSections(
+                this.tree,
+                frustum,
+                origin,
+                useOcclusionCulling
+        );
 
         this.updateVisibilityLists(visibleSections, camera);
     
-        if (this.chunkGeometrySorter != null) {
-            profiler.swap("translucency_sort");
-            this.chunkGeometrySorter.sortGeometry(this.visibleMeshedSections, camera);
-        }
+//        if (this.chunkGeometrySorter != null) {
+//            profiler.swap("translucency_sort");
+//            this.chunkGeometrySorter.sortGeometry(this.visibleMeshedSections, camera);
+//        }
 
         profiler.swap("create_render_lists");
         this.sortedTerrainLists.update(this.visibleMeshedSections, camera);
@@ -209,7 +215,7 @@ public class TerrainRenderManager {
     private void schedulePendingUpdates(RenderSection section) {
         PriorityQueue<RenderSection> queue = this.rebuildQueues.get(section.getPendingUpdate());
 
-        if (queue.size() < 32 && this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
+        if (queue.size() < 32 && this.tracker.hasMergedFlags(section.getSectionX(), section.getSectionZ(), ChunkStatus.FLAG_ALL)) {
             queue.enqueue(section);
         }
     }
@@ -255,9 +261,9 @@ public class TerrainRenderManager {
 
     private boolean unloadSection(int x, int y, int z) {
         RenderSection section = this.tree.remove(x, y, z);
-        if (this.chunkGeometrySorter != null) {
-            this.chunkGeometrySorter.removeSection(section);
-        }
+//        if (this.chunkGeometrySorter != null) {
+//            this.chunkGeometrySorter.removeSection(section);
+//        }
         section.delete();
 
         return true;
