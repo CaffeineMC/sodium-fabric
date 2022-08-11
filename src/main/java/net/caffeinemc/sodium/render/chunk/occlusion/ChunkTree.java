@@ -84,7 +84,7 @@ public class ChunkTree {
                + (xFromOrigin >> depth);
     }
     
-    public int getNodeDepthOffset(int depth) {
+    private int getNodeDepthOffset(int depth) {
         // should we be doing +depth here?
         return (this.sectionTableSize * 2) - (this.sectionTableSize >> depth);
     }
