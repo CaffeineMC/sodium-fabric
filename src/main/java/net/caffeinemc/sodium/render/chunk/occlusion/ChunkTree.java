@@ -73,7 +73,7 @@ public class ChunkTree {
     }
     
     // TODO: keep track of origin, do bounds check and return absent if outside
-    public int getNodeIdx(int x, int y, int z, int depth) {
+    private int getNodeIdx(int x, int y, int z, int depth) {
         int yFromOrigin = this.originSectionY - y + this.sectionHeightOffset;
         int zFromOrigin = this.originSectionZ - z + this.sectionWidthOffset;
         int xFromOrigin = this.originSectionX - x + this.sectionWidthOffset;
