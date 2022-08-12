@@ -52,7 +52,7 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
         this.indexCountsBufferPtr = MemoryUtil.nmemAlloc((long) this.sectionFacesAllocated * Integer.BYTES);
         this.baseVerticesBufferPtr = MemoryUtil.nmemAlloc((long) this.sectionFacesAllocated * Integer.BYTES);
         // because we always want the value to be 0, we can just calloc and never have to modify it
-        this.indexOffsetsBufferPtr = MemoryUtil.nmemCalloc(1, (long) this.sectionFacesAllocated * Pointer.POINTER_SIZE);
+        this.indexOffsetsBufferPtr = MemoryUtil.nmemCalloc(this.sectionFacesAllocated, Pointer.POINTER_SIZE);
     }
     
     protected void freeCPUBuffers() {

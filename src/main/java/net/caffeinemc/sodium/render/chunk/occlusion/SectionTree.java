@@ -1,7 +1,6 @@
 package net.caffeinemc.sodium.render.chunk.occlusion;
 
 import java.util.Arrays;
-import java.util.NoSuchElementException;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.util.DirectionUtil;
@@ -12,26 +11,25 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.HeightLimitView;
-import org.apache.commons.lang3.ArrayUtils;
 
-public class ChunkTree {
+public class SectionTree {
     public static final int ABSENT_VALUE = 0xFFFFFFFF;
+    
+    private final int chunkViewDistance;
+    private final int maxDepth; // inclusive
     
     private final int sectionHeightMin;
     private final int sectionHeightMax;
-    
-    private final RenderSection[] sections;
-    private final byte[] sectionVisibilityData;
-    private final int[] sectionAdjacent;
-
-    private final Node[] nodes;
-
     private final int sectionWidth;
-    private final int sectionWidthOffset;
     private final int sectionHeight;
+    private final int sectionWidthOffset;
     private final int sectionHeightOffset;
     private final int sectionTableSize;
-    private final int maxDepth; // inclusive
+    
+    private final RenderSection[] sections;
+    private final BitArray sectionExistenceBits;
+    private final byte[] sectionVisibilityData;
+    private final int[] sectionAdjacent;
     
     private int loadedSections;
     
@@ -39,24 +37,24 @@ public class ChunkTree {
     private int originSectionY;
     private int originSectionZ;
 
-    public ChunkTree(int maxDepth, int chunkViewDistance, HeightLimitView heightLimitView) {
+    public SectionTree(int maxDepth, int chunkViewDistance, HeightLimitView heightLimitView) {
         this.sectionHeightMin = heightLimitView.getBottomSectionCoord();
         this.sectionHeightMax = heightLimitView.getTopSectionCoord() - 1;
     
+        this.chunkViewDistance = chunkViewDistance;
         this.maxDepth = maxDepth;
+        
         this.sectionWidth = chunkViewDistance * 2 + 1;
         this.sectionWidthOffset = chunkViewDistance;
         this.sectionHeight = heightLimitView.countVerticalSections();
         this.sectionHeightOffset = -heightLimitView.getBottomSectionCoord();
         this.sectionTableSize = this.sectionWidth * this.sectionWidth * this.sectionHeight;
-        int nodeTableSize = this.sectionTableSize * 2 - (this.sectionTableSize >> maxDepth + 1);
-    
-        this.nodes = new Node[nodeTableSize];
         
+        this.sections = new RenderSection[this.sectionTableSize];
+        this.sectionExistenceBits = new BitArray(this.sectionTableSize);
         this.sectionVisibilityData = new byte[this.sectionTableSize * DirectionUtil.COUNT];
         this.sectionAdjacent = new int[this.sectionTableSize * DirectionUtil.COUNT];
         Arrays.fill(this.sectionAdjacent, ABSENT_VALUE);
-        this.sections = new RenderSection[this.sectionTableSize];
     }
     
     public int getSectionIdx(int x, int y, int z) {
@@ -70,23 +68,6 @@ public class ChunkTree {
                    + tableZ * this.sectionWidth
                    + tableX;
         }
-    }
-    
-    // TODO: keep track of origin, do bounds check and return absent if outside
-    private int getNodeIdx(int x, int y, int z, int depth) {
-        int yFromOrigin = this.originSectionY - y + this.sectionHeightOffset;
-        int zFromOrigin = this.originSectionZ - z + this.sectionWidthOffset;
-        int xFromOrigin = this.originSectionX - x + this.sectionWidthOffset;
-        int depthSectionWidth = this.sectionWidth >> depth;
-        return this.getNodeDepthOffset(depth)
-               + (yFromOrigin >> depth) * depthSectionWidth * depthSectionWidth
-               + (zFromOrigin >> depth) * depthSectionWidth
-               + (xFromOrigin >> depth);
-    }
-    
-    private int getNodeDepthOffset(int depth) {
-        // should we be doing +depth here?
-        return (this.sectionTableSize * 2) - (this.sectionTableSize >> depth);
     }
     
     public void setOrigin(BlockPos origin) {
@@ -112,16 +93,10 @@ public class ChunkTree {
         return this.originSectionZ;
     }
     
-    public BitArray findVisibleSections(Frustum frustum) {
-        var results = new BitArray(this.getSectionTableSize());
-
-        int startIdx = this.getNodeDepthOffset(this.maxDepth);
-        int endIdx = this.getNodeDepthOffset(this.maxDepth + 1);
+    public void findVisibleSections(BitArray resultBitsDest, Frustum frustum) {
         for (int idx = startIdx; idx < endIdx; idx++) {
-            this.checkNode(results, this.nodes[idx], frustum);
+            this.checkNode(resultBitsDest, this.nodes[idx], frustum);
         }
-
-        return results;
     }
 
     private void checkNode(BitArray vis, Node node, Frustum frustum) {
@@ -150,6 +125,10 @@ public class ChunkTree {
 //        if (node.sectionId != ABSENT_VALUE) {
 //            vis.set(node.sectionId);
 //        }
+        
+        // TODO: be smart about this, just figure out the whole array region indices and translate it into the bit
+        //  array, no recursion needed
+        
         vis.set(node.sectionIdx);
 
         for (var child : node.children) {
@@ -215,10 +194,10 @@ public class ChunkTree {
             );
 
             if (adjacentSectionIdx != ABSENT_VALUE) {
-                this.sectionAdjacent[(adjacentSectionIdx * 6) + DirectionUtil.getOppositeId(direction.ordinal())] = sectionIdx;
+                this.sectionAdjacent[(adjacentSectionIdx * DirectionUtil.COUNT) + DirectionUtil.getOppositeId(direction.ordinal())] = sectionIdx;
             }
 
-            this.sectionAdjacent[(sectionIdx * 6) + direction.ordinal()] = adjacentSectionIdx;
+            this.sectionAdjacent[(sectionIdx * DirectionUtil.COUNT) + direction.ordinal()] = adjacentSectionIdx;
         }
     }
 
@@ -231,7 +210,7 @@ public class ChunkTree {
             );
 
             if (adjacentSectionIdx != ABSENT_VALUE) {
-                this.sectionAdjacent[(adjacentSectionIdx * 6) + DirectionUtil.getOppositeId(direction.ordinal())] = ABSENT_VALUE;
+                this.sectionAdjacent[(adjacentSectionIdx * DirectionUtil.COUNT) + DirectionUtil.getOppositeId(direction.ordinal())] = ABSENT_VALUE;
             }
         }
     }
@@ -330,9 +309,29 @@ public class ChunkTree {
     }
 
     public int getAdjacent(int id, int direction) {
-        return this.sectionAdjacent[(id * 6) + direction];
+        return this.sectionAdjacent[(id * DirectionUtil.COUNT) + direction];
     }
-
+    
+    public int getChunkViewDistance() {
+        return this.chunkViewDistance;
+    }
+    
+    public int getSectionHeightMin() {
+        return this.sectionHeightMin;
+    }
+    
+    public int getSectionHeightMax() {
+        return this.sectionHeightMax;
+    }
+    
+    public int getSectionWidth() {
+        return this.sectionWidth;
+    }
+    
+    public int getSectionHeight() {
+        return this.sectionHeight;
+    }
+    
     public int getLoadedSections() {
         return this.loadedSections;
     }
@@ -341,63 +340,20 @@ public class ChunkTree {
         for (var from : DirectionUtil.ALL_DIRECTIONS) {
             int bits = 0;
 
-            for (var to : DirectionUtil.ALL_DIRECTIONS) {
-                if (data != null && data.isVisibleThrough(from, to)) {
-                    bits |= 1 << to.ordinal();
+            if (data != null) {
+                for (var to : DirectionUtil.ALL_DIRECTIONS) {
+                    if (data.isVisibleThrough(from, to)) {
+                        bits |= 1 << to.ordinal();
+                    }
                 }
             }
 
-            this.sectionVisibilityData[(sectionIdx * 6) + from.ordinal()] = (byte) bits;
+            this.sectionVisibilityData[(sectionIdx * DirectionUtil.COUNT) + from.ordinal()] = (byte) bits;
         }
     }
 
     public int getVisibilityData(int sectionIdx, int incomingDirection) {
-        return this.sectionVisibilityData[(sectionIdx * 6) + incomingDirection];
+        return this.sectionVisibilityData[(sectionIdx * DirectionUtil.COUNT) + incomingDirection];
     }
-
-    public interface Factory<T> {
-        T create(int x, int y, int z, int id);
-    }
-
-    public static class Node {
-        private static final Node[] EMPTY_CHILDREN = new Node[0];
-
-        private int sectionIdx;
-
-        private final float minX, minY, minZ;
-        private final float maxX, maxY, maxZ;
-
-        private Node[] children = EMPTY_CHILDREN;
-
-        public Node(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-            this.minX = minX;
-            this.minY = minY;
-            this.minZ = minZ;
-            this.maxX = maxX;
-            this.maxY = maxY;
-            this.maxZ = maxZ;
-        }
-
-        public int testBox(Frustum frustum) {
-            return frustum.testBox(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ);
-        }
-
-        public boolean isEmpty() {
-            return this.children.length == 0;
-        }
-
-        public void addChild(Node child) {
-            this.children = ArrayUtils.add(this.children, child);
-        }
-
-        public void removeChild(Node child) {
-            var index = ArrayUtils.indexOf(this.children, child);
-
-            if (index == ArrayUtils.INDEX_NOT_FOUND) {
-                throw new NoSuchElementException();
-            }
-
-            this.children = ArrayUtils.remove(this.children, index);
-        }
-    }
+    
 }

@@ -126,7 +126,7 @@ public class UserConfigCategories {
                         .setName(Text.translatable("options.renderClouds"))
                         .setTooltip(Text.translatable("sodium.options.clouds_quality.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class))
-                        .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getCloudRenderMod()))
+                        .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getCloudRenderMode()))
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(UserConfig.GraphicsQuality.class, sodiumOpts)

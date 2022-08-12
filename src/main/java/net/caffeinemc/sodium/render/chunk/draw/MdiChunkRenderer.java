@@ -2,6 +2,7 @@ package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.objects.ReferenceList;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -181,8 +182,8 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
                     
                         long ptr = commandBufferSectionAddress + commandBufferPosition;
                         MemoryUtil.memPutInt(ptr + 0, 6 * (BufferSegment.getLength(modelPartSegment) >> 2)); // go from vertex count -> index count
-                        MemoryUtil.memPutInt(ptr + 4, 1);
-                        MemoryUtil.memPutInt(ptr + 8, 0);
+                        MemoryUtil.memPutInt(ptr + 4, 1); // instance count
+                        MemoryUtil.memPutInt(ptr + 8, 0); // first index
                         MemoryUtil.memPutInt(ptr + 12, baseVertex + BufferSegment.getOffset(modelPartSegment)); // baseVertex
                         MemoryUtil.memPutInt(ptr + 16, regionPassTransformCount); // baseInstance
                         commandBufferPosition += COMMAND_STRUCT_STRIDE;
@@ -284,7 +285,8 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
         int size = 0;
     
         for (List<LongList> passModelPartSegments : lists.modelPartSegments) {
-            for (LongList regionModelPartSegments : passModelPartSegments) {
+            for (int i = 0; i < passModelPartSegments.size(); i++) {
+                LongList regionModelPartSegments = passModelPartSegments.get(i);
                 size += MathUtil.align(regionModelPartSegments.size() * COMMAND_STRUCT_STRIDE, alignment);
             }
         }
@@ -295,7 +297,9 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
     protected static int indexedTransformsBufferPassSize(int alignment, SortedTerrainLists lists) {
         int size = 0;
     
-        for (LongList regionUploadedSegments : lists.uploadedSegments) {
+        ReferenceList<LongList> uploadedSegments = lists.uploadedSegments;
+        for (int i = 0; i < uploadedSegments.size(); i++) {
+            LongList regionUploadedSegments = uploadedSegments.get(i);
             size = MathUtil.align(size + (regionUploadedSegments.size() * TRANSFORM_STRUCT_STRIDE), alignment);
         }
         

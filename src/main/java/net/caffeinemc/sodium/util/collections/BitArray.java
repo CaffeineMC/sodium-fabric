@@ -1,8 +1,7 @@
 package net.caffeinemc.sodium.util.collections;
 
-import net.caffeinemc.sodium.util.MathUtil;
-
 import java.util.Arrays;
+import net.caffeinemc.sodium.util.MathUtil;
 
 public class BitArray {
     private static final int ADDRESS_BITS_PER_WORD = 6;
@@ -24,9 +23,79 @@ public class BitArray {
     public void set(int index) {
         this.words[wordIndex(index)] |= 1L << bitIndex(index);
     }
+    
+    /**
+     * Sets the bits from startIdx (inclusive) to endIdx (exclusive) to 1
+     */
+    public void set(int startIdx, int endIdx) {
+        int startWordIndex = wordIndex(startIdx);
+        int endWordIndex = wordIndex(endIdx - 1);
+    
+        long firstWordMask = 0xFFFFFFFFFFFFFFFFL << startIdx;
+        long lastWordMask = 0xFFFFFFFFFFFFFFFFL >>> -endIdx;
+        if (startWordIndex == endWordIndex) {
+            this.words[startWordIndex] |= (firstWordMask & lastWordMask);
+        } else {
+            this.words[startWordIndex] |= firstWordMask;
+            
+            for (int i = startWordIndex + 1; i < endWordIndex; i++) {
+                this.words[i] = 0xFFFFFFFFFFFFFFFFL;
+            }
+            
+            this.words[endWordIndex] |= lastWordMask;
+        }
+    }
 
     public void unset(int index) {
         this.words[wordIndex(index)] &= ~(1L << bitIndex(index));
+    }
+    
+    /**
+     * Sets the bits from startIdx (inclusive) to endIdx (exclusive) to 0
+     */
+    public void unset(int startIdx, int endIdx) {
+        int startWordIndex = wordIndex(startIdx);
+        int endWordIndex = wordIndex(endIdx - 1);
+        
+        long firstWordMask = ~(0xFFFFFFFFFFFFFFFFL << startIdx);
+        long lastWordMask = ~(0xFFFFFFFFFFFFFFFFL >>> -endIdx);
+        if (startWordIndex == endWordIndex) {
+            this.words[startWordIndex] &= (firstWordMask & lastWordMask);
+        } else {
+            this.words[startWordIndex] &= firstWordMask;
+            
+            for (int i = startWordIndex + 1; i < endWordIndex; i++) {
+                this.words[i] = 0x0000000000000000L;
+            }
+            
+            this.words[endWordIndex] &= lastWordMask;
+        }
+    }
+    
+    public void copy(BitArray src, int startIdx, int endIdx) {
+        int startWordIndex = wordIndex(startIdx);
+        int endWordIndex = wordIndex(endIdx - 1);
+        
+        long firstWordMask = 0xFFFFFFFFFFFFFFFFL << startIdx;
+        long lastWordMask = 0xFFFFFFFFFFFFFFFFL >>> -endIdx;
+        if (startWordIndex == endWordIndex) {
+            this.words[startWordIndex] = src.words[startWordIndex] & (firstWordMask & lastWordMask);
+        } else {
+            this.words[startWordIndex] = src.words[startWordIndex] & firstWordMask;
+    
+            int length = endWordIndex - (startWordIndex + 1);
+            if (length >= 0) {
+                System.arraycopy(
+                        src.words,
+                        startWordIndex + 1,
+                        this.words,
+                        startWordIndex + 1,
+                        length
+                );
+            }
+            
+            this.words[endWordIndex] = src.words[startWordIndex] & lastWordMask;
+        }
     }
 
     private static int wordIndex(int index) {

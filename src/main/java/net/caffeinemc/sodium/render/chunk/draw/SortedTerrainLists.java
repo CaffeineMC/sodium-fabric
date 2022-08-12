@@ -15,6 +15,7 @@ import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
 import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
+import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 
 public class SortedTerrainLists {
@@ -189,8 +190,8 @@ public class SortedTerrainLists {
             IntList[] regionSectionIndices = null;
     
             for (int passId = 0; passId < totalPasses; passId++) {
-                // prior checks to avoid any unnecessary allocation
-                ChunkPassModel model = section.getData().models[passId];
+                ChunkRenderData chunkRenderData = section.getData();
+                ChunkPassModel model = chunkRenderData.models[passId];
                 
                 // skip if the section has no models for the pass
                 if (model == null) {
@@ -200,7 +201,7 @@ public class SortedTerrainLists {
                 int visibilityBits = model.getVisibilityBits();
 
                 if (useBlockFaceCulling) {
-                    visibilityBits &= calculateCameraVisibilityBits(section.getData().bounds, camera);
+                    visibilityBits &= calculateCameraVisibilityBits(chunkRenderData.bounds, camera);
                 }
 
                 // skip if the section has no *visible* models for the pass

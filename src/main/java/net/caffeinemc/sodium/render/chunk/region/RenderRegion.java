@@ -37,6 +37,10 @@ public class RenderRegion {
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_LENGTH));
     }
     
+    private static final int INITIAL_VERTICES = REGION_SIZE * 756; // 756 is the average-ish amount of vertices in a section
+    private static final int INITIAL_INDICES = (INITIAL_VERTICES >> 2) * 6;
+    private static final float RESIZE_FACTOR = .25f; // add 25% each resize
+    
     private final Set<RenderSection> sections = new ObjectOpenHashSet<>(REGION_SIZE);
     
     private final ArenaBuffer vertexBuffer;
@@ -47,8 +51,8 @@ public class RenderRegion {
                 device,
                 stagingBuffer,
                 vertexBufferPool,
-                REGION_SIZE * 756, // 756 is the average-ish amount of vertices in a section
-                .25f, // add 25% each resize
+                INITIAL_VERTICES, // 756 is the average-ish amount of vertices in a section
+                RESIZE_FACTOR, // add 25% each resize
                 vertexType.getBufferVertexFormat().stride()
         );
         this.id = id;

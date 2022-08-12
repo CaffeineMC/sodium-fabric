@@ -17,8 +17,8 @@ import net.caffeinemc.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildTask;
 import net.caffeinemc.sodium.render.chunk.draw.*;
-import net.caffeinemc.sodium.render.chunk.occlusion.ChunkOcclusion;
-import net.caffeinemc.sodium.render.chunk.occlusion.ChunkTree;
+import net.caffeinemc.sodium.render.chunk.occlusion.SectionOcclusion;
+import net.caffeinemc.sodium.render.chunk.occlusion.SectionTree;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
@@ -61,8 +61,8 @@ public class TerrainRenderManager {
     private final RenderRegionManager regionManager;
     private final ClonedChunkSectionCache sectionCache;
 
-    private final ChunkTree tree;
-    private final ChunkOcclusion chunkOcclusion;
+    private final SectionTree tree;
+    private final SectionOcclusion sectionOcclusion;
     private final int chunkViewDistance;
 
     private final Map<ChunkUpdateType, PriorityQueue<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
@@ -116,8 +116,8 @@ public class TerrainRenderManager {
         }
 
         this.tracker = worldRenderer.getChunkTracker();
-        this.tree = new ChunkTree(3, chunkViewDistance, world);
-        this.chunkOcclusion = new ChunkOcclusion(chunkViewDistance, world);
+        this.tree = new SectionTree(3, chunkViewDistance, world);
+        this.sectionOcclusion = new SectionOcclusion(chunkViewDistance, world);
         
         // TODO: uncomment when working on translucency sorting
 //        if (SodiumClientMod.options().quality.useTranslucentFaceSorting) {
@@ -145,8 +145,10 @@ public class TerrainRenderManager {
         BlockPos origin = camera.getBlockPos();
         var useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled &&
                 (!spectator || !this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin));
+        
+        this.tree.setOrigin(origin);
 
-        var visibleSections = this.chunkOcclusion.calculateVisibleSections(
+        var visibleSections = this.sectionOcclusion.calculateVisibleSections(
                 this.tree,
                 frustum,
                 origin,
@@ -284,7 +286,7 @@ public class TerrainRenderManager {
     public boolean isSectionVisible(int x, int y, int z) {
         var sectionId = this.tree.getSectionId(x, y, z);
 
-        if (sectionId == ChunkTree.ABSENT_VALUE) {
+        if (sectionId == SectionTree.ABSENT_VALUE) {
             return false;
         }
 

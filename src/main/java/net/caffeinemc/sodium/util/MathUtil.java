@@ -47,7 +47,7 @@ public class MathUtil {
     }
     
     /**
-     * @author ZNix and burger for BEM
+     * @author ZNix and burger (originally for BEM)
      * @param mv the model-view matrix
      * @return the camera position of the matrix
      */
@@ -86,9 +86,8 @@ public class MathUtil {
     }
     
     /**
-     * An adaptation to JOML's {@link Vector3f#angleCos(Vector3fc)} which has primitive
-     * inputs for inlining and auto-vectorization. It also uses fast inverse square root with a
-     * multiplication, rather than a square root and a division.
+     * An adaptation to JOML's {@link Vector3f#angleCos(Vector3fc)} which has primitive inputs for inlining. It also
+     * uses fast inverse square root with a multiplication, rather than a square root and a division.
      */
     public static float angleCos(float v1x, float v1y, float v1z, float v2x, float v2y, float v2z) {
         float length1Squared = Math.fma(v1x, v1x, Math.fma(v1y, v1y, v1z * v1z));
