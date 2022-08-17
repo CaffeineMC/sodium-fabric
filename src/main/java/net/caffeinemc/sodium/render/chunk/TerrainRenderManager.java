@@ -1,7 +1,6 @@
 package net.caffeinemc.sodium.render.chunk;
 
 import it.unimi.dsi.fastutil.PriorityQueue;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
@@ -16,8 +15,13 @@ import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildTask;
-import net.caffeinemc.sodium.render.chunk.draw.*;
-import net.caffeinemc.sodium.render.chunk.occlusion.SectionOcclusion;
+import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
+import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderMatrices;
+import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderer;
+import net.caffeinemc.sodium.render.chunk.draw.MdbvChunkRenderer;
+import net.caffeinemc.sodium.render.chunk.draw.MdiChunkRenderer;
+import net.caffeinemc.sodium.render.chunk.draw.SortedTerrainLists;
+import net.caffeinemc.sodium.render.chunk.occlusion.SectionCuller;
 import net.caffeinemc.sodium.render.chunk.occlusion.SectionTree;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
@@ -29,7 +33,6 @@ import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.texture.SpriteUtil;
 import net.caffeinemc.sodium.util.ListUtil;
 import net.caffeinemc.sodium.util.MathUtil;
-import net.caffeinemc.sodium.util.collections.BitArray;
 import net.caffeinemc.sodium.util.tasks.WorkStealingFutureDrain;
 import net.caffeinemc.sodium.world.ChunkStatus;
 import net.caffeinemc.sodium.world.ChunkTracker;
@@ -51,6 +54,7 @@ public class TerrainRenderManager {
      * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
      */
     private static final double NEARBY_BLOCK_UPDATE_DISTANCE = 32.0;
+    private static final int MAX_REBUILDS_PER_RENDERER_UPDATE = 32;
     
     private final RenderDevice device;
     
@@ -61,8 +65,8 @@ public class TerrainRenderManager {
     private final RenderRegionManager regionManager;
     private final ClonedChunkSectionCache sectionCache;
 
-    private final SectionTree tree;
-    private final SectionOcclusion sectionOcclusion;
+    private final SectionTree sectionTree;
+    private final SectionCuller sectionCuller;
     private final int chunkViewDistance;
 
     private final Map<ChunkUpdateType, PriorityQueue<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
@@ -87,9 +91,6 @@ public class TerrainRenderManager {
     private final boolean alwaysDeferChunkUpdates = SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
     
 //    private final ChunkGeometrySorter chunkGeometrySorter;
-
-    @Deprecated
-    private BitArray sectionVisibility = null;
 
     public TerrainRenderManager(RenderDevice device, SodiumWorldRenderer worldRenderer, ChunkRenderPassManager renderPassManager, ClientWorld world, int chunkViewDistance) {
         TerrainVertexType vertexType = createVertexType();
@@ -116,8 +117,8 @@ public class TerrainRenderManager {
         }
 
         this.tracker = worldRenderer.getChunkTracker();
-        this.tree = new SectionTree(3, chunkViewDistance, world);
-        this.sectionOcclusion = new SectionOcclusion(chunkViewDistance, world);
+        this.sectionTree = new SectionTree(3, chunkViewDistance, world);
+        this.sectionCuller = new SectionCuller(this.sectionTree);
         
         // TODO: uncomment when working on translucency sorting
 //        if (SodiumClientMod.options().quality.useTranslucentFaceSorting) {
@@ -146,16 +147,14 @@ public class TerrainRenderManager {
         var useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled &&
                 (!spectator || !this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin));
         
-        this.tree.setOrigin(origin);
+        this.sectionTree.setOrigin(origin);
 
-        var visibleSections = this.sectionOcclusion.calculateVisibleSections(
-                this.tree,
+        this.sectionCuller.calculateVisibleSections(
                 frustum,
-                origin,
                 useOcclusionCulling
         );
 
-        this.updateVisibilityLists(visibleSections, camera);
+        this.updateVisibilityLists(camera);
     
 //        if (this.chunkGeometrySorter != null) {
 //            profiler.swap("translucency_sort");
@@ -169,7 +168,7 @@ public class TerrainRenderManager {
         this.needsUpdate = false;
     }
 
-    private void updateVisibilityLists(IntArrayList visible, ChunkCameraContext camera) {
+    private void updateVisibilityLists(ChunkCameraContext camera) {
         var drawDistance = MathHelper.square((this.chunkViewDistance + 1) * 16.0f);
 
         for (PriorityQueue<RenderSection> queue : this.rebuildQueues.values()) {
@@ -179,45 +178,41 @@ public class TerrainRenderManager {
         this.visibleMeshedSections.clear();
         this.visibleTickingSections.clear();
         this.visibleBlockEntitySections.clear();
+        
+        Iterator<RenderSection> sectionItr = this.sectionCuller.getVisibleSectionIterator();
+    
+        while (sectionItr.hasNext()) {
+            RenderSection section = sectionItr.next();
 
-        var vis = new BitArray(this.tree.getSectionTableSize());
-
-        for (int i = 0; i < visible.size(); i++) {
-            var sectionId = visible.getInt(i);
-            var section = this.tree.getSectionById(sectionId);
-
+            // TODO: build this into SectionCuller?
             if (section.getDistance(camera.posX, camera.posZ) > drawDistance) {
                 continue;
             }
-
-            vis.set(sectionId);
 
             if (section.getPendingUpdate() != null) {
                 this.schedulePendingUpdates(section);
             }
 
-            var data = section.getFlags();
+            var flags = section.getFlags();
 
-            if (ChunkRenderFlag.has(data, ChunkRenderFlag.HAS_TERRAIN_MODELS)) {
+            if (ChunkRenderFlag.has(flags, ChunkRenderFlag.HAS_TERRAIN_MODELS)) {
                 this.visibleMeshedSections.add(section);
             }
 
-            if (ChunkRenderFlag.has(data, ChunkRenderFlag.HAS_TICKING_TEXTURES)) {
+            if (ChunkRenderFlag.has(flags, ChunkRenderFlag.HAS_TICKING_TEXTURES)) {
                 this.visibleTickingSections.add(section);
             }
 
-            if (ChunkRenderFlag.has(data, ChunkRenderFlag.HAS_BLOCK_ENTITIES)) {
+            if (ChunkRenderFlag.has(flags, ChunkRenderFlag.HAS_BLOCK_ENTITIES)) {
                 this.visibleBlockEntitySections.add(section);
             }
         }
-
-        this.sectionVisibility = vis;
     }
 
     private void schedulePendingUpdates(RenderSection section) {
         PriorityQueue<RenderSection> queue = this.rebuildQueues.get(section.getPendingUpdate());
 
-        if (queue.size() < 32 && this.tracker.hasMergedFlags(section.getSectionX(), section.getSectionZ(), ChunkStatus.FLAG_ALL)) {
+        if (queue.size() < MAX_REBUILDS_PER_RENDERER_UPDATE && this.tracker.hasMergedFlags(section.getSectionX(), section.getSectionZ(), ChunkStatus.FLAG_ALL)) {
             queue.enqueue(section);
         }
     }
@@ -245,7 +240,7 @@ public class TerrainRenderManager {
     }
 
     private boolean loadSection(int x, int y, int z) {
-        var render = this.tree.add(x, y, z);
+        var render = this.sectionTree.add(x, y, z);
 
         Chunk chunk = this.world.getChunk(x, z);
         ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
@@ -262,7 +257,7 @@ public class TerrainRenderManager {
     }
 
     private boolean unloadSection(int x, int y, int z) {
-        RenderSection section = this.tree.remove(x, y, z);
+        RenderSection section = this.sectionTree.remove(x, y, z);
 //        if (this.chunkGeometrySorter != null) {
 //            this.chunkGeometrySorter.removeSection(section);
 //        }
@@ -284,13 +279,7 @@ public class TerrainRenderManager {
     }
 
     public boolean isSectionVisible(int x, int y, int z) {
-        var sectionId = this.tree.getSectionId(x, y, z);
-
-        if (sectionId == SectionTree.ABSENT_VALUE) {
-            return false;
-        }
-
-        return this.sectionVisibility != null && this.sectionVisibility.capacity() > sectionId && this.sectionVisibility.get(sectionId);
+        return this.sectionCuller.isSectionVisible(x, y, z);
     }
 
     public void updateChunks() {
@@ -374,7 +363,7 @@ public class TerrainRenderManager {
     private void onChunkDataChanged(RenderSection section, ChunkRenderData prev, ChunkRenderData next) {
         ListUtil.updateList(this.globalBlockEntities, prev.globalBlockEntities, next.globalBlockEntities);
 
-        this.tree.setVisibilityData(section.getId(), next.occlusionData);
+        this.sectionCuller.setVisibilityData(section, next.occlusionData);
     }
 
     public AbstractBuilderTask createTerrainBuildTask(RenderSection render) {
@@ -404,13 +393,13 @@ public class TerrainRenderManager {
         this.regionManager.delete();
         this.builder.stopWorkers();
         this.chunkRenderer.delete();
-        if (this.chunkGeometrySorter != null) {
-            this.chunkGeometrySorter.delete();
-        }
+//        if (this.chunkGeometrySorter != null) {
+//            this.chunkGeometrySorter.delete();
+//        }
     }
 
     public int getTotalSections() {
-        return this.tree.getLoadedSections();
+        return this.sectionTree.getLoadedSections();
     }
 
     public int getVisibleSectionCount() {
@@ -420,7 +409,7 @@ public class TerrainRenderManager {
     public void scheduleRebuild(int x, int y, int z, boolean important) {
         this.sectionCache.invalidate(x, y, z);
 
-        RenderSection section = this.tree.getSection(x, y, z);
+        RenderSection section = this.sectionTree.getSection(x, y, z);
 
         if (section != null && section.isBuilt()) {
             if (!this.alwaysDeferChunkUpdates && (important || this.isBlockUpdatePrioritized(section))) {

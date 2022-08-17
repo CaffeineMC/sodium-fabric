@@ -14,18 +14,12 @@ public class DualStreamingBuffer extends SectionedStreamingBuffer {
     private ImmutableBuffer deviceResidentBuffer;
 
     public DualStreamingBuffer(RenderDevice device, int alignment, int sectionCapacity, int sectionCount, Set<MappedBufferFlags> extraFlags) {
-        super(device, alignment, sectionCapacity, sectionCount, addNeededFlags(extraFlags));
+        super(device, alignment, sectionCapacity, sectionCount, extraFlags);
 
         this.deviceResidentBuffer = device.createBuffer(
                 sectionCapacity,
                 EnumSet.noneOf(ImmutableBufferFlags.class)
         );
-    }
-
-    private static Set<MappedBufferFlags> addNeededFlags(Set<MappedBufferFlags> extraFlags) {
-        // client storage is added to the staging buffer because the copy will go from cpu -> gpu
-        extraFlags.add(MappedBufferFlags.CLIENT_STORAGE);
-        return extraFlags;
     }
 
     @Override

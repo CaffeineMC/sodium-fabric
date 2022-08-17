@@ -250,7 +250,8 @@ public class GlRenderDevice implements RenderDevice {
         var storage = GL45C.GL_MAP_PERSISTENT_BIT | getMappedBufferStorageBits(flags);
         GL45C.glNamedBufferStorage(handle, capacity, storage);
 
-        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT | getMappedBufferAccessBits(flags);
+        var access = GL45C.GL_MAP_PERSISTENT_BIT | GL45C.GL_MAP_UNSYNCHRONIZED_BIT | GL45C.GL_MAP_INVALIDATE_BUFFER_BIT
+                     | getMappedBufferAccessBits(flags);
         ByteBuffer mapping = GL45C.glMapNamedBufferRange(handle, 0, capacity, access);
 
         if (mapping == null) {
@@ -277,8 +278,7 @@ public class GlRenderDevice implements RenderDevice {
         
         //// Do the synchronization for the buffer ourselves
         // TODO: add a memory barrier function to RenderDevice
-        // do we need GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT?
-        GL45C.glMemoryBarrier(GL45C.GL_BUFFER_UPDATE_BARRIER_BIT);
+        GL45C.glMemoryBarrier(GL45C.GL_BUFFER_UPDATE_BARRIER_BIT | GL45C.GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
         this.createFence().sync(true);
 
         // If we were to use GL_MAP_INVALIDATE_BIT on this, it would invalidate all the stuff we just wrote to it.

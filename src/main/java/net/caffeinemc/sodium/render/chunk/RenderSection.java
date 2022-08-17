@@ -17,7 +17,7 @@ public class RenderSection {
     private RenderRegion region;
 
     private final int sectionX, sectionY, sectionZ;
-    private final double originX, originY, originZ;
+    private final double centerX, centerY, centerZ;
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<?> rebuildTask = null;
@@ -34,10 +34,10 @@ public class RenderSection {
         this.sectionX = sectionX;
         this.sectionY = sectionY;
         this.sectionZ = sectionZ;
-
-        this.originX = ChunkSectionPos.getBlockCoord(this.sectionX) + 8;
-        this.originY = ChunkSectionPos.getBlockCoord(this.sectionY) + 8;
-        this.originZ = ChunkSectionPos.getBlockCoord(this.sectionZ) + 8;
+        
+        this.centerX = ChunkSectionPos.getBlockCoord(this.sectionX) + 8.0;
+        this.centerY = ChunkSectionPos.getBlockCoord(this.sectionY) + 8.0;
+        this.centerZ = ChunkSectionPos.getBlockCoord(this.sectionZ) + 8.0;
         
         this.regionKey = RenderRegion.getRegionCoord(this.sectionX, this.sectionY, this.sectionZ);
     }
@@ -166,16 +166,16 @@ public class RenderSection {
     }
 
     public double getDistance(double x, double y, double z) {
-        double xDist = x - this.originX;
-        double yDist = y - this.originY;
-        double zDist = z - this.originZ;
+        double xDist = x - this.centerX;
+        double yDist = y - this.centerY;
+        double zDist = z - this.centerZ;
 
         return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
 
     public double getDistance(double x, double z) {
-        double xDist = x - this.originX;
-        double zDist = z - this.originZ;
+        double xDist = x - this.centerX;
+        double zDist = z - this.centerZ;
 
         return (xDist * xDist) + (zDist * zDist);
     }
@@ -190,12 +190,12 @@ public class RenderSection {
 
     public boolean isWithinFrustum(Frustum frustum) {
         return frustum.isBoxVisible(
-                (float) (this.originX - 8.0),
-                (float) (this.originY - 8.0),
-                (float) (this.originZ - 8.0),
-                (float) (this.originX + 8.0),
-                (float) (this.originY + 8.0),
-                (float) (this.originZ + 8.0)
+                (float) (this.centerX - 8.0),
+                (float) (this.centerY - 8.0),
+                (float) (this.centerZ - 8.0),
+                (float) (this.centerX + 8.0),
+                (float) (this.centerY + 8.0),
+                (float) (this.centerZ + 8.0)
         );
     }
 

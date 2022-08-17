@@ -5,6 +5,7 @@ import net.minecraft.util.math.ChunkPos;
 
 import java.util.stream.LongStream;
 
+// TODO: optimize this a lot, use a 2d array if possible
 public class ChunkTracker {
     private final Long2IntOpenHashMap single = new Long2IntOpenHashMap();
     private final Long2IntOpenHashMap merged = new Long2IntOpenHashMap();
