@@ -34,6 +34,7 @@ public class RenderRegionManager {
     private static final float PRUNE_PERCENT_MODIFIER = -.2f;
     private static final float DEFRAG_THRESHOLD = 0.000008f; // this may look dumb, but keep in mind that 1.0 is the absolute maximum
     
+    // turn this into a 3d array if needed
     private final Long2ReferenceMap<RenderRegion> regions = new Long2ReferenceOpenHashMap<>();
     private final IntPool idPool = new IntPool();
     private final BufferPool<ImmutableBuffer> bufferPool;
@@ -112,7 +113,13 @@ public class RenderRegionManager {
                 RenderSection section = result.render();
 
                 if (section.getData() != null) {
-                    callback.accept(section, section.getData(), result.data());
+                    callback.accept(
+                            section.getSectionX(),
+                            section.getSectionY(),
+                            section.getSectionZ(),
+                            section.getData(),
+                            result.data()
+                    );
                 }
 
                 section.setData(result.data());
@@ -174,7 +181,7 @@ public class RenderRegionManager {
     }
 
     public interface RenderUpdateCallback {
-        void accept(RenderSection section, ChunkRenderData prev, ChunkRenderData next);
+        void accept(int x, int y, int z, ChunkRenderData prev, ChunkRenderData next);
     }
 
     private void uploadGeometryBatch(long regionKey, List<TerrainBuildResult> results, int frameIndex) {

@@ -17,7 +17,6 @@ import net.caffeinemc.sodium.util.NativeBuffer;
 import net.caffeinemc.sodium.world.ChunkTracker;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.model.ModelLoader;
@@ -40,9 +39,13 @@ public class SodiumWorldRenderer {
     private ClientWorld world;
     private int chunkViewDistance;
 
-    private double lastCameraX, lastCameraY, lastCameraZ;
-    private double lastCameraPitch, lastCameraYaw;
-    private float lastFogDistance;
+    private double lastCameraX = Double.NaN;
+    private double lastCameraY = Double.NaN;
+    private double lastCameraZ = Double.NaN;
+    private double lastCameraPitch = Double.NaN;
+    private double lastCameraYaw = Double.NaN;
+    private float lastFogDistance = Float.NaN;
+    private int lastFogShapeId = Integer.MIN_VALUE;
 
     private boolean useEntityCulling;
 
@@ -119,7 +122,7 @@ public class SodiumWorldRenderer {
     }
 
     /**
-     * @return The number of chunk renders which are visible in the current camera's frustum
+     * @return The number of chunk renders which are not culled
      */
     public int getVisibleChunkCount() {
         return this.terrainRenderManager.getVisibleSectionCount();
@@ -147,29 +150,28 @@ public class SodiumWorldRenderer {
      */
     public void updateChunks(Camera camera, Frustum frustum, @Deprecated(forRemoval = true) int frame, boolean spectator) {
         NativeBuffer.reclaim(false);
-
-        this.useEntityCulling = SodiumClientMod.options().performance.useEntityCulling;
-
+        
         if (this.client.options.getClampedViewDistance() != this.chunkViewDistance) {
             this.reload();
         }
-
+        
+        this.useEntityCulling = SodiumClientMod.options().performance.useEntityCulling;
+        Entity.setRenderDistanceMultiplier(
+                MathHelper.clamp((double) this.chunkViewDistance / 8.0D, 1.0D, 2.5D) * this.client.options.getEntityDistanceScaling().getValue()
+        );
+        
         Profiler profiler = this.client.getProfiler();
         profiler.push("camera_setup");
-
-        ClientPlayerEntity player = this.client.player;
-
-        if (player == null) {
-            throw new IllegalStateException("Client instance has no active player entity");
-        }
 
         Vec3d pos = camera.getPos();
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
         float fogDistance = RenderSystem.getShaderFogEnd();
+        int fogShapeId = RenderSystem.getShaderFogShape().getId();
 
         boolean dirty = pos.x != this.lastCameraX || pos.y != this.lastCameraY || pos.z != this.lastCameraZ ||
-                pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
+                pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance ||
+                fogShapeId != this.lastFogShapeId;
 
         if (dirty) {
             this.terrainRenderManager.markGraphDirty();
@@ -181,6 +183,7 @@ public class SodiumWorldRenderer {
         this.lastCameraPitch = pitch;
         this.lastCameraYaw = yaw;
         this.lastFogDistance = fogDistance;
+        this.lastFogShapeId = fogShapeId;
 
         profiler.swap("chunk_update");
 
@@ -190,7 +193,7 @@ public class SodiumWorldRenderer {
         this.terrainRenderManager.updateChunks();
 
         if (this.terrainRenderManager.isGraphDirty()) {
-            this.terrainRenderManager.update(new ChunkCameraContext(camera), frustum, spectator);
+            this.terrainRenderManager.update(frustum, spectator);
         }
 
         profiler.swap("visible_chunk_tick");
@@ -198,8 +201,6 @@ public class SodiumWorldRenderer {
         this.terrainRenderManager.tickVisibleRenders();
 
         profiler.pop();
-
-        Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.getClampedViewDistance() / 8.0D, 1.0D, 2.5D) * this.client.options.getEntityDistanceScaling().getValue());
     }
 
     /**
@@ -227,8 +228,15 @@ public class SodiumWorldRenderer {
         this.chunkViewDistance = this.client.options.getClampedViewDistance();
 
         this.renderPassManager = ChunkRenderPassManager.createDefaultMappings();
-
-        this.terrainRenderManager = new TerrainRenderManager(SodiumClientMod.DEVICE, this, this.renderPassManager, this.world, this.chunkViewDistance);
+        
+        this.terrainRenderManager = new TerrainRenderManager(
+                SodiumClientMod.DEVICE,
+                this,
+                this.renderPassManager,
+                this.world,
+                new ChunkCameraContext(this.client),
+                this.chunkViewDistance
+        );
         this.terrainRenderManager.reloadChunks(this.chunkTracker);
     }
 
@@ -297,7 +305,7 @@ public class SodiumWorldRenderer {
     }
 
     /**
-     * Returns whether or not the entity intersects with any visible chunks in the graph.
+     * Returns whether the entity intersects with any visible chunks in the graph.
      * @return True if the entity is visible, otherwise false
      */
     public boolean isEntityVisible(Entity entity) {
@@ -321,8 +329,9 @@ public class SodiumWorldRenderer {
 
     public boolean isBoxVisible(double x1, double y1, double z1, double x2, double y2, double z2) {
         // Boxes outside the valid world height will never map to a rendered chunk
-        // Always render these boxes or they'll be culled incorrectly!
+        // Always render these boxes, or they'll be culled incorrectly!
         if (y2 < this.world.getBottomY() + 0.5D || y1 > this.world.getTopY() - 0.5D) {
+            // TODO: use a raw frustum check for this?
             return true;
         }
 

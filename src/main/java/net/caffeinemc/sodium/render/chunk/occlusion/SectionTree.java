@@ -1,14 +1,17 @@
 package net.caffeinemc.sodium.render.chunk.occlusion;
 
+import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
+import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.util.collections.BitArray;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.HeightLimitView;
 
 public class SectionTree {
-    public static final int ABSENT_VALUE = 0xFFFFFFFF;
+    public static final int OUT_OF_BOUNDS_INDEX = 0xFFFFFFFF;
+    
+    protected final ChunkCameraContext camera;
     
     protected final int chunkViewDistance;
     protected final int maxDepth; // inclusive
@@ -23,64 +26,129 @@ public class SectionTree {
     protected final int sectionTableSize;
     
     protected final RenderSection[] sections;
-    protected final RenderSection[] overwrittenSections; // used so we can unload/remove sections in the same order as vanilla
-    protected final BitArray sectionExistenceBits; // TODO: add space for different node depths, update accordingly
+    protected final BitArray sectionExistenceBits;
+    // used so we can deal with out-of-bounds sections in the same way as vanilla
+    // TODO: periodically move these into the array when they're in range
+    //  maybe remove?
+    protected final Long2ReferenceMap<RenderSection> backupSections;
+//    protected final int[] loadedSectionsPerNode;
     
     private int loadedSections;
     
-    private int originSectionX;
-    private int originSectionY;
-    private int originSectionZ;
-    
-    public SectionTree(int maxDepth, int chunkViewDistance, HeightLimitView heightLimitView) {
+    public SectionTree(int maxDepth, int chunkLoadDistance, HeightLimitView heightLimitView, ChunkCameraContext camera) {
         this.sectionHeightMin = heightLimitView.getBottomSectionCoord();
         this.sectionHeightMax = heightLimitView.getTopSectionCoord() - 1;
         
-        this.chunkViewDistance = chunkViewDistance;
+        this.chunkViewDistance = chunkLoadDistance;
         this.maxDepth = maxDepth;
-        
-        // why are these like this?
-        this.sectionWidth = chunkViewDistance * 2 + 3;
-        this.sectionWidthOffset = chunkViewDistance + 1;
-        
+    
+//        // Make the diameter a power-of-two, so we can exploit bit-wise math when computing indices
+//        this.diameter = MathHelper.smallestEncompassingPowerOfTwo(loadDistance * 2 + 1);
+        this.sectionWidth = chunkLoadDistance * 2 + 1;
+        this.sectionWidthOffset = chunkLoadDistance;
         this.sectionWidthSquared = this.sectionWidth * this.sectionWidth;
+        
         this.sectionHeight = heightLimitView.countVerticalSections();
         this.sectionHeightOffset = -heightLimitView.getBottomSectionCoord();
+        
         this.sectionTableSize = this.sectionWidth * this.sectionWidth * this.sectionHeight;
         
         this.sections = new RenderSection[this.sectionTableSize];
-        this.overwrittenSections = new RenderSection[this.sectionTableSize];
         this.sectionExistenceBits = new BitArray(this.sectionTableSize);
+        this.backupSections = new Long2ReferenceOpenHashMap<>(this.sectionTableSize / 8);
+        
+        this.camera = camera;
     }
     
+//    public int getSectionIdx(int x, int y, int z) {
+//        int tableY = y + this.sectionHeightOffset;
+//        int tableZ = z - this.originSectionZ + this.sectionWidthOffset;
+//        int tableX = x - this.originSectionX + this.sectionWidthOffset;
+//        if (tableY < 0 ||
+//            tableY >= this.sectionHeight ||
+//            tableZ < 0 ||
+//            tableZ >= this.sectionWidth ||
+//            tableX < 0 ||
+//            tableX >= this.sectionWidth) {
+//            return ABSENT_VALUE;
+//        } else {
+//            return tableY * this.sectionWidthSquared
+//                   + tableZ * this.sectionWidth
+//                   + tableX;
+//        }
+//    }
+    
+//    public int getSectionIdx(int x, int y, int z) {
+//        int offsetY = y + this.sectionHeightOffset;
+//        int offsetZ = z + this.sectionWidthOffset;
+//        int offsetX = x + this.sectionWidthOffset;
+//        int originZ = offsetZ - this.getOriginSectionZ();
+//        int originX = offsetX - this.getOriginSectionX();
+//        if (offsetY < 0 ||
+//            offsetY >= this.sectionHeight ||
+//            originZ < 0 ||
+//            originZ >= this.sectionWidth ||
+//            originX < 0 ||
+//            originX >= this.sectionWidth) {
+//            return ABSENT_VALUE;
+//        } else {
+//            int tableY = Math.floorMod(offsetY, this.sectionHeight);
+//            int tableZ = Math.floorMod(offsetZ, this.sectionWidth);
+//            int tableX = Math.floorMod(offsetX, this.sectionWidth);
+//            return tableY * this.sectionWidthSquared
+//                   + tableZ * this.sectionWidth
+//                   + tableX;
+//        }
+//    }
+    
     public int getSectionIdx(int x, int y, int z) {
-        int tableY = y + this.sectionHeightOffset;
-        int tableZ = z - this.originSectionZ + this.sectionWidthOffset;
-        int tableX = x - this.originSectionX + this.sectionWidthOffset;
-        if (tableY < 0 ||
-            tableY >= this.sectionHeight ||
-            tableZ < 0 ||
-            tableZ >= this.sectionWidth ||
-            tableX < 0 ||
-            tableX >= this.sectionWidth) {
-            return ABSENT_VALUE;
+        if (this.isSectionInBounds(x, y, z)) {
+                int tableY = Math.floorMod(y, this.sectionHeight);
+                int tableZ = Math.floorMod(z, this.sectionWidth);
+                int tableX = Math.floorMod(x, this.sectionWidth);
+                return tableY * this.sectionWidthSquared
+                       + tableZ * this.sectionWidth
+                       + tableX;
         } else {
-            return tableY * this.sectionWidthSquared
-                   + tableZ * this.sectionWidth
-                   + tableX;
+            return OUT_OF_BOUNDS_INDEX;
         }
     }
     
-    private int getNodeIdx(int x, int y, int z, int depth) {
-        int yFromOrigin = this.originSectionY - y + this.sectionHeightOffset;
-        int zFromOrigin = this.originSectionZ - z + this.sectionWidthOffset;
-        int xFromOrigin = this.originSectionX - x + this.sectionWidthOffset;
-        int depthSectionWidth = this.sectionWidth >> depth;
-        return this.getNodeDepthOffset(depth)
-               + (yFromOrigin >> depth) * depthSectionWidth * depthSectionWidth
-               + (zFromOrigin >> depth) * depthSectionWidth
-               + (xFromOrigin >> depth);
+    private boolean isSectionInBounds(int x, int y, int z) {
+        int offsetY = y + this.sectionHeightOffset;
+        int offsetZ = z + this.sectionWidthOffset - this.camera.getSectionX();
+        int offsetX = x + this.sectionWidthOffset - this.camera.getSectionZ();
+        return offsetY >= 0 &&
+               offsetY < this.sectionHeight &&
+               offsetZ >= 0 &&
+               offsetZ < this.sectionWidth &&
+               offsetX >= 0 &&
+               offsetX < this.sectionWidth;
     }
+    
+    public int getSectionIdxUnchecked(int x, int y, int z) {
+        int tableY = Math.floorMod(y, this.sectionHeight);
+        int tableZ = Math.floorMod(z, this.sectionWidth);
+        int tableX = Math.floorMod(x, this.sectionWidth);
+        return tableY * this.sectionWidthSquared
+               + tableZ * this.sectionWidth
+               + tableX;
+    }
+    
+    public int getSectionIdx(RenderSection section) {
+        return this.getSectionIdx(section.getSectionX(), section.getSectionY(), section.getSectionZ());
+    }
+    
+//    private int getNodeIdx(int x, int y, int z, int depth) {
+//        int yFromOrigin = this.originSectionY - y + this.sectionHeightOffset;
+//        int zFromOrigin = this.originSectionZ - z + this.sectionWidthOffset;
+//        int xFromOrigin = this.originSectionX - x + this.sectionWidthOffset;
+//        int depthSectionWidth = this.sectionWidth >> depth;
+//        return this.getNodeDepthOffset(depth)
+//               + (yFromOrigin >> depth) * depthSectionWidth * depthSectionWidth
+//               + (zFromOrigin >> depth) * depthSectionWidth
+//               + (xFromOrigin >> depth);
+//    }
     
     public int getNodeDepthOffset(int depth) {
         // To get an accurate number that's able to store all the elements we need, we need to make sure to "round up"
@@ -93,59 +161,53 @@ public class SectionTree {
         return (this.sectionTableSize * 2) - (this.sectionTableSize >> depth) + roundedDepths;
     }
     
-    public int getSectionIdx(RenderSection section) {
-        return this.getSectionIdx(section.getSectionX(), section.getSectionY(), section.getSectionZ());
-    }
-    
-    public void setOrigin(BlockPos origin) {
-        this.originSectionY = MathHelper.clamp(
-                ChunkSectionPos.getSectionCoord(origin.getY()),
-                this.sectionHeightMin,
-                this.sectionHeightMax
-        );
-        
-        this.originSectionX = ChunkSectionPos.getSectionCoord(origin.getX());
-        this.originSectionZ = ChunkSectionPos.getSectionCoord(origin.getZ());
-    }
-    
     public RenderSection add(int x, int y, int z) {
         this.loadedSections++;
         
         RenderSection section = new RenderSection(x, y, z);
-        int sectionIdx = this.getSectionIdx(x, y, z);
     
-        RenderSection existing = this.sections[sectionIdx];
-        if (existing != null) {
-            this.overwrittenSections[sectionIdx] = existing;
+        int sectionIdx = this.getSectionIdxUnchecked(x, y, z);
+    
+        if (sectionIdx != OUT_OF_BOUNDS_INDEX) {
+            RenderSection existing = this.sections[sectionIdx];
+            
+//            if (existing != null) {
+//                this.backupSections.put(
+//                        ChunkSectionPos.asLong(
+//                                existing.getSectionX(),
+//                                existing.getSectionY(),
+//                                existing.getSectionZ()
+//                        ),
+//                        existing
+//                );
+//            }
+            
+            this.sections[sectionIdx] = section;
+            this.sectionExistenceBits.set(sectionIdx);
+        } else {
+            this.backupSections.put(ChunkSectionPos.asLong(x, y, z), section);
         }
-        
-        this.sections[sectionIdx] = section;
-        this.sectionExistenceBits.set(sectionIdx);
-        
+    
         return section;
     }
     
     public RenderSection remove(int x, int y, int z) {
         this.loadedSections--;
         
-        int sectionIdx = this.getSectionIdx(x, y, z);
+        int sectionIdx = this.getSectionIdxUnchecked(x, y, z);
         
-        if (sectionIdx == ABSENT_VALUE) {
-            throw new IllegalArgumentException("Section IDX absent on remove");
-        }
         
-        RenderSection section = this.overwrittenSections[sectionIdx];
-        
-        if (section != null) {
-            this.overwrittenSections[sectionIdx] = null;
-        } else {
-            section = this.sections[sectionIdx];
+        if (sectionIdx != OUT_OF_BOUNDS_INDEX) {
+            RenderSection section = this.sections[sectionIdx];
             this.sections[sectionIdx] = null;
+    
+            this.sectionExistenceBits.unset(sectionIdx);
+            
+            return section;
+        } else {
+            return this.backupSections.remove(ChunkSectionPos.asLong(x, y, z));
         }
-        
-        this.sectionExistenceBits.unset(sectionIdx);
-        
-        return section;
+    
     }
     
     public RenderSection getSection(int x, int y, int z) {
@@ -153,7 +215,7 @@ public class SectionTree {
     }
     
     public RenderSection getSection(int sectionIdx) {
-        if (sectionIdx == ABSENT_VALUE) {
+        if (sectionIdx == OUT_OF_BOUNDS_INDEX) {
             return null;
         }
         
@@ -167,29 +229,4 @@ public class SectionTree {
     public int getLoadedSections() {
         return this.loadedSections;
     }
-    
-    public int getChunkViewDistance() {
-        return this.chunkViewDistance;
-    }
-    
-    public int getSectionWidth() {
-        return this.sectionWidth;
-    }
-    
-    public int getSectionHeight() {
-        return this.sectionHeight;
-    }
-    
-    public int getOriginSectionX() {
-        return this.originSectionX;
-    }
-    
-    public int getOriginSectionY() {
-        return this.originSectionY;
-    }
-    
-    public int getOriginSectionZ() {
-        return this.originSectionZ;
-    }
-    
 }

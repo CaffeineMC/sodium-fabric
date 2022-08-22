@@ -8,14 +8,16 @@ import net.caffeinemc.gfx.api.texture.parameters.MipmapMode;
 
 public abstract class AbstractChunkRenderer implements ChunkRenderer {
     protected final RenderDevice device;
+    protected final ChunkCameraContext camera;
 
     protected final Sampler blockTextureSampler;
     protected final Sampler blockTextureMippedSampler;
 
     protected final Sampler lightTextureSampler;
 
-    public AbstractChunkRenderer(RenderDevice device) {
+    public AbstractChunkRenderer(RenderDevice device, ChunkCameraContext camera) {
         this.device = device;
+        this.camera = camera;
 
         this.blockTextureSampler = device.createSampler(
                 FilterMode.NEAREST,

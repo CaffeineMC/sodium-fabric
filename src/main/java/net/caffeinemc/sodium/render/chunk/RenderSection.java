@@ -165,7 +165,7 @@ public class RenderSection {
         return this.uploadedGeometrySegment;
     }
 
-    public double getDistance(double x, double y, double z) {
+    public double getDistanceSq(double x, double y, double z) {
         double xDist = x - this.centerX;
         double yDist = y - this.centerY;
         double zDist = z - this.centerZ;
@@ -173,7 +173,7 @@ public class RenderSection {
         return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
 
-    public double getDistance(double x, double z) {
+    public double getDistanceSq(double x, double z) {
         double xDist = x - this.centerX;
         double zDist = z - this.centerZ;
 

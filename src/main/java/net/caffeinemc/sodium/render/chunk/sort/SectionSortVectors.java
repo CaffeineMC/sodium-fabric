@@ -24,9 +24,9 @@
 
 package net.caffeinemc.sodium.render.chunk.sort;
 
-import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.Vec3d;
 
 public class SectionSortVectors {
     private final double blockX, blockY, blockZ;
@@ -72,15 +72,15 @@ public class SectionSortVectors {
         this.blockZ = ChunkSectionPos.getBlockCoord(sectionZ);
     }
     
-    public boolean compareAndSet(ChunkCameraContext camera, float angleCosThreshold) {
-        float nx0 = ((float) (this.blockX - camera.posX));
-        float nx1 = ((float) (this.blockX - camera.posX + 16.0));
+    public boolean compareAndSet(Vec3d cameraPos, float angleCosThreshold) {
+        float nx0 = (float) (this.blockX - cameraPos.getX());
+        float nx1 = (float) (this.blockX - cameraPos.getX() + 16.0);
         
-        float ny0 = ((float) (this.blockY - camera.posY));
-        float ny1 = ((float) (this.blockY - camera.posY + 16.0));
+        float ny0 = (float) (this.blockY - cameraPos.getY());
+        float ny1 = (float) (this.blockY - cameraPos.getY() + 16.0);
         
-        float nz0 = ((float) (this.blockZ - camera.posZ));
-        float nz1 = ((float) (this.blockZ - camera.posZ + 16.0));
+        float nz0 = (float) (this.blockZ - cameraPos.getZ());
+        float nz1 = (float) (this.blockZ - cameraPos.getZ() + 16.0);
     
         if (!this.hasRun ||
             MathUtil.angleCos(this.c0x, this.c0y, this.c0z, nx0, ny0, nz0) < angleCosThreshold ||

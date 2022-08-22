@@ -45,6 +45,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
@@ -75,12 +76,12 @@ public class TerrainRenderManager {
 
     private final ClientWorld world;
 
-    private boolean needsUpdate;
+    private boolean needsUpdate = true;
     private int frameIndex = 0;
 
     private final ChunkTracker tracker;
 
-    private ChunkCameraContext camera;
+    private final ChunkCameraContext camera;
 
     private final List<RenderSection> visibleMeshedSections = new ReferenceArrayList<>();
     private final List<RenderSection> visibleTickingSections = new ReferenceArrayList<>();
@@ -92,32 +93,43 @@ public class TerrainRenderManager {
     
 //    private final ChunkGeometrySorter chunkGeometrySorter;
 
-    public TerrainRenderManager(RenderDevice device, SodiumWorldRenderer worldRenderer, ChunkRenderPassManager renderPassManager, ClientWorld world, int chunkViewDistance) {
+    public TerrainRenderManager(
+            RenderDevice device,
+            SodiumWorldRenderer worldRenderer,
+            ChunkRenderPassManager renderPassManager,
+            ClientWorld world,
+            ChunkCameraContext camera,
+            int chunkViewDistance
+    ) {
         TerrainVertexType vertexType = createVertexType();
-
+    
         this.device = device;
-
-        this.chunkRenderer = createChunkRenderer(device, renderPassManager, vertexType);
-
         this.world = world;
+        this.camera = camera;
+    
+        this.chunkRenderer = createChunkRenderer(device, camera, renderPassManager, vertexType);
 
         this.builder = new ChunkBuilder(vertexType);
         this.builder.init(world, renderPassManager);
-
-        this.needsUpdate = true;
+        
         this.chunkViewDistance = chunkViewDistance;
 
         this.regionManager = new RenderRegionManager(device, vertexType);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
     
-        this.sortedTerrainLists = new SortedTerrainLists(this.regionManager, renderPassManager);
+        this.sortedTerrainLists = new SortedTerrainLists(this.regionManager, renderPassManager, camera);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
             this.rebuildQueues.put(type, new ObjectArrayFIFOQueue<>());
         }
 
         this.tracker = worldRenderer.getChunkTracker();
-        this.sectionTree = new SectionTree(3, chunkViewDistance, world);
+        this.sectionTree = new SectionTree(
+                3,
+                chunkViewDistance + 3,
+                world,
+                camera
+        );
         this.sectionCuller = new SectionCuller(this.sectionTree);
         
         // TODO: uncomment when working on translucency sorting
@@ -137,24 +149,20 @@ public class TerrainRenderManager {
         this.frameIndex = frameIndex;
     }
 
-    public void update(ChunkCameraContext camera, Frustum frustum, boolean spectator) {
+    public void update(Frustum frustum, boolean spectator) {
         Profiler profiler = MinecraftClient.getInstance().getProfiler();
     
-        this.camera = camera;
-    
         profiler.swap("chunk_graph_rebuild");
-        BlockPos origin = camera.getBlockPos();
+        BlockPos origin = this.camera.getBlockPos();
         var useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled &&
                 (!spectator || !this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin));
-        
-        this.sectionTree.setOrigin(origin);
 
         this.sectionCuller.calculateVisibleSections(
                 frustum,
                 useOcclusionCulling
         );
 
-        this.updateVisibilityLists(camera);
+        this.updateVisibilityLists();
     
 //        if (this.chunkGeometrySorter != null) {
 //            profiler.swap("translucency_sort");
@@ -162,13 +170,13 @@ public class TerrainRenderManager {
 //        }
 
         profiler.swap("create_render_lists");
-        this.sortedTerrainLists.update(this.visibleMeshedSections, camera);
-        this.chunkRenderer.createRenderLists(this.sortedTerrainLists, camera, this.frameIndex);
+        this.sortedTerrainLists.update(this.visibleMeshedSections);
+        this.chunkRenderer.createRenderLists(this.sortedTerrainLists, this.frameIndex);
         
         this.needsUpdate = false;
     }
 
-    private void updateVisibilityLists(ChunkCameraContext camera) {
+    private void updateVisibilityLists() {
         var drawDistance = MathHelper.square((this.chunkViewDistance + 1) * 16.0f);
 
         for (PriorityQueue<RenderSection> queue : this.rebuildQueues.values()) {
@@ -183,9 +191,9 @@ public class TerrainRenderManager {
     
         while (sectionItr.hasNext()) {
             RenderSection section = sectionItr.next();
-
+            
             // TODO: build this into SectionCuller?
-            if (section.getDistance(camera.posX, camera.posZ) > drawDistance) {
+            if (section.getDistanceSq(this.camera.getPosX(), this.camera.getPosZ()) > drawDistance) {
                 continue;
             }
 
@@ -229,41 +237,47 @@ public class TerrainRenderManager {
 
     public void onChunkAdded(int x, int z) {
         for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
+            // TODO: only update if inside radius
             this.needsUpdate |= this.loadSection(x, y, z);
         }
     }
 
     public void onChunkRemoved(int x, int z) {
         for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
+            // TODO: only update if inside radius
             this.needsUpdate |= this.unloadSection(x, y, z);
         }
     }
 
     private boolean loadSection(int x, int y, int z) {
-        var render = this.sectionTree.add(x, y, z);
+        RenderSection renderSection = this.sectionTree.add(x, y, z);
 
         Chunk chunk = this.world.getChunk(x, z);
         ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
-
+        
         if (section.isEmpty()) {
-            render.setData(ChunkRenderData.EMPTY);
+            renderSection.setData(ChunkRenderData.EMPTY);
         } else {
-            render.markForUpdate(ChunkUpdateType.INITIAL_BUILD);
+            renderSection.markForUpdate(ChunkUpdateType.INITIAL_BUILD);
         }
-
-        this.onChunkDataChanged(render, ChunkRenderData.ABSENT, render.getData());
-
+        
+        this.onChunkDataChanged(x, y, z, ChunkRenderData.ABSENT, renderSection.getData());
+        
         return true;
     }
 
     private boolean unloadSection(int x, int y, int z) {
         RenderSection section = this.sectionTree.remove(x, y, z);
-//        if (this.chunkGeometrySorter != null) {
-//            this.chunkGeometrySorter.removeSection(section);
-//        }
-        section.delete();
-
-        return true;
+        
+        if (section != null) {
+//            if (this.chunkGeometrySorter != null) {
+//                this.chunkGeometrySorter.removeSection(section);
+//            }
+            section.delete();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public void renderLayer(ChunkRenderMatrices matrices, ChunkRenderPass renderPass) {
@@ -360,10 +374,10 @@ public class TerrainRenderManager {
         return true;
     }
 
-    private void onChunkDataChanged(RenderSection section, ChunkRenderData prev, ChunkRenderData next) {
+    private void onChunkDataChanged(int x, int y, int z, ChunkRenderData prev, ChunkRenderData next) {
         ListUtil.updateList(this.globalBlockEntities, prev.globalBlockEntities, next.globalBlockEntities);
 
-        this.sectionCuller.setVisibilityData(section, next.occlusionData);
+        this.sectionCuller.setVisibilityData(x, y, z, next.occlusionData);
     }
 
     public AbstractBuilderTask createTerrainBuildTask(RenderSection render) {
@@ -423,13 +437,12 @@ public class TerrainRenderManager {
     }
 
     public boolean isBlockUpdatePrioritized(RenderSection render) {
-        var camera = this.camera;
-
-        if (camera == null) {
+        if (!this.camera.isCameraInitialized()) {
             return false;
         }
-
-        return render.getDistance(camera.posX, camera.posY, camera.posZ) <= NEARBY_BLOCK_UPDATE_DISTANCE;
+    
+        Vec3d cameraPos = this.camera.getPos();
+        return render.getDistanceSq(cameraPos.getX(), cameraPos.getY(), cameraPos.getZ()) <= NEARBY_BLOCK_UPDATE_DISTANCE;
     }
 
     public Collection<String> getDebugStrings() {
@@ -454,15 +467,20 @@ public class TerrainRenderManager {
         return strings;
     }
 
-    private static ChunkRenderer createChunkRenderer(RenderDevice device, ChunkRenderPassManager renderPassManager, TerrainVertexType vertexType) {
+    private static ChunkRenderer createChunkRenderer(
+            RenderDevice device,
+            ChunkCameraContext camera,
+            ChunkRenderPassManager renderPassManager,
+            TerrainVertexType vertexType
+    ) {
         return switch (SodiumClientMod.options().advanced.chunkRendererBackend) {
             case DEFAULT -> device.properties().preferences.directRendering
-                            ? new MdbvChunkRenderer(device, renderPassManager, vertexType)
-                            : new MdiChunkRenderer(device, renderPassManager, vertexType);
+                            ? new MdbvChunkRenderer(device, camera, renderPassManager, vertexType)
+                            : new MdiChunkRenderer(device, camera, renderPassManager, vertexType);
             
-            case BASEVERTEX -> new MdbvChunkRenderer(device, renderPassManager, vertexType);
+            case BASEVERTEX -> new MdbvChunkRenderer(device, camera, renderPassManager, vertexType);
             
-            case INDIRECT -> new MdiChunkRenderer(device, renderPassManager, vertexType);
+            case INDIRECT -> new MdiChunkRenderer(device, camera, renderPassManager, vertexType);
         };
     }
 

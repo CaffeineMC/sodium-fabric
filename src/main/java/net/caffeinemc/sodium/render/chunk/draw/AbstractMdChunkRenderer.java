@@ -57,10 +57,11 @@ public abstract class AbstractMdChunkRenderer<B extends AbstractMdChunkRenderer.
     
     public AbstractMdChunkRenderer(
             RenderDevice device,
+            ChunkCameraContext camera,
             ChunkRenderPassManager renderPassManager,
             TerrainVertexType vertexType
     ) {
-        super(device);
+        super(device, camera);
         
         this.renderPassManager = renderPassManager;
     
@@ -331,8 +332,8 @@ public abstract class AbstractMdChunkRenderer<B extends AbstractMdChunkRenderer.
         return faces;
     }
     
-    protected static float getCameraTranslation(int chunkBlockPos, int cameraBlockPos, float cameraPos) {
-        return (chunkBlockPos - cameraBlockPos) - cameraPos;
+    protected static float getCameraTranslation(int chunkBlockPos, int cameraBlockPos, float cameraDeltaPos) {
+        return (chunkBlockPos - cameraBlockPos) - cameraDeltaPos;
     }
     
     //// OVERRIDABLE BATCH

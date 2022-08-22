@@ -24,6 +24,7 @@ import net.caffeinemc.sodium.render.shader.ShaderConstants;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.caffeinemc.sodium.util.MathUtil;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.Pointer;
@@ -38,10 +39,11 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
     
     public MdbvChunkRenderer(
             RenderDevice device,
+            ChunkCameraContext camera,
             ChunkRenderPassManager renderPassManager,
             TerrainVertexType vertexType
     ) {
-        super(device, renderPassManager, vertexType);
+        super(device, camera, renderPassManager, vertexType);
     
         this.sectionFacesAllocated = 1024; // can be resized when needed, just a guess
         this.allocateCPUBuffers();
@@ -71,12 +73,17 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
     }
     
     @Override
-    public void createRenderLists(SortedTerrainLists lists, ChunkCameraContext camera, int frameIndex) {
+    public void createRenderLists(SortedTerrainLists lists, int frameIndex) {
         if (lists.isEmpty()) {
             this.renderLists = null;
             return;
         }
-    
+        
+        BlockPos cameraBlockPos = this.camera.getBlockPos();
+        float cameraDeltaX = this.camera.getDeltaX();
+        float cameraDeltaY = this.camera.getDeltaY();
+        float cameraDeltaZ = this.camera.getDeltaZ();
+        
         ChunkRenderPass[] chunkRenderPasses = this.renderPassManager.getAllRenderPasses();
         int totalPasses = chunkRenderPasses.length;
     
@@ -163,18 +170,18 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
     
                     float x = getCameraTranslation(
                             ChunkSectionPos.getBlockCoord(sectionCoordX),
-                            camera.blockX,
-                            camera.deltaX
+                            cameraBlockPos.getX(),
+                            cameraDeltaX
                     );
                     float y = getCameraTranslation(
                             ChunkSectionPos.getBlockCoord(sectionCoordY),
-                            camera.blockY,
-                            camera.deltaY
+                            cameraBlockPos.getY(),
+                            cameraDeltaY
                     );
                     float z = getCameraTranslation(
                             ChunkSectionPos.getBlockCoord(sectionCoordZ),
-                            camera.blockZ,
-                            camera.deltaZ
+                            cameraBlockPos.getZ(),
+                            cameraDeltaZ
                     );
                     
                     for (int i = 0; i < sectionModelPartCount; i++) {
