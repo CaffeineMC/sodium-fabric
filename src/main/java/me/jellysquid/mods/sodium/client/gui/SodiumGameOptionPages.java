@@ -305,12 +305,17 @@ public class SodiumGameOptionPages {
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(new TranslatableText("sodium.options.use_adaptive_sync.name"))
-                        .setTooltip(new TranslatableText("sodium.options.use_adaptive_sync.tooltip"))
+                        .setName(Text.translatable("sodium.options.use_adaptive_sync.name"))
+                        .setTooltip(Text.translatable("sodium.options.use_adaptive_sync.tooltip"))
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.VARIES)
                         .setEnabled(GLFW.glfwExtensionSupported("GLX_EXT_swap_control_tear") || GLFW.glfwExtensionSupported("WGL_EXT_swap_control_tear"))
-                        .setBinding((opts, value) -> opts.performance.useAdaptiveSync = value, opts -> opts.performance.useAdaptiveSync)
+                        .setBinding((opts, value) -> {
+                            opts.performance.useAdaptiveSync = value;
+                            if (MinecraftClient.getInstance().getWindow() != null) {
+                                MinecraftClient.getInstance().getWindow().setVsync(MinecraftClient.getInstance().options.getEnableVsync().getValue());
+                            }
+                        }, opts -> opts.performance.useAdaptiveSync)
                         .build()
                 )
                 .build());

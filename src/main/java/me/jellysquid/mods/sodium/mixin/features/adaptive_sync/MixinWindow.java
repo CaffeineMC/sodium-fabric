@@ -12,7 +12,13 @@ public class MixinWindow {
     @Redirect(method = "setVsync", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwSwapInterval(I)V"))
     private void setSwapInterval(int interval) {
         if (SodiumClientMod.options().performance.useAdaptiveSync) {
-            GLFW.glfwSwapInterval(interval == 1 ? -1 : 0);
+            if (!(GLFW.glfwExtensionSupported("GLX_EXT_swap_control_tear") || GLFW.glfwExtensionSupported("WGL_EXT_swap_control_tear"))) {
+                SodiumClientMod.logger().warn("Tried to enable adaptive sync, but the system doesn't support it? Disabling.");
+                SodiumClientMod.options().performance.useAdaptiveSync = false;
+                GLFW.glfwSwapInterval(interval);
+            } else {
+                GLFW.glfwSwapInterval(interval == 1 ? -1 : 0);
+            }
         } else {
             GLFW.glfwSwapInterval(interval);
         }
