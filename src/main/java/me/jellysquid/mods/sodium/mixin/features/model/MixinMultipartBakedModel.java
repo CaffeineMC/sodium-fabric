@@ -6,6 +6,7 @@ import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.MultipartBakedModel;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
 import org.apache.commons.lang3.tuple.Pair;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;

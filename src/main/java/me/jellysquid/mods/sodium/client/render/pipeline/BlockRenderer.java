@@ -15,7 +15,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelB
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.util.rand.XoRoShiRoRandom;
 import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
@@ -26,13 +25,13 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Xoroshiro128PlusPlusRandom;
 import net.minecraft.world.BlockRenderView;
 
 import java.util.List;
-import java.util.Random;
 
 public class BlockRenderer {
-    private final Random random = new XoRoShiRoRandom();
+    private final Xoroshiro128PlusPlusRandom random = new Xoroshiro128PlusPlusRandom(42L);
 
     private final BlockColorsExtended blockColors;
     private final BlockOcclusionCache occlusionCache;
@@ -144,6 +143,7 @@ public class BlockRenderer {
             int lm = light.lm[j];
 
             vertices.writeVertex(origin, x, y, z, color, u, v, lm, model.getChunkId());
+
         }
 
         indices.add(vertexStart, ModelQuadWinding.CLOCKWISE);

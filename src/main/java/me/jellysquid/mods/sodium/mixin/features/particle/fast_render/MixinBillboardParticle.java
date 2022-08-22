@@ -69,7 +69,7 @@ public abstract class MixinBillboardParticle extends Particle {
         float minV = this.getMinV();
         float maxV = this.getMaxV();
 
-        int color = ColorABGR.pack(this.colorRed, this.colorGreen, this.colorBlue, this.colorAlpha);
+        int color = ColorABGR.pack(this.red , this.green, this.blue, this.alpha);
 
         ParticleVertexSink drain = VertexDrain.of(vertexConsumer)
                 .createSink(VanillaVertexTypes.PARTICLES);

@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkStatus;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
@@ -158,7 +159,7 @@ public class SodiumWorldRenderer {
 
         this.useEntityCulling = SodiumClientMod.options().performance.useEntityCulling;
 
-        if (this.client.options.getViewDistance() != this.renderDistance) {
+        if (this.client.options.getClampedViewDistance() != this.renderDistance) {
             this.reload();
         }
 
@@ -207,7 +208,7 @@ public class SodiumWorldRenderer {
 
         profiler.pop();
 
-        Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.getViewDistance() / 8.0D, 1.0D, 2.5D) * (double) this.client.options.entityDistanceScaling);
+        Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.getClampedViewDistance() / 8.0D, 1.0D, 2.5D) * this.client.options.getEntityDistanceScaling().getValue());
     }
 
     /**
@@ -238,7 +239,7 @@ public class SodiumWorldRenderer {
             this.renderSectionManager = null;
         }
 
-        this.renderDistance = this.client.options.getViewDistance();
+        this.renderDistance = this.client.options.getClampedViewDistance();
 
         this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
 
@@ -325,31 +326,34 @@ public class SodiumWorldRenderer {
             return true;
         }
 
-        Box box = entity.getVisibilityBoundingBox();
-
-        // Entities outside the valid world height will never map to a rendered chunk
-        // Always render these entities or they'll be culled incorrectly!
-        if (box.maxY < 0.5D || box.minY > 255.5D) {
-            return true;
-        }
-
         // Ensure entities with outlines or nametags are always visible
         if (this.client.hasOutline(entity) || entity.shouldRenderName()) {
             return true;
         }
 
+        Box box = entity.getVisibilityBoundingBox();
+
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
     }
 
+    public boolean doesChunkHaveFlag(int x, int z, int status) {
+        return this.chunkTracker.hasMergedFlags(x, z, status);
+    }
 
     public boolean isBoxVisible(double x1, double y1, double z1, double x2, double y2, double z2) {
-        int minX = MathHelper.floor(x1 - 0.5D) >> 4;
-        int minY = MathHelper.floor(y1 - 0.5D) >> 4;
-        int minZ = MathHelper.floor(z1 - 0.5D) >> 4;
+        // Boxes outside the valid world height will never map to a rendered chunk
+        // Always render these boxes or they'll be culled incorrectly!
+        if (y2 < this.world.getBottomY() + 0.5D || y1 > this.world.getTopY() - 0.5D) {
+            return true;
+        }
 
-        int maxX = MathHelper.floor(x2 + 0.5D) >> 4;
-        int maxY = MathHelper.floor(y2 + 0.5D) >> 4;
-        int maxZ = MathHelper.floor(z2 + 0.5D) >> 4;
+        int minX = ChunkSectionPos.getSectionCoord(x1 - 0.5D);
+        int minY = ChunkSectionPos.getSectionCoord(y1 - 0.5D);
+        int minZ = ChunkSectionPos.getSectionCoord(z1 - 0.5D);
+
+        int maxX = ChunkSectionPos.getSectionCoord(x2 + 0.5D);
+        int maxY = ChunkSectionPos.getSectionCoord(y2 + 0.5D);
+        int maxZ = ChunkSectionPos.getSectionCoord(z2 + 0.5D);
 
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
