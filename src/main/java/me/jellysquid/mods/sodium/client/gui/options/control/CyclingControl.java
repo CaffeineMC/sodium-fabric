@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.Validate;
 
@@ -42,7 +41,7 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
             if (value instanceof TextProvider) {
                 name = ((TextProvider) value).getLocalizedName();
             } else {
-                name = new LiteralText(value.name());
+                name = Text.literal(value.name());
             }
 
             this.names[i] = name;

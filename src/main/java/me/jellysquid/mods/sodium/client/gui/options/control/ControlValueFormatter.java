@@ -1,22 +1,22 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 
 public interface ControlValueFormatter {
     static ControlValueFormatter guiScale() {
-        return (v) -> (v == 0) ? new TranslatableText("options.guiScale.auto").getString() : v + "x";
+        return (v) -> (v == 0) ? Text.translatable("options.guiScale.auto").getString() : v + "x";
     }
 
     static ControlValueFormatter fpsLimit() {
-        return (v) -> (v == 260) ? new TranslatableText("options.framerateLimit.max").getString() : new TranslatableText("options.framerate", v).getString();
+        return (v) -> (v == 260) ? Text.translatable("options.framerateLimit.max").getString() : Text.translatable("options.framerate", v).getString();
     }
 
     static ControlValueFormatter brightness() {
         return (v) -> {
             if (v == 0) {
-                return new TranslatableText("options.gamma.min").getString();
+                return Text.translatable("options.gamma.min").getString();
             } else if (v == 100) {
-                return new TranslatableText("options.gamma.max").getString();
+                return Text.translatable("options.gamma.max").getString();
             } else {
                 return v + "%";
             }
@@ -24,13 +24,13 @@ public interface ControlValueFormatter {
     }
 
     static ControlValueFormatter biomeBlend() {
-        return (v) -> (v == 0) ? new TranslatableText("gui.none").getString() : new TranslatableText("sodium.options.biome_blend.value", v).getString();
+        return (v) -> (v == 0) ? Text.translatable("gui.none").getString() : Text.translatable("sodium.options.biome_blend.value", v).getString();
     }
 
     String format(int value);
 
     static ControlValueFormatter translateVariable(String key) {
-        return (v) -> new TranslatableText(key, v).getString();
+        return (v) -> Text.translatable(key, v).getString();
     }
 
     static ControlValueFormatter percentage() {
