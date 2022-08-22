@@ -18,6 +18,7 @@ import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.fabricmc.fabric.impl.client.rendering.fluid.FluidRenderHandlerRegistryImpl;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SideShapeType;
@@ -26,6 +27,7 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -47,8 +49,6 @@ public class FluidRenderer {
     private final MutableFloat scratchHeight = new MutableFloat(0);
     private final MutableInt scratchSamples = new MutableInt();
 
-    private final Sprite waterOverlaySprite;
-
     private final ModelQuadViewMutable quad = new ModelQuad();
 
     private final LightPipelineProvider lighters;
@@ -61,8 +61,6 @@ public class FluidRenderer {
     private final int[] quadColors = new int[4];
 
     public FluidRenderer(LightPipelineProvider lighters, ColorBlender colorBlender) {
-        this.waterOverlaySprite = ModelLoader.WATER_OVERLAY.getSprite();
-
         int normal = Norm3b.pack(0.0f, 1.0f, 0.0f);
 
         for (int i = 0; i < 4; i++) {
@@ -79,9 +77,8 @@ public class FluidRenderer {
         BlockPos adjPos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
 
         if (blockState.isOpaque()) {
-            return world.getFluidState(adjPos).getFluid().matchesType(fluid) || blockState.isSideSolid(world,pos,dir, SideShapeType.FULL);
-            // fluidlogged or next to water, occlude sides that are solid or the same liquid
-            }
+            return world.getFluidState(adjPos).getFluid().matchesType(fluid) || blockState.isSideSolid(world, pos, dir, SideShapeType.FULL);
+        }
         return world.getFluidState(adjPos).getFluid().matchesType(fluid);
     }
 
@@ -129,7 +126,14 @@ public class FluidRenderer {
 
         boolean isWater = fluidState.isIn(FluidTags.WATER);
 
-        FluidRenderHandler handler = FluidRenderHandlerRegistryImpl.INSTANCE.get(fluidState.getFluid());
+        FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getFluid());
+
+        // Match the vanilla FluidRenderer's behavior if the handler is null
+        if (handler == null) {
+            boolean isLava = fluidState.isIn(FluidTags.LAVA);
+            handler = FluidRenderHandlerRegistry.INSTANCE.get(isLava ? Fluids.LAVA : Fluids.WATER);
+        }
+
         ColorSampler<FluidState> colorizer = this.createColorProviderAdapter(handler);
 
         Sprite[] sprites = handler.getFluidSprites(world, pos, fluidState);
@@ -263,7 +267,7 @@ public class FluidRenderer {
             rendered = true;
         }
 
-        this.quad.setFlags(ModelQuadFlags.IS_ALIGNED);
+        quad.setFlags(ModelQuadFlags.IS_ALIGNED);
 
         for (Direction dir : DirectionUtil.HORIZONTAL_DIRECTIONS) {
             float c1;
@@ -333,14 +337,15 @@ public class FluidRenderer {
 
                 Sprite sprite = sprites[1];
 
-                if (isWater) {
+                boolean isOverlay = false;
+
+                if (sprites.length > 2) {
                     BlockPos adjPos = this.scratchPos.set(adjX, adjY, adjZ);
                     BlockState adjBlock = world.getBlockState(adjPos);
 
-                    if (!adjBlock.isOpaque() && !adjBlock.isAir()) {
-                        // ice, glass, stained glass, tinted glass
-                        sprite = this.waterOverlaySprite;
-
+                    if (FluidRenderHandlerRegistry.INSTANCE.isBlockTransparent(adjBlock.getBlock())) {
+                        sprite = sprites[2];
+                        isOverlay = true;
                     }
                 }
 
@@ -368,7 +373,7 @@ public class FluidRenderer {
                 buffers.getIndexBufferBuilder(facing)
                         .add(vertexStart, ModelQuadWinding.CLOCKWISE);
 
-                if (sprite != this.waterOverlaySprite) {
+                if (!isOverlay) {
                     buffers.getIndexBufferBuilder(facing.getOpposite())
                             .add(vertexStart, ModelQuadWinding.COUNTERCLOCKWISE);
                 }
@@ -390,7 +395,7 @@ public class FluidRenderer {
     private void calculateQuadColors(ModelQuadView quad, BlockRenderView world, BlockPos pos, LightPipeline lighter, Direction dir, float brightness,
                                      ColorSampler<FluidState> colorSampler, FluidState fluidState) {
         QuadLightData light = this.quadLightData;
-        lighter.calculate(quad, pos, light, dir, false);
+        lighter.calculate(quad, pos, light, null, dir, false);
 
         int[] biomeColors = this.colorBlender.getColors(world, pos, quad, colorSampler, fluidState);
 

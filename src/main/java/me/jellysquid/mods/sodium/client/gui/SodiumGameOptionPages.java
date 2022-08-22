@@ -146,7 +146,7 @@ public class SodiumGameOptionPages {
                         .setTooltip(Text.translatable("sodium.options.clouds_quality.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class, new Text[] { Text.translatable("options.off"), Text.translatable("options.clouds.fast"), Text.translatable("options.clouds.fancy") }))
                         .setBinding((opts, value) -> {
-                            opts.getCloudRenderMod().setValue(value);
+                            opts.getCloudRenderMode().setValue(value);
 
                             if (MinecraftClient.isFabulousGraphicsOrBetter()) {
                                 Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
@@ -154,7 +154,7 @@ public class SodiumGameOptionPages {
                                     framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
                                 }
                             }
-                        }, opts -> opts.getCloudRenderMod().getValue())
+                        }, opts -> opts.getCloudRenderMode().getValue())
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
