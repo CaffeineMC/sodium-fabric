@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.pipeline.context;
 
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.client.model.light.cache.ArrayLightDataCache;
-import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
+import me.jellysquid.mods.sodium.client.model.quad.blender.ColorBlender;
 import me.jellysquid.mods.sodium.client.render.pipeline.BlockRenderer;
 import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderCache;
 import me.jellysquid.mods.sodium.client.render.pipeline.FluidRenderer;
@@ -26,10 +26,10 @@ public class ChunkRenderCacheLocal extends ChunkRenderCache {
         this.lightDataCache = new ArrayLightDataCache(this.worldSlice);
 
         LightPipelineProvider lightPipelineProvider = new LightPipelineProvider(this.lightDataCache);
-        BiomeColorBlender biomeColorBlender = this.createBiomeColorBlender();
+        ColorBlender colorBlender = this.createBiomeColorBlender();
 
-        this.blockRenderer = new BlockRenderer(client, lightPipelineProvider, biomeColorBlender);
-        this.fluidRenderer = new FluidRenderer(lightPipelineProvider, biomeColorBlender);
+        this.blockRenderer = new BlockRenderer(client, lightPipelineProvider, colorBlender);
+        this.fluidRenderer = new FluidRenderer(lightPipelineProvider, colorBlender);
 
         this.blockModels = client.getBakedModelManager().getBlockModels();
     }

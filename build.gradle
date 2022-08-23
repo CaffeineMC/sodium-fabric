@@ -1,18 +1,18 @@
 plugins {
-    id 'fabric-loom' version '0.8-SNAPSHOT'
+    id 'fabric-loom' version '0.12-SNAPSHOT'
     id 'org.ajoberstar.grgit' version '4.1.0'
 }
 
-sourceCompatibility = "16"
-targetCompatibility = "16"
+sourceCompatibility = "17"
+targetCompatibility = "17"
 
 archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}"
 version = "${project.mod_version}+${getVersionMetadata()}"
 group = project.maven_group
 
-minecraft {
-    refmapName = "mixins.sodium.refmap.json"
-    accessWidener = file("src/main/resources/sodium.accesswidener")
+loom {
+    mixin.defaultRefmapName = "mixins.sodium.refmap.json"
+    accessWidenerPath = file("src/main/resources/sodium.accesswidener")
 }
 
 configurations {
@@ -28,28 +28,14 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    implementation 'org.joml:joml:1.10.2'
-    include 'org.joml:joml:1.10.2'
+    implementation 'org.joml:joml:1.10.4'
+    include 'org.joml:joml:1.10.4'
 
     // Fabric API
     modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
-}
-
-if (project.use_third_party_mods) {
-    repositories {
-        maven { url = "https://maven.gegy.dev" }
-    }
-
-    dependencies {
-        // DataBreaker applies a number of patches to eliminate the loading of data fixers
-        // This greatly reduces the amount of time needed to start the game, but is generally unsafe in production
-        modRuntime ("supercoder79:databreaker:${project.databreaker_version}") {
-            transitive = false
-        }
-    }
 }
 
 processResources {

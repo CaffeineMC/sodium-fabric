@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui.options;
 
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 
 public enum OptionImpact implements TextProvider {
@@ -13,7 +12,7 @@ public enum OptionImpact implements TextProvider {
     private final Text text;
 
     OptionImpact(Formatting color, String text) {
-        this.text = new TranslatableText(text).formatted(color);
+        this.text = Text.translatable(text).formatted(color);
     }
 
     @Override

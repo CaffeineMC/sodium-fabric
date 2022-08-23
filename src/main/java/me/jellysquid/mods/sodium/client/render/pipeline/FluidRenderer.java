@@ -5,10 +5,10 @@ import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuad;
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
+import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
-import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
+import me.jellysquid.mods.sodium.client.model.quad.blender.ColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
@@ -18,6 +18,7 @@ import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.fabricmc.fabric.impl.client.rendering.fluid.FluidRenderHandlerRegistryImpl;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SideShapeType;
@@ -26,6 +27,7 @@ import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -34,6 +36,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockRenderView;
+import org.apache.commons.lang3.mutable.MutableFloat;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
 public class FluidRenderer {
@@ -42,13 +46,13 @@ public class FluidRenderer {
     private static final float EPSILON = 0.001f;
 
     private final BlockPos.Mutable scratchPos = new BlockPos.Mutable();
-
-    private final Sprite waterOverlaySprite;
+    private final MutableFloat scratchHeight = new MutableFloat(0);
+    private final MutableInt scratchSamples = new MutableInt();
 
     private final ModelQuadViewMutable quad = new ModelQuad();
 
     private final LightPipelineProvider lighters;
-    private final BiomeColorBlender biomeColorBlender;
+    private final ColorBlender colorBlender;
 
     // Cached wrapper type that adapts FluidRenderHandler to support QuadColorProvider<FluidState>
     private final FabricFluidColorizerAdapter fabricColorProviderAdapter = new FabricFluidColorizerAdapter();
@@ -56,9 +60,7 @@ public class FluidRenderer {
     private final QuadLightData quadLightData = new QuadLightData();
     private final int[] quadColors = new int[4];
 
-    public FluidRenderer(LightPipelineProvider lighters, BiomeColorBlender biomeColorBlender) {
-        this.waterOverlaySprite = ModelLoader.WATER_OVERLAY.getSprite();
-
+    public FluidRenderer(LightPipelineProvider lighters, ColorBlender colorBlender) {
         int normal = Norm3b.pack(0.0f, 1.0f, 0.0f);
 
         for (int i = 0; i < 4; i++) {
@@ -66,7 +68,7 @@ public class FluidRenderer {
         }
 
         this.lighters = lighters;
-        this.biomeColorBlender = biomeColorBlender;
+        this.colorBlender = colorBlender;
     }
 
     private boolean isFluidOccluded(BlockRenderView world, int x, int y, int z, Direction dir, Fluid fluid) {
@@ -75,9 +77,8 @@ public class FluidRenderer {
         BlockPos adjPos = this.scratchPos.set(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
 
         if (blockState.isOpaque()) {
-            return world.getFluidState(adjPos).getFluid().matchesType(fluid) || blockState.isSideSolid(world,pos,dir, SideShapeType.FULL);
-            // fluidlogged or next to water, occlude sides that are solid or the same liquid
-            }
+            return world.getFluidState(adjPos).getFluid().matchesType(fluid) || blockState.isSideSolid(world, pos, dir, SideShapeType.FULL);
+        }
         return world.getFluidState(adjPos).getFluid().matchesType(fluid);
     }
 
@@ -125,18 +126,37 @@ public class FluidRenderer {
 
         boolean isWater = fluidState.isIn(FluidTags.WATER);
 
-        FluidRenderHandler handler = FluidRenderHandlerRegistryImpl.INSTANCE.getOverride(fluidState.getFluid());
-        ModelQuadColorProvider<FluidState> colorizer = this.createColorProviderAdapter(handler);
+        FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getFluid());
+
+        // Match the vanilla FluidRenderer's behavior if the handler is null
+        if (handler == null) {
+            boolean isLava = fluidState.isIn(FluidTags.LAVA);
+            handler = FluidRenderHandlerRegistry.INSTANCE.get(isLava ? Fluids.LAVA : Fluids.WATER);
+        }
+
+        ColorSampler<FluidState> colorizer = this.createColorProviderAdapter(handler);
 
         Sprite[] sprites = handler.getFluidSprites(world, pos, fluidState);
 
         boolean rendered = false;
 
-        float h1 = this.getCornerHeight(world, posX, posY, posZ, fluidState.getFluid());
-        float h2 = this.getCornerHeight(world, posX, posY, posZ + 1, fluidState.getFluid());
-        float h3 = this.getCornerHeight(world, posX + 1, posY, posZ + 1, fluidState.getFluid());
-        float h4 = this.getCornerHeight(world, posX + 1, posY, posZ, fluidState.getFluid());
-
+        float fluidHeight = this.fluidHeight(world, fluid, pos);
+        float h1, h2, h3, h4;
+        if (fluidHeight >= 1.0f) {
+            h1 = 1.0f;
+            h2 = 1.0f;
+            h3 = 1.0f;
+            h4 = 1.0f;
+        } else {
+            float north1 = this.fluidHeight(world, fluid, pos.north());
+            float south1 = this.fluidHeight(world, fluid, pos.south());
+            float east1 = this.fluidHeight(world, fluid, pos.east());
+            float west1 = this.fluidHeight(world, fluid, pos.west());
+            h1 = this.fluidCornerHeight(world, fluid, fluidHeight, north1, west1, pos.offset(Direction.NORTH).offset(Direction.WEST));
+            h2 = this.fluidCornerHeight(world, fluid, fluidHeight, south1, west1, pos.offset(Direction.SOUTH).offset(Direction.WEST));
+            h3 = this.fluidCornerHeight(world, fluid, fluidHeight, south1, east1, pos.offset(Direction.SOUTH).offset(Direction.EAST));
+            h4 = this.fluidCornerHeight(world, fluid, fluidHeight, north1, east1, pos.offset(Direction.NORTH).offset(Direction.EAST));
+        }
         float yOffset = sfDown ? 0.0F : EPSILON;
 
         final ModelQuadViewMutable quad = this.quad;
@@ -247,7 +267,7 @@ public class FluidRenderer {
             rendered = true;
         }
 
-        this.quad.setFlags(ModelQuadFlags.IS_ALIGNED);
+        quad.setFlags(ModelQuadFlags.IS_ALIGNED);
 
         for (Direction dir : DirectionUtil.HORIZONTAL_DIRECTIONS) {
             float c1;
@@ -317,14 +337,15 @@ public class FluidRenderer {
 
                 Sprite sprite = sprites[1];
 
-                if (isWater) {
+                boolean isOverlay = false;
+
+                if (sprites.length > 2) {
                     BlockPos adjPos = this.scratchPos.set(adjX, adjY, adjZ);
                     BlockState adjBlock = world.getBlockState(adjPos);
 
-                    if (!adjBlock.isOpaque() && !adjBlock.isAir()) {
-                        // ice, glass, stained glass, tinted glass
-                        sprite = this.waterOverlaySprite;
-
+                    if (FluidRenderHandlerRegistry.INSTANCE.isBlockTransparent(adjBlock.getBlock())) {
+                        sprite = sprites[2];
+                        isOverlay = true;
                     }
                 }
 
@@ -352,7 +373,7 @@ public class FluidRenderer {
                 buffers.getIndexBufferBuilder(facing)
                         .add(vertexStart, ModelQuadWinding.CLOCKWISE);
 
-                if (sprite != this.waterOverlaySprite) {
+                if (!isOverlay) {
                     buffers.getIndexBufferBuilder(facing.getOpposite())
                             .add(vertexStart, ModelQuadWinding.COUNTERCLOCKWISE);
                 }
@@ -364,7 +385,7 @@ public class FluidRenderer {
         return rendered;
     }
 
-    private ModelQuadColorProvider<FluidState> createColorProviderAdapter(FluidRenderHandler handler) {
+    private ColorSampler<FluidState> createColorProviderAdapter(FluidRenderHandler handler) {
         FabricFluidColorizerAdapter adapter = this.fabricColorProviderAdapter;
         adapter.setHandler(handler);
 
@@ -372,11 +393,11 @@ public class FluidRenderer {
     }
 
     private void calculateQuadColors(ModelQuadView quad, BlockRenderView world, BlockPos pos, LightPipeline lighter, Direction dir, float brightness,
-                                     ModelQuadColorProvider<FluidState> handler, FluidState fluidState) {
+                                     ColorSampler<FluidState> colorSampler, FluidState fluidState) {
         QuadLightData light = this.quadLightData;
-        lighter.calculate(quad, pos, light, dir, false);
+        lighter.calculate(quad, pos, light, null, dir, false);
 
-        int[] biomeColors = this.biomeColorBlender.getColors(world, pos, quad, handler, fluidState);
+        int[] biomeColors = this.colorBlender.getColors(world, pos, quad, colorSampler, fluidState);
 
         for (int i = 0; i < 4; i++) {
             this.quadColors[i] = ColorABGR.mul(biomeColors != null ? biomeColors[i] : 0xFFFFFFFF, light.br[i] * brightness);
@@ -423,42 +444,62 @@ public class FluidRenderer {
         quad.setTexV(i, v);
     }
 
-    private float getCornerHeight(BlockRenderView world, int x, int y, int z, Fluid fluid) {
-        int samples = 0;
-        float totalHeight = 0.0F;
-
-        for (int i = 0; i < 4; ++i) {
-            int x2 = x - (i & 1);
-            int z2 = z - (i >> 1 & 1);
-
-            if (world.getFluidState(this.scratchPos.set(x2, y + 1, z2)).getFluid().matchesType(fluid)) {
-                return 1.0F;
-            }
-
-            BlockPos pos = this.scratchPos.set(x2, y, z2);
-
-            BlockState blockState = world.getBlockState(pos);
-            FluidState fluidState = blockState.getFluidState();
-
-            if (fluidState.getFluid().matchesType(fluid)) {
-                float height = fluidState.getHeight(world, pos);
-
-                if (height >= 0.8F) {
-                    totalHeight += height * 10.0F;
-                    samples += 10;
-                } else {
-                    totalHeight += height;
-                    ++samples;
-                }
-            } else if (!blockState.getMaterial().isSolid()) {
-                ++samples;
-            }
+    private float fluidCornerHeight(BlockRenderView world, Fluid fluid, float fluidHeight, float fluidHeightX, float fluidHeightY, BlockPos blockPos) {
+        if (fluidHeightY >= 1.0f || fluidHeightX >= 1.0f) {
+            return 1.0f;
         }
 
-        return totalHeight / (float) samples;
+        if (fluidHeightY > 0.0f || fluidHeightX > 0.0f) {
+            float height = this.fluidHeight(world, fluid, blockPos);
+
+            if (height >= 1.0f) {
+                return 1.0f;
+            }
+
+            modifyHeight(scratchHeight, scratchSamples, height);
+        }
+
+        modifyHeight(scratchHeight, scratchSamples, fluidHeight);
+        modifyHeight(scratchHeight, scratchSamples, fluidHeightY);
+        modifyHeight(scratchHeight, scratchSamples, fluidHeightX);
+
+        float result = scratchHeight.floatValue() / scratchSamples.intValue();
+        scratchHeight.setValue(0);
+        scratchSamples.setValue(0);
+
+        return result;
     }
 
-    private static class FabricFluidColorizerAdapter implements ModelQuadColorProvider<FluidState> {
+    private void modifyHeight(MutableFloat totalHeight, MutableInt samples, float target) {
+        if (target >= 0.8f) {
+            totalHeight.add(target * 10.0f);
+            samples.add(10);
+        } else if (target >= 0.0f) {
+            totalHeight.add(target);
+            samples.increment();
+        }
+    }
+
+    private float fluidHeight(BlockRenderView world, Fluid fluid, BlockPos blockPos) {
+        BlockState blockState = world.getBlockState(blockPos);
+        FluidState fluidState = blockState.getFluidState();
+
+        if (fluid.matchesType(fluidState.getFluid())) {
+            FluidState fluidStateUp = world.getFluidState(blockPos.up());
+
+            if (fluid.matchesType(fluidStateUp.getFluid())) {
+                return 1.0f;
+            } else {
+                return fluidState.getHeight();
+            }
+        }
+        if (!blockState.getMaterial().isSolid()) {
+            return 0.0f;
+        }
+        return -1.0f;
+    }
+
+    private static class FabricFluidColorizerAdapter implements ColorSampler<FluidState> {
         private FluidRenderHandler handler;
 
         public void setHandler(FluidRenderHandler handler) {
