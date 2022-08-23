@@ -25,7 +25,7 @@ public class ModelVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe impl
         MemoryUtil.memPutShort(i + 12, ModelVertexType.encodeBlockTexture(u));
         MemoryUtil.memPutShort(i + 14, ModelVertexType.encodeBlockTexture(v));
 
-        MemoryUtil.memPutInt(i + 16, ModelVertexType.encodeLightMapTexCoord(light));
+        MemoryUtil.memPutInt(i + 16, light);
 
         this.advance();
     }

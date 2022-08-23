@@ -5,7 +5,7 @@ vec3 _vert_position;
 vec2 _vert_tex_diffuse_coord;
 
 // The light texture coordinate of the vertex
-vec2 _vert_tex_light_coord;
+ivec2 _vert_tex_light_coord;
 
 // The color of the vertex
 vec4 _vert_color;
@@ -17,7 +17,7 @@ uint _draw_id;
 in vec4 a_PosId;
 in vec4 a_Color;
 in vec2 a_TexCoord;
-in vec2 a_LightCoord;
+in ivec2 a_LightCoord;
 
 #if !defined(VERT_POS_SCALE)
 #error "VERT_POS_SCALE not defined"
