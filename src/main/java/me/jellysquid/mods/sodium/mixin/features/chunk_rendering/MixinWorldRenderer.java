@@ -35,10 +35,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
     private Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions;
 
     @Shadow
-    private int frame;
-
-    @Shadow
-    private boolean needsTerrainUpdate;
+    private boolean shouldUpdate;
 
     private SodiumWorldRenderer renderer;
 
@@ -132,7 +129,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
                 }
 
                 // We set this because third-party mods may use it (to loop themselves), even if Vanilla does not.
-                this.needsTerrainUpdate = false;
+                this.shouldUpdate = false;
             }
         } finally {
             RenderDevice.exitManagedCode();
