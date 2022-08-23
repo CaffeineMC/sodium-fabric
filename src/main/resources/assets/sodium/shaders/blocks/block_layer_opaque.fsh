@@ -16,6 +16,10 @@ uniform float u_FogEnd; // The ending position of the shader fog
 
 out vec4 fragColor; // The output fragment for the color framebuffer
 
+vec4 _sample_lightmap(sampler2D lightMap, vec2 uv) {
+    return texture(lightMap, clamp(uv, vec2(0.5 / 16.0), vec2(15.5 / 16.0)));
+}
+
 void main() {
     vec4 sampleBlockTex = texture(u_BlockTex, v_TexCoord);
 
@@ -25,7 +29,7 @@ void main() {
     }
 #endif
 
-    vec4 sampleLightTex = texture(u_LightTex, v_LightCoord);
+    vec4 sampleLightTex = _sample_lightmap(u_LightTex, v_LightCoord);
 
     vec4 diffuseColor = (sampleBlockTex * sampleLightTex);
     diffuseColor *= v_Color;

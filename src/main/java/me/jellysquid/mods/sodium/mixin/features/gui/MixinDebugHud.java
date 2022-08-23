@@ -61,7 +61,8 @@ public abstract class MixinDebugHud {
     private void renderStrings(MatrixStack matrixStack, List<String> list, boolean right) {
         VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
 
-        Matrix4f modelMatrix = matrixStack.peek().getModel();
+        Matrix4f positionMatrix = matrixStack.peek()
+                .getPositionMatrix();
 
         for (int i = 0; i < list.size(); ++i) {
             String string = list.get(i);
@@ -73,7 +74,7 @@ public abstract class MixinDebugHud {
                 float x1 = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
                 float y1 = 2 + (height * i);
 
-                this.textRenderer.draw(string, x1, y1, 0xe0e0e0, false, modelMatrix, immediate,
+                this.textRenderer.draw(string, x1, y1, 0xe0e0e0, false, positionMatrix, immediate,
                         false, 0, 15728880, this.textRenderer.isRightToLeft());
             }
         }
@@ -99,7 +100,7 @@ public abstract class MixinDebugHud {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         Matrix4f matrix = matrixStack.peek()
-                .getModel();
+                .getPositionMatrix();
 
         for (int i = 0; i < list.size(); ++i) {
             String string = list.get(i);
@@ -125,9 +126,9 @@ public abstract class MixinDebugHud {
             bufferBuilder.vertex(matrix, x1, y1, 0.0F).color(g, h, k, f).next();
         }
 
-        bufferBuilder.end();
+        BufferBuilder.BuiltBuffer output = bufferBuilder.end();
 
-        BufferRenderer.draw(bufferBuilder);
+        BufferRenderer.drawWithShader(output);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }

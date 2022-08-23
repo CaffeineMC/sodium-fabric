@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadColorProvider;
+import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
 import net.minecraft.block.BlockState;
 
 public interface BlockColorsExtended {
-    ModelQuadColorProvider<BlockState> getColorProvider(BlockState state);
+    ColorSampler<BlockState> getColorProvider(BlockState state);
 }
