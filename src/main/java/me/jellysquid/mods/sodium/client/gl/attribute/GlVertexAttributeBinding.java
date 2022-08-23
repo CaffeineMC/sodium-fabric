@@ -4,7 +4,7 @@ public class GlVertexAttributeBinding extends GlVertexAttribute {
     private final int index;
 
     public GlVertexAttributeBinding(int index, GlVertexAttribute attribute) {
-        super(attribute.getFormat(), attribute.getSize(), attribute.getCount(), attribute.isNormalized(), attribute.getPointer(), attribute.getStride());
+        super(attribute.getFormat(), attribute.getSize(), attribute.getCount(), attribute.isNormalized(), attribute.getPointer(), attribute.getStride(), attribute.isIntType());
 
         this.index = index;
     }

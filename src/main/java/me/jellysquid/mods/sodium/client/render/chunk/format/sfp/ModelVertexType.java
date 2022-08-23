@@ -15,10 +15,10 @@ import net.minecraft.client.render.VertexConsumer;
  */
 public class ModelVertexType implements ChunkVertexType {
     public static final GlVertexFormat<ChunkMeshAttribute> VERTEX_FORMAT = GlVertexFormat.builder(ChunkMeshAttribute.class, 20)
-            .addElement(ChunkMeshAttribute.POSITION_ID, 0, GlVertexAttributeFormat.UNSIGNED_SHORT, 4, false)
-            .addElement(ChunkMeshAttribute.COLOR, 8, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true)
-            .addElement(ChunkMeshAttribute.BLOCK_TEXTURE, 12, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false)
-            .addElement(ChunkMeshAttribute.LIGHT_TEXTURE, 16, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, true)
+            .addElement(ChunkMeshAttribute.POSITION_ID, 0, GlVertexAttributeFormat.UNSIGNED_SHORT, 4, false, false)
+            .addElement(ChunkMeshAttribute.COLOR, 8, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true, false)
+            .addElement(ChunkMeshAttribute.BLOCK_TEXTURE, 12, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false, false)
+            .addElement(ChunkMeshAttribute.LIGHT_TEXTURE, 16, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false, true)
             .build();
 
     private static final int POSITION_MAX_VALUE = 65536;
@@ -73,21 +73,5 @@ public class ModelVertexType implements ChunkVertexType {
 
     static short encodePosition(float v) {
         return (short) ((MODEL_ORIGIN + v) * MODEL_SCALE_INV);
-    }
-
-    static int encodeLightMapTexCoord(int light) {
-        int r = light;
-
-        // Mask off coordinate values outside 0..255
-        r &= 0x00FF_00FF;
-
-        // Light coordinates are normalized values, so upcasting requires a shift
-        // Scale the coordinates from the range of 0..255 (unsigned byte) into 0..65535 (unsigned short)
-        r <<= 8;
-
-        // Add a half-texel offset to each coordinate so we sample from the center of each texel
-        r += 0x0800_0800;
-
-        return r;
     }
 }
