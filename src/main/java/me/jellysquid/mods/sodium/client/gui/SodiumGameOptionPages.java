@@ -56,7 +56,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.guiScale"))
                         .setTooltip(Text.translatable("sodium.options.gui_scale.tooltip"))
-                        .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.guiScale()))
+                        .setControl(option -> new SliderControl(option, 0, MinecraftClient.getInstance().getWindow().calculateScaleFactor(0, MinecraftClient.getInstance().forcesUnicodeFont()), 1, ControlValueFormatter.guiScale()))
                         .setBinding((opts, value) -> {
                             opts.getGuiScale().setValue(value);
 
