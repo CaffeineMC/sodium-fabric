@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.longs.*;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import net.minecraft.util.math.ChunkPos;
 
 import java.util.stream.LongStream;
@@ -89,7 +90,7 @@ public class ChunkTracker {
         var existingFlags = this.single.get(key);
 
         if ((existingFlags & ChunkStatus.FLAG_HAS_BLOCK_DATA) == 0) {
-            throw new IllegalStateException("Tried to mark light data as ready for chunk [%s, %s] but it hasn't been loaded yet".formatted(x, z));
+            SodiumClientMod.logger().warn("Tried to mark light data as ready for chunk [%s, %s] but it hasn't been loaded yet".formatted(x, z));
         }
 
         this.single.put(key, existingFlags | ChunkStatus.FLAG_HAS_LIGHT_DATA);
