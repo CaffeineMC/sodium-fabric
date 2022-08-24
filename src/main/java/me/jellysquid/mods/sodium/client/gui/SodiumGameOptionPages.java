@@ -93,7 +93,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.framerateLimit"))
                         .setTooltip(Text.translatable("sodium.options.fps_limit.tooltip"))
-                        .setControl(option -> new SliderControl(option, 5, 260, 5, ControlValueFormatter.fpsLimit()))
+                        .setControl(option -> new SliderControl(option, 5, 260, 10, ControlValueFormatter.fpsLimit()))
                         .setBinding((opts, value) -> {
                             opts.getMaxFps().setValue(value);
                             MinecraftClient.getInstance().getWindow().setFramerateLimit(value);
