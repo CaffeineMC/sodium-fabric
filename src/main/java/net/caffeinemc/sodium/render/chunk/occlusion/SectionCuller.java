@@ -53,8 +53,8 @@ public class SectionCuller {
         this.sectionVisibilityBits.fill(false);
     
         if (this.sectionTree.getLoadedSections() != 0) {
-//            this.sectionVisibilityBits.copy(this.sectionTree.sectionExistenceBits, 0, this.sectionVisibilityBits.capacity());
-            this.frustumCull(frustum);
+            this.sectionVisibilityBits.copy(this.sectionTree.sectionExistenceBits, 0, this.sectionVisibilityBits.capacity());
+//            this.frustumCull(frustum);
 //            this.fogCull();
             // still need to do this to maintain ordering between sections
 //            this.occlusionCull(useOcclusionCulling);

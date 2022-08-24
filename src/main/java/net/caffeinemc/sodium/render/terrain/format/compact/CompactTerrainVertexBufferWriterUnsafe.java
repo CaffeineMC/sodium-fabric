@@ -4,6 +4,7 @@ import net.caffeinemc.sodium.render.vertex.buffer.VertexBufferView;
 import net.caffeinemc.sodium.render.vertex.buffer.VertexBufferWriterUnsafe;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexSink;
+import net.caffeinemc.sodium.util.TextureUtil;
 import org.lwjgl.system.MemoryUtil;
 
 public class CompactTerrainVertexBufferWriterUnsafe extends VertexBufferWriterUnsafe implements TerrainVertexSink {
@@ -24,7 +25,7 @@ public class CompactTerrainVertexBufferWriterUnsafe extends VertexBufferWriterUn
         MemoryUtil.memPutShort(i + 12, CompactTerrainVertexType.encodeBlockTexture(u));
         MemoryUtil.memPutShort(i + 14, CompactTerrainVertexType.encodeBlockTexture(v));
 
-        MemoryUtil.memPutInt(i + 16, CompactTerrainVertexType.encodeLightMapTexCoord(light));
+        MemoryUtil.memPutInt(i + 16, TextureUtil.encodeLightMapTexCoord(light));
 
         this.advance();
     }
