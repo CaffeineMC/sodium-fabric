@@ -28,7 +28,8 @@ public class ChunkCameraContext {
     }
     
     public boolean isCameraInitialized() {
-        return this.camera.getFocusedEntity() == null;
+//        return this.camera.getFocusedEntity() == null;
+        return this.camera.isReady();
     }
     
     private void updateIfNeeded() {

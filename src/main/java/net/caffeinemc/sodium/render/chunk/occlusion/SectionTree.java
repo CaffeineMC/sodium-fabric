@@ -169,7 +169,7 @@ public class SectionTree {
         int sectionIdx = this.getSectionIdxUnchecked(x, y, z);
     
         if (sectionIdx != OUT_OF_BOUNDS_INDEX) {
-            RenderSection existing = this.sections[sectionIdx];
+//            RenderSection existing = this.sections[sectionIdx];
             
 //            if (existing != null) {
 //                this.backupSections.put(
