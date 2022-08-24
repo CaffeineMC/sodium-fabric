@@ -25,7 +25,7 @@ public class CompactTerrainVertexBufferWriterUnsafe extends VertexBufferWriterUn
         MemoryUtil.memPutShort(i + 12, CompactTerrainVertexType.encodeBlockTexture(u));
         MemoryUtil.memPutShort(i + 14, CompactTerrainVertexType.encodeBlockTexture(v));
 
-        MemoryUtil.memPutInt(i + 16, TextureUtil.encodeLightMapTexCoord(light));
+        MemoryUtil.memPutInt(i + 16, light);
 
         this.advance();
     }

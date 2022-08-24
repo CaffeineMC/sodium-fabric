@@ -27,7 +27,7 @@ public class CompactTerrainVertexBufferWriterNio extends VertexBufferWriterNio i
         buffer.putShort(i + 12, CompactTerrainVertexType.encodeBlockTexture(u));
         buffer.putShort(i + 14, CompactTerrainVertexType.encodeBlockTexture(v));
 
-        buffer.putInt(i + 16, TextureUtil.encodeLightMapTexCoord(light));
+        buffer.putInt(i + 16, light);
 
         this.advance();
     }
