@@ -27,7 +27,7 @@ public class ModelVertexBufferWriterNio extends VertexBufferWriterNio implements
         buffer.putShort(i + 12, ModelVertexType.encodeBlockTexture(u));
         buffer.putShort(i + 14, ModelVertexType.encodeBlockTexture(v));
 
-        buffer.putInt(i + 16, ModelVertexType.encodeLightMapTexCoord(light));
+        buffer.putInt(i + 16, light);
 
         this.advance();
     }

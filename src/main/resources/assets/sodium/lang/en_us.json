@@ -48,6 +48,8 @@
   "sodium.options.cpu_render_ahead_limit.value": "%s frame(s)",
   "sodium.options.allow_direct_memory_access.name": "Allow Direct Memory Access",
   "sodium.options.allow_direct_memory_access.tooltip": "If enabled, some critical code paths will be allowed to use direct memory access for performance. This often greatly reduces CPU overhead for chunk and entity rendering, but can make it harder to diagnose some bugs and crashes. You should only disable this if you've been asked to or otherwise know what you're doing.",
+  "sodium.options.use_adaptive_sync.name": "Use Adaptive Sync",
+  "sodium.options.use_adaptive_sync.tooltip": "If enabled, V-Sync will be able to swap mid-frame and disable itself at times, usually notably helping responsiveness.",
   "sodium.options.enable_memory_tracing.name": "Enable Memory Tracing",
   "sodium.options.enable_memory_tracing.tooltip": "Debugging feature. If enabled, stack traces will be collected alongside memory allocations to help improve diagnostic information when memory leaks are detected.",
   "sodium.options.performance_impact_string": "Performance Impact: %s",

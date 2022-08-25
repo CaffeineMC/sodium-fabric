@@ -18,6 +18,7 @@ import net.minecraft.client.util.Monitor;
 import net.minecraft.client.util.VideoMode;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,7 @@ public class SodiumGameOptionPages {
                         .setName(Text.translatable("options.guiScale"))
                         .setTooltip(Text.translatable("sodium.options.gui_scale.tooltip"))
                         .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.guiScale(), false))
+                        .setControl(option -> new SliderControl(option, 0, MinecraftClient.getInstance().getWindow().calculateScaleFactor(0, MinecraftClient.getInstance().forcesUnicodeFont()), 1, ControlValueFormatter.guiScale()))
                         .setBinding((opts, value) -> {
                             opts.getGuiScale().setValue(value);
 
@@ -122,6 +124,7 @@ public class SodiumGameOptionPages {
                         .setName(Text.translatable("options.framerateLimit"))
                         .setTooltip(Text.translatable("sodium.options.fps_limit.tooltip"))
                         .setControl(option -> new SliderControl(option, 5, 260, 5, ControlValueFormatter.fpsLimit(), false))
+                        .setControl(option -> new SliderControl(option, 5, 260, 10, ControlValueFormatter.fpsLimit()))
                         .setBinding((opts, value) -> {
                             opts.getMaxFps().setValue(value);
                             MinecraftClient.getInstance().getWindow().setFramerateLimit(value);
@@ -175,7 +178,7 @@ public class SodiumGameOptionPages {
                         .setTooltip(Text.translatable("sodium.options.clouds_quality.tooltip"))
                         .setControl(option -> new CyclingControl<>(option, CloudRenderMode.class, new Text[] { Text.translatable("options.off"), Text.translatable("options.clouds.fast"), Text.translatable("options.clouds.fancy") }))
                         .setBinding((opts, value) -> {
-                            opts.getCloudRenderMod().setValue(value);
+                            opts.getCloudRenderMode().setValue(value);
 
                             if (MinecraftClient.isFabulousGraphicsOrBetter()) {
                                 Framebuffer framebuffer = MinecraftClient.getInstance().worldRenderer.getCloudsFramebuffer();
@@ -183,7 +186,7 @@ public class SodiumGameOptionPages {
                                     framebuffer.clear(MinecraftClient.IS_SYSTEM_MAC);
                                 }
                             }
-                        }, opts -> opts.getCloudRenderMod().getValue())
+                        }, opts -> opts.getCloudRenderMode().getValue())
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(OptionImpl.createBuilder(SodiumGameOptions.GraphicsQuality.class, sodiumOpts)
@@ -330,6 +333,20 @@ public class SodiumGameOptionPages {
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.animateOnlyVisibleTextures = value, opts -> opts.performance.animateOnlyVisibleTextures)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(Text.translatable("sodium.options.use_adaptive_sync.name"))
+                        .setTooltip(Text.translatable("sodium.options.use_adaptive_sync.tooltip"))
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.VARIES)
+                        .setEnabled(GLFW.glfwExtensionSupported("GLX_EXT_swap_control_tear") || GLFW.glfwExtensionSupported("WGL_EXT_swap_control_tear"))
+                        .setBinding((opts, value) -> {
+                            opts.performance.useAdaptiveSync = value;
+                            if (MinecraftClient.getInstance().getWindow() != null) {
+                                MinecraftClient.getInstance().getWindow().setVsync(MinecraftClient.getInstance().options.getEnableVsync().getValue());
+                            }
+                        }, opts -> opts.performance.useAdaptiveSync)
                         .build()
                 )
                 .build());

@@ -27,6 +27,10 @@ public class ChunkBuilder {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final List<Thread> threads = new ArrayList<>();
+    /**
+     * Amount of threads which are currently blocked waiting on {@link #jobNotifier}. Synchronized via the same object.
+     */
+    private int idleThreads;
 
     private World world;
     private BlockRenderPassManager renderPassManager;
@@ -80,7 +84,8 @@ public class ChunkBuilder {
     /**
      * Notifies all worker threads to stop and blocks until all workers terminate. After the workers have been shut
      * down, all tasks are cancelled and the pending queues are cleared. If the builder is already stopped, this
-     * method does nothing and exits.
+     * method does nothing and exits. This method implicitly calls {@link ChunkBuilder#doneStealingTasks()} on the
+     * calling thread.
      */
     public void stopWorkers() {
         if (!this.running.getAndSet(false)) {
@@ -122,6 +127,17 @@ public class ChunkBuilder {
         this.buildQueue.clear();
 
         this.world = null;
+
+        this.doneStealingTasks();
+    }
+
+    /**
+     * Cleans up resources allocated on the currently calling thread for the {@link ChunkBuilder#stealTask()} method.
+     * This method should be called on a thread that has stolen tasks when it is done stealing to prevent resource
+     * leaks.
+     */
+    public void doneStealingTasks() {
+        this.localContexts.remove();
     }
 
     public CompletableFuture<ChunkBuildResult> schedule(ChunkRenderBuildTask task) {
@@ -138,6 +154,18 @@ public class ChunkBuilder {
         }
 
         return job.future;
+    }
+
+    /**
+     * @return True if all background work has been completed
+     */
+    public boolean isIdle() {
+        if (!this.isBuildQueueEmpty()) {
+            return false;
+        }
+        synchronized (this.jobNotifier) {
+            return this.idleThreads >= this.threads.size();
+        }
     }
 
     /**
@@ -232,9 +260,12 @@ public class ChunkBuilder {
 
         if (job == null && block) {
             synchronized (ChunkBuilder.this.jobNotifier) {
+                ChunkBuilder.this.idleThreads++;
                 try {
                     ChunkBuilder.this.jobNotifier.wait();
                 } catch (InterruptedException ignored) {
+                } finally {
+                    ChunkBuilder.this.idleThreads--;
                 }
             }
         }
