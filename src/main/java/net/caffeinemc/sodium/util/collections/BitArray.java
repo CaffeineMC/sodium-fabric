@@ -83,19 +83,19 @@ public class BitArray {
     public void copy(BitArray src, int startIdx, int endIdx) {
         int startWordIndex = wordIndex(startIdx);
         int endWordIndex = wordIndex(endIdx - 1);
-        
+
         long firstWordMask = WORD_MASK << startIdx;
         long lastWordMask = WORD_MASK >>> -endIdx;
         if (startWordIndex == endWordIndex) {
             long combinedMask = firstWordMask & lastWordMask;
             long invCombinedMask = ~combinedMask;
-            this.words[startWordIndex] = (this.words[startWordIndex] & combinedMask) | (src.words[startWordIndex] & invCombinedMask);
+            this.words[startWordIndex] = (this.words[startWordIndex] & invCombinedMask) | (src.words[startWordIndex] & combinedMask);
         } else {
             long invFirstWordMask = ~firstWordMask;
             long invLastWordMask = ~lastWordMask;
-            
-            this.words[startWordIndex] = (this.words[startWordIndex] & firstWordMask) | (src.words[startWordIndex] & invFirstWordMask);
-    
+
+            this.words[startWordIndex] = (this.words[startWordIndex] & invFirstWordMask) | (src.words[startWordIndex] & firstWordMask);
+
             int length = endWordIndex - (startWordIndex + 1);
             if (length > 0) {
                 System.arraycopy(
@@ -106,8 +106,8 @@ public class BitArray {
                         length
                 );
             }
-    
-            this.words[endWordIndex] = (this.words[endWordIndex] & lastWordMask) | (src.words[endWordIndex] & invLastWordMask);
+
+            this.words[endWordIndex] = (this.words[endWordIndex] & invLastWordMask) | (src.words[endWordIndex] & lastWordMask);
         }
     }
     

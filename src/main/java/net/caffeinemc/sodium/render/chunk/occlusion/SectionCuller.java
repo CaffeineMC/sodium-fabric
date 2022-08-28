@@ -30,8 +30,8 @@ public class SectionCuller {
     // Chunks are grouped by manhattan distance to the start chunk, and given
     // the fact that the chunk graph is bipartite, it's possible to simply
     // alternate the lists to form a queue
-    private IntList currentQueue;
-    private IntList nextQueue;
+    private final IntList currentQueue;
+    private final IntList nextQueue;
     
     public SectionCuller(SectionTree sectionTree) {
         this.sectionTree = sectionTree;
@@ -71,7 +71,7 @@ public class SectionCuller {
         int xIdxIncrement = nodeSectionLength;
     
         // TODO: shrink this size with fog culling
-        //  don't rely on these for their intrinsic arithmetic with the bounds, it will change
+        // TODO: fix y axis and use render dist as cutoff
         // Start with corner section of the render distance.
         final int sectionYStart = this.sectionTree.camera.getSectionY() - this.sectionTree.sectionHeightOffset;
         final int sectionZStart = this.sectionTree.camera.getSectionZ() - this.sectionTree.sectionWidthOffset;
@@ -139,7 +139,6 @@ public class SectionCuller {
                     }
                     
                     this.checkNode(
-                           this.sectionVisibilityBits,
                            frustum,
                            sectionY,
                            sectionZ,
@@ -166,7 +165,6 @@ public class SectionCuller {
     
     @SuppressWarnings("SuspiciousNameCombination")
     private void checkNode(
-            BitArray sectionVisibilityBits,
             Frustum frustum,
             int sectionY,
             int sectionZ,
@@ -177,10 +175,6 @@ public class SectionCuller {
             int depth,
             int sectionIdx
     ) {
-//        if (this.sectionTree.getSectionIdxUnchecked(sectionX, sectionY, sectionZ) != sectionIdx) {
-//            System.out.println("bad");
-//        }
-        
         if (depth == 0 && !this.sectionTree.sectionExistenceBits.get(sectionIdx)) {
             // skip if the section doesn't exist
             return;
@@ -204,11 +198,15 @@ public class SectionCuller {
         if (depth == 0) {
             if (frustumTestResult == Frustum.INTERSECT || frustumTestResult == Frustum.INSIDE) {
                 // we already tested that it does exist, so we can unconditionally set
-                sectionVisibilityBits.set(sectionIdx);
+                if (this.sectionVisibilityBits.get(sectionIdx)) {
+                    System.out.println("already set");
+                } else {
+                    this.sectionVisibilityBits.set(sectionIdx);
+                }
             }
         } else {
             switch (frustumTestResult) {
-                case Frustum.INTERSECT, Frustum.INSIDE -> {
+                case Frustum.INTERSECT -> {
                     int childDepth = depth - 1;
                     int childSectionLength = nodeSectionLength >> 1;
                     
@@ -219,7 +217,6 @@ public class SectionCuller {
                         for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ += childSectionLength, zIdxOffset += zIdxIncrement) {
                             for (int newSectionX = sectionX, xIdxOffset = 0; newSectionX < sectionXEnd; newSectionX += childSectionLength, xIdxOffset += childSectionLength) {
                                 this.checkNode(
-                                        sectionVisibilityBits,
                                         frustum,
                                         newSectionY,
                                         newSectionZ,
@@ -234,26 +231,17 @@ public class SectionCuller {
                         }
                     }
                 }
-//                case Frustum.INSIDE -> {
-//                    for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
-//                        for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
-//                            int idx1 = this.sectionTree.getSectionIdxUnchecked(sectionX, newSectionY, newSectionZ);
-//                            int idx2 = sectionIdx + yIdxOffset + zIdxOffset;
-//                            int idx3 = this.sectionTree.getSectionIdxUnchecked(sectionXEnd - 1, newSectionY, newSectionZ);
-//                            int idx4 = sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX - 1;
-//
-//                            if (idx1 != idx2 || idx3 != idx4) {
-//                                System.out.println("bad");
-//                            }
-//
-//                            sectionVisibilityBits.copy(
-//                                    this.sectionTree.sectionExistenceBits,
-//                                    sectionIdx + yIdxOffset + zIdxOffset,
-//                                    sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
-//                            );
-//                        }
-//                    }
-//                }
+                case Frustum.INSIDE -> {
+                    for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
+                        for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
+                            this.sectionVisibilityBits.copy(
+                                    this.sectionTree.sectionExistenceBits,
+                                    sectionIdx + yIdxOffset + zIdxOffset,
+                                    sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
+                            );
+                        }
+                    }
+                }
             }
         }
     }
