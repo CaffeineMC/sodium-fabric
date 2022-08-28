@@ -9,6 +9,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.ImmutableBuffer;
+import net.caffeinemc.gfx.api.device.RenderConfiguration;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.util.buffer.BufferPool;
 import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
@@ -18,8 +19,6 @@ import org.lwjgl.system.MemoryUtil;
 // TODO: handle alignment
 // TODO: handle element vs pointers
 public class AsyncArenaBuffer implements ArenaBuffer {
-    private static final boolean CHECK_ASSERTIONS = true;
-
     private final float resizeMultiplier;
 
     private final RenderDevice device;
@@ -402,7 +401,7 @@ public class AsyncArenaBuffer implements ArenaBuffer {
     }
 
     private void checkAssertions() {
-        if (CHECK_ASSERTIONS) {
+        if (RenderConfiguration.DEBUG_CHECKS) {
             this.checkAssertions0();
         }
     }

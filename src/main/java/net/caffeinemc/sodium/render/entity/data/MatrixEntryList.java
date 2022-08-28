@@ -3,7 +3,7 @@ package net.caffeinemc.sodium.render.entity.data;
 import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix3fExtended;
 import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
 import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
-import net.caffeinemc.sodium.util.MathUtil;
+import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import org.lwjgl.system.MemoryUtil;
 

@@ -2,12 +2,12 @@ package net.caffeinemc.gfx.api.device;
 
 public class RenderConfiguration {
     /**
-     * If enabled, backends will check usages of the API to ensure usage is correct. This does not guard against all
-     * forms of invalid usage (such as buffers with malformed draw commands). These checks might add some overhead.
-     *
-     * This is left as a static final field so it can be optimized out by the JIT when not used.
+     * If enabled, extra checks are done across GFX and its users to ensure that calls, state, and more are valid.
+     * Users of GFX can also depend on this flag for debug checks.
+     * <p>
+     * This is left as a static final field, so it can be optimized out by the JIT when not used.
      */
-    public static final boolean API_CHECKS = false;
+    public static final boolean DEBUG_CHECKS = false;
     
     /**
      * If enabled, will ask the API to perform extra debug checks and produce more readable information for errors

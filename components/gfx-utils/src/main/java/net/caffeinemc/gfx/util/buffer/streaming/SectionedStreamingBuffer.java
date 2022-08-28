@@ -7,7 +7,7 @@ import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.MappedBuffer;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
-import net.caffeinemc.gfx.util.internal.MathUtil;
+import net.caffeinemc.gfx.util.misc.MathUtil;
 import org.lwjgl.system.MemoryUtil;
 
 // TODO: convert to all longs

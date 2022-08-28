@@ -53,100 +53,113 @@ public class SectionCuller {
         this.sectionVisibilityBits.fill(false);
     
         if (this.sectionTree.getLoadedSections() != 0) {
-            this.sectionVisibilityBits.copy(this.sectionTree.sectionExistenceBits, 0, this.sectionVisibilityBits.capacity());
-//            this.frustumCull(frustum);
+//            this.sectionVisibilityBits.copy(this.sectionTree.sectionExistenceBits, 0, this.sectionVisibilityBits.capacity());
+            this.frustumCull(frustum);
 //            this.fogCull();
             // still need to do this to maintain ordering between sections
 //            this.occlusionCull(useOcclusionCulling);
         }
     }
     
+    // inlining the locals makes it harder to read
+    @SuppressWarnings("UnnecessaryLocalVariable")
     private void frustumCull(Frustum frustum) {
-        // also the xIdxIncrement
         int nodeSectionLength = 1 << this.sectionTree.maxDepth;
     
         int yIdxIncrement = nodeSectionLength * this.sectionTree.sectionWidthSquared;
         int zIdxIncrement = nodeSectionLength * this.sectionTree.sectionWidth;
+        int xIdxIncrement = nodeSectionLength;
     
         // TODO: shrink this size with fog culling
-        int tableYStart = Math.floorMod(this.sectionTree.camera.getSectionY() - this.sectionTree.sectionHeightOffset, this.sectionTree.sectionHeight);
-        int tableZStart = Math.floorMod(this.sectionTree.camera.getSectionZ() - this.sectionTree.sectionWidthOffset, this.sectionTree.sectionWidth);
-        int tableXStart = Math.floorMod(this.sectionTree.camera.getSectionX() - this.sectionTree.sectionWidthOffset, this.sectionTree.sectionWidth);
-        int tableYEnd = tableYStart + this.sectionTree.sectionHeight;
-        int tableZEnd = tableZStart + this.sectionTree.sectionWidth;
-        int tableXEnd = tableXStart + this.sectionTree.sectionWidth;
-        
-        int tableYMin = tableYStart;
-        int tableZMin = tableZStart;
-        int tableXMin = tableXStart;
-        int tableYMax = this.sectionTree.sectionHeight;
-        int tableZMax = this.sectionTree.sectionWidth;
-        int tableXMax = this.sectionTree.sectionWidth;
+        //  don't rely on these for their intrinsic arithmetic with the bounds, it will change
+        // Start with corner section of the render distance.
+        final int sectionYStart = this.sectionTree.camera.getSectionY() - this.sectionTree.sectionHeightOffset;
+        final int sectionZStart = this.sectionTree.camera.getSectionZ() - this.sectionTree.sectionWidthOffset;
+        final int sectionXStart = this.sectionTree.camera.getSectionX() - this.sectionTree.sectionWidthOffset;
+        final int sectionYEnd = sectionYStart + this.sectionTree.sectionHeight;
+        final int sectionZEnd = sectionZStart + this.sectionTree.sectionWidth;
+        final int sectionXEnd = sectionXStart + this.sectionTree.sectionWidth;
     
-        int tableY = tableYStart;
-        int yIdxOffset = tableY * this.sectionTree.sectionWidthSquared;
+        // Table indices *are* restricted to the table.
+        final int tableYStart = Math.floorMod(sectionYStart, this.sectionTree.sectionHeight);
+        final int tableZStart = Math.floorMod(sectionZStart, this.sectionTree.sectionWidth);
+        final int tableXStart = Math.floorMod(sectionXStart, this.sectionTree.sectionWidth);
+        
+        final int yIdxStart = tableYStart * this.sectionTree.sectionWidthSquared;
+        final int zIdxStart = tableZStart * this.sectionTree.sectionWidth;
+        final int xIdxStart = tableXStart;
+        final int yIdxWrap = this.sectionTree.sectionTableSize;
+        final int zIdxWrap = this.sectionTree.sectionWidthSquared;
+        final int xIdxWrap = this.sectionTree.sectionWidth;
+    
+        int sectionYSplit = Math.min(sectionYStart + this.sectionTree.sectionHeight - tableYStart, sectionYEnd);
+        int sectionZSplit = Math.min(sectionZStart + this.sectionTree.sectionWidth - tableZStart, sectionZEnd);
+        int sectionXSplit = Math.min(sectionXStart + this.sectionTree.sectionWidth - tableXStart, sectionXEnd);
+    
+        int sectionY = sectionYStart;
+        int sectionYMax = sectionYSplit;
+        int yIdxOffset = yIdxStart;
         while (true) {
-            if (tableY >= this.sectionTree.sectionHeight) {
-               yIdxOffset -= this.sectionTree.sectionTableSize;
-               tableYMin = 0;
-               tableYMax = tableYEnd;
+            if (yIdxOffset >= yIdxWrap && sectionYMax != sectionYEnd) {
+                yIdxOffset = 0;
+                sectionY = sectionYMax;
+                sectionYMax = sectionYEnd;
             }
     
-            if (tableY >= tableYEnd) {
+            if (sectionY >= sectionYEnd) {
                 break;
             }
     
-            int tableZ = tableZStart;
-            int zIdxOffset = tableZ * this.sectionTree.sectionWidth;
+            int sectionZ = sectionZStart;
+            int sectionZMax = sectionZSplit;
+            int zIdxOffset = zIdxStart;
             while (true) {
-                if (tableZ >= this.sectionTree.sectionWidth) {
-                   zIdxOffset -= this.sectionTree.sectionWidthSquared;
-                   tableZMin = 0;
-                   tableZMax = tableZEnd;
+                if (zIdxOffset >= zIdxWrap && sectionZMax != sectionZEnd) {
+                    zIdxOffset = 0;
+                    sectionZ = sectionZMax;
+                    sectionZMax = sectionZEnd;
                 }
     
-                if (tableZ >= tableZEnd) {
+                if (sectionZ >= sectionZEnd) {
                     break;
                 }
     
-                int tableX = tableXStart;
-                int xIdxOffset = tableX;
+                int sectionX = sectionXStart;
+                int sectionXMax = sectionXSplit;
+                int xIdxOffset = xIdxStart;
                 while (true) {
-                    if (tableX >= this.sectionTree.sectionWidth) {
-                       xIdxOffset -= this.sectionTree.sectionWidth;
-                       tableXMin = 0;
-                       tableXMax = tableXEnd;
+                    if (xIdxOffset >= xIdxWrap && sectionXMax != sectionXEnd) {
+                        xIdxOffset = 0;
+                        sectionX = sectionXMax;
+                        sectionXMax = sectionXEnd;
                     }
     
-                    if (tableX >= tableXEnd) {
+                    if (sectionX >= sectionXEnd) {
                         break;
                     }
                     
                     this.checkNode(
                            this.sectionVisibilityBits,
                            frustum,
-                           tableY,
-                           tableZ,
-                           tableX,
-                           tableYMin,
-                           tableZMin,
-                           tableXMin,
-                           tableYMax,
-                           tableZMax,
-                           tableXMax,
+                           sectionY,
+                           sectionZ,
+                           sectionX,
+                           sectionYMax,
+                           sectionZMax,
+                           sectionXMax,
                            this.sectionTree.maxDepth,
                            yIdxOffset + zIdxOffset + xIdxOffset
                     );
                     
-                    tableX += nodeSectionLength;
-                    xIdxOffset += nodeSectionLength;
+                    sectionX += nodeSectionLength;
+                    xIdxOffset += xIdxIncrement;
                 }
                 
-                tableZ += nodeSectionLength;
+                sectionZ += nodeSectionLength;
                 zIdxOffset += zIdxIncrement;
             }
             
-            tableY += nodeSectionLength;
+            sectionY += nodeSectionLength;
             yIdxOffset += yIdxIncrement;
         }
     }
@@ -155,19 +168,16 @@ public class SectionCuller {
     private void checkNode(
             BitArray sectionVisibilityBits,
             Frustum frustum,
-            int tableY,
-            int tableZ,
-            int tableX,
-            int tableYMin,
-            int tableZMin,
-            int tableXMin,
-            int tableYMax,
-            int tableZMax,
-            int tableXMax,
+            int sectionY,
+            int sectionZ,
+            int sectionX,
+            int sectionYMax,
+            int sectionZMax,
+            int sectionXMax,
             int depth,
             int sectionIdx
     ) {
-//        if (this.sectionTree.getSectionIdxUnchecked(tableX, tableY, tableZ) != sectionIdx) {
+//        if (this.sectionTree.getSectionIdxUnchecked(sectionX, sectionY, sectionZ) != sectionIdx) {
 //            System.out.println("bad");
 //        }
         
@@ -175,23 +185,19 @@ public class SectionCuller {
             // skip if the section doesn't exist
             return;
         }
-        
-        int nodeSectionLength = 1 << depth;
-        // end exclusive
-        int tableYEnd = Math.min(tableY + nodeSectionLength, tableYMax);
-        int tableZEnd = Math.min(tableZ + nodeSectionLength, tableZMax);
-        int tableXEnd = Math.min(tableX + nodeSectionLength, tableXMax);
-        
-        tableY = Math.max(tableY, tableYMin);
-        tableZ = Math.max(tableZ, tableZMin);
-        tableX = Math.max(tableX, tableXMin);
     
-        float minY = (float) ChunkSectionPos.getBlockCoord(tableY + this.sectionTree.camera.getSectionY() - this.sectionTree.sectionHeightOffset);
-        float minZ = (float) ChunkSectionPos.getBlockCoord(tableZ + this.sectionTree.camera.getSectionZ() - this.sectionTree.sectionWidthOffset);
-        float minX = (float) ChunkSectionPos.getBlockCoord(tableX + this.sectionTree.camera.getSectionX() - this.sectionTree.sectionWidthOffset);
-        float maxY = (float) ChunkSectionPos.getBlockCoord(tableYEnd + this.sectionTree.camera.getSectionY() - this.sectionTree.sectionHeightOffset);
-        float maxZ = (float) ChunkSectionPos.getBlockCoord(tableZEnd + this.sectionTree.camera.getSectionZ() - this.sectionTree.sectionWidthOffset);
-        float maxX = (float) ChunkSectionPos.getBlockCoord(tableXEnd + this.sectionTree.camera.getSectionX() - this.sectionTree.sectionWidthOffset);
+        final int nodeSectionLength = 1 << depth;
+        // end exclusive
+        final int sectionYEnd = Math.min(sectionY + nodeSectionLength, sectionYMax);
+        final int sectionZEnd = Math.min(sectionZ + nodeSectionLength, sectionZMax);
+        final int sectionXEnd = Math.min(sectionX + nodeSectionLength, sectionXMax);
+        
+        float minY = (float) ChunkSectionPos.getBlockCoord(sectionY);
+        float minZ = (float) ChunkSectionPos.getBlockCoord(sectionZ);
+        float minX = (float) ChunkSectionPos.getBlockCoord(sectionX);
+        float maxY = (float) ChunkSectionPos.getBlockCoord(sectionYEnd);
+        float maxZ = (float) ChunkSectionPos.getBlockCoord(sectionZEnd);
+        float maxX = (float) ChunkSectionPos.getBlockCoord(sectionXEnd);
 
         int frustumTestResult = frustum.testBox(minX, minY, minZ, maxX, maxY, maxZ);
         
@@ -202,28 +208,25 @@ public class SectionCuller {
             }
         } else {
             switch (frustumTestResult) {
-                case Frustum.INTERSECT -> {
+                case Frustum.INTERSECT, Frustum.INSIDE -> {
                     int childDepth = depth - 1;
                     int childSectionLength = nodeSectionLength >> 1;
                     
                     int yIdxIncrement = childSectionLength * this.sectionTree.sectionWidthSquared;
                     int zIdxIncrement = childSectionLength * this.sectionTree.sectionWidth;
                     
-                    for (int yIdxOffset = 0; tableY < tableYEnd; tableY += childSectionLength, yIdxOffset += yIdxIncrement) {
-                        for (int zIdxOffset = 0; tableZ < tableZEnd; tableZ += childSectionLength, zIdxOffset += zIdxIncrement) {
-                            for (int xIdxOffset = 0; tableX < tableXEnd; tableX += childSectionLength, xIdxOffset += childSectionLength) {
+                    for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY += childSectionLength, yIdxOffset += yIdxIncrement) {
+                        for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ += childSectionLength, zIdxOffset += zIdxIncrement) {
+                            for (int newSectionX = sectionX, xIdxOffset = 0; newSectionX < sectionXEnd; newSectionX += childSectionLength, xIdxOffset += childSectionLength) {
                                 this.checkNode(
                                         sectionVisibilityBits,
                                         frustum,
-                                        tableY,
-                                        tableZ,
-                                        tableX,
-                                        tableYMin,
-                                        tableZMin,
-                                        tableXMin,
-                                        tableYMax,
-                                        tableZMax,
-                                        tableXMax,
+                                        newSectionY,
+                                        newSectionZ,
+                                        newSectionX,
+                                        sectionYMax,
+                                        sectionZMax,
+                                        sectionXMax,
                                         childDepth,
                                         sectionIdx + yIdxOffset + zIdxOffset + xIdxOffset
                                 );
@@ -231,17 +234,26 @@ public class SectionCuller {
                         }
                     }
                 }
-                case Frustum.INSIDE -> {
-                    for (int yIdxOffset = 0; tableY < tableYEnd; tableY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
-                        for (int zIdxOffset = 0; tableZ < tableZEnd; tableZ++, zIdxOffset += this.sectionTree.sectionWidth) {
-                            sectionVisibilityBits.copy(
-                                    this.sectionTree.sectionExistenceBits,
-                                    sectionIdx + yIdxOffset + zIdxOffset,
-                                    sectionIdx + yIdxOffset + zIdxOffset + tableXEnd - tableX
-                            );
-                        }
-                    }
-                }
+//                case Frustum.INSIDE -> {
+//                    for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
+//                        for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
+//                            int idx1 = this.sectionTree.getSectionIdxUnchecked(sectionX, newSectionY, newSectionZ);
+//                            int idx2 = sectionIdx + yIdxOffset + zIdxOffset;
+//                            int idx3 = this.sectionTree.getSectionIdxUnchecked(sectionXEnd - 1, newSectionY, newSectionZ);
+//                            int idx4 = sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX - 1;
+//
+//                            if (idx1 != idx2 || idx3 != idx4) {
+//                                System.out.println("bad");
+//                            }
+//
+//                            sectionVisibilityBits.copy(
+//                                    this.sectionTree.sectionExistenceBits,
+//                                    sectionIdx + yIdxOffset + zIdxOffset,
+//                                    sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
+//                            );
+//                        }
+//                    }
+//                }
             }
         }
     }

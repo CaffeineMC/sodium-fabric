@@ -51,7 +51,7 @@ public class SectionTree {
         this.sectionHeight = heightLimitView.countVerticalSections();
         this.sectionHeightOffset = -heightLimitView.getBottomSectionCoord();
         
-        this.sectionTableSize = this.sectionWidth * this.sectionWidth * this.sectionHeight;
+        this.sectionTableSize = this.sectionWidthSquared * this.sectionHeight;
         
         this.sections = new RenderSection[this.sectionTableSize];
         this.sectionExistenceBits = new BitArray(this.sectionTableSize);

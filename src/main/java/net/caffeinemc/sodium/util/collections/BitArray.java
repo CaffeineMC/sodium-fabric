@@ -1,7 +1,7 @@
 package net.caffeinemc.sodium.util.collections;
 
 import java.util.Arrays;
-import net.caffeinemc.sodium.util.MathUtil;
+import net.caffeinemc.gfx.util.misc.MathUtil;
 
 public class BitArray {
     private static final int ADDRESS_BITS_PER_WORD = 6;
@@ -97,7 +97,7 @@ public class BitArray {
             this.words[startWordIndex] = (this.words[startWordIndex] & firstWordMask) | (src.words[startWordIndex] & invFirstWordMask);
     
             int length = endWordIndex - (startWordIndex + 1);
-            if (length >= 0) {
+            if (length > 0) {
                 System.arraycopy(
                         src.words,
                         startWordIndex + 1,

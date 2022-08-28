@@ -23,7 +23,7 @@ import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.sodium.render.shader.ShaderConstants;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
-import net.caffeinemc.sodium.util.MathUtil;
+import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.system.MemoryUtil;

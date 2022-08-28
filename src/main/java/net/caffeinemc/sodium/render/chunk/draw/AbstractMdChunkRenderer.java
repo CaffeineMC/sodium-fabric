@@ -32,7 +32,7 @@ import net.caffeinemc.sodium.render.shader.ShaderLoader;
 import net.caffeinemc.sodium.render.shader.ShaderParser;
 import net.caffeinemc.sodium.render.terrain.format.TerrainMeshAttribute;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
-import net.caffeinemc.sodium.util.MathUtil;
+import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.caffeinemc.sodium.util.TextureUtil;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;

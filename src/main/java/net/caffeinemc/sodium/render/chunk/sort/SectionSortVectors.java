@@ -24,7 +24,7 @@
 
 package net.caffeinemc.sodium.render.chunk.sort;
 
-import net.caffeinemc.sodium.util.MathUtil;
+import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Vec3d;
 
