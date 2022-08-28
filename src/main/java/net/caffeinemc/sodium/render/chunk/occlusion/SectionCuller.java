@@ -198,11 +198,7 @@ public class SectionCuller {
         if (depth == 0) {
             if (frustumTestResult == Frustum.INTERSECT || frustumTestResult == Frustum.INSIDE) {
                 // we already tested that it does exist, so we can unconditionally set
-                if (this.sectionVisibilityBits.get(sectionIdx)) {
-                    System.out.println("already set");
-                } else {
-                    this.sectionVisibilityBits.set(sectionIdx);
-                }
+                this.sectionVisibilityBits.set(sectionIdx);
             }
         } else {
             switch (frustumTestResult) {
