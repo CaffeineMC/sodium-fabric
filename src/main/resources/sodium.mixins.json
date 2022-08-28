@@ -20,7 +20,6 @@
     "core.pipeline.MixinBufferBuilder",
     "core.pipeline.MixinVertexConsumer",
     "core.pipeline.MixinVertexFormat",
-    "features.adaptive_sync.MixinWindow",
     "features.block.MixinBlockModelRenderer",
     "features.block.MixinWorldRenderer",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
