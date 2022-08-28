@@ -17,13 +17,14 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.pattern.ParseTreeMatch;
 import org.antlr.v4.runtime.tree.pattern.ParseTreePattern;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
 
 // TODO: maybe make this an interface with static constants?
 public class ShaderTransformer {
+
     public static final TransformationManager<EntityParameters> ENTITY = createEntityTransformationManager();
 
     private static final String PREFIX = "sodium_";
