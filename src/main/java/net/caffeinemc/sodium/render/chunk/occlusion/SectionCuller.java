@@ -146,7 +146,8 @@ public class SectionCuller {
                            sectionZMax,
                            sectionXMax,
                            this.sectionTree.maxDepth,
-                           yIdxOffset + zIdxOffset + xIdxOffset
+                           yIdxOffset + zIdxOffset + xIdxOffset,
+                           Frustum.BLANK_RESULT
                     );
                     
                     sectionX += nodeSectionLength;
@@ -172,7 +173,8 @@ public class SectionCuller {
             int sectionZMax,
             int sectionXMax,
             int depth,
-            int sectionIdx
+            int sectionIdx,
+            int previousTestResult
     ) {
         if (depth == 0 && !this.sectionTree.sectionExistenceBits.get(sectionIdx)) {
             // skip if the section doesn't exist
@@ -192,47 +194,45 @@ public class SectionCuller {
         float maxZ = (float) ChunkSectionPos.getBlockCoord(sectionZEnd);
         float maxX = (float) ChunkSectionPos.getBlockCoord(sectionXEnd);
 
-        int frustumTestResult = frustum.testBox(minX, minY, minZ, maxX, maxY, maxZ);
+        int frustumTestResult = frustum.testBox(minX, minY, minZ, maxX, maxY, maxZ, previousTestResult);
         
         if (depth == 0) {
-            if (frustumTestResult == Frustum.INTERSECT || frustumTestResult == Frustum.INSIDE) {
+            if (frustumTestResult != Frustum.OUTSIDE) {
                 // we already tested that it does exist, so we can unconditionally set
                 this.sectionVisibilityBits.set(sectionIdx);
             }
         } else {
-            switch (frustumTestResult) {
-                case Frustum.INTERSECT -> {
-                    int childDepth = depth - 1;
-                    int childSectionLength = nodeSectionLength >> 1;
-                    
-                    int yIdxIncrement = childSectionLength * this.sectionTree.sectionWidthSquared;
-                    int zIdxIncrement = childSectionLength * this.sectionTree.sectionWidth;
-                    
-                    for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY += childSectionLength, yIdxOffset += yIdxIncrement) {
-                        for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ += childSectionLength, zIdxOffset += zIdxIncrement) {
-                            for (int newSectionX = sectionX, xIdxOffset = 0; newSectionX < sectionXEnd; newSectionX += childSectionLength, xIdxOffset += childSectionLength) {
-                                this.checkNode(
-                                        frustum,
-                                        newSectionY,
-                                        newSectionZ,
-                                        newSectionX,
-                                        sectionYMax,
-                                        sectionZMax,
-                                        sectionXMax,
-                                        childDepth,
-                                        sectionIdx + yIdxOffset + zIdxOffset + xIdxOffset
-                                );
-                            }
-                        }
+            if (frustumTestResult == Frustum.INSIDE) {
+                for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
+                    for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
+                        this.sectionVisibilityBits.copy(
+                                this.sectionTree.sectionExistenceBits,
+                                sectionIdx + yIdxOffset + zIdxOffset,
+                                sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
+                        );
                     }
                 }
-                case Frustum.INSIDE -> {
-                    for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
-                        for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
-                            this.sectionVisibilityBits.copy(
-                                    this.sectionTree.sectionExistenceBits,
-                                    sectionIdx + yIdxOffset + zIdxOffset,
-                                    sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
+            } else if (frustumTestResult != Frustum.OUTSIDE) {
+                int childDepth = depth - 1;
+                int childSectionLength = nodeSectionLength >> 1;
+    
+                int yIdxIncrement = childSectionLength * this.sectionTree.sectionWidthSquared;
+                int zIdxIncrement = childSectionLength * this.sectionTree.sectionWidth;
+    
+                for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY += childSectionLength, yIdxOffset += yIdxIncrement) {
+                    for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ += childSectionLength, zIdxOffset += zIdxIncrement) {
+                        for (int newSectionX = sectionX, xIdxOffset = 0; newSectionX < sectionXEnd; newSectionX += childSectionLength, xIdxOffset += childSectionLength) {
+                            this.checkNode(
+                                    frustum,
+                                    newSectionY,
+                                    newSectionZ,
+                                    newSectionX,
+                                    sectionYMax,
+                                    sectionZMax,
+                                    sectionXMax,
+                                    childDepth,
+                                    sectionIdx + yIdxOffset + zIdxOffset + xIdxOffset,
+                                    frustumTestResult
                             );
                         }
                     }
