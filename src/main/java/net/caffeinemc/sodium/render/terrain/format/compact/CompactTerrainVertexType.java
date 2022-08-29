@@ -18,7 +18,7 @@ public class CompactTerrainVertexType implements TerrainVertexType {
             .addElement(TerrainMeshAttribute.POSITION, 0, VertexAttributeFormat.SHORT, 3, true, false)
             .addElement(TerrainMeshAttribute.COLOR, 8, VertexAttributeFormat.UNSIGNED_BYTE, 4, true, false)
             .addElement(TerrainMeshAttribute.BLOCK_TEXTURE, 12, VertexAttributeFormat.UNSIGNED_SHORT, 2, true, false)
-            .addElement(TerrainMeshAttribute.LIGHT_TEXTURE, 16, VertexAttributeFormat.UNSIGNED_SHORT, 2, true, false)
+            .addElement(TerrainMeshAttribute.LIGHT_TEXTURE, 16, VertexAttributeFormat.UNSIGNED_SHORT, 2, false, true)
             .build();
 
     private static final int POSITION_MAX_VALUE = 32768;
