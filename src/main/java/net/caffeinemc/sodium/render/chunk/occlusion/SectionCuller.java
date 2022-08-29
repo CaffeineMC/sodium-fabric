@@ -69,11 +69,10 @@ public class SectionCuller {
         int yIdxIncrement = nodeSectionLength * this.sectionTree.sectionWidthSquared;
         int zIdxIncrement = nodeSectionLength * this.sectionTree.sectionWidth;
         int xIdxIncrement = nodeSectionLength;
-    
-        // TODO: shrink this size with fog culling
-        // TODO: fix y axis and use render dist as cutoff
+        
         // Start with corner section of the render distance.
-        final int sectionYStart = this.sectionTree.camera.getSectionY() - this.sectionTree.sectionHeightOffset;
+        // Don't mess with Y axis because it's set and shouldn't have a cutoff.
+        final int sectionYStart = -this.sectionTree.sectionHeightOffset;
         final int sectionZStart = this.sectionTree.camera.getSectionZ() - this.sectionTree.sectionWidthOffset;
         final int sectionXStart = this.sectionTree.camera.getSectionX() - this.sectionTree.sectionWidthOffset;
         final int sectionYEnd = sectionYStart + this.sectionTree.sectionHeight;
