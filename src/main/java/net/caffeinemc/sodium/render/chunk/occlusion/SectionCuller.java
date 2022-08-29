@@ -174,7 +174,7 @@ public class SectionCuller {
             int sectionXMax,
             int depth,
             int sectionIdx,
-            int previousTestResult
+            int parentTestResult
     ) {
         if (depth == 0 && !this.sectionTree.sectionExistenceBits.get(sectionIdx)) {
             // skip if the section doesn't exist
@@ -194,7 +194,7 @@ public class SectionCuller {
         float maxZ = (float) ChunkSectionPos.getBlockCoord(sectionZEnd);
         float maxX = (float) ChunkSectionPos.getBlockCoord(sectionXEnd);
 
-        int frustumTestResult = frustum.testBox(minX, minY, minZ, maxX, maxY, maxZ, previousTestResult);
+        int frustumTestResult = frustum.testBox(minX, minY, minZ, maxX, maxY, maxZ, parentTestResult);
         
         if (depth == 0) {
             if (frustumTestResult != Frustum.OUTSIDE) {

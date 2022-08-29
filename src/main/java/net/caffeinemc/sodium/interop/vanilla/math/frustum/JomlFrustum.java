@@ -1,10 +1,9 @@
 package net.caffeinemc.sodium.interop.vanilla.math.frustum;
 
+import org.joml.FrustumIntersection;
 import org.joml.Math;
 import org.joml.Matrix4fc;
 import org.joml.Vector3f;
-
-import static org.joml.FrustumIntersection.*;
 
 /**
  * Frustum implementation which extracts planes from a model-view-projection matrix, then allows the usage of skip masks
@@ -75,7 +74,7 @@ public class JomlFrustum implements Frustum {
          * this aab
          */
         int newMask = skipMask;
-        if ((skipMask & PLANE_MASK_NX) == 0) {
+        if ((skipMask & FrustumIntersection.PLANE_MASK_NX) == 0) {
             float outsideBoundX;
             float outsideBoundY;
             float outsideBoundZ;
@@ -111,10 +110,10 @@ public class JomlFrustum implements Frustum {
                 return OUTSIDE;
             }
             if (Math.fma(this.nxX, insideBoundX, Math.fma(this.nxY, insideBoundY, this.nxZ * insideBoundZ)) >= -this.nxW) {
-                newMask |= PLANE_MASK_NX;
+                newMask |= FrustumIntersection.PLANE_MASK_NX;
             }
         }
-        if ((skipMask & PLANE_MASK_PX) == 0) {
+        if ((skipMask & FrustumIntersection.PLANE_MASK_PX) == 0) {
             float outsideBoundX;
             float outsideBoundY;
             float outsideBoundZ;
@@ -150,10 +149,10 @@ public class JomlFrustum implements Frustum {
                 return OUTSIDE;
             }
             if (Math.fma(this.pxX, insideBoundX, Math.fma(this.pxY, insideBoundY, this.pxZ * insideBoundZ)) >= -this.pxW) {
-                newMask |= PLANE_MASK_PX;
+                newMask |= FrustumIntersection.PLANE_MASK_PX;
             }
         }
-        if ((skipMask & PLANE_MASK_NY) == 0) {
+        if ((skipMask & FrustumIntersection.PLANE_MASK_NY) == 0) {
             float outsideBoundX;
             float outsideBoundY;
             float outsideBoundZ;
@@ -189,10 +188,10 @@ public class JomlFrustum implements Frustum {
                 return OUTSIDE;
             }
             if (Math.fma(this.nyX, insideBoundX, Math.fma(this.nyY, insideBoundY, this.nyZ * insideBoundZ)) >= -this.nyW) {
-                newMask |= PLANE_MASK_NY;
+                newMask |= FrustumIntersection.PLANE_MASK_NY;
             }
         }
-        if ((skipMask & PLANE_MASK_PY) != 0) {
+        if ((skipMask & FrustumIntersection.PLANE_MASK_PY) != 0) {
             float outsideBoundX;
             float outsideBoundY;
             float outsideBoundZ;
@@ -228,10 +227,10 @@ public class JomlFrustum implements Frustum {
                 return OUTSIDE;
             }
             if (Math.fma(this.pyX, insideBoundX, Math.fma(this.pyY, insideBoundY, this.pyZ * insideBoundZ)) >= -this.pyW) {
-                newMask |= PLANE_MASK_PY;
+                newMask |= FrustumIntersection.PLANE_MASK_PY;
             }
         }
-        if ((skipMask & PLANE_MASK_NZ) != 0) {
+        if ((skipMask & FrustumIntersection.PLANE_MASK_NZ) != 0) {
             float outsideBoundX;
             float outsideBoundY;
             float outsideBoundZ;
@@ -267,10 +266,10 @@ public class JomlFrustum implements Frustum {
                 return OUTSIDE;
             }
             if (Math.fma(this.nzX, insideBoundX, Math.fma(this.nzY, insideBoundY, this.nzZ * insideBoundZ)) >= -this.nzW) {
-                newMask |= PLANE_MASK_NZ;
+                newMask |= FrustumIntersection.PLANE_MASK_NZ;
             }
         }
-        if ((skipMask & PLANE_MASK_PZ) != 0) {
+        if ((skipMask & FrustumIntersection.PLANE_MASK_PZ) != 0) {
             float outsideBoundX;
             float outsideBoundY;
             float outsideBoundZ;
@@ -306,7 +305,7 @@ public class JomlFrustum implements Frustum {
                 return OUTSIDE;
             }
             if (Math.fma(this.pzX, insideBoundX, Math.fma(this.pzY, insideBoundY, this.pzZ * insideBoundZ)) >= -this.pzW) {
-                newMask |= PLANE_MASK_PZ;
+                newMask |= FrustumIntersection.PLANE_MASK_PZ;
             }
         }
         return newMask;

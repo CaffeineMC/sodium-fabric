@@ -23,7 +23,7 @@ public interface Frustum {
     /**
      * Return value indicating that the axis-aligned box is completely outside the frustum.
      */
-    int OUTSIDE = FrustumIntersection.OUTSIDE;
+    int OUTSIDE = -1;
     
     /**
      * Supplied for the skipMask when executing a box test without any prior data.
