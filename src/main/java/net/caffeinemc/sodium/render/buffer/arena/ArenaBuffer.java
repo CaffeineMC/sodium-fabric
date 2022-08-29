@@ -1,8 +1,8 @@
 package net.caffeinemc.sodium.render.buffer.arena;
 
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
-import javax.annotation.Nullable;
 import net.caffeinemc.gfx.api.buffer.Buffer;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
