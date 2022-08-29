@@ -17,6 +17,7 @@ import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
+import net.minecraft.util.math.Vec3d;
 
 public class SortedTerrainLists {
     private static final int REGIONS_ESTIMATE = 128;
@@ -25,6 +26,7 @@ public class SortedTerrainLists {
     
     private final RenderRegionManager regionManager;
     private final ChunkRenderPassManager renderPassManager;
+    private final ChunkCameraContext camera;
     
     public final ReferenceList<RenderRegion> regions;
     public final IntList[] regionIndices;
@@ -44,9 +46,10 @@ public class SortedTerrainLists {
     private int totalSectionCount;
 
     @SuppressWarnings("unchecked")
-    public SortedTerrainLists(RenderRegionManager regionManager, ChunkRenderPassManager renderPassManager) {
+    public SortedTerrainLists(RenderRegionManager regionManager, ChunkRenderPassManager renderPassManager, ChunkCameraContext camera) {
         this.regionManager = regionManager;
         this.renderPassManager = renderPassManager;
+        this.camera = camera;
         
         int totalPasses = renderPassManager.getRenderPassCount();
     
@@ -154,13 +157,14 @@ public class SortedTerrainLists {
         }
     }
     
-    public void update(List<RenderSection> sortedSections, ChunkCameraContext camera) {
+    public void update(List<RenderSection> sortedSections) {
         this.reset();
         
         if (sortedSections.isEmpty()) {
             return;
         }
         
+        Vec3d cameraPos = this.camera.getPos();
         boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
         ChunkRenderPass[] chunkRenderPasses = this.renderPassManager.getAllRenderPasses();
         int totalPasses = chunkRenderPasses.length;
@@ -201,7 +205,7 @@ public class SortedTerrainLists {
                 int visibilityBits = model.getVisibilityBits();
 
                 if (useBlockFaceCulling) {
-                    visibilityBits &= calculateCameraVisibilityBits(chunkRenderData.bounds, camera);
+                    visibilityBits &= calculateCameraVisibilityBits(chunkRenderData.bounds, cameraPos);
                 }
 
                 // skip if the section has no *visible* models for the pass
@@ -306,30 +310,30 @@ public class SortedTerrainLists {
         this.totalSectionCount = totalSectionCount;
     }
     
-    protected static int calculateCameraVisibilityBits(ChunkRenderBounds bounds, ChunkCameraContext camera) {
+    protected static int calculateCameraVisibilityBits(ChunkRenderBounds bounds, Vec3d cameraPos) {
         int bits = ChunkMeshFace.UNASSIGNED_BITS;
         
-        if (camera.posY > bounds.y1) {
+        if (cameraPos.getY() > bounds.y1) {
             bits |= ChunkMeshFace.UP_BITS;
         }
         
-        if (camera.posY < bounds.y2) {
+        if (cameraPos.getY() < bounds.y2) {
             bits |= ChunkMeshFace.DOWN_BITS;
         }
         
-        if (camera.posX > bounds.x1) {
+        if (cameraPos.getX() > bounds.x1) {
             bits |= ChunkMeshFace.EAST_BITS;
         }
         
-        if (camera.posX < bounds.x2) {
+        if (cameraPos.getX() < bounds.x2) {
             bits |= ChunkMeshFace.WEST_BITS;
         }
         
-        if (camera.posZ > bounds.z1) {
+        if (cameraPos.getZ() > bounds.z1) {
             bits |= ChunkMeshFace.SOUTH_BITS;
         }
         
-        if (camera.posZ < bounds.z2) {
+        if (cameraPos.getZ() < bounds.z2) {
             bits |= ChunkMeshFace.NORTH_BITS;
         }
         

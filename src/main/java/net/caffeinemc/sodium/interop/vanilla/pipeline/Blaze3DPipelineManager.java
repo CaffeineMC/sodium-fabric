@@ -129,7 +129,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
 
         @Override
         public void bindTexture(int unit, Texture texture, Sampler sampler) {
-            if (RenderConfiguration.API_CHECKS) {
+            if (RenderConfiguration.DEBUG_CHECKS) {
                 Validate.isTrue(unit >= 0 && unit < this.maxTextureUnits, "Texture unit index is invalid");
             }
 
@@ -144,7 +144,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
 
         @Override
         public void bindBufferBlock(BufferBlock block, Buffer buffer, long offset, long length) {
-            if (RenderConfiguration.API_CHECKS) {
+            if (RenderConfiguration.DEBUG_CHECKS) {
                 Validate.isTrue(offset >= 0, "Offset must be greater-than or equal to zero");
 //                Validate.isTrue(offset + length <= buffer.capacity(), "Range is out of buffer bounds");
             }

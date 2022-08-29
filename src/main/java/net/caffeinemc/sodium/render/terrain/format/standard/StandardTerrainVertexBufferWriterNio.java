@@ -27,7 +27,7 @@ public class StandardTerrainVertexBufferWriterNio extends VertexBufferWriterNio 
         buffer.putFloat(i + 16, u);
         buffer.putFloat(i + 20, v);
 
-        buffer.putInt(i + 24, TextureUtil.encodeLightMapTexCoord(light));
+        buffer.putInt(i + 24, light);
 
         this.advance();
     }

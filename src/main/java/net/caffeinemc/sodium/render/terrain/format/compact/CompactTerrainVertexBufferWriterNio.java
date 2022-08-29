@@ -6,6 +6,7 @@ import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexSink;
 
 import java.nio.ByteBuffer;
+import net.caffeinemc.sodium.util.TextureUtil;
 
 public class CompactTerrainVertexBufferWriterNio extends VertexBufferWriterNio implements TerrainVertexSink {
     public CompactTerrainVertexBufferWriterNio(VertexBufferView backingBuffer) {
@@ -26,7 +27,7 @@ public class CompactTerrainVertexBufferWriterNio extends VertexBufferWriterNio i
         buffer.putShort(i + 12, CompactTerrainVertexType.encodeBlockTexture(u));
         buffer.putShort(i + 14, CompactTerrainVertexType.encodeBlockTexture(v));
 
-        buffer.putInt(i + 16, CompactTerrainVertexType.encodeLightMapTexCoord(light));
+        buffer.putInt(i + 16, light);
 
         this.advance();
     }

@@ -25,7 +25,7 @@ public class StandardTerrainVertexBufferWriterUnsafe extends VertexBufferWriterU
         MemoryUtil.memPutFloat(i + 16, u);
         MemoryUtil.memPutFloat(i + 20, v);
 
-        MemoryUtil.memPutInt(i + 24, TextureUtil.encodeLightMapTexCoord(light));
+        MemoryUtil.memPutInt(i + 24, light);
 
         this.advance();
     }

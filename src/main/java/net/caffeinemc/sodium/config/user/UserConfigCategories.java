@@ -37,6 +37,7 @@ public class UserConfigCategories {
                         .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.translateVariable("options.chunks")))
                         .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getViewDistance()))
                         .setImpact(OptionImpact.HIGH)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE) // the renderer will auto-reload at RD change
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.simulationDistance"))
@@ -79,7 +80,7 @@ public class UserConfigCategories {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.framerateLimit"))
                         .setTooltip(Text.translatable("sodium.options.fps_limit.tooltip"))
-                        .setControl(option -> new SliderControl(option, 5, 260, 5, ControlValueFormatter.fpsLimit()))
+                        .setControl(option -> new SliderControl(option, 10, 260, 10, ControlValueFormatter.fpsLimit()))
                         .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getMaxFps()))
                         .build())
                 .build());
@@ -174,6 +175,7 @@ public class UserConfigCategories {
                                 (opts) -> (int) Math.round(opts.getEntityDistanceScaling().getValue() * 100.0D)
                         )
                         .setImpact(OptionImpact.MEDIUM)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
@@ -256,6 +258,7 @@ public class UserConfigCategories {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.useEntityCulling = value, opts -> opts.performance.useEntityCulling)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
