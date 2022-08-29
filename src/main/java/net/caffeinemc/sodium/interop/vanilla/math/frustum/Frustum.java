@@ -23,7 +23,7 @@ public interface Frustum {
     /**
      * Return value indicating that the axis-aligned box is fully inside the frustum.
      */
-    int INSIDE = 0b11_1111;
+    int INSIDE = 0b111111;
     
     /**
      * Return value indicating that the axis-aligned box is completely outside the frustum.
