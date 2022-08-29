@@ -189,7 +189,7 @@ public class RenderSection {
     }
 
     public boolean isWithinFrustum(Frustum frustum) {
-        return frustum.isBoxVisible(
+        return frustum.containsBox(
                 (float) (this.centerX - 8.0),
                 (float) (this.centerY - 8.0),
                 (float) (this.centerZ - 8.0),

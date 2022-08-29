@@ -56,18 +56,19 @@ public class JomlFrustum implements Frustum {
     }
     
     @Override
-    public int testBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
-        return this.intersectAabInternal(
+    public int intersectBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
+        return this.intersectBoxInternal(
                 minX - this.offsetX,
                 minY - this.offsetY,
                 minZ - this.offsetZ,
                 maxX - this.offsetX,
                 maxY - this.offsetY,
                 maxZ - this.offsetZ,
-                skipMask);
+                skipMask
+        );
     }
     
-    private int intersectAabInternal(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
+    private int intersectBoxInternal(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
         /*
          * This is a modified version of what joml uses so a mask
          * can be generated that can be passed down to any aab inside
@@ -309,5 +310,79 @@ public class JomlFrustum implements Frustum {
             }
         }
         return newMask;
+    }
+    
+    @Override
+    public boolean containsBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
+        return this.containsBoxInternal(
+                minX - this.offsetX,
+                minY - this.offsetY,
+                minZ - this.offsetZ,
+                maxX - this.offsetX,
+                maxY - this.offsetY,
+                maxZ - this.offsetZ,
+                skipMask
+        );
+    }
+    
+    public boolean containsBoxInternal(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
+        /*
+         * This is a modified version of what joml uses so a mask can be provided to skip some planes and take advantage
+         * of fma intrinsics.
+         */
+        if ((skipMask & FrustumIntersection.PLANE_MASK_NX) == 0) {
+            float outsideBoundX = this.nxX < 0 ? minX : maxX;
+            float outsideBoundY = this.nxY < 0 ? minY : maxY;
+            float outsideBoundZ = this.nxZ < 0 ? minZ : maxZ;
+            
+            if (Math.fma(this.nxX, outsideBoundX, Math.fma(this.nxY, outsideBoundY, this.nxZ * outsideBoundZ)) < -this.nxW) {
+                return false;
+            }
+        }
+        if ((skipMask & FrustumIntersection.PLANE_MASK_PX) == 0) {
+            float outsideBoundX = this.pxX < 0 ? minX : maxX;
+            float outsideBoundY = this.pxY < 0 ? minY : maxY;
+            float outsideBoundZ = this.pxZ < 0 ? minZ : maxZ;
+            
+            if (Math.fma(this.pxX, outsideBoundX, Math.fma(this.pxY, outsideBoundY, this.pxZ * outsideBoundZ)) < -this.pxW) {
+                return false;
+            }
+        }
+        if ((skipMask & FrustumIntersection.PLANE_MASK_NY) == 0) {
+            float outsideBoundX = this.nyX < 0 ? minX : maxX;
+            float outsideBoundY = this.nyY < 0 ? minY : maxY;
+            float outsideBoundZ = this.nyZ < 0 ? minZ : maxZ;
+            
+            if (Math.fma(this.nyX, outsideBoundX, Math.fma(this.nyY, outsideBoundY, this.nyZ * outsideBoundZ)) < -this.nyW) {
+                return false;
+            }
+        }
+        if ((skipMask & FrustumIntersection.PLANE_MASK_PY) != 0) {
+            float outsideBoundX = this.pyX < 0 ? minX : maxX;
+            float outsideBoundY = this.pyY < 0 ? minY : maxY;
+            float outsideBoundZ = this.pyZ < 0 ? minZ : maxZ;
+            
+            if (Math.fma(this.pyX, outsideBoundX, Math.fma(this.pyY, outsideBoundY, this.pyZ * outsideBoundZ)) < -this.pyW) {
+                return false;
+            }
+        }
+        if ((skipMask & FrustumIntersection.PLANE_MASK_NZ) != 0) {
+            float outsideBoundX = this.nzX < 0 ? minX : maxX;
+            float outsideBoundY = this.nzY < 0 ? minY : maxY;
+            float outsideBoundZ = this.nzZ < 0 ? minZ : maxZ;
+            
+            if (Math.fma(this.nzX, outsideBoundX, Math.fma(this.nzY, outsideBoundY, this.nzZ * outsideBoundZ)) < -this.nzW) {
+                return false;
+            }
+        }
+        if ((skipMask & FrustumIntersection.PLANE_MASK_PZ) != 0) {
+            float outsideBoundX = this.pzX < 0 ? minX : maxX;
+            float outsideBoundY = this.pzY < 0 ? minY : maxY;
+            float outsideBoundZ = this.pzZ < 0 ? minZ : maxZ;
+            
+            // last check, just return if true
+            return !(Math.fma(this.pzX, outsideBoundX, Math.fma(this.pzY, outsideBoundY, this.pzZ * outsideBoundZ)) < -this.pzW);
+        }
+        return true;
     }
 }

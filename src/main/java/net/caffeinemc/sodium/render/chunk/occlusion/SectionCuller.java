@@ -193,47 +193,49 @@ public class SectionCuller {
         float maxY = (float) ChunkSectionPos.getBlockCoord(sectionYEnd);
         float maxZ = (float) ChunkSectionPos.getBlockCoord(sectionZEnd);
         float maxX = (float) ChunkSectionPos.getBlockCoord(sectionXEnd);
-
-        int frustumTestResult = frustum.testBox(minX, minY, minZ, maxX, maxY, maxZ, parentTestResult);
         
         if (depth == 0) {
-            if (frustumTestResult != Frustum.OUTSIDE) {
+            if (frustum.containsBox(minX, minY, minZ, maxX, maxY, maxZ, parentTestResult)) {
                 // we already tested that it does exist, so we can unconditionally set
                 this.sectionVisibilityBits.set(sectionIdx);
             }
         } else {
-            if (frustumTestResult == Frustum.INSIDE) {
-                for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
-                    for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
-                        this.sectionVisibilityBits.copy(
-                                this.sectionTree.sectionExistenceBits,
-                                sectionIdx + yIdxOffset + zIdxOffset,
-                                sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
-                        );
-                    }
-                }
-            } else if (frustumTestResult != Frustum.OUTSIDE) {
-                int childDepth = depth - 1;
-                int childSectionLength = nodeSectionLength >> 1;
+            int frustumTestResult = frustum.intersectBox(minX, minY, minZ, maxX, maxY, maxZ, parentTestResult);
     
-                int yIdxIncrement = childSectionLength * this.sectionTree.sectionWidthSquared;
-                int zIdxIncrement = childSectionLength * this.sectionTree.sectionWidth;
-    
-                for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY += childSectionLength, yIdxOffset += yIdxIncrement) {
-                    for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ += childSectionLength, zIdxOffset += zIdxIncrement) {
-                        for (int newSectionX = sectionX, xIdxOffset = 0; newSectionX < sectionXEnd; newSectionX += childSectionLength, xIdxOffset += childSectionLength) {
-                            this.checkNode(
-                                    frustum,
-                                    newSectionY,
-                                    newSectionZ,
-                                    newSectionX,
-                                    sectionYMax,
-                                    sectionZMax,
-                                    sectionXMax,
-                                    childDepth,
-                                    sectionIdx + yIdxOffset + zIdxOffset + xIdxOffset,
-                                    frustumTestResult
+            if (frustumTestResult != Frustum.OUTSIDE) {
+                if (frustumTestResult == Frustum.INSIDE) {
+                    for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
+                        for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
+                            this.sectionVisibilityBits.copy(
+                                    this.sectionTree.sectionExistenceBits,
+                                    sectionIdx + yIdxOffset + zIdxOffset,
+                                    sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
                             );
+                        }
+                    }
+                } else {
+                    int childDepth = depth - 1;
+                    int childSectionLength = nodeSectionLength >> 1;
+    
+                    int yIdxIncrement = childSectionLength * this.sectionTree.sectionWidthSquared;
+                    int zIdxIncrement = childSectionLength * this.sectionTree.sectionWidth;
+    
+                    for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY += childSectionLength, yIdxOffset += yIdxIncrement) {
+                        for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ += childSectionLength, zIdxOffset += zIdxIncrement) {
+                            for (int newSectionX = sectionX, xIdxOffset = 0; newSectionX < sectionXEnd; newSectionX += childSectionLength, xIdxOffset += childSectionLength) {
+                                this.checkNode(
+                                        frustum,
+                                        newSectionY,
+                                        newSectionZ,
+                                        newSectionX,
+                                        sectionYMax,
+                                        sectionZMax,
+                                        sectionXMax,
+                                        childDepth,
+                                        sectionIdx + yIdxOffset + zIdxOffset + xIdxOffset,
+                                        frustumTestResult
+                                );
+                            }
                         }
                     }
                 }

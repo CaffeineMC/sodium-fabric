@@ -1,18 +1,23 @@
 package net.caffeinemc.sodium.interop.vanilla.math.frustum;
 
-import org.joml.FrustumIntersection;
-
 public interface Frustum {
     /**
      * @return The visibility of an axis-aligned box within the frustum
      */
-    int testBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask);
+    int intersectBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask);
 
     /**
      * @return true if the axis-aligned box is visible within the frustum, otherwise false
      */
-    default boolean isBoxVisible(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-        return this.testBox(minX, minY, minZ, maxX, maxY, maxZ, 0) != Frustum.OUTSIDE;
+    default boolean containsBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
+        return this.intersectBox(minX, minY, minZ, maxX, maxY, maxZ, skipMask) != Frustum.OUTSIDE;
+    }
+    
+    /**
+     * @return true if the axis-aligned box is visible within the frustum, otherwise false
+     */
+    default boolean containsBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        return this.containsBox(minX, minY, minZ, maxX, maxY, maxZ, BLANK_RESULT);
     }
     
     /**
