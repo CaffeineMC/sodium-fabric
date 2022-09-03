@@ -161,6 +161,11 @@ public class SectionTree {
         return (this.sectionTableSize * 2) - (this.sectionTableSize >> depth) + roundedDepths;
     }
     
+    public int getNodeDepthOffset(int startDepth, int depth) {
+        int roundedDepths = Math.max(depth - startDepth - Integer.numberOfTrailingZeros(this.sectionTableSize >> startDepth), 0);
+        return (this.sectionTableSize * 2) - (this.sectionTableSize >> depth) + roundedDepths;
+    }
+    
     public RenderSection add(int x, int y, int z) {
         this.loadedSections++;
         
