@@ -9,14 +9,19 @@ import net.caffeinemc.sodium.util.DirectionUtil;
 import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.Vec3d;
 
 public class SectionCuller {
     
     private final SectionTree sectionTree;
+    private final double drawDistance;
+    private final double squaredDrawDistance;
     
     // 2 bit arrays: 1 for frustum, one for occlusion
     private final BitArray sectionVisibilityBits;
     private final byte[] sectionDirVisibilityData;
+    
+    private final BitArray fogLayerBits;
     
     /*
      * The outgoing directions out of the chunk
@@ -33,8 +38,10 @@ public class SectionCuller {
     private final IntList currentQueue;
     private final IntList nextQueue;
     
-    public SectionCuller(SectionTree sectionTree) {
+    public SectionCuller(SectionTree sectionTree, int chunkViewDistance) {
         this.sectionTree = sectionTree;
+        this.drawDistance = (chunkViewDistance + 1) * 16.0;
+        this.squaredDrawDistance = this.drawDistance * this.drawDistance;
         
         // TODO: correctly predict size, maybe inline array and keep position?
         this.currentQueue = new IntArrayList(128);
@@ -44,6 +51,8 @@ public class SectionCuller {
         this.allowedTraversalDirections = new byte[sectionTree.getSectionTableSize()];
         this.sectionDirVisibilityData = new byte[sectionTree.getSectionTableSize() * DirectionUtil.COUNT];
         this.sectionVisibilityBits = new BitArray(sectionTree.getSectionTableSize());
+    
+        this.fogLayerBits = new BitArray(sectionTree.sectionWidthSquared);
     }
     
     public void calculateVisibleSections(
@@ -53,8 +62,26 @@ public class SectionCuller {
         this.sectionVisibilityBits.fill(false);
     
         if (this.sectionTree.getLoadedSections() != 0) {
-//            this.sectionVisibilityBits.copy(this.sectionTree.sectionExistenceBits, 0, this.sectionVisibilityBits.capacity());
-            this.frustumCull(frustum);
+            // Start with corner section of the render distance.
+            // We add 8.0 to some of these coords to start from center of the section.
+            // Don't mess with Y axis because it's set and shouldn't have a cutoff.
+            final int sectionYStart = -this.sectionTree.sectionHeightOffset;
+            final int sectionZStart = ChunkSectionPos.getSectionCoord(this.sectionTree.camera.getPosZ() - 100);
+            final int sectionXStart = ChunkSectionPos.getSectionCoord(this.sectionTree.camera.getPosX() - 100);
+            
+            final int sectionYEnd = sectionYStart + this.sectionTree.sectionHeight;
+            final int sectionZEnd = ChunkSectionPos.getSectionCoord(this.sectionTree.camera.getPosZ() + 100);
+            final int sectionXEnd = ChunkSectionPos.getSectionCoord(this.sectionTree.camera.getPosX() + 100);
+            
+            this.frustumCull(
+                    frustum,
+                    sectionYStart,
+                    sectionZStart,
+                    sectionXStart,
+                    sectionYEnd,
+                    sectionZEnd,
+                    sectionXEnd
+            );
 //            this.fogCull();
             // still need to do this to maintain ordering between sections
 //            this.occlusionCull(useOcclusionCulling);
@@ -63,21 +90,20 @@ public class SectionCuller {
     
     // inlining the locals makes it harder to read
     @SuppressWarnings("UnnecessaryLocalVariable")
-    private void frustumCull(Frustum frustum) {
+    private void frustumCull(
+            Frustum frustum,
+            final int sectionYStart,
+            final int sectionZStart,
+            final int sectionXStart,
+            final int sectionYEnd,
+            final int sectionZEnd,
+            final int sectionXEnd
+    ) {
         int nodeSectionLength = 1 << this.sectionTree.maxDepth;
     
         int yIdxIncrement = nodeSectionLength * this.sectionTree.sectionWidthSquared;
         int zIdxIncrement = nodeSectionLength * this.sectionTree.sectionWidth;
         int xIdxIncrement = nodeSectionLength;
-        
-        // Start with corner section of the render distance.
-        // Don't mess with Y axis because it's set and shouldn't have a cutoff.
-        final int sectionYStart = -this.sectionTree.sectionHeightOffset;
-        final int sectionZStart = this.sectionTree.camera.getSectionZ() - this.sectionTree.sectionWidthOffset;
-        final int sectionXStart = this.sectionTree.camera.getSectionX() - this.sectionTree.sectionWidthOffset;
-        final int sectionYEnd = sectionYStart + this.sectionTree.sectionHeight;
-        final int sectionZEnd = sectionZStart + this.sectionTree.sectionWidth;
-        final int sectionXEnd = sectionXStart + this.sectionTree.sectionWidth;
     
         // Table indices *are* restricted to the table.
         final int tableYStart = Math.floorMod(sectionYStart, this.sectionTree.sectionHeight);
@@ -250,13 +276,20 @@ public class SectionCuller {
             }
         }
     }
-    
-//    private void fogCull() {
-//        switch (RenderSystem.getShaderFogShape()) {
-//            case SPHERE -> {}
-//            case CYLINDER -> {}
+
+    // always use a cylindrical cull for fog.
+    // we don't want to cull above and below the player for various reasons.
+    private void fogCull() {
+//        for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidth) {
+//            for (int newSectionX = sectionX, xIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset++) {
+//                this.sectionVisibilityBits.copy(
+//                        this.sectionTree.sectionExistenceBits,
+//                        sectionIdx + yIdxOffset + zIdxOffset,
+//                        sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
+//                );
+//            }
 //        }
-//    }
+    }
 
 //    private void occlusionCull() {
 //        // Run the frustum check early so the fallback can use it too
@@ -667,6 +700,16 @@ public class SectionCuller {
         return this.sectionVisibilityBits.get(sectionIdx);
     }
     
+    public boolean isChunkInDrawDistance(int x, int z) {
+        double centerX = ChunkSectionPos.getBlockCoord(x) + 8.0;
+        double centerZ = ChunkSectionPos.getBlockCoord(z) + 8.0;
+        Vec3d cameraPos = this.sectionTree.camera.getPos();
+        double xDist = cameraPos.getX() - centerX;
+        double zDist = cameraPos.getZ() - centerZ;
+        
+        return (xDist * xDist) + (zDist * zDist) <= this.squaredDrawDistance;
+    }
+    
     public void setVisibilityData(int x, int y, int z, ChunkOcclusionData data) {
         int sectionIdx = this.sectionTree.getSectionIdx(x, y, z);
         
@@ -689,7 +732,7 @@ public class SectionCuller {
         }
     }
     
-    public int getVisibilityData(int sectionIdx, int incomingDirection) {
+    private int getVisibilityData(int sectionIdx, int incomingDirection) {
         return this.sectionDirVisibilityData[(sectionIdx * DirectionUtil.COUNT) + incomingDirection];
     }
 }

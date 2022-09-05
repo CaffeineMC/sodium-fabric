@@ -44,7 +44,6 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.world.chunk.Chunk;
@@ -130,7 +129,7 @@ public class TerrainRenderManager {
                 world,
                 camera
         );
-        this.sectionCuller = new SectionCuller(this.sectionTree);
+        this.sectionCuller = new SectionCuller(this.sectionTree, chunkViewDistance);
         
         // TODO: uncomment when working on translucency sorting
 //        if (SodiumClientMod.options().quality.useTranslucentFaceSorting) {
@@ -177,8 +176,6 @@ public class TerrainRenderManager {
     }
 
     private void updateVisibilityLists() {
-        var drawDistance = MathHelper.square((this.chunkViewDistance + 1) * 16.0f);
-
         for (PriorityQueue<RenderSection> queue : this.rebuildQueues.values()) {
             queue.clear();
         }
@@ -191,17 +188,12 @@ public class TerrainRenderManager {
     
         while (sectionItr.hasNext()) {
             RenderSection section = sectionItr.next();
-            
-            // TODO: build this into SectionCuller?
-            if (section.getDistanceSq(this.camera.getPosX(), this.camera.getPosZ()) > drawDistance) {
-                continue;
-            }
 
             if (section.getPendingUpdate() != null) {
                 this.schedulePendingUpdates(section);
             }
 
-            var flags = section.getFlags();
+            int flags = section.getFlags();
 
             if (ChunkRenderFlag.has(flags, ChunkRenderFlag.HAS_TERRAIN_MODELS)) {
                 this.visibleMeshedSections.add(section);
@@ -236,16 +228,18 @@ public class TerrainRenderManager {
     }
 
     public void onChunkAdded(int x, int z) {
+        // we can't check the visibility bit here, but we can check if it's in draw distance, which effectively does
+        // fog culling on it.
+        boolean inDrawDistance = this.sectionCuller.isChunkInDrawDistance(x, z);
         for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
-            // TODO: only update if inside radius
-            this.needsUpdate |= this.loadSection(x, y, z);
+            this.needsUpdate |= this.loadSection(x, y, z) && inDrawDistance;
         }
     }
 
     public void onChunkRemoved(int x, int z) {
         for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
-            // TODO: only update if inside radius
-            this.needsUpdate |= this.unloadSection(x, y, z);
+            this.needsUpdate |= this.unloadSection(x, y, z)
+                                && this.sectionCuller.isSectionVisible(x, y, z);
         }
     }
 

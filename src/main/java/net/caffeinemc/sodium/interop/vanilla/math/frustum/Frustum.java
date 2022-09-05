@@ -5,6 +5,13 @@ public interface Frustum {
      * @return The visibility of an axis-aligned box within the frustum
      */
     int intersectBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask);
+    
+    /**
+     * @return The visibility of an axis-aligned box within the frustum
+     */
+    default int intersectBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        return this.intersectBox(minX, minY, minZ, maxX, maxY, maxZ, BLANK_RESULT);
+    }
 
     /**
      * @return true if the axis-aligned box is visible within the frustum, otherwise false

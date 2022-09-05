@@ -10,7 +10,7 @@ public class SectionTree {
     
     protected final ChunkCameraContext camera;
     
-    protected final int chunkViewDistance;
+    protected final int chunkLoadDistance;
     protected final int maxDepth; // inclusive
     
     protected final int sectionHeightMin;
@@ -40,7 +40,7 @@ public class SectionTree {
         this.sectionHeightMin = heightLimitView.getBottomSectionCoord();
         this.sectionHeightMax = heightLimitView.getTopSectionCoord() - 1;
         
-        this.chunkViewDistance = chunkLoadDistance;
+        this.chunkLoadDistance = chunkLoadDistance;
         this.maxDepth = maxDepth;
     
 //        // Make the diameter a power-of-two, so we can exploit bit-wise math when computing indices
@@ -79,14 +79,14 @@ public class SectionTree {
     }
     
     public int getSectionIdx(int x, int y, int z) {
-        if (this.isSectionInBounds(x, y, z)) {
+        if (this.isSectionInLoadBounds(x, y, z)) {
                 return this.getSectionIdxUnchecked(x, y, z);
         } else {
             return OUT_OF_BOUNDS_INDEX;
         }
     }
     
-    private boolean isSectionInBounds(int x, int y, int z) {
+    public boolean isSectionInLoadBounds(int x, int y, int z) {
         int offsetY = y + this.sectionHeightOffset;
         int offsetZ = z + this.sectionWidthOffset - this.camera.getSectionX();
         int offsetX = x + this.sectionWidthOffset - this.camera.getSectionZ();
@@ -115,7 +115,7 @@ public class SectionTree {
         return this.getNodeDepthOffset(depth) + (sectionIdx >> (3 * depth));
     }
     
-    private int getNodeDepthOffset(int depth) {
+    protected int getNodeDepthOffset(int depth) {
         return this.nodeArrayOffsets[depth - 1];
     }
     

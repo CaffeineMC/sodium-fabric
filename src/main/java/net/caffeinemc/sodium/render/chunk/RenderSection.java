@@ -2,7 +2,6 @@ package net.caffeinemc.sodium.render.chunk;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
@@ -177,7 +176,7 @@ public class RenderSection {
         double xDist = x - this.centerX;
         double zDist = z - this.centerZ;
 
-        return (xDist * xDist) + (zDist * zDist);
+        return (xDist * xDist) + (zDist * zDist) ;
     }
 
     public long getRegionKey() {
@@ -186,17 +185,6 @@ public class RenderSection {
 
     public RenderRegion getRegion() {
         return this.region;
-    }
-
-    public boolean isWithinFrustum(Frustum frustum) {
-        return frustum.containsBox(
-                (float) (this.centerX - 8.0),
-                (float) (this.centerY - 8.0),
-                (float) (this.centerZ - 8.0),
-                (float) (this.centerX + 8.0),
-                (float) (this.centerY + 8.0),
-                (float) (this.centerZ + 8.0)
-        );
     }
 
     public int getFlags() {

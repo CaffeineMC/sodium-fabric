@@ -54,6 +54,8 @@ public class BufferPool<B extends Buffer> {
         return this.createBufferFunction.apply(capacityTarget);
     }
     
+    // TODO: remove?
+    //  if keeping it is necessary, add sample collection for strict vs lenient and use it for pruning
     public B getBufferStrict(long capacity) {
         this.addSample(capacity);
         

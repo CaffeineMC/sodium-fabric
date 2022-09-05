@@ -186,7 +186,7 @@ public class JomlFrustum implements Frustum {
                 newMask |= FrustumIntersection.PLANE_MASK_NY;
             }
         }
-        if ((skipMask & FrustumIntersection.PLANE_MASK_PY) == 0) { // originally !=
+        if ((skipMask & FrustumIntersection.PLANE_MASK_PY) == 0) {
             float outsideBoundX;
             float outsideBoundY;
             float outsideBoundZ;
@@ -225,7 +225,7 @@ public class JomlFrustum implements Frustum {
                 newMask |= FrustumIntersection.PLANE_MASK_PY;
             }
         }
-        if ((skipMask & FrustumIntersection.PLANE_MASK_NZ) == 0) { // originally !=
+        if ((skipMask & FrustumIntersection.PLANE_MASK_NZ) == 0) {
             float outsideBoundX;
             float outsideBoundY;
             float outsideBoundZ;
@@ -264,7 +264,7 @@ public class JomlFrustum implements Frustum {
                 newMask |= FrustumIntersection.PLANE_MASK_NZ;
             }
         }
-        if ((skipMask & FrustumIntersection.PLANE_MASK_PZ) == 0) { // originally !=
+        if ((skipMask & FrustumIntersection.PLANE_MASK_PZ) == 0) {
             float outsideBoundX;
             float outsideBoundY;
             float outsideBoundZ;
@@ -346,7 +346,7 @@ public class JomlFrustum implements Frustum {
                 return false;
             }
         }
-        if ((skipMask & FrustumIntersection.PLANE_MASK_PY) == 0) { // originally !=
+        if ((skipMask & FrustumIntersection.PLANE_MASK_PY) == 0) {
             float outsideBoundX = this.pyX < 0 ? minX : maxX;
             float outsideBoundY = this.pyY < 0 ? minY : maxY;
             float outsideBoundZ = this.pyZ < 0 ? minZ : maxZ;
@@ -355,7 +355,7 @@ public class JomlFrustum implements Frustum {
                 return false;
             }
         }
-        if ((skipMask & FrustumIntersection.PLANE_MASK_NZ) == 0) { // originally !=
+        if ((skipMask & FrustumIntersection.PLANE_MASK_NZ) == 0) {
             float outsideBoundX = this.nzX < 0 ? minX : maxX;
             float outsideBoundY = this.nzY < 0 ? minY : maxY;
             float outsideBoundZ = this.nzZ < 0 ? minZ : maxZ;
@@ -364,7 +364,7 @@ public class JomlFrustum implements Frustum {
                 return false;
             }
         }
-        if ((skipMask & FrustumIntersection.PLANE_MASK_PZ) == 0) { // originally !=
+        if ((skipMask & FrustumIntersection.PLANE_MASK_PZ) == 0) {
             float outsideBoundX = this.pzX < 0 ? minX : maxX;
             float outsideBoundY = this.pzY < 0 ? minY : maxY;
             float outsideBoundZ = this.pzZ < 0 ? minZ : maxZ;
