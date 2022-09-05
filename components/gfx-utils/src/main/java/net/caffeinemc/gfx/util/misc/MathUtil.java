@@ -167,4 +167,13 @@ public class MathUtil {
     public static int absMax(int a, int b) {
         return java.lang.Math.abs(a) > java.lang.Math.abs(b) ? a : b;
     }
+    
+    public static int ceilDiv(int x, int y) {
+        int r = x / y;
+        // if the signs are the same and modulo not zero, round up
+        if ((x ^ y) >= 0 && (r * y != x)) {
+            r++;
+        }
+        return r;
+    }
 }

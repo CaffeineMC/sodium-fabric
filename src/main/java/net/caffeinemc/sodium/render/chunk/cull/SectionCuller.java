@@ -1,4 +1,4 @@
-package net.caffeinemc.sodium.render.chunk.occlusion;
+package net.caffeinemc.sodium.render.chunk.cull;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -176,9 +176,17 @@ public class SectionCuller {
             int sectionIdx,
             int parentTestResult
     ) {
-        if (depth == 0 && !this.sectionTree.sectionExistenceBits.get(sectionIdx)) {
-            // skip if the section doesn't exist
-            return;
+        if (depth == 0) {
+            // skip if the section is empty
+            if (!this.sectionTree.sectionExistenceBits.get(sectionIdx)) {
+                return;
+            }
+        } else {
+            // skip if the node is empty
+            int nodeIdx = this.sectionTree.getNodeIdx(depth, sectionIdx);
+            if (this.sectionTree.loadedSectionsPerNode[nodeIdx] == 0) {
+                return;
+            }
         }
     
         final int nodeSectionLength = 1 << depth;

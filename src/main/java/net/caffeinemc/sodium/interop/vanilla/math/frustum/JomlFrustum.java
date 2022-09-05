@@ -57,23 +57,17 @@ public class JomlFrustum implements Frustum {
     
     @Override
     public int intersectBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
-        return this.intersectBoxInternal(
-                minX - this.offsetX,
-                minY - this.offsetY,
-                minZ - this.offsetZ,
-                maxX - this.offsetX,
-                maxY - this.offsetY,
-                maxZ - this.offsetZ,
-                skipMask
-        );
-    }
-    
-    private int intersectBoxInternal(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
         /*
-         * This is a modified version of what joml uses so a mask
-         * can be generated that can be passed down to any aab inside
-         * this aab
+         * This is a modified version of what joml uses so a mask can be generated that can be passed down to any aab
+         * inside this aab. This also uses FMA intrinsics if possible.
          */
+        minX = minX - this.offsetX;
+        minY = minY - this.offsetY;
+        minZ = minZ - this.offsetZ;
+        maxX = maxX - this.offsetX;
+        maxY = maxY - this.offsetY;
+        maxZ = maxZ - this.offsetZ;
+    
         int newMask = skipMask;
         if ((skipMask & FrustumIntersection.PLANE_MASK_NX) == 0) {
             float outsideBoundX;
@@ -82,7 +76,7 @@ public class JomlFrustum implements Frustum {
             float insideBoundX;
             float insideBoundY;
             float insideBoundZ;
-    
+        
             if (this.nxX < 0) {
                 outsideBoundX = minX;
                 insideBoundX = maxX;
@@ -90,7 +84,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundX = maxX;
                 insideBoundX = minX;
             }
-            
+        
             if (this.nxY < 0) {
                 outsideBoundY = minY;
                 insideBoundY = maxY;
@@ -98,7 +92,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundY = maxY;
                 insideBoundY = minY;
             }
-    
+        
             if (this.nxZ < 0) {
                 outsideBoundZ = minZ;
                 insideBoundZ = maxZ;
@@ -106,7 +100,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundZ = maxZ;
                 insideBoundZ = minZ;
             }
-            
+        
             if (Math.fma(this.nxX, outsideBoundX, Math.fma(this.nxY, outsideBoundY, this.nxZ * outsideBoundZ)) < -this.nxW) {
                 return OUTSIDE;
             }
@@ -121,7 +115,7 @@ public class JomlFrustum implements Frustum {
             float insideBoundX;
             float insideBoundY;
             float insideBoundZ;
-    
+        
             if (this.pxX < 0) {
                 outsideBoundX = minX;
                 insideBoundX = maxX;
@@ -129,7 +123,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundX = maxX;
                 insideBoundX = minX;
             }
-    
+        
             if (this.pxY < 0) {
                 outsideBoundY = minY;
                 insideBoundY = maxY;
@@ -137,7 +131,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundY = maxY;
                 insideBoundY = minY;
             }
-    
+        
             if (this.pxZ < 0) {
                 outsideBoundZ = minZ;
                 insideBoundZ = maxZ;
@@ -145,7 +139,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundZ = maxZ;
                 insideBoundZ = minZ;
             }
-    
+        
             if (Math.fma(this.pxX, outsideBoundX, Math.fma(this.pxY, outsideBoundY, this.pxZ * outsideBoundZ)) < -this.pxW) {
                 return OUTSIDE;
             }
@@ -160,7 +154,7 @@ public class JomlFrustum implements Frustum {
             float insideBoundX;
             float insideBoundY;
             float insideBoundZ;
-    
+        
             if (this.nyX < 0) {
                 outsideBoundX = minX;
                 insideBoundX = maxX;
@@ -168,7 +162,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundX = maxX;
                 insideBoundX = minX;
             }
-    
+        
             if (this.nyY < 0) {
                 outsideBoundY = minY;
                 insideBoundY = maxY;
@@ -176,7 +170,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundY = maxY;
                 insideBoundY = minY;
             }
-    
+        
             if (this.nyZ < 0) {
                 outsideBoundZ = minZ;
                 insideBoundZ = maxZ;
@@ -184,7 +178,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundZ = maxZ;
                 insideBoundZ = minZ;
             }
-    
+        
             if (Math.fma(this.nyX, outsideBoundX, Math.fma(this.nyY, outsideBoundY, this.nyZ * outsideBoundZ)) < -this.nyW) {
                 return OUTSIDE;
             }
@@ -199,7 +193,7 @@ public class JomlFrustum implements Frustum {
             float insideBoundX;
             float insideBoundY;
             float insideBoundZ;
-    
+        
             if (this.pyX < 0) {
                 outsideBoundX = minX;
                 insideBoundX = maxX;
@@ -207,7 +201,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundX = maxX;
                 insideBoundX = minX;
             }
-    
+        
             if (this.pyY < 0) {
                 outsideBoundY = minY;
                 insideBoundY = maxY;
@@ -215,7 +209,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundY = maxY;
                 insideBoundY = minY;
             }
-    
+        
             if (this.pyZ < 0) {
                 outsideBoundZ = minZ;
                 insideBoundZ = maxZ;
@@ -223,7 +217,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundZ = maxZ;
                 insideBoundZ = minZ;
             }
-    
+        
             if (Math.fma(this.pyX, outsideBoundX, Math.fma(this.pyY, outsideBoundY, this.pyZ * outsideBoundZ)) < -this.pyW) {
                 return OUTSIDE;
             }
@@ -238,7 +232,7 @@ public class JomlFrustum implements Frustum {
             float insideBoundX;
             float insideBoundY;
             float insideBoundZ;
-    
+        
             if (this.nzX < 0) {
                 outsideBoundX = minX;
                 insideBoundX = maxX;
@@ -246,7 +240,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundX = maxX;
                 insideBoundX = minX;
             }
-    
+        
             if (this.nzY < 0) {
                 outsideBoundY = minY;
                 insideBoundY = maxY;
@@ -254,7 +248,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundY = maxY;
                 insideBoundY = minY;
             }
-    
+        
             if (this.nzZ < 0) {
                 outsideBoundZ = minZ;
                 insideBoundZ = maxZ;
@@ -262,7 +256,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundZ = maxZ;
                 insideBoundZ = minZ;
             }
-    
+        
             if (Math.fma(this.nzX, outsideBoundX, Math.fma(this.nzY, outsideBoundY, this.nzZ * outsideBoundZ)) < -this.nzW) {
                 return OUTSIDE;
             }
@@ -277,7 +271,7 @@ public class JomlFrustum implements Frustum {
             float insideBoundX;
             float insideBoundY;
             float insideBoundZ;
-    
+        
             if (this.pzX < 0) {
                 outsideBoundX = minX;
                 insideBoundX = maxX;
@@ -285,7 +279,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundX = maxX;
                 insideBoundX = minX;
             }
-    
+        
             if (this.pzY < 0) {
                 outsideBoundY = minY;
                 insideBoundY = maxY;
@@ -293,7 +287,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundY = maxY;
                 insideBoundY = minY;
             }
-    
+        
             if (this.pzZ < 0) {
                 outsideBoundZ = minZ;
                 insideBoundZ = maxZ;
@@ -301,7 +295,7 @@ public class JomlFrustum implements Frustum {
                 outsideBoundZ = maxZ;
                 insideBoundZ = minZ;
             }
-    
+        
             if (Math.fma(this.pzX, outsideBoundX, Math.fma(this.pzY, outsideBoundY, this.pzZ * outsideBoundZ)) < -this.pzW) {
                 return OUTSIDE;
             }
@@ -314,27 +308,22 @@ public class JomlFrustum implements Frustum {
     
     @Override
     public boolean containsBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
-        return this.containsBoxInternal(
-                minX - this.offsetX,
-                minY - this.offsetY,
-                minZ - this.offsetZ,
-                maxX - this.offsetX,
-                maxY - this.offsetY,
-                maxZ - this.offsetZ,
-                skipMask
-        );
-    }
-    
-    public boolean containsBoxInternal(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int skipMask) {
         /*
          * This is a modified version of what joml uses so a mask can be provided to skip some planes and take advantage
          * of fma intrinsics.
          */
+        minX = minX - this.offsetX;
+        minY = minY - this.offsetY;
+        minZ = minZ - this.offsetZ;
+        maxX = maxX - this.offsetX;
+        maxY = maxY - this.offsetY;
+        maxZ = maxZ - this.offsetZ;
+    
         if ((skipMask & FrustumIntersection.PLANE_MASK_NX) == 0) {
             float outsideBoundX = this.nxX < 0 ? minX : maxX;
             float outsideBoundY = this.nxY < 0 ? minY : maxY;
             float outsideBoundZ = this.nxZ < 0 ? minZ : maxZ;
-            
+        
             if (Math.fma(this.nxX, outsideBoundX, Math.fma(this.nxY, outsideBoundY, this.nxZ * outsideBoundZ)) < -this.nxW) {
                 return false;
             }
@@ -343,7 +332,7 @@ public class JomlFrustum implements Frustum {
             float outsideBoundX = this.pxX < 0 ? minX : maxX;
             float outsideBoundY = this.pxY < 0 ? minY : maxY;
             float outsideBoundZ = this.pxZ < 0 ? minZ : maxZ;
-            
+        
             if (Math.fma(this.pxX, outsideBoundX, Math.fma(this.pxY, outsideBoundY, this.pxZ * outsideBoundZ)) < -this.pxW) {
                 return false;
             }
@@ -352,7 +341,7 @@ public class JomlFrustum implements Frustum {
             float outsideBoundX = this.nyX < 0 ? minX : maxX;
             float outsideBoundY = this.nyY < 0 ? minY : maxY;
             float outsideBoundZ = this.nyZ < 0 ? minZ : maxZ;
-            
+        
             if (Math.fma(this.nyX, outsideBoundX, Math.fma(this.nyY, outsideBoundY, this.nyZ * outsideBoundZ)) < -this.nyW) {
                 return false;
             }
@@ -361,7 +350,7 @@ public class JomlFrustum implements Frustum {
             float outsideBoundX = this.pyX < 0 ? minX : maxX;
             float outsideBoundY = this.pyY < 0 ? minY : maxY;
             float outsideBoundZ = this.pyZ < 0 ? minZ : maxZ;
-            
+        
             if (Math.fma(this.pyX, outsideBoundX, Math.fma(this.pyY, outsideBoundY, this.pyZ * outsideBoundZ)) < -this.pyW) {
                 return false;
             }
@@ -370,7 +359,7 @@ public class JomlFrustum implements Frustum {
             float outsideBoundX = this.nzX < 0 ? minX : maxX;
             float outsideBoundY = this.nzY < 0 ? minY : maxY;
             float outsideBoundZ = this.nzZ < 0 ? minZ : maxZ;
-            
+        
             if (Math.fma(this.nzX, outsideBoundX, Math.fma(this.nzY, outsideBoundY, this.nzZ * outsideBoundZ)) < -this.nzW) {
                 return false;
             }
@@ -379,7 +368,7 @@ public class JomlFrustum implements Frustum {
             float outsideBoundX = this.pzX < 0 ? minX : maxX;
             float outsideBoundY = this.pzY < 0 ? minY : maxY;
             float outsideBoundZ = this.pzZ < 0 ? minZ : maxZ;
-            
+        
             // last check, just return if true
             return !(Math.fma(this.pzX, outsideBoundX, Math.fma(this.pzY, outsideBoundY, this.pzZ * outsideBoundZ)) < -this.pzW);
         }
