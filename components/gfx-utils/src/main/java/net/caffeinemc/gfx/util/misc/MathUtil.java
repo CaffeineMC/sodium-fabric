@@ -176,4 +176,24 @@ public class MathUtil {
         }
         return r;
     }
+    
+    public static int floor(double value) {
+        int i = (int)value;
+        return i > value ? i - 1 : i;
+    }
+    
+    public static int floor(float value) {
+        int i = (int)value;
+        return i > value ? i - 1 : i;
+    }
+    
+    public static double reducePrecision(double x, int bits) {
+        int exponent = bits - java.lang.Math.getExponent(x);
+        return java.lang.Math.scalb(java.lang.Math.rint(java.lang.Math.scalb(x, exponent)), -exponent);
+    }
+    
+    public static double floorMod(double x, double y){
+        // x mod y behaving the same way as Math.floorMod but with doubles
+        return (x - java.lang.Math.floor(x / y) * y);
+    }
 }

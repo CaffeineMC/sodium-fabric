@@ -176,7 +176,7 @@ public class RenderSection {
         double xDist = x - this.centerX;
         double zDist = z - this.centerZ;
 
-        return (xDist * xDist) + (zDist * zDist) ;
+        return (xDist * xDist) + (zDist * zDist);
     }
 
     public long getRegionKey() {

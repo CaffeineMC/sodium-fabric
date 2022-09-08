@@ -3,6 +3,7 @@ package net.caffeinemc.sodium.render.chunk.cull;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.Iterator;
+import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.util.DirectionUtil;
@@ -62,16 +63,23 @@ public class SectionCuller {
         this.sectionVisibilityBits.fill(false);
     
         if (this.sectionTree.getLoadedSections() != 0) {
-            // Start with corner section of the render distance.
-            // We add 8.0 to some of these coords to start from center of the section.
-            // Don't mess with Y axis because it's set and shouldn't have a cutoff.
-            final int sectionYStart = -this.sectionTree.sectionHeightOffset;
-            final int sectionZStart = ChunkSectionPos.getSectionCoord(this.sectionTree.camera.getPosZ() - 100);
-            final int sectionXStart = ChunkSectionPos.getSectionCoord(this.sectionTree.camera.getPosX() - 100);
-            
-            final int sectionYEnd = sectionYStart + this.sectionTree.sectionHeight;
-            final int sectionZEnd = ChunkSectionPos.getSectionCoord(this.sectionTree.camera.getPosZ() + 100);
-            final int sectionXEnd = ChunkSectionPos.getSectionCoord(this.sectionTree.camera.getPosX() + 100);
+            // Start with corner section of the fog distance.
+            // To do this, we have to reverse the function to check if a chunk is in bounds by doing pythagorean's
+            // theorem, then doing some math.
+            double cameraX = this.sectionTree.camera.getPosX();
+            double cameraZ = this.sectionTree.camera.getPosZ();
+            double sectionCenterDistX = MathUtil.floorMod(cameraX, 16.0) - 8.0;
+            double sectionCenterDistZ = MathUtil.floorMod(cameraZ, 16.0) - 8.0;
+            double distX = Math.sqrt(this.squaredDrawDistance - (sectionCenterDistZ * sectionCenterDistZ));
+            double distZ = Math.sqrt(this.squaredDrawDistance - (sectionCenterDistX * sectionCenterDistX));
+    
+            // Don't mess with Y axis, we always have all y sections loaded, so it shouldn't have a cutoff.
+            int sectionYStart = -this.sectionTree.sectionHeightOffset;
+            int sectionZStart = ChunkSectionPos.getSectionCoord(cameraZ - distZ - 8.0);
+            int sectionXStart = ChunkSectionPos.getSectionCoord(cameraX - distX - 8.0);
+            int sectionYEnd = sectionYStart + this.sectionTree.sectionHeight;
+            int sectionZEnd = ChunkSectionPos.getSectionCoord(cameraZ + distZ + 8.0);
+            int sectionXEnd = ChunkSectionPos.getSectionCoord(cameraX + distX + 8.0);
             
             this.frustumCull(
                     frustum,

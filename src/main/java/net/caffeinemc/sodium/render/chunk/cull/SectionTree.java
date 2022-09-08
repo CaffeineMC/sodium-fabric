@@ -88,8 +88,8 @@ public class SectionTree {
     
     public boolean isSectionInLoadBounds(int x, int y, int z) {
         int offsetY = y + this.sectionHeightOffset;
-        int offsetZ = z + this.sectionWidthOffset - this.camera.getSectionX();
-        int offsetX = x + this.sectionWidthOffset - this.camera.getSectionZ();
+        int offsetZ = this.camera.getSectionZ() - z + this.sectionWidthOffset;
+        int offsetX = this.camera.getSectionX() - x + this.sectionWidthOffset;
         return offsetY >= 0 &&
                offsetY < this.sectionHeight &&
                offsetZ >= 0 &&
