@@ -56,8 +56,6 @@ public class TerrainRenderManager {
     private static final double NEARBY_BLOCK_UPDATE_DISTANCE = 32.0;
     private static final int MAX_REBUILDS_PER_RENDERER_UPDATE = 32;
     
-    private final RenderDevice device;
-    
     private final SortedTerrainLists sortedTerrainLists;
 
     private final ChunkBuilder builder;
@@ -67,8 +65,7 @@ public class TerrainRenderManager {
 
     private final SectionTree sectionTree;
     private final SectionCuller sectionCuller;
-    private final int chunkViewDistance;
-
+    
     private final Map<ChunkUpdateType, PriorityQueue<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
 
     private final ChunkRenderer chunkRenderer;
@@ -102,7 +99,6 @@ public class TerrainRenderManager {
     ) {
         TerrainVertexType vertexType = createVertexType();
     
-        this.device = device;
         this.world = world;
         this.camera = camera;
     
@@ -110,9 +106,7 @@ public class TerrainRenderManager {
 
         this.builder = new ChunkBuilder(vertexType);
         this.builder.init(world, renderPassManager);
-        
-        this.chunkViewDistance = chunkViewDistance;
-
+    
         this.regionManager = new RenderRegionManager(device, vertexType);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
     

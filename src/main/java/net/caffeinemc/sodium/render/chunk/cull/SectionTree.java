@@ -72,7 +72,6 @@ public class SectionTree {
         // don't include the first level of nodes, because those are already stored in the sectionExistenceBits
         this.loadedSectionsPerNode = new short[totalOffset];
         
-        
 //        this.backupSections = new Long2ReferenceOpenHashMap<>(this.sectionTableSize / 8);
         
         this.camera = camera;

@@ -10,19 +10,17 @@ import net.caffeinemc.sodium.util.DirectionUtil;
 import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class SectionCuller {
     
     private final SectionTree sectionTree;
-    private final double drawDistance;
-    private final double squaredDrawDistance;
+    private final double squaredFogDistance;
     
     // 2 bit arrays: 1 for frustum, one for occlusion
     private final BitArray sectionVisibilityBits;
     private final byte[] sectionDirVisibilityData;
-    
-    private final BitArray fogLayerBits;
     
     /*
      * The outgoing directions out of the chunk
@@ -41,8 +39,7 @@ public class SectionCuller {
     
     public SectionCuller(SectionTree sectionTree, int chunkViewDistance) {
         this.sectionTree = sectionTree;
-        this.drawDistance = (chunkViewDistance + 1) * 16.0;
-        this.squaredDrawDistance = this.drawDistance * this.drawDistance;
+        this.squaredFogDistance = MathHelper.square((chunkViewDistance + 1) * 16.0);
         
         // TODO: correctly predict size, maybe inline array and keep position?
         this.currentQueue = new IntArrayList(128);
@@ -52,8 +49,6 @@ public class SectionCuller {
         this.allowedTraversalDirections = new byte[sectionTree.getSectionTableSize()];
         this.sectionDirVisibilityData = new byte[sectionTree.getSectionTableSize() * DirectionUtil.COUNT];
         this.sectionVisibilityBits = new BitArray(sectionTree.getSectionTableSize());
-    
-        this.fogLayerBits = new BitArray(sectionTree.sectionWidthSquared);
     }
     
     public void calculateVisibleSections(
@@ -70,8 +65,8 @@ public class SectionCuller {
             double cameraZ = this.sectionTree.camera.getPosZ();
             double sectionCenterDistX = MathUtil.floorMod(cameraX, 16.0) - 8.0;
             double sectionCenterDistZ = MathUtil.floorMod(cameraZ, 16.0) - 8.0;
-            double distX = Math.sqrt(this.squaredDrawDistance - (sectionCenterDistZ * sectionCenterDistZ));
-            double distZ = Math.sqrt(this.squaredDrawDistance - (sectionCenterDistX * sectionCenterDistX));
+            double distX = Math.sqrt(this.squaredFogDistance - (sectionCenterDistZ * sectionCenterDistZ));
+            double distZ = Math.sqrt(this.squaredFogDistance - (sectionCenterDistX * sectionCenterDistX));
     
             // Don't mess with Y axis, we always have all y sections loaded, so it shouldn't have a cutoff.
             int sectionYStart = -this.sectionTree.sectionHeightOffset;
@@ -90,7 +85,15 @@ public class SectionCuller {
                     sectionZEnd,
                     sectionXEnd
             );
-//            this.fogCull();
+            
+            this.fogCull(
+                    sectionYStart,
+                    sectionZStart,
+                    sectionXStart,
+                    sectionYEnd,
+                    sectionZEnd,
+                    sectionXEnd
+            );
             // still need to do this to maintain ordering between sections
 //            this.occlusionCull(useOcclusionCulling);
         }
@@ -287,16 +290,75 @@ public class SectionCuller {
 
     // always use a cylindrical cull for fog.
     // we don't want to cull above and below the player for various reasons.
-    private void fogCull() {
-//        for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidth) {
-//            for (int newSectionX = sectionX, xIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset++) {
-//                this.sectionVisibilityBits.copy(
-//                        this.sectionTree.sectionExistenceBits,
-//                        sectionIdx + yIdxOffset + zIdxOffset,
-//                        sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
-//                );
-//            }
-//        }
+    //
+    // inlining the locals makes it harder to read
+    @SuppressWarnings({"UnnecessaryLocalVariable", "SuspiciousNameCombination"})
+    private void fogCull(
+            final int sectionYStart,
+            final int sectionZStart,
+            final int sectionXStart,
+            final int sectionYEnd,
+            final int sectionZEnd,
+            final int sectionXEnd
+    ) {
+        int zIdxIncrement = this.sectionTree.sectionWidth;
+        int xIdxIncrement = 1;
+    
+        // Table indices *are* restricted to the table.
+        final int tableZStart = Math.floorMod(sectionZStart, this.sectionTree.sectionWidth);
+        final int tableXStart = Math.floorMod(sectionXStart, this.sectionTree.sectionWidth);
+        
+        final int zIdxStart = tableZStart * this.sectionTree.sectionWidth;
+        final int xIdxStart = tableXStart;
+        final int zIdxWrap = this.sectionTree.sectionWidthSquared;
+        final int xIdxWrap = this.sectionTree.sectionWidth;
+        
+        int sectionZSplit = Math.min(sectionZStart + this.sectionTree.sectionWidth - tableZStart, sectionZEnd);
+        int sectionXSplit = Math.min(sectionXStart + this.sectionTree.sectionWidth - tableXStart, sectionXEnd);
+        
+        int sectionZ = sectionZStart;
+        int sectionZMax = sectionZSplit;
+        int zIdxOffset = zIdxStart;
+        while (true) {
+            if (zIdxOffset >= zIdxWrap && sectionZMax != sectionZEnd) {
+                zIdxOffset = 0;
+                sectionZ = sectionZMax;
+                sectionZMax = sectionZEnd;
+            }
+        
+            if (sectionZ >= sectionZEnd) {
+                break;
+            }
+        
+            int sectionX = sectionXStart;
+            int sectionXMax = sectionXSplit;
+            int xIdxOffset = xIdxStart;
+            while (true) {
+                if (xIdxOffset >= xIdxWrap && sectionXMax != sectionXEnd) {
+                    xIdxOffset = 0;
+                    sectionX = sectionXMax;
+                    sectionXMax = sectionXEnd;
+                }
+            
+                if (sectionX >= sectionXEnd) {
+                    break;
+                }
+                
+                if (!this.isChunkInDrawDistance(sectionX, sectionZ)) {
+                    int yIdxIncrement = this.sectionTree.sectionWidthSquared;
+                    int yIdxOffset = 0;
+                    for (int sectionY = sectionYStart; sectionY < sectionYEnd; sectionY++, yIdxOffset += yIdxIncrement) {
+                        this.sectionVisibilityBits.unset(yIdxOffset + zIdxOffset + xIdxOffset);
+                    }
+                }
+            
+                sectionX++;
+                xIdxOffset += xIdxIncrement;
+            }
+        
+            sectionZ++;
+            zIdxOffset += zIdxIncrement;
+        }
     }
 
 //    private void occlusionCull() {
@@ -715,7 +777,7 @@ public class SectionCuller {
         double xDist = cameraPos.getX() - centerX;
         double zDist = cameraPos.getZ() - centerZ;
         
-        return (xDist * xDist) + (zDist * zDist) <= this.squaredDrawDistance;
+        return (xDist * xDist) + (zDist * zDist) <= this.squaredFogDistance;
     }
     
     public void setVisibilityData(int x, int y, int z, ChunkOcclusionData data) {

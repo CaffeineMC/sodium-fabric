@@ -117,6 +117,30 @@ public class BitArray {
         long bitMask = ~invBitMask;
         this.words[wordIndex] = (this.words[wordIndex] & bitMask) | (src.words[wordIndex] & invBitMask);
     }
+    
+    public void and(BitArray src, int startIdx, int endIdx) {
+        int startWordIndex = wordIndex(startIdx);
+        int endWordIndex = wordIndex(endIdx - 1);
+    
+        long firstWordMask = WORD_MASK << startIdx;
+        long lastWordMask = WORD_MASK >>> -endIdx;
+        if (startWordIndex == endWordIndex) {
+            long combinedMask = firstWordMask & lastWordMask;
+            long invCombinedMask = ~combinedMask;
+            this.words[startWordIndex] &= (src.words[startWordIndex] | invCombinedMask);
+        } else {
+            long invFirstWordMask = ~firstWordMask;
+            long invLastWordMask = ~lastWordMask;
+        
+            this.words[startWordIndex] &= (src.words[startWordIndex] | invFirstWordMask);
+            
+            for (int i = startWordIndex + 1; i < endWordIndex; i++) {
+                this.words[i] &= src.words[i];
+            }
+        
+            this.words[endWordIndex] &= (src.words[endWordIndex] | invLastWordMask);
+        }
+    }
 
     private static int wordIndex(int index) {
         return index >> ADDRESS_BITS_PER_WORD;
