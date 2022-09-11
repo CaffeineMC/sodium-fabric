@@ -22,6 +22,10 @@ public class SectionTree {
     protected final int sectionHeightOffset;
     protected final int sectionTableSize;
     
+    // the amount of nodes required to encompass all sections width-wise
+    protected final int[] nodeWidths;
+    protected final int[] nodeArrayOffsets;
+    
     protected final RenderSection[] sections;
     protected final BitArray sectionExistenceBits;
     // used so we can deal with out-of-bounds sections in the same way as vanilla
@@ -31,23 +35,23 @@ public class SectionTree {
     
     // these do not include the first level of nodes, which are the individual sections.
     // unsigned shorts support a max depth of 5, signed short support a max depth of 4
-    protected final short[] loadedSectionsPerNode;
-    protected final int[] nodeArrayOffsets;
+    protected final short[] nodeLoadedSections;
     
-    private int loadedSections;
+    private int totalLoadedSections;
     
     public SectionTree(int maxDepth, int chunkLoadDistance, HeightLimitView heightLimitView, ChunkCameraContext camera) {
         this.sectionHeightMin = heightLimitView.getBottomSectionCoord();
-        this.sectionHeightMax = heightLimitView.getTopSectionCoord() - 1;
+        this.sectionHeightMax = heightLimitView.getTopSectionCoord();
         
         this.chunkLoadDistance = chunkLoadDistance;
-        this.maxDepth = maxDepth;
     
 //        // Make the diameter a power-of-two, so we can exploit bit-wise math when computing indices
 //        this.diameter = MathHelper.smallestEncompassingPowerOfTwo(loadDistance * 2 + 1);
         this.sectionWidth = chunkLoadDistance * 2 + 1;
         this.sectionWidthOffset = chunkLoadDistance;
         this.sectionWidthSquared = this.sectionWidth * this.sectionWidth;
+        
+        this.maxDepth = Math.min(maxDepth, Integer.SIZE - Integer.numberOfLeadingZeros(this.sectionWidth) - 1);
         
         this.sectionHeight = heightLimitView.countVerticalSections();
         this.sectionHeightOffset = -heightLimitView.getBottomSectionCoord();
@@ -57,20 +61,33 @@ public class SectionTree {
         this.sections = new RenderSection[this.sectionTableSize];
         this.sectionExistenceBits = new BitArray(this.sectionTableSize);
         
-        this.nodeArrayOffsets = new int[maxDepth];
+        this.nodeWidths = new int[this.maxDepth];
+        this.nodeArrayOffsets = new int[this.maxDepth];
         int totalOffset = 0;
-        double currentSize = this.sectionTableSize;
+        int currentWidth = this.sectionWidth;
+        int currentHeight = this.sectionHeight;
+        int widthRound = 0;
+        int heightRound = 0;
         
-        for (int i = 0; i < maxDepth; i++) {
+        for (int i = 0; i < this.maxDepth; i++) {
             // To get an accurate number that's able to store all the elements we need, we need to make sure to round up
             // the divisor to make sure that nodes which may be caught on the border are included.
+            widthRound |= (0b1 & currentWidth);
+            currentWidth >>= 1;
+            int nodeWidth = currentWidth + widthRound;
+            
+            heightRound |= (0b1 & currentHeight);
+            currentHeight >>= 1;
+            int nodeHeight = currentHeight + heightRound;
+            
+            this.nodeWidths[i] = nodeWidth;
             this.nodeArrayOffsets[i] = totalOffset;
-            currentSize /= 8.0f;
-            totalOffset += (int) Math.ceil(currentSize);
+            
+            totalOffset += (nodeHeight * nodeWidth * nodeWidth);
         }
         
         // don't include the first level of nodes, because those are already stored in the sectionExistenceBits
-        this.loadedSectionsPerNode = new short[totalOffset];
+        this.nodeLoadedSections = new short[totalOffset];
         
 //        this.backupSections = new Long2ReferenceOpenHashMap<>(this.sectionTableSize / 8);
         
@@ -98,7 +115,7 @@ public class SectionTree {
     }
     
     public int getSectionIdxUnchecked(int x, int y, int z) {
-        int tableY = Math.floorMod(y, this.sectionHeight);
+        int tableY = y + this.sectionHeightOffset;
         int tableZ = Math.floorMod(z, this.sectionWidth);
         int tableX = Math.floorMod(x, this.sectionWidth);
         return tableY * this.sectionWidthSquared
@@ -110,16 +127,25 @@ public class SectionTree {
         return this.getSectionIdx(section.getSectionX(), section.getSectionY(), section.getSectionZ());
     }
     
-    protected int getNodeIdx(int depth, int sectionIdx) {
-        return this.getNodeDepthOffset(depth) + (sectionIdx >> (3 * depth));
-    }
-    
-    protected int getNodeDepthOffset(int depth) {
-        return this.nodeArrayOffsets[depth - 1];
+    protected int getNodeIdx(int depth, int x, int y, int z) {
+        int depthIdx = depth - 1; // 2 elements per depth, and the depth starts 1 prior
+        int nodeWidth = this.nodeWidths[depthIdx];
+        int nodeArrayOffset = this.nodeArrayOffsets[depthIdx];
+        
+        int tableY = (y + this.sectionHeightOffset) >> depth;
+//        int tableZ = Math.floorMod(z >> depth, nodeWidth);
+//        int tableX = Math.floorMod(x >> depth, nodeWidth);
+        int tableZ = Math.floorMod(z, this.sectionWidth) >> depth;
+        int tableX = Math.floorMod(x, this.sectionWidth) >> depth;
+        int innerIdx = tableY * nodeWidth * nodeWidth
+                       + tableZ * nodeWidth
+                       + tableX;
+        
+        return nodeArrayOffset + innerIdx;
     }
     
     public RenderSection add(int x, int y, int z) {
-        this.loadedSections++;
+        this.totalLoadedSections++;
         
         RenderSection section = new RenderSection(x, y, z);
     
@@ -141,12 +167,14 @@ public class SectionTree {
 //            }
             
             this.sections[sectionIdx] = section;
-            this.sectionExistenceBits.set(sectionIdx);
+            boolean prevExists = this.sectionExistenceBits.getAndSet(sectionIdx);
             
-            // skip bottom level of nodes
-            for (int depth = 1; depth <= this.maxDepth; depth++) {
-                int nodeIdx = this.getNodeIdx(depth, sectionIdx);
-                this.loadedSectionsPerNode[nodeIdx]++;
+            if (!prevExists) {
+                // skip bottom level of nodes
+                for (int depth = 1; depth <= this.maxDepth; depth++) {
+                    int nodeIdx = this.getNodeIdx(depth, x, y, z);
+                    this.nodeLoadedSections[nodeIdx]++;
+                }
             }
 //        } else {
 //            this.backupSections.put(ChunkSectionPos.asLong(x, y, z), section);
@@ -156,7 +184,7 @@ public class SectionTree {
     }
     
     public RenderSection remove(int x, int y, int z) {
-        this.loadedSections--;
+        this.totalLoadedSections--;
         
         int sectionIdx = this.getSectionIdxUnchecked(x, y, z);
         
@@ -165,12 +193,14 @@ public class SectionTree {
             RenderSection section = this.sections[sectionIdx];
             this.sections[sectionIdx] = null;
     
-            this.sectionExistenceBits.unset(sectionIdx);
+            boolean prevExists = this.sectionExistenceBits.getAndUnset(sectionIdx);
     
             // skip bottom level of nodes
-            for (int depth = 1; depth <= this.maxDepth; depth++) {
-                int nodeIdx = this.getNodeIdx(depth, sectionIdx);
-                this.loadedSectionsPerNode[nodeIdx]--;
+            if (prevExists) {
+                for (int depth = 1; depth <= this.maxDepth; depth++) {
+                    int nodeIdx = this.getNodeIdx(depth, x, y, z);
+                    this.nodeLoadedSections[nodeIdx]--;
+                }
             }
             
             return section;
@@ -197,6 +227,6 @@ public class SectionTree {
     }
     
     public int getLoadedSections() {
-        return this.loadedSections;
+        return this.totalLoadedSections;
     }
 }

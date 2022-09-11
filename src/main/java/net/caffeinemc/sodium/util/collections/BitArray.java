@@ -167,14 +167,24 @@ public class BitArray {
     public int capacity() {
         return this.count;
     }
+    
+    public boolean getAndSet(int index) {
+        int wordIndex = wordIndex(index);
+        long bit = 1L << bitIndex(index);
+        
+        long word = this.words[wordIndex];
+        this.words[wordIndex] = word | bit;
+        
+        return (word & bit) != 0;
+    }
 
     public boolean getAndUnset(int index) {
         var wordIndex = wordIndex(index);
         var bit = 1L << bitIndex(index);
-
+        
         var word = this.words[wordIndex];
         this.words[wordIndex] = word & ~bit;
-
+        
         return (word & bit) != 0;
     }
     

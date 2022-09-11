@@ -37,7 +37,7 @@ public class UserConfigCategories {
                         .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.translateVariable("options.chunks")))
                         .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getViewDistance()))
                         .setImpact(OptionImpact.HIGH)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE) // the renderer will auto-reload at RD change
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.simulationDistance"))
