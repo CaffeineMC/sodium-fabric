@@ -82,12 +82,12 @@ public class SectionCuller {
                     sectionXEnd
             );
 
-            this.fogCull(
-                    sectionZStart,
-                    sectionXStart,
-                    sectionZEnd,
-                    sectionXEnd
-            );
+//            this.fogCull(
+//                    sectionZStart,
+//                    sectionXStart,
+//                    sectionZEnd,
+//                    sectionXEnd
+//            );
             
             // still need to do this to maintain ordering between sections
 //            this.occlusionCull(useOcclusionCulling);
@@ -110,8 +110,8 @@ public class SectionCuller {
         int xIdxIncrement = nodeSectionLength;
     
         // Z and X table indices *are* restricted to the table.
-        final int tableZStart = Math.floorMod(sectionZStart, this.sectionTree.sectionWidth);
-        final int tableXStart = Math.floorMod(sectionXStart, this.sectionTree.sectionWidth);
+        final int tableZStart = sectionZStart & this.sectionTree.sectionWidthMask;
+        final int tableXStart = sectionXStart & this.sectionTree.sectionWidthMask;
         
         final int zIdxStart = tableZStart * this.sectionTree.sectionWidth;
         final int xIdxStart = tableXStart;
@@ -184,28 +184,28 @@ public class SectionCuller {
             int sectionIdx,
             int parentTestResult
     ) {
-        final int nodeSectionLength = 1 << depth;
+        // skip if the node is empty
+        int nodeIdx = this.sectionTree.getNodeIdx(depth, sectionX, sectionY, sectionZ);
+        if (this.sectionTree.nodeLoadedSections[nodeIdx] == 0) {
+            return;
+        }
         
+        final int nodeSectionLength = 1 << depth;
+    
         final int sectionYEnd = Math.min(sectionY + nodeSectionLength, this.sectionTree.sectionHeightMax);
         final int sectionZEnd = Math.min(sectionZ + nodeSectionLength, sectionZMax);
         final int sectionXEnd = Math.min(sectionX + nodeSectionLength, sectionXMax);
-
+    
         float minY = (float) ChunkSectionPos.getBlockCoord(sectionY);
         float minZ = (float) ChunkSectionPos.getBlockCoord(sectionZ);
         float minX = (float) ChunkSectionPos.getBlockCoord(sectionX);
         float maxY = (float) ChunkSectionPos.getBlockCoord(sectionYEnd);
         float maxZ = (float) ChunkSectionPos.getBlockCoord(sectionZEnd);
         float maxX = (float) ChunkSectionPos.getBlockCoord(sectionXEnd);
-        
+    
         int frustumTestResult = frustum.intersectBox(minX, minY, minZ, maxX, maxY, maxZ, parentTestResult);
-
+    
         if (frustumTestResult != Frustum.OUTSIDE) {
-            // skip if the node is empty
-            int nodeIdx = this.sectionTree.getNodeIdx(depth, sectionX, sectionY, sectionZ);
-            if (this.sectionTree.nodeLoadedSections[nodeIdx] == 0) {
-                return;
-            }
-            
 //            if (frustumTestResult == Frustum.INSIDE) {
 //                for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
 //                    for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
@@ -299,8 +299,8 @@ public class SectionCuller {
         int xIdxIncrement = 1;
     
         // Table indices *are* restricted to the table.
-        final int tableZStart = Math.floorMod(sectionZStart, this.sectionTree.sectionWidth);
-        final int tableXStart = Math.floorMod(sectionXStart, this.sectionTree.sectionWidth);
+        final int tableZStart = sectionZStart & this.sectionTree.sectionWidthMask;
+        final int tableXStart = sectionXStart & this.sectionTree.sectionWidthMask;
         
         final int zIdxStart = tableZStart * this.sectionTree.sectionWidth;
         final int xIdxStart = tableXStart;

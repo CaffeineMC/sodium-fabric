@@ -1,8 +1,10 @@
 package net.caffeinemc.sodium.render.chunk.cull;
 
+import java.util.Arrays;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.util.collections.BitArray;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.HeightLimitView;
 
 public class SectionTree {
@@ -15,15 +17,14 @@ public class SectionTree {
     
     protected final int sectionHeightMin;
     protected final int sectionHeightMax;
-    protected final int sectionWidth;
     protected final int sectionHeight;
+    protected final int sectionWidth;
     protected final int sectionWidthSquared;
+    protected final int sectionWidthMask;
     protected final int sectionWidthOffset;
     protected final int sectionHeightOffset;
     protected final int sectionTableSize;
     
-    // the amount of nodes required to encompass all sections width-wise
-    protected final int[] nodeWidths;
     protected final int[] nodeArrayOffsets;
     
     protected final RenderSection[] sections;
@@ -45,9 +46,9 @@ public class SectionTree {
         
         this.chunkLoadDistance = chunkLoadDistance;
     
-//        // Make the diameter a power-of-two, so we can exploit bit-wise math when computing indices
-//        this.diameter = MathHelper.smallestEncompassingPowerOfTwo(loadDistance * 2 + 1);
-        this.sectionWidth = chunkLoadDistance * 2 + 1;
+        // Make the width (in sections) a power-of-two, so we can exploit bit-wise math when computing indices
+        this.sectionWidth = MathHelper.smallestEncompassingPowerOfTwo(chunkLoadDistance * 2 + 1);
+        this.sectionWidthMask = this.sectionWidth - 1;
         this.sectionWidthOffset = chunkLoadDistance;
         this.sectionWidthSquared = this.sectionWidth * this.sectionWidth;
         
@@ -61,26 +62,21 @@ public class SectionTree {
         this.sections = new RenderSection[this.sectionTableSize];
         this.sectionExistenceBits = new BitArray(this.sectionTableSize);
         
-        this.nodeWidths = new int[this.maxDepth];
         this.nodeArrayOffsets = new int[this.maxDepth];
         int totalOffset = 0;
-        int currentWidth = this.sectionWidth;
+        int nodeWidth = this.sectionWidth;
         int currentHeight = this.sectionHeight;
-        int widthRound = 0;
         int heightRound = 0;
         
         for (int i = 0; i < this.maxDepth; i++) {
             // To get an accurate number that's able to store all the elements we need, we need to make sure to round up
             // the divisor to make sure that nodes which may be caught on the border are included.
-            widthRound |= (0b1 & currentWidth);
-            currentWidth >>= 1;
-            int nodeWidth = currentWidth + widthRound;
-            
             heightRound |= (0b1 & currentHeight);
             currentHeight >>= 1;
             int nodeHeight = currentHeight + heightRound;
+    
+            nodeWidth >>= 1;
             
-            this.nodeWidths[i] = nodeWidth;
             this.nodeArrayOffsets[i] = totalOffset;
             
             totalOffset += (nodeHeight * nodeWidth * nodeWidth);
@@ -88,6 +84,38 @@ public class SectionTree {
         
         // don't include the first level of nodes, because those are already stored in the sectionExistenceBits
         this.nodeLoadedSections = new short[totalOffset];
+    
+        for (int depth = 1; depth <= this.maxDepth; depth++) {
+            int currentMax = Integer.MIN_VALUE;
+            int maxY = Integer.MIN_VALUE;
+            int maxZ = Integer.MIN_VALUE;
+            int maxX = Integer.MIN_VALUE;
+            for (int y = this.sectionHeightMin; y < this.sectionHeightMax; y++) {
+                for (int z = 0; z < this.sectionWidth; z++) {
+                    for (int x = 0; x < this.sectionWidth; x++) {
+                        int idx = this.getNodeIdx(depth, x, y, z);
+                        if (currentMax <= idx) {
+                            currentMax = idx;
+                            maxY = y;
+                            maxZ = z;
+                            maxX = x;
+                        }
+                        this.nodeLoadedSections[idx]++;
+                    }
+                }
+            }
+            System.out.printf(
+                    "depth:%d, max: %d, expected max: %d, x: %d, y: %d z: %d%n",
+                    depth,
+                    currentMax,
+                    ((depth == this.maxDepth) ? this.nodeLoadedSections.length : this.nodeArrayOffsets[depth]) - 1,
+                    maxX,
+                    maxY,
+                    maxZ
+            );
+        }
+    
+        Arrays.fill(this.nodeLoadedSections, (short) 0);
         
 //        this.backupSections = new Long2ReferenceOpenHashMap<>(this.sectionTableSize / 8);
         
@@ -116,8 +144,8 @@ public class SectionTree {
     
     public int getSectionIdxUnchecked(int x, int y, int z) {
         int tableY = y + this.sectionHeightOffset;
-        int tableZ = Math.floorMod(z, this.sectionWidth);
-        int tableX = Math.floorMod(x, this.sectionWidth);
+        int tableZ = z & this.sectionWidthMask;
+        int tableX = x & this.sectionWidthMask;
         return tableY * this.sectionWidthSquared
                + tableZ * this.sectionWidth
                + tableX;
@@ -128,15 +156,12 @@ public class SectionTree {
     }
     
     protected int getNodeIdx(int depth, int x, int y, int z) {
-        int depthIdx = depth - 1; // 2 elements per depth, and the depth starts 1 prior
-        int nodeWidth = this.nodeWidths[depthIdx];
-        int nodeArrayOffset = this.nodeArrayOffsets[depthIdx];
+        int nodeWidth = this.sectionWidth >> depth;
+        int nodeArrayOffset = this.nodeArrayOffsets[depth - 1];
         
         int tableY = (y + this.sectionHeightOffset) >> depth;
-//        int tableZ = Math.floorMod(z >> depth, nodeWidth);
-//        int tableX = Math.floorMod(x >> depth, nodeWidth);
-        int tableZ = Math.floorMod(z, this.sectionWidth) >> depth;
-        int tableX = Math.floorMod(x, this.sectionWidth) >> depth;
+        int tableZ = (z & this.sectionWidthMask) >> depth;
+        int tableX = (x & this.sectionWidthMask) >> depth;
         int innerIdx = tableY * nodeWidth * nodeWidth
                        + tableZ * nodeWidth
                        + tableX;
