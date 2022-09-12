@@ -58,7 +58,6 @@ public class SectionCuller {
         this.sectionVisibilityBits.fill(false);
     
         if (this.sectionTree.getLoadedSections() != 0) {
-//            this.sectionVisibilityBits.copy(this.sectionTree.sectionExistenceBits, 0, this.sectionVisibilityBits.capacity());
             // Start with corner section of the fog distance.
             // To do this, we have to reverse the function to check if a chunk is in bounds by doing pythagorean's
             // theorem, then doing some math.
