@@ -1,6 +1,5 @@
 package net.caffeinemc.sodium.render.chunk.cull;
 
-import java.util.Arrays;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.util.collections.BitArray;
@@ -25,6 +24,7 @@ public class SectionTree {
     protected final int sectionHeightOffset;
     protected final int sectionTableSize;
     
+    protected final int[] nodeHeights;
     protected final int[] nodeArrayOffsets;
     
     protected final RenderSection[] sections;
@@ -63,6 +63,7 @@ public class SectionTree {
         this.sectionExistenceBits = new BitArray(this.sectionTableSize);
         
         this.nodeArrayOffsets = new int[this.maxDepth];
+        this.nodeHeights = new int[this.maxDepth];
         int totalOffset = 0;
         int nodeWidth = this.sectionWidth;
         int currentHeight = this.sectionHeight;
@@ -77,6 +78,7 @@ public class SectionTree {
     
             nodeWidth >>= 1;
             
+            this.nodeHeights[i] = nodeHeight;
             this.nodeArrayOffsets[i] = totalOffset;
             
             totalOffset += (nodeHeight * nodeWidth * nodeWidth);
@@ -84,38 +86,6 @@ public class SectionTree {
         
         // don't include the first level of nodes, because those are already stored in the sectionExistenceBits
         this.nodeLoadedSections = new short[totalOffset];
-    
-        for (int depth = 1; depth <= this.maxDepth; depth++) {
-            int currentMax = Integer.MIN_VALUE;
-            int maxY = Integer.MIN_VALUE;
-            int maxZ = Integer.MIN_VALUE;
-            int maxX = Integer.MIN_VALUE;
-            for (int y = this.sectionHeightMin; y < this.sectionHeightMax; y++) {
-                for (int z = 0; z < this.sectionWidth; z++) {
-                    for (int x = 0; x < this.sectionWidth; x++) {
-                        int idx = this.getNodeIdx(depth, x, y, z);
-                        if (currentMax <= idx) {
-                            currentMax = idx;
-                            maxY = y;
-                            maxZ = z;
-                            maxX = x;
-                        }
-                        this.nodeLoadedSections[idx]++;
-                    }
-                }
-            }
-            System.out.printf(
-                    "depth:%d, max: %d, expected max: %d, x: %d, y: %d z: %d%n",
-                    depth,
-                    currentMax,
-                    ((depth == this.maxDepth) ? this.nodeLoadedSections.length : this.nodeArrayOffsets[depth]) - 1,
-                    maxX,
-                    maxY,
-                    maxZ
-            );
-        }
-    
-        Arrays.fill(this.nodeLoadedSections, (short) 0);
         
 //        this.backupSections = new Long2ReferenceOpenHashMap<>(this.sectionTableSize / 8);
         
@@ -165,7 +135,7 @@ public class SectionTree {
         int innerIdx = tableY * nodeWidth * nodeWidth
                        + tableZ * nodeWidth
                        + tableX;
-        
+    
         return nodeArrayOffset + innerIdx;
     }
     

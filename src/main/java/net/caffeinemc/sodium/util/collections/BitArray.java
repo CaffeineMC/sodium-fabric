@@ -80,6 +80,30 @@ public class BitArray {
         }
     }
     
+    // FIXME
+    public boolean checkUnset(int startIdx, int endIdx) {
+        int startWordIndex = wordIndex(startIdx);
+        int endWordIndex = wordIndex(endIdx - 1);
+        
+        long firstWordMask = ~(WORD_MASK << startIdx);
+        long lastWordMask = ~(WORD_MASK >>> -endIdx);
+        if (startWordIndex == endWordIndex) {
+            return (this.words[startWordIndex] & firstWordMask & lastWordMask) == 0x0000000000000000L;
+        } else {
+            if ((this.words[startWordIndex] & firstWordMask) != 0x0000000000000000L) {
+                return false;
+            }
+            
+            for (int i = startWordIndex + 1; i < endWordIndex; i++) {
+                if (this.words[i] != 0x0000000000000000L) {
+                    return false;
+                }
+            }
+            
+            return (this.words[endWordIndex] & lastWordMask) == 0x0000000000000000L;
+        }
+    }
+    
     public void copy(BitArray src, int startIdx, int endIdx) {
         int startWordIndex = wordIndex(startIdx);
         int endWordIndex = wordIndex(endIdx - 1);

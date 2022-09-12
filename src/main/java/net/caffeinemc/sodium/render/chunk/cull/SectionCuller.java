@@ -82,12 +82,12 @@ public class SectionCuller {
                     sectionXEnd
             );
 
-//            this.fogCull(
-//                    sectionZStart,
-//                    sectionXStart,
-//                    sectionZEnd,
-//                    sectionXEnd
-//            );
+            this.fogCull(
+                    sectionZStart,
+                    sectionXStart,
+                    sectionZEnd,
+                    sectionXEnd
+            );
             
             // still need to do this to maintain ordering between sections
 //            this.occlusionCull(useOcclusionCulling);
@@ -184,12 +184,6 @@ public class SectionCuller {
             int sectionIdx,
             int parentTestResult
     ) {
-        // skip if the node is empty
-        int nodeIdx = this.sectionTree.getNodeIdx(depth, sectionX, sectionY, sectionZ);
-        if (this.sectionTree.nodeLoadedSections[nodeIdx] == 0) {
-            return;
-        }
-        
         final int nodeSectionLength = 1 << depth;
     
         final int sectionYEnd = Math.min(sectionY + nodeSectionLength, this.sectionTree.sectionHeightMax);
@@ -206,17 +200,17 @@ public class SectionCuller {
         int frustumTestResult = frustum.intersectBox(minX, minY, minZ, maxX, maxY, maxZ, parentTestResult);
     
         if (frustumTestResult != Frustum.OUTSIDE) {
-//            if (frustumTestResult == Frustum.INSIDE) {
-//                for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
-//                    for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
-//                        this.sectionVisibilityBits.copy(
-//                                this.sectionTree.sectionExistenceBits,
-//                                sectionIdx + yIdxOffset + zIdxOffset,
-//                                sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
-//                        );
-//                    }
-//                }
-//            } else {
+            if (frustumTestResult == Frustum.INSIDE) {
+                for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
+                    for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
+                        this.sectionVisibilityBits.copy(
+                                this.sectionTree.sectionExistenceBits,
+                                sectionIdx + yIdxOffset + zIdxOffset,
+                                sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
+                        );
+                    }
+                }
+            } else {
                 int childDepth = depth - 1;
                 int childSectionLength = nodeSectionLength >> 1;
 
@@ -254,7 +248,7 @@ public class SectionCuller {
                         }
                     }
                 }
-//            }
+            }
         }
     }
     
