@@ -2,6 +2,7 @@ package net.caffeinemc.sodium.render.chunk.cull;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import java.util.Arrays;
 import java.util.Iterator;
 import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
@@ -10,16 +11,19 @@ import net.caffeinemc.sodium.util.DirectionUtil;
 import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class SectionCuller {
     
     private final SectionTree sectionTree;
+    private final int chunkViewDistance;
     private final double squaredFogDistance;
     
-    // 2 bit arrays: 1 for frustum, one for occlusion
     private final BitArray sectionVisibilityBits;
+    private final BitArray sectionOcclusionVisibilityBits;
+    
     private final byte[] sectionDirVisibilityData;
     
     /*
@@ -31,24 +35,39 @@ public class SectionCuller {
      */
     private final byte[] allowedTraversalDirections;
     
+    private final IntList[] fallbackSectionLists;
+    
     // Chunks are grouped by manhattan distance to the start chunk, and given
     // the fact that the chunk graph is bipartite, it's possible to simply
     // alternate the lists to form a queue
-    private final IntList currentQueue;
-    private final IntList nextQueue;
+    private final int[] queue1;
+    private final int[] queue2;
+    
+    private final int[] sortedVisibleSections;
+    private int visibleSectionCount;
     
     public SectionCuller(SectionTree sectionTree, int chunkViewDistance) {
         this.sectionTree = sectionTree;
+        this.chunkViewDistance = chunkViewDistance;
         this.squaredFogDistance = MathHelper.square((chunkViewDistance + 1) * 16.0);
         
-        // TODO: correctly predict size, maybe inline array and keep position?
-        this.currentQueue = new IntArrayList(128);
-        this.nextQueue = new IntArrayList(128);
+        int maxSize = (MathHelper.square(chunkViewDistance * 2 + 1) * sectionTree.sectionHeight);
+        this.queue1 = new int[maxSize];
+        this.queue2 = new int[maxSize];
+        this.sortedVisibleSections = new int[maxSize];
+        
+        this.fallbackSectionLists = new IntList[chunkViewDistance * 2 + 1];
+        // the first list will have a known size of 1 always
+        this.fallbackSectionLists[0] = new IntArrayList(1);
+        for (int i = 1; i < this.fallbackSectionLists.length; i++) {
+            this.fallbackSectionLists[i] = new IntArrayList();
+        }
         
         this.visibleTraversalDirections = new byte[sectionTree.getSectionTableSize()];
         this.allowedTraversalDirections = new byte[sectionTree.getSectionTableSize()];
         this.sectionDirVisibilityData = new byte[sectionTree.getSectionTableSize() * DirectionUtil.COUNT];
         this.sectionVisibilityBits = new BitArray(sectionTree.getSectionTableSize());
+        this.sectionOcclusionVisibilityBits = new BitArray(sectionTree.getSectionTableSize());
     }
     
     public void calculateVisibleSections(
@@ -56,6 +75,7 @@ public class SectionCuller {
             boolean useOcclusionCulling
     ) {
         this.sectionVisibilityBits.fill(false);
+        this.sectionOcclusionVisibilityBits.fill(false);
     
         if (this.sectionTree.getLoadedSections() != 0) {
             // Start with corner section of the fog distance.
@@ -88,8 +108,14 @@ public class SectionCuller {
                     sectionXEnd
             );
             
-            // still need to do this to maintain ordering between sections
-//            this.occlusionCull(useOcclusionCulling);
+            // still need to do this to maintain ordering between sections, even if useOcclusionCulling is false
+            this.occlusionCull(
+                    useOcclusionCulling,
+                    sectionZStart,
+                    sectionXStart,
+                    sectionZEnd,
+                    sectionXEnd
+            );
         }
     }
     
@@ -348,383 +374,328 @@ public class SectionCuller {
         }
     }
 
-//    private void occlusionCull() {
-//        // Run the frustum check early so the fallback can use it too
-//        this.sectionTree.findVisibleSections(this.sectionVisibilityBits, frustum);
-//
-//        IntList[] startingNodes = null;
-//
-//        int startSectionIdx = this.sectionTree.getSectionIdx(
-//                ChunkSectionPos.getSectionCoord(origin.getX()),
-//                ChunkSectionPos.getSectionCoord(origin.getY()),
-//                ChunkSectionPos.getSectionCoord(origin.getZ())
-//        );
-//
-//        if (startSectionIdx == SectionTree.ABSENT_VALUE) {
-//            startingNodes = this.getStartingNodesFallback(
-//                    this.allowedTraversalDirections,
-//                    this.visibleTraversalDirections
-//            );
-//        } else {
-//            this.currentQueue.add(startSectionIdx);
-//
-//            byte visible = 0;
-//
-//            for (int direction = 0; direction < DirectionUtil.COUNT; direction++) {
-//                visible |= this.getVisibilityData(startSectionIdx, direction);
-//            }
-//
-//            this.allowedTraversalDirections[startSectionIdx] = (byte) -1;
-//            this.visibleTraversalDirections[startSectionIdx] = visible;
-//        }
-//
-//
-//        // It's possible that due to the near clip plane, the chunk the camera is in,
-//        // isn't actually visible, however since we still need to use it as a starting
-//        // point for iterating, we make it always visible, which means we need one extra
-//        // slot in the array
-//        int[] visibleSections = new int[vis.count() + 1];
-//        int visibleSectionCount = 0;
-//
-//        int fallbackIndex = 0;
-//
-//        while (true) {
-//            if (startingNodes != null && fallbackIndex < startingNodes.length) {
-//                this.currentQueue.addAll(startingNodes[fallbackIndex]);
-//                fallbackIndex++;
-//
-//                // It's possible that due to unloaded chunks, there entries in
-//                // the startingNodes array that are empty
-//            } else if (this.currentQueue.isEmpty()) {
-//                break;
-//            }
-//
-//            for (int i = 0, length = this.currentQueue.size(); i < length; i++) {
-//                int sectionIdx = this.currentQueue.getInt(i);
-//
-//                visibleSections[visibleSectionCount++] = sectionIdx;
-//
-//                byte allowedTraversalDirection = this.allowedTraversalDirections[sectionIdx];
-//                byte visibleTraversalDirection = this.visibleTraversalDirections[sectionIdx];
-//
-//                for (int outgoingDirection = 0; outgoingDirection < DirectionUtil.COUNT; outgoingDirection++) {
-//                    if ((visibleTraversalDirection & (1 << outgoingDirection)) == 0) {
-//                        continue;
-//                    }
-//
-//                    int adjacentNodeId = this.getAdjacent(sectionIdx, outgoingDirection);
-//
-//                    if (adjacentNodeId == SectionTree.ABSENT_VALUE || !vis.get(adjacentNodeId)) {
-//                        continue;
-//                    }
-//
-//                    int reverseDirection = DirectionUtil.getOppositeId(outgoingDirection);
-//
-//                    int visible = this.getVisibilityData(adjacentNodeId, reverseDirection) | visibilityOverride;
-//                    // prevent further iterations to backtrack
-//                    int newAllowed = allowedTraversalDirection & ~(1 << reverseDirection);
-//
-//                    if (this.allowedTraversalDirections[adjacentNodeId] == 0) {
-//                        this.nextQueue.add(adjacentNodeId);
-//                        if (newAllowed == 0) {
-//                            // TODO: I don't think it's mathematically possible to trigger this
-//                            // avoid adding it twice to the list!
-//                            newAllowed = 0b1000_0000; // not 0 but doesn't set any of the direction bits
-//                        }
-//                    }
-//
-//                    // TODO: I think newAllowed can just be set here, the old
-//                    //  value is always 0 if the node hasn't been seen yet, or
-//                    //  the same value if it has, as newAllowed is just a bitmask
-//                    //  telling exactly which of the 6 connected chunks are further
-//                    //  away in manhattan distance
-//                    this.allowedTraversalDirections[adjacentNodeId] |= newAllowed;
-//                    this.visibleTraversalDirections[adjacentNodeId] |= newAllowed & visible;
-//                }
-//            }
-//
-//            // swap and reset
-//            IntList temp = this.currentQueue;
-//            this.currentQueue = this.nextQueue;
-//            this.nextQueue = temp;
-//            this.nextQueue.clear();
-//        }
-//
-//        Arrays.fill(this.allowedTraversalDirections, (byte) 0);
-//        Arrays.fill(this.visibleTraversalDirections, (byte) 0);
-//
-//        return IntArrayList.wrap(visibleSections, visibleSectionCount);
-//    }
+    private void occlusionCull(
+            boolean useOcclusionCulling,
+            final int sectionZStart,
+            final int sectionXStart,
+            final int sectionZEnd,
+            final int sectionXEnd
+    ) {
+        // It's possible to improve culling for spectator mode players in walls,
+        // but the time cost to update this algorithm, bugfix it and maintain it
+        // on top of the potential slowdown of the normal path seems to outweigh
+        // any gains in those rare circumstances
+        int visibilityOverride = useOcclusionCulling ? 0 : -1;
+    
+        int tableZStart = sectionZStart & this.sectionTree.sectionWidthMask;
+        int tableXStart = sectionXStart & this.sectionTree.sectionWidthMask;
+        int tableZEnd = sectionZEnd & this.sectionTree.sectionWidthMask;
+        int tableXEnd = sectionXEnd & this.sectionTree.sectionWidthMask;
+    
+        this.visibleSectionCount = 0;
+        int currentQueueSize = 0;
+        int nextQueueSize = 0;
+        
+        int[] currentQueue = this.queue1;
+        int[] nextQueue = this.queue2;
+        
+        int originSectionX = this.sectionTree.camera.getSectionX();
+        int originSectionY = this.sectionTree.camera.getSectionY();
+        int originSectionZ = this.sectionTree.camera.getSectionZ();
+    
+        int startSectionIdx = this.sectionTree.getSectionIdx(originSectionX, originSectionY, originSectionZ);
+        
+        boolean fallback = startSectionIdx == SectionTree.OUT_OF_BOUNDS_INDEX;
+        if (fallback) {
+            this.getStartingNodesFallback(originSectionX, originSectionY, originSectionZ);
+        } else {
+            currentQueue[0] = startSectionIdx;
+            currentQueueSize = 1;
 
-//    private static void tryAdd(int sectionIdx, SectionTree tree, int direction, byte directionMask, byte[] allowedTraversalDirections, byte[] visibleTraversalDirections, BitArray visibleSections, IntList sections) {
-//        if (sectionIdx != SectionTree.ABSENT_VALUE && visibleSections.get(sectionIdx)) {
-//            sections.add(sectionIdx);
-//
-//            int visible = tree.getVisibilityData(sectionIdx, direction);
-//
-//            allowedTraversalDirections[sectionIdx] = directionMask;
-//            visibleTraversalDirections[sectionIdx] = (byte) (directionMask & visible);
-//        }
-//    }
-//
-//    private static final int XP = 1 << DirectionUtil.X_PLUS;
-//
-//    private static final int XN = 1 << DirectionUtil.X_MIN;
-//    private static final int ZP = 1 << DirectionUtil.Z_PLUS;
-//    private static final int ZN = 1 << DirectionUtil.Z_MIN;
-//    private IntList[] getStartingNodesFallback(BitArray sectionVisibilityBits, byte[] allowedTraversalDirections, byte[] visibleTraversalDirections) {
-//        IntList[] sections = new IntList[this.chunkViewDistance * 2 + 1];
-//
-//        int sectionX = this.sectionTree.getOriginSectionX();
-//        int sectionY = this.sectionTree.getOriginSectionY();
-//        int sectionZ = this.sectionTree.getOriginSectionZ();
-//
-//        int direction = sectionY < this.heightLimitView.getBottomSectionCoord() ? Direction.UP.getId() : Direction.DOWN.getId();
-//        int inDirection = DirectionUtil.getOppositeId(direction);
-//        // in theory useless
-//        int mask = 1 << direction;
-//
-//        // M M M B J J J
-//        // M M I B F J J
-//        // M I I B F F J
-//        // E E E A C C C
-//        // L H H D G G K
-//        // L L H D G K K
-//        // L L L D K K K
-//
-//        // A
-//        tryAdd(
-//                this.sectionTree.getSectionIdx(sectionX, sectionY, sectionZ),
-//                this.sectionTree,
-//                inDirection,
-//                (byte) -1,
-//                allowedTraversalDirections,
-//                visibleTraversalDirections,
-//                sectionVisibilityBits,
-//                sections[0] = new IntArrayList(1)
-//        );
-//
-//        for (int distance = 1; distance <= this.chunkViewDistance; distance++) {
-//            IntList inner = sections[distance] = new IntArrayList();
-//
-//            // nodes are checked at the following distances:
-//            // . . . 3 . . .
-//            // . . . 2 . . .
-//            // . . . 1 . . .
-//            // 3 2 1 . 1 2 3
-//            // . . . 1 . . .
-//            // . . . 2 . . .
-//            // . . . 3 . . .
-//
-//            {
-//                // handle the mayor axis
-//                // B (north z-)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX, sectionY, sectionZ - distance),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XN | ZN | XP),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        inner
-//                );
-//                // C (east x+)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX + distance, sectionY, sectionZ),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XP | ZN | ZP),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        inner
-//                );
-//                // D (south z+)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX, sectionY, sectionZ + distance),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XP | ZP | XN),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        inner
-//                );
-//                // E (west x-)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX - distance, sectionY, sectionZ),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XN | ZP | ZN),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        inner
-//                );
-//            }
-//
-//            // nodes are checked at the following distances:
-//            // . . . . . . .
-//            // . . 3 . 3 . .
-//            // . 3 2 . 2 3 .
-//            // . . . . . . .
-//            // . 3 2 . 2 3 .
-//            // . . 3 . 3 . .
-//            // . . . . . . .
-//
-//            for (int dx = 1; dx < distance; dx++) {
-//                // handle the inside of the corners areas
-//                int dz = distance - dx;
-//
-//                // F (northeast x+ z-)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX + dx, sectionY, sectionZ - dz),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XP | ZN),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        inner
-//                );
-//                // G (southeast x+ z+)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX + dx, sectionY, sectionZ + dz),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XP | ZP),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        inner
-//                );
-//                // H (southwest x- z+)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX - dx, sectionY, sectionZ + dz),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XN | ZP),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        inner
-//                );
-//                // I (northwest x- z-)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX - dx, sectionY, sectionZ - dz),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XN | ZN),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        inner
-//                );
-//            }
-//        }
-//
-//        for (int distance = 1; distance <= this.chunkViewDistance; distance++) {
-//            // nodes are checked at the following distances:
-//            // 1 2 3 . 3 2 1
-//            // 2 3 . . . 3 2
-//            // 3 . . . . . 3
-//            // . . . . . . .
-//            // 3 . . . . . 3
-//            // 2 3 . . . 3 2
-//            // 1 2 3 . 3 2 1
-//
-//            IntList outer = sections[2 * this.chunkViewDistance - distance + 1] = new IntArrayList();
-//
-//            for (int i = 0; i < distance; i++) {
-//                int dx = this.chunkViewDistance - i;
-//                int dz = this.chunkViewDistance - distance + i + 1;
-//
-//                // J (northeast x+ z-)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX + dx, sectionY, sectionZ - dz),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XP | ZN),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        outer
-//                );
-//                // K (southeast x+ z+)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX + dx, sectionY, sectionZ + dz),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XP | ZP),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        outer
-//                );
-//                // L (southwest x- z+)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX - dx, sectionY, sectionZ + dz),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XN | ZP),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        outer
-//                );
-//                // M (northwest x- z-)
-//                tryAdd(
-//                        this.sectionTree.getSectionIdx(sectionX - dx, sectionY, sectionZ - dz),
-//                        this.sectionTree,
-//                        inDirection,
-//                        (byte) (mask | XN | ZN),
-//                        allowedTraversalDirections,
-//                        visibleTraversalDirections,
-//                        sectionVisibilityBits,
-//                        outer
-//                );
-//            }
-//        }
-//
-//        // Trim the section lists (so no empty at the front or back)
-//        int first = 0;
-//        int last = sections.length - 1;
-//
-//        while (sections[first].isEmpty()) {
-//            if (++first >= sections.length) {
-//                return null;
-//            }
-//        }
-//
-//        while (sections[last].isEmpty()) {
-//            last--;
-//        }
-//
-//        last++;
-//
-//        if (first != 0 && last != sections.length) {
-//            IntList[] trimmed = new IntList[last - first];
-//            System.arraycopy(sections, first, trimmed, 0, last - first);
-//            return trimmed;
-//        } else {
-//            return sections;
-//        }
-//    }
-//
-//    public int getAdjacent(int id, Direction direction) {
-////        if (adjacentSectionIdx != ABSENT_VALUE) {
-////            this.sectionAdjacent[(adjacentSectionIdx * DirectionUtil.COUNT) +
-////                                 DirectionUtil.getOppositeId(direction.ordinal())] = sectionIdx;
-////        }
-////
-////        this.sectionAdjacent[(sectionIdx * DirectionUtil.COUNT) + direction.ordinal()] = adjacentSectionIdx;
-//
-//        return this.sectionAdjacent[(id * DirectionUtil.COUNT) + direction];
-//    }
+            byte visible = 0;
+
+            for (int direction = 0; direction < DirectionUtil.COUNT; direction++) {
+                visible |= this.getVisibilityData(startSectionIdx, direction);
+            }
+
+            this.allowedTraversalDirections[startSectionIdx] = (byte) -1;
+            this.visibleTraversalDirections[startSectionIdx] = visible;
+        }
+
+        int fallbackIndex = 0;
+
+        while (true) {
+            if (fallback && fallbackIndex < this.fallbackSectionLists.length) {
+                IntList nodes = this.fallbackSectionLists[fallbackIndex];
+                int count = nodes.size();
+                nodes.getElements(0, currentQueue, currentQueueSize, count);
+                currentQueueSize += count;
+                fallbackIndex++;
+
+                // Make sure that there are entries in the queue.
+            } else if (currentQueueSize == 0) {
+                break;
+            }
+
+            for (int i = 0; i < currentQueueSize; i++) {
+                int sectionIdx = currentQueue[i];
+
+                this.sortedVisibleSections[this.visibleSectionCount++] = sectionIdx;
+                this.sectionOcclusionVisibilityBits.set(sectionIdx);
+
+                byte allowedTraversalDirection = this.allowedTraversalDirections[sectionIdx];
+                byte visibleTraversalDirection = this.visibleTraversalDirections[sectionIdx];
+
+                for (int outgoingDirection = 0; outgoingDirection < DirectionUtil.COUNT; outgoingDirection++) {
+                    if ((visibleTraversalDirection & (1 << outgoingDirection)) == 0) {
+                        continue;
+                    }
+
+                    int adjacentNodeIdx = this.getAdjacentIdx(
+                            sectionIdx,
+                            outgoingDirection,
+                            tableZStart,
+                            tableXStart,
+                            tableZEnd,
+                            tableXEnd
+                    );
+                    
+                    if (adjacentNodeIdx < -1 || sectionIdx < 0) {
+                        int adjacentNodeIdx2 = this.getAdjacentIdx(
+                                sectionIdx,
+                                outgoingDirection,
+                                tableZStart,
+                                tableXStart,
+                                tableZEnd,
+                                tableXEnd
+                        );
+                        System.out.println(adjacentNodeIdx2);
+                    }
+
+                    if (adjacentNodeIdx == SectionTree.OUT_OF_BOUNDS_INDEX || !this.sectionVisibilityBits.get(adjacentNodeIdx)) {
+                        continue;
+                    }
+
+                    int reverseDirection = DirectionUtil.getOppositeId(outgoingDirection);
+
+                    int visible = this.getVisibilityData(adjacentNodeIdx, reverseDirection) | visibilityOverride;
+                    // prevent further iterations to backtrack
+                    int newAllowed = allowedTraversalDirection & ~(1 << reverseDirection);
+
+                    if (this.allowedTraversalDirections[adjacentNodeIdx] == 0) {
+                        nextQueue[nextQueueSize++] = adjacentNodeIdx;
+                        if (newAllowed == 0) {
+                            // TODO: I don't think it's mathematically possible to trigger this
+                            // avoid adding it twice to the list!
+                            newAllowed = 0b1000_0000; // not 0 but doesn't set any of the direction bits
+                        }
+                    }
+
+                    // TODO: I think newAllowed can just be set here, the old
+                    //  value is always 0 if the node hasn't been seen yet, or
+                    //  the same value if it has, as newAllowed is just a bitmask
+                    //  telling exactly which of the 6 connected chunks are further
+                    //  away in manhattan distance
+                    this.allowedTraversalDirections[adjacentNodeIdx] |= newAllowed;
+                    this.visibleTraversalDirections[adjacentNodeIdx] |= newAllowed & visible;
+                }
+            }
+
+            // swap and reset
+            int[] temp = currentQueue;
+            currentQueue = nextQueue;
+            nextQueue = temp;
+            
+            currentQueueSize = nextQueueSize;
+            nextQueueSize = 0;
+        }
+
+        Arrays.fill(this.allowedTraversalDirections, (byte) 0);
+        Arrays.fill(this.visibleTraversalDirections, (byte) 0);
+    }
+
+    private static final int XP = 1 << DirectionUtil.X_PLUS;
+    private static final int XN = 1 << DirectionUtil.X_MIN;
+    private static final int ZP = 1 << DirectionUtil.Z_PLUS;
+    private static final int ZN = 1 << DirectionUtil.Z_MIN;
+    
+    private void getStartingNodesFallback(int sectionX, int sectionY, int sectionZ) {
+        int direction = sectionY < this.sectionTree.sectionHeightMin ? Direction.UP.getId() : Direction.DOWN.getId();
+        int inDirection = DirectionUtil.getOppositeId(direction);
+        // in theory useless
+        int mask = 1 << direction;
+        
+        // clear out lists before running
+        for (IntList sectionList : this.fallbackSectionLists) {
+            sectionList.clear();
+        }
+
+        // M M M B J J J
+        // M M I B F J J
+        // M I I B F F J
+        // E E E A C C C
+        // L H H D G G K
+        // L L H D G K K
+        // L L L D K K K
+
+        // A
+        this.tryAddFallbackNode(
+                this.sectionTree.getSectionIdx(sectionX, sectionY, sectionZ),
+                inDirection,
+                (byte) -1,
+                this.fallbackSectionLists[0]
+        );
+
+        for (int distance = 1; distance <= this.chunkViewDistance; distance++) {
+            IntList inner = this.fallbackSectionLists[distance];
+
+            // nodes are checked at the following distances:
+            // . . . 3 . . .
+            // . . . 2 . . .
+            // . . . 1 . . .
+            // 3 2 1 . 1 2 3
+            // . . . 1 . . .
+            // . . . 2 . . .
+            // . . . 3 . . .
+
+            {
+                // handle the mayor axis
+                // B (north z-)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX, sectionY, sectionZ - distance),
+                        inDirection,
+                        (byte) (mask | XN | ZN | XP),
+                        inner
+                );
+                // C (east x+)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX + distance, sectionY, sectionZ),
+                        inDirection,
+                        (byte) (mask | XP | ZN | ZP),
+                        inner
+                );
+                // D (south z+)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX, sectionY, sectionZ + distance),
+                        inDirection,
+                        (byte) (mask | XP | ZP | XN),
+                        inner
+                );
+                // E (west x-)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX - distance, sectionY, sectionZ),
+                        inDirection,
+                        (byte) (mask | XN | ZP | ZN),
+                        inner
+                );
+            }
+
+            // nodes are checked at the following distances:
+            // . . . . . . .
+            // . . 3 . 3 . .
+            // . 3 2 . 2 3 .
+            // . . . . . . .
+            // . 3 2 . 2 3 .
+            // . . 3 . 3 . .
+            // . . . . . . .
+
+            for (int dx = 1; dx < distance; dx++) {
+                // handle the inside of the corners areas
+                int dz = distance - dx;
+
+                // F (northeast x+ z-)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX + dx, sectionY, sectionZ - dz),
+                        inDirection,
+                        (byte) (mask | XP | ZN),
+                        inner
+                );
+                // G (southeast x+ z+)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX + dx, sectionY, sectionZ + dz),
+                        inDirection,
+                        (byte) (mask | XP | ZP),
+                        inner
+                );
+                // H (southwest x- z+)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX - dx, sectionY, sectionZ + dz),
+                        inDirection,
+                        (byte) (mask | XN | ZP),
+                        inner
+                );
+                // I (northwest x- z-)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX - dx, sectionY, sectionZ - dz),
+                        inDirection,
+                        (byte) (mask | XN | ZN),
+                        inner
+                );
+            }
+        }
+
+        for (int distance = 1; distance <= this.chunkViewDistance; distance++) {
+            // nodes are checked at the following distances:
+            // 1 2 3 . 3 2 1
+            // 2 3 . . . 3 2
+            // 3 . . . . . 3
+            // . . . . . . .
+            // 3 . . . . . 3
+            // 2 3 . . . 3 2
+            // 1 2 3 . 3 2 1
+
+            IntList outer = this.fallbackSectionLists[2 * this.chunkViewDistance - distance + 1];
+
+            for (int i = 0; i < distance; i++) {
+                int dx = this.chunkViewDistance - i;
+                int dz = this.chunkViewDistance - distance + i + 1;
+
+                // J (northeast x+ z-)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX + dx, sectionY, sectionZ - dz),
+                        inDirection,
+                        (byte) (mask | XP | ZN),
+                        outer
+                );
+                // K (southeast x+ z+)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX + dx, sectionY, sectionZ + dz),
+                        inDirection,
+                        (byte) (mask | XP | ZP),
+                        outer
+                );
+                // L (southwest x- z+)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX - dx, sectionY, sectionZ + dz),
+                        inDirection,
+                        (byte) (mask | XN | ZP),
+                        outer
+                );
+                // M (northwest x- z-)
+                this.tryAddFallbackNode(
+                        this.sectionTree.getSectionIdx(sectionX - dx, sectionY, sectionZ - dz),
+                        inDirection,
+                        (byte) (mask | XN | ZN),
+                        outer
+                );
+            }
+        }
+    }
+    
+    private void tryAddFallbackNode(int sectionIdx, int direction, byte directionMask, IntList sectionList) {
+        if (sectionIdx != SectionTree.OUT_OF_BOUNDS_INDEX && this.sectionVisibilityBits.get(sectionIdx)) {
+            sectionList.add(sectionIdx);
+            
+            int visible = this.getVisibilityData(sectionIdx, direction);
+            
+            this.allowedTraversalDirections[sectionIdx] = directionMask;
+            this.visibleTraversalDirections[sectionIdx] = (byte) (directionMask & visible);
+        }
+    }
     
     public Iterator<RenderSection> getVisibleSectionIterator() {
-        return new VisibleSectionIterator();
+        return new SortedVisibleSectionIterator();
+//        return new VisibleSectionIterator();
     }
     
     private class VisibleSectionIterator implements Iterator<RenderSection> {
@@ -747,6 +718,24 @@ public class SectionCuller {
         }
     }
     
+    private class SortedVisibleSectionIterator implements Iterator<RenderSection> {
+        private int idx;
+        
+        private SortedVisibleSectionIterator() {
+        }
+        
+        @Override
+        public boolean hasNext() {
+            return this.idx < SectionCuller.this.visibleSectionCount;
+        }
+        
+        @Override
+        public RenderSection next() {
+            int trueIdx = SectionCuller.this.sortedVisibleSections[this.idx++];
+            return SectionCuller.this.sectionTree.sections[trueIdx];
+        }
+    }
+    
     public boolean isSectionVisible(int x, int y, int z) {
         int sectionIdx = this.sectionTree.getSectionIdx(x, y, z);
         
@@ -754,7 +743,7 @@ public class SectionCuller {
             return false;
         }
         
-        return this.sectionVisibilityBits.get(sectionIdx);
+        return this.sectionOcclusionVisibilityBits.get(sectionIdx);
     }
     
     public boolean isChunkInDrawDistance(int x, int z) {
@@ -791,5 +780,42 @@ public class SectionCuller {
     
     private int getVisibilityData(int sectionIdx, int incomingDirection) {
         return this.sectionDirVisibilityData[(sectionIdx * DirectionUtil.COUNT) + incomingDirection];
+    }
+    
+    public int getAdjacentIdx(
+            int sectionIdx,
+            int directionId,
+            int tableZStart,
+            int tableXStart,
+            int tableZEnd,
+            int tableXEnd
+    ) {
+        int tableY = sectionIdx >> this.sectionTree.idxYShift;
+        int tableZ = (sectionIdx >> this.sectionTree.idxZShift) & this.sectionTree.sectionWidthMask;
+        int tableX = sectionIdx & this.sectionTree.sectionWidthMask;
+        
+        return switch (directionId) {
+            case DirectionUtil.X_MIN -> tableX == tableXStart
+                                        ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                        : (sectionIdx & ~this.sectionTree.idxXMask) | ((sectionIdx - 1) & this.sectionTree.idxXMask);
+            case DirectionUtil.X_PLUS -> tableX == tableXEnd - 1
+                                         ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                         : (sectionIdx & ~this.sectionTree.idxXMask) | ((sectionIdx + 1) & this.sectionTree.idxXMask);
+    
+            case DirectionUtil.Z_MIN -> tableZ == tableZStart
+                                        ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                        : (sectionIdx & ~this.sectionTree.idxZMask) | ((sectionIdx - this.sectionTree.sectionWidth) & this.sectionTree.idxZMask);
+            case DirectionUtil.Z_PLUS -> tableZ == tableZEnd - 1
+                                         ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                         : (sectionIdx & ~this.sectionTree.idxZMask) | ((sectionIdx + this.sectionTree.sectionWidth) & this.sectionTree.idxZMask);
+    
+            case DirectionUtil.Y_MIN -> tableY == 0
+                                        ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                        : (sectionIdx & ~this.sectionTree.idxYMask) | ((sectionIdx - this.sectionTree.sectionWidthSquared) & this.sectionTree.idxYMask);
+            case DirectionUtil.Y_PLUS -> tableY == this.sectionTree.sectionHeight - 1
+                                         ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                         : (sectionIdx & ~this.sectionTree.idxYMask) | ((sectionIdx + this.sectionTree.sectionWidthSquared) & this.sectionTree.idxYMask);
+            default -> throw new IllegalStateException("Unknown direction ID: " + directionId);
+        };
     }
 }

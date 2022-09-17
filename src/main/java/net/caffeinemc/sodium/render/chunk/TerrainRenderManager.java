@@ -223,7 +223,7 @@ public class TerrainRenderManager {
 
     public void onChunkAdded(int x, int z) {
         // we can't check the visibility bit here, but we can check if it's in draw distance, which effectively does
-        // fog culling on it.
+        // fog culling on updates.
         boolean inDrawDistance = this.sectionCuller.isChunkInDrawDistance(x, z);
         for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
             this.needsUpdate |= this.loadSection(x, y, z) && inDrawDistance;

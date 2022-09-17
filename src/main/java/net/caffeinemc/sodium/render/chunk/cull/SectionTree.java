@@ -2,7 +2,9 @@ package net.caffeinemc.sodium.render.chunk.cull;
 
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
+import net.caffeinemc.sodium.util.DirectionUtil;
 import net.caffeinemc.sodium.util.collections.BitArray;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.HeightLimitView;
 
@@ -23,6 +25,12 @@ public class SectionTree {
     protected final int sectionWidthOffset;
     protected final int sectionHeightOffset;
     protected final int sectionTableSize;
+    
+    protected final int idxYShift;
+    protected final int idxZShift;
+    protected final int idxYMask;
+    protected final int idxZMask;
+    protected final int idxXMask;
     
     protected final int[] nodeHeights;
     protected final int[] nodeArrayOffsets;
@@ -48,10 +56,16 @@ public class SectionTree {
     
         // Make the width (in sections) a power-of-two, so we can exploit bit-wise math when computing indices
         this.sectionWidth = MathHelper.smallestEncompassingPowerOfTwo(chunkLoadDistance * 2 + 1);
-        this.sectionWidthMask = this.sectionWidth - 1;
         this.sectionWidthOffset = chunkLoadDistance;
         this.sectionWidthSquared = this.sectionWidth * this.sectionWidth;
         
+        this.sectionWidthMask = this.sectionWidth - 1;
+        this.idxZShift = Integer.numberOfTrailingZeros(this.sectionWidth);
+        this.idxYShift = this.idxZShift * 2;
+        this.idxYMask = -(1 << this.idxYShift);
+        this.idxXMask = this.sectionWidthMask;
+        this.idxZMask = this.sectionWidthMask << this.idxZShift;
+    
         this.maxDepth = Math.min(maxDepth, Integer.SIZE - Integer.numberOfLeadingZeros(this.sectionWidth) - 1);
         
         this.sectionHeight = heightLimitView.countVerticalSections();
@@ -116,9 +130,9 @@ public class SectionTree {
         int tableY = y + this.sectionHeightOffset;
         int tableZ = z & this.sectionWidthMask;
         int tableX = x & this.sectionWidthMask;
-        return tableY * this.sectionWidthSquared
-               + tableZ * this.sectionWidth
-               + tableX;
+        return (tableY << this.idxYShift)
+               | (tableZ << this.idxZShift)
+               | tableX;
     }
     
     public int getSectionIdx(RenderSection section) {
@@ -126,15 +140,15 @@ public class SectionTree {
     }
     
     protected int getNodeIdx(int depth, int x, int y, int z) {
-        int nodeWidth = this.sectionWidth >> depth;
+        int nodeWidthShift = this.idxZShift >> depth;
         int nodeArrayOffset = this.nodeArrayOffsets[depth - 1];
         
         int tableY = (y + this.sectionHeightOffset) >> depth;
         int tableZ = (z & this.sectionWidthMask) >> depth;
         int tableX = (x & this.sectionWidthMask) >> depth;
-        int innerIdx = tableY * nodeWidth * nodeWidth
-                       + tableZ * nodeWidth
-                       + tableX;
+        int innerIdx = (tableY << nodeWidthShift * 2)
+                       | (tableZ << nodeWidthShift)
+                       | tableX;
     
         return nodeArrayOffset + innerIdx;
     }
