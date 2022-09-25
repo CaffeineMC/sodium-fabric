@@ -38,7 +38,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
     
     @Override
     public <PROGRAM> void bindComputePipeline(ComputePipeline<PROGRAM> renderPipeline, Consumer<PipelineState> gate) {
-        GL45C.glUseProgram(GlProgram.getHandle(renderPipeline.getProgram()));
+        GlStateManager._glUseProgram(GlProgram.getHandle(renderPipeline.getProgram()));
     
         // compute shaders can use textures, so we have to do this too
         try {
@@ -54,7 +54,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
         // should this be BufferRenderer.unbindAll?
         BufferRenderer.resetCurrentVertexBuffer();
 
-        GL45C.glUseProgram(GlProgram.getHandle(renderPipeline.getProgram()));
+        GlStateManager._glUseProgram(GlProgram.getHandle(renderPipeline.getProgram()));
         GL45C.glBindVertexArray(GlVertexArray.getHandle(renderPipeline.getVertexArray()));
 
         setRenderState(renderPipeline.getDescription());
