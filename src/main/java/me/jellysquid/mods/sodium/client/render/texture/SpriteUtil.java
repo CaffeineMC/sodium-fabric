@@ -4,8 +4,8 @@ import net.minecraft.client.texture.Sprite;
 
 public class SpriteUtil {
     public static void markSpriteActive(Sprite sprite) {
-        if (sprite instanceof SpriteExtended) {
-            ((SpriteExtended) sprite).setActive(true);
+        if (sprite.method_45851() instanceof SpriteExtended) {
+            ((SpriteExtended) sprite.method_45851()).setActive(true);
         }
     }
 }

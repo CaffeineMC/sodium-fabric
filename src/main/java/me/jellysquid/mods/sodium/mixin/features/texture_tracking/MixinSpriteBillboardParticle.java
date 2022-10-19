@@ -26,7 +26,7 @@ public abstract class MixinSpriteBillboardParticle extends BillboardParticle {
 
     @Inject(method = "setSprite(Lnet/minecraft/client/texture/Sprite;)V", at = @At("RETURN"))
     private void afterSetSprite(Sprite sprite, CallbackInfo ci) {
-        this.shouldTickSprite = sprite != null && sprite.getAnimation() != null;
+        this.shouldTickSprite = sprite != null && sprite.createAnimation() != null;
     }
 
     @Override
