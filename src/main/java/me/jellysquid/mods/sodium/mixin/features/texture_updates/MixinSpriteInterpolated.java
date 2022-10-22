@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.mixin.features.texture_updates;
 import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
 import net.minecraft.class_7764;
 import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.Sprite;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -38,10 +37,10 @@ public class MixinSpriteInterpolated {
      */
     @Overwrite
     void apply(int one, int two, class_7764.class_7765 arg) {
-        class_7764.Animation animation = ((SpriteInfoAccessor) arg).getAnimation();
-        AnimationAccessor animation2 = (AnimationAccessor) ((SpriteInfoAccessor) arg).getAnimation();
+        class_7764.Animation animation = ((SpriteInfoAnimationAccessor) arg).getAnimation();
+        AnimationAccessor animation2 = (AnimationAccessor) ((SpriteInfoAnimationAccessor) arg).getAnimation();
         List<class_7764.AnimationFrame> frames = ((AnimationAccessor) animation).getFrames();
-        SpriteInfoAccessor accessor = (SpriteInfoAccessor) arg;
+        SpriteInfoAnimationAccessor accessor = (SpriteInfoAnimationAccessor) arg;
         AnimationFrameAccessor animationFrame = (AnimationFrameAccessor) frames.get(accessor.getFrameIndex());
 
         int curIndex = animationFrame.getIndex();
@@ -66,7 +65,7 @@ public class MixinSpriteInterpolated {
             int nextX = ((nextIndex % animation2.getFrameCount()) * width);
             int nextY = ((nextIndex / animation2.getFrameCount()) * height);
 
-            NativeImage src = ((SpriteInfoAccessor2) this.parent).getImages()[layer];
+            NativeImage src = ((SpriteInfoAccessor) this.parent).getImages()[layer];
             NativeImage dst = this.images[layer];
 
             // Source pointers

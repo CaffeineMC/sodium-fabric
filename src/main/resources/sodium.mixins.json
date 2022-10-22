@@ -62,7 +62,7 @@
     "features.texture_updates.MixinSpriteInterpolated",
     "features.texture_updates.AnimationAccessor",
     "features.texture_updates.AnimationFrameAccessor",
-    "features.texture_updates.SpriteInfoAccessor",
-    "features.texture_updates.SpriteInfoAccessor2"
+    "features.texture_updates.SpriteInfoAnimationAccessor",
+    "features.texture_updates.SpriteInfoAccessor"
   ]
 }
