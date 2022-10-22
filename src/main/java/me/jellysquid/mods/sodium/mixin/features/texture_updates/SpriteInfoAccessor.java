@@ -1,17 +1,12 @@
 package me.jellysquid.mods.sodium.mixin.features.texture_updates;
 
 import net.minecraft.class_7764;
+import net.minecraft.client.texture.NativeImage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(class_7764.class_7765.class)
+@Mixin(class_7764.class)
 public interface SpriteInfoAccessor {
-    @Accessor("field_40546")
-    class_7764.Animation getAnimation();
-
-    @Accessor("field_40544")
-    int getFrameIndex();
-
-    @Accessor("field_40545")
-    int getFrameTicks();
+    @Accessor("field_40540")
+    NativeImage[] getImages();
 }
