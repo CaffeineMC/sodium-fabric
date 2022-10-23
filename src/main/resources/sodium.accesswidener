@@ -2,8 +2,6 @@ accessWidener v1 named
 
 accessible class net/minecraft/client/model/ModelPart$Vertex
 accessible class net/minecraft/client/model/ModelPart$Quad
-accessible class net/minecraft/client/texture/Sprite$Interpolation
-accessible class net/minecraft/client/texture/Sprite$Animation
 accessible class net/minecraft/class_7764$Interpolation
 accessible class net/minecraft/class_7764$Animation
 accessible class net/minecraft/class_7764$AnimationFrame
@@ -13,15 +11,4 @@ accessible class net/minecraft/world/chunk/PalettedContainer$DataProvider
 
 accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
 
-accessible class net/minecraft/client/texture/Sprite$AnimationFrame
-accessible field net/minecraft/client/texture/Sprite$AnimationFrame index I
-accessible field net/minecraft/client/texture/Sprite$AnimationFrame time I
-accessible field net/minecraft/client/texture/Sprite$Animation frameIndex I
-accessible field net/minecraft/client/texture/Sprite$Animation frameTicks I
-accessible field net/minecraft/client/texture/Sprite$Animation frames Ljava/util/List;
-accessible field net/minecraft/client/texture/Sprite$Animation frameCount I
-accessible field net/minecraft/client/texture/Sprite width I
-accessible field net/minecraft/client/texture/Sprite height I
-accessible field net/minecraft/client/texture/Sprite images [Lnet/minecraft/client/texture/NativeImage;
-accessible method net/minecraft/client/texture/Sprite upload (II[Lnet/minecraft/client/texture/NativeImage;)V
 accessible field net/minecraft/client/texture/NativeImage pointer J
