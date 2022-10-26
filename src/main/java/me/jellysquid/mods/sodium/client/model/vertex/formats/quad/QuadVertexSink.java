@@ -44,9 +44,9 @@ public interface QuadVertexSink extends VertexSink {
         float normY1 = Norm3b.unpackY(normal);
         float normZ1 = Norm3b.unpackZ(normal);
 
-        float normX2 = Math.fma(normMatrix.m00(), x, Math.fma(normMatrix.m10(), y, normMatrix.m20() * z));
-        float normY2 = Math.fma(normMatrix.m01(), x, Math.fma(normMatrix.m11(), y, normMatrix.m21() * z));
-        float normZ2 = Math.fma(normMatrix.m02(), x, Math.fma(normMatrix.m12(), y, normMatrix.m22() * z));
+        float normX2 = Math.fma(normMatrix.m00(), normX1, Math.fma(normMatrix.m10(), normY1, normMatrix.m20() * normZ1));
+        float normY2 = Math.fma(normMatrix.m01(), normX1, Math.fma(normMatrix.m11(), normY1, normMatrix.m21() * normZ1));
+        float normZ2 = Math.fma(normMatrix.m02(), normX1, Math.fma(normMatrix.m12(), normY1, normMatrix.m22() * normZ1));
 
         this.writeQuad(x2, y2, z2, color, u, v, light, overlay, Norm3b.pack(normX2, normY2, normZ2));
     }
