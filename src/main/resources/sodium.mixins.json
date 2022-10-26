@@ -41,7 +41,6 @@
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
     "features.gui.font.MixinGlyphRenderer",
     "features.item.MixinItemRenderer",
-    "features.matrix_stack.MixinMatrixStack",
     "features.matrix_stack.MixinVertexConsumer",
     "features.model.MixinMultipartBakedModel",
     "features.model.MixinWeightedBakedModel",
