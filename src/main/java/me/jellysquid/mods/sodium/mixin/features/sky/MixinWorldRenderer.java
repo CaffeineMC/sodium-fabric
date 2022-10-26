@@ -16,7 +16,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Matrix4f;
+
 import net.minecraft.util.math.Vec3d;
 
 @Mixin(WorldRenderer.class)

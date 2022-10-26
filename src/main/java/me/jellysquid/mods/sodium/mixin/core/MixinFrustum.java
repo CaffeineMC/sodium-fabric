@@ -28,11 +28,9 @@ public class MixinFrustum implements FrustumAdapter {
     private Matrix4f modelViewMatrix;
 
     @Inject(method = "init", at = @At("RETURN"))
-    public void init(net.minecraft.util.math.Matrix4f modelViewMatrix,
-                     net.minecraft.util.math.Matrix4f projectionMatrix,
-                     CallbackInfo ci) {
-        this.projectionMatrix = JomlHelper.copy(projectionMatrix);
-        this.modelViewMatrix = JomlHelper.copy(modelViewMatrix);
+    public void init(Matrix4f matrix4f, Matrix4f projectionMatrix, CallbackInfo ci) {
+        this.projectionMatrix = new Matrix4f(projectionMatrix);
+        this.modelViewMatrix = new Matrix4f(modelViewMatrix);
     }
 
     @Override

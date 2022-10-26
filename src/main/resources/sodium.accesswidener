@@ -2,10 +2,10 @@ accessWidener v1 named
 
 accessible class net/minecraft/client/model/ModelPart$Vertex
 accessible class net/minecraft/client/model/ModelPart$Quad
-accessible class net/minecraft/class_7764$Interpolation
-accessible class net/minecraft/class_7764$Animation
-accessible class net/minecraft/class_7764$AnimationFrame
-accessible class net/minecraft/class_7764$class_7765
+accessible class net/minecraft/client/texture/SpriteContents$Interpolation
+accessible class net/minecraft/client/texture/SpriteContents$Animation
+accessible class net/minecraft/client/texture/SpriteContents$AnimationFrame
+accessible class net/minecraft/client/texture/SpriteContents$AnimatorImpl
 accessible class net/minecraft/world/chunk/PalettedContainer$Data
 accessible class net/minecraft/world/chunk/PalettedContainer$DataProvider
 

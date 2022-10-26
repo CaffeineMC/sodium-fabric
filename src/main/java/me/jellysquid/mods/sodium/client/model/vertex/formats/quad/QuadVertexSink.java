@@ -1,11 +1,13 @@
 package me.jellysquid.mods.sodium.client.model.vertex.formats.quad;
 
 import me.jellysquid.mods.sodium.client.model.vertex.VertexSink;
-import me.jellysquid.mods.sodium.client.util.math.Matrix4fExtended;
-import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
+import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
+import org.joml.Math;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 
 public interface QuadVertexSink extends VertexSink {
     VertexFormat VERTEX_FORMAT = VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL;
@@ -31,14 +33,21 @@ public interface QuadVertexSink extends VertexSink {
      * @param matrices The matrices to transform the vertex's position and normal vectors by
      */
     default void writeQuad(MatrixStack.Entry matrices, float x, float y, float z, int color, float u, float v, int light, int overlay, int normal) {
-        Matrix4fExtended positionMatrix = MatrixUtil.getExtendedMatrix(matrices.getPositionMatrix());
+        Matrix4f matrix = matrices.getPositionMatrix();
+        Matrix3f normMatrix = matrices.getNormalMatrix();
 
-        float x2 = positionMatrix.transformVecX(x, y, z);
-        float y2 = positionMatrix.transformVecY(x, y, z);
-        float z2 = positionMatrix.transformVecZ(x, y, z);
+        float x2 = Math.fma(matrix.m00(), x, Math.fma(matrix.m10(), y, Math.fma(matrix.m20(), z, matrix.m30())));
+        float y2 = Math.fma(matrix.m01(), x, Math.fma(matrix.m11(), y, Math.fma(matrix.m21(), z, matrix.m31())));
+        float z2 = Math.fma(matrix.m02(), x, Math.fma(matrix.m12(), y, Math.fma(matrix.m22(), z, matrix.m32())));
 
-        int norm = MatrixUtil.transformPackedNormal(normal, matrices.getNormalMatrix());
+        float normX1 = Norm3b.unpackX(normal);
+        float normY1 = Norm3b.unpackY(normal);
+        float normZ1 = Norm3b.unpackZ(normal);
 
-        this.writeQuad(x2, y2, z2, color, u, v, light, overlay, norm);
+        float normX2 = Math.fma(normMatrix.m00(), x, Math.fma(normMatrix.m10(), y, normMatrix.m20() * z));
+        float normY2 = Math.fma(normMatrix.m01(), x, Math.fma(normMatrix.m11(), y, normMatrix.m21() * z));
+        float normZ2 = Math.fma(normMatrix.m02(), x, Math.fma(normMatrix.m12(), y, normMatrix.m22() * z));
+
+        this.writeQuad(x2, y2, z2, color, u, v, light, overlay, Norm3b.pack(normX2, normY2, normZ2));
     }
 }
