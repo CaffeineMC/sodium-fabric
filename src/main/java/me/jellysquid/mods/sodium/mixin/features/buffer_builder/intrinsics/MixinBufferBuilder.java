@@ -4,16 +4,19 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
 import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
+import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorU8;
-import me.jellysquid.mods.sodium.client.util.math.MatrixUtil;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.FixedColorVertexConsumer;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Matrix3f;
-import net.minecraft.util.math.Matrix4f;
-import net.minecraft.util.math.Vector4f;
+import net.minecraft.util.math.Direction;
+
+import net.minecraft.util.math.Vec3i;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
+import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
@@ -40,7 +43,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
         Matrix4f positionMatrix = matrices.getPositionMatrix();
         Matrix3f normalMatrix = matrices.getNormalMatrix();
 
-        int norm = MatrixUtil.computeNormal(normalMatrix, quad.getFace());
+        int norm = computeNormal(normalMatrix, quad.getFace());
 
         QuadVertexSink drain = VertexDrain.of(this)
                 .createSink(VanillaVertexTypes.QUADS);
@@ -79,11 +82,25 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer {
             int color = ColorABGR.pack(fR, fG, fB, 1.0F);
 
             Vector4f pos = new Vector4f(x, y, z, 1.0F);
-            pos.transform(positionMatrix);
+            positionMatrix.transform(pos);
 
-            drain.writeQuad(pos.getX(), pos.getY(), pos.getZ(), color, u, v, light[i], overlay, norm);
+            drain.writeQuad(pos.x(), pos.y(), pos.z(), color, u, v, light[i], overlay, norm);
         }
 
         drain.flush();
+    }
+
+    private int computeNormal(Matrix3f normalMatrix, Direction face) {
+        Vec3i faceNorm = face.getVector();
+
+        float x = faceNorm.getX();
+        float y = faceNorm.getY();
+        float z = faceNorm.getZ();
+
+        float x2 = normalMatrix.m00 * x + normalMatrix.m01 * y + normalMatrix.m02 * z;
+        float y2 = normalMatrix.m10 * x + normalMatrix.m11 * y + normalMatrix.m12 * z;
+        float z2 = normalMatrix.m20 * x + normalMatrix.m21 * y + normalMatrix.m22 * z;
+
+        return Norm3b.pack(x2, y2, z2);
     }
 }

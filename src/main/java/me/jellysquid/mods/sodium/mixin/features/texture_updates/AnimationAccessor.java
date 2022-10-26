@@ -1,15 +1,15 @@
 package me.jellysquid.mods.sodium.mixin.features.texture_updates;
 
-import net.minecraft.class_7764;
+import net.minecraft.client.texture.SpriteContents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.List;
 
-@Mixin(class_7764.Animation.class)
+@Mixin(SpriteContents.Animation.class)
 public interface AnimationAccessor {
     @Accessor
-    List<class_7764.AnimationFrame> getFrames();
+    List<SpriteContents.AnimationFrame> getFrames();
 
     @Accessor
     int getFrameCount();

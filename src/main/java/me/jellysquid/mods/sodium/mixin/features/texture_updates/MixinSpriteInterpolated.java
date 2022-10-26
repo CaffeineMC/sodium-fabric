@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.features.texture_updates;
 
 import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
-import net.minecraft.class_7764;
 import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.texture.SpriteContents;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -11,14 +11,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 
-@Mixin(class_7764.Interpolation.class)
+@Mixin(SpriteContents.Interpolation.class)
 public class MixinSpriteInterpolated {
     @Shadow
     @Final
     private NativeImage[] images;
 
     @Unique
-    private class_7764 parent;
+    private SpriteContents parent;
 
     private static final int STRIDE = 4;
 
@@ -27,7 +27,7 @@ public class MixinSpriteInterpolated {
      * @reason Replace fragile Shadow
      */
     @Inject(method = "<init>", at = @At("RETURN"))
-    public void assignParent(class_7764 parent, CallbackInfo ci) {
+    public void assignParent(SpriteContents parent, CallbackInfo ci) {
         this.parent = parent;
     }
 
@@ -36,10 +36,10 @@ public class MixinSpriteInterpolated {
      * @reason Drastic optimizations
      */
     @Overwrite
-    void apply(int one, int two, class_7764.class_7765 arg) {
-        class_7764.Animation animation = ((SpriteInfoAnimationAccessor) arg).getAnimation();
+    void apply(int one, int two, SpriteContents.AnimatorImpl arg) {
+        SpriteContents.Animation animation = ((SpriteInfoAnimationAccessor) arg).getAnimation();
         AnimationAccessor animation2 = (AnimationAccessor) ((SpriteInfoAnimationAccessor) arg).getAnimation();
-        List<class_7764.AnimationFrame> frames = ((AnimationAccessor) animation).getFrames();
+        List<SpriteContents.AnimationFrame> frames = ((AnimationAccessor) animation).getFrames();
         SpriteInfoAnimationAccessor accessor = (SpriteInfoAnimationAccessor) arg;
         AnimationFrameAccessor animationFrame = (AnimationFrameAccessor) frames.get(accessor.getFrameIndex());
 
@@ -56,8 +56,8 @@ public class MixinSpriteInterpolated {
         int f2 = ColorMixer.getEndRatio(delta);
 
         for (int layer = 0; layer < this.images.length; layer++) {
-            int width = this.parent.method_45807() >> layer;
-            int height = this.parent.method_45815() >> layer;
+            int width = this.parent.getWidth() >> layer;
+            int height = this.parent.getHeight() >> layer;
 
             int curX = ((curIndex % animation2.getFrameCount()) * width);
             int curY = ((curIndex / animation2.getFrameCount()) * height);
@@ -86,7 +86,7 @@ public class MixinSpriteInterpolated {
             }
         }
 
-        this.parent.method_45809(0, 0);
+        this.parent.upload(0, 0);
     }
 
 }
