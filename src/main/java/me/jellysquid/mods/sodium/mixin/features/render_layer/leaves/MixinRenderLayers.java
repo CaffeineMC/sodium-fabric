@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
@@ -35,11 +34,6 @@ public class MixinRenderLayers {
     static {
         // Replace the backing collection types with something a bit faster, since this is a hot spot in chunk rendering.
         BLOCKS = new Reference2ReferenceOpenHashMap<>(BLOCKS);
-
-        // TODO: This is a temporary fix to solve frogspawn blocks making the underlying water invisible due to translucency sorting.
-        // This slightly affects the look of the block, but is better than the alternative for now.
-        BLOCKS.replace(Blocks.FROGSPAWN, RenderLayer.getCutoutMipped());
-
         FLUIDS = new Reference2ReferenceOpenHashMap<>(FLUIDS);
     }
     @Inject(method = "getBlockLayer(Lnet/minecraft/block/BlockState;)Lnet/minecraft/client/render/RenderLayer;", at = @At(value = "RETURN"), cancellable = true)
