@@ -14,8 +14,8 @@ import java.util.Set;
 
 public class DefaultBlockColorSettings {
 
-    private static final TagKey<Block> MODDED_BLENDED_BLOCKS = TagKey.of(Registry.BLOCK_KEY, new Identifier("c", "blendable_blocks"));
-    private static final TagKey<Fluid> MODDED_BLENDED_FLUIDS = TagKey.of(Registry.FLUID_KEY, new Identifier("c", "blendable_fluids"));
+    private static final TagKey<Block> MODDED_BLENDED_BLOCKS = TagKey.of(Registry.BLOCK_KEY, new Identifier("c", "blendable"));
+    private static final TagKey<Fluid> MODDED_BLENDED_FLUIDS = TagKey.of(Registry.FLUID_KEY, new Identifier("c", "blendable"));
 
     // Hardcoded to prevent breakage through tag replacements.
     private static final Set<Block> BLENDED_BLOCKS = new ReferenceOpenHashSet<>(Sets.newHashSet(
@@ -45,7 +45,7 @@ public class DefaultBlockColorSettings {
     /**
      * Registers a block for smooth blending.
      * <p>
-     * Recommended to use the <code>c:blendable_blocks</code> block tag instead for modded blocks.
+     * Recommended to use the <code>c:blendable</code> block tag instead.
      */
     @SuppressWarnings("unused")
     public static void registerForBlending(Block block) {
@@ -55,7 +55,7 @@ public class DefaultBlockColorSettings {
     /**
      * Registers a fluid for smooth blending.
      * <p>
-     * Recommended to use the <code>c:blendable_fluid</code> fluid tag instead for modded fluids.
+     * Recommended to use the <code>c:blendable</code> fluid tag instead.
      */
     @SuppressWarnings("unused")
     public static void registerForBlending(Fluid fluid) {
