@@ -5,7 +5,7 @@ vec3 _vert_position;
 vec2 _vert_tex_diffuse_coord;
 
 // The light texture coordinate of the vertex
-vec2 _vert_tex_light_coord;
+ivec2 _vert_tex_light_coord;
 
 // The color (rgb) and shade (a) of the vertex
 vec4 _vert_color_shade;
@@ -13,7 +13,7 @@ vec4 _vert_color_shade;
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec4 in_color;
 layout(location = 2) in vec2 in_tex_diffuse_coord;
-layout(location = 3) in vec2 in_tex_light_coord;
+layout(location = 3) in ivec2 in_tex_light_coord;
 
 void _vert_init() {
 #ifdef VERT_SCALE

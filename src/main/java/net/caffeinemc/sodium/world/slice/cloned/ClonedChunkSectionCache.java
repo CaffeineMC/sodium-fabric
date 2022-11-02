@@ -11,7 +11,7 @@ public class ClonedChunkSectionCache {
     private final World world;
 
     private final ConcurrentLinkedQueue<ClonedChunkSection> inactivePool = new ConcurrentLinkedQueue<>();
-    private final Long2ReferenceMap<ClonedChunkSection> byPosition = new Long2ReferenceOpenHashMap<>();
+    private final Long2ReferenceMap<ClonedChunkSection> byPosition = new Long2ReferenceOpenHashMap<>(); // TODO: replace
 
     public ClonedChunkSectionCache(World world) {
         this.world = world;

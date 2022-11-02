@@ -149,8 +149,7 @@ public class UserConfig {
     }
 
     private void sanitize() {
-
-
+        // NOOP for now
     }
 
     public void writeChanges() throws IOException {

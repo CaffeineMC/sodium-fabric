@@ -5,6 +5,7 @@ import net.minecraft.util.math.ChunkPos;
 
 import java.util.stream.LongStream;
 
+// TODO: see if this should be optimized using 2d arrays, may not be worth it
 public class ChunkTracker {
     private final Long2IntOpenHashMap single = new Long2IntOpenHashMap();
     private final Long2IntOpenHashMap merged = new Long2IntOpenHashMap();
@@ -89,6 +90,7 @@ public class ChunkTracker {
         var existingFlags = this.single.get(key);
 
         if ((existingFlags & ChunkStatus.FLAG_HAS_BLOCK_DATA) == 0) {
+            // FIXME
             throw new IllegalStateException("Tried to mark light data as ready for chunk [%s, %s] but it hasn't been loaded yet".formatted(x, z));
         }
 

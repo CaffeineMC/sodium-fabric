@@ -38,7 +38,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
     
     @Override
     public <PROGRAM> void bindComputePipeline(ComputePipeline<PROGRAM> renderPipeline, Consumer<PipelineState> gate) {
-        GL45C.glUseProgram(GlProgram.getHandle(renderPipeline.getProgram()));
+        GlStateManager._glUseProgram(GlProgram.getHandle(renderPipeline.getProgram()));
     
         // compute shaders can use textures, so we have to do this too
         try {
@@ -54,7 +54,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
         // should this be BufferRenderer.unbindAll?
         BufferRenderer.resetCurrentVertexBuffer();
 
-        GL45C.glUseProgram(GlProgram.getHandle(renderPipeline.getProgram()));
+        GlStateManager._glUseProgram(GlProgram.getHandle(renderPipeline.getProgram()));
         GL45C.glBindVertexArray(GlVertexArray.getHandle(renderPipeline.getVertexArray()));
 
         setRenderState(renderPipeline.getDescription());
@@ -129,7 +129,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
 
         @Override
         public void bindTexture(int unit, Texture texture, Sampler sampler) {
-            if (RenderConfiguration.API_CHECKS) {
+            if (RenderConfiguration.DEBUG_CHECKS) {
                 Validate.isTrue(unit >= 0 && unit < this.maxTextureUnits, "Texture unit index is invalid");
             }
 
@@ -144,7 +144,7 @@ public class Blaze3DPipelineManager implements GlPipelineManager {
 
         @Override
         public void bindBufferBlock(BufferBlock block, Buffer buffer, long offset, long length) {
-            if (RenderConfiguration.API_CHECKS) {
+            if (RenderConfiguration.DEBUG_CHECKS) {
                 Validate.isTrue(offset >= 0, "Offset must be greater-than or equal to zero");
 //                Validate.isTrue(offset + length <= buffer.capacity(), "Range is out of buffer bounds");
             }

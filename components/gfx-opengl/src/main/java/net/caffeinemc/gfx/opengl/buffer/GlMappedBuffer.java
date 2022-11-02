@@ -23,7 +23,7 @@ public class GlMappedBuffer extends GlBuffer implements MappedBuffer {
 
     @Override
     public void flush(long offset, long length) {
-        if (RenderConfiguration.API_CHECKS) {
+        if (RenderConfiguration.DEBUG_CHECKS) {
             Validate.isTrue(this.flags.contains(MappedBufferFlags.EXPLICIT_FLUSH), "Buffer is not mapped for explicit flushing");
 
             Validate.isTrue(offset >= 0, "The offset must be greater than or equal to zero");

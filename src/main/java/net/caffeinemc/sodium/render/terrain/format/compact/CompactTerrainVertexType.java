@@ -18,7 +18,7 @@ public class CompactTerrainVertexType implements TerrainVertexType {
             .addElement(TerrainMeshAttribute.POSITION, 0, VertexAttributeFormat.SHORT, 3, true, false)
             .addElement(TerrainMeshAttribute.COLOR, 8, VertexAttributeFormat.UNSIGNED_BYTE, 4, true, false)
             .addElement(TerrainMeshAttribute.BLOCK_TEXTURE, 12, VertexAttributeFormat.UNSIGNED_SHORT, 2, true, false)
-            .addElement(TerrainMeshAttribute.LIGHT_TEXTURE, 16, VertexAttributeFormat.UNSIGNED_SHORT, 2, true, false)
+            .addElement(TerrainMeshAttribute.LIGHT_TEXTURE, 16, VertexAttributeFormat.UNSIGNED_SHORT, 2, false, true)
             .build();
 
     private static final int POSITION_MAX_VALUE = 32768;
@@ -54,22 +54,6 @@ public class CompactTerrainVertexType implements TerrainVertexType {
 
     static short encodePosition(float v) {
         return (short) ((v - POSITION_ORIGIN) * POSITION_SCALE);
-    }
-
-    static int encodeLightMapTexCoord(int light) {
-        int r = light;
-
-        // Mask off coordinate values outside 0..255
-        r &= 0x00FF_00FF;
-
-        // Light coordinates are normalized values, so upcasting requires a shift
-        // Scale the coordinates from the range of 0..255 (unsigned byte) into 0..65535 (unsigned short)
-        r <<= 8;
-
-        // Add a half-texel offset to each coordinate so we sample from the center of each texel
-        r += 0x0800_0800;
-
-        return r;
     }
 
     @Override

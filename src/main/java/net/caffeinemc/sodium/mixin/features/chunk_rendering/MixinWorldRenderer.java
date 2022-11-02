@@ -35,9 +35,6 @@ public abstract class MixinWorldRenderer implements WorldRendererHolder {
 
     private SodiumWorldRenderer renderer;
 
-    @Unique
-    private int frame;
-
     @Override
     public SodiumWorldRenderer getSodiumWorldRenderer() {
         return this.renderer;
@@ -102,7 +99,7 @@ public abstract class MixinWorldRenderer implements WorldRendererHolder {
      */
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, boolean spectator) {
-        this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), this.frame++, spectator);
+        this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), spectator);
     }
 
     /**
@@ -158,6 +155,11 @@ public abstract class MixinWorldRenderer implements WorldRendererHolder {
     @Inject(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/WorldRenderer;noCullingBlockEntities:Ljava/util/Set;", shift = At.Shift.BEFORE, ordinal = 0))
     private void onRenderTileEntities(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f matrix4f, CallbackInfo ci) {
         this.renderer.renderTileEntities(matrices, this.bufferBuilders, this.blockBreakingProgressions, camera, tickDelta);
+    }
+    
+    @Inject(method = "render", at = @At("RETURN"))
+    private void onRenderFinish(MatrixStack matrices, float tickDelta, long limitTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightmapTextureManager lightmapTextureManager, Matrix4f positionMatrix, CallbackInfo ci) {
+        this.renderer.incrementFrame();
     }
 
     /**
