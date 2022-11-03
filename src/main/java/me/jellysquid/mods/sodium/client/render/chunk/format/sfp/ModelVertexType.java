@@ -68,7 +68,7 @@ public class ModelVertexType implements ChunkVertexType {
     }
 
     static short encodeBlockTexture(float value) {
-        return (short) (value * TEXTURE_MAX_VALUE);
+        return (short) (Math.min(0.99999997F, value) * TEXTURE_MAX_VALUE);
     }
 
     static short encodePosition(float v) {
