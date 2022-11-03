@@ -20,7 +20,7 @@ public class MixinFrustum implements FrustumAdapter, me.jellysquid.mods.sodium.c
 
     @Shadow
     @Final
-    private FrustumIntersection field_40823;
+    private FrustumIntersection frustumIntersection;
 
     @Override
     public me.jellysquid.mods.sodium.client.util.frustum.Frustum sodium$createFrustum() {
@@ -29,7 +29,7 @@ public class MixinFrustum implements FrustumAdapter, me.jellysquid.mods.sodium.c
 
     @Override
     public Visibility testBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-        return switch (this.field_40823.intersectAab(minX - (float) this.x, minY - (float) this.y, minZ - (float) this.z,
+        return switch (this.frustumIntersection.intersectAab(minX - (float) this.x, minY - (float) this.y, minZ - (float) this.z,
                 maxX - (float) this.x, maxY - (float) this.y, maxZ - (float) this.z)) {
             case FrustumIntersection.INTERSECT -> Visibility.INTERSECT;
             case FrustumIntersection.INSIDE -> Visibility.INSIDE;
