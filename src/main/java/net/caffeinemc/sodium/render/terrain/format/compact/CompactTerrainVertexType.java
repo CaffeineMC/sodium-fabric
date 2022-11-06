@@ -49,7 +49,7 @@ public class CompactTerrainVertexType implements TerrainVertexType {
     }
 
     static short encodeBlockTexture(float v) {
-        return (short) (v * TEXTURE_MAX_VALUE);
+        return (short) (Math.min(0.99999997F, v) * TEXTURE_MAX_VALUE);
     }
 
     static short encodePosition(float v) {
