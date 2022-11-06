@@ -1,13 +1,12 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.caffeinemc.sodium.interop.vanilla.math.JomlHelper;
 import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
 
 public record ChunkRenderMatrices(Matrix4f projection, Matrix4f modelView) {
     public static ChunkRenderMatrices from(MatrixStack stack) {
         MatrixStack.Entry entry = stack.peek();
-        return new ChunkRenderMatrices(JomlHelper.copy(RenderSystem.getProjectionMatrix()), JomlHelper.copy(entry.getPositionMatrix()));
+        return new ChunkRenderMatrices(new Matrix4f(RenderSystem.getProjectionMatrix()), new Matrix4f(entry.getPositionMatrix()));
     }
 }

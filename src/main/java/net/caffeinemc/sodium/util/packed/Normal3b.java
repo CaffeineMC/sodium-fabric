@@ -1,8 +1,8 @@
 package net.caffeinemc.sodium.util.packed;
 
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3f;
 import net.minecraft.util.math.Vec3i;
+import org.joml.Vector3f;
 
 /**
  * Provides some utilities for working with packed normal vectors. Each normal component provides 8 bits of
@@ -28,8 +28,8 @@ public class Normal3b {
         return pack(norm.getX(), norm.getY(), norm.getZ());
     }
 
-    public static int pack(Vec3f dir) {
-        return pack(dir.getX(), dir.getY(), dir.getZ());
+    public static int pack(Vector3f dir) {
+        return pack(dir.x(), dir.y(), dir.z());
     }
 
     /**

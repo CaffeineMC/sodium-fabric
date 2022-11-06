@@ -2,21 +2,23 @@ package net.caffeinemc.sodium.mixin.features.texture_updates;
 
 import net.caffeinemc.sodium.util.color.ColorMixer;
 import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.texture.SpriteContents;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Sprite.Interpolation.class)
+import java.util.List;
+
+@Mixin(SpriteContents.Interpolation.class)
 public class MixinSpriteInterpolated {
     @Shadow
     @Final
     private NativeImage[] images;
 
     @Unique
-    private Sprite parent;
+    private SpriteContents parent;
 
     private static final int STRIDE = 4;
 
@@ -25,7 +27,7 @@ public class MixinSpriteInterpolated {
      * @reason Replace fragile Shadow
      */
     @Inject(method = "<init>", at = @At("RETURN"))
-    public void assignParent(Sprite parent, Sprite.Info info, int maxLevel, CallbackInfo ci) {
+    public void assignParent(SpriteContents parent, CallbackInfo ci) {
         this.parent = parent;
     }
 
@@ -34,32 +36,36 @@ public class MixinSpriteInterpolated {
      * @reason Drastic optimizations
      */
     @Overwrite
-    void apply(Sprite.Animation animation) {
-        Sprite.AnimationFrame animationFrame = animation.frames.get(animation.frameIndex);
+    void apply(int one, int two, SpriteContents.AnimatorImpl arg) {
+        SpriteContents.Animation animation = ((SpriteInfoAnimationAccessor) arg).getAnimation();
+        AnimationAccessor animation2 = (AnimationAccessor) ((SpriteInfoAnimationAccessor) arg).getAnimation();
+        List<SpriteContents.AnimationFrame> frames = ((AnimationAccessor) animation).getFrames();
+        SpriteInfoAnimationAccessor accessor = (SpriteInfoAnimationAccessor) arg;
+        AnimationFrameAccessor animationFrame = (AnimationFrameAccessor) frames.get(accessor.getFrameIndex());
 
-        int curIndex = animationFrame.index;
-        int nextIndex = animation.frames.get((animation.frameIndex + 1) % animation.frames.size()).index;
+        int curIndex = animationFrame.getIndex();
+        int nextIndex = ((AnimationFrameAccessor) animation2.getFrames().get((accessor.getFrameIndex() + 1) % frames.size())).getIndex();
 
         if (curIndex == nextIndex) {
             return;
         }
 
-        float delta = 1.0F - (float) animation.frameTicks / (float) animationFrame.time;
+        float delta = 1.0F - (float) accessor.getFrameTicks() / (float) animationFrame.getTime();
 
         int f1 = ColorMixer.getStartRatio(delta);
         int f2 = ColorMixer.getEndRatio(delta);
 
         for (int layer = 0; layer < this.images.length; layer++) {
-            int width = this.parent.width >> layer;
-            int height = this.parent.height >> layer;
+            int width = this.parent.getWidth() >> layer;
+            int height = this.parent.getHeight() >> layer;
 
-            int curX = ((curIndex % animation.frameCount) * width);
-            int curY = ((curIndex / animation.frameCount) * height);
+            int curX = ((curIndex % animation2.getFrameCount()) * width);
+            int curY = ((curIndex / animation2.getFrameCount()) * height);
 
-            int nextX = ((nextIndex % animation.frameCount) * width);
-            int nextY = ((nextIndex / animation.frameCount) * height);
+            int nextX = ((nextIndex % animation2.getFrameCount()) * width);
+            int nextY = ((nextIndex / animation2.getFrameCount()) * height);
 
-            NativeImage src = this.parent.images[layer];
+            NativeImage src = ((SpriteInfoAccessor) this.parent).getImages()[layer];
             NativeImage dst = this.images[layer];
 
             // Source pointers
@@ -80,7 +86,7 @@ public class MixinSpriteInterpolated {
             }
         }
 
-        this.parent.upload(0, 0, this.images);
+        this.parent.upload(0, 0);
     }
 
 }

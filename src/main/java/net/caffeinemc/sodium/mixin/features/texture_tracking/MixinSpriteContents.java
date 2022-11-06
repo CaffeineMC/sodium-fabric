@@ -1,11 +1,11 @@
 package net.caffeinemc.sodium.mixin.features.texture_tracking;
 
 import net.caffeinemc.sodium.interop.vanilla.mixin.SpriteVisibilityStorage;
-import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.texture.SpriteContents;
 import org.spongepowered.asm.mixin.Mixin;
 
-@Mixin(Sprite.class)
-public abstract class MixinSprite implements SpriteVisibilityStorage {
+@Mixin(SpriteContents.class)
+public abstract class MixinSpriteContents implements SpriteVisibilityStorage {
     private boolean active;
 
     @Override

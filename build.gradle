@@ -62,7 +62,6 @@ dependencies {
     includeModImplementation fabricApi.module("fabric-resource-loader-v0", project.fabric_version)
 
     includeImplementation 'io.github.douira:glsl-transformer:0.27.0'
-    includeImplementation "org.joml:joml:1.10.4"
 
     // Because we need the subprojects to be build as jars prior to their inclusion, we need to separate them to
     // order them correctly.
@@ -71,9 +70,9 @@ dependencies {
 
     if (findProperty("sodium.use_third_party_mods") != "false") {
         modRuntimeOnly "maven.modrinth:lazydfu:0.1.3"
-        modRuntimeOnly "maven.modrinth:starlight:1.1.1+1.19"
-        modRuntimeOnly "maven.modrinth:lithium:mc1.19.2-0.8.3"
-        modRuntimeOnly "maven.modrinth:ferrite-core:5.0.0-fabric"
+       // modRuntimeOnly "maven.modrinth:starlight:1.1.1+1.19"
+       // modRuntimeOnly "maven.modrinth:lithium:mc1.19.2-0.8.3"
+       // modRuntimeOnly "maven.modrinth:ferrite-core:5.0.0-fabric"
     }
 }
 

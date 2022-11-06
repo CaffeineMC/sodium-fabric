@@ -2,27 +2,16 @@ accessWidener v1 named
 
 accessible class net/minecraft/client/model/ModelPart$Vertex
 accessible class net/minecraft/client/model/ModelPart$Quad
-accessible class net/minecraft/client/texture/Sprite$Interpolation
-accessible class net/minecraft/client/texture/Sprite$Animation
+accessible class net/minecraft/client/texture/SpriteContents$Interpolation
+accessible class net/minecraft/client/texture/SpriteContents$Animation
+accessible class net/minecraft/client/texture/SpriteContents$AnimationFrame
+accessible class net/minecraft/client/texture/SpriteContents$AnimatorImpl
 accessible class net/minecraft/world/chunk/PalettedContainer$Data
 accessible class net/minecraft/world/chunk/PalettedContainer$DataProvider
 
 accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
 
-accessible class net/minecraft/client/texture/Sprite$AnimationFrame
-accessible field net/minecraft/client/texture/Sprite$AnimationFrame index I
-accessible field net/minecraft/client/texture/Sprite$AnimationFrame time I
-accessible field net/minecraft/client/texture/Sprite$Animation frameIndex I
-accessible field net/minecraft/client/texture/Sprite$Animation frameTicks I
-accessible field net/minecraft/client/texture/Sprite$Animation frames Ljava/util/List;
-accessible field net/minecraft/client/texture/Sprite$Animation frameCount I
-accessible field net/minecraft/client/texture/Sprite width I
-accessible field net/minecraft/client/texture/Sprite height I
-accessible field net/minecraft/client/texture/Sprite images [Lnet/minecraft/client/texture/NativeImage;
-accessible method net/minecraft/client/texture/Sprite upload (II[Lnet/minecraft/client/texture/NativeImage;)V
 accessible field net/minecraft/client/texture/NativeImage pointer J
-
-accessible field net/minecraft/client/render/VertexFormat offsets Lit/unimi/dsi/fastutil/ints/IntList;
 
 accessible field com/mojang/blaze3d/platform/GlStateManager TEXTURES [Lcom/mojang/blaze3d/platform/GlStateManager$Texture2DState;
 accessible class com/mojang/blaze3d/platform/GlStateManager$Texture2DState

@@ -8,8 +8,8 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.ColorResolver;
 import net.minecraft.world.biome.source.BiomeAccess;
-import net.minecraft.world.level.ColorResolver;
 
 public class ChunkColorCache {
     private static final int BORDER = 1;

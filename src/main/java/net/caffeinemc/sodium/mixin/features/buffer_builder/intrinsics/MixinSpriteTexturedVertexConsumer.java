@@ -20,19 +20,19 @@ public abstract class MixinSpriteTexturedVertexConsumer implements VertexDrain {
 
     @Shadow
     @Final
-    private VertexConsumer parent;
+    private VertexConsumer delegate;
 
     @SuppressWarnings("unchecked")
     @Override
     public <T extends VertexSink> T createSink(VertexType<T> type) {
         if (type == VanillaVertexFormats.QUADS) {
-            return (T) new SpriteTexturedVertexTransformer.Quad(VertexDrain.of(this.parent)
+            return (T) new SpriteTexturedVertexTransformer.Quad(VertexDrain.of(this.delegate)
                     .createSink(VanillaVertexFormats.QUADS), this.sprite);
         } else if (type == VanillaVertexFormats.PARTICLES) {
-            return (T) new SpriteTexturedVertexTransformer.Particle(VertexDrain.of(this.parent)
+            return (T) new SpriteTexturedVertexTransformer.Particle(VertexDrain.of(this.delegate)
                     .createSink(VanillaVertexFormats.PARTICLES), this.sprite);
         } else if (type == VanillaVertexFormats.GLYPHS) {
-            return (T) new SpriteTexturedVertexTransformer.Glyph(VertexDrain.of(this.parent)
+            return (T) new SpriteTexturedVertexTransformer.Glyph(VertexDrain.of(this.delegate)
                     .createSink(VanillaVertexFormats.GLYPHS), this.sprite);
         }
 

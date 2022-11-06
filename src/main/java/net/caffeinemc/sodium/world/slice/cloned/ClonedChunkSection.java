@@ -19,6 +19,7 @@ import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.registry.BuiltinRegistries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
@@ -29,7 +30,7 @@ public class ClonedChunkSection {
     private static final LightType[] LIGHT_TYPES = LightType.values();
 
     @Deprecated
-    private static final ChunkSection EMPTY_SECTION = new ChunkSection(0, BuiltinRegistries.BIOME);
+    private ChunkSection EMPTY_SECTION;
 
     private static final int PACKED_BLOCK_BITS = 4;
 
@@ -57,6 +58,7 @@ public class ClonedChunkSection {
     }
 
     public void init(World world, ChunkSectionPos pos) {
+        EMPTY_SECTION = new ChunkSection(0, world.getRegistryManager().get(Registry.BIOME_KEY));
         WorldChunk chunk = world.getChunk(pos.getX(), pos.getZ());
 
         if (chunk == null) {

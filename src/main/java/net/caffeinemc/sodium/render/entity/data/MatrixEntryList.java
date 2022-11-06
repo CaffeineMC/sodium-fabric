@@ -1,10 +1,9 @@
 package net.caffeinemc.sodium.render.entity.data;
 
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix3fExtended;
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.Matrix4fExtended;
-import net.caffeinemc.sodium.interop.vanilla.math.matrix.MatrixUtil;
 import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.minecraft.client.util.math.MatrixStack;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -105,36 +104,36 @@ public class MatrixEntryList {
     }
 
     private static void writeMatrixEntry(long pointer, MatrixStack.Entry matrixEntry) {
-        Matrix4fExtended model = MatrixUtil.getExtendedMatrix(matrixEntry.getPositionMatrix());
-        MemoryUtil.memPutFloat(pointer, model.getA00());
-        MemoryUtil.memPutFloat(pointer + 4, model.getA10());
-        MemoryUtil.memPutFloat(pointer + 8, model.getA20());
-        MemoryUtil.memPutFloat(pointer + 12, model.getA30());
-        MemoryUtil.memPutFloat(pointer + 16, model.getA01());
-        MemoryUtil.memPutFloat(pointer + 20, model.getA11());
-        MemoryUtil.memPutFloat(pointer + 24, model.getA21());
-        MemoryUtil.memPutFloat(pointer + 28, model.getA31());
-        MemoryUtil.memPutFloat(pointer + 32, model.getA02());
-        MemoryUtil.memPutFloat(pointer + 36, model.getA12());
-        MemoryUtil.memPutFloat(pointer + 40, model.getA22());
-        MemoryUtil.memPutFloat(pointer + 44, model.getA32());
-        MemoryUtil.memPutFloat(pointer + 48, model.getA03());
-        MemoryUtil.memPutFloat(pointer + 52, model.getA13());
-        MemoryUtil.memPutFloat(pointer + 56, model.getA23());
-        MemoryUtil.memPutFloat(pointer + 60, model.getA33());
+        Matrix4f model = matrixEntry.getPositionMatrix();
+        MemoryUtil.memPutFloat(pointer, model.m00());
+        MemoryUtil.memPutFloat(pointer + 4, model.m10());
+        MemoryUtil.memPutFloat(pointer + 8, model.m20());
+        MemoryUtil.memPutFloat(pointer + 12, model.m30());
+        MemoryUtil.memPutFloat(pointer + 16, model.m01());
+        MemoryUtil.memPutFloat(pointer + 20, model.m11());
+        MemoryUtil.memPutFloat(pointer + 24, model.m21());
+        MemoryUtil.memPutFloat(pointer + 28, model.m31());
+        MemoryUtil.memPutFloat(pointer + 32, model.m02());
+        MemoryUtil.memPutFloat(pointer + 36, model.m12());
+        MemoryUtil.memPutFloat(pointer + 40, model.m22());
+        MemoryUtil.memPutFloat(pointer + 44, model.m32());
+        MemoryUtil.memPutFloat(pointer + 48, model.m03());
+        MemoryUtil.memPutFloat(pointer + 52, model.m13());
+        MemoryUtil.memPutFloat(pointer + 56, model.m23());
+        MemoryUtil.memPutFloat(pointer + 60, model.m33());
 
-        Matrix3fExtended normal = MatrixUtil.getExtendedMatrix(matrixEntry.getNormalMatrix());
-        MemoryUtil.memPutFloat(pointer + 64, normal.getA00());
-        MemoryUtil.memPutFloat(pointer + 68, normal.getA10());
-        MemoryUtil.memPutFloat(pointer + 72, normal.getA20());
+        Matrix3f normal = matrixEntry.getNormalMatrix();
+        MemoryUtil.memPutFloat(pointer + 64, normal.m00());
+        MemoryUtil.memPutFloat(pointer + 68, normal.m10());
+        MemoryUtil.memPutFloat(pointer + 72, normal.m20());
         // padding
-        MemoryUtil.memPutFloat(pointer + 80, normal.getA01());
-        MemoryUtil.memPutFloat(pointer + 84, normal.getA11());
-        MemoryUtil.memPutFloat(pointer + 88, normal.getA21());
+        MemoryUtil.memPutFloat(pointer + 80, normal.m01());
+        MemoryUtil.memPutFloat(pointer + 84, normal.m11());
+        MemoryUtil.memPutFloat(pointer + 88, normal.m21());
         // padding
-        MemoryUtil.memPutFloat(pointer + 96, normal.getA02());
-        MemoryUtil.memPutFloat(pointer + 100, normal.getA12());
-        MemoryUtil.memPutFloat(pointer + 104, normal.getA22());
+        MemoryUtil.memPutFloat(pointer + 96, normal.m02());
+        MemoryUtil.memPutFloat(pointer + 100, normal.m12());
+        MemoryUtil.memPutFloat(pointer + 104, normal.m22());
         // padding
     }
 

@@ -13,8 +13,6 @@
     "core.MixinFrustum",
     "core.MixinWindow",
     "core.MixinRenderSystem",
-    "core.matrix.MixinMatrix3f",
-    "core.matrix.MixinMatrix4f",
     "core.model.MixinBlockColors",
     "core.model.MixinItemColors",
     "core.pipeline.MixinBakedQuad",
@@ -34,6 +32,7 @@
     "features.chunk_rendering.MixinLightmapTextureManager",
     "features.chunk_rendering.MixinPackedIntegerArray",
     "features.chunk_rendering.MixinPalettedContainer",
+    "features.chunk_rendering.MixinSpriteContents",
     "features.chunk_rendering.MixinWorldRenderer",
     "features.debug.MixinDebugHud",
     "features.entity.cull.MixinEntityRenderer",
@@ -45,7 +44,6 @@
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
     "features.gui.font.MixinGlyphRenderer",
     "features.item.MixinItemRenderer",
-    "features.matrix_stack.MixinMatrixStack",
     "features.matrix_stack.MixinVertexConsumer",
     "features.model.MixinMultipartBakedModel",
     "features.model.MixinWeightedBakedModel",
@@ -57,10 +55,14 @@
     "features.render_layer.leaves.MixinLeavesBlock",
     "features.render_layer.leaves.MixinRenderLayers",
     "features.sky.MixinWorldRenderer",
-    "features.texture_tracking.MixinSprite",
-    "features.texture_tracking.MixinSpriteAnimation",
     "features.texture_tracking.MixinSpriteAtlasTexture",
     "features.texture_tracking.MixinSpriteBillboardParticle",
-    "features.texture_updates.MixinSpriteInterpolated"
+    "features.texture_tracking.MixinSpriteContents",
+    "features.texture_tracking.MixinSpriteContentsAnimatorImpl",
+    "features.texture_updates.AnimationAccessor",
+    "features.texture_updates.AnimationFrameAccessor",
+    "features.texture_updates.MixinSpriteInterpolated",
+    "features.texture_updates.SpriteInfoAccessor",
+    "features.texture_updates.SpriteInfoAnimationAccessor"
   ]
 }

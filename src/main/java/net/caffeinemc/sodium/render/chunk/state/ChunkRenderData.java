@@ -7,6 +7,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.IntFunction;
+
+import net.caffeinemc.sodium.render.texture.SpriteAnimationInterface;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
@@ -87,7 +89,7 @@ public class ChunkRenderData {
          * @param sprite The sprite
          */
         public void addSprite(Sprite sprite) {
-            if (sprite.getAnimation() != null) {
+            if (((SpriteAnimationInterface) sprite.getContents()).hasAnimation()) {
                 this.animatedSprites.add(sprite);
             }
         }

@@ -1,27 +1,26 @@
 package net.caffeinemc.sodium.mixin.features.texture_tracking;
 
-import java.util.List;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.mixin.SpriteVisibilityStorage;
-import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.texture.SpriteContents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Sprite.Animation.class)
-public class MixinSpriteAnimation {
+@Mixin(SpriteContents.AnimatorImpl.class)
+public class MixinSpriteContentsAnimatorImpl {
     @Unique
-    private Sprite parent;
+    private SpriteContents parent;
 
     /**
      * @author IMS
      * @reason Replace fragile Shadow
      */
     @Inject(method = "<init>", at = @At("RETURN"))
-    public void assignParent(Sprite parent, List<Sprite.AnimationFrame> frames, int frameCount, Sprite.Interpolation interpolation, CallbackInfo ci) {
-        this.parent = parent;
+    public void assignParent(SpriteContents spriteContents, SpriteContents.Animation animation, SpriteContents.Interpolation interpolation, CallbackInfo ci) {
+        this.parent = spriteContents;
     }
 
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)

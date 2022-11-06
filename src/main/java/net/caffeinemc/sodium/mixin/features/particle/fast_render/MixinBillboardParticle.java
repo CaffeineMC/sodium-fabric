@@ -10,9 +10,8 @@ import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3f;
+import org.joml.Quaternionf;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -50,15 +49,15 @@ public abstract class MixinBillboardParticle extends Particle {
         float y = (float) (MathHelper.lerp(tickDelta, this.prevPosY, this.y) - vec3d.getY());
         float z = (float) (MathHelper.lerp(tickDelta, this.prevPosZ, this.z) - vec3d.getZ());
 
-        Quaternion quaternion;
+        Quaternionf quaternion;
 
         if (this.angle == 0.0F) {
             quaternion = camera.getRotation();
         } else {
             float angle = MathHelper.lerp(tickDelta, this.prevAngle, this.angle);
 
-            quaternion = new Quaternion(camera.getRotation());
-            quaternion.hamiltonProduct(Vec3f.POSITIVE_Z.getRadialQuaternion(angle));
+            quaternion = new Quaternionf(camera.getRotation());
+            quaternion.rotateZ(angle);
         }
 
         float size = this.getSize(tickDelta);
@@ -83,13 +82,13 @@ public abstract class MixinBillboardParticle extends Particle {
     }
 
     @SuppressWarnings("UnnecessaryLocalVariable")
-    private static void addVertex(ParticleVertexSink drain, Quaternion rotation,
+    private static void addVertex(ParticleVertexSink drain, Quaternionf rotation,
                                   float x, float y, float posX, float posY, float posZ, float u, float v, int color, int light, float size) {
         // Quaternion q0 = new Quaternion(rotation);
-        float q0x = rotation.getX();
-        float q0y = rotation.getY();
-        float q0z = rotation.getZ();
-        float q0w = rotation.getW();
+        float q0x = rotation.x();
+        float q0y = rotation.y();
+        float q0z = rotation.z();
+        float q0w = rotation.w();
 
         // q0.hamiltonProduct(x, y, 0.0f, 0.0f)
         float q1x = (q0w * x) - (q0z * y);
