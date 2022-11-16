@@ -51,7 +51,7 @@ public class MixinLevelLoadingScreen {
                     .forEach(entry -> STATUS_TO_COLOR_FAST.put(entry.getKey(), ColorARGB.toABGR(entry.getIntValue(), 0xFF)));
         }
 
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
         Matrix4f matrix = matrixStack.peek().getPositionMatrix();
 
