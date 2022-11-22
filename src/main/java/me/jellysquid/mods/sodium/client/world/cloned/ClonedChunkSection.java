@@ -55,7 +55,7 @@ public class ClonedChunkSection {
     }
 
     public void init(World world, ChunkSectionPos pos) {
-        EMPTY_SECTION =  new ChunkSection(0, world.getRegistryManager().get(RegistryKeys.BIOME_WORLDGEN));
+        EMPTY_SECTION =  new ChunkSection(0, world.getRegistryManager().get(RegistryKeys.BIOME));
 
         WorldChunk chunk = world.getChunk(pos.getX(), pos.getZ());
 
