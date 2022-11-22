@@ -44,14 +44,14 @@ public class ConfigCorruptedScreen extends Screen {
     protected void init() {
         super.init();
 
-        this.addDrawableChild(ButtonWidget.createBuilder(TEXT_BUTTON_RESTORE_DEFAULTS, (btn) -> {
+        this.addDrawableChild(ButtonWidget.builder(TEXT_BUTTON_RESTORE_DEFAULTS, (btn) -> {
             SodiumClientMod.restoreDefaultOptions();
             MinecraftClient.getInstance().setScreen(this.child.get());
-        }).setPositionAndSize(32, this.height - 40, 174, 20).build());
+        }).dimensions(32, this.height - 40, 174, 20).build());
 
-        this.addDrawableChild(ButtonWidget.createBuilder(TEXT_BUTTON_CLOSE_GAME, (btn) -> {
+        this.addDrawableChild(ButtonWidget.builder(TEXT_BUTTON_CLOSE_GAME, (btn) -> {
             MinecraftClient.getInstance().scheduleStop();
-        }).setPositionAndSize(this.width - 174 - 32, this.height - 40, 174, 20).build());
+        }).dimensions(this.width - 174 - 32, this.height - 40, 174, 20).build());
     }
 
     @Override
