@@ -68,7 +68,7 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
 
     protected void playClickSound() {
         MinecraftClient.getInstance().getSoundManager()
-                .play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                .play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
     }
 
     protected int getStringWidth(String text) {
