@@ -36,4 +36,4 @@ jobs:
         name: sodium-artifacts-${{ steps.ref.outputs.branch }}
         # Filter built files to disregard -sources and -dev, and leave only the minecraft-compatible jars.
         # This also filters out unstable versions, and only builds for tagged versions.
-        path: build/libs/*[0-9].jar
+        path: build/libs

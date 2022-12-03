@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(OptionsScreen.class)
 public class MixinOptionsScreen extends Screen {
@@ -18,10 +19,8 @@ public class MixinOptionsScreen extends Screen {
     }
 
     @Dynamic
-    @Inject(method = "method_19828(Lnet/minecraft/client/gui/widget/ButtonWidget;)V", at = @At("HEAD"), cancellable = true)
-    private void open(ButtonWidget widget, CallbackInfo ci) {
-        this.client.setScreen(new UserConfigScreen(this));
-
-        ci.cancel();
+    @Inject(method = "method_19828", at = @At("HEAD"), cancellable = true)
+    private void open(CallbackInfoReturnable<Screen> ci) {
+        ci.setReturnValue(new UserConfigScreen(this));
     }
 }
