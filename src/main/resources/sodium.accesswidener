@@ -10,5 +10,6 @@ accessible class net/minecraft/world/chunk/PalettedContainer$Data
 accessible class net/minecraft/world/chunk/PalettedContainer$DataProvider
 
 accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
+accessible method net/minecraft/client/texture/SpriteContents upload (IIII[Lnet/minecraft/client/texture/NativeImage;)V
 
 accessible field net/minecraft/client/texture/NativeImage pointer J
