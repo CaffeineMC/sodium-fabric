@@ -36,7 +36,7 @@ public class MixinSpriteInterpolated {
      * @reason Drastic optimizations
      */
     @Overwrite
-    void apply(int one, int two, SpriteContents.AnimatorImpl arg) {
+    void apply(int x, int y, SpriteContents.AnimatorImpl arg) {
         SpriteContents.Animation animation = ((SpriteInfoAnimationAccessor) arg).getAnimation();
         AnimationAccessor animation2 = (AnimationAccessor) ((SpriteInfoAnimationAccessor) arg).getAnimation();
         List<SpriteContents.AnimationFrame> frames = ((AnimationAccessor) animation).getFrames();
@@ -69,8 +69,8 @@ public class MixinSpriteInterpolated {
             NativeImage dst = this.images[layer];
 
             // Source pointers
-            long s1p = src.pointer + (curX + ((long) curY * src.getWidth()) * STRIDE);
-            long s2p = src.pointer + (nextX + ((long) nextY * src.getWidth()) * STRIDE);
+            long s1p = src.pointer + (curX + (long) curY * src.getWidth() * STRIDE);
+            long s2p = src.pointer + (nextX + (long) nextY * src.getWidth() * STRIDE);
 
             // Destination pointers
             long dp = dst.pointer;
@@ -86,7 +86,6 @@ public class MixinSpriteInterpolated {
             }
         }
 
-        this.parent.upload(0, 0);
+        this.parent.upload(x, y, 0, 0, this.images);
     }
-
 }
