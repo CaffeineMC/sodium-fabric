@@ -61,6 +61,7 @@
     "features.texture_updates.AnimationAccessor",
     "features.texture_updates.AnimationFrameAccessor",
     "features.texture_updates.SpriteInfoAnimationAccessor",
-    "features.texture_updates.SpriteInfoAccessor"
+    "features.texture_updates.SpriteInfoAccessor",
+    "workarounds.nvidia.MixinMinecraftClient"
   ]
 }
