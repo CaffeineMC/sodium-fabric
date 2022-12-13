@@ -46,11 +46,9 @@ public class DriverWorkarounds {
                     var choice = TinyFileDialogs.tinyfd_messageBox("Sodium Renderer", """
                         The currently installed version of the NVIDIA graphics driver is incompatible with Sodium.
                         
-                        To prevent crashes and other issues, the game needs to be restarted in order to apply a
-                        workaround. This will not affect your system configuration.
+                        To prevent crashes and other issues, the game needs to be restarted in order to apply a workaround. This will not affect your system configuration.
                         
-                        After this workaround has been applied, the window title of the game will be changed to hide the
-                        currently running version of Minecraft from the graphics driver.
+                        After this workaround has been applied, the window title of the game will be changed to hide the currently running version of Minecraft from the graphics driver.
                         
                         Would you like to read more information about this issue before the game restarts?
                         """, "yesno", "error", true);
