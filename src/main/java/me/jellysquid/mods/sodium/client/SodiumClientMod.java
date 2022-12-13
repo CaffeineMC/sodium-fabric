@@ -30,7 +30,6 @@ public class SodiumClientMod implements ClientModInitializer {
         LOGGER = LoggerFactory.getLogger("Sodium");
         CONFIG = loadConfig();
 
-        DriverWorkarounds.init();
         FlawlessFrames.onClientInitialization();
     }
 
