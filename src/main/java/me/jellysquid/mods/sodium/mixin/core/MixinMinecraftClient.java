@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.core;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
+import me.jellysquid.mods.sodium.client.util.workarounds.DriverWorkarounds;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
 import org.lwjgl.opengl.GL32C;
@@ -21,6 +22,8 @@ public class MixinMinecraftClient {
             var parent = MinecraftClient.getInstance().currentScreen;
             MinecraftClient.getInstance().setScreen(new ConfigCorruptedScreen(() -> parent));
         }
+
+        DriverWorkarounds.init();
     }
 
     @Inject(method = "render", at = @At("HEAD"))
