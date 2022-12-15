@@ -459,7 +459,8 @@ public class SectionCuller {
                             tableZEnd,
                             tableXEnd
                     );
-                    
+
+                    // TEMP
                     if (adjacentNodeIdx < -1 || sectionIdx < 0) {
                         int adjacentNodeIdx2 = this.getAdjacentIdx(
                                 sectionIdx,
@@ -471,6 +472,7 @@ public class SectionCuller {
                         );
                         System.out.println(adjacentNodeIdx2);
                     }
+                    // END TEMP
 
                     if (adjacentNodeIdx == SectionTree.OUT_OF_BOUNDS_INDEX || !this.sectionVisibilityBits.get(adjacentNodeIdx)) {
                         continue;

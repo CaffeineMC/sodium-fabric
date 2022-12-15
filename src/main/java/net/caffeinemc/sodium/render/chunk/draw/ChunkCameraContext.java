@@ -71,8 +71,12 @@ public class ChunkCameraContext {
     public int getSectionX() {
         return ChunkSectionPos.getSectionCoord(this.getBlockX());
     }
-    
+
     public int getSectionY() {
+        return ChunkSectionPos.getSectionCoord(this.getBlockY());
+    }
+    
+    public int getSectionYClamped() {
         // effectively clamps, but because this method is extremely hot, we use the intrinsics for min and max rather
         // than typical branching with MathHelper.clamp
         return Math.max(
