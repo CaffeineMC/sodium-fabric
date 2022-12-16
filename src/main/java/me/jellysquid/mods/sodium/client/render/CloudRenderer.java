@@ -23,6 +23,7 @@ import net.minecraft.util.math.Vec3d;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL30C;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,6 +48,7 @@ public class CloudRenderer {
     private VertexBuffer vertexBuffer;
     private CloudEdges edges;
     private ShaderProgram clouds;
+    private ShaderProgram cloudsDepth;
 
     private int prevCenterCellX, prevCenterCellY;
 
@@ -95,7 +97,6 @@ public class CloudRenderer {
         float translateX = (float) (cloudCenterX - (centerCellX * 8.0));
         float translateZ = (float) (cloudCenterZ - (centerCellZ * 8.0));
 
-        RenderSystem.setShader(() -> clouds);
         RenderSystem.enableDepthTest();
 
         this.vertexBuffer.bind();
@@ -121,21 +122,25 @@ public class CloudRenderer {
         RenderSystem.depthMask(true);
         RenderSystem.colorMask(false, false, false, false);
 
-        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, RenderSystem.getShader());
+        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, cloudsDepth);
 
         // PASS 2: Render geometry
         RenderSystem.enableBlend();
         RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
         RenderSystem.depthMask(false);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(GL30C.GL_EQUAL);
         RenderSystem.colorMask(true, true, true, true);
 
-        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, RenderSystem.getShader());
+        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, clouds);
 
         matrices.pop();
 
         VertexBuffer.unbind();
 
         RenderSystem.disableBlend();
+        RenderSystem.depthFunc(GL30C.GL_LEQUAL);
+
         RenderSystem.enableCull();
     }
 
@@ -228,8 +233,13 @@ public class CloudRenderer {
             clouds.close();
         }
 
+        if (cloudsDepth != null) {
+            cloudsDepth.close();
+        }
+
         try {
             this.clouds = new ShaderProgram(factory, "clouds", VertexFormats.POSITION_COLOR);
+            this.cloudsDepth = new ShaderProgram(factory, "cloudsdepth", VertexFormats.POSITION_COLOR);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -242,6 +252,7 @@ public class CloudRenderer {
 
     public void destroy() {
         clouds.close();
+        cloudsDepth.close();
         if (this.vertexBuffer != null) {
             this.vertexBuffer.close();
             this.vertexBuffer = null;
