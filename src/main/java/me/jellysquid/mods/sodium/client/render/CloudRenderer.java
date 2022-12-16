@@ -72,8 +72,8 @@ public class CloudRenderer {
         int renderDistance = MinecraftClient.getInstance().options.getClampedViewDistance();
         int cloudDistance = (renderDistance * 2) + 9;
 
-        int centerCellX = (int) (Math.floor(cloudCenterX / 8.0));
-        int centerCellZ = (int) (Math.floor(cloudCenterZ / 8.0));
+        int centerCellX = (int) (Math.floor(cloudCenterX / 12));
+        int centerCellZ = (int) (Math.floor(cloudCenterZ / 12));
 
         if (this.vertexBuffer == null || this.prevCenterCellX != centerCellX || this.prevCenterCellY != centerCellZ) {
             BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
@@ -94,14 +94,14 @@ public class CloudRenderer {
             this.prevCenterCellY = centerCellZ;
         }
 
-        float translateX = (float) (cloudCenterX - (centerCellX * 8.0));
-        float translateZ = (float) (cloudCenterZ - (centerCellZ * 8.0));
+        float translateX = (float) (cloudCenterX - (centerCellX * 12));
+        float translateZ = (float) (cloudCenterZ - (centerCellZ * 12));
 
         RenderSystem.enableDepthTest();
 
         this.vertexBuffer.bind();
 
-        boolean insideClouds = cameraY < cloudHeight + 4.0f && cameraY > cloudHeight;
+        boolean insideClouds = cameraY < cloudHeight + 4.5f && cameraY > cloudHeight - 0.5f;
 
         if (insideClouds) {
             RenderSystem.disableCull();
@@ -115,10 +115,7 @@ public class CloudRenderer {
         matrices.push();
 
         Matrix4f modelViewMatrix = matrices.peek().getPositionMatrix();
-        modelViewMatrix.translate(-translateX, cloudHeight - (float) cameraY, -translateZ);
-
-        // Scale matrix to avoid z-fighting
-        modelViewMatrix.scale(0.99975586f, 0.99975586f, 0.99975586f);
+        modelViewMatrix.translate(-translateX, cloudHeight - (float) cameraY + 0.33F, -translateZ);
 
         // PASS 1: Set up depth buffer
         RenderSystem.disableBlend();
@@ -161,26 +158,26 @@ public class CloudRenderer {
 
                 int baseColor = this.edges.getColor(centerCellX + offsetX, centerCellZ + offsetZ);
 
-                float x = offsetX * 8.0f;
-                float z = offsetZ * 8.0f;
+                float x = offsetX * 12;
+                float z = offsetZ * 12;
 
                 // -Y
                 if ((connectedEdges & DIR_NEG_Y) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_Y);
                     sink.ensureCapacity(4);
-                    sink.writeQuad(x + 8.0f, 0.0f, z + 8.0f, mixedColor);
-                    sink.writeQuad(x + 0.0f, 0.0f, z + 8.0f, mixedColor);
+                    sink.writeQuad(x + 12, 0.0f, z + 12, mixedColor);
+                    sink.writeQuad(x + 0.0f, 0.0f, z + 12, mixedColor);
                     sink.writeQuad(x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                    sink.writeQuad(x + 8.0f, 0.0f, z + 0.0f, mixedColor);
+                    sink.writeQuad(x + 12, 0.0f, z + 0.0f, mixedColor);
                 }
 
                 // +Y
                 if ((connectedEdges & DIR_POS_Y) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_Y);
                     sink.ensureCapacity(4);
-                    sink.writeQuad(x + 0.0f, 4.0f, z + 8.0f, mixedColor);
-                    sink.writeQuad(x + 8.0f, 4.0f, z + 8.0f, mixedColor);
-                    sink.writeQuad(x + 8.0f, 4.0f, z + 0.0f, mixedColor);
+                    sink.writeQuad(x + 0.0f, 4.0f, z + 12, mixedColor);
+                    sink.writeQuad(x + 12, 4.0f, z + 12, mixedColor);
+                    sink.writeQuad(x + 12, 4.0f, z + 0.0f, mixedColor);
                     sink.writeQuad(x + 0.0f, 4.0f, z + 0.0f, mixedColor);
                 }
 
@@ -188,8 +185,8 @@ public class CloudRenderer {
                 if ((connectedEdges & DIR_NEG_X) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_X);
                     sink.ensureCapacity(4);
-                    sink.writeQuad(x + 0.0f, 0.0f, z + 8.0f, mixedColor);
-                    sink.writeQuad(x + 0.0f, 4.0f, z + 8.0f, mixedColor);
+                    sink.writeQuad(x + 0.0f, 0.0f, z + 12, mixedColor);
+                    sink.writeQuad(x + 0.0f, 4.0f, z + 12, mixedColor);
                     sink.writeQuad(x + 0.0f, 4.0f, z + 0.0f, mixedColor);
                     sink.writeQuad(x + 0.0f, 0.0f, z + 0.0f, mixedColor);
                 }
@@ -198,18 +195,18 @@ public class CloudRenderer {
                 if ((connectedEdges & DIR_POS_X) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_X);
                     sink.ensureCapacity(4);
-                    sink.writeQuad(x + 8.0f, 4.0f, z + 8.0f, mixedColor);
-                    sink.writeQuad(x + 8.0f, 0.0f, z + 8.0f, mixedColor);
-                    sink.writeQuad(x + 8.0f, 0.0f, z + 0.0f, mixedColor);
-                    sink.writeQuad(x + 8.0f, 4.0f, z + 0.0f, mixedColor);
+                    sink.writeQuad(x + 12, 4.0f, z + 12, mixedColor);
+                    sink.writeQuad(x + 12, 0.0f, z + 12, mixedColor);
+                    sink.writeQuad(x + 12, 0.0f, z + 0.0f, mixedColor);
+                    sink.writeQuad(x + 12, 4.0f, z + 0.0f, mixedColor);
                 }
 
                 // -Z
                 if ((connectedEdges & DIR_NEG_Z) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_Z);
                     sink.ensureCapacity(4);
-                    sink.writeQuad(x + 8.0f, 4.0f, z + 0.0f, mixedColor);
-                    sink.writeQuad(x + 8.0f, 0.0f, z + 0.0f, mixedColor);
+                    sink.writeQuad(x + 12, 4.0f, z + 0.0f, mixedColor);
+                    sink.writeQuad(x + 12, 0.0f, z + 0.0f, mixedColor);
                     sink.writeQuad(x + 0.0f, 0.0f, z + 0.0f, mixedColor);
                     sink.writeQuad(x + 0.0f, 4.0f, z + 0.0f, mixedColor);
                 }
@@ -218,10 +215,10 @@ public class CloudRenderer {
                 if ((connectedEdges & DIR_POS_Z) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_Z);
                     sink.ensureCapacity(4);
-                    sink.writeQuad(x + 8.0f, 0.0f, z + 8.0f, mixedColor);
-                    sink.writeQuad(x + 8.0f, 4.0f, z + 8.0f, mixedColor);
-                    sink.writeQuad(x + 0.0f, 4.0f, z + 8.0f, mixedColor);
-                    sink.writeQuad(x + 0.0f, 0.0f, z + 8.0f, mixedColor);
+                    sink.writeQuad(x + 12, 0.0f, z + 12, mixedColor);
+                    sink.writeQuad(x + 12, 4.0f, z + 12, mixedColor);
+                    sink.writeQuad(x + 0.0f, 4.0f, z + 12, mixedColor);
+                    sink.writeQuad(x + 0.0f, 0.0f, z + 12, mixedColor);
                 }
             }
         }
