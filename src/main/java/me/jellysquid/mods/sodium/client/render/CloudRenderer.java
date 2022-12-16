@@ -9,12 +9,14 @@ import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.resource.Resource;
+import net.minecraft.resource.ResourceFactory;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
@@ -44,11 +46,12 @@ public class CloudRenderer {
 
     private VertexBuffer vertexBuffer;
     private CloudEdges edges;
+    private ShaderProgram clouds;
 
     private int prevCenterCellX, prevCenterCellY;
 
-    public CloudRenderer() {
-        this.reloadTextures();
+    public CloudRenderer(ResourceFactory factory) {
+        this.reloadTextures(factory);
     }
 
     public void render(@Nullable ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float ticks, float tickDelta, double cameraX, double cameraY, double cameraZ) {
@@ -65,7 +68,7 @@ public class CloudRenderer {
         double cloudCenterZ = (cameraZ) + 0.33D;
 
         int renderDistance = MinecraftClient.getInstance().options.getClampedViewDistance();
-        int cloudDistance = (renderDistance * 2) + 1;
+        int cloudDistance = (renderDistance * 2) + 9;
 
         int centerCellX = (int) (Math.floor(cloudCenterX / 8.0));
         int centerCellZ = (int) (Math.floor(cloudCenterZ / 8.0));
@@ -92,7 +95,7 @@ public class CloudRenderer {
         float translateX = (float) (cloudCenterX - (centerCellX * 8.0));
         float translateZ = (float) (cloudCenterZ - (centerCellZ * 8.0));
 
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.setShader(() -> clouds);
         RenderSystem.enableDepthTest();
 
         this.vertexBuffer.bind();
@@ -218,8 +221,18 @@ public class CloudRenderer {
         sink.flush();
     }
 
-    public void reloadTextures() {
+    public void reloadTextures(ResourceFactory factory) {
         this.edges = createCloudEdges();
+
+        if (clouds != null) {
+            clouds.close();
+        }
+
+        try {
+            this.clouds = new ShaderProgram(factory, "clouds", VertexFormats.POSITION_COLOR);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         if (this.vertexBuffer != null) {
             this.vertexBuffer.close();
@@ -228,6 +241,7 @@ public class CloudRenderer {
     }
 
     public void destroy() {
+        clouds.close();
         if (this.vertexBuffer != null) {
             this.vertexBuffer.close();
             this.vertexBuffer = null;
