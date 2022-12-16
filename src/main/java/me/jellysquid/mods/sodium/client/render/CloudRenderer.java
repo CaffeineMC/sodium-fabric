@@ -117,6 +117,9 @@ public class CloudRenderer {
         Matrix4f modelViewMatrix = matrices.peek().getPositionMatrix();
         modelViewMatrix.translate(-translateX, cloudHeight - (float) cameraY, -translateZ);
 
+        // Scale matrix to avoid z-fighting
+        modelViewMatrix.scale(0.99975586f, 0.99975586f, 0.99975586f);
+
         // PASS 1: Set up depth buffer
         RenderSystem.disableBlend();
         RenderSystem.depthMask(true);
