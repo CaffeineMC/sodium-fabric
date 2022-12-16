@@ -70,7 +70,7 @@ public class CloudRenderer {
         double cloudCenterZ = (cameraZ) + 0.33D;
 
         int renderDistance = MinecraftClient.getInstance().options.getClampedViewDistance();
-        int cloudDistance = (renderDistance * 2) + 9;
+        int cloudDistance = Math.max(32, (renderDistance * 2) + 9);
 
         int centerCellX = (int) (Math.floor(cloudCenterX / 12));
         int centerCellZ = (int) (Math.floor(cloudCenterZ / 12));
@@ -93,6 +93,9 @@ public class CloudRenderer {
             this.prevCenterCellX = centerCellX;
             this.prevCenterCellY = centerCellZ;
         }
+
+        RenderSystem.setShaderFogEnd(cloudDistance * 8);
+        RenderSystem.setShaderFogStart((cloudDistance * 8) - 16);
 
         float translateX = (float) (cloudCenterX - (centerCellX * 12));
         float translateZ = (float) (cloudCenterZ - (centerCellZ * 12));
