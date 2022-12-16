@@ -94,6 +94,8 @@ public class CloudRenderer {
             this.prevCenterCellY = centerCellZ;
         }
 
+        float previousEnd = RenderSystem.getShaderFogEnd();
+        float previousStart = RenderSystem.getShaderFogStart();
         RenderSystem.setShaderFogEnd(cloudDistance * 8);
         RenderSystem.setShaderFogStart((cloudDistance * 8) - 16);
 
@@ -145,6 +147,9 @@ public class CloudRenderer {
         RenderSystem.depthFunc(GL30C.GL_LEQUAL);
 
         RenderSystem.enableCull();
+
+        RenderSystem.setShaderFogEnd(previousEnd);
+        RenderSystem.setShaderFogStart(previousStart);
     }
 
     private void rebuildGeometry(BufferBuilder bufferBuilder, int cloudDistance, int centerCellX, int centerCellZ) {
