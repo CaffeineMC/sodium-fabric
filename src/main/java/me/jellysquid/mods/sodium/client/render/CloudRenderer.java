@@ -50,7 +50,7 @@ public class CloudRenderer {
     private ShaderProgram clouds;
     private ShaderProgram cloudsDepth;
 
-    private int prevCenterCellX, prevCenterCellY;
+    private int prevCenterCellX, prevCenterCellY, cachedRenderDistance;
 
     public CloudRenderer(ResourceFactory factory) {
         this.reloadTextures(factory);
@@ -75,7 +75,7 @@ public class CloudRenderer {
         int centerCellX = (int) (Math.floor(cloudCenterX / 12));
         int centerCellZ = (int) (Math.floor(cloudCenterZ / 12));
 
-        if (this.vertexBuffer == null || this.prevCenterCellX != centerCellX || this.prevCenterCellY != centerCellZ) {
+        if (this.vertexBuffer == null || this.prevCenterCellX != centerCellX || this.prevCenterCellY != centerCellZ || this.cachedRenderDistance != renderDistance) {
             BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
             bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
@@ -92,6 +92,7 @@ public class CloudRenderer {
 
             this.prevCenterCellX = centerCellX;
             this.prevCenterCellY = centerCellZ;
+            this.cachedRenderDistance = renderDistance;
         }
 
         float previousEnd = RenderSystem.getShaderFogEnd();
