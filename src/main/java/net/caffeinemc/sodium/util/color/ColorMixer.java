@@ -1,5 +1,8 @@
 package net.caffeinemc.sodium.util.color;
 
+import net.caffeinemc.sodium.util.packed.ColorARGB;
+import net.caffeinemc.sodium.util.packed.ColorU8;
+
 public class ColorMixer {
     private static final long MASK1 = 0x00FF00FF;
     private static final long MASK2 = 0xFF00FF00;
@@ -36,5 +39,17 @@ public class ColorMixer {
 
     public static int getEndRatio(float frac) {
         return 256 - getStartRatio(frac);
+    }
+
+    public static int mulARGB(int a, int b) {
+        float cr = ColorARGB.unpackRed(a) * ColorARGB.unpackRed(b);
+        float cg = ColorARGB.unpackGreen(a) * ColorARGB.unpackGreen(b);
+        float cb = ColorARGB.unpackBlue(a) * ColorARGB.unpackBlue(b);
+        float ca = ColorARGB.unpackAlpha(a) * ColorARGB.unpackAlpha(b);
+
+        return ColorARGB.pack((int) ColorU8.normalize(cr),
+                (int) ColorU8.normalize(cg),
+                (int) ColorU8.normalize(cb),
+                (int) ColorU8.normalize(ca));
     }
 }

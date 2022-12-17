@@ -33,6 +33,7 @@ public class MixinConfig {
         this.addMixinRule("features.buffer_builder.fast_advance", true);
         this.addMixinRule("features.buffer_builder.fast_sort", true);
         this.addMixinRule("features.buffer_builder.intrinsics", true);
+        this.addMixinRule("features.clouds", true);
         this.addMixinRule("features.chunk_rendering", true);
         this.addMixinRule("features.debug", true);
         this.addMixinRule("features.entity", true);
