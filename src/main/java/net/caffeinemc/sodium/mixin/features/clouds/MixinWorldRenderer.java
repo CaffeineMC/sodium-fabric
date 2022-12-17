@@ -1,5 +1,6 @@
 package net.caffeinemc.sodium.mixin.features.clouds;
 
+import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.CloudRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.WorldRenderer;
@@ -36,7 +37,7 @@ public class MixinWorldRenderer {
     @Overwrite
     public void renderClouds(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z) {
         if (this.cloudRenderer == null) {
-            this.cloudRenderer = new CloudRenderer(client.getResourceManager());
+            this.cloudRenderer = new CloudRenderer(SodiumClientMod.DEVICE);
         }
 
         this.cloudRenderer.render(this.world, matrices, projectionMatrix, this.ticks, tickDelta, x, y, z);
@@ -45,7 +46,7 @@ public class MixinWorldRenderer {
     @Inject(method = "reload(Lnet/minecraft/resource/ResourceManager;)V", at = @At("RETURN"))
     private void onReload(ResourceManager manager, CallbackInfo ci) {
         if (this.cloudRenderer != null) {
-            this.cloudRenderer.reloadTextures(manager);
+            this.cloudRenderer.reloadTextures();
         }
     }
 

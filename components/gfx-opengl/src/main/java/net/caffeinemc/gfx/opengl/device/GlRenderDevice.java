@@ -233,7 +233,7 @@ public class GlRenderDevice implements RenderDevice {
     @Override
     public DynamicBuffer createDynamicBuffer(long capacity, Set<DynamicBufferFlags> flags) {
         var handle = GL45C.glCreateBuffers();
-        GL45C.glNamedBufferStorage(handle, capacity, getDynamicBufferStorageBits(flags));
+        GL45C.glNamedBufferStorage(handle, capacity, getDynamicBufferStorageBits(flags) | GL45C.GL_DYNAMIC_STORAGE_BIT);
 
         return new GlDynamicBuffer(handle, capacity, flags);
     }
@@ -549,6 +549,11 @@ public class GlRenderDevice implements RenderDevice {
                     maxCount,
                     stride
             );
+        }
+
+        @Override
+        public void drawElements(PrimitiveType primitiveType, ElementFormat elementFormat, int elementOffset, int count) {
+            GL45C.glDrawElements(GlEnum.from(primitiveType), count, GlEnum.from(elementFormat), elementOffset);
         }
     }
 
