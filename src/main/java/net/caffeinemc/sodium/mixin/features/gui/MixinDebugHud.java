@@ -97,7 +97,7 @@ public abstract class MixinDebugHud {
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
         bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
         Matrix4f matrix = matrixStack.peek()
                 .getPositionMatrix();
@@ -128,7 +128,7 @@ public abstract class MixinDebugHud {
 
         BufferBuilder.BuiltBuffer output = bufferBuilder.end();
 
-        BufferRenderer.drawWithShader(output);
+        BufferRenderer.drawWithGlobalProgram(output);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }

@@ -16,7 +16,6 @@ import net.caffeinemc.sodium.gui.config.CyclingControl;
 import net.caffeinemc.sodium.gui.config.SliderControl;
 import net.caffeinemc.sodium.gui.config.TickBoxControl;
 import net.caffeinemc.sodium.interop.vanilla.options.MinecraftOptionsStorage;
-import net.minecraft.client.option.AoMode;
 import net.minecraft.client.option.AttackIndicator;
 import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.option.GraphicsMode;
@@ -152,10 +151,10 @@ public class UserConfigCategories {
                         .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getParticles()))
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
-                .add(OptionImpl.createBuilder(AoMode.class, vanillaOpts)
+                .add(OptionImpl.createBuilder(boolean.class, vanillaOpts)
                         .setName(Text.translatable("options.ao"))
                         .setTooltip(Text.translatable("sodium.options.smooth_lighting.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, AoMode.class))
+                        .setControl(TickBoxControl::new)
                         .setBinding(new VanillaOptionBinding<>(vanillaOpts.getData().getAo()))
                         .setImpact(OptionImpact.LOW)
                         .build())
