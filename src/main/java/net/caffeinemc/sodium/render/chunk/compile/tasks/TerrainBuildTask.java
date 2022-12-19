@@ -4,7 +4,7 @@ import net.caffeinemc.sodium.render.terrain.TerrainBuildContext;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
 import net.caffeinemc.sodium.render.terrain.context.PreparedTerrainRenderCache;
 import net.caffeinemc.sodium.util.tasks.CancellationSource;
 import net.caffeinemc.sodium.world.slice.WorldSlice;
@@ -23,9 +23,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
- * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
+ * Rebuilds all the meshes of a chunk for each given section pass with non-occluded blocks. The result is then uploaded
  * to graphics memory on the main thread.
- *
+ * <p>
  * This task takes a slice of the world from the thread it is created on. Since these slices require rather large
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
@@ -42,7 +42,7 @@ public class TerrainBuildTask extends AbstractBuilderTask {
 
     @Override
     public TerrainBuildResult performBuild(TerrainBuildContext buildContext, CancellationSource cancellationSource) {
-        ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
+        SectionRenderData.Builder renderData = new SectionRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 

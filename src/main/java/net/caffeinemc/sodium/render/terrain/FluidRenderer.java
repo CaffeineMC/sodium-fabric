@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class FluidRenderer {
     // TODO: allow this to be changed by vertex format
-    // TODO: move fluid rendering to a separate render pass and control glPolygonOffset and glDepthFunc to fix this properly
+    // TODO: move fluid rendering to a separate section pass and control glPolygonOffset and glDepthFunc to fix this properly
     private static final float EPSILON = 0.001f;
 
     private final BlockPos.Mutable scratchPos = new BlockPos.Mutable();

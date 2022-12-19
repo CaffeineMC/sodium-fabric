@@ -6,16 +6,17 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceList;
-import java.util.List;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
+import net.caffeinemc.sodium.render.chunk.SortedSectionLists;
+import net.caffeinemc.sodium.render.chunk.SectionTree;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
-import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
+import net.caffeinemc.sodium.render.chunk.state.SectionPassModel;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
 import net.minecraft.util.math.Vec3d;
 
@@ -26,6 +27,7 @@ public class SortedTerrainLists {
     
     private final RenderRegionManager regionManager;
     private final ChunkRenderPassManager renderPassManager;
+    private final SortedSectionLists sortedSectionLists;
     private final ChunkCameraContext camera;
     
     public final ReferenceList<RenderRegion> regions;
@@ -43,12 +45,18 @@ public class SortedTerrainLists {
     private final ReferenceArrayList<IntList> modelPartCountsListPool;
     private final ReferenceArrayList<LongList> modelPartSegmentsListPool;
     
-    private int totalSectionCount;
+    private int finalSectionCount;
 
     @SuppressWarnings("unchecked")
-    public SortedTerrainLists(RenderRegionManager regionManager, ChunkRenderPassManager renderPassManager, ChunkCameraContext camera) {
+    public SortedTerrainLists(
+            RenderRegionManager regionManager,
+            ChunkRenderPassManager renderPassManager,
+            SortedSectionLists sortedSectionLists,
+            ChunkCameraContext camera
+    ) {
         this.regionManager = regionManager;
         this.renderPassManager = renderPassManager;
+        this.sortedSectionLists = sortedSectionLists;
         this.camera = camera;
         
         int totalPasses = renderPassManager.getRenderPassCount();
@@ -104,7 +112,7 @@ public class SortedTerrainLists {
             list.clear();
         }
         
-        this.totalSectionCount = 0;
+        this.finalSectionCount = 0;
     }
     
     private LongList getUploadedSegmentsList() {
@@ -157,10 +165,10 @@ public class SortedTerrainLists {
         }
     }
     
-    public void update(List<RenderSection> sortedSections) {
+    public void update() {
         this.reset();
         
-        if (sortedSections.isEmpty()) {
+        if (this.sortedSectionLists.terrainSectionCount == 0) {
             return;
         }
         
@@ -185,7 +193,7 @@ public class SortedTerrainLists {
         
         int totalSectionCount = 0;
         
-        for (RenderSection section : sortedSections) {
+        for (RenderSection section : this.sortedSectionLists.getTerrainSections()) {
             boolean sectionAdded = false;
     
             int sequentialSectionIdx = 0;
@@ -194,8 +202,8 @@ public class SortedTerrainLists {
             IntList[] regionSectionIndices = null;
     
             for (int passId = 0; passId < totalPasses; passId++) {
-                ChunkRenderData chunkRenderData = section.getData();
-                ChunkPassModel model = chunkRenderData.models[passId];
+                SectionRenderData sectionRenderData = section.getData();
+                SectionPassModel model = sectionRenderData.models[passId];
                 
                 // skip if the section has no models for the pass
                 if (model == null) {
@@ -205,7 +213,7 @@ public class SortedTerrainLists {
                 int visibilityBits = model.getVisibilityBits();
 
                 if (useBlockFaceCulling) {
-                    visibilityBits &= calculateCameraVisibilityBits(chunkRenderData.bounds, cameraPos);
+                    visibilityBits &= calculateCameraVisibilityBits(sectionRenderData.bounds, cameraPos);
                 }
 
                 // skip if the section has no *visible* models for the pass
@@ -307,7 +315,7 @@ public class SortedTerrainLists {
             }
         }
         
-        this.totalSectionCount = totalSectionCount;
+        this.finalSectionCount = totalSectionCount;
     }
     
     protected static int calculateCameraVisibilityBits(ChunkRenderBounds bounds, Vec3d cameraPos) {
@@ -340,12 +348,12 @@ public class SortedTerrainLists {
         return bits;
     }
 
-    public int getTotalSectionCount() {
-        return this.totalSectionCount;
+    public int getFinalSectionCount() {
+        return this.finalSectionCount;
     }
 
     public boolean isEmpty() {
-        return this.totalSectionCount == 0;
+        return this.finalSectionCount == 0;
     }
     
 }

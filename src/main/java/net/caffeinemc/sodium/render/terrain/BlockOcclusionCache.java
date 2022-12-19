@@ -24,7 +24,7 @@ public class BlockOcclusionCache {
 
     /**
      * @param selfState The state of the block in the world
-     * @param view The world view for this render context
+     * @param view The world view for this section context
      * @param pos The position of the block
      * @param facing The facing direction of the side to check
      * @return True if the block side facing {@param dir} is not occluded, otherwise false

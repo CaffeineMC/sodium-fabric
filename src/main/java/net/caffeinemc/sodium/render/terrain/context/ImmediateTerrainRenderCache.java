@@ -47,7 +47,7 @@ public class ImmediateTerrainRenderCache extends TerrainRenderCache {
 
     public static void destroyRenderContext(BlockRenderView world) {
         if (INSTANCES.remove(world) == null) {
-            throw new IllegalStateException("No render context exists for world: " + world);
+            throw new IllegalStateException("No section context exists for world: " + world);
         }
     }
 

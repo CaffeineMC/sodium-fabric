@@ -24,7 +24,7 @@ public class WorldSliceData {
         ChunkSection section = chunk.getSectionArray()[world.sectionCoordToIndex(origin.getY())];
 
         // If the chunk section is absent or empty, simply terminate now. There will never be anything in this chunk
-        // section to render, so we need to signal that a chunk render task shouldn't created. This saves a considerable
+        // section to section, so we need to signal that a chunk section task shouldn't created. This saves a considerable
         // amount of time in queueing instant build tasks and greatly accelerates how quickly the world can be loaded.
         if (section == null || section.isEmpty()) {
             return null;

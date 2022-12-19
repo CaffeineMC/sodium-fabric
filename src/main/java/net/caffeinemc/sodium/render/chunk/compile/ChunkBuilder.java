@@ -165,7 +165,7 @@ public class ChunkBuilder {
      * a world teleportation event), the worker threads will first be stopped and all pending tasks will be discarded
      * before being started again.
      * @param world The world instance
-     * @param renderPassManager The render pass manager used for the world
+     * @param renderPassManager The section pass manager used for the world
      */
     public void init(ClientWorld world, ChunkRenderPassManager renderPassManager) {
         if (world == null) {

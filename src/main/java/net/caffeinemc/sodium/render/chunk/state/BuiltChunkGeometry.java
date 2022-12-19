@@ -4,7 +4,7 @@ import net.caffeinemc.sodium.render.buffer.VertexData;
 import org.jetbrains.annotations.Nullable;
 
 public record BuiltChunkGeometry(@Nullable VertexData vertices,
-                                 ChunkPassModel[] models) {
+                                 SectionPassModel[] models) {
     
     private static final BuiltChunkGeometry EMPTY_INSTANCE = new BuiltChunkGeometry(null, null);
     

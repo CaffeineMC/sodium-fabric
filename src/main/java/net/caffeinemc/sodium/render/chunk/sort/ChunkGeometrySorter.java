@@ -1,4 +1,4 @@
-//package net.caffeinemc.sodium.render.chunk.sort;
+//package net.caffeinemc.sodium.section.chunk.sort;
 //
 //import it.unimi.dsi.fastutil.objects.ObjectArrays;
 //import java.util.Arrays;
@@ -10,16 +10,16 @@
 //import net.caffeinemc.gfx.api.shader.ShaderDescription;
 //import net.caffeinemc.gfx.api.shader.ShaderType;
 //import net.caffeinemc.gfx.api.sync.Fence;
-//import net.caffeinemc.sodium.render.chunk.RenderSection;
-//import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
-//import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
-//import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
-//import net.caffeinemc.sodium.render.chunk.shader.SortShaderInterface;
-//import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
-//import net.caffeinemc.sodium.render.shader.ShaderConstants;
-//import net.caffeinemc.sodium.render.shader.ShaderLoader;
-//import net.caffeinemc.sodium.render.shader.ShaderParser;
-//import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
+//import net.caffeinemc.sodium.section.chunk.RenderSection;
+//import net.caffeinemc.sodium.section.chunk.draw.ChunkCameraContext;
+//import net.caffeinemc.sodium.section.chunk.passes.ChunkRenderPass;
+//import net.caffeinemc.sodium.section.chunk.passes.ChunkRenderPassManager;
+//import net.caffeinemc.sodium.section.chunk.shader.SortShaderInterface;
+//import net.caffeinemc.sodium.section.chunk.state.ChunkPassModel;
+//import net.caffeinemc.sodium.section.shader.ShaderConstants;
+//import net.caffeinemc.sodium.section.shader.ShaderLoader;
+//import net.caffeinemc.sodium.section.shader.ShaderParser;
+//import net.caffeinemc.sodium.section.terrain.format.TerrainVertexType;
 //import net.minecraft.util.Identifier;
 //import net.minecraft.util.math.MathHelper;
 //
@@ -46,7 +46,7 @@
 //                                       .toArray(ChunkRenderPass[]::new);
 //        this.passCount = this.translucentPasses.length;
 //        this.angleThreshold = (float) Math.cos(angleThreshold);
-//        // make an estimate for size based on inputs (render distance?)
+//        // make an estimate for size based on inputs (section distance?)
 //        this.nodes = new SortNode[4096 * this.passCount];
 //
 //        var constants = getShaderConstants(vertexType).build();
@@ -90,7 +90,7 @@
 //                ChunkPassModel model = section.getData().models[passId];
 //
 //                if (model == null) {
-//                    // section doesn't have a model for this render pass
+//                    // section doesn't have a model for this section pass
 //                    continue;
 //                }
 //

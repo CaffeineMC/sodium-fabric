@@ -4,12 +4,12 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
- * The render state object for a chunk section. This contains all the graphics state for each render pass along with
- * data about the render in the chunk visibility graph.
+ * The section state object for a chunk section. This contains all the graphics state for each section pass along with
+ * data about the section in the chunk visibility graph.
  */
 public class RenderSection {
     private final long regionKey;
@@ -18,16 +18,13 @@ public class RenderSection {
     private final int sectionX, sectionY, sectionZ;
     private final double centerX, centerY, centerZ;
 
-    private ChunkRenderData data = ChunkRenderData.ABSENT;
+    private SectionRenderData data = SectionRenderData.ABSENT;
     private CompletableFuture<?> rebuildTask = null;
-
-    private ChunkUpdateType pendingUpdate;
-    private long uploadedGeometrySegment = BufferSegment.INVALID;
-
-    private boolean disposed;
-
+    
     private int lastAcceptedBuildTime = -1;
-    private int flags;
+    private long uploadedGeometrySegment = BufferSegment.INVALID;
+    
+    private boolean disposed;
 
     public RenderSection(int sectionX, int sectionY, int sectionZ) {
         this.sectionX = sectionX;
@@ -52,13 +49,13 @@ public class RenderSection {
         }
     }
 
-    public ChunkRenderData getData() {
+    public SectionRenderData getData() {
         return this.data;
     }
 
     /**
-     * Deletes all data attached to this render and drops any pending tasks. This should be used when the render falls
-     * out of view or otherwise needs to be destroyed. After the render has been destroyed, the object can no longer
+     * Deletes all data attached to this section and drops any pending tasks. This should be used when the section falls
+     * out of view or otherwise needs to be destroyed. After the section has been destroyed, the object can no longer
      * be used.
      */
     public void delete() {
@@ -67,17 +64,16 @@ public class RenderSection {
         this.disposed = true;
     }
 
-    public void setData(ChunkRenderData data) {
+    public void setData(SectionRenderData data) {
         if (data == null) {
             throw new NullPointerException("Mesh information must not be null");
         }
 
         this.data = data;
-        this.flags = data.getFlags();
     }
 
     /**
-     * Returns the chunk section position which this render refers to in the world.
+     * Returns the chunk section position which this section refers to in the world.
      */
     public ChunkSectionPos getChunkPos() {
         return ChunkSectionPos.from(this.sectionX, this.sectionY, this.sectionZ);
@@ -106,25 +102,14 @@ public class RenderSection {
         );
     }
 
-    public ChunkUpdateType getPendingUpdate() {
-        return this.pendingUpdate;
-    }
-
-    public void markForUpdate(ChunkUpdateType type) {
-        if (this.pendingUpdate == null || type.ordinal() > this.pendingUpdate.ordinal()) {
-            this.pendingUpdate = type;
-        }
-    }
-
     public void onBuildSubmitted(CompletableFuture<?> task) {
         this.cancelRebuildTask();
 
         this.rebuildTask = task;
-        this.pendingUpdate = null;
     }
 
     public boolean isBuilt() {
-        return this.data != ChunkRenderData.ABSENT;
+        return this.data != SectionRenderData.ABSENT;
     }
 
     public int getLastAcceptedBuildTime() {
@@ -185,10 +170,6 @@ public class RenderSection {
 
     public RenderRegion getRegion() {
         return this.region;
-    }
-
-    public int getFlags() {
-        return this.flags;
     }
     
     @Override

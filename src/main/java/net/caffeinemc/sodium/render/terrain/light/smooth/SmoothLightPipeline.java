@@ -19,13 +19,13 @@ import net.minecraft.util.math.MathHelper;
  * - Shading issues caused by anisotropy are fixed by re-orientating quads to a consistent ordering (fixes MC-136302)
  * - Inset block faces are correctly shaded by their neighbors, fixing a number of problems with non-full blocks such as
  *   grass paths (fixes MC-11783 and MC-108621)
- * - Synchronization issues between the main render thread's light engine and chunk build worker threads are corrected
+ * - Synchronization issues between the main section thread's light engine and chunk build worker threads are corrected
  *   by copying light data alongside block states, fixing a number of inconsistencies in baked chunks (no open issue)
  *
  * This implementation also includes a significant number of optimizations:
  *
  * - Computed light data for a given block face is cached and re-used again when multiple quads exist for a given
- *   facing, making complex block models less expensive to render
+ *   facing, making complex block models less expensive to section
  * - The light data cache encodes as much information as possible into integer words to improve cache locality and
  *   to eliminate the multiple array lookups that would otherwise be needed, significantly speeding up this section
  * - Block faces aligned to the block grid use a fast-path for mapping corner light values to vertices without expensive

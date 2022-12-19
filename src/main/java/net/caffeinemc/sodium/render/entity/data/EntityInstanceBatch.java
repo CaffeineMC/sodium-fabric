@@ -74,8 +74,8 @@ public class EntityInstanceBatch {
         int lightX = light & (LightmapTextureManager.MAX_BLOCK_LIGHT_COORDINATE | 0xFF0F);
         int lightY = light >> 16 & (LightmapTextureManager.MAX_BLOCK_LIGHT_COORDINATE | 0xFF0F);
 
-        // this can happen if the model didn't render any model parts,
-        // in which case it makes sense to not try to render it anyway.
+        // this can happen if the model didn't section any model parts,
+        // in which case it makes sense to not try to section it anyway.
         if (this.matrices.isEmpty()) return;
 
         int[] primitiveIndices = null;

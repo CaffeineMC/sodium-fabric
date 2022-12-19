@@ -7,6 +7,7 @@ import java.util.SortedSet;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.interop.vanilla.mixin.WorldRendererHolder;
+import net.caffeinemc.sodium.render.chunk.BlockEntityRenderManager;
 import net.caffeinemc.sodium.render.chunk.TerrainRenderManager;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkRenderMatrices;
@@ -207,7 +208,7 @@ public class SodiumWorldRenderer {
     }
 
     /**
-     * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
+     * Performs a section pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
     public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack) {
         ChunkRenderPass renderPass = this.renderPassManager.getRenderPassForLayer(renderLayer);
@@ -253,8 +254,9 @@ public class SodiumWorldRenderer {
         double z = cameraPos.getZ();
 
         BlockEntityRenderDispatcher blockEntityRenderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
+        BlockEntityRenderManager blockEntityRenderManager = this.terrainRenderManager.getBlockEntityRenderManager();
 
-        for (BlockEntity blockEntity : this.terrainRenderManager.getVisibleBlockEntities()) {
+        for (BlockEntity blockEntity : blockEntityRenderManager.getSectionedBlockEntities()) {
             BlockPos pos = blockEntity.getPos();
 
             matrices.push();
@@ -279,7 +281,7 @@ public class SodiumWorldRenderer {
             matrices.pop();
         }
 
-        for (BlockEntity blockEntity : this.terrainRenderManager.getGlobalBlockEntities()) {
+        for (BlockEntity blockEntity : blockEntityRenderManager.getGlobalBlockEntities()) {
             BlockPos pos = blockEntity.getPos();
 
             matrices.push();
@@ -392,7 +394,7 @@ public class SodiumWorldRenderer {
     }
 
     /**
-     * Schedules a chunk rebuild for the render belonging to the given chunk section position.
+     * Schedules a chunk rebuild for the section belonging to the given chunk section position.
      */
     public void scheduleRebuildForChunk(int x, int y, int z, boolean important) {
         this.terrainRenderManager.scheduleRebuild(x, y, z, important);

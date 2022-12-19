@@ -15,23 +15,23 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 
 /**
- * The render data for a chunk render container containing all the information about which terrain models are attached,
+ * The section data for a chunk section container containing all the information about which terrain models are attached,
  * the block entities contained by it, and any data used for occlusion testing.
  */
-public class ChunkRenderData {
-    public static final ChunkRenderData ABSENT = new ChunkRenderData.Builder()
+public class SectionRenderData {
+    public static final SectionRenderData ABSENT = new SectionRenderData.Builder()
             .build();
-    public static final ChunkRenderData EMPTY = createEmptyData();
+    public static final SectionRenderData EMPTY = createEmptyData();
 
     public final BlockEntity[] globalBlockEntities;
     public final BlockEntity[] blockEntities;
     public final Sprite[] animatedSprites;
-    public final ChunkPassModel[] models;
+    public final SectionPassModel[] models;
     public final ChunkRenderBounds bounds;
     public final ChunkOcclusionData occlusionData;
 
-    public ChunkRenderData(BlockEntity[] globalBlockEntities, BlockEntity[] blockEntities, Sprite[] animatedSprites,
-                           ChunkPassModel[] models, ChunkRenderBounds bounds, ChunkOcclusionData occlusionData) {
+    public SectionRenderData(BlockEntity[] globalBlockEntities, BlockEntity[] blockEntities, Sprite[] animatedSprites,
+                             SectionPassModel[] models, ChunkRenderBounds bounds, ChunkOcclusionData occlusionData) {
         this.globalBlockEntities = globalBlockEntities;
         this.blockEntities = blockEntities;
         this.animatedSprites = animatedSprites;
@@ -40,23 +40,23 @@ public class ChunkRenderData {
         this.occlusionData = occlusionData;
     }
 
-    public int getFlags() {
-        int flags = 0;
+    public byte getBaseFlags() {
+        byte flags = 0;
 
         if (this.globalBlockEntities != null) {
-            flags |= ChunkRenderFlag.HAS_GLOBAL_BLOCK_ENTITIES;
+            flags |= SectionRenderFlags.HAS_GLOBAL_BLOCK_ENTITIES;
         }
 
         if (this.blockEntities != null) {
-            flags |= ChunkRenderFlag.HAS_BLOCK_ENTITIES;
+            flags |= SectionRenderFlags.HAS_BLOCK_ENTITIES;
         }
 
         if (this.models != null) {
-            flags |= ChunkRenderFlag.HAS_TERRAIN_MODELS;
+            flags |= SectionRenderFlags.HAS_TERRAIN_MODELS;
         }
 
         if (this.animatedSprites != null) {
-            flags |= ChunkRenderFlag.HAS_TICKING_TEXTURES;
+            flags |= SectionRenderFlags.HAS_TICKING_TEXTURES;
         }
 
         return flags;
@@ -67,7 +67,7 @@ public class ChunkRenderData {
         private final List<BlockEntity> localBlockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
         
-        private ChunkPassModel[] models;
+        private SectionPassModel[] models;
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
 
@@ -79,7 +79,7 @@ public class ChunkRenderData {
             this.occlusionData = data;
         }
         
-        public void setModels(ChunkPassModel[] models) {
+        public void setModels(SectionPassModel[] models) {
             this.models = models;
         }
 
@@ -97,18 +97,18 @@ public class ChunkRenderData {
         /**
          * Adds a block entity to the data container.
          * @param entity The block entity itself
-         * @param cull True if the block entity can be culled to this chunk render's volume, otherwise false
+         * @param cull True if the block entity can be culled to this chunk section's volume, otherwise false
          */
         public void addBlockEntity(BlockEntity entity, boolean cull) {
             (cull ? this.localBlockEntities : this.globalBlockEntities).add(entity);
         }
 
-        public ChunkRenderData build() {
+        public SectionRenderData build() {
             var globalBlockEntities = toArray(this.globalBlockEntities, BlockEntity[]::new);
             var blockEntities = toArray(this.localBlockEntities, BlockEntity[]::new);
             var animatedSprites = toArray(this.animatedSprites, Sprite[]::new);
 
-            return new ChunkRenderData(
+            return new SectionRenderData(
                     globalBlockEntities,
                     blockEntities,
                     animatedSprites,
@@ -127,11 +127,11 @@ public class ChunkRenderData {
         }
     }
 
-    private static ChunkRenderData createEmptyData() {
+    private static SectionRenderData createEmptyData() {
         ChunkOcclusionData occlusionData = new ChunkOcclusionData();
         occlusionData.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
 
-        ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
+        SectionRenderData.Builder meshInfo = new SectionRenderData.Builder();
         meshInfo.setOcclusionData(occlusionData);
 
         return meshInfo.build();

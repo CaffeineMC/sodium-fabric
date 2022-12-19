@@ -2,11 +2,12 @@ package net.caffeinemc.sodium.render.chunk.cull;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.BitSet;
 import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
-import net.caffeinemc.sodium.render.chunk.RenderSection;
+import net.caffeinemc.sodium.render.chunk.SectionTree;
+import net.caffeinemc.sodium.render.chunk.SortedSectionLists;
+import net.caffeinemc.sodium.render.chunk.state.SectionRenderFlags;
 import net.caffeinemc.sodium.util.DirectionUtil;
 import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
@@ -17,44 +18,41 @@ import net.minecraft.util.math.Vec3d;
 
 public class SectionCuller {
     
+    private static final long VIS_DATA_MASK = ~(-1L << DirectionUtil.COUNT);
+    private static final int XP = 1 << DirectionUtil.X_PLUS;
+    private static final int XN = 1 << DirectionUtil.X_MIN;
+    private static final int ZP = 1 << DirectionUtil.Z_PLUS;
+    private static final int ZN = 1 << DirectionUtil.Z_MIN;
+    
     private final SectionTree sectionTree;
+    private final SortedSectionLists sortedSectionLists;
     private final int chunkViewDistance;
     private final double squaredFogDistance;
     
-    private final BitArray sectionVisibilityBits;
-    private final BitArray sectionOcclusionVisibilityBits;
-    
     private final byte[] sectionDirVisibilityData;
+    private final BitArray sectionVisibilityBitsPass1;
+    private final BitArray sectionVisibilityBitsPass2;
     
-    /*
-     * The outgoing directions out of the chunk
+    /**
+     * Temporary array that stores all sections (including air sections and sections that haven't been loaded yet) in a
+     * bfs-sorted array.
      */
-    private final byte[] visibleTraversalDirections;
-    /*
-     * The directions that the bfs is still allowed to check
+    private final int[] sortedSections;
+    
+    /**
+     * An array of shorts which represents the concatenation of the allowed and visible traversal directions.
+     * allowed: The directions that the bfs is still allowed to check
+     * visible: The outgoing directions out of the chunk
      */
-    private final byte[] allowedTraversalDirections;
+    private final short[] sectionTraversalData;
     
     private final IntList[] fallbackSectionLists;
     
-    // Chunks are grouped by manhattan distance to the start chunk, and given
-    // the fact that the chunk graph is bipartite, it's possible to simply
-    // alternate the lists to form a queue
-    private final int[] queue1;
-    private final int[] queue2;
-    
-    private final int[] sortedVisibleSections;
-    private int visibleSectionCount;
-    
-    public SectionCuller(SectionTree sectionTree, int chunkViewDistance) {
+    public SectionCuller(SectionTree sectionTree, SortedSectionLists sortedSectionLists, int chunkViewDistance) {
         this.sectionTree = sectionTree;
+        this.sortedSectionLists = sortedSectionLists;
         this.chunkViewDistance = chunkViewDistance;
         this.squaredFogDistance = MathHelper.square((chunkViewDistance + 1) * 16.0);
-        
-        int maxSize = (MathHelper.square(chunkViewDistance * 2 + 1) * sectionTree.sectionHeight);
-        this.queue1 = new int[maxSize];
-        this.queue2 = new int[maxSize];
-        this.sortedVisibleSections = new int[maxSize];
         
         this.fallbackSectionLists = new IntList[chunkViewDistance * 2 + 1];
         // the first list will have a known size of 1 always
@@ -63,19 +61,20 @@ public class SectionCuller {
             this.fallbackSectionLists[i] = new IntArrayList();
         }
         
-        this.visibleTraversalDirections = new byte[sectionTree.getSectionTableSize()];
-        this.allowedTraversalDirections = new byte[sectionTree.getSectionTableSize()];
         this.sectionDirVisibilityData = new byte[sectionTree.getSectionTableSize() * DirectionUtil.COUNT];
-        this.sectionVisibilityBits = new BitArray(sectionTree.getSectionTableSize());
-        this.sectionOcclusionVisibilityBits = new BitArray(sectionTree.getSectionTableSize());
+        this.sectionVisibilityBitsPass1 = new BitArray(sectionTree.getSectionTableSize());
+        this.sectionVisibilityBitsPass2 = new BitArray(sectionTree.getSectionTableSize());
+        
+        this.sectionTraversalData = new short[sectionTree.getSectionTableSize()];
+        this.sortedSections = new int[sectionTree.getSectionTableSize()];
     }
     
     public void calculateVisibleSections(
             Frustum frustum,
             boolean useOcclusionCulling
     ) {
-        this.sectionVisibilityBits.fill(false);
-        this.sectionOcclusionVisibilityBits.fill(false);
+        this.sectionVisibilityBitsPass1.fill(false);
+        this.sectionVisibilityBitsPass2.fill(false);
     
         if (this.sectionTree.getLoadedSections() != 0) {
             // Start with corner section of the fog distance.
@@ -109,7 +108,7 @@ public class SectionCuller {
             );
             
             // still need to do this to maintain ordering between sections, even if useOcclusionCulling is false
-            this.occlusionCull(
+            this.occlusionCullAndFillLists(
                     useOcclusionCulling,
                     sectionZStart,
                     sectionXStart,
@@ -228,7 +227,7 @@ public class SectionCuller {
             if (frustumTestResult == Frustum.INSIDE) {
                 for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
                     for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
-                        this.sectionVisibilityBits.copy(
+                        this.sectionVisibilityBitsPass1.copy(
                                 this.sectionTree.sectionExistenceBits,
                                 sectionIdx + yIdxOffset + zIdxOffset,
                                 sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
@@ -299,7 +298,7 @@ public class SectionCuller {
     
         if (frustum.containsBox(minX, minY, minZ, maxX, maxY, maxZ, parentTestResult)) {
             // we already tested that it does exist, so we can unconditionally set
-            this.sectionVisibilityBits.set(sectionIdx);
+            this.sectionVisibilityBitsPass1.set(sectionIdx);
         }
     }
 
@@ -361,7 +360,7 @@ public class SectionCuller {
                     int yIdxIncrement = this.sectionTree.sectionWidthSquared;
                     int yIdxOffset = 0;
                     for (int sectionY = this.sectionTree.sectionHeightMin; sectionY < this.sectionTree.sectionHeightMax; sectionY++, yIdxOffset += yIdxIncrement) {
-                        this.sectionVisibilityBits.unset(yIdxOffset + zIdxOffset + xIdxOffset);
+                        this.sectionVisibilityBitsPass1.unset(yIdxOffset + zIdxOffset + xIdxOffset);
                     }
                 }
             
@@ -373,153 +372,94 @@ public class SectionCuller {
             zIdxOffset += zIdxIncrement;
         }
     }
-
-    private void occlusionCull(
-            boolean useOcclusionCulling,
+    
+    private void occlusionCullAndFillLists(
+            boolean useOcclusion,
             final int sectionZStart,
             final int sectionXStart,
             final int sectionZEnd,
             final int sectionXEnd
     ) {
-        // It's possible to improve culling for spectator mode players in walls,
-        // but the time cost to update this algorithm, bugfix it and maintain it
-        // on top of the potential slowdown of the normal path seems to outweigh
-        // any gains in those rare circumstances
-        int visibilityOverride = useOcclusionCulling ? 0 : -1;
-    
-        int tableZStart = sectionZStart & this.sectionTree.sectionWidthMask;
-        int tableXStart = sectionXStart & this.sectionTree.sectionWidthMask;
-        int tableZEnd = sectionZEnd & this.sectionTree.sectionWidthMask;
-        int tableXEnd = sectionXEnd & this.sectionTree.sectionWidthMask;
-    
-        this.visibleSectionCount = 0;
-        int currentQueueSize = 0;
-        int nextQueueSize = 0;
+        int visibleChunksCount = 1;
+        int visibleChunksQueue = 0;
         
-        int[] currentQueue = this.queue1;
-        int[] nextQueue = this.queue2;
+        short traversalOverride = (short) (useOcclusion ? 0 : -1);
+        int startSectionIdx = this.sectionTree.getSectionIdx(
+                this.sectionTree.camera.getSectionX(),
+                this.sectionTree.camera.getSectionY(),
+                this.sectionTree.camera.getSectionZ()
+        );
         
-        int originSectionX = this.sectionTree.camera.getSectionX();
-        int originSectionY = this.sectionTree.camera.getSectionY();
-        int originSectionZ = this.sectionTree.camera.getSectionZ();
-    
-        int startSectionIdx = this.sectionTree.getSectionIdx(originSectionX, originSectionY, originSectionZ);
+        boolean fallback = startSectionIdx == SectionTree.NULL_INDEX;
         
-        boolean fallback = startSectionIdx == SectionTree.OUT_OF_BOUNDS_INDEX;
         if (fallback) {
-            this.getStartingNodesFallback(originSectionX, originSectionY, originSectionZ);
+            this.getStartingNodesFallback(
+                    this.sectionTree.camera.getSectionX(),
+                    this.sectionTree.camera.getSectionY(),
+                    this.sectionTree.camera.getSectionZ()
+            );
         } else {
-            currentQueue[0] = startSectionIdx;
-            currentQueueSize = 1;
-
-            byte visible = 0;
-
-            for (int direction = 0; direction < DirectionUtil.COUNT; direction++) {
-                visible |= this.getVisibilityData(startSectionIdx, direction);
-            }
-
-            this.allowedTraversalDirections[startSectionIdx] = (byte) -1;
-            this.visibleTraversalDirections[startSectionIdx] = visible;
+            this.sortedSections[0] = startSectionIdx;
+            this.sectionTraversalData[startSectionIdx] = -1; // All outbound directions
         }
-
-        int fallbackIndex = 0;
-
-        while (true) {
-            if (fallback && fallbackIndex < this.fallbackSectionLists.length) {
-                IntList nodes = this.fallbackSectionLists[fallbackIndex];
-                int count = nodes.size();
-                nodes.getElements(0, currentQueue, currentQueueSize, count);
-                currentQueueSize += count;
-                fallbackIndex++;
-
-                // Make sure that there are entries in the queue.
-            } else if (currentQueueSize == 0) {
-                break;
+        
+        // TODO:FIXME: FALLBACK
+        while (visibleChunksQueue != visibleChunksCount) {
+            int sectionIdx = this.sortedSections[visibleChunksQueue++];
+            
+            byte flags = this.sectionTree.sectionFlagData[sectionIdx];
+            
+            if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_TERRAIN_MODELS)) {
+                this.sortedSectionLists.terrainSectionIdxs[this.sortedSectionLists.terrainSectionCount++] = sectionIdx;
             }
-
-            for (int i = 0; i < currentQueueSize; i++) {
-                int sectionIdx = currentQueue[i];
-
-                this.sortedVisibleSections[this.visibleSectionCount++] = sectionIdx;
-                this.sectionOcclusionVisibilityBits.set(sectionIdx);
-
-                byte allowedTraversalDirection = this.allowedTraversalDirections[sectionIdx];
-                byte visibleTraversalDirection = this.visibleTraversalDirections[sectionIdx];
-
-                for (int outgoingDirection = 0; outgoingDirection < DirectionUtil.COUNT; outgoingDirection++) {
-                    if ((visibleTraversalDirection & (1 << outgoingDirection)) == 0) {
-                        continue;
-                    }
-
-                    int adjacentNodeIdx = this.getAdjacentIdx(
-                            sectionIdx,
-                            outgoingDirection,
-                            tableZStart,
-                            tableXStart,
-                            tableZEnd,
-                            tableXEnd
-                    );
-
-                    // TEMP
-                    if (adjacentNodeIdx < -1 || sectionIdx < 0) {
-                        int adjacentNodeIdx2 = this.getAdjacentIdx(
-                                sectionIdx,
-                                outgoingDirection,
-                                tableZStart,
-                                tableXStart,
-                                tableZEnd,
-                                tableXEnd
-                        );
-                        System.out.println(adjacentNodeIdx2);
-                    }
-                    // END TEMP
-
-                    if (adjacentNodeIdx == SectionTree.OUT_OF_BOUNDS_INDEX || !this.sectionVisibilityBits.get(adjacentNodeIdx)) {
-                        continue;
-                    }
-
-                    int reverseDirection = DirectionUtil.getOppositeId(outgoingDirection);
-
-                    int visible = this.getVisibilityData(adjacentNodeIdx, reverseDirection) | visibilityOverride;
-                    // prevent further iterations to backtrack
-                    int newAllowed = allowedTraversalDirection & ~(1 << reverseDirection);
-
-                    if (this.allowedTraversalDirections[adjacentNodeIdx] == 0) {
-                        nextQueue[nextQueueSize++] = adjacentNodeIdx;
-                        if (newAllowed == 0) {
-                            // TODO: I don't think it's mathematically possible to trigger this
-                            // avoid adding it twice to the list!
-                            newAllowed = 0b1000_0000; // not 0 but doesn't set any of the direction bits
-                        }
-                    }
-
-                    // TODO: I think newAllowed can just be set here, the old
-                    //  value is always 0 if the node hasn't been seen yet, or
-                    //  the same value if it has, as newAllowed is just a bitmask
-                    //  telling exactly which of the 6 connected chunks are further
-                    //  away in manhattan distance
-                    this.allowedTraversalDirections[adjacentNodeIdx] |= newAllowed;
-                    this.visibleTraversalDirections[adjacentNodeIdx] |= newAllowed & visible;
+            
+            if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_BLOCK_ENTITIES)) {
+                this.sortedSectionLists.blockEntitySectionIdxs[this.sortedSectionLists.blockEntitySectionCount++] = sectionIdx;
+            }
+    
+            if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_TICKING_TEXTURES)) {
+                this.sortedSectionLists.tickingTextureSectionIdxs[this.sortedSectionLists.tickingTextureSectionCount++] = sectionIdx;
+            }
+            
+            if (SectionRenderFlags.has(flags, SectionRenderFlags.NEEDS_UPDATE)) {
+                if (SectionRenderFlags.has(flags, SectionRenderFlags.NEEDS_UPDATE_IMPORTANT)) {
+                    this.sortedSectionLists.importantUpdatableSectionIdxs[this.sortedSectionLists.importantUpdateSectionCount++] = sectionIdx;
+                } else {
+                    this.sortedSectionLists.secondaryUpdatableSectionIdxs[this.sortedSectionLists.secondaryUpdateSectionCount++] = sectionIdx;
                 }
             }
-
-            // swap and reset
-            int[] temp = currentQueue;
-            currentQueue = nextQueue;
-            nextQueue = temp;
+    
+            this.sectionVisibilityBitsPass1.unset(sectionIdx); // Performance hack, means it ignores sections if its already visited them
+            this.sectionVisibilityBitsPass2.set(sectionIdx);
+            short traversalData = (short) (this.sectionTraversalData[sectionIdx] | traversalOverride);
+            this.sectionTraversalData[sectionIdx] = 0; // Reset the traversalData, meaning don't need to fill the array
+            traversalData &= ((traversalData >> 8) & 0xFF) | 0xFF00; // Apply inbound chunk filter to prevent backwards traversal
             
-            currentQueueSize = nextQueueSize;
-            nextQueueSize = 0;
+            for (int outgoingDir = 0; outgoingDir < DirectionUtil.COUNT; outgoingDir++) {
+                if ((traversalData & (1 << outgoingDir)) == 0) {
+                    continue;
+                }
+                
+                //TODO: check that the direction is facing away from the camera (dot product less positive or something)
+                int neighborSectionIdx = this.getAdjacentIdx(sectionIdx, outgoingDir, sectionZStart, sectionXStart, sectionZEnd, sectionXEnd);
+                if (neighborSectionIdx == SectionTree.NULL_INDEX || !this.sectionVisibilityBitsPass1.get(neighborSectionIdx)) {
+                    continue;
+                }
+                
+                short neighborTraversalData = this.sectionTraversalData[neighborSectionIdx];
+                
+                if (neighborTraversalData == 0) {
+                    this.sortedSections[visibleChunksCount++] = neighborSectionIdx;
+                    neighborTraversalData |= (short) (1 << 15) | (traversalData & 0xFF00);
+                }
+                
+                int inboundDir = DirectionUtil.getOppositeId(outgoingDir);
+                neighborTraversalData |= this.getVisibilityData(neighborSectionIdx, inboundDir);
+                neighborTraversalData &= ~(1 << (8 + inboundDir)); // Un mark incoming direction
+                this.sectionTraversalData[neighborSectionIdx] = neighborTraversalData;
+            }
         }
-
-        Arrays.fill(this.allowedTraversalDirections, (byte) 0);
-        Arrays.fill(this.visibleTraversalDirections, (byte) 0);
     }
-
-    private static final int XP = 1 << DirectionUtil.X_PLUS;
-    private static final int XN = 1 << DirectionUtil.X_MIN;
-    private static final int ZP = 1 << DirectionUtil.Z_PLUS;
-    private static final int ZN = 1 << DirectionUtil.Z_MIN;
     
     private void getStartingNodesFallback(int sectionX, int sectionY, int sectionZ) {
         int direction = sectionY < this.sectionTree.sectionHeightMin ? Direction.UP.getId() : Direction.DOWN.getId();
@@ -685,67 +625,25 @@ public class SectionCuller {
     }
     
     private void tryAddFallbackNode(int sectionIdx, int direction, byte directionMask, IntList sectionList) {
-        if (sectionIdx != SectionTree.OUT_OF_BOUNDS_INDEX && this.sectionVisibilityBits.get(sectionIdx)) {
+        if (sectionIdx != SectionTree.NULL_INDEX && this.sectionVisibilityBitsPass1.get(sectionIdx)) {
             sectionList.add(sectionIdx);
             
-            int visible = this.getVisibilityData(sectionIdx, direction);
+            byte visible = this.getVisibilityData(sectionIdx, direction);
             
-            this.allowedTraversalDirections[sectionIdx] = directionMask;
-            this.visibleTraversalDirections[sectionIdx] = (byte) (directionMask & visible);
-        }
-    }
-    
-    public Iterator<RenderSection> getVisibleSectionIterator() {
-        return new SortedVisibleSectionIterator();
-//        return new VisibleSectionIterator();
-    }
-    
-    private class VisibleSectionIterator implements Iterator<RenderSection> {
-        private int nextIdx;
-        
-        private VisibleSectionIterator() {
-            this.nextIdx = SectionCuller.this.sectionVisibilityBits.nextSetBit(0);
-        }
-        
-        @Override
-        public boolean hasNext() {
-            return this.nextIdx != -1;
-        }
-        
-        @Override
-        public RenderSection next() {
-            RenderSection section = SectionCuller.this.sectionTree.sections[this.nextIdx];
-            this.nextIdx = SectionCuller.this.sectionVisibilityBits.nextSetBit(this.nextIdx + 1);
-            return section;
-        }
-    }
-    
-    private class SortedVisibleSectionIterator implements Iterator<RenderSection> {
-        private int idx;
-        
-        private SortedVisibleSectionIterator() {
-        }
-        
-        @Override
-        public boolean hasNext() {
-            return this.idx < SectionCuller.this.visibleSectionCount;
-        }
-        
-        @Override
-        public RenderSection next() {
-            int trueIdx = SectionCuller.this.sortedVisibleSections[this.idx++];
-            return SectionCuller.this.sectionTree.sections[trueIdx];
+            // TODO
+//            this.allowedTraversalDirections[sectionIdx] = directionMask;
+//            this.visibleTraversalDirections[sectionIdx] = (byte) (directionMask & visible);
         }
     }
     
     public boolean isSectionVisible(int x, int y, int z) {
         int sectionIdx = this.sectionTree.getSectionIdx(x, y, z);
         
-        if (sectionIdx == SectionTree.OUT_OF_BOUNDS_INDEX) {
+        if (sectionIdx == SectionTree.NULL_INDEX) {
             return false;
         }
         
-        return this.sectionOcclusionVisibilityBits.get(sectionIdx);
+        return this.sectionVisibilityBitsPass2.get(sectionIdx);
     }
     
     public boolean isChunkInDrawDistance(int x, int z) {
@@ -758,29 +656,26 @@ public class SectionCuller {
         return (xDist * xDist) + (zDist * zDist) <= this.squaredFogDistance;
     }
     
-    public void setVisibilityData(int x, int y, int z, ChunkOcclusionData data) {
-        int sectionIdx = this.sectionTree.getSectionIdx(x, y, z);
-        
-        if (sectionIdx == SectionTree.OUT_OF_BOUNDS_INDEX) {
-            return;
-        }
-        
-        for (var from : DirectionUtil.ALL_DIRECTIONS) {
-            int bits = 0;
-            
-            if (data != null) {
-                for (var to : DirectionUtil.ALL_DIRECTIONS) {
-                    if (data.isVisibleThrough(from, to)) {
-                        bits |= 1 << to.ordinal();
-                    }
-                }
+    public void setVisibilityData(int sectionIdx, ChunkOcclusionData data) {
+        long bits = 0;
+
+        // The underlying data is already formatted to what we need, so we can just grab the long representation and work with that
+        if (data != null) {
+            BitSet bitSet = data.visibility;
+            if (!bitSet.isEmpty()) {
+                bits = bitSet.toLongArray()[0];
             }
-            
-            this.sectionDirVisibilityData[(sectionIdx * DirectionUtil.COUNT) + from.ordinal()] = (byte) bits;
+        }
+
+        for (int fromIdx = 0; fromIdx < DirectionUtil.COUNT; fromIdx++) {
+            byte toBits = (byte) (bits & VIS_DATA_MASK);
+            bits >>= DirectionUtil.COUNT;
+
+            this.sectionDirVisibilityData[(sectionIdx * DirectionUtil.COUNT) + fromIdx] = toBits;
         }
     }
     
-    private int getVisibilityData(int sectionIdx, int incomingDirection) {
+    private byte getVisibilityData(int sectionIdx, int incomingDirection) {
         return this.sectionDirVisibilityData[(sectionIdx * DirectionUtil.COUNT) + incomingDirection];
     }
     
@@ -796,26 +691,26 @@ public class SectionCuller {
         int tableZ = (sectionIdx >> this.sectionTree.idxZShift) & this.sectionTree.sectionWidthMask;
         int tableX = sectionIdx & this.sectionTree.sectionWidthMask;
         
+        // do some terrible bit hacks to decrement and increment the index in the correct direction
         return switch (directionId) {
             case DirectionUtil.X_MIN -> tableX == tableXStart
-                                        ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                        ? SectionTree.NULL_INDEX
                                         : (sectionIdx & ~this.sectionTree.idxXMask) | ((sectionIdx - 1) & this.sectionTree.idxXMask);
             case DirectionUtil.X_PLUS -> tableX == tableXEnd - 1
-                                         ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                         ? SectionTree.NULL_INDEX
                                          : (sectionIdx & ~this.sectionTree.idxXMask) | ((sectionIdx + 1) & this.sectionTree.idxXMask);
-    
             case DirectionUtil.Z_MIN -> tableZ == tableZStart
-                                        ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                        ? SectionTree.NULL_INDEX
                                         : (sectionIdx & ~this.sectionTree.idxZMask) | ((sectionIdx - this.sectionTree.sectionWidth) & this.sectionTree.idxZMask);
             case DirectionUtil.Z_PLUS -> tableZ == tableZEnd - 1
-                                         ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                         ? SectionTree.NULL_INDEX
                                          : (sectionIdx & ~this.sectionTree.idxZMask) | ((sectionIdx + this.sectionTree.sectionWidth) & this.sectionTree.idxZMask);
     
             case DirectionUtil.Y_MIN -> tableY == 0
-                                        ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                        ? SectionTree.NULL_INDEX
                                         : (sectionIdx & ~this.sectionTree.idxYMask) | ((sectionIdx - this.sectionTree.sectionWidthSquared) & this.sectionTree.idxYMask);
             case DirectionUtil.Y_PLUS -> tableY == this.sectionTree.sectionHeight - 1
-                                         ? SectionTree.OUT_OF_BOUNDS_INDEX
+                                         ? SectionTree.NULL_INDEX
                                          : (sectionIdx & ~this.sectionTree.idxYMask) | ((sectionIdx + this.sectionTree.sectionWidthSquared) & this.sectionTree.idxYMask);
             default -> throw new IllegalStateException("Unknown direction ID: " + directionId);
         };

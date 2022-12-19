@@ -80,7 +80,7 @@ public abstract class MixinWorldRenderer implements WorldRendererHolder {
     }
 
     /**
-     * @reason Redirect the chunk layer render passes to our renderer
+     * @reason Redirect the chunk layer section passes to our renderer
      * @author JellySquid
      */
     @Overwrite
@@ -88,7 +88,7 @@ public abstract class MixinWorldRenderer implements WorldRendererHolder {
         this.renderer.drawChunkLayer(renderLayer, matrices);
 
         // VANILLA BUG: Binding a RenderLayer for chunk rendering will result in setShaderColor being called,
-        // which is accidentally depended on by tile entity rendering. Since we don't bind a render layer, we need
+        // which is accidentally depended on by tile entity rendering. Since we don't bind a section layer, we need
         // to set this back to the expected state, or colors will be corrupted.
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }

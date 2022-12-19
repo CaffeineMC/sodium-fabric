@@ -68,7 +68,7 @@ public abstract class AbstractMdChunkRenderer<B extends AbstractMdChunkRenderer.
         //noinspection unchecked
         this.renderPipelines = new RenderPipeline[renderPassManager.getRenderPassCount()];
     
-        // construct all pipelines for current render passes now
+        // construct all pipelines for current section passes now
         var vertexFormat = vertexType.getCustomVertexFormat();
         var vertexArray = new VertexArrayDescription<>(
                 BufferTarget.values(),
@@ -179,7 +179,7 @@ public abstract class AbstractMdChunkRenderer<B extends AbstractMdChunkRenderer.
     
     @Override
     public void render(ChunkRenderPass renderPass, ChunkRenderMatrices matrices, int frameIndex) {
-        // make sure a render list was created for this pass, if any
+        // make sure a section list was created for this pass, if any
         if (this.renderLists == null) {
             return;
         }
@@ -194,7 +194,7 @@ public abstract class AbstractMdChunkRenderer<B extends AbstractMdChunkRenderer.
             return;
         }
         
-        // if the render list exists, the pipeline probably exists (unless a new render pass was added without a reload)
+        // if the section list exists, the pipeline probably exists (unless a new section pass was added without a reload)
         RenderPipeline<ChunkShaderInterface, BufferTarget> renderPipeline = this.renderPipelines[passId];
         
         this.device.useRenderPipeline(renderPipeline, (commandList, programInterface, pipelineState) -> {

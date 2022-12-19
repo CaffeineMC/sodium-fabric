@@ -21,7 +21,7 @@ import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.buffer.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.IntPool;
 import net.minecraft.client.MinecraftClient;
@@ -110,23 +110,9 @@ public class RenderRegionManager {
             this.uploadGeometryBatch(entry.getLongKey(), entry.getValue(), frameIndex);
 
             for (TerrainBuildResult result : entry.getValue()) {
-                RenderSection section = result.render();
-
-                if (section.getData() != null) {
-                    callback.accept(
-                            section.getSectionX(),
-                            section.getSectionY(),
-                            section.getSectionZ(),
-                            section.getData(),
-                            result.data()
-                    );
-                }
-
-                section.setData(result.data());
-                section.setLastAcceptedBuildTime(result.buildTime());
-
+                RenderSection section = result.section();
+                callback.accept(section, result);
                 result.delete();
-    
                 RenderRegion region = section.getRegion();
                 if (region != null) {
                     // expand list as needed
@@ -181,14 +167,14 @@ public class RenderRegionManager {
     }
 
     public interface RenderUpdateCallback {
-        void accept(int x, int y, int z, ChunkRenderData prev, ChunkRenderData next);
+        void accept(RenderSection section, TerrainBuildResult result);
     }
 
     private void uploadGeometryBatch(long regionKey, List<TerrainBuildResult> results, int frameIndex) {
         List<PendingUpload> uploads = new ReferenceArrayList<>(results.size());
 
         for (TerrainBuildResult result : results) {
-            var section = result.render();
+            var section = result.section();
             var geometry = result.geometry();
 
             // De-allocate all storage for the meshes we're about to replace
@@ -230,7 +216,7 @@ public class RenderRegionManager {
 
         while (renders.hasNext()) {
             TerrainBuildResult result = renders.next();
-            RenderSection render = result.render();
+            RenderSection render = result.section();
 
             // TODO: this is kinda gross, maybe find a way to make the Future dispose of the result when cancelled?
             if (render.isDisposed() || result.buildTime() <= render.getLastAcceptedBuildTime()) {

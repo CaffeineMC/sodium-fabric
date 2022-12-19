@@ -7,8 +7,8 @@ import net.caffeinemc.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
 import net.caffeinemc.sodium.render.chunk.compile.buffers.DefaultChunkMeshBuilder;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
-import net.caffeinemc.sodium.render.chunk.state.ChunkPassModel;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.caffeinemc.sodium.render.chunk.state.SectionPassModel;
+import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexSink;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
@@ -18,7 +18,7 @@ import net.minecraft.client.render.RenderLayer;
 import org.lwjgl.system.MemoryUtil;
 
 /**
- * A collection of temporary buffers for each worker thread which will be used to build chunk meshes for given render
+ * A collection of temporary buffers for each worker thread which will be used to build chunk meshes for given section
  * passes. This makes a best-effort attempt to pick a suitable size for each scratch buffer, but will never try to
  * shrink a buffer.
  */
@@ -49,7 +49,7 @@ public class TerrainBuildBuffers {
         }
     }
     
-    public void init(ChunkRenderData.Builder renderData) {
+    public void init(SectionRenderData.Builder renderData) {
         for (var renderPass : this.renderPassManager.getAllRenderPasses()) {
             int passId = renderPass.getId();
             
@@ -69,7 +69,7 @@ public class TerrainBuildBuffers {
     
     /**
      * Return the {@link ChunkMeshBuilder} for the given {@link RenderLayer} as mapped by the
-     * {@link ChunkRenderPassManager} for this render context.
+     * {@link ChunkRenderPassManager} for this section context.
      */
     public ChunkMeshBuilder get(RenderLayer layer) {
         return this.delegates[this.renderPassManager.getRenderPassForLayer(layer).getId()];
@@ -93,7 +93,7 @@ public class TerrainBuildBuffers {
         NativeBuffer chunkVertexBuffer = null;
         int chunkVertexBufferPosition = 0;
         
-        var models = new ChunkPassModel[buffers.length];
+        var models = new SectionPassModel[buffers.length];
         
         for (int i = 0; i < buffers.length; i++) {
             VertexBufferBuilder[] sidedBuffers = buffers[i];
@@ -132,7 +132,7 @@ public class TerrainBuildBuffers {
             }
             
             if (!isEmpty) {
-                models[i] = new ChunkPassModel(modelPartRanges);
+                models[i] = new SectionPassModel(modelPartRanges);
             }
         }
         

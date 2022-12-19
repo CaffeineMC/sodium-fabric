@@ -9,6 +9,8 @@ accessible class net/minecraft/client/texture/SpriteContents$AnimatorImpl
 accessible class net/minecraft/world/chunk/PalettedContainer$Data
 accessible class net/minecraft/world/chunk/PalettedContainer$DataProvider
 
+accessible field net/minecraft/client/render/chunk/ChunkOcclusionData visibility Ljava/util/BitSet;
+
 accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
 
 accessible field net/minecraft/client/texture/NativeImage pointer J

@@ -1,50 +1,45 @@
-package net.caffeinemc.sodium.render.chunk.cull;
+package net.caffeinemc.sodium.render.chunk;
 
-import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
-import net.caffeinemc.sodium.util.DirectionUtil;
 import net.caffeinemc.sodium.util.collections.BitArray;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.HeightLimitView;
 
 public class SectionTree {
-    public static final int OUT_OF_BOUNDS_INDEX = 0xFFFFFFFF;
+    public static final int NULL_INDEX = 0xFFFFFFFF;
     
-    protected final ChunkCameraContext camera;
+    public final ChunkCameraContext camera;
     
-    protected final int chunkLoadDistance;
-    protected final int maxDepth; // inclusive
+    public final int chunkLoadDistance;
+    public final int maxDepth; // inclusive
     
-    protected final int sectionHeightMin;
-    protected final int sectionHeightMax;
-    protected final int sectionHeight;
-    protected final int sectionWidth;
-    protected final int sectionWidthSquared;
-    protected final int sectionWidthMask;
-    protected final int sectionWidthOffset;
-    protected final int sectionHeightOffset;
-    protected final int sectionTableSize;
+    public final int sectionHeightMin;
+    public final int sectionHeightMax;
+    public final int sectionHeight;
+    public final int sectionWidth;
+    public final int sectionWidthSquared;
+    public final int sectionWidthMask;
+    public final int sectionWidthOffset;
+    public final int sectionHeightOffset;
+    public final int sectionTableSize;
     
-    protected final int idxYShift;
-    protected final int idxZShift;
-    protected final int idxYMask;
-    protected final int idxZMask;
-    protected final int idxXMask;
+    public final int idxYShift;
+    public final int idxZShift;
+    public final int idxYMask;
+    public final int idxZMask;
+    public final int idxXMask;
     
-    protected final int[] nodeHeights;
-    protected final int[] nodeArrayOffsets;
+    public final int[] nodeHeights;
+    public final int[] nodeArrayOffsets;
     
-    protected final RenderSection[] sections;
-    protected final BitArray sectionExistenceBits;
-    // used so we can deal with out-of-bounds sections in the same way as vanilla
-    // TODO: periodically move these into the array when they're in range
-    //  maybe remove?
-//    protected final Long2ReferenceMap<RenderSection> backupSections;
+    // TODO: slowly take fields out of this class and move them into parallel arrays here
+    public final RenderSection[] sections;
+    public final byte[] sectionFlagData;
+    public final BitArray sectionExistenceBits;
     
     // these do not include the first level of nodes, which are the individual sections.
     // unsigned shorts support a max depth of 5, signed short support a max depth of 4
-    protected final short[] nodeLoadedSections;
+    public final short[] nodeLoadedSections;
     
     private int totalLoadedSections;
     
@@ -74,6 +69,7 @@ public class SectionTree {
         this.sectionTableSize = this.sectionWidthSquared * this.sectionHeight;
         
         this.sections = new RenderSection[this.sectionTableSize];
+        this.sectionFlagData = new byte[this.sectionTableSize];
         this.sectionExistenceBits = new BitArray(this.sectionTableSize);
         
         this.nodeArrayOffsets = new int[this.maxDepth];
@@ -101,8 +97,6 @@ public class SectionTree {
         // don't include the first level of nodes, because those are already stored in the sectionExistenceBits
         this.nodeLoadedSections = new short[totalOffset];
         
-//        this.backupSections = new Long2ReferenceOpenHashMap<>(this.sectionTableSize / 8);
-        
         this.camera = camera;
     }
     
@@ -110,7 +104,7 @@ public class SectionTree {
         if (this.isSectionInLoadBounds(x, y, z)) {
                 return this.getSectionIdxUnchecked(x, y, z);
         } else {
-            return OUT_OF_BOUNDS_INDEX;
+            return NULL_INDEX;
         }
     }
     
@@ -159,35 +153,19 @@ public class SectionTree {
         RenderSection section = new RenderSection(x, y, z);
     
         // TODO: make this not unchecked?
+        //  maybe do checks outside of the add and keep them in the tracker until they can be added
         int sectionIdx = this.getSectionIdxUnchecked(x, y, z);
-    
-//        if (sectionIdx != OUT_OF_BOUNDS_INDEX) {
-//            RenderSection existing = this.sections[sectionIdx];
-            
-//            if (existing != null) {
-//                this.backupSections.put(
-//                        ChunkSectionPos.asLong(
-//                                existing.getSectionX(),
-//                                existing.getSectionY(),
-//                                existing.getSectionZ()
-//                        ),
-//                        existing
-//                );
-//            }
-            
-            this.sections[sectionIdx] = section;
-            boolean prevExists = this.sectionExistenceBits.getAndSet(sectionIdx);
-            
-            if (!prevExists) {
-                // skip bottom level of nodes
-                for (int depth = 1; depth <= this.maxDepth; depth++) {
-                    int nodeIdx = this.getNodeIdx(depth, x, y, z);
-                    this.nodeLoadedSections[nodeIdx]++;
-                }
+        
+        this.sections[sectionIdx] = section;
+        boolean prevExists = this.sectionExistenceBits.getAndSet(sectionIdx);
+        
+        if (!prevExists) {
+            // skip bottom level of nodes
+            for (int depth = 1; depth <= this.maxDepth; depth++) {
+                int nodeIdx = this.getNodeIdx(depth, x, y, z);
+                this.nodeLoadedSections[nodeIdx]++;
             }
-//        } else {
-//            this.backupSections.put(ChunkSectionPos.asLong(x, y, z), section);
-//        }
+        }
     
         return section;
     }
@@ -197,26 +175,20 @@ public class SectionTree {
         
         int sectionIdx = this.getSectionIdxUnchecked(x, y, z);
         
-        
-//        if (sectionIdx != OUT_OF_BOUNDS_INDEX) {
-            RenderSection section = this.sections[sectionIdx];
-            this.sections[sectionIdx] = null;
-    
-            boolean prevExists = this.sectionExistenceBits.getAndUnset(sectionIdx);
-    
-            // skip bottom level of nodes
-            if (prevExists) {
-                for (int depth = 1; depth <= this.maxDepth; depth++) {
-                    int nodeIdx = this.getNodeIdx(depth, x, y, z);
-                    this.nodeLoadedSections[nodeIdx]--;
-                }
+        RenderSection section = this.sections[sectionIdx];
+        this.sections[sectionIdx] = null;
+
+        boolean prevExists = this.sectionExistenceBits.getAndUnset(sectionIdx);
+
+        // skip bottom level of nodes
+        if (prevExists) {
+            for (int depth = 1; depth <= this.maxDepth; depth++) {
+                int nodeIdx = this.getNodeIdx(depth, x, y, z);
+                this.nodeLoadedSections[nodeIdx]--;
             }
-            
-            return section;
-//        } else {
-//            return this.backupSections.remove(ChunkSectionPos.asLong(x, y, z));
-//        }
-    
+        }
+        
+        return section;
     }
     
     public RenderSection getSection(int x, int y, int z) {
@@ -224,7 +196,7 @@ public class SectionTree {
     }
     
     public RenderSection getSection(int sectionIdx) {
-        if (sectionIdx == OUT_OF_BOUNDS_INDEX) {
+        if (sectionIdx == NULL_INDEX) {
             return null;
         }
         

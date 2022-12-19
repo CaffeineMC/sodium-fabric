@@ -138,7 +138,7 @@ public class ClonedChunkSection {
             }
         }
 
-        // Retrieve any render attachments after we have copied all block entities, as this will call into the code of
+        // Retrieve any section attachments after we have copied all block entities, as this will call into the code of
         // other mods. This could potentially result in the chunk being modified, which would cause problems if we
         // were iterating over any data in that chunk.
         // See https://github.com/CaffeineMC/sodium-fabric/issues/942 for more info.

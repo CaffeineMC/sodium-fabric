@@ -2,11 +2,11 @@ package net.caffeinemc.sodium.render.chunk.state;
 
 import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 
-public final class ChunkPassModel {
+public final class SectionPassModel {
     private final long[] modelPartSegments;
     private final int visibilityBits;
 
-    public ChunkPassModel(long[] modelPartSegments) {
+    public SectionPassModel(long[] modelPartSegments) {
         this.modelPartSegments = modelPartSegments;
 
         this.visibilityBits = calculateVisibilityBits(modelPartSegments);

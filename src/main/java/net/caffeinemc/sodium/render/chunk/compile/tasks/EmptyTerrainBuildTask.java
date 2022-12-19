@@ -2,7 +2,7 @@ package net.caffeinemc.sodium.render.chunk.compile.tasks;
 
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
-import net.caffeinemc.sodium.render.chunk.state.ChunkRenderData;
+import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
 import net.caffeinemc.sodium.render.terrain.TerrainBuildContext;
 import net.caffeinemc.sodium.util.tasks.CancellationSource;
 
@@ -10,7 +10,7 @@ import net.caffeinemc.sodium.util.tasks.CancellationSource;
  * A build task which does no computation and always return an empty build result. These tasks are created whenever
  * chunk meshes need to be deleted as the only way to change graphics state is to send a message to the main
  * actor thread. In cases where new chunk renders are being created and scheduled, the scheduler will prefer to just
- * synchronously update the render's data to an empty state to speed things along.
+ * synchronously update the section's data to an empty state to speed things along.
  */
 @Deprecated
 public class EmptyTerrainBuildTask extends AbstractBuilderTask {
@@ -24,6 +24,6 @@ public class EmptyTerrainBuildTask extends AbstractBuilderTask {
 
     @Override
     public TerrainBuildResult performBuild(TerrainBuildContext context, CancellationSource cancellationSource) {
-        return new TerrainBuildResult(this.render, ChunkRenderData.EMPTY, BuiltChunkGeometry.empty(), this.frame);
+        return new TerrainBuildResult(this.render, SectionRenderData.EMPTY, BuiltChunkGeometry.empty(), this.frame);
     }
 }
