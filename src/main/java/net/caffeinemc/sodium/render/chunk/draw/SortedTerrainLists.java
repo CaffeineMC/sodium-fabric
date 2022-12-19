@@ -4,50 +4,43 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import it.unimi.dsi.fastutil.objects.ReferenceList;
+import java.util.List;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.SortedSectionLists;
-import net.caffeinemc.sodium.render.chunk.SectionTree;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegion;
 import net.caffeinemc.sodium.render.chunk.region.RenderRegionManager;
-import net.caffeinemc.sodium.render.chunk.state.SectionPassModel;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
+import net.caffeinemc.sodium.render.chunk.state.SectionPassModel;
 import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
+import net.caffeinemc.sodium.util.Pool;
 import net.minecraft.util.math.Vec3d;
 
 public class SortedTerrainLists {
     private static final int REGIONS_ESTIMATE = 128;
-    private static final int SECTIONS_PER_REGION_ESTIMATE = RenderRegion.REGION_SIZE / 2;
-    private static final int INITIAL_CACHE_SIZE = 256;
     
     private final RenderRegionManager regionManager;
     private final ChunkRenderPassManager renderPassManager;
     private final SortedSectionLists sortedSectionLists;
     private final ChunkCameraContext camera;
     
-    public final ReferenceList<RenderRegion> regions;
-    public final IntList[] regionIndices;
-    public final ReferenceList<LongList> uploadedSegments;
-    public final ReferenceList<IntList> sectionCoords;
-    public final ReferenceList<IntList>[] sectionIndices;
-    public final ReferenceList<IntList>[] modelPartCounts;
-    public final ReferenceList<LongList>[] modelPartSegments;
+    public final ReferenceArrayList<RenderRegion> regions;
+    public final ReferenceArrayList<LongArrayList> uploadedSegments;
+    public final ReferenceArrayList<IntArrayList> sectionCoords;
+    
+    public final BuiltPass[] builtPasses;
     
     // pools to save on many list allocations
-    private final ReferenceArrayList<LongList> uploadedSegmentsListPool;
-    private final ReferenceArrayList<IntList> sectionCoordsListPool;
-    private final ReferenceArrayList<IntList> sectionIndicesListPool;
-    private final ReferenceArrayList<IntList> modelPartCountsListPool;
-    private final ReferenceArrayList<LongList> modelPartSegmentsListPool;
+    private final Pool<LongArrayList> uploadedSegmentsListPool;
+    private final Pool<IntArrayList> sectionCoordsListPool;
     
     private int finalSectionCount;
 
-    @SuppressWarnings("unchecked")
     public SortedTerrainLists(
             RenderRegionManager regionManager,
             ChunkRenderPassManager renderPassManager,
@@ -58,111 +51,33 @@ public class SortedTerrainLists {
         this.renderPassManager = renderPassManager;
         this.sortedSectionLists = sortedSectionLists;
         this.camera = camera;
-        
-        int totalPasses = renderPassManager.getRenderPassCount();
+    
+        this.builtPasses = new BuiltPass[renderPassManager.getRenderPassCount()];
+    
+        for (int i = 0; i < this.builtPasses.length; i++) {
+            this.builtPasses[i] = new BuiltPass();
+        }
     
         this.regions = new ReferenceArrayList<>(REGIONS_ESTIMATE);
         this.uploadedSegments = new ReferenceArrayList<>(REGIONS_ESTIMATE);
         this.sectionCoords = new ReferenceArrayList<>(REGIONS_ESTIMATE);
-        this.regionIndices = new IntList[totalPasses];
-        this.sectionIndices = new ReferenceList[totalPasses];
-        this.modelPartCounts = new ReferenceList[totalPasses];
-        this.modelPartSegments = new ReferenceList[totalPasses];
-        
-        for (int passId = 0; passId < totalPasses; passId++) {
-            this.regionIndices[passId] = new IntArrayList(REGIONS_ESTIMATE);
-            this.sectionIndices[passId] = new ReferenceArrayList<>(REGIONS_ESTIMATE);
-            this.modelPartCounts[passId] = new ReferenceArrayList<>(REGIONS_ESTIMATE);
-            this.modelPartSegments[passId] = new ReferenceArrayList<>(REGIONS_ESTIMATE);
-        }
-        
-        this.uploadedSegmentsListPool = new ReferenceArrayList<>(INITIAL_CACHE_SIZE);
-        this.sectionCoordsListPool = new ReferenceArrayList<>(INITIAL_CACHE_SIZE);
-        this.sectionIndicesListPool = new ReferenceArrayList<>(INITIAL_CACHE_SIZE);
-        this.modelPartCountsListPool = new ReferenceArrayList<>(INITIAL_CACHE_SIZE);
-        this.modelPartSegmentsListPool = new ReferenceArrayList<>(INITIAL_CACHE_SIZE);
+        this.uploadedSegmentsListPool = new Pool<>(() -> new LongArrayList(RenderRegion.REGION_SIZE));
+        this.sectionCoordsListPool = new Pool<>(() -> new IntArrayList(RenderRegion.REGION_SIZE * 3));
     }
     
     private void reset() {
         this.regions.clear();
     
-        for (IntList list : this.regionIndices) {
-            list.clear();
+        for (var pass : this.builtPasses) {
+            pass.builtRegions.clear();
+            pass.regionIndices.clear();
         }
     
         // flush everything out to the list caches
-        this.uploadedSegmentsListPool.addAll(this.uploadedSegments);
-        this.uploadedSegments.clear();
-    
-        this.sectionCoordsListPool.addAll(this.sectionCoords);
-        this.sectionCoords.clear();
-    
-        for (ReferenceList<IntList> list : this.sectionIndices) {
-            this.sectionIndicesListPool.addAll(list);
-            list.clear();
-        }
-        
-        for (ReferenceList<IntList> list : this.modelPartCounts) {
-            this.modelPartCountsListPool.addAll(list);
-            list.clear();
-        }
-        
-        for (ReferenceList<LongList> list : this.modelPartSegments) {
-            this.modelPartSegmentsListPool.addAll(list);
-            list.clear();
-        }
+        this.uploadedSegmentsListPool.release(this.uploadedSegments);
+        this.sectionCoordsListPool.release(this.sectionCoords);
         
         this.finalSectionCount = 0;
-    }
-    
-    private LongList getUploadedSegmentsList() {
-        if (this.uploadedSegmentsListPool.isEmpty()) {
-            return new LongArrayList(SECTIONS_PER_REGION_ESTIMATE);
-        } else {
-            LongList cachedList = this.uploadedSegmentsListPool.pop();
-            cachedList.clear();
-            return cachedList;
-        }
-    }
-    
-    private IntList getSectionCoordsList() {
-        if (this.sectionCoordsListPool.isEmpty()) {
-            return new IntArrayList(SECTIONS_PER_REGION_ESTIMATE * 3); // component count for position (x, y, z)
-        } else {
-            IntList cachedList = this.sectionCoordsListPool.pop();
-            cachedList.clear();
-            return cachedList;
-        }
-    }
-    
-    private IntList getSectionIndicesList() {
-        if (this.sectionIndicesListPool.isEmpty()) {
-            return new IntArrayList(SECTIONS_PER_REGION_ESTIMATE);
-        } else {
-            IntList cachedList = this.sectionIndicesListPool.pop();
-            cachedList.clear();
-            return cachedList;
-        }
-    }
-    
-    private IntList getModelPartCountsList() {
-        if (this.modelPartCountsListPool.isEmpty()) {
-            return new IntArrayList(SECTIONS_PER_REGION_ESTIMATE);
-        } else {
-            IntList cachedList = this.modelPartCountsListPool.pop();
-            cachedList.clear();
-            return cachedList;
-        }
-    }
-    
-    private LongList getModelPartSegmentsList() {
-        if (this.modelPartSegmentsListPool.isEmpty()) {
-            return new LongArrayList(SECTIONS_PER_REGION_ESTIMATE * ChunkMeshFace.COUNT);
-        } else {
-            LongList cachedList = this.modelPartSegmentsListPool.pop();
-            cachedList.clear();
-            return cachedList;
-        }
     }
     
     public void update() {
@@ -179,15 +94,12 @@ public class SortedTerrainLists {
         int regionTableSize = this.regionManager.getRegionTableSize();
     
         // lookup tables indexed by region id
-        LongList[] uploadedSegmentsTable = new LongList[regionTableSize];
-        IntList[] sectionCoordsTable = new IntList[regionTableSize];
-        int[] sequentialRegionIdxTable = new int[regionTableSize];
-        
-        // lookup tables indexed by region id and pass id
-        IntList[][] modelPartCountsTable = new IntList[regionTableSize][totalPasses];
-        LongList[][] modelPartSegmentsTable = new LongList[regionTableSize][totalPasses];
-        IntList[][] sectionIndicesTable = new IntList[regionTableSize][totalPasses];
-        
+        var uploadedSegmentsTable = new LongArrayList[regionTableSize];
+        var sectionCoordsTable = new IntArrayList[regionTableSize];
+        var sequentialRegionIdxTable = new int[regionTableSize];
+
+        var builtRegionTable = new BuiltPass.BuiltRegion[regionTableSize][totalPasses];
+
         // index counters
         int sequentialRegionIdx = 0;
         
@@ -197,10 +109,7 @@ public class SortedTerrainLists {
             boolean sectionAdded = false;
     
             int sequentialSectionIdx = 0;
-            IntList[] regionModelPartCounts = null;
-            LongList[] regionModelPartSegments = null;
-            IntList[] regionSectionIndices = null;
-    
+            
             for (int passId = 0; passId < totalPasses; passId++) {
                 SectionRenderData sectionRenderData = section.getData();
                 SectionPassModel model = sectionRenderData.models[passId];
@@ -229,19 +138,16 @@ public class SortedTerrainLists {
                 // add per-section data, and make sure to only add once
                 // warning: don't use passId in here
                 if (!sectionAdded) {
-                    LongList regionUploadedSegments = uploadedSegmentsTable[regionId];
-                    IntList regionSectionCoords = sectionCoordsTable[regionId];
-                    regionModelPartCounts = modelPartCountsTable[regionId];
-                    regionModelPartSegments = modelPartSegmentsTable[regionId];
-                    regionSectionIndices = sectionIndicesTable[regionId];
-    
+                    var regionUploadedSegments = uploadedSegmentsTable[regionId];
+                    var regionSectionCoords = sectionCoordsTable[regionId];
+
                     // if one is null, the region hasn't been processed yet
                     if (regionUploadedSegments == null) {
-                        regionUploadedSegments = this.getUploadedSegmentsList();
+                        regionUploadedSegments = this.uploadedSegmentsListPool.acquire();
                         uploadedSegmentsTable[regionId] = regionUploadedSegments;
                         this.uploadedSegments.add(regionUploadedSegments);
-                        
-                        regionSectionCoords = this.getSectionCoordsList();
+
+                        regionSectionCoords = this.sectionCoordsListPool.acquire();
                         sectionCoordsTable[regionId] = regionSectionCoords;
                         this.sectionCoords.add(regionSectionCoords);
                         
@@ -262,31 +168,22 @@ public class SortedTerrainLists {
                     totalSectionCount++;
                     sectionAdded = true;
                 }
+
+                var builtRegion = builtRegionTable[regionId][passId];
     
-                // add per-section-pass data
-                IntList regionPassModelPartCounts = regionModelPartCounts[passId];
-                LongList regionPassModelPartSegments = regionModelPartSegments[passId];
-                IntList regionPassSectionIndices = regionSectionIndices[passId];
-    
-                // if one is null, the region + pass combination hasn't been processed yet
-                if (regionPassModelPartCounts == null) {
-                    regionPassModelPartCounts = this.getModelPartCountsList();
-                    regionModelPartCounts[passId] = regionPassModelPartCounts;
-                    this.modelPartCounts[passId].add(regionPassModelPartCounts);
-    
-                    regionPassModelPartSegments = this.getModelPartSegmentsList();
-                    regionModelPartSegments[passId] = regionPassModelPartSegments;
-                    this.modelPartSegments[passId].add(regionPassModelPartSegments);
-    
-                    regionPassSectionIndices = this.getSectionIndicesList();
-                    regionSectionIndices[passId] = regionPassSectionIndices;
-                    this.sectionIndices[passId].add(regionPassSectionIndices);
-                    
-                    this.regionIndices[passId].add(sequentialRegionIdxTable[regionId]);
+                if (builtRegion == null) {
+                    // the region + pass combination hasn't been processed yet
+                    builtRegion = new BuiltPass.BuiltRegion();
+                    builtRegionTable[regionId][passId] = builtRegion;
+
+                    var pass = this.builtPasses[passId];
+                    pass.regionIndices.add(sequentialRegionIdxTable[regionId]);
+                    pass.builtRegions.add(builtRegion);
                 }
-    
-                regionPassSectionIndices.add(sequentialSectionIdx);
-                regionPassModelPartCounts.add(Integer.bitCount(visibilityBits));
+
+                // add per-section-pass data
+                builtRegion.sectionIndices.add(sequentialSectionIdx);
+                builtRegion.modelPartCounts.add(Integer.bitCount(visibilityBits));
                 
                 // We want to make sure the direction order is the same, whether the pass reverses
                 // the iteration or not. It's faster to do that here, because it'll allow the
@@ -302,13 +199,13 @@ public class SortedTerrainLists {
                 if (reverseOrder) {
                     while (visibilityBits != 0) {
                         int dirIdx = (Integer.SIZE - 1) - Integer.numberOfLeadingZeros(visibilityBits);
-                        regionPassModelPartSegments.add(modelPartSegments[dirIdx]);
+                        builtRegion.modelPartSegments.add(modelPartSegments[dirIdx]);
                         visibilityBits ^= 1 << dirIdx;
                     }
                 } else {
                     while (visibilityBits != 0) {
                         int dirIdx = Integer.numberOfTrailingZeros(visibilityBits);
-                        regionPassModelPartSegments.add(modelPartSegments[dirIdx]);
+                        builtRegion.modelPartSegments.add(modelPartSegments[dirIdx]);
                         visibilityBits &= visibilityBits - 1;
                     }
                 }
@@ -356,4 +253,20 @@ public class SortedTerrainLists {
         return this.finalSectionCount == 0;
     }
     
+    public static class BuiltPass {
+        public final List<BuiltRegion> builtRegions = new ObjectArrayList<>();
+        public final IntArrayList regionIndices = new IntArrayList();
+        
+        public static class BuiltRegion {
+            public final IntArrayList sectionIndices;
+            public final IntArrayList modelPartCounts;
+            public final LongArrayList modelPartSegments;
+            
+            public BuiltRegion() {
+                this.sectionIndices = new IntArrayList(RenderRegion.REGION_SIZE);
+                this.modelPartCounts = new IntArrayList(RenderRegion.REGION_SIZE);
+                this.modelPartSegments = new LongArrayList(RenderRegion.REGION_SIZE * ChunkMeshFace.COUNT);
+            }
+        }
+    }
 }

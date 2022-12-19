@@ -124,20 +124,19 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
         for (int passId = 0; passId < chunkRenderPasses.length; passId++) {
             ChunkRenderPass renderPass = chunkRenderPasses[passId];
             Deque<MdiChunkRenderBatch> renderList = new ArrayDeque<>(128); // just an estimate, should be plenty
-        
-            IntList passRegionIndices = lists.regionIndices[passId];
-            List<IntList> passModelPartCounts = lists.modelPartCounts[passId];
-            List<LongList> passModelPartSegments = lists.modelPartSegments[passId];
-            List<IntList> passSectionIndices = lists.sectionIndices[passId];
+
+            var pass = lists.builtPasses[passId];
+            IntList passRegionIndices = pass.regionIndices;
             int passRegionCount = passRegionIndices.size();
         
             boolean reverseOrder = renderPass.isTranslucent();
         
             int regionIdx = reverseOrder ? passRegionCount - 1 : 0;
             while (reverseOrder ? (regionIdx >= 0) : (regionIdx < passRegionCount)) {
-                IntList regionPassModelPartCounts = passModelPartCounts.get(regionIdx);
-                LongList regionPassModelPartSegments = passModelPartSegments.get(regionIdx);
-                IntList regionPassSectionIndices = passSectionIndices.get(regionIdx);
+                var builtRegion = pass.builtRegions.get(regionIdx);
+                IntList regionPassModelPartCounts = builtRegion.modelPartCounts;
+                LongList regionPassModelPartSegments = builtRegion.modelPartSegments;
+                IntList regionPassSectionIndices = builtRegion.sectionIndices;
             
                 int fullRegionIdx = passRegionIndices.getInt(regionIdx);
                 RenderRegion region = lists.regions.get(fullRegionIdx);
@@ -290,11 +289,10 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
 
     protected static int commandBufferPassSize(int alignment, SortedTerrainLists lists) {
         int size = 0;
-    
-        for (List<LongList> passModelPartSegments : lists.modelPartSegments) {
-            for (int i = 0; i < passModelPartSegments.size(); i++) {
-                LongList regionModelPartSegments = passModelPartSegments.get(i);
-                size += MathUtil.align(regionModelPartSegments.size() * COMMAND_STRUCT_STRIDE, alignment);
+
+        for (var pass : lists.builtPasses) {
+            for (var region : pass.builtRegions) {
+                size += MathUtil.align(region.modelPartSegments.size() * COMMAND_STRUCT_STRIDE, alignment);
             }
         }
 
@@ -303,10 +301,8 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
     
     protected static int indexedTransformsBufferPassSize(int alignment, SortedTerrainLists lists) {
         int size = 0;
-    
-        ReferenceList<LongList> uploadedSegments = lists.uploadedSegments;
-        for (int i = 0; i < uploadedSegments.size(); i++) {
-            LongList regionUploadedSegments = uploadedSegments.get(i);
+
+        for (LongList regionUploadedSegments : lists.uploadedSegments) {
             size = MathUtil.align(size + (regionUploadedSegments.size() * TRANSFORM_STRUCT_STRIDE), alignment);
         }
         

@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.List;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.api.device.commands.RenderCommandList;
@@ -15,6 +14,7 @@ import net.caffeinemc.gfx.api.pipeline.RenderPipeline;
 import net.caffeinemc.gfx.api.types.ElementFormat;
 import net.caffeinemc.gfx.api.types.PrimitiveType;
 import net.caffeinemc.gfx.util.buffer.streaming.StreamingBuffer;
+import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
@@ -23,7 +23,6 @@ import net.caffeinemc.sodium.render.chunk.shader.ChunkShaderInterface;
 import net.caffeinemc.sodium.render.shader.ShaderConstants;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.terrain.quad.properties.ChunkMeshFace;
-import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.system.MemoryUtil;
@@ -116,20 +115,19 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
         for (int passId = 0; passId < chunkRenderPasses.length; passId++) {
             ChunkRenderPass renderPass = chunkRenderPasses[passId];
             Deque<MdbvChunkRenderBatch> renderList = new ArrayDeque<>(128); // just an estimate, should be plenty
-            
-            IntList passRegionIndices = lists.regionIndices[passId];
-            List<IntList> passModelPartCounts = lists.modelPartCounts[passId];
-            List<LongList> passModelPartSegments = lists.modelPartSegments[passId];
-            List<IntList> passSectionIndices = lists.sectionIndices[passId];
+
+            var pass = lists.builtPasses[passId];
+            IntList passRegionIndices = pass.regionIndices;
             int passRegionCount = passRegionIndices.size();
     
             boolean reverseOrder = renderPass.isTranslucent();
             
             int regionIdx = reverseOrder ? passRegionCount - 1 : 0;
             while (reverseOrder ? (regionIdx >= 0) : (regionIdx < passRegionCount)) {
-                IntList regionPassModelPartCounts = passModelPartCounts.get(regionIdx);
-                LongList regionPassModelPartSegments = passModelPartSegments.get(regionIdx);
-                IntList regionPassSectionIndices = passSectionIndices.get(regionIdx);
+                var builtRegion = pass.builtRegions.get(regionIdx);
+                IntList regionPassModelPartCounts = builtRegion.modelPartCounts;
+                LongList regionPassModelPartSegments = builtRegion.modelPartSegments;
+                IntList regionPassSectionIndices = builtRegion.sectionIndices;
     
                 int fullRegionIdx = passRegionIndices.getInt(regionIdx);
                 RenderRegion region = lists.regions.get(fullRegionIdx);
@@ -286,13 +284,13 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
     
     protected static int unindexedTransformsBufferSize(int alignment, SortedTerrainLists lists) {
         int size = 0;
-        
-        for (List<LongList> passModelPartSegments : lists.modelPartSegments) {
-            for (LongList regionModelPartSegments : passModelPartSegments) {
-                size = MathUtil.align(size + (regionModelPartSegments.size() * TRANSFORM_STRUCT_STRIDE), alignment);
+
+        for (var pass : lists.builtPasses) {
+            for (var region : pass.builtRegions) {
+                size = MathUtil.align(size + (region.modelPartSegments.size() * TRANSFORM_STRUCT_STRIDE), alignment);
             }
         }
-        
+
         return size;
     }
     

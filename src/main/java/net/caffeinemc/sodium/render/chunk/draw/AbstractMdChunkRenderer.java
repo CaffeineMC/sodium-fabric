@@ -322,10 +322,10 @@ public abstract class AbstractMdChunkRenderer<B extends AbstractMdChunkRenderer.
     
     protected static int getMaxSectionFaces(SortedTerrainLists list) {
         int faces = 0;
-    
-        for (List<LongList> passModelPartSegments : list.modelPartSegments) {
-            for (LongList regionModelPartSegments : passModelPartSegments) {
-                faces += regionModelPartSegments.size();
+
+        for (var pass : list.builtPasses) {
+            for (var region : pass.builtRegions) {
+                faces += region.modelPartSegments.size();
             }
         }
         
