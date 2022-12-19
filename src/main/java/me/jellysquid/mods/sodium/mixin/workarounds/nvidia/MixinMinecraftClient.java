@@ -12,7 +12,7 @@ public class MixinMinecraftClient {
     @Inject(method = "getWindowTitle", at = @At("HEAD"), cancellable = true)
     private void overrideWindowTitle(CallbackInfoReturnable<String> ci) {
         if (SodiumClientMod.options().workarounds.issue1486_hideWindowTitleToEvadeNvidiaDrivers) {
-            ci.setReturnValue("Minecraft (version hidden from driver)");
+            ci.setReturnValue("Minecraft* (version hidden from driver)");
         }
     }
 }
