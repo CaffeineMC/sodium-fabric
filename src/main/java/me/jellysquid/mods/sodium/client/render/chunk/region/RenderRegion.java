@@ -50,8 +50,6 @@ public class RenderRegion {
 
     private final int x, y, z;
 
-    private Frustum.Visibility visibility;
-
     public RenderRegion(RenderRegionManager manager, int x, int y, int z) {
         this.manager = manager;
 
@@ -119,22 +117,6 @@ public class RenderRegion {
 
     public int getChunkCount() {
         return this.chunks.size();
-    }
-
-    public void updateVisibility(Frustum frustum) {
-        int x = this.getOriginX();
-        int y = this.getOriginY();
-        int z = this.getOriginZ();
-
-        // HACK: Regions need to be slightly larger than their real volume
-        // Otherwise, the first node in the iteration graph might be incorrectly culled when the camera
-        // is at the extreme end of a region
-        this.visibility = frustum.testBox(x - REGION_EXCESS, y - REGION_EXCESS, z - REGION_EXCESS,
-                x + (REGION_WIDTH << 4) + REGION_EXCESS, y + (REGION_HEIGHT << 4) + REGION_EXCESS, z + (REGION_LENGTH << 4) + REGION_EXCESS);
-    }
-
-    public Frustum.Visibility getVisibility() {
-        return this.visibility;
     }
 
     public static int getChunkIndex(int x, int y, int z) {

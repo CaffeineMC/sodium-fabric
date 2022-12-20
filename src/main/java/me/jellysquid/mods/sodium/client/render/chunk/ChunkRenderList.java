@@ -53,13 +53,31 @@ public class ChunkRenderList {
     }
 
     public void clear() {
-        this.entries.clear();
+        var it = this.entries.entrySet().iterator();
+        while (it.hasNext()) {
+            var entry = it.next();
+            var region = entry.getKey();
+            var chunks = entry.getValue();
+
+            if (region.isEmpty()) {
+                it.remove();
+            } else {
+                chunks.clear();
+            }
+        }
     }
 
     public void add(RenderSection render) {
         RenderRegion region = render.getRegion();
 
-        List<RenderSection> sections = this.entries.computeIfAbsent(region, (key) -> new ObjectArrayList<>());
+        List<RenderSection> sections = this.entries.get(region);
+
+        if (sections == null) {
+            this.entries.put(region, sections = new ObjectArrayList<>());
+        } else if (sections.isEmpty()) {
+            this.entries.getAndMoveToFirst(region);
+        }
+
         sections.add(render);
     }
 

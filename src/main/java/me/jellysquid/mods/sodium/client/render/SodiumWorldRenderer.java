@@ -193,7 +193,9 @@ public class SodiumWorldRenderer {
 
         profiler.swap("chunk_update");
 
-        this.chunkTracker.update();
+        var dirtyChunks = this.chunkTracker.update();
+
+        this.renderSectionManager.notifyChunksChanged(dirtyChunks);
         this.renderSectionManager.updateChunks();
 
         if (true) {
@@ -258,7 +260,10 @@ public class SodiumWorldRenderer {
 
         BlockEntityRenderDispatcher blockEntityRenderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
 
-        for (BlockEntity blockEntity : this.renderSectionManager.getVisibleBlockEntities()) {
+        var visibleBlockEntities = this.renderSectionManager.getVisibleBlockEntities();
+
+        while (visibleBlockEntities.hasNext()) {
+            BlockEntity blockEntity = visibleBlockEntities.next();
             BlockPos pos = blockEntity.getPos();
 
             matrices.push();

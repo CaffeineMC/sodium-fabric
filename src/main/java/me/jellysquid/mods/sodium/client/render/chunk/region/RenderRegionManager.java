@@ -28,14 +28,6 @@ public class RenderRegionManager {
         this.stagingBuffer = createStagingBuffer(commandList);
     }
 
-    public void updateVisibility(Frustum frustum) {
-        for (RenderRegion region : this.regions.values()) {
-            if (!region.isEmpty()) {
-                region.updateVisibility(frustum);
-            }
-        }
-    }
-
     public void cleanup() {
         this.stagingBuffer.flip();
 

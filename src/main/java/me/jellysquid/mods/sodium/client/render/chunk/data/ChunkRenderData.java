@@ -2,7 +2,9 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
@@ -25,15 +27,7 @@ public class ChunkRenderData {
     private ChunkRenderBounds bounds;
 
     private List<Sprite> animatedSprites;
-
-    private boolean isEmpty;
-
-    /**
-     * @return True if the chunk has no renderables, otherwise false
-     */
-    public boolean isEmpty() {
-        return this.isEmpty;
-    }
+    private List<RenderLayer> renderLayers;
 
     public ChunkRenderBounds getBounds() {
         return this.bounds;
@@ -62,10 +56,15 @@ public class ChunkRenderData {
         return this.globalBlockEntities;
     }
 
+    public List<RenderLayer> getRenderLayers() {
+        return this.renderLayers;
+    }
+
     public static class Builder {
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
+        private final Set<RenderLayer> renderLayers = new ObjectOpenHashSet<>();
 
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
@@ -89,6 +88,10 @@ public class ChunkRenderData {
             }
         }
 
+        public void addRenderLayer(RenderLayer layer) {
+            this.renderLayers.add(layer);
+        }
+
         /**
          * Adds a block entity to the data container.
          * @param entity The block entity itself
@@ -105,7 +108,7 @@ public class ChunkRenderData {
             data.occlusionData = this.occlusionData;
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
-            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty();
+            data.renderLayers = new ObjectArrayList<>(this.renderLayers);
 
             return data;
         }

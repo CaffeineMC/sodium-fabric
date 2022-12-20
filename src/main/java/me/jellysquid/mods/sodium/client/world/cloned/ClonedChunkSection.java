@@ -32,9 +32,6 @@ public class ClonedChunkSection {
     private static final LightType[] LIGHT_TYPES = LightType.values();
     private ChunkSection EMPTY_SECTION;
 
-    private final AtomicInteger referenceCount = new AtomicInteger(0);
-    private final ClonedChunkSectionCache backingCache;
-
     private final Short2ObjectMap<BlockEntity> blockEntities;
     private final Short2ObjectMap<Object> renderAttachments;
 
@@ -47,14 +44,12 @@ public class ClonedChunkSection {
 
     private ReadableContainer<RegistryEntry<Biome>> biomeData;
 
-    ClonedChunkSection(ClonedChunkSectionCache backingCache) {
-        this.backingCache = backingCache;
+    ClonedChunkSection(World world, ChunkSectionPos pos) {
         this.blockEntities = new Short2ObjectOpenHashMap<>();
         this.renderAttachments = new Short2ObjectOpenHashMap<>();
         this.lightDataArrays = new ChunkNibbleArray[LIGHT_TYPES.length];
-    }
 
-    public void init(World world, ChunkSectionPos pos) {
+        // TODO FIX!!!
         EMPTY_SECTION =  new ChunkSection(0, world.getRegistryManager().get(RegistryKeys.BIOME));
 
         WorldChunk chunk = world.getChunk(pos.getX(), pos.getZ());
@@ -205,18 +200,6 @@ public class ClonedChunkSection {
         }
 
         return section;
-    }
-
-    public void acquireReference() {
-        this.referenceCount.incrementAndGet();
-    }
-
-    public boolean releaseReference() {
-        return this.referenceCount.decrementAndGet() <= 0;
-    }
-
-    public ClonedChunkSectionCache getBackingCache() {
-        return this.backingCache;
     }
 
     /**

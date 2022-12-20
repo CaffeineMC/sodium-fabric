@@ -47,15 +47,15 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
     @Override
     public ChunkBuildResult performBuild(ChunkBuildContext buildContext, CancellationSource cancellationSource) {
+        ChunkRenderCacheLocal cache = buildContext.cache;
+        cache.init(this.renderContext);
+
         ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
         ChunkBuildBuffers buffers = buildContext.buffers;
         buffers.init(renderData, this.render.getChunkId());
-
-        ChunkRenderCacheLocal cache = buildContext.cache;
-        cache.init(this.renderContext);
 
         WorldSlice slice = cache.getWorldSlice();
 
@@ -97,6 +97,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                         long seed = blockState.getRenderingSeed(blockPos);
 
                         if (cache.getBlockRenderer().renderModel(slice, blockState, blockPos, offset, model, buffers.get(layer), true, seed)) {
+                            renderData.addRenderLayer(layer);
                             rendered = true;
                         }
                     }
@@ -107,6 +108,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                         RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
 
                         if (cache.getFluidRenderer().render(slice, fluidState, blockPos, offset, buffers.get(layer))) {
+                            renderData.addRenderLayer(layer);
                             rendered = true;
                         }
                     }

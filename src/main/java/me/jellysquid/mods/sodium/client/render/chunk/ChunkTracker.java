@@ -17,15 +17,17 @@ public class ChunkTracker {
         this.merged.defaultReturnValue(0);
     }
 
-    public void update() {
+    public LongSet update() {
         if (this.dirty.isEmpty()) {
-            return;
+            return LongSets.emptySet();
         }
 
         var dirty = this.markDirtyChunks();
         this.recalculateChunks(dirty);
 
         this.dirty.clear();
+
+        return dirty;
     }
 
     private void recalculateChunks(LongSet set) {

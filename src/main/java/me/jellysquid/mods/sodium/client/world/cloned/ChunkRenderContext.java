@@ -25,13 +25,4 @@ public class ChunkRenderContext {
     public BlockBox getVolume() {
         return this.volume;
     }
-
-    public void releaseResources() {
-        for (ClonedChunkSection section : this.sections) {
-            if (section != null) {
-                section.getBackingCache()
-                        .release(section);
-            }
-        }
-    }
 }

@@ -13,6 +13,7 @@ public class DirectionUtil {
 
     // Provides the same order as enumerating Direction and checking the axis of each value
     public static final Direction[] HORIZONTAL_DIRECTIONS = new Direction[] { Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST };
+    public static final int COUNT = ALL_DIRECTIONS.length;
 
     private static final Direction[] OPPOSITE_DIRECTIONS = Arrays.stream(ALL_DIRECTIONS)
             .map(Direction::getOpposite)
