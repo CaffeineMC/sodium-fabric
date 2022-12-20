@@ -601,14 +601,17 @@ public class RenderSectionManager {
             mutableRayTestDelta.set(cameraPos).sub(mutableRayTestPosition).normalize().mul(16);
 
             int invalid = 0;
-            while (Vector3f.distanceSquared(mutableRayTestPosition.x, mutableRayTestPosition.y, mutableRayTestPosition.z, cameraPos.x, cameraPos.y, cameraPos.z) > 3600.0) {
+            int valid = 0;
+            while (Vector3f.distanceSquared(mutableRayTestPosition.x, mutableRayTestPosition.y, mutableRayTestPosition.z, cameraPos.x, cameraPos.y, cameraPos.z) > 3600.0 && valid < 4) {
                 mutableRayTestPosition.add(mutableRayTestDelta);
                 if (mutableRayTestPosition.y > (double) this.world.getTopY() || mutableRayTestPosition.y < (double) this.world.getBottomY())
                     break;
                 RenderSection other = getRenderSection(((int) mutableRayTestPosition.x) >> 4, ((int) mutableRayTestPosition.y) >> 4, ((int) mutableRayTestPosition.z) >> 4);
-                if (other != null && other.getGraphInfo().getLastVisibleFrame() == currentFrame)
+                if (other != null && other.getGraphInfo().getLastVisibleFrame() == currentFrame) {
+                    valid++;
                     continue;
-                invalid+=1;
+                }
+                invalid++;
                 if (invalid > 1)
                     break;
             }
