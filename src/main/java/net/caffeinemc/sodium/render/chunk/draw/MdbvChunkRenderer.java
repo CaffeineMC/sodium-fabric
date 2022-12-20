@@ -87,10 +87,10 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
         int totalPasses = chunkRenderPasses.length;
     
         // setup buffers, resizing as needed
-        int transformsBufferPassSize = unindexedTransformsBufferSize(this.uniformBufferChunkTransforms.getAlignment(), lists);
+        int transformsRequiredSize = unindexedTransformsRequiredSize(this.uniformBufferChunkTransforms.getAlignment(), lists);
         StreamingBuffer.WritableSection transformsBufferSection = this.uniformBufferChunkTransforms.getSection(
                 frameIndex,
-                transformsBufferPassSize,
+                transformsRequiredSize,
                 false
         );
         ByteBuffer transformsBufferSectionView = transformsBufferSection.getView();
@@ -282,15 +282,15 @@ public class MdbvChunkRenderer extends AbstractMdChunkRenderer<MdbvChunkRenderer
         }
     }
     
-    protected static int unindexedTransformsBufferSize(int alignment, SortedTerrainLists lists) {
+    protected static int unindexedTransformsRequiredSize(int alignment, SortedTerrainLists lists) {
         int size = 0;
-
+        
         for (var pass : lists.builtPasses) {
             for (var region : pass.builtRegions) {
                 size = MathUtil.align(size + (region.modelPartSegments.size() * TRANSFORM_STRUCT_STRIDE), alignment);
             }
         }
-
+        
         return size;
     }
     

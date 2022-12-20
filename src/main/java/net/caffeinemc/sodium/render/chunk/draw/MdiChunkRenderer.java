@@ -2,13 +2,11 @@ package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.longs.LongList;
-import it.unimi.dsi.fastutil.objects.ReferenceList;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.EnumSet;
-import java.util.List;
 import net.caffeinemc.gfx.api.buffer.Buffer;
 import net.caffeinemc.gfx.api.buffer.MappedBufferFlags;
 import net.caffeinemc.gfx.api.device.RenderDevice;
@@ -96,19 +94,19 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
         int totalPasses = chunkRenderPasses.length;
 
         // setup buffers, resizing as needed
-        int commandBufferPassSize = commandBufferPassSize(this.commandBuffer.getAlignment(), lists);
+        int commandsRequiredSize = commandsRequiredSize(this.commandBuffer.getAlignment(), lists);
         StreamingBuffer.WritableSection commandBufferSection = this.commandBuffer.getSection(
                 frameIndex,
-                commandBufferPassSize * totalPasses,
+                commandsRequiredSize,
                 false
         );
         ByteBuffer commandBufferSectionView = commandBufferSection.getView();
         long commandBufferSectionAddress = MemoryUtil.memAddress0(commandBufferSectionView);
 
-        int transformBufferPassSize = indexedTransformsBufferPassSize(this.uniformBufferChunkTransforms.getAlignment(), lists);
+        int transformsRequiredSize = indexedTransformsRequiredSize(this.uniformBufferChunkTransforms.getAlignment(), lists);
         StreamingBuffer.WritableSection transformBufferSection = this.uniformBufferChunkTransforms.getSection(
                 frameIndex,
-                transformBufferPassSize * totalPasses,
+                transformsRequiredSize,
                 false
         );
         ByteBuffer transformBufferSectionView = transformBufferSection.getView();
@@ -287,23 +285,25 @@ public class MdiChunkRenderer extends AbstractMdChunkRenderer<MdiChunkRenderer.M
         }
     }
 
-    protected static int commandBufferPassSize(int alignment, SortedTerrainLists lists) {
+    protected static int commandsRequiredSize(int alignment, SortedTerrainLists lists) {
         int size = 0;
 
         for (var pass : lists.builtPasses) {
             for (var region : pass.builtRegions) {
-                size += MathUtil.align(region.modelPartSegments.size() * COMMAND_STRUCT_STRIDE, alignment);
+                size = MathUtil.align(size + (region.modelPartSegments.size() * COMMAND_STRUCT_STRIDE), alignment);
             }
         }
 
         return size;
     }
     
-    protected static int indexedTransformsBufferPassSize(int alignment, SortedTerrainLists lists) {
+    protected static int indexedTransformsRequiredSize(int alignment, SortedTerrainLists lists) {
         int size = 0;
-
-        for (LongList regionUploadedSegments : lists.uploadedSegments) {
-            size = MathUtil.align(size + (regionUploadedSegments.size() * TRANSFORM_STRUCT_STRIDE), alignment);
+        
+        for (var pass : lists.builtPasses) {
+            for (var region : pass.builtRegions) {
+                size = MathUtil.align(size + (region.sectionIndices.size() * TRANSFORM_STRUCT_STRIDE), alignment);
+            }
         }
         
         return size;
