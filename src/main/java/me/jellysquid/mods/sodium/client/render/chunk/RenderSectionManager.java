@@ -25,6 +25,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.client.util.collections.BitArray;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -84,9 +85,10 @@ public class RenderSectionManager {
     private final ClientWorld world;
 
     private final int renderDistance;
+    private final int bottomSectionCoord, topSectionCoord;
 
     private float cameraX, cameraY, cameraZ;
-    private int centerChunkX, centerChunkZ;
+    private int centerChunkX, centerChunkY, centerChunkZ;
 
     private boolean needsUpdate;
 
@@ -101,6 +103,17 @@ public class RenderSectionManager {
     private boolean alwaysDeferChunkUpdates;
 
     private final ChunkTracker tracker;
+
+
+
+    private final int widthShift;
+    private final int sectionWidthMask;
+    private final int sectionWidth;
+    private final int sectionHeightOffset;
+    private final int sectionHeight;
+    private final int sectionHeightMask;
+    private final int heightShift;
+    private final BitArray queuedChunks;
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkModelVertexFormats.DEFAULT);
@@ -122,6 +135,21 @@ public class RenderSectionManager {
         }
 
         this.tracker = this.worldRenderer.getChunkTracker();
+
+        this.bottomSectionCoord = this.world.getBottomSectionCoord();
+        this.topSectionCoord = this.world.getTopSectionCoord();
+
+
+        this.sectionHeightOffset = -world.getBottomSectionCoord();
+        this.sectionHeight = MathHelper.smallestEncompassingPowerOfTwo(world.getTopSectionCoord()+ this.sectionHeightOffset);
+        this.sectionHeightMask = this.sectionHeight -1;
+        this.heightShift = Integer.numberOfTrailingZeros(this.sectionHeight);
+
+        this.sectionWidth = MathHelper.smallestEncompassingPowerOfTwo(renderDistance * 2 + 1);
+        this.sectionWidthMask = this.sectionWidth - 1;
+        this.widthShift = Integer.numberOfTrailingZeros(this.sectionWidth);
+
+        this.queuedChunks = new BitArray(this.sectionWidth * this.sectionHeight * this.sectionWidth);
     }
 
     public void reloadChunks(ChunkTracker tracker) {
@@ -161,6 +189,8 @@ public class RenderSectionManager {
                 this.fogRenderCutoff = Math.max(FOG_PLANE_MIN_DISTANCE, dist * dist);
             }
         }
+
+        this.queuedChunks.clear();
     }
 
     private void iterateChunks(Camera camera, Frustum frustum, int frame, boolean spectator) {
@@ -170,14 +200,18 @@ public class RenderSectionManager {
 
         Vector3f cameraPos = new Vector3f((float) camera.getPos().x, (float) camera.getPos().y, (float) camera.getPos().z);
         Vector3f cameraSectionOrigin = new Vector3f(MathHelper.floor(cameraPos.x / 16.0) * 16, MathHelper.floor(cameraPos.y / 16.0) * 16, MathHelper.floor(cameraPos.z / 16.0) * 16);
-        Vector3f cameraCenterChunk = cameraSectionOrigin.add(8, 8, 8, new Vector3f());
+
+        boolean isRayCullEnabled = SodiumClientMod.options().performance.useRasterOcclusionCulling;
+
         for (int i = 0; i < queue.size(); i++) {
             RenderSection section = queue.getRender(i);
             Direction flow = queue.getDirection(i);
 
             this.schedulePendingUpdates(section);
 
-            boolean doRayCull = Math.abs(section.getOriginX() - cameraSectionOrigin.x) > 60 || Math.abs(section.getOriginY() - cameraSectionOrigin.y) > 60 || Math.abs(section.getOriginZ() - cameraSectionOrigin.z) > 60;
+            boolean doRayCull = isRayCullEnabled && (Math.abs(section.getOriginX() - cameraSectionOrigin.x) > 60 ||
+                    Math.abs(section.getOriginY() - cameraSectionOrigin.y) > 60 ||
+                    Math.abs(section.getOriginZ() - cameraSectionOrigin.z) > 60);
 
             for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
                 if (this.isCulled(section.getGraphInfo(), flow, dir)) {
@@ -187,7 +221,7 @@ public class RenderSectionManager {
                 RenderSection adj = section.getAdjacent(dir);
 
                 if (adj != null && this.isWithinRenderDistance(adj)) {
-                    this.bfsEnqueue(section, adj, DirectionUtil.getOpposite(dir), doRayCull, cameraCenterChunk, cameraPos);
+                    this.bfsEnqueue(section, adj, DirectionUtil.getOpposite(dir), doRayCull);
                 }
             }
         }
@@ -315,11 +349,11 @@ public class RenderSectionManager {
     }
 
     public void updateChunks() {
-        updateChunks(false);
+        this.updateChunks(false);
     }
 
     public void updateAllChunksNow() {
-        updateChunks(true);
+        this.updateChunks(true);
 
         // Also wait for any rebuilds which had already been scheduled before this method was called
         this.needsUpdate |= this.performAllUploads();
@@ -528,6 +562,7 @@ public class RenderSectionManager {
         int chunkZ = origin.getZ() >> 4;
 
         this.centerChunkX = chunkX;
+        this.centerChunkY = chunkY;
         this.centerChunkZ = chunkZ;
 
         RenderSection rootRender = this.getRenderSection(chunkX, chunkY, chunkZ);
@@ -576,12 +611,124 @@ public class RenderSectionManager {
         }
     }
 
-    private final Vector3f mutableRayTestPosition = new Vector3f();
-    private final Vector3f mutableRayTestDelta = new Vector3f();
-    private void bfsEnqueue(RenderSection parent, RenderSection render, Direction flow, boolean doRayCull, Vector3f cameraCenterChunk, Vector3f cameraPos) {
+    private boolean raycast(float originX, float originY, float originZ,
+                            float directionX, float directionY, float directionZ,
+                            float maxDistance) {
+        int currVoxelX = MathHelper.floor(originX);
+        int currVoxelY = MathHelper.floor(originY);
+        int currVoxelZ = MathHelper.floor(originZ);
+
+        final int stepX = sign(directionX);
+        final int stepY = sign(directionY);
+        final int stepZ = sign(directionZ);
+
+        final float tDeltaX = (stepX == 0) ? Float.MAX_VALUE : (stepX / directionX);
+        final float tDeltaY = (stepY == 0) ? Float.MAX_VALUE : (stepY / directionY);
+        final float tDeltaZ = (stepZ == 0) ? Float.MAX_VALUE : (stepZ / directionZ);
+
+        float tMaxX = tDeltaX * (stepX > 0 ? frac1(originX) : frac0(originX));
+        float tMaxY = tDeltaY * (stepY > 0 ? frac1(originY) : frac0(originY));
+        float tMaxZ = tDeltaZ * (stepZ > 0 ? frac1(originZ) : frac0(originZ));
+
+        maxDistance /= (float) Math.sqrt(directionX * directionX + directionY * directionY + directionZ * directionZ);
+
+        int invalid = 0;
+        int valid = 0;
+
+        while ((valid < 3 || invalid > 1)) {
+            if (tMaxX < tMaxY) {
+                if (tMaxX < tMaxZ) {
+                    if (tMaxX > maxDistance) break;
+                    currVoxelX += stepX;
+                    tMaxX += tDeltaX;
+                } else {
+                    if (tMaxZ > maxDistance) break;
+                    currVoxelZ += stepZ;
+                    tMaxZ += tDeltaZ;
+                }
+            } else {
+                if (tMaxY < tMaxZ) {
+                    if (tMaxY > maxDistance) break;
+                    currVoxelY += stepY;
+                    tMaxY += tDeltaY;
+                } else {
+                    if (tMaxZ > maxDistance) break;
+                    currVoxelZ += stepZ;
+                    tMaxZ += tDeltaZ;
+                }
+            }
+
+            if (currVoxelY < this.bottomSectionCoord || currVoxelY > this.topSectionCoord) {
+                break;
+            }
+
+            if (this.queuedChunks.get(this.getSectionId(currVoxelX, currVoxelY, currVoxelZ))) {
+                valid++;
+            } else {
+                invalid++;
+            }
+        }
+
+        return invalid >= 2;
+    }
+
+    private boolean raycastSection(RenderSection render, Direction flow) {
+        float rX = render.getOriginX();
+        float rY = render.getOriginY();
+        float rZ = render.getOriginZ();
+
+        if (flow.getAxis() == Direction.Axis.X) {
+            rX += this.centerChunkX > render.getChunkX() ? 16.0f : 0.0f;
+        } else {
+            rX += this.centerChunkX < render.getChunkX() ? 16.0f : 0.0f;
+        }
+
+        if (flow.getAxis() == Direction.Axis.Y) {
+            rY += this.centerChunkY > render.getChunkY() ? 16.0f : 0.0f;
+        } else {
+            rY += this.centerChunkY < render.getChunkY() ? 16.0f : 0.0f;
+        }
+
+        if (flow.getAxis() == Direction.Axis.Z) {
+            rZ += this.centerChunkZ > render.getChunkZ() ? 16.0f : 0.0f;
+        } else {
+            rZ += this.centerChunkZ < render.getChunkZ() ? 16.0f : 0.0f;
+        }
+
+        float dX = this.cameraX - rX;
+        float dY = this.cameraY - rY;
+        float dZ = this.cameraZ - rZ;
+
+        float scalar = 1.0f / (float) Math.sqrt(dX * dX + dY * dY + dZ * dZ);
+        dX = dX * scalar;
+        dY = dY * scalar;
+        dZ = dZ * scalar;
+
+        return this.raycast(rX / 16.0f, rY / 16.0f, rZ / 16.0f, dX, dY, dZ, 60.0f / 16.0f);
+    }
+
+    private static float frac0(float number) {
+        return number - (float) Math.floor(number);
+    }
+
+    private static float frac1(float number) {
+        return 1.0f - number + (float) Math.floor(number);
+    }
+
+    private static int sign(float number) {
+        return number == 0 ? 0 : (number > 0 ? 1 : -1);
+    }
+
+    private int getSectionId(int x, int y, int z) {
+        return ((x & this.sectionWidthMask) << (this.widthShift + this.heightShift)) | ((z & this.sectionWidthMask) << (this.heightShift)) | (y & this.sectionHeightMask);
+    }
+
+    private void bfsEnqueue(RenderSection parent, RenderSection render, Direction flow, boolean doRayCull) {
         ChunkGraphInfo info = render.getGraphInfo();
 
-        if (info.getLastVisibleFrame() == this.currentFrame) {
+        int sId = this.getSectionId(render.getChunkX(), render.getChunkY(), render.getChunkZ());
+
+        if (this.queuedChunks.get(sId)) {
             return;
         }
 
@@ -593,34 +740,14 @@ public class RenderSectionManager {
             return;
         }
 
-        if (doRayCull) {
-            mutableRayTestPosition.set(render.getOriginX(), render.getOriginY(), render.getOriginZ());
-            mutableRayTestPosition.add((flow.getAxis() == Direction.Axis.X ? cameraCenterChunk.x > mutableRayTestPosition.x : cameraCenterChunk.x < mutableRayTestPosition.x) ? 16 : 0,
-                    (flow.getAxis() == Direction.Axis.Y ? cameraCenterChunk.y > mutableRayTestPosition.y : cameraCenterChunk.y < mutableRayTestPosition.y) ? 16 : 0,
-                    (flow.getAxis() == Direction.Axis.Z ? cameraCenterChunk.z > mutableRayTestPosition.z : cameraCenterChunk.z < mutableRayTestPosition.z) ? 16 : 0);
-            mutableRayTestDelta.set(cameraPos).sub(mutableRayTestPosition).normalize().mul(16);
-
-            int invalid = 0;
-            int valid = 0;
-            while (Vector3f.distanceSquared(mutableRayTestPosition.x, mutableRayTestPosition.y, mutableRayTestPosition.z, cameraPos.x, cameraPos.y, cameraPos.z) > 3600.0 && valid < 4) {
-                mutableRayTestPosition.add(mutableRayTestDelta);
-                if (mutableRayTestPosition.y > (double) this.world.getTopY() || mutableRayTestPosition.y < (double) this.world.getBottomY())
-                    break;
-                RenderSection other = getRenderSection(((int) mutableRayTestPosition.x) >> 4, ((int) mutableRayTestPosition.y) >> 4, ((int) mutableRayTestPosition.z) >> 4);
-                if (other != null && other.getGraphInfo().getLastVisibleFrame() == currentFrame) {
-                    valid++;
-                    continue;
-                }
-                invalid++;
-                if (invalid > 1)
-                    break;
-            }
-            if (invalid>=2)
-                return;
+        if (doRayCull && this.raycastSection(render, flow)) {
+            return;
         }
 
         info.setLastVisibleFrame(this.currentFrame);
         info.setCullingState(parent.getGraphInfo().getCullingState(), flow);
+
+        this.queuedChunks.set(sId);
 
         this.addVisible(render, flow);
     }

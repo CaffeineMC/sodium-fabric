@@ -17,7 +17,6 @@ import net.minecraft.client.option.*;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
 
-import javax.sound.sampled.BooleanControl;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -301,6 +300,15 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.HIGH)
                         .setBinding((opts, value) -> opts.performance.animateOnlyVisibleTextures = value, opts -> opts.performance.animateOnlyVisibleTextures)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
+                        .build()
+                )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(Text.literal("Use Raster Occlusion Culling"))
+                        .setTooltip(Text.literal("How about you write your own fuc-"))
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.HIGH)
+                        .setBinding((opts, value) -> opts.performance.useRasterOcclusionCulling = value, opts -> opts.performance.useRasterOcclusionCulling)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
                         .build()
                 )

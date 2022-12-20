@@ -45,6 +45,7 @@ public class SodiumGameOptions {
         public boolean useParticleCulling = true;
         public boolean useFogOcclusion = true;
         public boolean useBlockFaceCulling = true;
+        public boolean useRasterOcclusionCulling = true;
     }
 
     public static class AdvancedSettings {
