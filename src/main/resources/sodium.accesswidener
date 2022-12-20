@@ -8,8 +8,11 @@ accessible class net/minecraft/client/texture/SpriteContents$AnimationFrame
 accessible class net/minecraft/client/texture/SpriteContents$AnimatorImpl
 accessible class net/minecraft/world/chunk/PalettedContainer$Data
 accessible class net/minecraft/world/chunk/PalettedContainer$DataProvider
+accessible class net/minecraft/client/render/BackgroundRenderer$FogData
+accessible class net/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier
 
 accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
 accessible method net/minecraft/client/texture/SpriteContents upload (IIII[Lnet/minecraft/client/texture/NativeImage;)V
+accessible method net/minecraft/client/render/BackgroundRenderer getFogModifier (Lnet/minecraft/entity/Entity;F)Lnet/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier;
 
 accessible field net/minecraft/client/texture/NativeImage pointer J

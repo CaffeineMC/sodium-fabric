@@ -11,15 +11,20 @@ import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceFactory;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.biome.Biome;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -49,6 +54,7 @@ public class CloudRenderer {
     private CloudEdges edges;
     private ShaderProgram clouds;
     private ShaderProgram cloudsDepth;
+    private final BackgroundRenderer.FogData fogData = new BackgroundRenderer.FogData(BackgroundRenderer.FogType.FOG_TERRAIN);
 
     private int prevCenterCellX, prevCenterCellY, cachedRenderDistance;
 
@@ -56,7 +62,7 @@ public class CloudRenderer {
         this.reloadTextures(factory);
     }
 
-    public void render(@Nullable ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float ticks, float tickDelta, double cameraX, double cameraY, double cameraZ) {
+    public void render(@Nullable ClientWorld world, ClientPlayerEntity player, MatrixStack matrices, Matrix4f projectionMatrix, float ticks, float tickDelta, double cameraX, double cameraY, double cameraZ) {
         if (world == null) {
             return;
         }
@@ -97,8 +103,14 @@ public class CloudRenderer {
 
         float previousEnd = RenderSystem.getShaderFogEnd();
         float previousStart = RenderSystem.getShaderFogStart();
-        RenderSystem.setShaderFogEnd(cloudDistance * 8);
-        RenderSystem.setShaderFogStart((cloudDistance * 8) - 16);
+        fogData.fogEnd = cloudDistance * 8;
+        fogData.fogStart = (cloudDistance * 8) - 16;
+
+        applyFogModifiers(world, fogData, player, cloudDistance * 8, tickDelta);
+
+
+        RenderSystem.setShaderFogEnd(fogData.fogEnd);
+        RenderSystem.setShaderFogStart(fogData.fogStart);
 
         float translateX = (float) (cloudCenterX - (centerCellX * 12));
         float translateZ = (float) (cloudCenterZ - (centerCellZ * 12));
@@ -151,6 +163,50 @@ public class CloudRenderer {
 
         RenderSystem.setShaderFogEnd(previousEnd);
         RenderSystem.setShaderFogStart(previousStart);
+    }
+
+    private void applyFogModifiers(ClientWorld world, BackgroundRenderer.FogData fogData, ClientPlayerEntity player, int cloudDistance, float tickDelta) {
+        Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
+        CameraSubmersionType cameraSubmersionType = camera.getSubmersionType();
+        if (cameraSubmersionType == CameraSubmersionType.LAVA) {
+            if (player.isSpectator()) {
+                fogData.fogStart = -8.0f;
+                fogData.fogEnd = (cloudDistance) * 0.5f;
+            } else if (player.hasStatusEffect(StatusEffects.FIRE_RESISTANCE)) {
+                fogData.fogStart = 0.0f;
+                fogData.fogEnd = 3.0f;
+            } else {
+                fogData.fogStart = 0.25f;
+                fogData.fogEnd = 1.0f;
+            }
+        } else if (cameraSubmersionType == CameraSubmersionType.POWDER_SNOW) {
+            if (player.isSpectator()) {
+                fogData.fogStart = -8.0f;
+                fogData.fogEnd = (cloudDistance) * 0.5f;
+            } else {
+                fogData.fogStart = 0.0f;
+                fogData.fogEnd = 2.0f;
+            }
+        } else if (cameraSubmersionType == CameraSubmersionType.WATER) {
+            fogData.fogStart = -8.0f;
+            fogData.fogEnd = 96.0f;
+            fogData.fogEnd *= Math.max(0.25f, player.getUnderwaterVisibility());
+            if (fogData.fogEnd > (cloudDistance)) {
+                fogData.fogEnd = cloudDistance;
+                fogData.fogShape = FogShape.CYLINDER;
+            }
+        } else if (world.getDimensionEffects().useThickFog(MathHelper.floor(camera.getPos().x), MathHelper.floor(camera.getPos().z)) || MinecraftClient.getInstance().inGameHud.getBossBarHud().shouldThickenFog()) {
+            fogData.fogStart = (cloudDistance) * 0.05f;
+            fogData.fogEnd = Math.min((cloudDistance), 192.0f) * 0.5f;
+        }
+
+        BackgroundRenderer.StatusEffectFogModifier fogModifier = BackgroundRenderer.getFogModifier(player, tickDelta);
+        if (fogModifier != null) {
+            StatusEffectInstance statusEffectInstance = player.getStatusEffect(fogModifier.getStatusEffect());
+            if (statusEffectInstance != null) {
+                fogModifier.applyStartEndModifier(fogData, player, statusEffectInstance, (cloudDistance * 8), tickDelta);
+            }
+        }
     }
 
     private void rebuildGeometry(BufferBuilder bufferBuilder, int cloudDistance, int centerCellX, int centerCellZ) {
