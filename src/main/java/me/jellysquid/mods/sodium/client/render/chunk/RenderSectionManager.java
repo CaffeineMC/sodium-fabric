@@ -38,6 +38,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
+import org.joml.Vector3f;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -167,11 +168,16 @@ public class RenderSectionManager {
 
         ChunkGraphIterationQueue queue = this.iterationQueue;
 
+        Vector3f cameraPos = new Vector3f((float) camera.getPos().x, (float) camera.getPos().y, (float) camera.getPos().z);
+        Vector3f cameraSectionOrigin = new Vector3f(MathHelper.floor(cameraPos.x / 16.0) * 16, MathHelper.floor(cameraPos.y / 16.0) * 16, MathHelper.floor(cameraPos.z / 16.0) * 16);
+        Vector3f cameraCenterChunk = cameraSectionOrigin.add(8, 8, 8, new Vector3f());
         for (int i = 0; i < queue.size(); i++) {
             RenderSection section = queue.getRender(i);
             Direction flow = queue.getDirection(i);
 
             this.schedulePendingUpdates(section);
+
+            boolean doRayCull = Math.abs(section.getOriginX() - cameraSectionOrigin.x) > 60 || Math.abs(section.getOriginY() - cameraSectionOrigin.y) > 60 || Math.abs(section.getOriginZ() - cameraSectionOrigin.z) > 60;
 
             for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
                 if (this.isCulled(section.getGraphInfo(), flow, dir)) {
@@ -181,7 +187,7 @@ public class RenderSectionManager {
                 RenderSection adj = section.getAdjacent(dir);
 
                 if (adj != null && this.isWithinRenderDistance(adj)) {
-                    this.bfsEnqueue(section, adj, DirectionUtil.getOpposite(dir));
+                    this.bfsEnqueue(section, adj, DirectionUtil.getOpposite(dir), doRayCull, cameraCenterChunk, cameraPos);
                 }
             }
         }
@@ -570,8 +576,9 @@ public class RenderSectionManager {
         }
     }
 
-
-    private void bfsEnqueue(RenderSection parent, RenderSection render, Direction flow) {
+    private final Vector3f mutableRayTestPosition = new Vector3f();
+    private final Vector3f mutableRayTestDelta = new Vector3f();
+    private void bfsEnqueue(RenderSection parent, RenderSection render, Direction flow, boolean doRayCull, Vector3f cameraCenterChunk, Vector3f cameraPos) {
         ChunkGraphInfo info = render.getGraphInfo();
 
         if (info.getLastVisibleFrame() == this.currentFrame) {
@@ -584,6 +591,29 @@ public class RenderSectionManager {
             return;
         } else if (parentVisibility == Frustum.Visibility.INTERSECT && info.isCulledByFrustum(this.frustum)) {
             return;
+        }
+
+        if (doRayCull) {
+            mutableRayTestPosition.set(render.getOriginX(), render.getOriginY(), render.getOriginZ());
+            mutableRayTestPosition.add((flow.getAxis() == Direction.Axis.X ? cameraCenterChunk.x > mutableRayTestPosition.x : cameraCenterChunk.x < mutableRayTestPosition.x) ? 16 : 0,
+                    (flow.getAxis() == Direction.Axis.Y ? cameraCenterChunk.y > mutableRayTestPosition.y : cameraCenterChunk.y < mutableRayTestPosition.y) ? 16 : 0,
+                    (flow.getAxis() == Direction.Axis.Z ? cameraCenterChunk.z > mutableRayTestPosition.z : cameraCenterChunk.z < mutableRayTestPosition.z) ? 16 : 0);
+            mutableRayTestDelta.set(cameraPos).sub(mutableRayTestPosition).normalize().mul(16);
+
+            int invalid = 0;
+            while (Vector3f.distanceSquared(mutableRayTestPosition.x, mutableRayTestPosition.y, mutableRayTestPosition.z, cameraPos.x, cameraPos.y, cameraPos.z) > 3600.0) {
+                mutableRayTestPosition.add(mutableRayTestDelta);
+                if (mutableRayTestPosition.y > (double) this.world.getTopY() || mutableRayTestPosition.y < (double) this.world.getBottomY())
+                    break;
+                RenderSection other = getRenderSection(((int) mutableRayTestPosition.x) >> 4, ((int) mutableRayTestPosition.y) >> 4, ((int) mutableRayTestPosition.z) >> 4);
+                if (other != null && other.getGraphInfo().getLastVisibleFrame() == currentFrame)
+                    continue;
+                invalid+=1;
+                if (invalid > 1)
+                    break;
+            }
+            if (invalid>=2)
+                return;
         }
 
         info.setLastVisibleFrame(this.currentFrame);
