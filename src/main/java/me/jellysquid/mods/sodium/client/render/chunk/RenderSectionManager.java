@@ -232,7 +232,7 @@ public class RenderSectionManager {
                     continue;
                 }
 
-                if (useRayCulling && !isVisibleThrough(this.state.visibilityData[fromId], fromDirection, toDirection)) {
+                if (useOcclusionCulling && !isVisibleThrough(this.state.visibilityData[fromId], fromDirection, toDirection)) {
                     continue;
                 }
 
@@ -623,12 +623,13 @@ public class RenderSectionManager {
         float dY = this.cameraY - rY;
         float dZ = this.cameraZ - rZ;
 
-        float scalar = 1.0f / (float) Math.sqrt(dX * dX + dY * dY + dZ * dZ);
-        dX = dX * scalar;
-        dY = dY * scalar;
-        dZ = dZ * scalar;
+        float dist = (float) Math.sqrt(dX * dX + dY * dY + dZ * dZ);
+        float norm = 1.0f / dist;
+        dX = dX * norm;
+        dY = dY * norm;
+        dZ = dZ * norm;
 
-        return this.raycast(rX / 16.0f, rY / 16.0f, rZ / 16.0f, dX, dY, dZ, 5.0f);
+        return this.raycast(rX / 16.0f, rY / 16.0f, rZ / 16.0f, dX, dY, dZ, dist / 16.0f);
     }
 
     private void bfsEnqueue(int fromId, int toId,
