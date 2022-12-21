@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.PriorityQueue;
-import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
@@ -14,6 +13,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkModelVertexFormats;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
@@ -21,6 +21,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.client.util.collections.BitArray;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -48,7 +49,7 @@ public class RenderSectionManager {
     private final EnumMap<ChunkUpdateType, PriorityQueue<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
 
     private final ChunkRenderList chunkRenderList;
-    private final IntArrayFIFOQueue iterationQueue = new IntArrayFIFOQueue();
+    private final ChunkGraphIterationQueue iterationQueue = new ChunkGraphIterationQueue();
 
     private final IntArrayList tickableChunks = new IntArrayList();
     private final IntArrayList entityChunks = new IntArrayList();
@@ -77,10 +78,11 @@ public class RenderSectionManager {
     private static class State {
         private static final long DEFAULT_VISIBILITY_DATA = calculateVisibilityData(ChunkRenderData.EMPTY.getOcclusionData());
 
-        private final int shiftXZ, shiftY;
+        private final int offsetZ, offsetX;
         private final int maskXZ, maskY;
 
         public final RenderSection[] sections;
+        public final long[] visible;
         public final long[] visibilityData;
 
         public final byte[] cullingState;
@@ -95,10 +97,12 @@ public class RenderSectionManager {
             this.maskXZ = sizeXZ - 1;
             this.maskY = sizeY - 1;
 
-            this.shiftXZ = Integer.numberOfTrailingZeros(sizeXZ);
-            this.shiftY = Integer.numberOfTrailingZeros(sizeY);
+            this.offsetZ = Integer.numberOfTrailingZeros(sizeY);
+            this.offsetX = this.offsetZ + Integer.numberOfTrailingZeros(sizeXZ);
 
             int arraySize = sizeXZ * sizeY * sizeXZ;
+
+            this.visible = BitArray.create(arraySize);
 
             this.sections = new RenderSection[arraySize];
             this.visibilityData = new long[arraySize];
@@ -108,12 +112,14 @@ public class RenderSectionManager {
         }
 
         public void reset() {
+            BitArray.clear(this.visible);
+
             Arrays.fill(this.cullingState, (byte) 0);
             Arrays.fill(this.direction, (byte) 0);
         }
 
         public int getIndex(int x, int y, int z) {
-            return (x & this.maskXZ) << this.shiftXZ + this.shiftY | (y & this.maskY) | (z & this.maskXZ) << this.shiftY;
+            return ((x & this.maskXZ) << (this.offsetX)) | ((z & this.maskXZ) << this.offsetZ) | (y & this.maskY);
         }
     }
 
@@ -202,8 +208,8 @@ public class RenderSectionManager {
         boolean isRayCullEnabled = SodiumClientMod.options().performance.useRasterOcclusionCulling;
         boolean useOcclusionCulling = this.useOcclusionCulling;
 
-        while (!this.iterationQueue.isEmpty()) {
-            var fromId = this.iterationQueue.dequeueInt();
+        for (int i = 0; i < this.iterationQueue.size(); i++) {
+            var fromId = this.iterationQueue.getSection(i);
             var from = this.state.sections[fromId];
 
             this.addSectionToLists(fromId, from);
@@ -236,11 +242,12 @@ public class RenderSectionManager {
                     continue;
                 }
 
-                if (!hasAnyDirection(this.state.direction[toId])) {
+                if (!BitArray.get(this.state.visible, toId)) {
+                    BitArray.set(this.state.visible, toId);
+
                     this.state.cullingState[toId] |=
                             (byte) (this.state.cullingState[fromId] | (1 << toDirection));
-                    this.iterationQueue.enqueue(toId);
-
+                    this.iterationQueue.add(toId);
                 }
 
                 this.state.direction[toId] |= (1 << toDirection);
@@ -372,7 +379,7 @@ public class RenderSectionManager {
     }
 
     public boolean isSectionVisible(int x, int y, int z) {
-        return hasAnyDirection(this.state.direction[this.state.getIndex(x, y, z)]);
+        return BitArray.get(this.state.visible, this.state.getIndex(x, y, z));
     }
 
     public void updateChunks() {
@@ -587,9 +594,9 @@ public class RenderSectionManager {
 
         BlockPos origin = camera.getBlockPos();
 
-        int chunkX = origin.getX() >> 4;
-        int chunkY = origin.getY() >> 4;
-        int chunkZ = origin.getZ() >> 4;
+        final int chunkX = origin.getX() >> 4;
+        final int chunkY = origin.getY() >> 4;
+        final int chunkZ = origin.getZ() >> 4;
 
         this.centerChunkX = chunkX;
         this.centerChunkY = chunkY;
@@ -605,23 +612,37 @@ public class RenderSectionManager {
 
             this.addSectionToQueue(rootRenderId);
         } else {
-            chunkY = MathHelper.clamp(origin.getY() >> 4, this.world.getBottomSectionCoord(), this.world.getTopSectionCoord() - 1);
+            int chunkTop = MathHelper.clamp(origin.getY() >> 4, this.world.getBottomSectionCoord(), this.world.getTopSectionCoord() - 1);
 
             IntArrayList sorted = new IntArrayList();
 
             for (int x2 = -this.renderDistance; x2 <= this.renderDistance; ++x2) {
                 for (int z2 = -this.renderDistance; z2 <= this.renderDistance; ++z2) {
-                    var sectionId = this.state.getIndex(chunkX + x2, chunkY, chunkZ + z2);
+                    var sectionId = this.state.getIndex(chunkX + x2, chunkTop, chunkZ + z2);
 
-                    if (this.state.sections[sectionId] == null || this.isCulledByFrustum(chunkX + x2, chunkY, chunkZ + z2)) {
+                    if (this.state.sections[sectionId] == null || this.isCulledByFrustum(chunkX + x2, chunkTop, chunkZ + z2)) {
                         continue;
                     }
 
                     sorted.add(sectionId);
                 }
             }
-//            TODO: FIX
-//            sorted.sort(Comparator.comparingDouble(node -> node.getSquaredDistance(origin)));
+
+            sorted.sort((aId, bId) -> {
+                var a = this.state.sections[aId];
+                var b = this.state.sections[bId];
+
+                int ax = this.centerChunkX - a.getOriginX();
+                int az = this.centerChunkZ - a.getOriginZ();
+
+                int bx = this.centerChunkX - b.getOriginX();
+                int bz = this.centerChunkZ - b.getOriginZ();
+
+                int ad = (ax * ax) + (az * az);
+                int bd = (bx * bx) + (bz * bz);
+
+                return Integer.compare(bd, ad);
+            });
 
             IntIterator it = sorted.iterator();
             while (it.hasNext()) {
@@ -630,39 +651,75 @@ public class RenderSectionManager {
         }
     }
 
-    private boolean raycast(float originX, float originY, float originZ,
-                            float directionX, float directionY, float directionZ,
-                            float maxDistance) {
-        float d = 0.0f;
+    private boolean raycast(final int x0, final int y0, final int z0, final int x1, final int y1, final int z1)  {
+        final int deltaX = x1 - x0;
+        final int deltaY = y1 - y0;
+        final int deltaZ = z1 - z0;
 
-        int invalid = 0;
+        final int lenX = Math.abs(deltaX);
+        final int lenY = Math.abs(deltaY);
+        final int lenZ = Math.abs(deltaZ);
+
+        final int longest = Math.max(lenX, Math.max(lenY, lenZ));
+
+        final int signX = Integer.compare(deltaX, 0);
+        final int signY = Integer.compare(deltaY, 0);
+        final int signZ = Integer.compare(deltaZ, 0);
+
+        // Divide by 2
+        int errX = longest >> 1;
+        int errY = longest >> 1;
+        int errZ = longest >> 1;
+
+        int x = x0;
+        int y = y0;
+        int z = z0;
+
         int valid = 0;
+        int invalid = 0;
 
-        while ((valid < 4 && invalid < 2) && d < maxDistance) {
-            d += 1.0f;
+        for (int step = 0; step < longest; step++) {
+            errX -= lenX;
+            errY -= lenY;
+            errZ -= lenZ;
 
-            int x = MathHelper.floor(originX + (directionX * d));
-            int y = MathHelper.floor(originY + (directionY * d));
-            int z = MathHelper.floor(originZ + (directionZ * d));
-
-            if (y < this.bottomSectionCoord || y > this.topSectionCoord) {
-                break;
+            if (errX < 0) {
+                errX += longest;
+                x += signX;
             }
 
-            var id = this.state.getIndex(x, y, z);
-            if (hasAnyDirection(this.state.direction[id])) {
+            if (errY < 0) {
+                errY += longest;
+                y += signY;
+            }
+
+            if (errZ < 0) {
+                errZ += longest;
+                z += signZ;
+            }
+
+            if (y <= this.bottomSectionCoord || y >= this.topSectionCoord) {
+                return false;
+            }
+
+
+            if (BitArray.get(this.state.visible, this.state.getIndex(x, y, z))) {
                 valid++;
             } else if (this.isCulledByFrustum(x, y, z)) {
                 return false;
             } else {
                 invalid++;
             }
+
+            if (valid >= 4 || invalid >= 2) {
+                break;
+            }
         }
 
         return invalid > 1;
     }
 
-    private boolean isCulledByRaycast(int sectionX, int sectionY, int sectionZ, int dir) {
+    private boolean isCulledByRaycast(final int sectionX, final int sectionY, final int sectionZ, int dir) {
         final int cameraOriginX = (this.centerChunkX << 4) + 8;
         final int cameraOriginY = (this.centerChunkY << 4) + 8;
         final int cameraOriginZ = (this.centerChunkZ << 4) + 8;
@@ -677,46 +734,31 @@ public class RenderSectionManager {
 
         // X-axis
         if (dir == DirectionUtil.WEST || dir == DirectionUtil.EAST) {
-            xOffset = cameraOriginX > chunkOriginX ? 16 : 0;
+            xOffset = cameraOriginX > chunkOriginX ? 1 : 0;
         } else {
-            xOffset = cameraOriginX < chunkOriginX ? 16 : 0;
+            xOffset = cameraOriginX < chunkOriginX ? 1 : 0;
         }
 
         // Y-axis
         if (dir == DirectionUtil.DOWN || dir == DirectionUtil.UP) {
-            yOffset = cameraOriginY > chunkOriginY ? 16 : 0;
+            yOffset = cameraOriginY > chunkOriginY ? 1 : 0;
         } else {
-            yOffset = cameraOriginY < chunkOriginY ? 16 : 0;
+            yOffset = cameraOriginY < chunkOriginY ? 1 : 0;
         }
 
         // Z-axis
         if (dir == DirectionUtil.NORTH || dir == DirectionUtil.SOUTH) {
-            zOffset = cameraOriginZ > chunkOriginZ ? 16 : 0;
+            zOffset = cameraOriginZ > chunkOriginZ ? 1 : 0;
         } else {
-            zOffset = cameraOriginZ < chunkOriginZ ? 16 : 0;
+            zOffset = cameraOriginZ < chunkOriginZ ? 1 : 0;
         }
 
-
-        float rX = chunkOriginX + xOffset;
-        float rY = chunkOriginY + yOffset;
-        float rZ = chunkOriginZ + zOffset;
-
-        float dX = this.cameraX - rX;
-        float dY = this.cameraY - rY;
-        float dZ = this.cameraZ - rZ;
-
-        float dist = (float) Math.sqrt(dX * dX + dY * dY + dZ * dZ);
-        float norm = 1.0f / dist;
-        dX = dX * norm;
-        dY = dY * norm;
-        dZ = dZ * norm;
-
-        return this.raycast(rX / 16.0f, rY / 16.0f, rZ / 16.0f, dX, dY, dZ, dist / 16.0f);
+        return this.raycast(sectionX + xOffset, sectionY + yOffset, sectionZ + zOffset,
+                this.centerChunkX, this.centerChunkY, this.centerChunkZ);
     }
 
-
     private void addSectionToQueue(int sectionId) {
-        this.iterationQueue.enqueue(sectionId);
+        this.iterationQueue.add(sectionId);
     }
 
     public Collection<String> getDebugStrings() {
