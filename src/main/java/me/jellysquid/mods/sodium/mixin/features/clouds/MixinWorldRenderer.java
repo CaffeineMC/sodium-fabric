@@ -39,7 +39,7 @@ public class MixinWorldRenderer {
             this.cloudRenderer = new CloudRenderer(client.getResourceManager());
         }
 
-        this.cloudRenderer.render(this.world, matrices, projectionMatrix, this.ticks, tickDelta, x, y, z);
+        this.cloudRenderer.render(this.world, this.client.player, matrices, projectionMatrix, this.ticks, tickDelta, x, y, z);
     }
 
     @Inject(method = "reload(Lnet/minecraft/resource/ResourceManager;)V", at = @At("RETURN"))

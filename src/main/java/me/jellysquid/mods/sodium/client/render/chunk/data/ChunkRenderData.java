@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.texture.SpriteExtended;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
@@ -83,7 +84,7 @@ public class ChunkRenderData {
          * @param sprite The sprite
          */
         public void addSprite(Sprite sprite) {
-            if (sprite.createAnimation() != null) {
+            if (((SpriteExtended) sprite.getContents()).hasAnimation()) {
                 this.animatedSprites.add(sprite);
             }
         }
