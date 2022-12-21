@@ -39,10 +39,19 @@ public class SortedSectionLists {
     }
     
     private Iterator<RenderSection> createIterator(int[] idxs, int count) {
-        // this deref is really slow, avoid this method if possible
-        return Arrays.stream(idxs, 0, count)
-                     .mapToObj(this.sectionTree::getSection)
-                     .iterator();
+        return new Iterator<>() {
+            private int i;
+            
+            @Override
+            public boolean hasNext() {
+                return this.i < count;
+            }
+    
+            @Override
+            public RenderSection next() {
+                return SortedSectionLists.this.sectionTree.getSection(idxs[this.i++]);
+            }
+        };
     }
     
     public Iterable<RenderSection> getTerrainSections() {

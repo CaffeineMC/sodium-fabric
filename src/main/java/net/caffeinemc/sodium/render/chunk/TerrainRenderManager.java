@@ -215,6 +215,16 @@ public class TerrainRenderManager {
         this.blockEntityRenderManager.addGlobalBlockEntities(data);
         this.sectionCuller.setVisibilityData(sectionIdx, data.occlusionData);
     
+        SectionRenderFlags.unset(
+                this.sectionTree.sectionFlagData,
+                sectionIdx,
+                (byte) (
+                        SectionRenderFlags.HAS_BLOCK_ENTITIES
+                        | SectionRenderFlags.HAS_GLOBAL_BLOCK_ENTITIES
+                        | SectionRenderFlags.HAS_TICKING_TEXTURES
+                        | SectionRenderFlags.HAS_TERRAIN_MODELS
+                )
+        );
         SectionRenderFlags.set(
                 this.sectionTree.sectionFlagData,
                 sectionIdx,
