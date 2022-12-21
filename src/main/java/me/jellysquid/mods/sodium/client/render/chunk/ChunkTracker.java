@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.longs.*;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import net.minecraft.util.math.ChunkPos;
 
 import java.util.stream.LongStream;
@@ -10,116 +9,92 @@ public class ChunkTracker {
     private final Long2IntOpenHashMap single = new Long2IntOpenHashMap();
     private final Long2IntOpenHashMap merged = new Long2IntOpenHashMap();
 
-    private final LongLinkedOpenHashSet dirty = new LongLinkedOpenHashSet();
+    private final Callback callback;
 
-    public ChunkTracker() {
+
+    public ChunkTracker(Callback callback) {
         this.single.defaultReturnValue(0);
         this.merged.defaultReturnValue(0);
+
+        this.callback = callback;
     }
 
-    public LongSet update() {
-        if (this.dirty.isEmpty()) {
-            return LongSets.emptySet();
-        }
-
-        var dirty = this.markDirtyChunks();
-        this.recalculateChunks(dirty);
-
-        this.dirty.clear();
-
-        return dirty;
-    }
-
-    private void recalculateChunks(LongSet set) {
-        LongIterator it = set.iterator();
-
-        while (it.hasNext()) {
-            long key = it.nextLong();
-
-            var x = ChunkPos.getPackedX(key);
-            var z = ChunkPos.getPackedZ(key);
-
-            int flags = this.single.get(key);
-
-            for (int ox = -1; ox <= 1; ox++) {
-                for (int oz = -1; oz <= 1; oz++) {
-                    flags &= this.single.get(ChunkPos.toLong(ox + x, oz + z));
-                }
-            }
-
-            if (flags != 0) {
-                this.merged.put(key, flags);
-            } else {
-                this.merged.remove(key);
-            }
-        }
-    }
-
-    private LongSet markDirtyChunks() {
-        var dirty = new LongOpenHashSet(this.dirty);
-        var it = this.dirty.iterator();
-
-        while (it.hasNext()) {
-            var key = it.nextLong();
-            var x = ChunkPos.getPackedX(key);
-            var z = ChunkPos.getPackedZ(key);
-
-            for (int ox = -1; ox <= 1; ox++) {
-                for (int oz = -1; oz <= 1; oz++) {
-                    dirty.add(ChunkPos.toLong(ox + x, oz + z));
-                }
-            }
-        }
-
-        return dirty;
-    }
-
-    public boolean loadChunk(int x, int z) {
-        var key = ChunkPos.toLong(x, z);
-        var flags = this.single.get(key) | ChunkStatus.FLAG_HAS_BLOCK_DATA;
-
-        if (this.single.put(key, flags) == flags) {
-            return false;
-        }
-
-        this.dirty.add(key);
-
-        return true;
-    }
-
-    public void onLightDataAdded(int x, int z) {
-        var key = ChunkPos.toLong(x, z);
-        var existingFlags = this.single.get(key);
-
-        if ((existingFlags & ChunkStatus.FLAG_HAS_BLOCK_DATA) == 0) {
-            SodiumClientMod.logger().warn("Tried to mark light data as ready for chunk [%s, %s] but it hasn't been loaded yet".formatted(x, z));
-        }
-
-        this.single.put(key, existingFlags | ChunkStatus.FLAG_HAS_LIGHT_DATA);
-        this.dirty.add(key);
-    }
-
-    public boolean unloadChunk(int x, int z) {
+    private void updateMerged(int x, int z) {
         long key = ChunkPos.toLong(x, z);
 
-        if (this.single.remove(key) == 0) {
-            return false;
+        int flags = this.single.get(key);
+
+        for (int ox = -1; ox <= 1; ox++) {
+            for (int oz = -1; oz <= 1; oz++) {
+                flags &= this.single.get(ChunkPos.toLong(ox + x, oz + z));
+            }
         }
 
-        this.dirty.add(key);
+        int prev;
 
-        return true;
+        if (flags != 0) {
+            prev = this.merged.put(key, flags);
+        } else {
+            prev = this.merged.remove(key);
+        }
+
+        if (prev != flags) {
+            if (prev == ChunkStatus.FLAG_ALL) {
+                this.callback.unloadChunk(x, z);
+            } else if (flags == ChunkStatus.FLAG_ALL) {
+                this.callback.loadChunk(x, z);
+            }
+        }
+    }
+
+    public void mark(int x, int z, int bits) {
+        var key = ChunkPos.toLong(x, z);
+        var prev = this.single.get(key);
+
+        if ((prev & bits) == bits) {
+            return;
+        }
+
+        this.single.put(key, prev | bits);
+
+        for (int ox = -1; ox <= 1; ox++) {
+            for (int oz = -1; oz <= 1; oz++) {
+                this.updateMerged(ox + x, oz + z);
+            }
+        }
+    }
+
+    public void remove(int x, int z) {
+        var key = ChunkPos.toLong(x, z);
+        var prev = this.single.get(key);
+
+        if (prev == 0) {
+            return;
+        }
+
+        this.single.remove(key);
+
+        for (int ox = -1; ox <= 1; ox++) {
+            for (int oz = -1; oz <= 1; oz++) {
+                this.updateMerged(ox + x, oz + z);
+            }
+        }
     }
 
     public boolean hasMergedFlags(int x, int z, int flags) {
         return (this.merged.get(ChunkPos.toLong(x, z)) & flags) == flags;
     }
 
-    public LongStream getChunks(int flags) {
-        return this.single
+    public LongStream getLoadedChunks() {
+        return this.merged
                 .long2IntEntrySet()
                 .stream()
-                .filter(entry -> (entry.getIntValue() & flags) == flags)
+                .filter(entry -> entry.getIntValue() == ChunkStatus.FLAG_ALL)
                 .mapToLong(Long2IntMap.Entry::getLongKey);
+    }
+
+    public interface Callback {
+        void loadChunk(int x, int z);
+        void unloadChunk(int x, int z);
     }
 }

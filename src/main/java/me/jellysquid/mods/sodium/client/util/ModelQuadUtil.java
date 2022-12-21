@@ -29,11 +29,13 @@ public class ModelQuadUtil {
     public static final int VERTEX_SIZE = 8;
 
     // Cached array of normals for every facing to avoid expensive computation
-    static final int[] NORMALS = new int[DirectionUtil.ALL_DIRECTIONS.length];
+    static final int[] NORMALS;
 
     static {
-        for (int i = 0; i < NORMALS.length; i++) {
-            NORMALS[i] = Norm3b.pack(DirectionUtil.ALL_DIRECTIONS[i].getVector());
+        NORMALS = new int[DirectionUtil.COUNT];
+
+        for (int dir = 0; dir < DirectionUtil.COUNT; dir++) {
+            NORMALS[dir] = Norm3b.pack(DirectionUtil.getOffset(dir));
         }
     }
 

@@ -59,7 +59,7 @@ public class BlockRenderer {
 
         boolean rendered = false;
 
-        for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
+        for (Direction dir : DirectionUtil.ENUMS) {
             this.random.setSeed(seed);
 
             List<BakedQuad> sided = model.getQuads(state, dir, this.random);

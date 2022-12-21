@@ -104,7 +104,17 @@ public class SodiumWorldRenderer {
 
     private void loadWorld(ClientWorld world) {
         this.world = world;
-        this.chunkTracker = new ChunkTracker();
+        this.chunkTracker = new ChunkTracker(new ChunkTracker.Callback() {
+            @Override
+            public void loadChunk(int x, int z) {
+                SodiumWorldRenderer.this.renderSectionManager.loadChunk(x, z);
+            }
+
+            @Override
+            public void unloadChunk(int x, int z) {
+                SodiumWorldRenderer.this.renderSectionManager.unloadChunk(x, z);
+            }
+        });
 
         ChunkRenderCacheShared.createRenderContext(this.world);
 
@@ -193,9 +203,6 @@ public class SodiumWorldRenderer {
 
         profiler.swap("chunk_update");
 
-        var dirtyChunks = this.chunkTracker.update();
-
-        this.renderSectionManager.notifyChunksChanged(dirtyChunks);
         this.renderSectionManager.updateChunks();
 
         if (true) {
@@ -246,7 +253,8 @@ public class SodiumWorldRenderer {
         this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
 
         this.renderSectionManager = new RenderSectionManager(this, this.renderPassManager, this.world, this.renderDistance, commandList);
-        this.renderSectionManager.reloadChunks(this.chunkTracker);
+        this.chunkTracker.getLoadedChunks()
+                .forEach(pos -> this.renderSectionManager.loadChunk(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
     }
 
     public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
@@ -301,19 +309,16 @@ public class SodiumWorldRenderer {
     }
 
     public void onChunkAdded(int x, int z) {
-        if (this.chunkTracker.loadChunk(x, z)) {
-            this.renderSectionManager.onChunkAdded(x, z);
-        }
+        this.chunkTracker.mark(x, z, ChunkStatus.FLAG_HAS_BLOCK_DATA);
+
     }
 
     public void onChunkLightAdded(int x, int z) {
-        this.chunkTracker.onLightDataAdded(x, z);
+        this.chunkTracker.mark(x, z, ChunkStatus.FLAG_HAS_LIGHT_DATA);
     }
 
     public void onChunkRemoved(int x, int z) {
-        if (this.chunkTracker.unloadChunk(x, z)) {
-            this.renderSectionManager.onChunkRemoved(x, z);
-        }
+        this.chunkTracker.remove(x, z);
     }
 
     public void onChunkRenderUpdated(int x, int y, int z, ChunkRenderData meshBefore, ChunkRenderData meshAfter) {

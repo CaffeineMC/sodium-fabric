@@ -42,7 +42,7 @@ public class MixinItemRenderer {
     private void renderBakedItemModel(BakedModel model, ItemStack stack, int light, int overlay, MatrixStack matrices, VertexConsumer vertices) {
         Xoroshiro128PlusPlusRandom random = this.random;
 
-        for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {
+        for (Direction direction : DirectionUtil.ENUMS) {
             random.setSeed(42L);
             List<BakedQuad> quads = model.getQuads(null, direction, random);
 

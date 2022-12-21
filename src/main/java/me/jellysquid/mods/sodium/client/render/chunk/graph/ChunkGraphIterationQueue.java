@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 public class ChunkGraphIterationQueue {
     private int[] sections;
-    private int[] directions;
+    private byte[] directions;
 
     private int pos;
     private int capacity;
@@ -18,7 +18,7 @@ public class ChunkGraphIterationQueue {
 
     public ChunkGraphIterationQueue(int capacity) {
         this.sections = new int[capacity];
-        this.directions = new int[capacity];
+        this.directions = new byte[capacity];
 
         this.capacity = capacity;
     }
@@ -31,7 +31,7 @@ public class ChunkGraphIterationQueue {
         }
 
         this.sections[i] = section;
-        this.directions[i] = direction;
+        this.directions[i] = (byte) direction;
     }
 
     private void resize() {

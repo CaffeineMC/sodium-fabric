@@ -22,10 +22,7 @@ import net.minecraft.util.math.random.Xoroshiro128PlusPlusRandom;
 import net.minecraft.world.BlockRenderView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
@@ -60,7 +57,7 @@ public class MixinBlockModelRenderer {
 
         int defaultColor = ColorABGR.pack(red, green, blue, 1.0F);
 
-        for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {
+        for (Direction direction : DirectionUtil.ENUMS) {
             random.setSeed(42L);
             List<BakedQuad> quads = bakedModel.getQuads(blockState, direction, random);
 
