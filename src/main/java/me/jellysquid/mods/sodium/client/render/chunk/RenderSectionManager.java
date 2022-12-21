@@ -498,10 +498,6 @@ public class RenderSectionManager {
         this.state.visibilityData[this.state.getIndex(x, y, z)] = calculateVisibilityData(occlusionData);
     }
 
-    private boolean isWithinRenderDistance(int adjX, int adjZ) {
-        return ThreadedAnvilChunkStorage.isWithinDistance(adjX, adjZ, this.centerChunkX, this.centerChunkZ, this.renderDistance);
-    }
-
     private void initSearch(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.currentFrame = frame;
         this.frustum = frustum;
@@ -562,7 +558,7 @@ public class RenderSectionManager {
         int invalid = 0;
         int valid = 0;
 
-        while ((valid < 3 || invalid > 1) && d < maxDistance) {
+        while ((valid < 4 && invalid < 2) && d < maxDistance) {
             d += 1.0f;
 
             int x = MathHelper.floor(originX + (directionX * d));
@@ -601,9 +597,9 @@ public class RenderSectionManager {
         int zOffset;
 
         if (axis == Direction.Axis.X) {
-            xOffset = cameraOriginX <= chunkOriginX ? 0 : 16;
+            xOffset = cameraOriginX > chunkOriginX ? 16 : 0;
         } else {
-            xOffset = cameraOriginX >= chunkOriginX ? 0 : 16;
+            xOffset = cameraOriginX < chunkOriginX ? 16 : 0;
         }
 
         if (axis == Direction.Axis.Y) {
@@ -632,7 +628,7 @@ public class RenderSectionManager {
         dY = dY * scalar;
         dZ = dZ * scalar;
 
-        return this.raycast(rX / 16.0f, rY / 16.0f, rZ / 16.0f, dX, dY, dZ, 4.0f);
+        return this.raycast(rX / 16.0f, rY / 16.0f, rZ / 16.0f, dX, dY, dZ, 5.0f);
     }
 
     private void bfsEnqueue(int fromId, int toId,
@@ -647,12 +643,12 @@ public class RenderSectionManager {
         }
 
         this.state.cullingState[toId] = mergeCullingState(this.state.cullingState[fromId], dir);
-        BitArray.set(this.state.queuedChunks, toId);
 
         this.addSectionToQueue(toId, dir);
     }
 
     private void addSectionToQueue(int sectionId, int dir) {
+        BitArray.set(this.state.queuedChunks, sectionId);
         this.iterationQueue.add(sectionId, dir);
     }
 
