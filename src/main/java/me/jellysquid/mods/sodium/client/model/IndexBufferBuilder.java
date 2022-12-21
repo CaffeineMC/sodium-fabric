@@ -46,47 +46,19 @@ public class IndexBufferBuilder {
 
     public static class Result {
         private final IntArrayList indices;
-
-        private final int maxIndex, minIndex;
         private final GlIndexType format;
 
         private Result(IntArrayList indices) {
             this.indices = indices;
-
-            int maxIndex = Integer.MIN_VALUE;
-            int minIndex = Integer.MAX_VALUE;
-
-            IntIterator it = this.indices.iterator();
-
-            while (it.hasNext()) {
-                int i = it.nextInt();
-
-                minIndex = Math.min(minIndex, i);
-                maxIndex = Math.max(maxIndex, i);
-            }
-
-            this.minIndex = minIndex;
-            this.maxIndex = maxIndex;
-
-            this.format = getOptimalIndexType(this.maxIndex - this.minIndex);
+            this.format = GlIndexType.UNSIGNED_INT;
         }
 
         public int writeTo(int offset, ByteBuffer buffer) {
-            IntIterator it = this.indices.iterator();
-            int stride = this.format.getStride();
-
             int pointer = offset;
 
-            while (it.hasNext()) {
-                int value = it.nextInt() - this.minIndex;
-
-                switch (this.format) {
-                    case UNSIGNED_BYTE -> buffer.put(pointer, (byte) value);
-                    case UNSIGNED_SHORT -> buffer.putShort(pointer, (short) value);
-                    case UNSIGNED_INT -> buffer.putInt(pointer, value);
-                }
-
-                pointer += stride;
+            for (int i = 0; i < this.indices.size(); i++){
+                buffer.putInt(pointer, this.indices.getInt(i));
+                pointer += 4;
             }
 
             return pointer;
@@ -98,10 +70,6 @@ public class IndexBufferBuilder {
 
         public int getCount() {
             return this.indices.size();
-        }
-
-        public int getBaseVertex() {
-            return this.minIndex;
         }
 
         public GlIndexType getFormat() {

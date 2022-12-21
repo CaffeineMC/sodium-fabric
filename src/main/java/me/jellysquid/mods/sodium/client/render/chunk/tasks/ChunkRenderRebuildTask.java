@@ -55,7 +55,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
         ChunkBuildBuffers buffers = buildContext.buffers;
-        buffers.init(renderData, this.render.getChunkId());
+        buffers.init(renderData, this.render.getLocalId());
 
         WorldSlice slice = cache.getWorldSlice();
 

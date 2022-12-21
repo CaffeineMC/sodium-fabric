@@ -16,6 +16,16 @@ public enum ModelQuadFacing {
 
     public static final int COUNT = VALUES.length;
 
+    public static final int BIT_UP = 1 << UP.ordinal();
+    public static final int BIT_DOWN = 1 << DOWN.ordinal();
+    public static final int BIT_EAST = 1 << EAST.ordinal();
+    public static final int BIT_WEST = 1 << WEST.ordinal();
+    public static final int BIT_SOUTH = 1 << SOUTH.ordinal();
+    public static final int BIT_NORTH = 1 << NORTH.ordinal();
+    public static final int BIT_UNASSIGNED = 1 << UNASSIGNED.ordinal();
+
+    public static final int BIT_ALL = BIT_UP | BIT_DOWN | BIT_EAST | BIT_WEST | BIT_SOUTH | BIT_NORTH | BIT_UNASSIGNED;
+
     public static ModelQuadFacing fromDirection(Direction dir) {
         return switch (dir) {
             case DOWN -> DOWN;

@@ -116,8 +116,7 @@ public class ChunkBuildBuffers {
                 continue;
             }
 
-            ranges.put(facing,
-                    new ElementRange(indexPointer, indices.getCount(), indices.getFormat(), indices.getBaseVertex()));
+            ranges.put(facing, new ElementRange(indexPointer, indices.getCount()));
 
             indexPointer = indices.writeTo(indexPointer, indexBuffer.getDirectBuffer());
         }

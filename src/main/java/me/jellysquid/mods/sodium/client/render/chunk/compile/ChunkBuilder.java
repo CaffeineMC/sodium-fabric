@@ -217,7 +217,7 @@ public class ChunkBuilder {
                 .thenAccept(this.deferredResultQueue::add);
     }
 
-    public Iterator<ChunkBuildResult> createDeferredBuildResultDrain() {
+    public Iterator<ChunkBuildResult> createAsyncResultDrain() {
         return new QueueDrainingIterator<>(this.deferredResultQueue);
     }
 

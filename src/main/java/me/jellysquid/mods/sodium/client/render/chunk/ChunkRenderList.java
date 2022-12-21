@@ -1,84 +1,64 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectSortedMap;
 import it.unimi.dsi.fastutil.objects.*;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class ChunkRenderList {
-    private final Reference2ObjectLinkedOpenHashMap<RenderRegion, List<RenderSection>> entries = new Reference2ObjectLinkedOpenHashMap<>();
+    private final Long2ObjectLinkedOpenHashMap<IntArrayList> entries = new Long2ObjectLinkedOpenHashMap<>();
+    private final ObjectArrayFIFOQueue<IntArrayList> pool = new ObjectArrayFIFOQueue<>();
 
-    public Iterable<Map.Entry<RenderRegion, List<RenderSection>>> sorted(boolean reverse) {
-        if (this.entries.isEmpty()) {
-            return Collections.emptyList();
-        }
+    private final RenderRegionManager regionManager;
 
-        Reference2ObjectSortedMap.FastSortedEntrySet<RenderRegion, List<RenderSection>> entries =
-                this.entries.reference2ObjectEntrySet();
+    public ChunkRenderList(RenderRegionManager regionManager) {
 
-        if (reverse) {
-            return () -> new Iterator<>() {
-                final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, List<RenderSection>>> iterator =
-                        entries.fastIterator(entries.last());
+        this.regionManager = regionManager;
+    }
 
-                @Override
-                public boolean hasNext() {
-                    return this.iterator.hasPrevious();
-                }
+    public RenderRegion getRegion(long id) {
+        return this.regionManager.getRegion(id);
+    }
 
-                @Override
-                public Map.Entry<RenderRegion, List<RenderSection>> next() {
-                    return this.iterator.previous();
-                }
-            };
-        } else {
-            return () -> new Iterator<>() {
-                final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, List<RenderSection>>> iterator =
-                        entries.fastIterator();
-
-                @Override
-                public boolean hasNext() {
-                    return this.iterator.hasNext();
-                }
-
-                @Override
-                public Map.Entry<RenderRegion, List<RenderSection>> next() {
-                    return this.iterator.next();
-                }
-            };
-        }
+    public Long2ObjectSortedMap.FastSortedEntrySet<IntArrayList> sorted() {
+        return this.entries.long2ObjectEntrySet();
     }
 
     public void clear() {
-        var it = this.entries.entrySet().iterator();
-        while (it.hasNext()) {
-            var entry = it.next();
-            var region = entry.getKey();
-            var chunks = entry.getValue();
+        this.pool.clear();
 
-            if (region.isEmpty()) {
-                it.remove();
-            } else {
-                chunks.clear();
-            }
+        for (var list : this.entries.values()) {
+            list.clear();
+
+            this.pool.enqueue(list);
         }
+
+        this.entries.clear();
     }
 
-    public void add(RenderSection render) {
-        RenderRegion region = render.getRegion();
+    public void add(RenderSection section, int visibleFaces) {
+        var regionId = section.getRegionId();
+        var localId = section.getLocalId();
 
-        List<RenderSection> sections = this.entries.get(region);
+        IntArrayList sections = this.entries.get(regionId);
 
         if (sections == null) {
-            this.entries.put(region, sections = new ObjectArrayList<>());
-        } else if (sections.isEmpty()) {
-            this.entries.getAndMoveToFirst(region);
+            this.entries.put(regionId, sections = this.createList());
         }
 
-        sections.add(render);
+        sections.add(pack(localId, visibleFaces));
+    }
+
+    private IntArrayList createList() {
+        if (this.pool.isEmpty()) {
+            return new IntArrayList(RenderRegion.REGION_SIZE);
+        }
+
+        return this.pool.dequeue();
     }
 
     public int getCount() {
@@ -86,5 +66,17 @@ public class ChunkRenderList {
                 .stream()
                 .mapToInt(List::size)
                 .sum();
+    }
+
+    public static int pack(int localId, int faces) {
+        return ((localId & 0xFFFF) << 16) | (faces & 0xFF);
+    }
+
+    public static int unpackLocalId(int packed) {
+        return ((packed >> 16) & 0xFFFF);
+    }
+
+    public static int unpackVisibleFaces(int packed) {
+        return packed & 0xFF;
     }
 }

@@ -13,16 +13,16 @@ import java.util.Map;
  * will instead be discarded.
  */
 public class ChunkBuildResult {
-    public final RenderSection render;
+    public final RenderSection section;
     public final ChunkRenderData data;
     public final Map<BlockRenderPass, ChunkMeshData> meshes;
-    public final int buildTime;
+    public final int timestamp;
 
-    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<BlockRenderPass, ChunkMeshData> meshes, int buildTime) {
-        this.render = render;
+    public ChunkBuildResult(RenderSection section, ChunkRenderData data, Map<BlockRenderPass, ChunkMeshData> meshes, int timestamp) {
+        this.section = section;
         this.data = data;
         this.meshes = meshes;
-        this.buildTime = buildTime;
+        this.timestamp = timestamp;
     }
 
     public ChunkMeshData getMesh(BlockRenderPass pass) {

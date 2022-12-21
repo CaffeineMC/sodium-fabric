@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.gl.arena.GlBufferSegment;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Map;
@@ -33,8 +34,8 @@ public class ChunkGraphicsState {
         this.indexSegment.delete();
     }
 
-    public ElementRange getModelPart(ModelQuadFacing facing) {
-        return this.parts[facing.ordinal()];
+    public ElementRange getModelPart(int facing) {
+        return this.parts[facing];
     }
 
     public GlBufferSegment getVertexSegment() {
