@@ -45,7 +45,7 @@ public class ChunkGraphIterationQueue {
         return this.sections[i];
     }
 
-    public int getDirection(int i) {
+    public byte getDirection(int i) {
         return this.directions[i];
     }
 
