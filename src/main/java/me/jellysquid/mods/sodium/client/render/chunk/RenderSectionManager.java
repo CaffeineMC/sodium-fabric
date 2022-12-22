@@ -37,7 +37,6 @@ import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
-import org.joml.Vector3f;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -202,10 +201,6 @@ public class RenderSectionManager {
     private void iterateChunks(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.initSearch(camera, frustum, frame, spectator);
 
-        Vector3f cameraPos = new Vector3f((float) camera.getPos().x, (float) camera.getPos().y, (float) camera.getPos().z);
-        Vector3f cameraSectionOrigin = new Vector3f(MathHelper.floor(cameraPos.x / 16.0) * 16, MathHelper.floor(cameraPos.y / 16.0) * 16, MathHelper.floor(cameraPos.z / 16.0) * 16);
-
-        boolean isRayCullEnabled = SodiumClientMod.options().performance.useRasterOcclusionCulling;
         boolean useOcclusionCulling = this.useOcclusionCulling;
 
         for (int i = 0; i < this.iterationQueue.size(); i++) {
@@ -214,16 +209,7 @@ public class RenderSectionManager {
 
             this.addSectionToLists(fromId, from);
 
-            boolean useRayCulling = useOcclusionCulling && isRayCullEnabled &&
-                    (Math.abs(from.getOriginX() - cameraSectionOrigin.x) > 60 ||
-                            Math.abs(from.getOriginY() - cameraSectionOrigin.y) > 60 ||
-                            Math.abs(from.getOriginZ() - cameraSectionOrigin.z) > 60);
-
             for (int toDirection = 0; toDirection < DirectionUtil.COUNT; toDirection++) {
-                if (useOcclusionCulling && this.isCulledByGraph(fromId, toDirection)) {
-                    continue;
-                }
-
                 int toX = from.getChunkX() + DirectionUtil.getOffsetX(toDirection);
                 int toY = from.getChunkY() + DirectionUtil.getOffsetY(toDirection);
                 int toZ = from.getChunkZ() + DirectionUtil.getOffsetZ(toDirection);
@@ -234,11 +220,12 @@ public class RenderSectionManager {
                     continue;
                 }
 
-                if (useOcclusionCulling && this.isCulledByFrustum(toX, toY, toZ)) {
+                if (useOcclusionCulling && this.isCulledByGraph(fromId, toDirection)) {
                     continue;
                 }
 
-                if (useRayCulling && this.isCulledByRaycast(toX, toY, toZ, toDirection)) {
+                if (useOcclusionCulling && (this.isCulledByFrustum(toX, toY, toZ) ||
+                        this.isCulledByRaycast(toX, toY, toZ, DirectionUtil.getOpposite(toDirection)))) {
                     continue;
                 }
 
@@ -652,6 +639,10 @@ public class RenderSectionManager {
     }
 
     private boolean raycast(final int x0, final int y0, final int z0, final int x1, final int y1, final int z1)  {
+        if (y1 <= this.bottomSectionCoord || y1 >= this.topSectionCoord) {
+            return false;
+        }
+
         final int deltaX = x1 - x0;
         final int deltaY = y1 - y0;
         final int deltaZ = z1 - z0;
@@ -676,7 +667,6 @@ public class RenderSectionManager {
         int z = z0;
 
         int valid = 0;
-        int invalid = 0;
 
         for (int step = 0; step < longest; step++) {
             errX -= lenX;
@@ -698,25 +688,25 @@ public class RenderSectionManager {
                 z += signZ;
             }
 
-            if (y <= this.bottomSectionCoord || y >= this.topSectionCoord) {
-                return false;
-            }
-
-
             if (BitArray.get(this.state.visible, this.state.getIndex(x, y, z))) {
                 valid++;
-            } else if (this.isCulledByFrustum(x, y, z)) {
-                return false;
             } else {
-                invalid++;
+                switch (this.frustumCheck(x, y, z)) {
+                    case OUTSIDE:
+                        return false;
+                    case INTERSECT:
+                        break;
+                    case INSIDE:
+                        return true;
+                }
             }
 
-            if (valid >= 4 || invalid >= 2) {
+            if (valid >= 4) {
                 break;
             }
         }
 
-        return invalid > 1;
+        return false;
     }
 
     private boolean isCulledByRaycast(final int sectionX, final int sectionY, final int sectionZ, int dir) {
@@ -753,12 +743,15 @@ public class RenderSectionManager {
             zOffset = cameraOriginZ < chunkOriginZ ? 1 : 0;
         }
 
+
         return this.raycast(sectionX + xOffset, sectionY + yOffset, sectionZ + zOffset,
                 this.centerChunkX, this.centerChunkY, this.centerChunkZ);
     }
 
+    @Deprecated
     private void addSectionToQueue(int sectionId) {
         this.iterationQueue.add(sectionId);
+        BitArray.set(this.state.visible, sectionId);
     }
 
     public Collection<String> getDebugStrings() {
@@ -784,12 +777,14 @@ public class RenderSectionManager {
     }
 
     private boolean isCulledByFrustum(int chunkX, int chunkY, int chunkZ) {
-        float centerX = (chunkX << 4) + 8;
-        float centerY = (chunkY << 4) + 8;
-        float centerZ = (chunkZ << 4) + 8;
+        return this.frustumCheck(chunkX, chunkY, chunkZ) == Frustum.Visibility.OUTSIDE;
+    }
+    private Frustum.Visibility frustumCheck(int chunkX, int chunkY, int chunkZ) {
+        float x = (chunkX << 4);
+        float y = (chunkY << 4);
+        float z = (chunkZ << 4);
 
-        return !this.frustum.isBoxVisible(centerX - 8.0f, centerY - 8.0f, centerZ - 8.0f,
-                centerX + 8.0f, centerY + 8.0f, centerZ + 8.0f);
+        return this.frustum.testBox(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
     }
 
     public void loadChunk(int x, int z) {
