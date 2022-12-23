@@ -756,7 +756,7 @@ public class RenderSectionManager {
         int id = state.getIndex(chunkX, chunkY, chunkZ);
         byte shift = (byte) ((id&3)<<1);
         byte cache = state.frustumCache[id>>2];
-        int res = (cache>>3)&3;
+        int res = (cache>>shift)&3;
         if (res!=0) {
             return res;
         }
