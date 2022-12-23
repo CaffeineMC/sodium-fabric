@@ -79,7 +79,7 @@ public class RenderSectionManager {
     private static class State {
         private static final long DEFAULT_VISIBILITY_DATA = calculateVisibilityData(ChunkRenderData.EMPTY.getOcclusionData());
 
-        private final int offsetZ, offsetX;
+        private final int offsetZ, offsetY;
         private final int maskXZ, maskY;
 
         public final RenderSection[] sections;
@@ -100,8 +100,8 @@ public class RenderSectionManager {
             this.maskXZ = sizeXZ - 1;
             this.maskY = sizeY - 1;
 
-            this.offsetZ = Integer.numberOfTrailingZeros(sizeY);
-            this.offsetX = this.offsetZ + Integer.numberOfTrailingZeros(sizeXZ);
+            this.offsetZ = Integer.numberOfTrailingZeros(sizeXZ);
+            this.offsetY = this.offsetZ * 2;
 
             int arraySize = sizeXZ * sizeY * sizeXZ;
 
@@ -126,7 +126,7 @@ public class RenderSectionManager {
         }
 
         public int getIndex(int x, int y, int z) {
-            return ((x & this.maskXZ) << (this.offsetX)) | ((z & this.maskXZ) << this.offsetZ) | (y & this.maskY);
+            return ((y & this.maskY) << this.offsetY) |((z & this.maskXZ) << (this.offsetZ)) | (x & this.maskXZ);
         }
     }
 
