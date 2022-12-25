@@ -212,9 +212,11 @@ public class TerrainRenderManager {
         
         SectionRenderData data = renderSection.getData();
         
+        // we just made the section, do we really need to do this?
         this.blockEntityRenderManager.addGlobalBlockEntities(data);
         this.sectionCuller.setVisibilityData(sectionIdx, data.occlusionData);
-    
+        
+        // should we do this in unload?
         SectionRenderFlags.unset(
                 this.sectionTree.sectionFlagData,
                 sectionIdx,
@@ -225,6 +227,7 @@ public class TerrainRenderManager {
                         | SectionRenderFlags.HAS_TERRAIN_MODELS
                 )
         );
+        // we just made the section, do we really need to do this?
         SectionRenderFlags.set(
                 this.sectionTree.sectionFlagData,
                 sectionIdx,
