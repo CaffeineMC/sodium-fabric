@@ -53,7 +53,6 @@ public class CloudRenderer {
     private VertexBuffer vertexBuffer;
     private CloudEdges edges;
     private ShaderProgram clouds;
-    private ShaderProgram cloudsDepth;
     private final BackgroundRenderer.FogData fogData = new BackgroundRenderer.FogData(BackgroundRenderer.FogType.FOG_TERRAIN);
 
     private int prevCenterCellX, prevCenterCellY, cachedRenderDistance;
@@ -140,7 +139,7 @@ public class CloudRenderer {
         RenderSystem.depthMask(true);
         RenderSystem.colorMask(false, false, false, false);
 
-        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, cloudsDepth);
+        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, clouds);
 
         // PASS 2: Render geometry
         RenderSystem.enableBlend();
@@ -166,6 +165,10 @@ public class CloudRenderer {
     }
 
     private void applyFogModifiers(ClientWorld world, BackgroundRenderer.FogData fogData, ClientPlayerEntity player, int cloudDistance, float tickDelta) {
+        if (MinecraftClient.getInstance().gameRenderer == null || MinecraftClient.getInstance().gameRenderer.getCamera() == null) {
+            return;
+        }
+
         Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
         CameraSubmersionType cameraSubmersionType = camera.getSubmersionType();
         if (cameraSubmersionType == CameraSubmersionType.LAVA) {
@@ -298,13 +301,8 @@ public class CloudRenderer {
             clouds.close();
         }
 
-        if (cloudsDepth != null) {
-            cloudsDepth.close();
-        }
-
         try {
             this.clouds = new ShaderProgram(factory, "clouds", VertexFormats.POSITION_COLOR);
-            this.cloudsDepth = new ShaderProgram(factory, "cloudsdepth", VertexFormats.POSITION_COLOR);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -317,7 +315,6 @@ public class CloudRenderer {
 
     public void destroy() {
         clouds.close();
-        cloudsDepth.close();
         if (this.vertexBuffer != null) {
             this.vertexBuffer.close();
             this.vertexBuffer = null;
