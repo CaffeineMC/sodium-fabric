@@ -1,5 +1,6 @@
 package net.caffeinemc.sodium.mixin.features.texture_tracking;
 
+import net.caffeinemc.sodium.render.texture.SpriteAnimationInterface;
 import net.caffeinemc.sodium.render.texture.SpriteUtil;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.SpriteBillboardParticle;
@@ -26,7 +27,7 @@ public abstract class MixinSpriteBillboardParticle extends BillboardParticle {
 
     @Inject(method = "setSprite(Lnet/minecraft/client/texture/Sprite;)V", at = @At("RETURN"))
     private void afterSetSprite(Sprite sprite, CallbackInfo ci) {
-        this.shouldTickSprite = sprite != null && sprite.createAnimation() != null;
+        this.shouldTickSprite = sprite != null && ((SpriteAnimationInterface) sprite.getContents()).hasAnimation();
     }
 
     @Override
