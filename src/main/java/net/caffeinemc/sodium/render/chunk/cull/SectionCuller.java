@@ -7,7 +7,6 @@ import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
 import net.caffeinemc.sodium.render.chunk.SectionTree;
 import net.caffeinemc.sodium.render.chunk.SortedSectionLists;
-import net.caffeinemc.sodium.render.chunk.state.SectionRenderFlags;
 import net.caffeinemc.sodium.util.DirectionUtil;
 import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
@@ -408,26 +407,7 @@ public class SectionCuller {
             int sectionIdx = this.sortedSections[visibleChunksQueue++];
             
             byte flags = this.sectionTree.sectionFlagData[sectionIdx];
-            
-            if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_TERRAIN_MODELS)) {
-                this.sortedSectionLists.terrainSectionIdxs[this.sortedSectionLists.terrainSectionCount++] = sectionIdx;
-            }
-            
-            if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_BLOCK_ENTITIES)) {
-                this.sortedSectionLists.blockEntitySectionIdxs[this.sortedSectionLists.blockEntitySectionCount++] = sectionIdx;
-            }
-    
-            if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_TICKING_TEXTURES)) {
-                this.sortedSectionLists.tickingTextureSectionIdxs[this.sortedSectionLists.tickingTextureSectionCount++] = sectionIdx;
-            }
-            
-            if (SectionRenderFlags.has(flags, SectionRenderFlags.NEEDS_UPDATE)) {
-                if (SectionRenderFlags.has(flags, SectionRenderFlags.NEEDS_UPDATE_IMPORTANT)) {
-                    this.sortedSectionLists.importantUpdatableSectionIdxs[this.sortedSectionLists.importantUpdateSectionCount++] = sectionIdx;
-                } else {
-                    this.sortedSectionLists.secondaryUpdatableSectionIdxs[this.sortedSectionLists.secondaryUpdateSectionCount++] = sectionIdx;
-                }
-            }
+            this.sortedSectionLists.addSectionIdx(sectionIdx, flags);
     
             this.sectionVisibilityBitsPass1.unset(sectionIdx); // Performance hack, means it ignores sections if its already visited them
             this.sectionVisibilityBitsPass2.set(sectionIdx);

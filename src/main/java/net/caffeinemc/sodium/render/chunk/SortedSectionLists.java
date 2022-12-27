@@ -1,7 +1,7 @@
 package net.caffeinemc.sodium.render.chunk;
 
-import java.util.Arrays;
 import java.util.Iterator;
+import net.caffeinemc.sodium.render.chunk.state.SectionRenderFlags;
 
 public class SortedSectionLists {
     
@@ -36,6 +36,28 @@ public class SortedSectionLists {
         this.tickingTextureSectionCount = 0;
         this.importantUpdateSectionCount = 0;
         this.secondaryUpdateSectionCount = 0;
+    }
+    
+    public void addSectionIdx(int sectionIdx, byte flags) {
+        if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_TERRAIN_MODELS)) {
+            this.terrainSectionIdxs[this.terrainSectionCount++] = sectionIdx;
+        }
+    
+        if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_BLOCK_ENTITIES)) {
+            this.blockEntitySectionIdxs[this.blockEntitySectionCount++] = sectionIdx;
+        }
+    
+        if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_TICKING_TEXTURES)) {
+            this.tickingTextureSectionIdxs[this.tickingTextureSectionCount++] = sectionIdx;
+        }
+    
+        if (SectionRenderFlags.has(flags, SectionRenderFlags.NEEDS_UPDATE)) {
+            if (SectionRenderFlags.has(flags, SectionRenderFlags.NEEDS_UPDATE_IMPORTANT)) {
+                this.importantUpdatableSectionIdxs[this.importantUpdateSectionCount++] = sectionIdx;
+            } else {
+                this.secondaryUpdatableSectionIdxs[this.secondaryUpdateSectionCount++] = sectionIdx;
+            }
+        }
     }
     
     private Iterator<RenderSection> createIterator(int[] idxs, int count) {
