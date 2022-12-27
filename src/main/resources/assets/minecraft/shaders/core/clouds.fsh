@@ -6,7 +6,6 @@ uniform mat4 ProjMat;
 uniform vec4 ColorModulator;
 uniform float FogStart;
 uniform float FogEnd;
-uniform vec4 FogColor;
 
 in vec4 vertexColor;
 in float vertexDistance;
