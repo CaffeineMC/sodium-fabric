@@ -1,11 +1,22 @@
 package net.caffeinemc.sodium.render.chunk.compile;
 
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
 import net.caffeinemc.sodium.SodiumClientMod;
+import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
+import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.terrain.TerrainBuildContext;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
-import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
-import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.util.tasks.CancellationSource;
 import net.caffeinemc.sodium.util.tasks.QueueDrainingIterator;
 import net.minecraft.client.world.ClientWorld;
@@ -13,11 +24,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChunkBuilder {
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
@@ -37,6 +43,18 @@ public class ChunkBuilder {
 
     private final Queue<TerrainBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
     private final ThreadLocal<TerrainBuildContext> localContexts = new ThreadLocal<>();
+    
+    private static final int BUILD_SAMPLE_COUNT = 64;
+    private static final int SCHEDULE_SAMPLE_COUNT = 64;
+    
+    private final AtomicLong sumBuildTime = new AtomicLong();
+    private final AtomicLongArray buildTimeSamples = new AtomicLongArray(BUILD_SAMPLE_COUNT);
+    private final AtomicInteger buildSamplesPointer = new AtomicInteger();
+    
+    private long sumScheduleTime;
+    private final long[] scheduleTimeSamples = new long[SCHEDULE_SAMPLE_COUNT];
+    private int scheduleSamplesPointer;
+    private long currentScheduleTime;
 
     public ChunkBuilder(TerrainVertexType vertexType) {
         this.vertexType = vertexType;
@@ -48,7 +66,50 @@ public class ChunkBuilder {
      * spawn more tasks than the budget allows, it will block until resources become available.
      */
     public int getSchedulingBudget() {
-        return Math.max(0, this.limitThreads - this.buildQueue.size());
+        this.addScheduleSample();
+    
+        int currentBuilds = this.buildQueue.size();
+    
+        int budgetFast = 0;
+        int buildSampleCount = Math.min(this.buildSamplesPointer.get(), BUILD_SAMPLE_COUNT);
+        int scheduleSampleCount = Math.min(this.scheduleSamplesPointer, SCHEDULE_SAMPLE_COUNT);
+        
+        if (buildSampleCount != 0 && scheduleSampleCount != 0) {
+            long avgBuildTime = this.sumBuildTime.get() / buildSampleCount;
+            long avgScheduleTime = this.sumScheduleTime / scheduleSampleCount;
+            if (avgBuildTime != 0) {
+                budgetFast = (int) ((double) avgScheduleTime * this.limitThreads / avgBuildTime) - currentBuilds;
+            }
+        }
+        
+        int budgetSlow = this.limitThreads - currentBuilds;
+    
+        return Math.max(0, Math.max(budgetFast, budgetSlow));
+    }
+    
+    private void addScheduleSample() {
+        long nextTime = System.nanoTime();
+        long currentTime = this.currentScheduleTime;
+        if (currentTime != 0) {
+            long nanosElapsed = nextTime - currentTime;
+            int rawPtr = this.scheduleSamplesPointer++;
+            if (this.scheduleSamplesPointer >= BUILD_SAMPLE_COUNT * 2) {
+                this.scheduleSamplesPointer = BUILD_SAMPLE_COUNT;
+            }
+            int ptr = rawPtr % BUILD_SAMPLE_COUNT;
+            long oldSample = this.scheduleTimeSamples[ptr];
+            this.scheduleTimeSamples[ptr] = nanosElapsed;
+            this.sumScheduleTime += nanosElapsed - oldSample;
+        }
+        this.currentScheduleTime = nextTime;
+    }
+    
+    private void addBuildSample(long nanosElapsed) {
+        int rawPtr = this.buildSamplesPointer.getAndIncrement();
+        this.buildSamplesPointer.compareAndSet(BUILD_SAMPLE_COUNT * 2, BUILD_SAMPLE_COUNT);
+        int ptr = rawPtr % BUILD_SAMPLE_COUNT;
+        long oldSample = this.buildTimeSamples.getAndSet(ptr, nanosElapsed);
+        this.sumBuildTime.getAndAdd(nanosElapsed - oldSample);
     }
 
     /**
@@ -299,6 +360,8 @@ public class ChunkBuilder {
             while (this.running.get()) {
                 WrappedTask job = ChunkBuilder.this.getNextJob(true);
 
+                long t1 = System.nanoTime();
+                
                 if (job == null) {
                     continue;
                 }
@@ -308,6 +371,9 @@ public class ChunkBuilder {
                 } finally {
                     this.context.release();
                 }
+                
+                long t2 = System.nanoTime();
+                ChunkBuilder.this.addBuildSample(t2 - t1);
             }
         }
     }
