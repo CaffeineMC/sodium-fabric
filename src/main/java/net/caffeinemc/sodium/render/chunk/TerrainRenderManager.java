@@ -258,12 +258,8 @@ public class TerrainRenderManager {
 
     public void tickVisibleRenders() {
         for (RenderSection section : this.sortedSectionLists.getTickingTextureSections()) {
-            if (section.getData().animatedSprites == null) {
-                System.out.println("bad");
-            } else {
-                for (Sprite sprite : section.getData().animatedSprites) {
-                    SpriteUtil.markSpriteActive(sprite);
-                }
+            for (Sprite sprite : section.getData().animatedSprites) {
+                SpriteUtil.markSpriteActive(sprite);
             }
         }
     }
