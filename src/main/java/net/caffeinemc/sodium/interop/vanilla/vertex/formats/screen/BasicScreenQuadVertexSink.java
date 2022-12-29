@@ -4,6 +4,7 @@ import net.caffeinemc.sodium.render.vertex.VertexSink;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import org.joml.Matrix4f;
+import org.joml.Math;
 
 public interface BasicScreenQuadVertexSink extends VertexSink {
     VertexFormat VERTEX_FORMAT = VertexFormats.POSITION_COLOR;
