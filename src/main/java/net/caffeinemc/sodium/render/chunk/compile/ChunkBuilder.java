@@ -46,6 +46,7 @@ public class ChunkBuilder {
     
     private static final int BUILD_SAMPLE_COUNT = 64;
     private static final int SCHEDULE_SAMPLE_COUNT = 64;
+    private static final double WORK_FACTOR = .5;
     
     private final AtomicLong sumBuildTime = new AtomicLong();
     private final AtomicLongArray buildTimeSamples = new AtomicLongArray(BUILD_SAMPLE_COUNT);
@@ -67,9 +68,9 @@ public class ChunkBuilder {
      */
     public int getSchedulingBudget() {
         this.addScheduleSample();
-    
+        
         int currentBuilds = this.buildQueue.size();
-    
+        
         int budgetFast = 0;
         int buildSampleCount = Math.min(this.buildSamplesPointer.get(), BUILD_SAMPLE_COUNT);
         int scheduleSampleCount = Math.min(this.scheduleSamplesPointer, SCHEDULE_SAMPLE_COUNT);
@@ -78,12 +79,12 @@ public class ChunkBuilder {
             long avgBuildTime = this.sumBuildTime.get() / buildSampleCount;
             long avgScheduleTime = this.sumScheduleTime / scheduleSampleCount;
             if (avgBuildTime != 0) {
-                budgetFast = (int) ((double) avgScheduleTime * this.limitThreads / avgBuildTime) - currentBuilds;
+                budgetFast = (int) ((double) avgScheduleTime * this.limitThreads * WORK_FACTOR / avgBuildTime) - currentBuilds;
             }
         }
         
         int budgetSlow = this.limitThreads - currentBuilds;
-    
+        
         return Math.max(0, Math.max(budgetFast, budgetSlow));
     }
     
