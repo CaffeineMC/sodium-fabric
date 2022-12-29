@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.core;
 import me.jellysquid.mods.sodium.client.util.frustum.FrustumAdapter;
 import net.minecraft.client.render.Frustum;
 import org.joml.FrustumIntersection;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -22,6 +23,10 @@ public class MixinFrustum implements FrustumAdapter, me.jellysquid.mods.sodium.c
     @Final
     private FrustumIntersection frustumIntersection;
 
+    @Shadow
+    @Final
+    private Matrix4f field_40824;
+
     @Override
     public me.jellysquid.mods.sodium.client.util.frustum.Frustum sodium$createFrustum() {
         return this;
@@ -35,5 +40,10 @@ public class MixinFrustum implements FrustumAdapter, me.jellysquid.mods.sodium.c
             case FrustumIntersection.INSIDE -> Visibility.INSIDE;
             default -> Visibility.OUTSIDE;
         };
+    }
+
+    @Override
+    public Matrix4f getMatrix() {
+        return this.field_40824;
     }
 }

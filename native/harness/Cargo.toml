@@ -1,0 +1,13 @@
+[package]
+name = "harness"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rasterizer = { path = "../rasterizer" }
+ultraviolet = "0.9.0"
+
+[dependencies.minifb]
+version = "0.23"
+default-features = false
+features = [ "x11" ]

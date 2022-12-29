@@ -26,6 +26,17 @@ public class BitArray {
         words[wordIndex(index)] |= 1L << bitIndex(index);
     }
 
+    public static boolean getAndSet(long[] words, int index) {
+        int bitIndex = bitIndex(index);
+        int wordIndex = wordIndex(index);
+
+        long bit = 1L << bitIndex;
+        long prev = words[wordIndex];
+        words[wordIndex] |= bit;
+
+        return (prev & bit) != 0L;
+    }
+
     public static void unset(long[] words, int index) {
         words[wordIndex(index)] &= ~(1L << bitIndex(index));
     }

@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.util.frustum;
 
+import org.joml.Matrix4f;
+
 public interface Frustum {
     /**
      * @return The visibility of an axis-aligned box within the frustum
@@ -12,6 +14,8 @@ public interface Frustum {
     default boolean isBoxVisible(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
         return this.testBox(minX, minY, minZ, maxX, maxY, maxZ) != Visibility.OUTSIDE;
     }
+
+    Matrix4f getMatrix();
 
     enum Visibility {
         /**

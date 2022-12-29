@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.VoxelBoxList;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteExtended;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.RenderLayer;
@@ -29,6 +29,7 @@ public class ChunkRenderData {
 
     private List<Sprite> animatedSprites;
     private List<RenderLayer> renderLayers;
+    private VoxelBoxList[] occlusionBoxes;
 
     public ChunkRenderBounds getBounds() {
         return this.bounds;
@@ -61,6 +62,10 @@ public class ChunkRenderData {
         return this.renderLayers;
     }
 
+    public VoxelBoxList[] getOcclusionBoxes() {
+        return this.occlusionBoxes;
+    }
+
     public static class Builder {
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> blockEntities = new ArrayList<>();
@@ -69,6 +74,7 @@ public class ChunkRenderData {
 
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
+        private VoxelBoxList[] occlusionBoxes;
 
         public void setBounds(ChunkRenderBounds bounds) {
             this.bounds = bounds;
@@ -102,6 +108,10 @@ public class ChunkRenderData {
             (cull ? this.blockEntities : this.globalBlockEntities).add(entity);
         }
 
+        public void setOcclusionBoxes(VoxelBoxList[] boxes) {
+            this.occlusionBoxes = boxes;
+        }
+
         public ChunkRenderData build() {
             ChunkRenderData data = new ChunkRenderData();
             data.globalBlockEntities = this.globalBlockEntities;
@@ -110,6 +120,7 @@ public class ChunkRenderData {
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
             data.renderLayers = new ObjectArrayList<>(this.renderLayers);
+            data.occlusionBoxes = this.occlusionBoxes;
 
             return data;
         }

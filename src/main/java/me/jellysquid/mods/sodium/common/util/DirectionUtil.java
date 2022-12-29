@@ -2,21 +2,42 @@ package me.jellysquid.mods.sodium.common.util;
 
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
+import org.apache.commons.lang3.Validate;
 
 /**
  * Contains a number of cached arrays to avoid allocations since calling Enum#values() requires the backing array to
  * be cloned every time.
  */
+@SuppressWarnings("ConstantValue")
 public class DirectionUtil {
 
-    public static final int DOWN = Direction.DOWN.ordinal();
-    public static final int UP = Direction.UP.ordinal();
-    public static final int NORTH = Direction.NORTH.ordinal();
-    public static final int SOUTH = Direction.SOUTH.ordinal();
-    public static final int WEST = Direction.WEST.ordinal();
-    public static final int EAST = Direction.EAST.ordinal();
+    public static final int DOWN = 0;
+    public static final int UP = 1;
+    public static final int NORTH = 2;
+    public static final int SOUTH = 3;
+    public static final int WEST = 4;
+    public static final int EAST = 5;
+
+    static {
+        Validate.isTrue(DOWN == Direction.DOWN.ordinal());
+        Validate.isTrue(UP == Direction.UP.ordinal());
+        Validate.isTrue(NORTH == Direction.NORTH.ordinal());
+        Validate.isTrue(SOUTH == Direction.SOUTH.ordinal());
+        Validate.isTrue(WEST == Direction.WEST.ordinal());
+        Validate.isTrue(EAST == Direction.EAST.ordinal());
+
+        for (Direction dir : Direction.values()) {
+            if (dir.ordinal() != dir.getId()) {
+                throw new IllegalStateException("The ordinal for direction %s does not equal id".formatted(dir.name()));
+            }
+        }
+    }
 
     public static final int COUNT = 6;
+
+    static {
+        Validate.isTrue(COUNT == Direction.values().length);
+    }
 
     public static final Direction[] ENUMS;
     public static final Direction.Axis[] AXIS;
@@ -50,43 +71,43 @@ public class DirectionUtil {
         return DirectionUtil.VECTOR[dir];
     }
 
+    public static Direction.Axis getAxis(int dir) {
+        return DirectionUtil.AXIS[dir];
+    }
+
     public static int getOffsetX(int dir) {
         return switch (dir) {
-            case 4 -> -1;
-            case 5 -> 1;
+            case WEST -> -1;
+            case EAST -> 1;
             default -> 0;
         };
     }
 
     public static int getOffsetY(int dir) {
         return switch (dir) {
-            case 0 -> -1;
-            case 1 -> 1;
+            case DOWN -> -1;
+            case UP -> 1;
             default -> 0;
         };
     }
 
     public static int getOffsetZ(int dir) {
         return switch (dir) {
-            case 2 -> -1;
-            case 3 -> 1;
+            case NORTH -> -1;
+            case SOUTH -> 1;
             default -> 0;
         };
     }
 
     public static int getOpposite(int dir) {
         return switch (dir) {
-            case 0 -> 1;
-            case 1 -> 0;
-            case 2 -> 3;
-            case 3 -> 2;
-            case 4 -> 5;
-            case 5 -> 4;
+            case DOWN -> UP;
+            case UP -> DOWN;
+            case NORTH -> SOUTH;
+            case SOUTH -> NORTH;
+            case WEST -> EAST;
+            case EAST -> WEST;
             default -> dir;
         };
-    }
-
-    public static Direction.Axis getAxis(int dir) {
-        return DirectionUtil.AXIS[dir];
     }
 }

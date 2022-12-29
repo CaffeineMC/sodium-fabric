@@ -7,7 +7,6 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkStatus;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
@@ -53,6 +52,7 @@ public class SodiumWorldRenderer {
 
     private RenderSectionManager renderSectionManager;
     private BlockRenderPassManager renderPassManager;
+
     private ChunkTracker chunkTracker;
 
     /**
@@ -104,17 +104,7 @@ public class SodiumWorldRenderer {
 
     private void loadWorld(ClientWorld world) {
         this.world = world;
-        this.chunkTracker = new ChunkTracker(new ChunkTracker.Callback() {
-            @Override
-            public void loadChunk(int x, int z) {
-                SodiumWorldRenderer.this.renderSectionManager.loadChunk(x, z);
-            }
-
-            @Override
-            public void unloadChunk(int x, int z) {
-                SodiumWorldRenderer.this.renderSectionManager.unloadChunk(x, z);
-            }
-        });
+        this.chunkTracker = ChunkTracker.from(world);
 
         ChunkRenderCacheShared.createRenderContext(this.world);
 
@@ -251,10 +241,7 @@ public class SodiumWorldRenderer {
         this.renderDistance = this.client.options.getClampedViewDistance();
 
         this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
-
-        this.renderSectionManager = new RenderSectionManager(this, this.renderPassManager, this.world, this.renderDistance, commandList);
-        this.chunkTracker.getLoadedChunks()
-                .forEach(pos -> this.renderSectionManager.loadChunk(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
+        this.renderSectionManager = new RenderSectionManager(this, this.renderPassManager, this.world, this.renderDistance, this.chunkTracker, commandList);;
     }
 
     public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
@@ -308,19 +295,6 @@ public class SodiumWorldRenderer {
         }
     }
 
-    public void onChunkAdded(int x, int z) {
-        this.chunkTracker.mark(x, z, ChunkStatus.FLAG_HAS_BLOCK_DATA);
-
-    }
-
-    public void onChunkLightAdded(int x, int z) {
-        this.chunkTracker.mark(x, z, ChunkStatus.FLAG_HAS_LIGHT_DATA);
-    }
-
-    public void onChunkRemoved(int x, int z) {
-        this.chunkTracker.remove(x, z);
-    }
-
     public void onChunkRenderUpdated(int x, int y, int z, ChunkRenderData meshBefore, ChunkRenderData meshAfter) {
         ListUtil.updateList(this.globalBlockEntities, meshBefore.getGlobalBlockEntities(), meshAfter.getGlobalBlockEntities());
 
@@ -346,8 +320,8 @@ public class SodiumWorldRenderer {
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
     }
 
-    public boolean doesChunkHaveFlag(int x, int z, int status) {
-        return this.chunkTracker.hasMergedFlags(x, z, status);
+    public boolean isRenderingReady(int x, int y, int z) {
+        return this.renderSectionManager.isSectionReady(x, y, z);
     }
 
     public boolean isBoxVisible(double x1, double y1, double z1, double x2, double y2, double z2) {
@@ -417,9 +391,5 @@ public class SodiumWorldRenderer {
 
     public RenderSectionManager getRenderSectionManager() {
         return this.renderSectionManager;
-    }
-
-    public ChunkTracker getChunkTracker() {
-        return this.chunkTracker;
     }
 }

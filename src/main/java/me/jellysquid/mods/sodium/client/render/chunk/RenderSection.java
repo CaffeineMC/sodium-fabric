@@ -181,4 +181,8 @@ public class RenderSection {
     public void finishRebuild() {
         this.rebuildFuture = null;
     }
+
+    public boolean hasFlags() {
+        return this.flags != 0;
+    }
 }

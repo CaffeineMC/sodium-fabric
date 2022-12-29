@@ -1,0 +1,10 @@
+[workspace]
+members = [ "harness", "rasterizer", "jni" ]
+
+[profile.release]
+lto = true
+
+[profile.production]
+inherits = "release"
+lto = true
+strip = true

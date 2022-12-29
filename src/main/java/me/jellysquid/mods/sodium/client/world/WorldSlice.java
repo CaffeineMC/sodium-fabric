@@ -44,7 +44,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     private static final int SECTION_BIOME_COUNT = 4 * 4 * 4;
 
     // The radius of blocks around the origin chunk that should be copied.
-    private static final int NEIGHBOR_BLOCK_RADIUS = 2;
+    private static final int NEIGHBOR_BLOCK_RADIUS = 8;
 
     // The radius of chunks around the origin chunk that should be copied.
     private static final int NEIGHBOR_CHUNK_RADIUS = MathHelper.roundUpToMultiple(NEIGHBOR_BLOCK_RADIUS, 16) >> 4;
@@ -227,6 +227,11 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
 
         return this.blockStatesArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
                 [getLocalBlockIndex(relX & 15, relY & 15, relZ & 15)];
+    }
+
+    public BlockState getBlockStateRelative(int x, int y, int z) {
+        return this.blockStatesArrays[getLocalSectionIndex(x >> 4, y >> 4, z >> 4)]
+                [getLocalBlockIndex(x & 15, y & 15, z & 15)];
     }
 
     @Override

@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.VoxelBoxList;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
@@ -14,6 +15,7 @@ import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
@@ -23,6 +25,7 @@ import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -149,7 +152,74 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
+        renderData.setOcclusionBoxes(new VoxelBoxList[] {
+                generateVoxelHull(slice, 8),
+                generateVoxelHull(slice, 4),
+                generateVoxelHull(slice, 2)
+        });
 
         return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
     }
+
+    private static VoxelBoxList generateVoxelHull(WorldSlice slice, int size) {
+        boolean[][][] data = new boolean[size + 2][size + 2][size + 2];
+
+        int width = 16 / size;
+
+        for (int cellX = -1; cellX <= size; cellX++) {
+            for (int cellY = -1; cellY <= size; cellY++) {
+                for (int cellZ = -1; cellZ <= size; cellZ++) {
+                    data[cellX + 1][cellY + 1][cellZ + 1] = isAreaOccluder(slice, (cellX * width), (cellY * width), (cellZ * width),
+                            (cellX * width) + width, (cellY * width) + width, (cellZ * width) + width);
+                }
+            }
+        }
+
+        var list = new VoxelBoxList.Builder();
+
+        for (int cellX = 0; cellX < size; cellX++) {
+            for (int cellY = 0; cellY < size; cellY++) {
+                for (int cellZ = 0; cellZ < size; cellZ++) {
+                    if (!data[cellX + 1][cellY + 1][cellZ + 1]) {
+                        continue;
+                    }
+
+                    int faces = 0b111111;
+
+                    for (var dir : Direction.values()) {
+                        var adjCellX = cellX + dir.getOffsetX();
+                        var adjCellY = cellY + dir.getOffsetY();
+                        var adjCellZ = cellZ + dir.getOffsetZ();
+
+                        if (adjCellX >= -1 && adjCellY >= -1 && adjCellZ >= -1 && adjCellX <= size && adjCellY <= size && adjCellZ <= size &&
+                                data[adjCellX + 1][adjCellY + 1][adjCellZ + 1]) {
+                            faces &= ~(1 << dir.ordinal());
+                        }
+                    }
+
+                    list.add(cellX * width, cellY * width, cellZ * width,
+                            (cellX * width) + width, (cellY * width) + width, (cellZ * width) + width, faces);
+                }
+            }
+        }
+
+        return list.finish();
+    }
+
+    private static boolean isAreaOccluder(WorldSlice slice, int x1, int y1, int z1, int x2, int y2, int z2) {
+        for (int x = x1; x < x2; x++) {
+            for (int y = y1; y < y2; y++) {
+                for (int z = z1; z < z2; z++) {
+                    var state = slice.getBlockStateRelative(16 + x, 16 + y, 16 + z);
+
+                    if (!state.isOpaque() && state.getBlock() != Blocks.BLUE_STAINED_GLASS) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
 }

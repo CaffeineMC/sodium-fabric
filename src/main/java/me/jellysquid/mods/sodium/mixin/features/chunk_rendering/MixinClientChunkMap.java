@@ -35,7 +35,7 @@ public class MixinClientChunkMap {
         // switched or the render distance is changed;
         this.radius = loadDistance;
 
-        // Make the diameter a power-of-two so we can exploit bit-wise math when computing indices
+        // Make the diameter a power-of-two, so we can exploit bit-wise math when computing indices
         this.diameter = MathHelper.smallestEncompassingPowerOfTwo(loadDistance * 2 + 1);
 
         // The factor is used as a bit mask to replace the modulo in getIndex
