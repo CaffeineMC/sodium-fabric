@@ -74,11 +74,9 @@ public class Graph {
         return ((x & this.maskXZ) << (this.offsetX)) | ((z & this.maskXZ) << this.offsetZ) | (y & this.maskY);
     }
 
-    public LongArrayList findVisibleSections(Camera camera, Frustum frustum, boolean useOcclusionCulling) {
+    public GraphSearch createSearch(Camera camera, Frustum frustum, boolean useOcclusionCulling) {
         this.reset();
-
-        return new GraphSearch(this, camera, frustum, useOcclusionCulling)
-                .findVisibleSections();
+        return new GraphSearch(this, camera, frustum, useOcclusionCulling);
     }
 
     private static long calculateVisibilityData(ChunkOcclusionData occlusionData) {
