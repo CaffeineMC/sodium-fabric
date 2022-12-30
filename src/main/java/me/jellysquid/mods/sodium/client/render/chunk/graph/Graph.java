@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import me.jellysquid.mods.sodium.client.util.collections.BitArray;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -66,7 +65,7 @@ public class Graph {
         return this.isVisited(this.getIndex(x, y, z));
     }
 
-    public void reset() {
+    public void resetTransientState() {
         Arrays.fill(this.graphSearchState, 0);
     }
 
@@ -75,7 +74,6 @@ public class Graph {
     }
 
     public GraphSearch createSearch(Camera camera, Frustum frustum, boolean useOcclusionCulling) {
-        this.reset();
         return new GraphSearch(this, camera, frustum, useOcclusionCulling);
     }
 

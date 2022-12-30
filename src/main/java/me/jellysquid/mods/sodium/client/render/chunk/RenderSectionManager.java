@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -124,12 +125,31 @@ public class RenderSectionManager {
         this.rasterizer.clear();
         this.rasterizer.setCamera(camera, frustum);
 
-        var visible = this.graph.findVisibleSections(camera, frustum, useOcclusionCulling);
-        var it = visible.longIterator();
+        var search = this.graph.createSearch(camera, frustum, useOcclusionCulling);
+        var list = search.start();
 
-        while (it.hasNext()) {
-            var s = this.sections.get(it.nextLong());
-            this.addSectionToLists(s);
+        var dist = 0;
+
+        while (!list.isEmpty()) {
+            var filteredPos = list.elements();
+            var filteredCount = 0;
+
+            for (int index = 0, count = list.size(); index < count; index++) {
+                var sectionId = list.getLong(index);
+                var section = this.sections.get(sectionId);
+
+                if (!this.isVisibleOnRaster(section, dist)) {
+                    continue;
+                }
+
+                this.addSectionToLists(section);
+                this.drawOcclusionHull(section, dist);
+
+                filteredPos[filteredCount++] = sectionId;
+            }
+
+            list = search.next(LongArrayList.wrap(filteredPos, filteredCount));
+            dist++;
         }
 
         if (GLFW.glfwGetKey(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_P) == GLFW.GLFW_PRESS) {
@@ -137,6 +157,23 @@ public class RenderSectionManager {
         }
 
         this.needsUpdate = false;
+    }
+
+    private void drawOcclusionHull(RenderSection section, int dist) {
+        var boxes = section.getData().getOcclusionBoxes();
+
+        if (boxes != null && dist > 0) {
+            this.rasterizer.drawBoxes(boxes[this.getOccluderDetailLevel(dist)], section.getOriginX(), section.getOriginY(), section.getOriginZ());
+        }
+    }
+
+    private boolean isVisibleOnRaster(RenderSection section, int dist) {
+        if (dist > 0) {
+            return this.rasterizer.testBox(section.getOriginX(), section.getOriginY(), section.getOriginZ(),
+                    section.getOriginX() + 16.0f, section.getOriginY() + 16.0f, section.getOriginZ() + 16.0f, 0b111111);
+        }
+
+        return true;
     }
 
     private void updateWatchedArea(Camera camera) {
@@ -167,26 +204,6 @@ public class RenderSectionManager {
 
             if (queue.size() < 32) {
                 queue.enqueue(section);
-            }
-        }
-
-        if (!section.hasFlags()) {
-            return;
-        }
-
-        var bounds = section.getBounds();
-
-        var dist = this.getDistance(section);
-
-        if (dist > 1) {
-            if (!this.rasterizer.testBox(bounds.x1, bounds.y1, bounds.z1, bounds.x2, bounds.y2, bounds.z2, 0b111111)) {
-                return;
-            }
-
-            var boxes = section.getData().getOcclusionBoxes()[this.getOccluderDetailLevel(dist)];
-
-            if (boxes != null) {
-                this.rasterizer.drawBoxes(boxes, section.getOriginX(), section.getOriginY(), section.getOriginZ());
             }
         }
 

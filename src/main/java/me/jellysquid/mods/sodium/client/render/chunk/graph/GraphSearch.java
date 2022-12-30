@@ -9,7 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 
-final class GraphSearch {
+public final class GraphSearch {
     private final Graph graph;
     private final Frustum frustum;
     private final boolean useOcclusionCulling;
@@ -29,7 +29,9 @@ final class GraphSearch {
         this.useOcclusionCulling = useOcclusionCulling;
     }
 
-    private LongArrayList initSearch() {
+    public LongArrayList start() {
+        this.graph.resetTransientState();
+
         var sorted = new LongArrayList();
 
         if (BitArray.get(this.graph.graphLoaded, this.graph.getIndex(this.centerChunkX, this.centerChunkY, this.centerChunkZ))) {
@@ -80,14 +82,14 @@ final class GraphSearch {
         return sorted;
     }
 
-    public LongArrayList findVisibleSections() {
-        var queue = this.initSearch();
+    public LongArrayList next(LongArrayList nodes) {
+        var next = new LongArrayList();
 
-        for (int i = 0; i < queue.size(); i++) {
-            this.searchNeighbors(queue, queue.getLong(i));
+        for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+            this.searchNeighbors(next, nodes.getLong(nodeIndex));
         }
 
-        return queue;
+        return next;
     }
 
     private void searchNeighbors(LongArrayList queue, long fromPos) {
