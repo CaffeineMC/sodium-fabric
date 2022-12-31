@@ -109,6 +109,7 @@ public class TerrainRenderManager {
         this.sortedTerrainLists = new SortedTerrainLists(
                 this.regionManager,
                 renderPassManager,
+                this.sectionTree,
                 this.sortedSectionLists,
                 camera
         );
@@ -257,7 +258,10 @@ public class TerrainRenderManager {
     }
 
     public void tickVisibleRenders() {
-        for (RenderSection section : this.sortedSectionLists.getTickingTextureSections()) {
+        for (int i = 0; i < this.sortedSectionLists.tickingTextureSectionCount; i++) {
+            int sectionIdx = this.sortedSectionLists.tickingTextureSectionIdxs[i];
+            RenderSection section = this.sectionTree.getSection(sectionIdx);
+            
             for (Sprite sprite : section.getData().animatedSprites) {
                 SpriteUtil.markSpriteActive(sprite);
             }

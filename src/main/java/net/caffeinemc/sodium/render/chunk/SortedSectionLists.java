@@ -59,40 +59,4 @@ public class SortedSectionLists {
             }
         }
     }
-    
-    private Iterator<RenderSection> createIterator(int[] idxs, int count) {
-        return new Iterator<>() {
-            private int i;
-            
-            @Override
-            public boolean hasNext() {
-                return this.i < count;
-            }
-    
-            @Override
-            public RenderSection next() {
-                return SortedSectionLists.this.sectionTree.getSection(idxs[this.i++]);
-            }
-        };
-    }
-    
-    public Iterable<RenderSection> getTerrainSections() {
-        return () -> this.createIterator(this.terrainSectionIdxs, this.terrainSectionCount);
-    }
-    
-    public Iterable<RenderSection> getBlockEntitySections() {
-        return () -> this.createIterator(this.blockEntitySectionIdxs, this.blockEntitySectionCount);
-    }
-    
-    public Iterable<RenderSection> getTickingTextureSections() {
-        return () -> this.createIterator(this.tickingTextureSectionIdxs, this.tickingTextureSectionCount);
-    }
-    
-    public Iterable<RenderSection> getImportantUpdatableSections() {
-        return () -> this.createIterator(this.importantUpdatableSectionIdxs, this.importantUpdateSectionCount);
-    }
-    
-    public Iterable<RenderSection> getSecondaryUpdatableSections() {
-        return () -> this.createIterator(this.secondaryUpdatableSectionIdxs, this.secondaryUpdateSectionCount);
-    }
 }

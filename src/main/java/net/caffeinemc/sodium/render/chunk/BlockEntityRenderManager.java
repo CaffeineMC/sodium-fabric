@@ -15,6 +15,7 @@ public class BlockEntityRenderManager {
     private static final int BLOCK_ENTITIES_PER_SECTION_ESTIMATE = 1;
     private static final int GLOBAL_BLOCK_ENTITIES_ESTIMATE = 64;
     
+    private final SectionTree sectionTree;
     private final SortedSectionLists sortedSectionLists;
     
     private final ReferenceList<BlockEntity> sectionedBlockEntities;
@@ -22,6 +23,7 @@ public class BlockEntityRenderManager {
     private final Set<BlockEntity> globalBlockEntities;
     
     public BlockEntityRenderManager(SectionTree sectionTree, SortedSectionLists sortedSectionLists) {
+        this.sectionTree = sectionTree;
         this.sortedSectionLists = sortedSectionLists;
     
         this.sectionedBlockEntities = new ReferenceArrayList<>(sectionTree.getSectionTableSize() * BLOCK_ENTITIES_PER_SECTION_ESTIMATE);
@@ -34,8 +36,11 @@ public class BlockEntityRenderManager {
     
     public void update() {
         this.reset();
-        
-        for (RenderSection section : this.sortedSectionLists.getBlockEntitySections()) {
+    
+        for (int i = 0; i < this.sortedSectionLists.blockEntitySectionCount; i++) {
+            int sectionIdx = this.sortedSectionLists.blockEntitySectionIdxs[i];
+            RenderSection section = this.sectionTree.getSection(sectionIdx);
+            
             // TODO: should more sorting based on position be done here other than the BFS?
             this.sectionedBlockEntities.addElements(this.sectionedBlockEntities.size(), section.getData().blockEntities);
         }

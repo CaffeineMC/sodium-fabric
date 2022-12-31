@@ -1,14 +1,13 @@
 package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import java.util.List;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
+import net.caffeinemc.sodium.render.chunk.SectionTree;
 import net.caffeinemc.sodium.render.chunk.SortedSectionLists;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPass;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
@@ -26,6 +25,7 @@ public class SortedTerrainLists {
     
     private final RenderRegionManager regionManager;
     private final ChunkRenderPassManager renderPassManager;
+    private final SectionTree sectionTree;
     private final SortedSectionLists sortedSectionLists;
     private final ChunkCameraContext camera;
     
@@ -44,11 +44,13 @@ public class SortedTerrainLists {
     public SortedTerrainLists(
             RenderRegionManager regionManager,
             ChunkRenderPassManager renderPassManager,
+            SectionTree sectionTree,
             SortedSectionLists sortedSectionLists,
             ChunkCameraContext camera
     ) {
         this.regionManager = regionManager;
         this.renderPassManager = renderPassManager;
+        this.sectionTree = sectionTree;
         this.sortedSectionLists = sortedSectionLists;
         this.camera = camera;
     
@@ -105,7 +107,9 @@ public class SortedTerrainLists {
         
         int totalSectionCount = 0;
         
-        for (RenderSection section : this.sortedSectionLists.getTerrainSections()) {
+        for (int i = 0; i < this.sortedSectionLists.terrainSectionCount; i++) {
+            int sectionIdx = this.sortedSectionLists.terrainSectionIdxs[i];
+            RenderSection section = this.sectionTree.getSection(sectionIdx);
             boolean sectionAdded = false;
     
             int sequentialSectionIdx = 0;
