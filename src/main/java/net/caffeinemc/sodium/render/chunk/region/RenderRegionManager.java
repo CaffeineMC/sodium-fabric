@@ -224,7 +224,7 @@ public class RenderRegionManager {
                 continue;
             }
 
-            var batch = batches.computeIfAbsent(render.getRegionKey(), key -> new ReferenceArrayList<>());
+            var batch = batches.computeIfAbsent(render.getRegionKey(), key -> new ReferenceArrayList<>(RenderRegion.REGION_SIZE));
             batch.add(result);
         }
 

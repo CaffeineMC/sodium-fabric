@@ -2,9 +2,7 @@ package net.caffeinemc.sodium.render.chunk.draw;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
-import java.util.List;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
 import net.caffeinemc.sodium.render.chunk.SectionTree;
@@ -38,6 +36,7 @@ public class SortedTerrainLists {
     // pools to save on many list allocations
     private final Pool<LongArrayList> uploadedSegmentsListPool;
     private final Pool<IntArrayList> sectionCoordsListPool;
+    private final Pool<BuiltPass.BuiltRegion> builtRegionPool;
     
     private int finalSectionCount;
 
@@ -54,7 +53,8 @@ public class SortedTerrainLists {
         this.sortedSectionLists = sortedSectionLists;
         this.camera = camera;
     
-        this.builtPasses = new BuiltPass[renderPassManager.getRenderPassCount()];
+        int passCount = renderPassManager.getRenderPassCount();
+        this.builtPasses = new BuiltPass[passCount];
     
         for (int i = 0; i < this.builtPasses.length; i++) {
             this.builtPasses[i] = new BuiltPass();
@@ -63,18 +63,39 @@ public class SortedTerrainLists {
         this.regions = new ReferenceArrayList<>(REGIONS_ESTIMATE);
         this.uploadedSegments = new ReferenceArrayList<>(REGIONS_ESTIMATE);
         this.sectionCoords = new ReferenceArrayList<>(REGIONS_ESTIMATE);
-        this.uploadedSegmentsListPool = new Pool<>(() -> new LongArrayList(RenderRegion.REGION_SIZE));
-        this.sectionCoordsListPool = new Pool<>(() -> new IntArrayList(RenderRegion.REGION_SIZE * 3));
+        
+        this.uploadedSegmentsListPool = new Pool<>(
+                REGIONS_ESTIMATE,
+                () -> new LongArrayList(RenderRegion.REGION_SIZE)
+        );
+        this.sectionCoordsListPool = new Pool<>(
+                REGIONS_ESTIMATE,
+                () -> new IntArrayList(RenderRegion.REGION_SIZE * 3)
+        );
+        this.builtRegionPool = new Pool<>(
+                REGIONS_ESTIMATE,
+                BuiltPass.BuiltRegion::new
+        );
     }
     
     private void reset() {
         this.regions.clear();
     
-        for (var pass : this.builtPasses) {
-            pass.builtRegions.clear();
-            pass.regionIndices.clear();
+        var builtPasses = this.builtPasses;
+        // manual for loops done for performance in hot code
+        //noinspection ForLoopReplaceableByForEach
+        for (int i = 0; i < builtPasses.length; i++) {
+            builtPasses[i].clear();
         }
-    
+        
+        // combine clearing uploaded segments and section coords because they will be the same size
+        var uploadedSegments = this.uploadedSegments;
+        var sectionCoords = this.sectionCoords;
+        for (int i = 0; i < uploadedSegments.size(); i++) {
+            uploadedSegments.get(i).clear();
+            sectionCoords.get(i).clear();
+        }
+        
         // flush everything out to the list caches
         this.uploadedSegmentsListPool.release(this.uploadedSegments);
         this.sectionCoordsListPool.release(this.sectionCoords);
@@ -110,8 +131,8 @@ public class SortedTerrainLists {
         for (int i = 0; i < this.sortedSectionLists.terrainSectionCount; i++) {
             int sectionIdx = this.sortedSectionLists.terrainSectionIdxs[i];
             RenderSection section = this.sectionTree.getSection(sectionIdx);
+            
             boolean sectionAdded = false;
-    
             int sequentialSectionIdx = 0;
             
             for (int passId = 0; passId < totalPasses; passId++) {
@@ -177,7 +198,7 @@ public class SortedTerrainLists {
     
                 if (builtRegion == null) {
                     // the region + pass combination hasn't been processed yet
-                    builtRegion = new BuiltPass.BuiltRegion();
+                    builtRegion = this.builtRegionPool.acquire();
                     builtRegionTable[regionId][passId] = builtRegion;
 
                     var pass = this.builtPasses[passId];
@@ -257,19 +278,42 @@ public class SortedTerrainLists {
         return this.finalSectionCount == 0;
     }
     
-    public static class BuiltPass {
-        public final List<BuiltRegion> builtRegions = new ObjectArrayList<>();
-        public final IntArrayList regionIndices = new IntArrayList();
+    public class BuiltPass {
+        public final IntArrayList regionIndices;
+        public final ReferenceArrayList<BuiltRegion> builtRegions;
+    
+        public BuiltPass() {
+            this.regionIndices = new IntArrayList(REGIONS_ESTIMATE);
+            this.builtRegions = new ReferenceArrayList<>(REGIONS_ESTIMATE);
+        }
+    
+        public void clear() {
+            this.regionIndices.clear();
+    
+            // manual for loop done for performance in hot code
+            //noinspection ForLoopReplaceableByForEach
+            for (int i = 0; i < this.builtRegions.size(); i++) {
+                this.builtRegions.get(i).clear();
+            }
+            SortedTerrainLists.this.builtRegionPool.release(this.builtRegions);
+        }
         
         public static class BuiltRegion {
             public final IntArrayList sectionIndices;
             public final IntArrayList modelPartCounts;
+            
             public final LongArrayList modelPartSegments;
             
             public BuiltRegion() {
                 this.sectionIndices = new IntArrayList(RenderRegion.REGION_SIZE);
                 this.modelPartCounts = new IntArrayList(RenderRegion.REGION_SIZE);
                 this.modelPartSegments = new LongArrayList(RenderRegion.REGION_SIZE * ChunkMeshFace.COUNT);
+            }
+            
+            public void clear() {
+                this.sectionIndices.clear();
+                this.modelPartCounts.clear();
+                this.modelPartSegments.clear();
             }
         }
     }

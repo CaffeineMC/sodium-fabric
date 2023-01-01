@@ -1,32 +1,67 @@
 package net.caffeinemc.sodium.util;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
-
-import java.util.List;
+import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import java.util.Collection;
 import java.util.function.Supplier;
 
 public class Pool<T> {
     private final Supplier<T> factory;
-    private final ObjectArrayFIFOQueue<T> queue;
+    private final ReferenceArrayList<T> list;
 
     public Pool(Supplier<T> factory) {
         this.factory = factory;
-        this.queue = new ObjectArrayFIFOQueue<>();
+        this.list = new ReferenceArrayList<>();
+    }
+    
+    public Pool(int initialSize, Supplier<T> factory) {
+        this.factory = factory;
+        this.list = new ReferenceArrayList<>(initialSize);
     }
 
     public T acquire() {
-        if (!this.queue.isEmpty()) {
-            return this.queue.dequeue();
+        int size = this.list.size();
+        if (size != 0) {
+            return this.list.remove(size - 1);
         }
 
         return this.factory.get();
     }
 
-    public void release(List<T> list) {
-        for (var obj : list) {
-            this.queue.enqueue(obj);
+    public void release(Collection<T> collection) {
+        this.list.addAll(collection);
+        collection.clear();
+    }
+    
+    public void release(ReferenceArrayList<T> addedList) {
+        int addedCount = addedList.size();
+        
+        if (addedCount == 0) {
+            return;
         }
-
-        list.clear();
+        
+        int currentSize = this.list.elements().length;
+        int currentCount = this.list.size();
+        int requiredSize = currentCount + addedCount;
+    
+        if (requiredSize > currentSize) {
+            this.list.ensureCapacity(Math.max(
+                    currentSize + (currentSize >> 1),
+                    requiredSize
+            ));
+        }
+        
+        System.arraycopy(
+                addedList.elements(),
+                0,
+                this.list.elements(),
+                currentCount,
+                addedCount
+        );
+        
+        addedList.clear();
+    }
+    
+    public void add(T object) {
+        this.list.add(object);
     }
 }
