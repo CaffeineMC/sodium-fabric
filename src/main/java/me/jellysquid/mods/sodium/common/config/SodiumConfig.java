@@ -59,7 +59,8 @@ public class SodiumConfig {
         this.addMixinRule("features.shader", true);
         this.addMixinRule("features.clouds", true);
 
-        this.addMixinRule("workarounds.nvidia", true);
+        this.addMixinRule("workarounds", true);
+        this.addMixinRule("workarounds.issue1486", true);
     }
 
     /**
