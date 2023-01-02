@@ -1,6 +1,6 @@
-package me.jellysquid.mods.sodium.mixin.workarounds.nvidia;
+package me.jellysquid.mods.sodium.mixin.workarounds.issue1486;
 
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.util.workarounds.DriverWorkarounds;
 import net.minecraft.client.MinecraftClient;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MixinMinecraftClient {
     @Inject(method = "getWindowTitle", at = @At("HEAD"), cancellable = true)
     private void overrideWindowTitle(CallbackInfoReturnable<String> ci) {
-        if (SodiumClientMod.options().workarounds.issue1486_hideWindowTitleToEvadeNvidiaDrivers) {
+        if (DriverWorkarounds.isWorkaroundEnabled(DriverWorkarounds.Reference.ISSUE_1486)) {
             ci.setReturnValue("Minecraft* (version hidden from driver)");
         }
     }

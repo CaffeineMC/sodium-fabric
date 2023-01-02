@@ -22,7 +22,6 @@ public class SodiumGameOptions {
     public final AdvancedSettings advanced = new AdvancedSettings();
     public final PerformanceSettings performance = new PerformanceSettings();
     public final NotificationSettings notifications = new NotificationSettings();
-    public final WorkaroundSettings workarounds = new WorkaroundSettings();
 
     private boolean readOnly;
 
@@ -66,11 +65,6 @@ public class SodiumGameOptions {
 
     public static class NotificationSettings {
         public boolean hideDonationButton = false;
-    }
-
-    public static class WorkaroundSettings {
-        // https://github.com/CaffeineMC/sodium-fabric/issues/1486
-        public boolean issue1486_hideWindowTitleToEvadeNvidiaDrivers;
     }
 
     public enum ArenaMemoryAllocator implements TextProvider {

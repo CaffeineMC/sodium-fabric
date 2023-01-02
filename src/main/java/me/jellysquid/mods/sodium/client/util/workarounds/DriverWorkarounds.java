@@ -1,66 +1,60 @@
 package me.jellysquid.mods.sodium.client.util.workarounds;
 
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import net.minecraft.util.Util;
-import org.lwjgl.opengl.GL11C;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DriverWorkarounds {
+    private static final Logger LOGGER = LoggerFactory.getLogger("Sodium");
+
+    private static final AtomicReference<Set<Reference>> ACTIVE_WORKAROUNDS = new AtomicReference<>();
+
     public static void init() {
-        DriverWorkarounds.Issue1486.apply();
+        LOGGER.info("Launching a new process to probe the system configuration!");
+
+        DriverProbeResult result;
+
+        try {
+            result = DriverProbe.launchProbe();
+        } catch (Throwable t) {
+            LOGGER.error("Failed to launch driver probe", t);
+            return;
+        }
+
+        LOGGER.info("OpenGL Vendor: {}", result.vendor);
+        LOGGER.info("OpenGL Renderer: {}", result.renderer);
+        LOGGER.info("OpenGL Version: {}", result.version);
+
+        var workarounds = updateWorkarounds(result);
+
+        if (!workarounds.isEmpty()) {
+            LOGGER.warn("One or more workarounds were enabled to prevent crashes or other issues on your system. You may need to update your graphics drivers.");
+        }
+
+        ACTIVE_WORKAROUNDS.set(workarounds);
     }
 
-    private static class Issue1486 {
-        private static final String URL = "https://github.com/CaffeineMC/sodium-fabric/issues/1486";
+    private static Set<Reference> updateWorkarounds(DriverProbeResult probe) {
+        var workarounds = EnumSet.noneOf(Reference.class);
+        var operatingSystem = Util.getOperatingSystem();
 
-        private static boolean isCurrentDriverApplicable() {
-            var operatingSystem = Util.getOperatingSystem();
-
-            if (operatingSystem == Util.OperatingSystem.WINDOWS) {
-                var vendor = GL11C.glGetString(GL11C.GL_VENDOR);
-
-                if (vendor != null && vendor.contains("NVIDIA")) {
-                    return true;
-                }
-            }
-
-            return false;
+        if (operatingSystem == Util.OperatingSystem.WINDOWS && probe.vendor.contains("NVIDIA")) {
+            workarounds.add(Reference.ISSUE_1486);
+            LOGGER.warn("Enabling workaround for NVIDIA graphics drivers on Windows (issue #1486)");
         }
 
-        public static void apply() {
-            var options = SodiumClientMod.options();
-            var active = isCurrentDriverApplicable();
+        return workarounds;
+    }
 
-            if (options.workarounds.issue1486_hideWindowTitleToEvadeNvidiaDrivers != active) {
-                options.workarounds.issue1486_hideWindowTitleToEvadeNvidiaDrivers = active;
+    public static boolean isWorkaroundEnabled(Reference id) {
+        return ACTIVE_WORKAROUNDS.get().contains(id);
+    }
 
-                try {
-                    options.writeChanges();
-                } catch (IOException e) {
-                    throw new RuntimeException("Couldn't save workaround settings", e);
-                }
-
-                if (active) {
-                    var choice = TinyFileDialogs.tinyfd_messageBox("Sodium Renderer", """
-                        Heads up! The game needs to restart in order to apply a workaround. You will only see this message once.
-                        
-                        Details: The currently installed version of the NVIDIA graphics driver is incompatible with Sodium.
-                        
-                        To prevent crashes and other issues, we need to hide the current version of Minecraft from the graphics driver. This will not affect your system configuration.
-                        
-                        Additional information will be opened in your web browser after closing this message.
-                        """, "ok", "info", true);
-
-                    if (choice) {
-                        Util.getOperatingSystem()
-                                .open(URL);
-                    }
-
-                    System.exit(0);
-                }
-            }
-        }
+    public enum Reference {
+        ISSUE_1486
     }
 }
