@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DriverWorkarounds {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium");
 
-    private static final AtomicReference<Set<Reference>> ACTIVE_WORKAROUNDS = new AtomicReference<>();
+    private static final AtomicReference<Set<Reference>> ACTIVE_WORKAROUNDS = new AtomicReference<>(EnumSet.noneOf(Reference.class));
 
     public static void init() {
         LOGGER.info("Launching a new process to probe the system configuration!");

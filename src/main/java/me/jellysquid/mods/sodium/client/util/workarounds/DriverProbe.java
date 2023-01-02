@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.util.workarounds;
 
+import net.minecraft.util.Util;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
@@ -16,10 +17,7 @@ import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -92,11 +90,20 @@ public class DriverProbe {
         natives.add(getDirectory(lwjglOpenGlNative));
         natives.add(getDirectory(lwjglGlfwNative));
 
+        var commands = new ArrayList<String>();
+        commands.add(jvmExecutable);
+        commands.add("-classpath");
+        commands.add(String.join(File.pathSeparator, classpath));
+
+        if (Util.getOperatingSystem() == Util.OperatingSystem.OSX) {
+            commands.add("-XstartOnFirstThread");
+        }
+
+        commands.add("-Djava.library.path=" + String.join(File.pathSeparator, natives));
+        commands.add(DriverProbe.class.getName());
+
         var pb = new ProcessBuilder();
-        pb.command(jvmExecutable,
-                "-classpath", String.join(File.pathSeparator, classpath),
-                "-Djava.library.path=" + String.join(File.pathSeparator, natives),
-                DriverProbe.class.getName());
+        pb.command(commands);
 
         try {
             var process = pb.start();
