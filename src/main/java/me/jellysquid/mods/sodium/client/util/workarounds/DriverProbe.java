@@ -16,10 +16,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 public class DriverProbe {
     public static void main(String[] args) {
@@ -115,6 +117,14 @@ public class DriverProbe {
 
                 return new DriverProbeResult(fields);
             } else {
+                var error = IOUtils.toString(process.getErrorStream(), StandardCharsets.UTF_8);
+
+                System.out.println("COMMAND LINE: " + String.join(",", commands));
+
+                for (var line : error.split("\n")) {
+                    System.out.println("SUBPROCESS ERROR: " + line);
+                }
+
                 throw new RuntimeException("Driver probe returned exit code " + process.exitValue());
             }
         } catch (IOException | InterruptedException e) {
@@ -143,7 +153,7 @@ public class DriverProbe {
     private static String getBaseDirectoryForFileUrl(URL resource, Class<?> clazz) {
         var pathFragment = clazz.getName()
                 .replace('.', '/') + ".class";
-        var path = resource.getPath();
+        var path = URLDecoder.decode(resource.getPath(), StandardCharsets.UTF_8);
 
         var idx = path.lastIndexOf(pathFragment);
 
@@ -160,7 +170,7 @@ public class DriverProbe {
                     (JarURLConnection) url.openConnection();
             final URL resolvedUrl = connection.getJarFileURL();
 
-            return resolvedUrl.getFile();
+            return URLDecoder.decode(resolvedUrl.getPath(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
