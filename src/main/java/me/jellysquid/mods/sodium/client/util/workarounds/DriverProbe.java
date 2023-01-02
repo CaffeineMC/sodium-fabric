@@ -135,7 +135,7 @@ public class DriverProbe {
 
     private static String getBaseDirectoryForFileUrl(URL resource, Class<?> clazz) {
         var pathFragment = clazz.getName()
-                .replace('.', File.separatorChar) + ".class";
+                .replace('.', '/') + ".class";
         var path = resource.getPath();
 
         var idx = path.lastIndexOf(pathFragment);
