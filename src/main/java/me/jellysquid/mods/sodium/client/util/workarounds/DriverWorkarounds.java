@@ -19,7 +19,7 @@ public class DriverWorkarounds {
         DriverProbeResult result;
 
         try {
-            result = DriverProbe.launchProbe();
+            result = DriverProbeLauncher.launchProbe();
         } catch (Throwable t) {
             LOGGER.error("Failed to launch driver probe", t);
             return;
