@@ -75,7 +75,7 @@ public class SectionCuller {
         this.sectionVisibilityBitsPass1.fill(false);
         this.sectionVisibilityBitsPass2.fill(false);
     
-        if (this.sectionTree.getLoadedSections() != 0) {
+        if (this.sectionTree.getTotalLoadedSections() != 0) {
             // Start with corner section of the fog distance.
             // To do this, we have to reverse the function to check if a chunk is in bounds by doing pythagorean's
             // theorem, then doing some math.
@@ -226,8 +226,8 @@ public class SectionCuller {
             if (frustumTestResult == Frustum.INSIDE) {
                 for (int newSectionY = sectionY, yIdxOffset = 0; newSectionY < sectionYEnd; newSectionY++, yIdxOffset += this.sectionTree.sectionWidthSquared) {
                     for (int newSectionZ = sectionZ, zIdxOffset = 0; newSectionZ < sectionZEnd; newSectionZ++, zIdxOffset += this.sectionTree.sectionWidth) {
-                        this.sectionVisibilityBitsPass1.copy(
-                                this.sectionTree.sectionExistenceBits,
+                        this.sectionTree.copySectionExistBits(
+                                this.sectionVisibilityBitsPass1,
                                 sectionIdx + yIdxOffset + zIdxOffset,
                                 sectionIdx + yIdxOffset + zIdxOffset + sectionXEnd - sectionX
                         );
@@ -284,7 +284,7 @@ public class SectionCuller {
             int parentTestResult
     ) {
         // skip if the section is empty
-        if (!this.sectionTree.sectionExistenceBits.get(sectionIdx)) {
+        if (this.sectionTree.isSectionEmpty(sectionIdx)) {
             return;
         }
     
@@ -406,7 +406,7 @@ public class SectionCuller {
         while (visibleChunksQueue != visibleChunksCount) {
             int sectionIdx = this.sortedSections[visibleChunksQueue++];
             
-            byte flags = this.sectionTree.sectionFlagData[sectionIdx];
+            byte flags = this.sectionTree.getSectionFlags(sectionIdx);
             this.sortedSectionLists.addSectionIdx(sectionIdx, flags);
     
             this.sectionVisibilityBitsPass1.unset(sectionIdx); // Performance hack, means it ignores sections if its already visited them

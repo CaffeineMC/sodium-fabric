@@ -189,51 +189,23 @@ public class TerrainRenderManager {
         int sectionIdx = this.sectionTree.getSectionIdxUnchecked(x, y, z);
         
         RenderSection renderSection = this.sectionTree.add(x, y, z);
-
-        Chunk chunk = this.world.getChunk(x, z);
-        ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
+        ChunkSection section = this.world.getChunk(x, z).getSectionArray()[this.world.sectionCoordToIndex(y)];
         
         if (section.isEmpty()) {
             renderSection.setData(SectionRenderData.EMPTY);
         } else {
-            SectionRenderFlags.set(
-                    this.sectionTree.sectionFlagData,
-                    sectionIdx,
-                    SectionRenderFlags.NEEDS_UPDATE
-            );
-            SectionRenderFlags.unset(
-                    this.sectionTree.sectionFlagData,
-                    sectionIdx,
-                    (byte) (
-                            SectionRenderFlags.NEEDS_UPDATE_REBUILD
-                            | SectionRenderFlags.NEEDS_UPDATE_IMPORTANT
-                    )
-            );
+            this.sectionTree.addSectionFlags(sectionIdx, SectionRenderFlags.NEEDS_UPDATE);
+            this.sectionTree.removeSectionFlags(sectionIdx, SectionRenderFlags.NEEDS_UPDATE_REBUILD | SectionRenderFlags.NEEDS_UPDATE_IMPORTANT);
         }
         
         SectionRenderData data = renderSection.getData();
         
-        // we just made the section, do we really need to do this?
         this.blockEntityRenderManager.addGlobalBlockEntities(data);
         this.sectionCuller.setVisibilityData(sectionIdx, data.occlusionData);
         
-        // should we do this in unload?
-        SectionRenderFlags.unset(
-                this.sectionTree.sectionFlagData,
-                sectionIdx,
-                (byte) (
-                        SectionRenderFlags.HAS_BLOCK_ENTITIES
-                        | SectionRenderFlags.HAS_GLOBAL_BLOCK_ENTITIES
-                        | SectionRenderFlags.HAS_TICKING_TEXTURES
-                        | SectionRenderFlags.HAS_TERRAIN_MODELS
-                )
-        );
-        // we just made the section, do we really need to do this?
-        SectionRenderFlags.set(
-                this.sectionTree.sectionFlagData,
-                sectionIdx,
-                data.getBaseFlags()
-        );
+        // clear existing flags and add default content flags
+        this.sectionTree.removeSectionFlags(sectionIdx, SectionRenderFlags.ALL_CONTENT_FLAGS);
+        this.sectionTree.addSectionFlags(sectionIdx, data.getBaseFlags());
         
         return true;
     }
@@ -312,15 +284,7 @@ public class TerrainRenderManager {
             // remove early, reset flags, and skip
             if (section.isDisposed()) {
                 this.sortedSectionLists.importantUpdatableSectionIdxs[i] = SectionTree.NULL_INDEX;
-                SectionRenderFlags.unset(
-                        this.sectionTree.sectionFlagData,
-                        sectionIdx,
-                        (byte) (
-                                SectionRenderFlags.NEEDS_UPDATE
-                                | SectionRenderFlags.NEEDS_UPDATE_REBUILD
-                                | SectionRenderFlags.NEEDS_UPDATE_IMPORTANT
-                        )
-                );
+                this.sectionTree.removeSectionFlags(sectionIdx, SectionRenderFlags.ALL_UPDATE_FLAGS);
                 continue;
             }
     
@@ -328,9 +292,7 @@ public class TerrainRenderManager {
             // previously in to save CPU cycles. We just filter any changed entries here instead.
             // TODO: is this still needed?
             // remove early but don't reset flags, then skip
-            if (!SectionRenderFlags.has(this.sectionTree.sectionFlagData[sectionIdx],
-                                       (byte) (SectionRenderFlags.NEEDS_UPDATE | SectionRenderFlags.NEEDS_UPDATE_IMPORTANT)
-            )) {
+            if (!this.sectionTree.sectionHasAllFlags(sectionIdx, SectionRenderFlags.NEEDS_UPDATE | SectionRenderFlags.NEEDS_UPDATE_IMPORTANT)) {
                 this.sortedSectionLists.importantUpdatableSectionIdxs[i] = SectionTree.NULL_INDEX;
                 continue;
             }
@@ -354,15 +316,7 @@ public class TerrainRenderManager {
             
             // remove from queue once processed
             this.sortedSectionLists.importantUpdatableSectionIdxs[i] = SectionTree.NULL_INDEX;
-            SectionRenderFlags.unset(
-                    this.sectionTree.sectionFlagData,
-                    sectionIdx,
-                    (byte) (
-                            SectionRenderFlags.NEEDS_UPDATE
-                            | SectionRenderFlags.NEEDS_UPDATE_REBUILD
-                            | SectionRenderFlags.NEEDS_UPDATE_IMPORTANT
-                    )
-            );
+            this.sectionTree.removeSectionFlags(sectionIdx, SectionRenderFlags.ALL_UPDATE_FLAGS);
         }
     
         for (int i = 0; i < this.sortedSectionLists.secondaryUpdateSectionCount; i++) {
@@ -380,15 +334,7 @@ public class TerrainRenderManager {
             // remove early, reset flags, and skip
             if (section.isDisposed()) {
                 this.sortedSectionLists.secondaryUpdatableSectionIdxs[i] = SectionTree.NULL_INDEX;
-                SectionRenderFlags.unset(
-                        this.sectionTree.sectionFlagData,
-                        sectionIdx,
-                        (byte) (
-                                SectionRenderFlags.NEEDS_UPDATE
-                                | SectionRenderFlags.NEEDS_UPDATE_REBUILD
-                                | SectionRenderFlags.NEEDS_UPDATE_IMPORTANT
-                        )
-                );
+                this.sectionTree.removeSectionFlags(sectionIdx, SectionRenderFlags.ALL_UPDATE_FLAGS);
                 continue;
             }
     
@@ -396,8 +342,9 @@ public class TerrainRenderManager {
             // previously in to save CPU cycles. We just filter any changed entries here instead.
             // TODO: is this still needed?
             // remove early but don't reset flags, then skip
-            byte flagData = this.sectionTree.sectionFlagData[sectionIdx];
-            if (!SectionRenderFlags.has(flagData,SectionRenderFlags.NEEDS_UPDATE) || SectionRenderFlags.has(flagData, SectionRenderFlags.NEEDS_UPDATE_IMPORTANT)) {
+            byte flagData = this.sectionTree.getSectionFlags(sectionIdx);
+            if (!SectionRenderFlags.hasAny(flagData, SectionRenderFlags.NEEDS_UPDATE)
+                || SectionRenderFlags.hasAny(flagData, SectionRenderFlags.NEEDS_UPDATE_IMPORTANT)) {
                 this.sortedSectionLists.secondaryUpdatableSectionIdxs[i] = SectionTree.NULL_INDEX;
                 continue;
             }
@@ -415,15 +362,7 @@ public class TerrainRenderManager {
     
             // remove from queue once processed
             this.sortedSectionLists.secondaryUpdatableSectionIdxs[i] = SectionTree.NULL_INDEX;
-            SectionRenderFlags.unset(
-                    this.sectionTree.sectionFlagData,
-                    sectionIdx,
-                    (byte) (
-                            SectionRenderFlags.NEEDS_UPDATE
-                            | SectionRenderFlags.NEEDS_UPDATE_REBUILD
-                            | SectionRenderFlags.NEEDS_UPDATE_IMPORTANT
-                    )
-            );
+            this.sectionTree.removeSectionFlags(sectionIdx, SectionRenderFlags.ALL_UPDATE_FLAGS);
         }
 
         return immediateFutures;
@@ -457,11 +396,7 @@ public class TerrainRenderManager {
         section.setData(next);
         section.setLastAcceptedBuildTime(result.buildTime());
         
-        SectionRenderFlags.set(
-                this.sectionTree.sectionFlagData,
-                sectionIdx,
-                next.getBaseFlags()
-        );
+        this.sectionTree.addSectionFlags(sectionIdx, next.getBaseFlags());
     }
 
     public AbstractBuilderTask createTerrainBuildTask(RenderSection render) {
@@ -497,7 +432,7 @@ public class TerrainRenderManager {
     }
 
     public int getTotalSections() {
-        return this.sectionTree.getLoadedSections();
+        return this.sectionTree.getTotalLoadedSections();
     }
 
     public int getVisibleSectionCount() {
@@ -515,26 +450,19 @@ public class TerrainRenderManager {
             int sectionIdx = this.sectionTree.getSectionIdxUnchecked(x, y, z);
             
             if (!this.alwaysDeferChunkUpdates && important) {
-                SectionRenderFlags.set(
-                        this.sectionTree.sectionFlagData,
+                this.sectionTree.addSectionFlags(
                         sectionIdx,
-                        (byte) (
-                                SectionRenderFlags.NEEDS_UPDATE
-                                | SectionRenderFlags.NEEDS_UPDATE_REBUILD
-                                | SectionRenderFlags.NEEDS_UPDATE_IMPORTANT
-                        )
+                        SectionRenderFlags.NEEDS_UPDATE
+                        | SectionRenderFlags.NEEDS_UPDATE_REBUILD
+                        | SectionRenderFlags.NEEDS_UPDATE_IMPORTANT
                 );
             } else {
-                SectionRenderFlags.set(
-                        this.sectionTree.sectionFlagData,
+                this.sectionTree.addSectionFlags(
                         sectionIdx,
-                        (byte) (
-                                SectionRenderFlags.NEEDS_UPDATE
-                                | SectionRenderFlags.NEEDS_UPDATE_REBUILD
-                        )
+                        SectionRenderFlags.NEEDS_UPDATE
+                        | SectionRenderFlags.NEEDS_UPDATE_REBUILD
                 );
-                SectionRenderFlags.unset(
-                        this.sectionTree.sectionFlagData,
+                this.sectionTree.removeSectionFlags(
                         sectionIdx,
                         SectionRenderFlags.NEEDS_UPDATE_IMPORTANT
                 );

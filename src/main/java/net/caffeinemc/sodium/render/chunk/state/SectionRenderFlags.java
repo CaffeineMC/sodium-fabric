@@ -8,16 +8,15 @@ public class SectionRenderFlags {
     public static byte NEEDS_UPDATE = 1 << 4;
     public static byte NEEDS_UPDATE_REBUILD = 1 << 5;
     public static byte NEEDS_UPDATE_IMPORTANT = 1 << 6;
+    
+    public static byte ALL_CONTENT_FLAGS = (byte) (HAS_BLOCK_ENTITIES | HAS_GLOBAL_BLOCK_ENTITIES | HAS_TICKING_TEXTURES | HAS_TERRAIN_MODELS);
+    public static byte ALL_UPDATE_FLAGS = (byte) (NEEDS_UPDATE | NEEDS_UPDATE_REBUILD | NEEDS_UPDATE_IMPORTANT);
 
-    public static boolean has(byte word, byte flags) {
+    public static boolean hasAny(byte word, int flags) {
         return (word & flags) != 0;
     }
     
-    public static void set(byte[] array, int idx, byte flags) {
-        array[idx] |= flags;
-    }
-    
-    public static void unset(byte[] array, int idx, byte flags) {
-        array[idx] &= ~flags;
+    public static boolean hasAll(byte word, int flags) {
+        return (word & flags) == flags;
     }
 }

@@ -1,11 +1,8 @@
 package net.caffeinemc.sodium.render.chunk;
 
-import java.util.Iterator;
 import net.caffeinemc.sodium.render.chunk.state.SectionRenderFlags;
 
 public class SortedSectionLists {
-    
-    private final SectionTree sectionTree;
     
     public final int[] terrainSectionIdxs;
     public final int[] blockEntitySectionIdxs;
@@ -20,8 +17,6 @@ public class SortedSectionLists {
     public int secondaryUpdateSectionCount;
     
     public SortedSectionLists(SectionTree sectionTree) {
-        this.sectionTree = sectionTree;
-        
         int maxSections = sectionTree.getSectionTableSize();
         this.terrainSectionIdxs = new int[maxSections];
         this.blockEntitySectionIdxs = new int[maxSections];
@@ -39,20 +34,20 @@ public class SortedSectionLists {
     }
     
     public void addSectionIdx(int sectionIdx, byte flags) {
-        if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_TERRAIN_MODELS)) {
+        if (SectionRenderFlags.hasAny(flags, SectionRenderFlags.HAS_TERRAIN_MODELS)) {
             this.terrainSectionIdxs[this.terrainSectionCount++] = sectionIdx;
         }
     
-        if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_BLOCK_ENTITIES)) {
+        if (SectionRenderFlags.hasAny(flags, SectionRenderFlags.HAS_BLOCK_ENTITIES)) {
             this.blockEntitySectionIdxs[this.blockEntitySectionCount++] = sectionIdx;
         }
     
-        if (SectionRenderFlags.has(flags, SectionRenderFlags.HAS_TICKING_TEXTURES)) {
+        if (SectionRenderFlags.hasAny(flags, SectionRenderFlags.HAS_TICKING_TEXTURES)) {
             this.tickingTextureSectionIdxs[this.tickingTextureSectionCount++] = sectionIdx;
         }
     
-        if (SectionRenderFlags.has(flags, SectionRenderFlags.NEEDS_UPDATE)) {
-            if (SectionRenderFlags.has(flags, SectionRenderFlags.NEEDS_UPDATE_IMPORTANT)) {
+        if (SectionRenderFlags.hasAny(flags, SectionRenderFlags.NEEDS_UPDATE)) {
+            if (SectionRenderFlags.hasAny(flags, SectionRenderFlags.NEEDS_UPDATE_IMPORTANT)) {
                 this.importantUpdatableSectionIdxs[this.importantUpdateSectionCount++] = sectionIdx;
             } else {
                 this.secondaryUpdatableSectionIdxs[this.secondaryUpdateSectionCount++] = sectionIdx;

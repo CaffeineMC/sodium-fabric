@@ -1,6 +1,7 @@
 package net.caffeinemc.sodium.render.chunk;
 
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
+import net.caffeinemc.sodium.render.chunk.state.SectionRenderFlags;
 import net.caffeinemc.sodium.util.collections.BitArray;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.HeightLimitView;
@@ -33,13 +34,13 @@ public class SectionTree {
     public final int[] nodeArrayOffsets;
     
     // TODO: slowly take fields out of this class and move them into parallel arrays here
-    public final RenderSection[] sections;
-    public final byte[] sectionFlagData;
-    public final BitArray sectionExistenceBits;
+    private final RenderSection[] sections;
+    private final byte[] sectionFlagData;
+    private final BitArray sectionExistenceBits;
     
     // these do not include the first level of nodes, which are the individual sections.
     // unsigned shorts support a max depth of 5, signed short support a max depth of 4
-    public final short[] nodeLoadedSections;
+    private final short[] nodeLoadedSections;
     
     private int totalLoadedSections;
     
@@ -133,27 +134,13 @@ public class SectionTree {
         return this.getSectionIdx(section.getSectionX(), section.getSectionY(), section.getSectionZ());
     }
     
-    protected int getNodeIdx(int depth, int x, int y, int z) {
-        int nodeWidthShift = this.idxZShift >> depth;
-        int nodeArrayOffset = this.nodeArrayOffsets[depth - 1];
-        
-        int tableY = (y + this.sectionHeightOffset) >> depth;
-        int tableZ = (z & this.sectionWidthMask) >> depth;
-        int tableX = (x & this.sectionWidthMask) >> depth;
-        int innerIdx = (tableY << nodeWidthShift * 2)
-                       | (tableZ << nodeWidthShift)
-                       | tableX;
-    
-        return nodeArrayOffset + innerIdx;
-    }
-    
     public RenderSection add(int x, int y, int z) {
         this.totalLoadedSections++;
         
         RenderSection section = new RenderSection(x, y, z);
     
         // TODO: make this not unchecked?
-        //  maybe do checks outside of the add and keep them in the tracker until they can be added
+        //  maybe do checks outside the add and keep them in the tracker until they can be added
         int sectionIdx = this.getSectionIdxUnchecked(x, y, z);
         
         this.sections[sectionIdx] = section;
@@ -162,7 +149,7 @@ public class SectionTree {
         if (!prevExists) {
             // skip bottom level of nodes
             for (int depth = 1; depth <= this.maxDepth; depth++) {
-                int nodeIdx = this.getNodeIdx(depth, x, y, z);
+                int nodeIdx = this.sectionIdxToNodeIdx(depth, x, y, z);
                 this.nodeLoadedSections[nodeIdx]++;
             }
         }
@@ -183,7 +170,7 @@ public class SectionTree {
         // skip bottom level of nodes
         if (prevExists) {
             for (int depth = 1; depth <= this.maxDepth; depth++) {
-                int nodeIdx = this.getNodeIdx(depth, x, y, z);
+                int nodeIdx = this.sectionIdxToNodeIdx(depth, x, y, z);
                 this.nodeLoadedSections[nodeIdx]--;
             }
         }
@@ -203,11 +190,69 @@ public class SectionTree {
         return this.sections[sectionIdx];
     }
     
+    public RenderSection getSectionUnchecked(int sectionIdx) {
+        return this.sections[sectionIdx];
+    }
+    
+    public boolean isSectionEmpty(int sectionIdx) {
+        return !this.sectionExistenceBits.get(sectionIdx);
+    }
+    
+    public void copySectionExistBits(BitArray dest, int startIdx, int endIdx) {
+        dest.copy(
+                this.sectionExistenceBits,
+                startIdx,
+                endIdx
+        );
+    }
+    
+    public int sectionIdxToNodeIdx(int depth, int x, int y, int z) {
+        int nodeWidthShift = this.idxZShift >> depth;
+        int nodeArrayOffset = this.nodeArrayOffsets[depth - 1];
+        
+        int tableY = (y + this.sectionHeightOffset) >> depth;
+        int tableZ = (z & this.sectionWidthMask) >> depth;
+        int tableX = (x & this.sectionWidthMask) >> depth;
+        int innerIdx = (tableY << nodeWidthShift * 2)
+                       | (tableZ << nodeWidthShift)
+                       | tableX;
+        
+        return nodeArrayOffset + innerIdx;
+    }
+    
+    public int getNodeLoadedSections(int nodeIdx) {
+        return Short.toUnsignedInt(this.nodeLoadedSections[nodeIdx]);
+    }
+    
+    public boolean isNodeEmpty(int nodeIdx) {
+        return this.nodeLoadedSections[nodeIdx] == 0;
+    }
+    
+    public byte getSectionFlags(int sectionIdx) {
+        return this.sectionFlagData[sectionIdx];
+    }
+    
+    public void addSectionFlags(int sectionIdx, int flags) {
+        this.sectionFlagData[sectionIdx] |= flags;
+    }
+    
+    public void removeSectionFlags(int sectionIdx, int flags) {
+        this.sectionFlagData[sectionIdx] &= ~flags;
+    }
+    
+    public boolean sectionHasAnyFlags(int sectionIdx, int flags) {
+        return SectionRenderFlags.hasAny(this.getSectionFlags(sectionIdx), flags);
+    }
+    
+    public boolean sectionHasAllFlags(int sectionIdx, int flags) {
+        return SectionRenderFlags.hasAll(this.getSectionFlags(sectionIdx), flags);
+    }
+    
     public int getSectionTableSize() {
         return this.sectionTableSize;
     }
     
-    public int getLoadedSections() {
+    public int getTotalLoadedSections() {
         return this.totalLoadedSections;
     }
 }
