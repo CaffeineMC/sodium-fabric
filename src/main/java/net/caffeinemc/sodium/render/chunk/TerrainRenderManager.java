@@ -33,7 +33,6 @@ import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.texture.SpriteUtil;
 import net.caffeinemc.sodium.util.tasks.WorkStealingFutureDrain;
-import net.caffeinemc.sodium.world.ChunkStatusFlags;
 import net.caffeinemc.sodium.world.ChunkTracker;
 import net.caffeinemc.sodium.world.slice.WorldSliceData;
 import net.caffeinemc.sodium.world.slice.cloned.ClonedChunkSectionCache;
@@ -103,7 +102,7 @@ public class TerrainRenderManager {
         
         this.sectionTree = new SectionTree(
                 3,
-                chunkViewDistance + 3, // ????? idk lol i think this matches vanilla?
+                ChunkTracker.getChunkMapRadius(chunkViewDistance + 3),
                 world,
                 camera
         );

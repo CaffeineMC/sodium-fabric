@@ -79,7 +79,7 @@ public class ChunkTracker {
                 Math.abs(chunkZ - centerChunkZ) <= radius;
     }
 
-    private static int getChunkMapRadius(int loadDistance) {
+    public static int getChunkMapRadius(int loadDistance) {
         return Math.max(2, loadDistance) + 3;
     }
 

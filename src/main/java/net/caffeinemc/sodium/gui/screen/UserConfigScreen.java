@@ -260,26 +260,26 @@ public class UserConfigScreen extends Screen {
             dirtyStorages.add(option.getStorage());
         }));
 
+        for (OptionStorage<?> storage : dirtyStorages) {
+            storage.save();
+        }
+    
         MinecraftClient client = MinecraftClient.getInstance();
-
+    
         if (flags.contains(OptionFlag.REQUIRES_RESOLUTION_UPDATE)) {
             client.onResolutionChanged();
         }
-
+    
         if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
             client.worldRenderer.reload();
         } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
             client.worldRenderer.scheduleTerrainUpdate();
         }
-
+    
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
             // This previously set the client mipmap levels, but it is no longer needed
             // because Minecraft will make sure to set it itself
             client.reloadResourcesConcurrently();
-        }
-
-        for (OptionStorage<?> storage : dirtyStorages) {
-            storage.save();
         }
     }
 
