@@ -1,20 +1,21 @@
 package net.caffeinemc.sodium.render.chunk;
 
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import net.caffeinemc.gfx.api.device.RenderDevice;
 import net.caffeinemc.gfx.util.misc.MathUtil;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.interop.vanilla.math.frustum.Frustum;
-import net.caffeinemc.sodium.render.SodiumWorldRenderer;
 import net.caffeinemc.sodium.render.chunk.compile.ChunkBuilder;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.EmptyTerrainBuildTask;
-import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
+import net.caffeinemc.sodium.render.chunk.compile.tasks.SectionBuildResult;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildTask;
 import net.caffeinemc.sodium.render.chunk.cull.SectionCuller;
 import net.caffeinemc.sodium.render.chunk.draw.ChunkCameraContext;
@@ -32,7 +33,7 @@ import net.caffeinemc.sodium.render.terrain.format.TerrainVertexFormats;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.render.texture.SpriteUtil;
 import net.caffeinemc.sodium.util.tasks.WorkStealingFutureDrain;
-import net.caffeinemc.sodium.world.ChunkStatus;
+import net.caffeinemc.sodium.world.ChunkStatusFlags;
 import net.caffeinemc.sodium.world.ChunkTracker;
 import net.caffeinemc.sodium.world.slice.WorldSliceData;
 import net.caffeinemc.sodium.world.slice.cloned.ClonedChunkSectionCache;
@@ -42,7 +43,6 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.profiler.Profiler;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 
 public class TerrainRenderManager {
@@ -67,7 +67,9 @@ public class TerrainRenderManager {
     private boolean needsUpdate = true;
     private int frameIndex = 0;
     
-    private final ChunkTracker tracker;
+    private final ChunkTracker chunkTracker;
+    private final int chunkViewDistance;
+    private ChunkTracker.Area watchedArea;
     
     private final ChunkCameraContext camera;
     
@@ -77,7 +79,7 @@ public class TerrainRenderManager {
 
     public TerrainRenderManager(
             RenderDevice device,
-            SodiumWorldRenderer worldRenderer,
+            ChunkTracker chunkTracker,
             ChunkRenderPassManager renderPassManager,
             ClientWorld world,
             ChunkCameraContext camera,
@@ -96,7 +98,9 @@ public class TerrainRenderManager {
         this.regionManager = new RenderRegionManager(device, vertexType);
         this.sectionCache = new ClonedChunkSectionCache(this.world);
 
-        this.tracker = worldRenderer.getChunkTracker();
+        this.chunkTracker = chunkTracker;
+        this.chunkViewDistance = chunkViewDistance;
+        
         this.sectionTree = new SectionTree(
                 3,
                 chunkViewDistance + 3, // ????? idk lol i think this matches vanilla?
@@ -125,18 +129,16 @@ public class TerrainRenderManager {
 //            this.chunkGeometrySorter = null;
 //        }
     }
-
-    public void reloadChunks(ChunkTracker tracker) {
-        tracker.getChunks(ChunkStatus.FLAG_HAS_BLOCK_DATA)
-                .forEach(pos -> this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
-    }
-
+    
     public void setFrameIndex(int frameIndex) {
         this.frameIndex = frameIndex;
     }
 
     public void update(Frustum frustum, boolean spectator) {
         Profiler profiler = MinecraftClient.getInstance().getProfiler();
+    
+        this.updateWatchedArea();
+        this.processChunkQueues();
     
         profiler.swap("update_section_lists");
         BlockPos origin = this.camera.getBlockPos();
@@ -162,30 +164,54 @@ public class TerrainRenderManager {
         
         this.needsUpdate = false;
     }
-
-    public BlockEntityRenderManager getBlockEntityRenderManager() {
-        return this.blockEntityRenderManager;
+    
+    private void updateWatchedArea() {
+        int x = this.camera.getSectionX();
+        int z = this.camera.getSectionZ();
+        
+        var prevArea = this.watchedArea;
+        var newArea = new ChunkTracker.Area(x, z, this.chunkViewDistance);
+        
+        if (Objects.equals(prevArea, newArea)) {
+            return;
+        }
+        
+        if (prevArea != null) {
+            this.chunkTracker.updateWatchedArea(prevArea, newArea);
+        } else {
+            this.chunkTracker.addWatchedArea(newArea);
+        }
+        
+        this.watchedArea = newArea;
     }
-
-    public void onChunkAdded(int x, int z) {
-        // we can't check the visibility bit here, but we can check if it's in draw distance, which effectively does
-        // fog culling on updates.
-        boolean inDrawDistance = this.sectionCuller.isChunkInDrawDistance(x, z);
-        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
-            this.needsUpdate |= this.loadSection(x, y, z) && inDrawDistance;
+    
+    public void processChunkQueues() {
+        var queue = this.chunkTracker.getEvents(this.watchedArea);
+        
+        for (LongIterator iterator = queue.removed().iterator(); iterator.hasNext(); ) {
+            long pos = iterator.nextLong();
+            
+            int x = ChunkPos.getPackedX(pos);
+            int z = ChunkPos.getPackedZ(pos);
+            
+            for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
+                this.unloadSection(x, y, z);
+            }
+        }
+        
+        for (LongIterator iterator = queue.added().iterator(); iterator.hasNext(); ) {
+            long pos = iterator.nextLong();
+            
+            int x = ChunkPos.getPackedX(pos);
+            int z = ChunkPos.getPackedZ(pos);
+            
+            for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
+                this.loadSection(x, y, z);
+            }
         }
     }
-
-    public void onChunkRemoved(int x, int z) {
-        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
-            // is this safe to just only update if it's visible?
-            this.needsUpdate |= this.unloadSection(x, y, z)
-                                && this.sectionCuller.isSectionVisible(x, y, z);
-        }
-    }
-
-    private boolean loadSection(int x, int y, int z) {
-        // TODO: refactor with cache for ChunkTracker
+    
+    private void loadSection(int x, int y, int z) {
         int sectionIdx = this.sectionTree.getSectionIdxUnchecked(x, y, z);
         
         RenderSection renderSection = this.sectionTree.add(x, y, z);
@@ -206,12 +232,9 @@ public class TerrainRenderManager {
         // clear existing flags and add default content flags
         this.sectionTree.removeSectionFlags(sectionIdx, SectionRenderFlags.ALL_CONTENT_FLAGS);
         this.sectionTree.addSectionFlags(sectionIdx, data.getBaseFlags());
-        
-        return true;
     }
-
-    private boolean unloadSection(int x, int y, int z) {
-        // TODO: refactor with cache for ChunkTracker
+    
+    private void unloadSection(int x, int y, int z) {
         RenderSection section = this.sectionTree.remove(x, y, z);
         
         if (section != null) {
@@ -219,16 +242,13 @@ public class TerrainRenderManager {
 //                this.chunkGeometrySorter.removeSection(section);
 //            }
             section.delete();
-            return true;
-        } else {
-            return false;
         }
     }
-
+    
     public void renderLayer(ChunkRenderMatrices matrices, ChunkRenderPass renderPass) {
         this.chunkRenderer.render(renderPass, matrices, this.frameIndex);
     }
-
+    
     public void tickVisibleRenders() {
         for (int i = 0; i < this.sortedSectionLists.tickingTextureSectionCount; i++) {
             int sectionIdx = this.sortedSectionLists.tickingTextureSectionIdxs[i];
@@ -239,11 +259,11 @@ public class TerrainRenderManager {
             }
         }
     }
-
+    
     public boolean isSectionVisible(int x, int y, int z) {
         return this.sectionCuller.isSectionVisible(x, y, z);
     }
-
+    
     public void updateChunks() {
         Profiler profiler = MinecraftClient.getInstance().getProfiler();
         
@@ -267,11 +287,11 @@ public class TerrainRenderManager {
         profiler.swap("chunk_cleanup");
         this.regionManager.cleanup();
     }
-
-    private LinkedList<CompletableFuture<TerrainBuildResult>> submitBuildTasks() {
+    
+    private LinkedList<CompletableFuture<SectionBuildResult>> submitBuildTasks() {
         int budget = this.builder.getSchedulingBudget();
 
-        LinkedList<CompletableFuture<TerrainBuildResult>> immediateFutures = new LinkedList<>();
+        LinkedList<CompletableFuture<SectionBuildResult>> immediateFutures = new LinkedList<>();
         
         for (int i = 0; i < this.sortedSectionLists.importantUpdateSectionCount; i++) {
             int sectionIdx = this.sortedSectionLists.importantUpdatableSectionIdxs[i];
@@ -296,16 +316,11 @@ public class TerrainRenderManager {
                 this.sortedSectionLists.importantUpdatableSectionIdxs[i] = SectionTree.NULL_INDEX;
                 continue;
             }
-            
-            // keep in queue and skip
-            if (!this.tracker.hasMergedFlags(section.getSectionX(), section.getSectionZ(), ChunkStatus.FLAG_ALL)) {
-                continue;
-            }
     
             AbstractBuilderTask task = this.createTerrainBuildTask(section);
             CompletableFuture<?> future;
     
-            CompletableFuture<TerrainBuildResult> immediateFuture = this.builder.schedule(task);
+            CompletableFuture<SectionBuildResult> immediateFuture = this.builder.schedule(task);
             immediateFutures.add(immediateFuture);
     
             future = immediateFuture;
@@ -348,11 +363,6 @@ public class TerrainRenderManager {
                 this.sortedSectionLists.secondaryUpdatableSectionIdxs[i] = SectionTree.NULL_INDEX;
                 continue;
             }
-    
-            // keep in queue and skip
-            if (!this.tracker.hasMergedFlags(section.getSectionX(), section.getSectionZ(), ChunkStatus.FLAG_ALL)) {
-                continue;
-            }
 
             AbstractBuilderTask task = this.createTerrainBuildTask(section);
             CompletableFuture<?> future = this.builder.scheduleDeferred(task);
@@ -367,9 +377,9 @@ public class TerrainRenderManager {
 
         return immediateFutures;
     }
-
+    
     private boolean performPendingUploads() {
-        Iterator<TerrainBuildResult> it = this.builder.createDeferredBuildResultDrain();
+        Iterator<SectionBuildResult> it = this.builder.createDeferredBuildResultDrain();
 
         if (!it.hasNext()) {
             return false;
@@ -379,8 +389,8 @@ public class TerrainRenderManager {
 
         return true;
     }
-
-    private void onChunkDataChanged(RenderSection section, TerrainBuildResult result) {
+    
+    private void onChunkDataChanged(RenderSection section, SectionBuildResult result) {
         SectionRenderData prev = section.getData();
         SectionRenderData next = result.data();
     
@@ -398,7 +408,7 @@ public class TerrainRenderManager {
         
         this.sectionTree.addSectionFlags(sectionIdx, next.getBaseFlags());
     }
-
+    
     public AbstractBuilderTask createTerrainBuildTask(RenderSection render) {
         WorldSliceData data = WorldSliceData.prepare(this.world, render.getChunkPos(), this.sectionCache);
         int frame = this.frameIndex;
@@ -409,19 +419,23 @@ public class TerrainRenderManager {
 
         return new TerrainBuildTask(render, data, frame);
     }
-
+    
     public void markGraphDirty() {
         this.needsUpdate = true;
     }
-
+    
     public boolean isGraphDirty() {
         return this.needsUpdate;
     }
-
+    
     public ChunkBuilder getBuilder() {
         return this.builder;
     }
-
+    
+    public BlockEntityRenderManager getBlockEntityRenderManager() {
+        return this.blockEntityRenderManager;
+    }
+    
     public void destroy() {
         this.regionManager.delete();
         this.builder.stopWorkers();
@@ -429,6 +443,10 @@ public class TerrainRenderManager {
 //        if (this.chunkGeometrySorter != null) {
 //            this.chunkGeometrySorter.delete();
 //        }
+    
+        if (this.watchedArea != null) {
+            this.chunkTracker.removeWatchedArea(this.watchedArea);
+        }
     }
 
     public int getTotalSections() {
@@ -470,6 +488,16 @@ public class TerrainRenderManager {
         }
 
         this.needsUpdate = true;
+    }
+    
+    public boolean isSectionReady(int x, int y, int z) {
+        var section = this.sectionTree.getSection(x, y, z);
+        
+        if (section != null) {
+            return section.getData() != SectionRenderData.ABSENT;
+        }
+        
+        return false;
     }
 
     public Collection<String> getDebugStrings() {

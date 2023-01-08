@@ -20,8 +20,7 @@ import net.caffeinemc.sodium.render.buffer.arena.ArenaBuffer;
 import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.buffer.arena.PendingUpload;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
-import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
-import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
+import net.caffeinemc.sodium.render.chunk.compile.tasks.SectionBuildResult;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
 import net.caffeinemc.sodium.util.IntPool;
 import net.minecraft.client.MinecraftClient;
@@ -98,7 +97,7 @@ public class RenderRegionManager {
         this.bufferPool.prune(PRUNE_PERCENT_MODIFIER);
     }
 
-    public void uploadChunks(Iterator<TerrainBuildResult> queue, int frameIndex, @Deprecated RenderUpdateCallback callback) {
+    public void uploadChunks(Iterator<SectionBuildResult> queue, int frameIndex, @Deprecated RenderUpdateCallback callback) {
         Profiler profiler = MinecraftClient.getInstance().getProfiler();
         
         profiler.push("chunk_upload");
@@ -109,7 +108,7 @@ public class RenderRegionManager {
         for (var entry : this.setupUploadBatches(queue)) {
             this.uploadGeometryBatch(entry.getLongKey(), entry.getValue(), frameIndex);
 
-            for (TerrainBuildResult result : entry.getValue()) {
+            for (SectionBuildResult result : entry.getValue()) {
                 RenderSection section = result.section();
                 callback.accept(section, result);
                 result.delete();
@@ -167,13 +166,13 @@ public class RenderRegionManager {
     }
 
     public interface RenderUpdateCallback {
-        void accept(RenderSection section, TerrainBuildResult result);
+        void accept(RenderSection section, SectionBuildResult result);
     }
 
-    private void uploadGeometryBatch(long regionKey, List<TerrainBuildResult> results, int frameIndex) {
+    private void uploadGeometryBatch(long regionKey, List<SectionBuildResult> results, int frameIndex) {
         List<PendingUpload> uploads = new ReferenceArrayList<>(results.size());
 
-        for (TerrainBuildResult result : results) {
+        for (SectionBuildResult result : results) {
             var section = result.section();
             var geometry = result.geometry();
 
@@ -211,11 +210,11 @@ public class RenderRegionManager {
         region.submitUploads(uploads, frameIndex);
     }
 
-    private Iterable<Long2ReferenceMap.Entry<List<TerrainBuildResult>>> setupUploadBatches(Iterator<TerrainBuildResult> renders) {
-        var batches = new Long2ReferenceOpenHashMap<List<TerrainBuildResult>>();
+    private Iterable<Long2ReferenceMap.Entry<List<SectionBuildResult>>> setupUploadBatches(Iterator<SectionBuildResult> renders) {
+        var batches = new Long2ReferenceOpenHashMap<List<SectionBuildResult>>();
 
         while (renders.hasNext()) {
-            TerrainBuildResult result = renders.next();
+            SectionBuildResult result = renders.next();
             RenderSection render = result.section();
 
             // TODO: this is kinda gross, maybe find a way to make the Future dispose of the result when cancelled?

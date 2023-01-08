@@ -32,10 +32,10 @@ public class MixinClientChunkMap {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void reinit(ClientChunkManager outer, int loadDistance, CallbackInfo ci) {
         // This re-initialization is a bit expensive on memory, but it only happens when either the world is
-        // switched or the section distance is changed;
+        // switched or the render distance is changed;
         this.radius = loadDistance;
 
-        // Make the diameter a power-of-two so we can exploit bit-wise math when computing indices
+        // Make the diameter a power-of-two, so we can exploit bit-wise math when computing indices
         this.diameter = MathHelper.smallestEncompassingPowerOfTwo(loadDistance * 2 + 1);
 
         // The factor is used as a bit mask to replace the modulo in getIndex

@@ -18,6 +18,7 @@ import net.caffeinemc.sodium.util.NativeBuffer;
 import net.caffeinemc.sodium.world.ChunkTracker;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.model.ModelLoader;
@@ -105,7 +106,7 @@ public class SodiumWorldRenderer {
 
     private void loadWorld(ClientWorld world) {
         this.world = world;
-        this.chunkTracker = new ChunkTracker();
+        this.chunkTracker = ChunkTracker.from(world);
 
         ImmediateTerrainRenderCache.createRenderContext(this.world);
 
@@ -167,6 +168,12 @@ public class SodiumWorldRenderer {
         Profiler profiler = this.client.getProfiler();
         profiler.push("camera_setup");
 
+        ClientPlayerEntity player = this.client.player;
+
+        if (player == null) {
+            throw new IllegalStateException("Client instance has no active player entity");
+        }
+
         Vec3d pos = camera.getPos();
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
@@ -190,8 +197,6 @@ public class SodiumWorldRenderer {
         this.lastFogShapeId = fogShapeId;
 
         profiler.swap("chunk_update");
-
-        this.chunkTracker.update();
 
         this.terrainRenderManager.setFrameIndex(this.frameIndex);
         this.terrainRenderManager.updateChunks();
@@ -228,20 +233,22 @@ public class SodiumWorldRenderer {
             this.terrainRenderManager.destroy();
             this.terrainRenderManager = null;
         }
-
-        this.chunkViewDistance = this.client.options.getClampedViewDistance();
-
+    
         this.renderPassManager = ChunkRenderPassManager.createDefaultMappings();
+    
+        this.chunkViewDistance = this.client.options.getClampedViewDistance();
         
         this.terrainRenderManager = new TerrainRenderManager(
                 SodiumClientMod.DEVICE,
-                this,
+                this.chunkTracker,
                 this.renderPassManager,
                 this.world,
-                new ChunkCameraContext(this.client),
+                new ChunkCameraContext(
+                        this.client.gameRenderer.getCamera(),
+                        this.world
+                ),
                 this.chunkViewDistance
         );
-        this.terrainRenderManager.reloadChunks(this.chunkTracker);
     }
 
     public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
@@ -293,22 +300,6 @@ public class SodiumWorldRenderer {
         }
     }
 
-    public void onChunkAdded(int x, int z) {
-        if (this.chunkTracker.loadChunk(x, z)) {
-            this.terrainRenderManager.onChunkAdded(x, z);
-        }
-    }
-
-    public void onChunkLightAdded(int x, int z) {
-        this.chunkTracker.onLightDataAdded(x, z);
-    }
-
-    public void onChunkRemoved(int x, int z) {
-        if (this.chunkTracker.unloadChunk(x, z)) {
-            this.terrainRenderManager.onChunkRemoved(x, z);
-        }
-    }
-
     /**
      * Returns whether the entity intersects with any visible chunks in the graph.
      * @return True if the entity is visible, otherwise false
@@ -328,8 +319,8 @@ public class SodiumWorldRenderer {
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
     }
 
-    public boolean doesChunkHaveFlag(int x, int z, int status) {
-        return this.chunkTracker.hasMergedFlags(x, z, status);
+    public boolean isRenderingReady(int x, int y, int z) {
+        return this.terrainRenderManager.isSectionReady(x, y, z);
     }
 
     public boolean isBoxVisible(double x1, double y1, double z1, double x2, double y2, double z2) {
@@ -394,7 +385,7 @@ public class SodiumWorldRenderer {
     }
 
     /**
-     * Schedules a chunk rebuild for the section belonging to the given chunk section position.
+     * Schedules a chunk rebuild for the section at the given position.
      */
     public void scheduleRebuildForChunk(int x, int y, int z, boolean important) {
         this.terrainRenderManager.scheduleRebuild(x, y, z, important);

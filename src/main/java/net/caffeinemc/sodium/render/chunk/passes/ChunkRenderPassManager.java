@@ -8,7 +8,7 @@ import net.caffeinemc.sodium.SodiumClientMod;
 import net.minecraft.client.render.RenderLayer;
 
 /**
- * Maps vanilla section layers to section passes used by Sodium. This provides compatibility with the section layers
+ * Maps vanilla render layers to section passes used by Sodium. This provides compatibility with the section layers
  * already used by the base game.
  */
 public class ChunkRenderPassManager {
@@ -76,6 +76,7 @@ public class ChunkRenderPassManager {
     
     /**
      * Note: This won't take effect until after a renderer reload.
+     * TODO: this should be included in an API when one is created
      */
     public void addMapping(RenderLayer layer, ChunkRenderPass renderPass) {
         int nextId = this.layerMappings.size();

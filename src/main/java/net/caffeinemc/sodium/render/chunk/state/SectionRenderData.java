@@ -15,7 +15,7 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 
 /**
- * The section data for a chunk section container containing all the information about which terrain models are attached,
+ * The render data for a chunk section container containing all the information about which terrain models are attached,
  * the block entities contained by it, and any data used for occlusion testing.
  */
 public class SectionRenderData {

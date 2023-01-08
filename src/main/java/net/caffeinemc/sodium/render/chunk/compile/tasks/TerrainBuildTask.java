@@ -2,7 +2,7 @@ package net.caffeinemc.sodium.render.chunk.compile.tasks;
 
 import net.caffeinemc.sodium.render.terrain.TerrainBuildContext;
 import net.caffeinemc.sodium.render.chunk.RenderSection;
-import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
+import net.caffeinemc.sodium.render.chunk.state.BuiltSectionGeometry;
 import net.caffeinemc.sodium.render.chunk.state.ChunkRenderBounds;
 import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
 import net.caffeinemc.sodium.render.terrain.context.PreparedTerrainRenderCache;
@@ -41,7 +41,7 @@ public class TerrainBuildTask extends AbstractBuilderTask {
     }
 
     @Override
-    public TerrainBuildResult performBuild(TerrainBuildContext buildContext, CancellationSource cancellationSource) {
+    public SectionBuildResult performBuild(TerrainBuildContext buildContext, CancellationSource cancellationSource) {
         SectionRenderData.Builder renderData = new SectionRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
@@ -130,12 +130,12 @@ public class TerrainBuildTask extends AbstractBuilderTask {
             }
         }
 
-        BuiltChunkGeometry geometry = buffers.buildGeometry();
+        BuiltSectionGeometry geometry = buffers.buildGeometry();
 
         renderData.setModels(geometry.models());
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
 
-        return new TerrainBuildResult(this.render, renderData.build(), geometry, this.frame);
+        return new SectionBuildResult(this.render, renderData.build(), geometry, this.frame);
     }
 }

@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import net.caffeinemc.sodium.SodiumClientMod;
 import net.caffeinemc.sodium.render.chunk.compile.tasks.AbstractBuilderTask;
-import net.caffeinemc.sodium.render.chunk.compile.tasks.TerrainBuildResult;
+import net.caffeinemc.sodium.render.chunk.compile.tasks.SectionBuildResult;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
 import net.caffeinemc.sodium.render.terrain.TerrainBuildContext;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexType;
@@ -41,7 +41,7 @@ public class ChunkBuilder {
     private final int limitThreads;
     private final TerrainVertexType vertexType;
 
-    private final Queue<TerrainBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
+    private final Queue<SectionBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
     private final ThreadLocal<TerrainBuildContext> localContexts = new ThreadLocal<>();
     
     private static final int BUILD_SAMPLE_COUNT = 64;
@@ -199,7 +199,7 @@ public class ChunkBuilder {
         this.localContexts.remove();
     }
 
-    public CompletableFuture<TerrainBuildResult> schedule(AbstractBuilderTask task) {
+    public CompletableFuture<SectionBuildResult> schedule(AbstractBuilderTask task) {
         if (!this.running.get()) {
             throw new IllegalStateException("Executor is stopped");
         }
@@ -227,7 +227,7 @@ public class ChunkBuilder {
      * a world teleportation event), the worker threads will first be stopped and all pending tasks will be discarded
      * before being started again.
      * @param world The world instance
-     * @param renderPassManager The section pass manager used for the world
+     * @param renderPassManager The render pass manager used for the world
      */
     public void init(ClientWorld world, ChunkRenderPassManager renderPassManager) {
         if (world == null) {
@@ -264,7 +264,7 @@ public class ChunkBuilder {
                 .thenAccept(this.deferredResultQueue::add);
     }
 
-    public Iterator<TerrainBuildResult> createDeferredBuildResultDrain() {
+    public Iterator<SectionBuildResult> createDeferredBuildResultDrain() {
         return new QueueDrainingIterator<>(this.deferredResultQueue);
     }
 
@@ -322,7 +322,7 @@ public class ChunkBuilder {
             return;
         }
 
-        TerrainBuildResult result;
+        SectionBuildResult result;
 
         try {
             // Perform the build task with this worker's local resources and obtain the result
@@ -381,7 +381,7 @@ public class ChunkBuilder {
 
     private static class WrappedTask implements CancellationSource {
         private final AbstractBuilderTask task;
-        private final CompletableFuture<TerrainBuildResult> future;
+        private final CompletableFuture<SectionBuildResult> future;
 
         private WrappedTask(AbstractBuilderTask task) {
             this.task = task;

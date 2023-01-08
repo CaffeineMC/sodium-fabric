@@ -6,7 +6,7 @@ import net.caffeinemc.sodium.render.buffer.arena.BufferSegment;
 import net.caffeinemc.sodium.render.chunk.compile.buffers.ChunkMeshBuilder;
 import net.caffeinemc.sodium.render.chunk.compile.buffers.DefaultChunkMeshBuilder;
 import net.caffeinemc.sodium.render.chunk.passes.ChunkRenderPassManager;
-import net.caffeinemc.sodium.render.chunk.state.BuiltChunkGeometry;
+import net.caffeinemc.sodium.render.chunk.state.BuiltSectionGeometry;
 import net.caffeinemc.sodium.render.chunk.state.SectionPassModel;
 import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
 import net.caffeinemc.sodium.render.terrain.format.TerrainVertexSink;
@@ -75,7 +75,7 @@ public class TerrainBuildBuffers {
         return this.delegates[this.renderPassManager.getRenderPassForLayer(layer).getId()];
     }
     
-    public BuiltChunkGeometry buildGeometry() {
+    public BuiltSectionGeometry buildGeometry() {
         VertexBufferBuilder[][] buffers = this.vertexBuffers;
         
         var capacity = Arrays.stream(buffers)
@@ -84,7 +84,7 @@ public class TerrainBuildBuffers {
                              .sum();
         
         if (capacity <= 0) {
-            return BuiltChunkGeometry.empty();
+            return BuiltSectionGeometry.empty();
         }
         
         var vertexFormat = this.vertexType.getCustomVertexFormat();
@@ -138,10 +138,10 @@ public class TerrainBuildBuffers {
         
         if (chunkVertexBuffer != null) {
             // if the buffer is there, there's at least one model entry that's non-null
-            return new BuiltChunkGeometry(new VertexData(vertexFormat, chunkVertexBuffer), models);
+            return new BuiltSectionGeometry(new VertexData(vertexFormat, chunkVertexBuffer), models);
         }
         
-        return BuiltChunkGeometry.empty();
+        return BuiltSectionGeometry.empty();
     }
     
     public void destroy() {

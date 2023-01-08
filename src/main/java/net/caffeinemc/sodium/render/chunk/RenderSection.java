@@ -8,7 +8,7 @@ import net.caffeinemc.sodium.render.chunk.state.SectionRenderData;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
- * The section state object for a chunk section. This contains all the graphics state for each section pass along with
+ * The render state object for a chunk section. This contains all the graphics state for each render pass along with
  * data about the section in the chunk visibility graph.
  */
 public class RenderSection {

@@ -9,15 +9,12 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.HeightLimitView;
 
 public class ChunkCameraContext {
-    private final MinecraftClient client;
     private final Camera camera;
     private final int sectionHeightMin;
     private final int sectionHeightMax;
 
-    public ChunkCameraContext(MinecraftClient client) {
-        this.client = client;
-        this.camera = client.gameRenderer.getCamera();
-        HeightLimitView heightLimitView = client.world;
+    public ChunkCameraContext(Camera camera, HeightLimitView heightLimitView) {
+        this.camera = camera;
         
         if (heightLimitView == null) {
             throw new IllegalStateException("World doesn't exist");

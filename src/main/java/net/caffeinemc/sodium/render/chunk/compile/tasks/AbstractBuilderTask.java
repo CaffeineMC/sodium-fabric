@@ -23,5 +23,5 @@ public abstract class AbstractBuilderTask {
      * @return The build result of this task, containing any data which needs to be uploaded on the main-thread, or null
      *         if the task was cancelled.
      */
-    public abstract TerrainBuildResult performBuild(TerrainBuildContext context, CancellationSource cancellationSource);
+    public abstract SectionBuildResult performBuild(TerrainBuildContext context, CancellationSource cancellationSource);
 }
