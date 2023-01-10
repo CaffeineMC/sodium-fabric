@@ -39,7 +39,8 @@ impl Rasterizer {
 
 #[derive(Clone, Copy, Debug)]
 struct Edge {
-    start_y: i32, // The top-most y-coordinate of the edge
+    start: IVec2,
+    end: IVec2,
 
     init: i32,  // The initial state at the line origin
     inc: i32,   // The increment applied to init for each scanline after start_y
@@ -57,7 +58,7 @@ impl Edge {
         let init = start.x << 16;
         let inc = ((start.x - end.x) << 16) / (end.y - start.y);
 
-        Edge { start_y: start.y, init, inc }
+        Edge { start, end, init, inc }
     }
 }
 
@@ -189,49 +190,69 @@ impl Rasterizer {
         false
     }
 
-    fn draw_spans<P>(&mut self, e0: Edge, e1: Edge, min_y: i32, max_y: i32) -> bool
+    #[inline(always)]
+    fn draw_spans<P>(&mut self, mut left: Edge, mut right: Edge, min_y: i32, max_y: i32) -> bool
         where P: PixelFunction
     {
         // Clamp the render bounds to the viewport
         let min_y = i32::max(min_y, 0);
         let max_y = i32::min(max_y, self.height as i32 - 1);
 
-        // This allows us to resume the walk of an existing line
-        let mut e0_y = e0.start_y - max_y;
-        let mut e1_y = e1.start_y - max_y;
+        // This allows us to resume the walk of an existing line, useful for restarting the edge walk
+        // of the triangle's longest edge to avoid unnecessary setup.
+        let left_offset_y = left.start.y - max_y;
+        let right_offset_y = right.start.y - max_y;
+
+        let mut left_x = left.init + (left_offset_y * left.inc);
+        let mut right_x = right.init + (right_offset_y * right.inc);
+
+        // Orient the left/right edges so that our spans are always min_x..max_x 
+        // BUG: This sometimes produces one-pixel errors for certain triangle configurations, but
+        // really helps by avoiding left=min(e0, e1) and right=max(e0, e1) in the critical loop below
+        if left_x + left.inc > right_x + right.inc {
+            mem::swap(&mut left, &mut right);
+            mem::swap(&mut left_x, &mut right_x);
+        }
+
+        // Determine if the triangle is outside of the viewport to eliminate needing to clamp the entry/exit
+        // events to both the left and right edge of the viewport
+        if i32::min(left.start.x, left.end.x) >= self.width as i32 {
+            // Left edge is on the right side of the viewport
+            return false;
+        } else if i32::max(right.start.x, right.end.x) < 0 {
+            // Right edge is on the left side of the viewport
+            return false;
+        }
 
         // Iterate in descending Y order from max_y to min_y
         let mut y = max_y;
 
         while y > min_y {
-            // Calculate (init + (y * step)) for each edge
-            // TODO: Vectorize this so we can process 8 rows in parallel
-            let e0_px = (e0.init + (e0_y * e0.inc)) >> 16;
-            let e1_px = (e1.init + (e1_y * e1.inc)) >> 16;
-
             // Calculate the left/right entry events for the scan line
-            // TODO: Simplify this by ensuring e0 is always the left edge, and e1 is always the right edge
-            let left_bound = i32::min(e0_px, e1_px);
-            let right_bound = i32::max(e0_px, e1_px);
-
-            // Clamp the entry events to the viewport
-            // TODO: Simplify this by discarding triangles which are outside the viewport
-            let left_bound = i32::min(i32::max(left_bound, 0), self.width as i32 - 1);
-            let right_bound = i32::min(i32::max(right_bound, 0), self.width as i32 - 1);
+            // Since we discarded triangles outside the viewport just above, we alawys know that the left
+            // and right events are within certain edges of the viewport, which avoids an additional
+            // min and max in this loop.
+            let left_bound = i32::max(left_x >> 16, 0); // (left_x < width - 1) is always true  
+            let right_bound = i32::min(right_x >> 16, self.width as i32 - 1); // (right_x > 0) is always true  
 
             // Calculate the range of tiles which this scanline will overlap
-            let tile_left_bound = left_bound / 32;
-            let tile_right_bound = right_bound / 32;
+            let tile_left_bound = left_bound >> 5;
+            let tile_right_bound = right_bound >> 5;
 
             for tile_x in tile_left_bound..=tile_right_bound {
+                // The x-coordinate in raster space which the tile starts at 
                 let start_x = tile_x * 32;
                 
-                // Clamp the left/right entry events to this tile
-                let left_bit = i32::clamp(left_bound - start_x, 0, 32);
-                let right_bit = i32::clamp(right_bound - start_x + 1, 0, 32);
+                // Clamp the left/right entry events of the scanline to this tile's bounding box
+                let left_bit = i32::max(left_bound - start_x, 0);
+                let right_bit = i32::min(right_bound - start_x + 1, 32);
                 
                 // Calculate a bit mask of left..right bits for the tile
-                let mask = unsafe { 0xFFFFFFFFu32.unchecked_shr(-(right_bit - left_bit) as u32) } << left_bit;
+                let mask = unsafe {
+                    0xFFFFFFFFu32
+                        .unchecked_shr(-(right_bit - left_bit) as u32)
+                        .unchecked_shl(left_bit as u32)
+                };
 
                 // Process the tile
                 // The exact behavior here is up to the pixel function which the caller provided
@@ -246,8 +267,11 @@ impl Rasterizer {
                 }
             }
             
-            e0_y += 1;
-            e1_y += 1;
+            // Step the left/right events forward one scan line
+            // Calculating the events looks like (Init + (Y * Step)) but since we step only one
+            // scan line at a time, we can simply add Step to Init on each iteration.
+            left_x += left.inc;
+            right_x += right.inc;
 
             y -= 1;
         }
