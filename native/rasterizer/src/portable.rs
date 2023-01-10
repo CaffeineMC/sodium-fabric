@@ -224,7 +224,7 @@ impl Rasterizer {
             return false;
         }
 
-        // Iterate in descending Y order from max_y to min_y
+        // Process scanlines in descending Y order from max_y to min_y
         let mut y = max_y;
 
         while y > min_y {
