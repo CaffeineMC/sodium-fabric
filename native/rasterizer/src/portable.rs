@@ -87,9 +87,9 @@ impl Rasterizer {
         self.tiles.fill(0);
     }
 
-    pub fn set_camera(&mut self, position: &Vec3, matrix: &Mat4) {
-        self.camera_matrix = *matrix;
-        self.camera_position = *position;
+    pub fn set_camera(&mut self, position: Vec3, matrix: Mat4) {
+        self.camera_matrix = matrix;
+        self.camera_position = position;
     }
 
     pub fn draw_aabb<T, E>(&mut self, min: &Vec3, max: &Vec3, faces: BoxFace) -> bool
@@ -189,7 +189,6 @@ impl Rasterizer {
         false
     }
 
-    #[inline(always)]
     fn draw_spans<P>(&mut self, e0: Edge, e1: Edge, min_y: i32, max_y: i32) -> bool
         where P: PixelFunction
     {
@@ -254,6 +253,10 @@ impl Rasterizer {
         }
 
         false
+    }
+
+    pub fn pixels(&self) -> &[u32] {
+        &self.tiles
     }
 
     pub fn height(&self) -> usize {

@@ -47,7 +47,7 @@ pub extern "system" fn Java_me_jellysquid_mods_sodium_ffi_RustBindings_r_1set_1c
         &*(matrix_ptr as *const [f32; 16])
     };
 
-    rasterizer.set_camera(&Vec3::from(position), &Mat4::from(matrix));
+    rasterizer.set_camera(Vec3::from(position), Mat4::from(matrix));
 }
 
 #[no_mangle]

@@ -11,3 +11,11 @@ ultraviolet = "0.9.0"
 version = "0.23"
 default-features = false
 features = [ "x11" ]
+
+[dev-dependencies.criterion]
+version = "0.4"
+default-features = false
+
+[[bench]]
+name = "raster"
+harness = false

@@ -28,11 +28,10 @@ fn main() {
         
         let view_matrix = Mat4::look_at(camera_position, camera_target, Vec3::new(0.0, 1.0, 0.0));
         let proj_matrix = ultraviolet::projection::perspective_gl(45.0f32.to_radians(), WIDTH as f32 / HEIGHT as f32, 0.01, 1000.0);
-        let mvp_matrix = proj_matrix * view_matrix;
-
+        
         rasterizer.clear();
         
-        rasterizer.set_camera(&camera_position, &mvp_matrix);
+        rasterizer.set_camera(camera_position, proj_matrix * view_matrix);
         rasterizer.draw_aabb::<WriteOnlyPixelFunction, AllExecutionsFunction>(
             &Vec3::new(-1.0, -1.0, -1.0),
             &Vec3::new(1.0, 1.0, 1.0),
