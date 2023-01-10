@@ -175,23 +175,40 @@ impl Rasterizer {
         // The longest edge of the triangle (from the top-most to the bottom-most vertices)
         let e13 = Edge::new(v1, v3);
 
+        // The orientation of the midpoint vertex relative to edge(v1, v3) 
+        let orientation = (v3.x - v1.x) * (v2.y - v1.y) - (v3.y - v1.y) * (v2.x - v1.x);
+
         // Top-half case
         if v2.y != v1.y {
             let e12 = Edge::new(v1, v2);
-            if self.draw_spans::<P>(e12, e13, v2.y, v1.y) { return true; }
+
+            let (left, right) = if orientation > 0 {
+                (e13, e12)
+            } else {
+                (e12, e13)
+            };
+
+            if self.draw_spans::<P>(left, right, v2.y, v1.y) { return true; }
         }
 
         // Bottom-half case
         if v3.y != v2.y {
             let e23 = Edge::new(v2, v3);
-            if self.draw_spans::<P>(e23, e13, v3.y, v2.y) { return true; }
+
+            let (left, right) = if orientation < 0 {
+                (e23, e13)
+            } else {
+                (e13, e23)
+            };
+
+            if self.draw_spans::<P>(left, right, v3.y, v2.y) { return true; }
         }
         
         false
     }
 
     #[inline(always)]
-    fn draw_spans<P>(&mut self, mut left: Edge, mut right: Edge, min_y: i32, max_y: i32) -> bool
+    fn draw_spans<P>(&mut self, left: Edge, right: Edge, min_y: i32, max_y: i32) -> bool
         where P: PixelFunction
     {
         // Clamp the render bounds to the viewport
@@ -205,14 +222,6 @@ impl Rasterizer {
 
         let mut left_x = left.init + (left_offset_y * left.inc);
         let mut right_x = right.init + (right_offset_y * right.inc);
-
-        // Orient the left/right edges so that our spans are always min_x..max_x 
-        // BUG: This sometimes produces one-pixel errors for certain triangle configurations, but
-        // really helps by avoiding left=min(e0, e1) and right=max(e0, e1) in the critical loop below
-        if left_x + left.inc > right_x + right.inc {
-            mem::swap(&mut left, &mut right);
-            mem::swap(&mut left_x, &mut right_x);
-        }
 
         // Determine if the triangle is outside of the viewport to eliminate needing to clamp the entry/exit
         // events to both the left and right edge of the viewport
