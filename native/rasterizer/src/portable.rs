@@ -1,65 +1,77 @@
-use std::simd::{i16x16, SimdInt, ToBitMask};
-
+use std::cmp::PartialEq;
+use std::mem;
 use bitflags::*;
 use ultraviolet::{Mat4, Vec3, IVec2};
 
+#[allow(unused)]
 pub struct Rasterizer {
     width: usize,
     height: usize,
 
-    tiles: Box<[u16]>,
-    tiles_stride: usize,
+    tiles: Box<[u32]>,
+    tiles_x: usize,
+    tiles_y: usize,
 
     camera_matrix: Mat4,
     camera_position: Vec3,
+
     viewport: Viewport
 }
 
 impl Rasterizer {
     // This is not meant to be fast. It's simply a debug function for getting out the framebuffer to a usable surface.
     pub fn get_depth_buffer(&self, data: &mut [u32]) {
-        let src_len = self.width * self.height;
-        let dst_len = data.len();
+        let mut k = 0;
 
-        if dst_len < src_len {
-            panic!("Destination buffer too small (needed {} elements, destination holds {} elements)",
-                   src_len, dst_len);
-        }
-
-        for word_index in 0..self.tiles.len() {
-            let word = self.tiles[word_index];
-
-            let x = (word_index % self.tiles_stride) * Edge::STEP_X_SIZE as usize;
-            let y = (word_index / self.tiles_stride) * Edge::STEP_Y_SIZE as usize;
-
-            for bit_index in 0..16 {
-                let bit = word & (1 << bit_index);
-
-                let x = x + Edge::OFFSETS_X[bit_index] as usize;
-                let y = y + Edge::OFFSETS_Y[bit_index] as usize;
-
-                if x >= self.width || y >= self.height {
-                    continue;
+        for word in self.tiles.iter() {
+            for i in 0..32 {
+                if (word & (1 << i)) != 0 {
+                    data[k] = 0xFFFFFFFF;
+                } else {
+                    data[k] = 0x00000000;
                 }
 
-                // Flipped Y
-                data[((self.height - y - 1) * self.width) + x] = if bit == 0 { 0x00 } else { 0xFFFFFFFF };
+                k += 1;
             }
         }
     }
+}
 
+#[derive(Clone, Copy, Debug)]
+struct Edge {
+    start_y: i32, // The top-most y-coordinate of the edge
+
+    init: i32,  // The initial state at the line origin
+    inc: i32,   // The increment applied to init for each scanline after start_y
+}
+
+impl Edge {
+    fn new(start: IVec2, end: IVec2) -> Self {
+        // We use fixed point math here, in i16.i16 format
+        // There is some chance for losing precision here since we project into raster space (integer)
+        //
+        // For some additional instructions, we can work from floating point and take the whole/fractional parts to assemble
+        // a fixed-point number. This would also allow us to vectorize the division here since there are no SIMD instructions
+        // for integer divisions, which would likely end up being a net-positive.
+        
+        let init = start.x << 16;
+        let inc = ((start.x - end.x) << 16) / (end.y - start.y);
+
+        Edge { start_y: start.y, init, inc }
+    }
 }
 
 impl Rasterizer {
     pub fn create(width: usize, height: usize) -> Self {
-        let tiles_x = width / 4;
-        let tiles_y = height / 4;
+        let tiles_x = width / 32;
+        let tiles_y = height;
 
         Rasterizer {
-            tiles: vec![0u16; tiles_x * tiles_y].into_boxed_slice(),
-            tiles_stride: tiles_x,
+            tiles: vec![0u32; tiles_x * tiles_y].into_boxed_slice(),
             width,
             height,
+            tiles_x,
+            tiles_y,
             camera_matrix: Mat4::identity(),
             camera_position: Vec3::default(),
             viewport: Viewport {
@@ -72,7 +84,7 @@ impl Rasterizer {
     }
 
     pub fn clear(&mut self) {
-        self.tiles.fill(0u16);
+        self.tiles.fill(0);
     }
 
     pub fn set_camera(&mut self, position: &Vec3, matrix: &Mat4) {
@@ -83,19 +95,7 @@ impl Rasterizer {
     pub fn draw_aabb<T, E>(&mut self, min: &Vec3, max: &Vec3, faces: BoxFace) -> bool
         where T: PixelFunction, E: ResultAccumulator
     {
-        let pos_y = faces.contains(BoxFace::POSITIVE_Y) && self.camera_position.y > max.y;
-        let neg_y = faces.contains(BoxFace::NEGATIVE_Y) && self.camera_position.y < min.y;
-
-        let pos_x = faces.contains(BoxFace::POSITIVE_X) && self.camera_position.x > max.x;
-        let neg_x = faces.contains(BoxFace::NEGATIVE_X) && self.camera_position.x < min.x;
-
-        let pos_z = faces.contains(BoxFace::POSITIVE_Z) && self.camera_position.z > max.z;
-        let neg_z = faces.contains(BoxFace::NEGATIVE_Z) && self.camera_position.z < min.z;
-        
-        if !(pos_y | neg_y | pos_x | neg_x | pos_z | neg_z) {
-            return false;
-        }
-
+        // Project the eight corners of the bounding box
         let c000 = project(&self.camera_matrix, &Vec3::new(min.x, min.y, min.z), &self.viewport);
         let c001 = project(&self.camera_matrix, &Vec3::new(min.x, min.y, max.z), &self.viewport);
         let c100 = project(&self.camera_matrix, &Vec3::new(max.x, min.y, min.z), &self.viewport);
@@ -108,88 +108,152 @@ impl Rasterizer {
 
         let mut result = false;
 
-        if pos_y {
-            E::accumulate(&mut result, || self.draw_quad::<T>(c010, c011, c111, c110));
-        } else if neg_y {
-            E::accumulate(&mut result, || self.draw_quad::<T>(c001, c000, c100, c101));
+        if faces.contains(BoxFace::POSITIVE_Y) && self.camera_position.y > max.y {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(c110, c010, c111)
+                || self.draw_triangle::<T>(c010, c011, c111));
         }
 
-        if pos_x {
-            E::accumulate(&mut result, || self.draw_quad::<T>(c101, c100, c110, c111));
-        } else if neg_x {
-            E::accumulate(&mut result, || self.draw_quad::<T>(c000, c001, c011, c010));
+        if faces.contains(BoxFace::NEGATIVE_Y) && self.camera_position.y < min.y {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(c000, c100, c101)
+                || self.draw_triangle::<T>(c001, c000, c101));
         }
 
-        if pos_z {
-            E::accumulate(&mut result, || self.draw_quad::<T>(c001, c101, c111, c011));
-        } else if neg_z {
-            E::accumulate(&mut result, || self.draw_quad::<T>(c100, c000, c010, c110));
+        if faces.contains(BoxFace::POSITIVE_X) && self.camera_position.x > max.x {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(c101, c100, c111)
+                || self.draw_triangle::<T>(c100, c110, c111));
         }
 
-        return result;
-    }
+        if faces.contains(BoxFace::NEGATIVE_X) && self.camera_position.x < min.x {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(c000, c001, c011)
+                || self.draw_triangle::<T>(c000, c011, c010));
+        }
 
-    pub fn draw_quad<T>(&mut self, v0: IVec2, v1: IVec2, v2: IVec2, v3: IVec2) -> bool
-        where T: PixelFunction
-    {
-        let min_x = i32::max(min4(v0.x, v1.x, v2.x, v3.x), 0) & !(Edge::STEP_X_SIZE - 1);
-        let max_x = i32::min(max4(v0.x, v1.x, v2.x, v3.x), (self.width - 1) as i32);
+        if faces.contains(BoxFace::POSITIVE_Z) && self.camera_position.z > max.z {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(c001, c101, c111)
+                || self.draw_triangle::<T>(c111, c011, c001));
+        }
 
-        let min_y = i32::max(min4(v0.y, v1.y, v2.y, v3.y), 0) & !(Edge::STEP_Y_SIZE - 1);
-        let max_y = i32::min(max4(v0.y, v1.y, v2.y, v3.y), (self.height - 1) as i32);
-
-        let top_left_corner = IVec2::new(min_x, min_y);
-
-        let (e01, mut w0_row) = Edge::init(v0, v1, top_left_corner);
-        let (e12, mut w1_row) = Edge::init(v1, v2, top_left_corner);
-        let (e23, mut w2_row) = Edge::init(v2, v3, top_left_corner);
-        let (e30, mut w3_row) = Edge::init(v3, v0, top_left_corner);
-
-        let mut y = min_y;
-        let mut result = false;
-
-        while y <= max_y {
-            let mut w0 = w0_row;
-            let mut w1 = w1_row;
-            let mut w2 = w2_row;
-            let mut w3 = w3_row;
-
-            let mut x = min_x;
-
-            while x <= max_x {
-                let pixel_coord = ((y as usize >> 2) * self.tiles_stride) + (x as usize >> 2);
-                
-                let mask = w0 | w1 | w2 | w3;
-                let bits = mask.is_positive()
-                        .to_bitmask();
-
-                unsafe {
-                    result |= T::apply(&mut self.tiles.get_unchecked_mut(pixel_coord), bits);
-                }
-
-                if result { return true; }
-
-                w0 += e01.one_step_x;
-                w1 += e12.one_step_x;
-                w2 += e23.one_step_x;
-                w3 += e30.one_step_x;
-
-                x += Edge::STEP_X_SIZE;
-            }
-
-            w0_row += e01.one_step_y;
-            w1_row += e12.one_step_y;
-            w2_row += e23.one_step_y;
-            w3_row += e30.one_step_y;
-
-            y += Edge::STEP_Y_SIZE;
+        if faces.contains(BoxFace::NEGATIVE_Z) && self.camera_position.z < min.z {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(c000, c010, c110)
+                || self.draw_triangle::<T>(c100, c000, c110));
         }
 
         result
     }
 
-    pub fn pixels(&self) -> &[u16] {
-        &self.tiles
+    // The vertices need to be in clockwise order.
+    pub fn draw_triangle<P>(&mut self, mut v1: IVec2, mut v2: IVec2, mut v3: IVec2) -> bool
+        where P: PixelFunction
+    {
+        // Sort the vertices from top to bottom
+        // This is an unrolled bubble sort to help the compiler as much as possible
+        // The generated machine code is very slightly faster when compared to the simple [slice].sort_by(|v| -v.y)
+        if v1.y < v2.y { mem::swap(&mut v1, &mut v2); }
+        if v2.y < v3.y { mem::swap(&mut v2, &mut v3); }
+        if v1.y < v2.y { mem::swap(&mut v1, &mut v2); }
+
+        // The vertices are now in the following configuration
+        //
+        //      v1
+        //      #
+        //      ##    
+        // e13  # #  e12
+        //      #  #            top-half
+        //      #---#  v2       -------
+        //      #  #            bottom-half
+        // e13  # #  e23        
+        //      ##
+        //      #
+        //      v3
+
+        // If the top and bottom vertices share the same Y-coordinate, the triangle has no height, so skip it
+        if v1.y == v3.y {
+            return false;
+        }
+
+        // The longest edge of the triangle (from the top-most to the bottom-most vertices)
+        let e13 = Edge::new(v1, v3);
+
+        // Top-half case
+        if v2.y != v1.y {
+            let e12 = Edge::new(v1, v2);
+            if self.draw_spans::<P>(e12, e13, v2.y, v1.y) { return true; }
+        }
+
+        // Bottom-half case
+        if v3.y != v2.y {
+            let e23 = Edge::new(v2, v3);
+            if self.draw_spans::<P>(e23, e13, v3.y, v2.y) { return true; }
+        }
+        
+        false
+    }
+
+    #[inline(always)]
+    fn draw_spans<P>(&mut self, e0: Edge, e1: Edge, min_y: i32, max_y: i32) -> bool
+        where P: PixelFunction
+    {
+        // Clamp the render bounds to the viewport
+        let min_y = i32::max(min_y, 0);
+        let max_y = i32::min(max_y, self.height as i32 - 1);
+
+        // This allows us to resume the walk of an existing line
+        let mut e0_y = e0.start_y - max_y;
+        let mut e1_y = e1.start_y - max_y;
+
+        // Iterate in descending Y order from max_y to min_y
+        let mut y = max_y;
+
+        while y > min_y {
+            // Calculate (init + (y * step)) for each edge
+            // TODO: Vectorize this so we can process 8 rows in parallel
+            let e0_px = (e0.init + (e0_y * e0.inc)) >> 16;
+            let e1_px = (e1.init + (e1_y * e1.inc)) >> 16;
+
+            // Calculate the left/right entry events for the scan line
+            // TODO: Simplify this by ensuring e0 is always the left edge, and e1 is always the right edge
+            let left_bound = i32::min(e0_px, e1_px);
+            let right_bound = i32::max(e0_px, e1_px);
+
+            // Clamp the entry events to the viewport
+            // TODO: Simplify this by discarding triangles which are outside the viewport
+            let left_bound = i32::min(i32::max(left_bound, 0), self.width as i32 - 1);
+            let right_bound = i32::min(i32::max(right_bound, 0), self.width as i32 - 1);
+
+            // Calculate the range of tiles which this scanline will overlap
+            let tile_left_bound = left_bound / 32;
+            let tile_right_bound = right_bound / 32;
+
+            for tile_x in tile_left_bound..=tile_right_bound {
+                let start_x = tile_x * 32;
+                
+                // Clamp the left/right entry events to this tile
+                let left_bit = i32::clamp(left_bound - start_x, 0, 32);
+                let right_bit = i32::clamp(right_bound - start_x + 1, 0, 32);
+                
+                // Calculate a bit mask of left..right bits for the tile
+                let mask = unsafe { 0xFFFFFFFFu32.unchecked_shr(-(right_bit - left_bit) as u32) } << left_bit;
+
+                // Process the tile
+                // The exact behavior here is up to the pixel function which the caller provided
+                let result = unsafe {
+                    let index = (y as usize * self.tiles_x) + tile_x as usize;
+                    P::apply(self.tiles.get_unchecked_mut(index), mask)
+                };
+
+                // If the pixel function returned true, it means it would like to exit early (most likely it has the result it needs)
+                if result {
+                    return true;
+                }
+            }
+            
+            e0_y += 1;
+            e1_y += 1;
+
+            y -= 1;
+        }
+
+        false
     }
 
     pub fn height(&self) -> usize {
@@ -201,38 +265,8 @@ impl Rasterizer {
     }
 }
 
-struct Edge {
-    one_step_x: i16x16,
-    one_step_y: i16x16
-}
-
-impl Edge {
-    const STEP_X_SIZE: i32 = 4;
-    const STEP_Y_SIZE: i32 = 4;
-
-    const OFFSETS_X: i16x16 = i16x16::from_array([0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]);
-    const OFFSETS_Y: i16x16 = i16x16::from_array([0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]);
-
-    pub fn init(v0: IVec2, v1: IVec2, origin: IVec2) -> (Edge, i16x16) {
-        let a = v0.y - v1.y;
-        let b = v1.x - v0.x;
-        let c = (v0.x * v1.y) - (v0.y * v1.x);
-
-        let x = i16x16::splat(origin.x as i16) + Edge::OFFSETS_X;
-        let y = i16x16::splat(origin.y as i16) + Edge::OFFSETS_Y;
-
-        let edge = Edge {
-            one_step_x: i16x16::splat((a * Edge::STEP_X_SIZE) as i16),
-            one_step_y: i16x16::splat((b * Edge::STEP_Y_SIZE) as i16)
-        };
-
-        let row = (i16x16::splat(a as i16) * x) + (i16x16::splat(b as i16) * y) + i16x16::splat(c as i16);
-        (edge, row)
-    }
-}
-
 pub trait PixelFunction {
-    fn apply(pixel: &mut u16, mask: u16) -> bool;
+    fn apply(pixel: &mut u32, mask: u32) -> bool;
 }
 
 pub struct ReadOnlyPixelFunction;
@@ -240,14 +274,14 @@ pub struct WriteOnlyPixelFunction;
 
 impl PixelFunction for ReadOnlyPixelFunction {
     #[inline(always)]
-    fn apply(pixel: &mut u16, mask: u16) -> bool {
+    fn apply(pixel: &mut u32, mask: u32) -> bool {
         (*pixel & mask) != mask
     }
 }
 
 impl PixelFunction for WriteOnlyPixelFunction {
     #[inline(always)]
-    fn apply(pixel: &mut u16, mask: u16) -> bool {
+    fn apply(pixel: &mut u32, mask: u32) -> bool {
         *pixel |= mask;
         false
     }
@@ -303,7 +337,9 @@ pub struct Viewport {
     height: f32
 }
 
+// TODO: handle near-plane clipping
 pub fn project(mat: &Mat4, pos: &Vec3, viewport: &Viewport) -> IVec2 {
+    // TODO: Vectorize this, since the generated machine code is terrible and very slow
     let inv_w = 1.0 / ((mat[0][3] * pos.x) + (mat[1][3] * pos.y) + (mat[2][3] * pos.z) + mat[3][3]);
 
     let nx = ((mat[0][0] * pos.x) + (mat[1][0] * pos.y) + (mat[2][0] * pos.z) + mat[3][0]) * inv_w;
@@ -315,12 +351,4 @@ pub fn project(mat: &Mat4, pos: &Vec3, viewport: &Viewport) -> IVec2 {
     IVec2 {
         x, y
     }
-}
-
-fn max4(a: i32, b: i32, c: i32, d: i32) -> i32 {
-    i32::max(i32::max(a, b), i32::max(c, d))
-}
-
-fn min4(a: i32, b: i32, c: i32, d: i32) -> i32 {
-    i32::min(i32::min(a, b), i32::min(c, d))
 }

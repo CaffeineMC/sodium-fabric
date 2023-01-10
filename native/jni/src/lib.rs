@@ -62,7 +62,7 @@ pub extern "system" fn Java_me_jellysquid_mods_sodium_ffi_RustBindings_r_1get_1d
     };
 
     let data_ptr: &mut [u32] = unsafe {
-        std::slice::from_raw_parts_mut(data_ptr as *mut u32, rasterizer.width() * rasterizer.height() * 4)
+        std::slice::from_raw_parts_mut(data_ptr as *mut u32, rasterizer.width() * rasterizer.height())
     };
     
     rasterizer.get_depth_buffer(data_ptr);

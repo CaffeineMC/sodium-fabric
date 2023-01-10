@@ -162,13 +162,13 @@ public class RenderSectionManager {
     private void drawOcclusionHull(RenderSection section, int dist) {
         var boxes = section.getData().getOcclusionBoxes();
 
-        if (boxes != null && dist > 0) {
+        if (boxes != null && dist > 1) {
             this.rasterizer.drawBoxes(boxes[this.getOccluderDetailLevel(dist)], section.getOriginX(), section.getOriginY(), section.getOriginZ());
         }
     }
 
     private boolean isVisibleOnRaster(RenderSection section, int dist) {
-        if (dist > 0) {
+        if (dist > 1) {
             return this.rasterizer.testBox(section.getOriginX(), section.getOriginY(), section.getOriginZ(),
                     section.getOriginX() + 16.0f, section.getOriginY() + 16.0f, section.getOriginZ() + 16.0f, 0b111111);
         }
@@ -196,7 +196,7 @@ public class RenderSectionManager {
         this.watchedArea = newArea;
     }
 
-    protected final Rasterizer rasterizer = new Rasterizer(854, 480);
+    protected final Rasterizer rasterizer = new Rasterizer(864, 480);
 
     private void addSectionToLists(RenderSection section) {
         if (section.getPendingUpdate() != null) {
@@ -218,14 +218,6 @@ public class RenderSectionManager {
         if (section.hasFlag(ChunkDataFlags.HAS_BLOCK_ENTITIES)) {
             this.entityChunks.add(section);
         }
-    }
-
-    private int getDistance(RenderSection section) {
-        int x = Math.abs((MathHelper.floor(this.cameraX) >> 4) - section.getChunkX());
-        int y = Math.abs((MathHelper.floor(this.cameraY) >> 4) - section.getChunkY());
-        int z = Math.abs((MathHelper.floor(this.cameraZ) >> 4) - section.getChunkZ());
-
-        return Math.max(x, Math.max(y, z));
     }
 
     private int getOccluderDetailLevel(int dist) {
