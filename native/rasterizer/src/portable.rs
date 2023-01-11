@@ -207,6 +207,26 @@ impl Rasterizer {
         false
     }
 
+    #[inline(always)]
+    fn draw_tile_scanline<P>(&mut self, y: i32, tile_x: i32, left_bit: i32, right_bit: i32) -> bool
+        where P: PixelFunction
+    {
+        let mask = {
+            0xFFFFFFFFu32
+                .wrapping_shr(-(right_bit - left_bit) as u32)
+                .wrapping_shl(left_bit as u32)
+        };
+
+        let result = unsafe {
+            let index = (y as usize * self.tiles_x) + tile_x as usize;
+            P::apply(self.tiles.get_unchecked_mut(index), mask)
+        };
+
+        self.stats.rasterized_pixels += 32;
+
+        result
+    }
+
     fn draw_spans<P>(&mut self, left: Edge, right: Edge) -> bool
         where P: PixelFunction
     {
@@ -262,78 +282,19 @@ impl Rasterizer {
                 // Clamp the left/right entry events of the scanline to this tile's bounding box
                 let left_bit = i32::max(left_bound, 0);
                 let right_bit = i32::min(right_bound, 32);
-
-                // Calculate a bit mask of left..right bits for the tile
-                let mask = {
-                    0xFFFFFFFFu32
-                        .wrapping_shr(-(right_bit - left_bit) as u32)
-                        .wrapping_shl(left_bit as u32)
-                };
-
-                // Process the tile
-                // The exact behavior here is up to the pixel function which the caller provided
-                let result = unsafe {
-                    let index = (y as usize * self.tiles_x) + tile_x as usize;
-                    P::apply(self.tiles.get_unchecked_mut(index), mask)
-                };
-
-	            self.stats.rasterized_pixels += 32;
-
-                // If the pixel function returned true, it means it would like to exit early (most likely it has the result it needs)
-                if result {
-                    return true;
-                }
+                if self.draw_tile_scanline::<P>(y, tile_x, left_bit, right_bit) { return true; }
             } else {
                 // left end
-                {
-                    // Clamp the left/right entry events of the scanline to this tile's bounding box
-                    let left_bit = i32::max(left_bound, 0);
-                    let right_bit = 32;
+                let left_bit = i32::max(left_bound, 0);
+                if self.draw_tile_scanline::<P>(y, tile_x, left_bit, 32) { return true; }
 
-                    // Calculate a bit mask of left..right bits for the tile
-                    let mask = {
-                        0xFFFFFFFFu32
-                            .wrapping_shr(-(right_bit - left_bit) as u32)
-                            .wrapping_shl(left_bit as u32)
-                    };
-
-                    // Process the tile
-                    // The exact behavior here is up to the pixel function which the caller provided
-                    let result = unsafe {
-                        let index = (y as usize * self.tiles_x) + tile_x as usize;
-                        P::apply(self.tiles.get_unchecked_mut(index), mask)
-                    };
-
-                    self.stats.rasterized_pixels += 32;
-
-                    // If the pixel function returned true, it means it would like to exit early (most likely it has the result it needs)
-                    if result {
-                        return true;
-                    }
-
-                    left_bound -= 32;
-                    right_bound -= 32;
-                    tile_x += 1;
-                }
+                left_bound -= 32;
+                right_bound -= 32;
+                tile_x += 1;
 
                 // center parts that are completely filled
                 while tile_x < tile_right_bound {
-                    // Calculate a bit mask of left..right bits for the tile
-                    let mask = 0xFFFFFFFFu32;
-
-                    // Process the tile
-                    // The exact behavior here is up to the pixel function which the caller provided
-                    let result = unsafe {
-                        let index = (y as usize * self.tiles_x) + tile_x as usize;
-                        P::apply(self.tiles.get_unchecked_mut(index), mask)
-                    };
-
-                    self.stats.rasterized_pixels += 32;
-
-                    // If the pixel function returned true, it means it would like to exit early (most likely it has the result it needs)
-                    if result {
-                        return true;
-                    }
+                    if self.draw_tile_scanline::<P>(y, tile_x, 0, 32) { return true; }
 
                     left_bound -= 32;
                     right_bound -= 32;
@@ -341,32 +302,10 @@ impl Rasterizer {
                 }
 
                 // right end
-                {
-                    // Clamp the left/right entry events of the scanline to this tile's bounding box
-                    let right_bit = i32::min(right_bound, 32);
-
-                    // Calculate a bit mask of left..right bits for the tile
-                    let mask = {
-                        0xFFFFFFFFu32
-                            .wrapping_shr(-(right_bit) as u32)
-                    };
-
-                    // Process the tile
-                    // The exact behavior here is up to the pixel function which the caller provided
-                    let result = unsafe {
-                        let index = (y as usize * self.tiles_x) + tile_x as usize;
-                        P::apply(self.tiles.get_unchecked_mut(index), mask)
-                    };
-
-                    self.stats.rasterized_pixels += 32;
-
-                    // If the pixel function returned true, it means it would like to exit early (most likely it has the result it needs)
-                    if result {
-                        return true;
-                    }
-                }
+                let right_bit = i32::min(right_bound, 32);
+                if self.draw_tile_scanline::<P>(y, tile_x, 0, right_bit) { return true; }
             }
-            
+
             // Step the left/right events forward one scan line
             // Calculating the events looks like (Init + (Y * Step)) but since we step only one
             // scan line at a time, we can simply add Step to Init on each iteration.
