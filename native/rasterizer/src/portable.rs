@@ -207,7 +207,6 @@ impl Rasterizer {
         false
     }
 
-    #[inline(never)]
     fn draw_spans<P>(&mut self, left: Edge, right: Edge) -> bool
         where P: PixelFunction
     {
@@ -257,16 +256,18 @@ impl Rasterizer {
             let mut left_bound = left_bound - (tile_left_bound * 32);
             let mut right_bound = right_bound - (tile_left_bound * 32) + 1;
 
-            for tile_x in tile_left_bound..=tile_right_bound {
+            let mut tile_x = tile_left_bound;
+
+            while tile_x <= tile_right_bound {
                 // Clamp the left/right entry events of the scanline to this tile's bounding box
                 let left_bit = i32::max(left_bound, 0);
                 let right_bit = i32::min(right_bound, 32);
 
                 // Calculate a bit mask of left..right bits for the tile
-                let mask = unsafe {
+                let mask = {
                     0xFFFFFFFFu32
-                        .unchecked_shr(-(right_bit - left_bit) as u32)
-                        .unchecked_shl(left_bit as u32)
+                        .wrapping_shr(-(right_bit - left_bit) as u32)
+                        .wrapping_shl(left_bit as u32)
                 };
 
                 // Process the tile
@@ -276,6 +277,8 @@ impl Rasterizer {
                     P::apply(self.tiles.get_unchecked_mut(index), mask)
                 };
 
+	            self.stats.rasterized_pixels += 32;
+
                 // If the pixel function returned true, it means it would like to exit early (most likely it has the result it needs)
                 if result {
                     return true;
@@ -283,6 +286,7 @@ impl Rasterizer {
 
                 left_bound -= 32;
                 right_bound -= 32;
+                tile_x += 1;
             }
             
             // Step the left/right events forward one scan line
@@ -292,8 +296,6 @@ impl Rasterizer {
             right_x += right_inc;
 
             y -= 1;
-
-            self.stats.rasterized_pixels += 32;
         }
 
         false
