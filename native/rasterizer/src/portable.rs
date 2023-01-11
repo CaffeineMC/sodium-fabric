@@ -255,7 +255,9 @@ impl Rasterizer {
             let mut left_bit_remaining = left_bound - (tile_left_bound << 5);
             let mut right_bit_remaining = right_bound - (tile_left_bound << 5) + 1;
 
-            for tile_x in tile_left_bound..=tile_right_bound {                
+            let mut cur_itr = tile_right_bound - tile_left_bound;
+            while cur_itr >= 0 {
+            //for tile_x in tile_left_bound..=tile_right_bound {                
                 // Clamp the left/right entry events of the scanline to this tile's bounding box
                 let left_bit = i32::max(left_bit_remaining, 0);
                 left_bit_remaining -= 32;
@@ -266,22 +268,26 @@ impl Rasterizer {
                 // Calculate a bit mask of left..right bits for the tile
                 let mask = unsafe {
                     0xFFFFFFFFu32
-                        .unchecked_shr(-(right_bit - left_bit) as u32)
+                        .unchecked_shr(-(right_bit - left_bit) as u32 & 31)
                         .unchecked_shl(left_bit as u32)
                 };
 
                 // Process the tile
                 // The exact behavior here is up to the pixel function which the caller provided
                 let result = unsafe {
-                    let index = (y as usize * self.tiles_x) + tile_x as usize;
+                    let index = (y as usize * self.tiles_x) + (tile_right_bound-cur_itr) as usize;
                     P::apply(self.tiles.get_unchecked_mut(index), mask)
                 };
+
+                cur_itr -= 1;
 
                 // If the pixel function returned true, it means it would like to exit early (most likely it has the result it needs)
                 if result {
                     return true;
                 }
             }
+            
+            
             
             // Step the left/right events forward one scan line
             // Calculating the events looks like (Init + (Y * Step)) but since we step only one
