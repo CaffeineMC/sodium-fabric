@@ -258,7 +258,7 @@ impl Rasterizer {
 
             let mut tile_x = tile_left_bound;
 
-            while tile_x <= tile_right_bound {
+            if tile_x == tile_right_bound {
                 // Clamp the left/right entry events of the scanline to this tile's bounding box
                 let left_bit = i32::max(left_bound, 0);
                 let right_bit = i32::min(right_bound, 32);
@@ -283,10 +283,88 @@ impl Rasterizer {
                 if result {
                     return true;
                 }
+            } else {
+                // left end
+                {
+                    // Clamp the left/right entry events of the scanline to this tile's bounding box
+                    let left_bit = i32::max(left_bound, 0);
+                    let right_bit = 32;
 
-                left_bound -= 32;
-                right_bound -= 32;
-                tile_x += 1;
+                    // Calculate a bit mask of left..right bits for the tile
+                    let mask = {
+                        0xFFFFFFFFu32
+                            .wrapping_shr(-(right_bit - left_bit) as u32)
+                            .wrapping_shl(left_bit as u32)
+                    };
+
+                    // Process the tile
+                    // The exact behavior here is up to the pixel function which the caller provided
+                    let result = unsafe {
+                        let index = (y as usize * self.tiles_x) + tile_x as usize;
+                        P::apply(self.tiles.get_unchecked_mut(index), mask)
+                    };
+
+                    self.stats.rasterized_pixels += 32;
+
+                    // If the pixel function returned true, it means it would like to exit early (most likely it has the result it needs)
+                    if result {
+                        return true;
+                    }
+
+                    left_bound -= 32;
+                    right_bound -= 32;
+                    tile_x += 1;
+                }
+
+                // center parts that are completely filled
+                while tile_x < tile_right_bound {
+                    // Calculate a bit mask of left..right bits for the tile
+                    let mask = 0xFFFFFFFFu32;
+
+                    // Process the tile
+                    // The exact behavior here is up to the pixel function which the caller provided
+                    let result = unsafe {
+                        let index = (y as usize * self.tiles_x) + tile_x as usize;
+                        P::apply(self.tiles.get_unchecked_mut(index), mask)
+                    };
+
+                    self.stats.rasterized_pixels += 32;
+
+                    // If the pixel function returned true, it means it would like to exit early (most likely it has the result it needs)
+                    if result {
+                        return true;
+                    }
+
+                    left_bound -= 32;
+                    right_bound -= 32;
+                    tile_x += 1;
+                }
+
+                // right end
+                {
+                    // Clamp the left/right entry events of the scanline to this tile's bounding box
+                    let right_bit = i32::min(right_bound, 32);
+
+                    // Calculate a bit mask of left..right bits for the tile
+                    let mask = {
+                        0xFFFFFFFFu32
+                            .wrapping_shr(-(right_bit) as u32)
+                    };
+
+                    // Process the tile
+                    // The exact behavior here is up to the pixel function which the caller provided
+                    let result = unsafe {
+                        let index = (y as usize * self.tiles_x) + tile_x as usize;
+                        P::apply(self.tiles.get_unchecked_mut(index), mask)
+                    };
+
+                    self.stats.rasterized_pixels += 32;
+
+                    // If the pixel function returned true, it means it would like to exit early (most likely it has the result it needs)
+                    if result {
+                        return true;
+                    }
+                }
             }
             
             // Step the left/right events forward one scan line
