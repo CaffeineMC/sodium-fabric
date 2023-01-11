@@ -1,4 +1,5 @@
 use std::cmp::PartialEq;
+use _core::arch::x86_64::{_mm_prefetch, _MM_HINT_T0};
 use bitflags::*;
 use ultraviolet::{Mat4, Vec3, IVec2};
 
@@ -227,15 +228,22 @@ impl Rasterizer {
         result
     }
 
+    #[inline(always)]
+    fn prefetch_tile(&self, y: i32, tile_x: i32) {
+        unsafe {
+            _mm_prefetch(self.tiles.get_unchecked((y as usize * self.tiles_x) + tile_x as usize) as *const _ as *const i8, _MM_HINT_T0);
+        }
+    }
+
     fn draw_spans<P>(&mut self, left: Edge, right: Edge) -> bool
         where P: PixelFunction
     {
         let bounds_min_y = i32::max(left.end.y, right.end.y);
         let bounds_max_y = i32::min(left.start.y, right.start.y);
-        
+
         let bounds_min_x = i32::min(left.start.x, left.end.x);
         let bounds_max_x = i32::max(right.start.x, right.end.x);
-        
+
         if outside_viewport(bounds_min_y, bounds_max_y, bounds_min_x, bounds_max_x, self.width as i32, self.height as i32) {
             return false;
         }
@@ -257,13 +265,13 @@ impl Rasterizer {
 
         let mut left_x = left_init + (left_offset_y * left_inc);
         let mut right_x = right_init + (right_offset_y * right_inc);
-        
+
         // Process scanlines in descending Y order from max_y to min_y
         let mut y = max_y;
-        
+
         while y > min_y {
             // Calculate the left/right entry events for the scan line
-            // Since we discarded triangles outside the viewport just above, we alawys know that the left
+            // Since we discarded triangles outside the viewport just above, we always know that the left
             // and right events are within certain edges of the viewport, which avoids an additional
             // min and max in this loop.
             let left_bound = i32::max(left_x >> 16, 0); // (left_x <= width) is always true  
@@ -277,6 +285,7 @@ impl Rasterizer {
             let mut right_bound = right_bound - (tile_left_bound * 32) + 1;
 
             let mut tile_x = tile_left_bound;
+            // self.prefetch_tile(y, tile_x); // prefetching the tile here makes it worse
 
             if tile_x == tile_right_bound {
                 // Clamp the left/right entry events of the scanline to this tile's bounding box
@@ -286,6 +295,7 @@ impl Rasterizer {
             } else {
                 // left end
                 let left_bit = i32::max(left_bound, 0);
+                // self.prefetch_tile(y + 1, tile_x); // prefetching y + 1 doesn't help, x + 1 makes it worse
                 if self.draw_tile_scanline::<P>(y, tile_x, left_bit, 32) { return true; }
 
                 left_bound -= 32;
@@ -294,6 +304,9 @@ impl Rasterizer {
 
                 // center parts that are completely filled
                 while tile_x < tile_right_bound {
+                    // prefetch the next tile before this one is calculated to give it some time to fetch
+                    self.prefetch_tile(y, tile_x + 1);
+                    // self.prefetch_tile(y + 1, tile_x); // doesn't help either
                     if self.draw_tile_scanline::<P>(y, tile_x, 0, 32) { return true; }
 
                     left_bound -= 32;
