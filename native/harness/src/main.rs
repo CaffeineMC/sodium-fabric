@@ -1,7 +1,7 @@
 use minifb::{Key, Window, WindowOptions};
 use ultraviolet::{Mat4, Vec3};
 
-use rasterizer::{AllExecutionsFunction, BoxFace, Rasterizer, WriteOnlyPixelFunction};
+use rasterizer::{AllExecutionsFunction, BoxFace, Rasterizer, RasterPixelFunction};
 
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 720;
@@ -32,7 +32,7 @@ fn main() {
         rasterizer.clear();
         
         rasterizer.set_camera(camera_position, proj_matrix * view_matrix);
-        rasterizer.draw_aabb::<WriteOnlyPixelFunction, AllExecutionsFunction>(
+        rasterizer.draw_aabb::<RasterPixelFunction, AllExecutionsFunction>(
             &Vec3::new(-1.0, -1.0, -1.0),
             &Vec3::new(1.0, 1.0, 1.0),
             BoxFace::ALL);

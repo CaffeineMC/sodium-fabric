@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use rasterizer::{Rasterizer, BoxFace, WriteOnlyPixelFunction, AllExecutionsFunction, ReadOnlyPixelFunction, EarlyExitFunction};
+use rasterizer::{Rasterizer, BoxFace, RasterPixelFunction, AllExecutionsFunction, SamplePixelFunction, EarlyExitFunction};
 use ultraviolet::{Vec3, Mat4};
 use std::ffi::c_void;
 
@@ -107,7 +107,7 @@ pub extern "system" fn Java_me_jellysquid_mods_sodium_ffi_RustBindings_r_1draw_1
         let min = Vec3::new(b.min_x as f32, b.min_y as f32, b.min_z as f32) + offset;
         let max = Vec3::new(b.max_x as f32, b.max_y as f32, b.max_z as f32) + offset;
         
-        rasterizer.draw_aabb::<WriteOnlyPixelFunction, AllExecutionsFunction>(&min, &max, BoxFace::from_bits_truncate(b.face));
+        rasterizer.draw_aabb::<RasterPixelFunction, AllExecutionsFunction>(&min, &max, BoxFace::from_bits_truncate(b.face));
     }
 }
 
@@ -127,7 +127,7 @@ pub extern "system" fn Java_me_jellysquid_mods_sodium_ffi_RustBindings_r_1test_1
     let rasterizer = unsafe {
         Box::leak(Box::from_raw(handle as *mut Rasterizer))
     };
-    rasterizer.draw_aabb::<ReadOnlyPixelFunction, EarlyExitFunction>(&Vec3::new(x1, y1, z1), &Vec3::new(x2, y2, z2), BoxFace::from_bits_truncate(faces as u32))
+    rasterizer.draw_aabb::<SamplePixelFunction, EarlyExitFunction>(&Vec3::new(x1, y1, z1), &Vec3::new(x2, y2, z2), BoxFace::from_bits_truncate(faces as u32))
 }
 
 #[no_mangle]

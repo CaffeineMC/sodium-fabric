@@ -1,5 +1,4 @@
 use std::cmp::PartialEq;
-use std::mem;
 use bitflags::*;
 use ultraviolet::{Mat4, Vec3, IVec2};
 
@@ -43,24 +42,11 @@ impl Rasterizer {
 struct Edge {
     start: IVec2,
     end: IVec2,
-
-    init: i32,  // The initial state at the line origin
-    inc: i32,   // The increment applied to init for each scanline after start_y
 }
 
 impl Edge {
     fn new(start: IVec2, end: IVec2) -> Self {
-        // We use fixed point math here, in i16.i16 format
-        // There is some chance for losing precision here since we project into raster space (integer)
-        //
-        // For some additional instructions, we can work from floating point and take the whole/fractional parts to assemble
-        // a fixed-point number. This would also allow us to vectorize the division here since there are no SIMD instructions
-        // for integer divisions, which would likely end up being a net-positive.
-        
-        let init = start.x << 16;
-        let inc = ((start.x - end.x) << 16) / (end.y - start.y);
-
-        Edge { start, end, init, inc }
+        Edge { start, end }
     }
 }
 
@@ -100,7 +86,19 @@ impl Rasterizer {
     pub fn draw_aabb<T, E>(&mut self, min: &Vec3, max: &Vec3, faces: BoxFace) -> bool
         where T: PixelFunction, E: ResultAccumulator
     {
-        // Project the eight corners of the bounding box
+        let pos_y = faces.contains(BoxFace::POSITIVE_Y) && self.camera_position.y > max.y;
+        let neg_y = faces.contains(BoxFace::NEGATIVE_Y) && self.camera_position.y < min.y;
+
+        let pos_x = faces.contains(BoxFace::POSITIVE_X) && self.camera_position.x > max.x;
+        let neg_x = faces.contains(BoxFace::NEGATIVE_X) && self.camera_position.x < min.x;
+
+        let pos_z = faces.contains(BoxFace::POSITIVE_Z) && self.camera_position.z > max.z;
+        let neg_z = faces.contains(BoxFace::NEGATIVE_Z) && self.camera_position.z < min.z;
+        
+        if !(pos_y | neg_y | pos_x | neg_x | pos_z | neg_z) {
+            return false;
+        }
+
         let c000 = project(&self.camera_matrix, &Vec3::new(min.x, min.y, min.z), &self.viewport);
         let c001 = project(&self.camera_matrix, &Vec3::new(min.x, min.y, max.z), &self.viewport);
         let c100 = project(&self.camera_matrix, &Vec3::new(max.x, min.y, min.z), &self.viewport);
@@ -113,105 +111,103 @@ impl Rasterizer {
 
         let mut result = false;
 
-        if faces.contains(BoxFace::POSITIVE_Y) && self.camera_position.y > max.y {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c110, c010, c111)
-                || self.draw_triangle::<T>(c010, c011, c111));
+        if pos_y {
+            E::accumulate(&mut result, || self.draw_quad::<T>([c010, c011, c111, c110]));
+        } else if neg_y {
+            E::accumulate(&mut result, || self.draw_quad::<T>([c001, c000, c100, c101]));
         }
 
-        if faces.contains(BoxFace::NEGATIVE_Y) && self.camera_position.y < min.y {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c000, c100, c101)
-                || self.draw_triangle::<T>(c001, c000, c101));
+        if pos_x {
+            E::accumulate(&mut result, || self.draw_quad::<T>([c101, c100, c110, c111]));
+        } else if neg_x {
+            E::accumulate(&mut result, || self.draw_quad::<T>([c000, c001, c011, c010]));
         }
 
-        if faces.contains(BoxFace::POSITIVE_X) && self.camera_position.x > max.x {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c101, c100, c111)
-                || self.draw_triangle::<T>(c100, c110, c111));
+        if pos_z {
+            E::accumulate(&mut result, || self.draw_quad::<T>([c001, c101, c111, c011]));
+        } else if neg_z {
+            E::accumulate(&mut result, || self.draw_quad::<T>([c100, c000, c010, c110]));
         }
 
-        if faces.contains(BoxFace::NEGATIVE_X) && self.camera_position.x < min.x {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c000, c001, c011)
-                || self.draw_triangle::<T>(c000, c011, c010));
-        }
-
-        if faces.contains(BoxFace::POSITIVE_Z) && self.camera_position.z > max.z {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c001, c101, c111)
-                || self.draw_triangle::<T>(c111, c011, c001));
-        }
-
-        if faces.contains(BoxFace::NEGATIVE_Z) && self.camera_position.z < min.z {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c000, c010, c110)
-                || self.draw_triangle::<T>(c100, c000, c110));
-        }
-
-        result
+        return result;
     }
 
     // The vertices need to be in clockwise order.
-    pub fn draw_triangle<P>(&mut self, mut v1: IVec2, mut v2: IVec2, mut v3: IVec2) -> bool
+    pub fn draw_quad<P>(&mut self, mut vertices: [IVec2; 4]) -> bool
         where P: PixelFunction
     {
-        // Sort the vertices from top to bottom
-        // This is an unrolled bubble sort to help the compiler as much as possible
-        // The generated machine code is very slightly faster when compared to the simple [slice].sort_by(|v| -v.y)
-        if v1.y < v2.y { mem::swap(&mut v1, &mut v2); }
-        if v2.y < v3.y { mem::swap(&mut v2, &mut v3); }
-        if v1.y < v2.y { mem::swap(&mut v1, &mut v2); }
+        // Sort the vertices from bottom to top
+        vertices.sort_by_key(|v| v.y);
 
-        // The vertices are now in the following configuration
-        //
-        //      v1
-        //      #
-        //      ##    
-        // e13  # #  e12
-        //      #  #            top-half
-        //      #---#  v2       -------
-        //      #  #            bottom-half
-        // e13  # #  e23        
-        //      ##
-        //      #
-        //      v3
+        // Reverse the order of the vertices so they're in top to bottom order
+        let v1 = vertices[3];
+        let v2 = vertices[2];
+        let v3 = vertices[1];
+        let v4 = vertices[0];
+        
+        // The vertices are now in the following configuration...
+        // 
+        //            v1
+        //            #
+        //           # #             
+        //          #   #            top-half triangle
+        //         #-----# v2/v3     -----------------
+        //        #     #            middle trapezoid
+        // v3/v2 #-----#             -----------------
+        //        #   #              bottom-half triangle
+        //         # #
+        //          #
+        //         v4
 
-        // If the top and bottom vertices share the same Y-coordinate, the triangle has no height, so skip it
-        if v1.y == v3.y {
-            return false;
-        }
+        // Top-half triangle
+        if v1.y != v2.y {
+            // Orientation of v2 against edge(v1, v4)
+            let orientation = (v4.x - v1.x) * (v2.y - v1.y) > (v4.y - v1.y) * (v2.x - v1.x);
 
-        // The longest edge of the triangle (from the top-most to the bottom-most vertices)
-        let e13 = Edge::new(v1, v3);
-
-        // The orientation of the midpoint vertex relative to edge(v1, v3) 
-        let orientation = (v3.x - v1.x) * (v2.y - v1.y) - (v3.y - v1.y) * (v2.x - v1.x);
-
-        // Top-half case
-        if v2.y != v1.y {
-            let e12 = Edge::new(v1, v2);
-
-            let (left, right) = if orientation > 0 {
-                (e13, e12)
+            let (mid_left, mid_right) = if orientation {
+                (v3, v2)
             } else {
-                (e12, e13)
+                (v2, v3)
             };
 
-            if self.draw_spans::<P>(left, right) { return true; }
+            if self.draw_spans::<P>(Edge::new(v1, mid_left), Edge::new(v1, mid_right)) { return true; }
         }
 
-        // Bottom-half case
-        if v3.y != v2.y {
-            let e23 = Edge::new(v2, v3);
-
-            let (left, right) = if orientation < 0 {
-                (e23, e13)
+        // Middle trapezoid
+        if v2.y != v3.y {
+            let (top_left, top_right) = if v1.x < v2.x {
+                (v1, v2)
             } else {
-                (e13, e23)
+                (v2, v1)
             };
 
-            if self.draw_spans::<P>(left, right) { return true; }
+            let (bottom_left, bottom_right) = if v3.x < v4.x {
+                (v3, v4)
+            } else {
+                (v4, v3)
+            };
+
+            if self.draw_spans::<P>(Edge::new(top_left, bottom_left), Edge::new(top_right, bottom_right)) { return true; }
+        }
+
+        // Bottom-half triangle
+        if v3.y != v4.y {
+            // Orientation of v3 against edge(v1, v4)
+            let orientation = (v4.x - v1.x) * (v3.y - v1.y) > (v4.y - v1.y) * (v3.x - v1.x);
+
+            let (mid_left, mid_right) = if orientation {
+                (v2, v3)
+            } else {
+                (v3, v2)
+            };
+
+            if self.draw_spans::<P>(Edge::new(mid_left, v4), Edge::new(mid_right, v4)) { return true; }
         }
         
         false
     }
 
-    #[inline(always)]
+    #[inline(never)]
     fn draw_spans<P>(&mut self, left: Edge, right: Edge) -> bool
         where P: PixelFunction
     {
@@ -234,8 +230,14 @@ impl Rasterizer {
         let left_offset_y = left.start.y - max_y;
         let right_offset_y = right.start.y - max_y;
 
-        let mut left_x = left.init + (left_offset_y * left.inc);
-        let mut right_x = right.init + (right_offset_y * right.inc);
+        let left_init = left.start.x << 16;
+        let left_inc = ((left.start.x - left.end.x) << 16) / (left.end.y - left.start.y);
+
+        let right_init = right.start.x << 16;
+        let right_inc = ((right.start.x - right.end.x) << 16) / (right.end.y - right.start.y);
+
+        let mut left_x = left_init + (left_offset_y * left_inc);
+        let mut right_x = right_init + (right_offset_y * right_inc);
         
         // Process scanlines in descending Y order from max_y to min_y
         let mut y = max_y;
@@ -252,16 +254,13 @@ impl Rasterizer {
             let tile_left_bound = left_bound >> 5;
             let tile_right_bound = right_bound >> 5;
 
-            let mut left_bit_remaining = left_bound - (tile_left_bound << 5);
-            let mut right_bit_remaining = right_bound - (tile_left_bound << 5) + 1;
+            let mut left_bound = left_bound - (tile_left_bound * 32);
+            let mut right_bound = right_bound - (tile_left_bound * 32) + 1;
 
-            for tile_x in tile_left_bound..=tile_right_bound {                
+            for tile_x in tile_left_bound..=tile_right_bound {
                 // Clamp the left/right entry events of the scanline to this tile's bounding box
-                let left_bit = i32::max(left_bit_remaining, 0);
-                left_bit_remaining -= 32;
-
-                let right_bit = i32::min(right_bit_remaining, 32);
-                right_bit_remaining -= 32;
+                let left_bit = i32::max(left_bound, 0);
+                let right_bit = i32::min(right_bound, 32);
 
                 // Calculate a bit mask of left..right bits for the tile
                 let mask = unsafe {
@@ -281,13 +280,16 @@ impl Rasterizer {
                 if result {
                     return true;
                 }
+
+                left_bound -= 32;
+                right_bound -= 32;
             }
             
             // Step the left/right events forward one scan line
             // Calculating the events looks like (Init + (Y * Step)) but since we step only one
             // scan line at a time, we can simply add Step to Init on each iteration.
-            left_x += left.inc;
-            right_x += right.inc;
+            left_x += left_inc;
+            right_x += right_inc;
 
             y -= 1;
 
@@ -337,20 +339,29 @@ pub trait PixelFunction {
     fn apply(pixel: &mut u32, mask: u32) -> bool;
 }
 
-pub struct ReadOnlyPixelFunction;
-pub struct WriteOnlyPixelFunction;
+pub struct SamplePixelFunction;
+pub struct RasterPixelFunction;
+pub struct OverdrawPixelFunction;
 
-impl PixelFunction for ReadOnlyPixelFunction {
+impl PixelFunction for SamplePixelFunction {
     #[inline(always)]
     fn apply(pixel: &mut u32, mask: u32) -> bool {
         (*pixel & mask) != mask
     }
 }
 
-impl PixelFunction for WriteOnlyPixelFunction {
+impl PixelFunction for RasterPixelFunction {
     #[inline(always)]
     fn apply(pixel: &mut u32, mask: u32) -> bool {
         *pixel |= mask;
+        false
+    }
+}
+
+impl PixelFunction for OverdrawPixelFunction {
+    #[inline(always)]
+    fn apply(pixel: &mut u32, _: u32) -> bool {
+        *pixel ^= 0xFFFFFFFFu32;
         false
     }
 }

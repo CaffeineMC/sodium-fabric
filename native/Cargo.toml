@@ -3,6 +3,7 @@ members = [ "harness", "rasterizer", "jni" ]
 
 [profile.release]
 lto = true
+debug = 1
 
 [profile.production]
 inherits = "release"

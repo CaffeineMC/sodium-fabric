@@ -1,10 +1,10 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Bencher};
-use rasterizer::{Rasterizer, WriteOnlyPixelFunction, AllExecutionsFunction, BoxFace, ReadOnlyPixelFunction, EarlyExitFunction};
+use rasterizer::{Rasterizer, RasterPixelFunction, AllExecutionsFunction, BoxFace, SamplePixelFunction, EarlyExitFunction};
 use ultraviolet::{Mat4, Vec3};
 
 fn draw_cube(bencher: &mut Bencher, width: usize, height: usize) {
     let camera_target = Vec3::new(0.0, 0.0, 0.0);
-    let camera_position = Vec3::new(3.0, 3.0, 3.0);
+    let camera_position = Vec3::new(1.0, 3.0, 3.0);
     let camera = Camera::create(camera_target, camera_position, width, height);
 
     let mut rasterizer = Rasterizer::create(width, height);
@@ -12,7 +12,7 @@ fn draw_cube(bencher: &mut Bencher, width: usize, height: usize) {
     rasterizer.set_camera(camera.position, camera.proj_matrix * camera.view_matrix);
 
     bencher.iter(|| {
-        rasterizer.draw_aabb::<WriteOnlyPixelFunction, AllExecutionsFunction>(
+        rasterizer.draw_aabb::<RasterPixelFunction, AllExecutionsFunction>(
             &Vec3::new(-1.0, -1.0, -1.0),
             &Vec3::new(1.0, 1.0, 1.0),
             BoxFace::ALL)
@@ -23,20 +23,20 @@ fn draw_cube(bencher: &mut Bencher, width: usize, height: usize) {
 
 fn test_cube(bencher: &mut Bencher, width: usize, height: usize) {
     let camera_target = Vec3::new(0.0, 0.0, 0.0);
-    let camera_position = Vec3::new(3.0, 3.0, 3.0);
+    let camera_position = Vec3::new(1.0, 3.0, 3.0);
     let camera = Camera::create(camera_target, camera_position, width, height);
 
     let mut rasterizer = Rasterizer::create(width, height);
     rasterizer.clear();
     rasterizer.set_camera(camera.position, camera.proj_matrix * camera.view_matrix);
 
-    rasterizer.draw_aabb::<WriteOnlyPixelFunction, AllExecutionsFunction>(
+    rasterizer.draw_aabb::<RasterPixelFunction, AllExecutionsFunction>(
         &Vec3::new(-1.0, -1.0, -1.0),
         &Vec3::new(1.0, 1.0, 1.0),
         BoxFace::ALL);
 
     bencher.iter(|| {
-        rasterizer.draw_aabb::<ReadOnlyPixelFunction, EarlyExitFunction>(
+        rasterizer.draw_aabb::<SamplePixelFunction, EarlyExitFunction>(
             &Vec3::new(-1.0, -1.0, -1.0),
             &Vec3::new(1.0, 1.0, 1.0),
             BoxFace::ALL)
