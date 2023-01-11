@@ -15,23 +15,25 @@ pub struct Rasterizer {
     camera_matrix: Mat4,
     camera_position: Vec3,
 
-    viewport: Viewport
+    viewport: Viewport,
+
+    stats: Stats
 }
 
 impl Rasterizer {
     // This is not meant to be fast. It's simply a debug function for getting out the framebuffer to a usable surface.
     pub fn get_depth_buffer(&self, data: &mut [u32]) {
-        let mut k = 0;
+        for x in 0..self.width {
+            for y in 0..self.height { 
+                let word = self.tiles[(y * self.tiles_x) + (x / 32)];
 
-        for word in self.tiles.iter() {
-            for i in 0..32 {
-                if (word & (1 << i)) != 0 {
-                    data[k] = 0xFFFFFFFF;
+                let color = if (word & (1 << (x % 32))) != 0 {
+                    0xFFFFFFFF
                 } else {
-                    data[k] = 0x00000000;
-                }
+                    0x00000000
+                };
 
-                k += 1;
+                data[(y * self.width) + x] = color;
             }
         }
     }
@@ -64,7 +66,7 @@ impl Edge {
 
 impl Rasterizer {
     pub fn create(width: usize, height: usize) -> Self {
-        let tiles_x = width / 32;
+        let tiles_x = round_up_to_multiple(width, 32) / 32;
         let tiles_y = height;
 
         Rasterizer {
@@ -80,12 +82,14 @@ impl Rasterizer {
                 y: 0.0,
                 width: width as f32,
                 height: height as f32
-            }
+            },
+            stats: Stats::default()
         }
     }
 
     pub fn clear(&mut self) {
         self.tiles.fill(0);
+        self.stats = Stats::default();
     }
 
     pub fn set_camera(&mut self, position: Vec3, matrix: Mat4) {
@@ -188,7 +192,7 @@ impl Rasterizer {
                 (e12, e13)
             };
 
-            if self.draw_spans::<P>(left, right, v2.y, v1.y) { return true; }
+            if self.draw_spans::<P>(left, right) { return true; }
         }
 
         // Bottom-half case
@@ -201,19 +205,29 @@ impl Rasterizer {
                 (e13, e23)
             };
 
-            if self.draw_spans::<P>(left, right, v3.y, v2.y) { return true; }
+            if self.draw_spans::<P>(left, right) { return true; }
         }
         
         false
     }
 
     #[inline(always)]
-    fn draw_spans<P>(&mut self, left: Edge, right: Edge, min_y: i32, max_y: i32) -> bool
+    fn draw_spans<P>(&mut self, left: Edge, right: Edge) -> bool
         where P: PixelFunction
     {
+        let bounds_min_y = i32::max(left.end.y, right.end.y);
+        let bounds_max_y = i32::min(left.start.y, right.start.y);
+        
+        let bounds_min_x = i32::min(left.start.x, left.end.x);
+        let bounds_max_x = i32::max(right.start.x, right.end.x);
+        
+        if outside_viewport(bounds_min_y, bounds_max_y, bounds_min_x, bounds_max_x, self.width as i32, self.height as i32) {
+            return false;
+        }
+
         // Clamp the render bounds to the viewport
-        let min_y = i32::max(min_y, 0);
-        let max_y = i32::min(max_y, self.height as i32 - 1);
+        let min_y = i32::max(bounds_min_y, 0);
+        let max_y = i32::min(bounds_max_y, self.height as i32 - 1);
 
         // This allows us to resume the walk of an existing line, useful for restarting the edge walk
         // of the triangle's longest edge to avoid unnecessary setup.
@@ -222,40 +236,33 @@ impl Rasterizer {
 
         let mut left_x = left.init + (left_offset_y * left.inc);
         let mut right_x = right.init + (right_offset_y * right.inc);
-
-        // Determine if the triangle is outside of the viewport to eliminate needing to clamp the entry/exit
-        // events to both the left and right edge of the viewport
-        if i32::min(left.start.x, left.end.x) >= self.width as i32 {
-            // Left edge is on the right side of the viewport
-            return false;
-        } else if i32::max(right.start.x, right.end.x) < 0 {
-            // Right edge is on the left side of the viewport
-            return false;
-        }
-
+        
         // Process scanlines in descending Y order from max_y to min_y
         let mut y = max_y;
-
+        
         while y > min_y {
             // Calculate the left/right entry events for the scan line
             // Since we discarded triangles outside the viewport just above, we alawys know that the left
             // and right events are within certain edges of the viewport, which avoids an additional
             // min and max in this loop.
-            let left_bound = i32::max(left_x >> 16, 0); // (left_x < width - 1) is always true  
+            let left_bound = i32::max(left_x >> 16, 0); // (left_x <= width) is always true  
             let right_bound = i32::min(right_x >> 16, self.width as i32 - 1); // (right_x > 0) is always true  
 
             // Calculate the range of tiles which this scanline will overlap
             let tile_left_bound = left_bound >> 5;
             let tile_right_bound = right_bound >> 5;
 
-            for tile_x in tile_left_bound..=tile_right_bound {
-                // The x-coordinate in raster space which the tile starts at 
-                let start_x = tile_x * 32;
-                
+            let mut left_bit_remaining = left_bound - (tile_left_bound << 5);
+            let mut right_bit_remaining = right_bound - (tile_left_bound << 5) + 1;
+
+            for tile_x in tile_left_bound..=tile_right_bound {                
                 // Clamp the left/right entry events of the scanline to this tile's bounding box
-                let left_bit = i32::max(left_bound - start_x, 0);
-                let right_bit = i32::min(right_bound - start_x + 1, 32);
-                
+                let left_bit = i32::max(left_bit_remaining, 0);
+                left_bit_remaining -= 32;
+
+                let right_bit = i32::min(right_bit_remaining, 32);
+                right_bit_remaining -= 32;
+
                 // Calculate a bit mask of left..right bits for the tile
                 let mask = unsafe {
                     0xFFFFFFFFu32
@@ -283,6 +290,8 @@ impl Rasterizer {
             right_x += right.inc;
 
             y -= 1;
+
+            self.stats.rasterized_pixels += 32;
         }
 
         false
@@ -299,6 +308,29 @@ impl Rasterizer {
     pub fn width(&self) -> usize {
         self.width
     }
+
+    pub fn stats(&self) -> Stats {
+        self.stats.clone()
+    }
+}
+
+fn outside_viewport(min_y: i32, max_y: i32, min_x: i32, max_x: i32,
+                    width: i32, height: i32) -> bool
+{
+    if max_x < 0 || min_x >= width {
+        return true;
+    }
+
+    if max_y < 0 || min_y >= height {
+        return true;
+    }
+
+    false
+}
+
+#[derive(Clone, Default)]
+pub struct Stats {
+    pub rasterized_pixels: u64
 }
 
 pub trait PixelFunction {
@@ -387,4 +419,11 @@ pub fn project(mat: &Mat4, pos: &Vec3, viewport: &Viewport) -> IVec2 {
     IVec2 {
         x, y
     }
+}
+
+// Multiple must be a power-of-two!
+fn round_up_to_multiple(number: usize, multiple: usize) -> usize {
+    let additive = multiple - 1;
+    let mask = !additive;
+    (number + additive) & mask
 }

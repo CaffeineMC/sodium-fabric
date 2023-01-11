@@ -196,7 +196,7 @@ public class RenderSectionManager {
         this.watchedArea = newArea;
     }
 
-    protected final Rasterizer rasterizer = new Rasterizer(864, 480);
+    protected final Rasterizer rasterizer = new Rasterizer(854, 480);
 
     private void addSectionToLists(RenderSection section) {
         if (section.getPendingUpdate() != null) {

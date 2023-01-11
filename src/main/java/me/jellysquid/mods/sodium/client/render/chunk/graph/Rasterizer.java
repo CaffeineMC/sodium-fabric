@@ -42,7 +42,9 @@ public class Rasterizer {
         ByteBuffer buffer = MemoryUtil.memAlloc(this.width * this.height * 4);
         RustBindings.r_get_depth_buffer(this.handle, MemoryUtil.memAddress(buffer));
 
+        STBImageWrite.stbi_flip_vertically_on_write(true);
         STBImageWrite.stbi_write_png(filename, this.width, this.height, 4, buffer, (this.width * 4));
+        STBImageWrite.stbi_flip_vertically_on_write(false);
 
         MemoryUtil.memFree(buffer);
     }

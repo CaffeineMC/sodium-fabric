@@ -24,7 +24,7 @@ fn main() {
         }
 
         let camera_target = Vec3::new(0.0, 0.0, 0.0);
-        let camera_position = Vec3::new(time.cos() * 3.0, 3.0, time.sin() * 3.0);
+        let camera_position = Vec3::new(time.cos() * 4.0, 3.0, time.sin() * 4.0);
         
         let view_matrix = Mat4::look_at(camera_position, camera_target, Vec3::new(0.0, 1.0, 0.0));
         let proj_matrix = ultraviolet::projection::perspective_gl(45.0f32.to_radians(), WIDTH as f32 / HEIGHT as f32, 0.01, 1000.0);
