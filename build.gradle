@@ -54,6 +54,10 @@ java {
     withSourcesJar()
 }
 
+runClient {
+    systemProperty 'java.library.path', "$projectDir/native/target/release"
+}
+
 jar {
     from "LICENSE.txt"
 }
