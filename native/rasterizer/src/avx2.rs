@@ -266,19 +266,16 @@ impl Rasterizer {
                 // Step across each word in a scanline
                 while tile_x <= tile_max_x {
                     // Create a bitmask for the current tile given the scan line bounds 
-                    let x_mask = {
+                    let mask = {
                         // left_mask = (~0 >> max(0, left - x))
-                        let left_mask = _mm256_srlv_epi32(_mm256_set1_epi32(0xFFFFFFFFi32), _mm256_max_epi32(left_bound, _mm256_set1_epi32(0)));
+                        let left_mask = _mm256_srlv_epi32(y_mask, _mm256_max_epi32(left_bound, _mm256_set1_epi32(0)));
 
                         // right_mask = (~0 >> max(0, right - x))
-                        let right_mask = _mm256_srlv_epi32(_mm256_set1_epi32(0xFFFFFFFFi32), _mm256_max_epi32(right_bound, _mm256_set1_epi32(0)));
+                        let right_mask = _mm256_srlv_epi32(y_mask, _mm256_max_epi32(right_bound, _mm256_set1_epi32(0)));
 
                         // mask = left_mask & ~right_mask
                         _mm256_and_si256(left_mask, _mm256_xor_si256(right_mask, _mm256_set1_epi32(0xFFFFFFFFi32)))
                     };
-
-                    // Mask off any scan lines which are not within bounds
-                    let mask = _mm256_and_si256(x_mask, y_mask);
 
                     // Apply the bitmask to the tile using the pixel function
                     // Depending on the implementation, this may or may not write data
@@ -316,7 +313,7 @@ impl Rasterizer {
         false
     }
 
-    pub fn pixels(&self) -> &[__m256i] {
+    pub fn tiles(&self) -> &[__m256i] {
         &self.tiles
     }
 
