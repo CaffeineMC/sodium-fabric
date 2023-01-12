@@ -18,7 +18,7 @@ fn draw_cube(bencher: &mut Bencher, width: usize, height: usize) {
             BoxFace::ALL);
 
         black_box(result);
-        black_box(rasterizer.pixels());
+        black_box(rasterizer.tiles());
     });
 }
 
@@ -43,7 +43,7 @@ fn test_cube(bencher: &mut Bencher, width: usize, height: usize) {
             BoxFace::ALL);
 
         black_box(result);
-        black_box(rasterizer.pixels());
+        black_box(rasterizer.tiles());
     });
 }
 

@@ -1,7 +1,7 @@
 use std::mem;
 use std::arch::x86_64::*;
 use bitflags::*;
-use ultraviolet::{Mat4, Vec3, IVec2};
+use ultraviolet::{Mat4, Vec3, IVec2, Vec4};
 
 #[allow(unused)]
 pub struct Rasterizer {
@@ -12,7 +12,7 @@ pub struct Rasterizer {
     tiles_x: usize,
     tiles_y: usize,
 
-    camera_matrix: Mat4,
+    camera_matrix: Mat4x32,
     camera_position: Vec3,
 
     viewport: Viewport,
@@ -65,7 +65,7 @@ impl Rasterizer {
             height,
             tiles_x,
             tiles_y,
-            camera_matrix: Mat4::identity(),
+            camera_matrix: Mat4x32::from(Mat4::identity()),
             camera_position: Vec3::default(),
             viewport: Viewport {
                 x: 0.0,
@@ -83,7 +83,7 @@ impl Rasterizer {
     }
 
     pub fn set_camera(&mut self, position: Vec3, matrix: Mat4) {
-        self.camera_matrix = matrix;
+        self.camera_matrix = Mat4x32::from(matrix);
         self.camera_position = position;
     }
 
@@ -91,47 +91,62 @@ impl Rasterizer {
     pub fn draw_aabb<T, E>(&mut self, min: &Vec3, max: &Vec3, faces: BoxFace) -> bool
         where T: PixelFunction, E: ResultAccumulator
     {
-        // Project the eight corners of the bounding box
-        let c000 = project(&self.camera_matrix, &Vec3::new(min.x, min.y, min.z), &self.viewport);
-        let c001 = project(&self.camera_matrix, &Vec3::new(min.x, min.y, max.z), &self.viewport);
-        let c100 = project(&self.camera_matrix, &Vec3::new(max.x, min.y, min.z), &self.viewport);
-        let c101 = project(&self.camera_matrix, &Vec3::new(max.x, min.y, max.z), &self.viewport);
+        let pos_x = faces.contains(BoxFace::POSITIVE_X) && self.camera_position.x > max.x;
+        let neg_x = faces.contains(BoxFace::NEGATIVE_X) && self.camera_position.x < min.x;
 
-        let c010 = project(&self.camera_matrix, &Vec3::new(min.x, max.y, min.z), &self.viewport);
-        let c011 = project(&self.camera_matrix, &Vec3::new(min.x, max.y, max.z), &self.viewport);
-        let c110 = project(&self.camera_matrix, &Vec3::new(max.x, max.y, min.z), &self.viewport);
-        let c111 = project(&self.camera_matrix, &Vec3::new(max.x, max.y, max.z), &self.viewport);
+        let pos_y = faces.contains(BoxFace::POSITIVE_Y) && self.camera_position.y > max.y;
+        let neg_y = faces.contains(BoxFace::NEGATIVE_Y) && self.camera_position.y < min.y;
+
+        let pos_z = faces.contains(BoxFace::POSITIVE_Z) && self.camera_position.z > max.z;
+        let neg_z = faces.contains(BoxFace::NEGATIVE_Z) && self.camera_position.z < min.z;
+
+        if !(pos_x | neg_x | pos_y | neg_y | pos_z | neg_z) {
+            return false;
+        }
+
+        let vertices: [Vec3; 8] = [
+            Vec3::new(min.x, min.y, min.z),
+            Vec3::new(min.x, min.y, max.z),
+            Vec3::new(max.x, min.y, min.z),
+            Vec3::new(max.x, min.y, max.z),
+    
+            Vec3::new(min.x, max.y, min.z),
+            Vec3::new(min.x, max.y, max.z),
+            Vec3::new(max.x, max.y, min.z),
+            Vec3::new(max.x, max.y, max.z),
+        ];
+
+        let mut corners = [IVec2::default(); 8];
+
+        // Project the eight corners of the bounding box
+        for i in 0..8 {
+            corners[i] = project(&self.camera_matrix, vertices[i], &self.viewport);
+        }
 
         let mut result = false;
 
-        if faces.contains(BoxFace::POSITIVE_Y) && self.camera_position.y > max.y {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c110, c010, c111)
-                || self.draw_triangle::<T>(c010, c011, c111));
+        if pos_x {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[3], corners[2], corners[7])
+                || self.draw_triangle::<T>(corners[2], corners[6], corners[7]));
+        } else if neg_x {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[0], corners[1], corners[5])
+                || self.draw_triangle::<T>(corners[0], corners[5], corners[4]));
         }
 
-        if faces.contains(BoxFace::NEGATIVE_Y) && self.camera_position.y < min.y {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c000, c100, c101)
-                || self.draw_triangle::<T>(c001, c000, c101));
+        if pos_y {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[6], corners[4], corners[7])
+                || self.draw_triangle::<T>(corners[4], corners[5], corners[7]));
+        } else if neg_y {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[0], corners[2], corners[3])
+                || self.draw_triangle::<T>(corners[1], corners[0], corners[3]));
         }
 
-        if faces.contains(BoxFace::POSITIVE_X) && self.camera_position.x > max.x {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c101, c100, c111)
-                || self.draw_triangle::<T>(c100, c110, c111));
-        }
-
-        if faces.contains(BoxFace::NEGATIVE_X) && self.camera_position.x < min.x {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c000, c001, c011)
-                || self.draw_triangle::<T>(c000, c011, c010));
-        }
-
-        if faces.contains(BoxFace::POSITIVE_Z) && self.camera_position.z > max.z {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c001, c101, c111)
-                || self.draw_triangle::<T>(c111, c011, c001));
-        }
-
-        if faces.contains(BoxFace::NEGATIVE_Z) && self.camera_position.z < min.z {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(c000, c010, c110)
-                || self.draw_triangle::<T>(c100, c000, c110));
+        if pos_z {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[1], corners[3], corners[7])
+                || self.draw_triangle::<T>(corners[7], corners[5], corners[1]));
+        } else if neg_z {
+            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[0], corners[4], corners[6])
+                || self.draw_triangle::<T>(corners[2], corners[0], corners[6]));
         }
 
         result
@@ -195,7 +210,6 @@ impl Rasterizer {
         false
     }
 
-    #[inline(always)]
     #[allow(overflowing_literals)]
     fn draw_spans<P>(&mut self, left: Edge, right: Edge) -> bool
         where P: PixelFunction
@@ -216,7 +230,7 @@ impl Rasterizer {
         let bounds_min_y = i32::max(bounds_min_y, 0);
         let bounds_max_x = i32::min(bounds_max_x, self.width as i32 - 1);
         let bounds_max_y = i32::min(bounds_max_y, self.height as i32 - 1);
-                
+
         // Find the tiles which the bounding box overlaps
         let tile_min_x = bounds_min_x >> 5;
         let tile_min_y = bounds_min_y >> 3;
@@ -265,7 +279,7 @@ impl Rasterizer {
 
                 // Step across each word in a scanline
                 while tile_x <= tile_max_x {
-                    // Create a bitmask for the current tile given the scan line bounds 
+                    // Create a bitmask for the current tile given the scan line bounds  
                     let mask = {
                         // left_mask = (~0 >> max(0, left - x))
                         let left_mask = _mm256_srlv_epi32(y_mask, _mm256_max_epi32(left_bound, _mm256_set1_epi32(0)));
@@ -422,16 +436,51 @@ pub struct Viewport {
     height: f32
 }
 
+struct Mat4x32 {
+    cols: [__m128; 4]    
+}
+
+impl From<Mat4> for Mat4x32 {
+    fn from(mat: Mat4) -> Self {
+        unsafe {
+            Mat4x32 {
+                cols: [
+                    _mm_set_ps(mat[0][0], mat[0][1], mat[0][2], mat[0][3]),
+                    _mm_set_ps(mat[1][0], mat[1][1], mat[1][2], mat[1][3]),
+                    _mm_set_ps(mat[2][0], mat[2][1], mat[2][2], mat[2][3]),
+                    _mm_set_ps(mat[3][0], mat[3][1], mat[3][2], mat[3][3])
+                ]
+            }
+        }
+    }
+}
+
 // TODO: handle near-plane clipping
-pub fn project(mat: &Mat4, pos: &Vec3, viewport: &Viewport) -> IVec2 {
-    // TODO: Vectorize this, since the generated machine code is terrible and very slow
-    let inv_w = 1.0 / ((mat[0][3] * pos.x) + (mat[1][3] * pos.y) + (mat[2][3] * pos.z) + mat[3][3]);
+#[inline(always)]
+fn project(mat: &Mat4x32, pos: Vec3, viewport: &Viewport) -> IVec2 {
+    let pos = Vec4::new(pos.x, pos.y, pos.z, 1.0);
 
-    let nx = ((mat[0][0] * pos.x) + (mat[1][0] * pos.y) + (mat[2][0] * pos.z) + mat[3][0]) * inv_w;
-    let ny = ((mat[0][1] * pos.x) + (mat[1][1] * pos.y) + (mat[2][1] * pos.z) + mat[3][1]) * inv_w;
+    let (x, y) = unsafe {
+        let x = _mm_mul_ps(mat.cols[0], _mm_set1_ps(pos.x));
+        let y = _mm_mul_ps(mat.cols[1], _mm_set1_ps(pos.y));
+        let z = _mm_mul_ps(mat.cols[2], _mm_set1_ps(pos.z));
+        let w = _mm_mul_ps(mat.cols[3], _mm_set1_ps(pos.w));
 
-    let x = ((((nx * 0.5) + 0.5) * viewport.width) + viewport.x).floor() as i32;
-    let y = ((((ny * 0.5) + 0.5) * viewport.height) + viewport.y).floor() as i32;
+        let n = _mm_add_ps(_mm_add_ps(x, y), _mm_add_ps(z, w));
+        let n = _mm_permute_ps(n, _MM_SHUFFLE(3, 2, 1, 0));
+
+        let nw = _mm_div_ps(n, _mm_broadcastss_ps(n));
+        let nws = _mm_add_ps(_mm_mul_ps(nw, _mm_set1_ps(0.5)), _mm_set1_ps(0.5));
+
+        let viewport_scale = _mm_set_ps(viewport.width, viewport.height, 0.0, 0.0);
+        let viewport_origin = _mm_set_ps(viewport.x, viewport.y, 0.0, 0.0);
+
+        let view_coord = _mm_add_ps(_mm_mul_ps(nws, viewport_scale), viewport_origin);
+        let raster_coord = _mm_cvtps_epi32(_mm_floor_ps(view_coord));
+
+        (_mm_extract_epi32(raster_coord, 3), _mm_extract_epi32(raster_coord, 2))
+    };
+    
 
     IVec2 {
         x, y
