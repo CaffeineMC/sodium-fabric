@@ -43,9 +43,9 @@ fn draw_small_cubes(bencher: &mut Bencher, width: usize, height: usize) {
             for x in 0..steps {
                 for y in 0..steps {
                     for z in 0..steps {
-                        let x = start + (x as f32 / steps as f32) * (end - start);
+                        let x = start + ((steps - x) as f32 / steps as f32) * (end - start);
                         let y = start + (y as f32 / steps as f32) * (end - start);
-                        let z = start + (z as f32 / steps as f32) * (end - start);
+                        let z = start + ((steps - z) as f32 / steps as f32) * (end - start);
 
                         result |= rasterizer.draw_aabb::<RasterPixelFunction, AllExecutionsFunction>(
                             &Vec3::new(x, y, z),
