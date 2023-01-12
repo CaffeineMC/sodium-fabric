@@ -1,8 +1,12 @@
-#![feature(portable_simd)]
-#![feature(unchecked_math)]
+#![feature(stdarch)]
 
-mod portable;
+#[cfg(target_feature = "avx2")]
+#[path = "avx2.rs"]
+mod implementation;
 
-pub use portable::*;
+#[cfg(not(any(target_feature = "avx2")))]
+mod none {
+    compile_error!("No implementation found for rasterizer... you probably need to change your compile flags.");
+}
 
-
+pub use implementation::*;
