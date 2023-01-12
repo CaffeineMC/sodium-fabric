@@ -299,7 +299,7 @@ impl Rasterizer {
                         P::apply(self.tiles.as_mut_ptr()
                             .add(tile_index as usize), mask)
                     };
-                    
+
                     // The pixel function decides whether we should exit early or not. Depending on the pixel function used,
                     // the compiler may optimize this away entirely, such as for the write-only function which does not return early.
                     if result {
@@ -309,7 +309,7 @@ impl Rasterizer {
                     // Advance the left/right bounds by one tile
                     left_bound = _mm256_sub_epi32(left_bound, _mm256_set1_epi32(32));
                     right_bound = _mm256_sub_epi32(right_bound, _mm256_set1_epi32(32));
-                    
+
                     tile_x += 1;
                 }
 
