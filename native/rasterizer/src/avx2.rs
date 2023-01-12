@@ -238,9 +238,8 @@ impl Rasterizer {
         let tile_max_y = bounds_max_y >> 3;
 
         let left_init = left.start.x << 16;
-        let left_inc = ((left.start.x - left.end.x) << 16) / (left.end.y - left.start.y);
-
         let right_init = right.start.x << 16;
+        let left_inc = ((left.start.x - left.end.x) << 16) / (left.end.y - left.start.y);
         let right_inc = ((right.start.x - right.end.x) << 16) / (right.end.y - right.start.y);
 
         unsafe {
@@ -251,28 +250,30 @@ impl Rasterizer {
             let mut y_coord = _mm256_add_epi32(_mm256_set1_epi32(tile_max_y * 8), _mm256_set_epi32(0, 1, 2, 3, 4, 5, 6, 7));
 
             // The starting value for the left edge
-            let mut left_x = _mm256_add_epi32(_mm256_set1_epi32(left_init), _mm256_mullo_epi32(_mm256_sub_epi32(_mm256_set1_epi32(left.start.y), y_coord), _mm256_set1_epi32(left_inc)));
-            left_x = _mm256_sub_epi32(left_x, line_x_offset);
+            let left_x = _mm256_add_epi32(_mm256_set1_epi32(left_init), _mm256_mullo_epi32(_mm256_sub_epi32(_mm256_set1_epi32(left.start.y), y_coord), _mm256_set1_epi32(left_inc)));
+            let mut left_x_px = _mm256_sub_epi32(left_x, line_x_offset);
 
             // The starting value for the right edge
-            let mut right_x = _mm256_add_epi32(_mm256_set1_epi32(right_init), _mm256_mullo_epi32(_mm256_sub_epi32(_mm256_set1_epi32(right.start.y), y_coord), _mm256_set1_epi32(right_inc)));
-            right_x = _mm256_sub_epi32(right_x, line_x_offset);
+            let right_x = _mm256_add_epi32(_mm256_set1_epi32(right_init), _mm256_mullo_epi32(_mm256_sub_epi32(_mm256_set1_epi32(right.start.y), y_coord), _mm256_set1_epi32(right_inc)));
+            let mut right_x_px = _mm256_sub_epi32(right_x, line_x_offset);
 
             // The value by which left/right are advanced each tile
-            let left_x_step = _mm256_mullo_epi32(_mm256_set1_epi32(left_inc), _mm256_set1_epi32(8));
-            let right_x_step = _mm256_mullo_epi32(_mm256_set1_epi32(right_inc), _mm256_set1_epi32(8));
+            // x_step = (left_inc * 8) is equiv to x_step = (left_inc << 3)
+            let left_x_step = _mm256_slli_epi32(_mm256_set1_epi32(left_inc), 3);
+            let right_x_step = _mm256_slli_epi32(_mm256_set1_epi32(right_inc), 3);
 
             let mut tile_y = tile_max_y;
 
             // Step downward in parallel for each scanline
             while tile_y >= tile_min_y {
                 // The bounds of the rendered scanline
-                let mut left_bound = _mm256_srai_epi32(left_x, 16);
-                let mut right_bound = _mm256_srai_epi32(right_x, 16);
+                let mut left_bound = _mm256_srai_epi32(left_x_px, 16);
+                let mut right_bound = _mm256_srai_epi32(right_x_px, 16);
 
                 // Since we render tiles, it's possible for rendering to start or end outside of the bounds. To avoid this,
                 // we generate a mask for each y-coordinate depending on whether or not it's within bounds.
-                let y_mask = _mm256_and_si256(_mm256_cmpgt_epi32(y_coord, _mm256_set1_epi32(bounds_min_y - 1)),
+                // y_mask = ~(bounds_min_y > y_coord) & (bounds_max_y > y_coord)
+                let y_mask = _mm256_andnot_si256(_mm256_cmpgt_epi32(_mm256_set1_epi32(bounds_min_y), y_coord),
                     _mm256_cmpgt_epi32(_mm256_set1_epi32(bounds_max_y), y_coord));
 
                 let mut tile_x = tile_min_x;
@@ -288,7 +289,7 @@ impl Rasterizer {
                         let right_mask = _mm256_srlv_epi32(y_mask, _mm256_max_epi32(right_bound, _mm256_set1_epi32(0)));
 
                         // mask = left_mask & ~right_mask
-                        _mm256_and_si256(left_mask, _mm256_xor_si256(right_mask, _mm256_set1_epi32(0xFFFFFFFFi32)))
+                        _mm256_andnot_si256(right_mask, left_mask)
                     };
 
                     // Apply the bitmask to the tile using the pixel function
@@ -317,8 +318,8 @@ impl Rasterizer {
                 y_coord = _mm256_sub_epi32(y_coord, _mm256_set1_epi32(8));
 
                 // Step the left/right bounds for the next scanlines
-                left_x = _mm256_add_epi32(left_x, left_x_step);
-                right_x = _mm256_add_epi32(right_x, right_x_step);
+                left_x_px = _mm256_add_epi32(left_x_px, left_x_step);
+                right_x_px = _mm256_add_epi32(right_x_px, right_x_step);
 
                 tile_y -= 1;
             }
@@ -374,14 +375,22 @@ pub struct RasterPixelFunction;
 impl PixelFunction for SamplePixelFunction {
     #[inline(always)]
     unsafe fn apply(pixel: *mut __m256i, mask: __m256i) -> bool {
-        _mm256_movemask_epi8(_mm256_xor_si256(_mm256_and_si256(_mm256_load_si256(pixel), mask), mask)) != 0x0
+        let prev = _mm256_load_si256(pixel);
+        let overlap = _mm256_and_si256(prev, mask);
+        let difference = _mm256_xor_si256(overlap, mask);
+
+        _mm256_movemask_epi8(difference) != 0x0
     }
 }
 
 impl PixelFunction for RasterPixelFunction {
     #[inline(always)]
     unsafe fn apply(pixel: *mut __m256i, mask: __m256i) -> bool {
-        _mm256_store_si256(pixel, _mm256_or_si256(_mm256_load_si256(pixel), mask));
+        let prev = _mm256_load_si256(pixel);
+        let overlap = _mm256_or_si256(prev, mask);
+        
+        _mm256_store_si256(pixel, overlap);
+
         false
     }
 }
