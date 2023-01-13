@@ -21,19 +21,17 @@ public class MixinRenderSystem {
     @Redirect(method = "flipFrame", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwPollEvents()V", ordinal = 0))
     private static void removeFirstPoll() {
         // noop
-    }
-    
-    @Inject(method = "flipFrame", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwSwapBuffers(J)V", shift = At.Shift.BEFORE))
-    private static void preFlip(long window, CallbackInfo ci) {
-        while (fences.size() > SodiumClientMod.options().advanced.cpuRenderAheadLimit) {
-            var fence = fences.dequeue();
-            fence.sync(true);
-        }
+        // should fix some bugs with minecraft polling events twice for some reason (why does it do that in the first place?)
     }
     
     @Inject(method = "flipFrame", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwSwapBuffers(J)V"))
     private static void postFlip(long window, CallbackInfo ci) {
         fences.enqueue(SodiumClientMod.DEVICE.createFence());
+        
+        while (fences.size() > SodiumClientMod.options().advanced.cpuRenderAheadLimit) {
+            var fence = fences.dequeue();
+            fence.sync(true);
+        }
     }
     
     @Inject(method = "initRenderer", at = @At("TAIL"), remap = false)
