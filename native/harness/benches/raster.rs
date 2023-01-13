@@ -13,9 +13,9 @@ fn draw_cube(bencher: &mut Bencher, width: usize, height: usize) {
 
     bencher.iter(|| {
         let result = rasterizer.draw_aabb::<RasterPixelFunction, AllExecutionsFunction>(
-            &Vec3::new(-1.0, -1.0, -1.0),
-            &Vec3::new(1.0, 1.0, 1.0),
-            BoxFace::ALL);
+            Vec3::new(-1.0, -1.0, -1.0),
+            Vec3::new(1.0, 1.0, 1.0),
+            BoxFace::all());
 
         black_box(result);
         black_box(rasterizer.tiles());
@@ -32,15 +32,15 @@ fn test_cube(bencher: &mut Bencher, width: usize, height: usize) {
     rasterizer.set_camera(camera.position, camera.proj_matrix * camera.view_matrix);
 
     rasterizer.draw_aabb::<RasterPixelFunction, AllExecutionsFunction>(
-        &Vec3::new(-1.0, -1.0, -1.0),
-        &Vec3::new(1.0, 1.0, 1.0),
-        BoxFace::ALL);
+        Vec3::new(-1.0, -1.0, -1.0),
+        Vec3::new(1.0, 1.0, 1.0),
+        BoxFace::all());
 
     bencher.iter(|| {
         let result = rasterizer.draw_aabb::<SamplePixelFunction, EarlyExitFunction>(
-            &Vec3::new(-1.0, -1.0, -1.0),
-            &Vec3::new(1.0, 1.0, 1.0),
-            BoxFace::ALL);
+            Vec3::new(-1.0, -1.0, -1.0),
+            Vec3::new(1.0, 1.0, 1.0),
+            BoxFace::all());
 
         black_box(result);
         black_box(rasterizer.tiles());

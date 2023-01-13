@@ -1,7 +1,7 @@
 use std::mem;
 use std::arch::x86_64::*;
 use bitflags::*;
-use ultraviolet::{Mat4, Vec3, IVec2, Vec4};
+use ultraviolet::{Mat4, Vec3, IVec2, IVec4};
 
 #[allow(unused)]
 pub struct Rasterizer {
@@ -67,12 +67,7 @@ impl Rasterizer {
             tiles_y,
             camera_matrix: Mat4x32::from(Mat4::identity()),
             camera_position: Vec3::default(),
-            viewport: Viewport {
-                x: 0.0,
-                y: 0.0,
-                width: width as f32,
-                height: height as f32
-            },
+            viewport: Viewport::create(0, 0, width, height),
             stats: Stats::default()
         }
     }
@@ -87,8 +82,7 @@ impl Rasterizer {
         self.camera_position = position;
     }
 
-
-    pub fn draw_aabb<T, E>(&mut self, min: &Vec3, max: &Vec3, faces: BoxFace) -> bool
+    pub fn draw_aabb<T, E>(&mut self, min: Vec3, max: Vec3, faces: BoxFace) -> bool
         where T: PixelFunction, E: ResultAccumulator
     {
         let pos_x = faces.contains(BoxFace::POSITIVE_X) && self.camera_position.x > max.x;
@@ -104,56 +98,47 @@ impl Rasterizer {
             return false;
         }
 
-        let vertices: [Vec3; 8] = [
-            Vec3::new(min.x, min.y, min.z),
-            Vec3::new(min.x, min.y, max.z),
-            Vec3::new(max.x, min.y, min.z),
-            Vec3::new(max.x, min.y, max.z),
+        unsafe {
+            let min = _mm256_broadcast_ps(&_mm_set_ps(min.x, min.y, min.z, 1.0));
+            let max = _mm256_broadcast_ps(&_mm_set_ps(max.x, max.y, max.z, 1.0));
+            
+            let (c0, c1) = project_vec3x2(&self.camera_matrix, _mm256_blend_ps(min, max, 0b_0000_0100), &self.viewport);
+            let (c2, c3) = project_vec3x2(&self.camera_matrix, _mm256_blend_ps(min, max, 0b_1000_1100), &self.viewport);
+            let (c4, c5) = project_vec3x2(&self.camera_matrix, _mm256_blend_ps(min, max, 0b_0010_0110), &self.viewport);
+            let (c6, c7) = project_vec3x2(&self.camera_matrix, _mm256_blend_ps(min, max, 0b_1010_1110), &self.viewport);
+                
+            let mut result = false;
     
-            Vec3::new(min.x, max.y, min.z),
-            Vec3::new(min.x, max.y, max.z),
-            Vec3::new(max.x, max.y, min.z),
-            Vec3::new(max.x, max.y, max.z),
-        ];
-
-        let mut corners = [IVec2::default(); 8];
-
-        // Project the eight corners of the bounding box
-        for i in 0..8 {
-            corners[i] = project(&self.camera_matrix, vertices[i], &self.viewport);
+            if pos_x {
+                E::accumulate(&mut result, || self.draw_triangle::<T>(c6, c2, c7)
+                    || self.draw_triangle::<T>(c2, c3, c7));
+            } else if neg_x {
+                E::accumulate(&mut result, || self.draw_triangle::<T>(c0, c4, c5)
+                    || self.draw_triangle::<T>(c0, c5, c1));
+            }
+    
+            if pos_y {
+                E::accumulate(&mut result, || self.draw_triangle::<T>(c3, c1, c7)
+                    || self.draw_triangle::<T>(c1, c5, c7));
+            } else if neg_y {
+                E::accumulate(&mut result, || self.draw_triangle::<T>(c0, c2, c6)
+                    || self.draw_triangle::<T>(c4, c0, c6));
+            }
+    
+            if pos_z {
+                E::accumulate(&mut result, || self.draw_triangle::<T>(c4, c6, c7)
+                    || self.draw_triangle::<T>(c7, c5, c4));
+            } else if neg_z {
+                E::accumulate(&mut result, || self.draw_triangle::<T>(c0, c1, c3)
+                    || self.draw_triangle::<T>(c2, c0, c3));
+            }
+    
+            result
         }
-
-        let mut result = false;
-
-        if pos_x {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[3], corners[2], corners[7])
-                || self.draw_triangle::<T>(corners[2], corners[6], corners[7]));
-        } else if neg_x {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[0], corners[1], corners[5])
-                || self.draw_triangle::<T>(corners[0], corners[5], corners[4]));
-        }
-
-        if pos_y {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[6], corners[4], corners[7])
-                || self.draw_triangle::<T>(corners[4], corners[5], corners[7]));
-        } else if neg_y {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[0], corners[2], corners[3])
-                || self.draw_triangle::<T>(corners[1], corners[0], corners[3]));
-        }
-
-        if pos_z {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[1], corners[3], corners[7])
-                || self.draw_triangle::<T>(corners[7], corners[5], corners[1]));
-        } else if neg_z {
-            E::accumulate(&mut result, || self.draw_triangle::<T>(corners[0], corners[4], corners[6])
-                || self.draw_triangle::<T>(corners[2], corners[0], corners[6]));
-        }
-
-        result
     }
 
     // The vertices need to be in clockwise order.
-    pub fn draw_triangle<P>(&mut self, mut v1: IVec2, mut v2: IVec2, mut v3: IVec2) -> bool
+    fn draw_triangle<P>(&mut self, mut v1: IVec2, mut v2: IVec2, mut v3: IVec2) -> bool
         where P: PixelFunction
     {
         // If the top and bottom vertices share the same Y-coordinate, the triangle has no height, so skip it
@@ -193,7 +178,7 @@ impl Rasterizer {
                 (v3, v2)
             };
 
-            if self.draw_spans::<P>(Edge::new(v1, left), Edge::new(v1, right)) { return true; }
+            if self.draw_spans::<P>(Edge::new(v1, left), Edge::new(v1, right), v2.y, v1.y) { return true; }
         }
 
         // Bottom-half case
@@ -204,59 +189,64 @@ impl Rasterizer {
                 (v1, v2)
             };
 
-            if self.draw_spans::<P>(Edge::new(left, v3), Edge::new(right, v3)) { return true; }
+            if self.draw_spans::<P>(Edge::new(left, v3), Edge::new(right, v3), v3.y, v2.y) { return true; }
         }
         
         false
     }
 
     #[allow(overflowing_literals)]
-    fn draw_spans<P>(&mut self, left: Edge, right: Edge) -> bool
+    fn draw_spans<P>(&mut self, left: Edge, right: Edge, bounds_min_y: i32, bounds_max_y: i32) -> bool
         where P: PixelFunction
     {
         // Find the bounding box
-        let bounds_min_y = i32::max(left.end.y, right.end.y);
         let bounds_min_x = i32::min(left.start.x, left.end.x);
-        let bounds_max_y = i32::min(left.start.y, right.start.y);
         let bounds_max_x = i32::max(right.start.x, right.end.x);
-        
+
         // Check if the bounding box is outside the viewport, so that we can avoid clamping later
-        if outside_viewport(bounds_min_y, bounds_max_y, bounds_min_x, bounds_max_x, self.width as i32, self.height as i32) {
+        if outside_viewport(bounds_min_x, bounds_min_y, bounds_max_x, bounds_max_y, self.width as i32, self.height as i32) {
             return false;
         }
 
         // Clamp the bounding box to the viewport
-        let bounds_min_x = i32::max(bounds_min_x, 0);
-        let bounds_min_y = i32::max(bounds_min_y, 0);
-        let bounds_max_x = i32::min(bounds_max_x, self.width as i32 - 1);
-        let bounds_max_y = i32::min(bounds_max_y, self.height as i32 - 1);
+        let bounds_min_x = i32::clamp(bounds_min_x, 0, self.width as i32);
+        let bounds_min_y = i32::clamp(bounds_min_y, 0, self.height as i32);
+        let bounds_max_x = i32::clamp(bounds_max_x, 0, self.width as i32);
+        let bounds_max_y = i32::clamp(bounds_max_y, 0, self.height as i32);
 
         // Find the tiles which the bounding box overlaps
         let tile_min_x = bounds_min_x >> 5;
         let tile_min_y = bounds_min_y >> 3;
-        let tile_max_x = bounds_max_x >> 5;
-        let tile_max_y = bounds_max_y >> 3;
+        let tile_max_x = (bounds_max_x - 1) >> 5;
+        let tile_max_y = (bounds_max_y - 1) >> 3;
 
         let left_init = left.start.x << 16;
         let right_init = right.start.x << 16;
+        
         let left_inc = ((left.start.x - left.end.x) << 16) / (left.end.y - left.start.y);
         let right_inc = ((right.start.x - right.end.x) << 16) / (right.end.y - right.start.y);
 
         unsafe {
-            // The raster x-coordinate which each scanline starts at
-            let line_x_offset = _mm256_set1_epi32((tile_min_x * 32) << 16);
-
             // The raster y-coordinate for each scanline in the tile 
+            // y_coord = (tile_y * 8) + (raster_y % 8)
             let mut y_coord = _mm256_add_epi32(_mm256_set1_epi32(tile_max_y * 8), _mm256_set_epi32(0, 1, 2, 3, 4, 5, 6, 7));
 
-            // The starting value for the left edge
-            let left_x = _mm256_add_epi32(_mm256_set1_epi32(left_init), _mm256_mullo_epi32(_mm256_sub_epi32(_mm256_set1_epi32(left.start.y), y_coord), _mm256_set1_epi32(left_inc)));
-            let mut left_x_px = _mm256_sub_epi32(left_x, line_x_offset);
+            // The raster y-offset at which we will start stepping the line from
+            // offset_y = (start_y - y)
+            let left_y_offset = _mm256_sub_epi32(_mm256_set1_epi32(left.start.y), y_coord);
+            let right_y_offset = _mm256_sub_epi32(_mm256_set1_epi32(right.start.y), y_coord);
+            
+            // The raster x-coordinate of each line being stepped
+            // init + (y_start * inc)
+            let left_x = _mm256_add_epi32(_mm256_set1_epi32(left_init), _mm256_mullo_epi32(left_y_offset, _mm256_set1_epi32(left_inc)));
+            let right_x = _mm256_add_epi32(_mm256_set1_epi32(right_init), _mm256_mullo_epi32(right_y_offset, _mm256_set1_epi32(right_inc)));
 
-            // The starting value for the right edge
-            let right_x = _mm256_add_epi32(_mm256_set1_epi32(right_init), _mm256_mullo_epi32(_mm256_sub_epi32(_mm256_set1_epi32(right.start.y), y_coord), _mm256_set1_epi32(right_inc)));
-            let mut right_x_px = _mm256_sub_epi32(right_x, line_x_offset);
+            // The raster x-coordinate which we will start rendering from
+            let x_start = _mm256_set1_epi32((tile_min_x * 32) << 16);
 
+            let mut left_x = _mm256_sub_epi32(left_x, x_start);
+            let mut right_x = _mm256_sub_epi32(right_x, x_start);
+            
             // The value by which left/right are advanced each tile
             // x_step = (left_inc * 8) is equiv to x_step = (left_inc << 3)
             let left_x_step = _mm256_slli_epi32(_mm256_set1_epi32(left_inc), 3);
@@ -267,8 +257,8 @@ impl Rasterizer {
             // Step downward in parallel for each scanline
             while tile_y >= tile_min_y {
                 // The bounds of the rendered scanline
-                let mut left_bound = _mm256_srai_epi32(left_x_px, 16);
-                let mut right_bound = _mm256_srai_epi32(right_x_px, 16);
+                let mut left_bound = _mm256_srai_epi32(left_x, 16);
+                let mut right_bound = _mm256_srai_epi32(right_x, 16);
 
                 // Since we render tiles, it's possible for rendering to start or end outside of the bounds. To avoid this,
                 // we generate a mask for each y-coordinate depending on whether or not it's within bounds.
@@ -308,6 +298,7 @@ impl Rasterizer {
                     }
 
                     // Advance the left/right bounds by one tile
+                    // bound = bound - 32
                     left_bound = _mm256_sub_epi32(left_bound, _mm256_set1_epi32(32));
                     right_bound = _mm256_sub_epi32(right_bound, _mm256_set1_epi32(32));
                     
@@ -318,8 +309,8 @@ impl Rasterizer {
                 y_coord = _mm256_sub_epi32(y_coord, _mm256_set1_epi32(8));
 
                 // Step the left/right bounds for the next scanlines
-                left_x_px = _mm256_add_epi32(left_x_px, left_x_step);
-                right_x_px = _mm256_add_epi32(right_x_px, right_x_step);
+                left_x = _mm256_add_epi32(left_x, left_x_step);
+                right_x = _mm256_add_epi32(right_x, right_x_step);
 
                 tile_y -= 1;
             }
@@ -346,18 +337,16 @@ impl Rasterizer {
 }
 
 #[inline(always)]
-fn outside_viewport(min_y: i32, max_y: i32, min_x: i32, max_x: i32,
+fn outside_viewport(min_x: i32, min_y: i32, max_x: i32, max_y: i32,
                     width: i32, height: i32) -> bool
 {
-    if max_x < 0 || min_x >= width {
-        return true;
-    }
+    unsafe {
+        let bounds = _mm_set_epi32(min_x, min_y, max_x, max_y);
+        let viewport = _mm_set_epi32(width, height, 0, 0);
 
-    if max_y < 0 || min_y >= height {
-        return true;
+        // !(min_x < width) || !(min_y < height) || max_x < 0 || max_y < 0
+        _mm_movemask_epi8(_mm_cmplt_epi32(bounds, viewport)) == 0x00FF
     }
-
-    false
 }
 
 #[derive(Clone, Default)]
@@ -431,22 +420,38 @@ bitflags! {
         const POSITIVE_Z = 0b001000;
         const NEGATIVE_X = 0b010000;
         const POSITIVE_X = 0b100000;
-
-        const ALL = BoxFace::POSITIVE_X.bits() | BoxFace::POSITIVE_Y.bits() | BoxFace::POSITIVE_Z.bits() |
-                    BoxFace::NEGATIVE_X.bits() | BoxFace::NEGATIVE_Y.bits() | BoxFace::NEGATIVE_Z.bits();
     }
 }
 
 #[derive(Clone)]
 pub struct Viewport {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32
+    offset: __m256,  // __m128 broadcasted twice for project_vec3x2
+    scale: __m256   // __m128 broadcasted twice for project_vec3x2
+}
+impl Viewport {
+    fn create(x: usize, y: usize, width: usize, height: usize) -> Self {
+        let x = x as f32;
+        let y = y as f32;
+        let width = width as f32;
+        let height = height as f32;
+
+        let half_width = width / 2.0;
+        let half_height = height / 2.0;
+
+        unsafe {
+            let scale = _mm256_broadcast_ps(&_mm_set_ps(half_width, half_height, 0.0, 0.0));
+            let offset = _mm256_broadcast_ps(&_mm_set_ps(x + half_width, y + half_height, 0.0, 0.0));
+
+            Viewport {
+                offset,
+                scale
+            }
+        }
+    }
 }
 
 struct Mat4x32 {
-    cols: [__m128; 4]    
+    cols: [__m256; 4] // __m128 broadcasted twice for project_vec3x2
 }
 
 impl From<Mat4> for Mat4x32 {
@@ -454,10 +459,10 @@ impl From<Mat4> for Mat4x32 {
         unsafe {
             Mat4x32 {
                 cols: [
-                    _mm_set_ps(mat[0][0], mat[0][1], mat[0][2], mat[0][3]),
-                    _mm_set_ps(mat[1][0], mat[1][1], mat[1][2], mat[1][3]),
-                    _mm_set_ps(mat[2][0], mat[2][1], mat[2][2], mat[2][3]),
-                    _mm_set_ps(mat[3][0], mat[3][1], mat[3][2], mat[3][3])
+                    _mm256_broadcast_ps(&_mm_set_ps(mat[0][0], mat[0][1], mat[0][2], mat[0][3])),
+                    _mm256_broadcast_ps(&_mm_set_ps(mat[1][0], mat[1][1], mat[1][2], mat[1][3])),
+                    _mm256_broadcast_ps(&_mm_set_ps(mat[2][0], mat[2][1], mat[2][2], mat[2][3])),
+                    _mm256_broadcast_ps(&_mm_set_ps(mat[3][0], mat[3][1], mat[3][2], mat[3][3]))
                 ]
             }
         }
@@ -465,34 +470,32 @@ impl From<Mat4> for Mat4x32 {
 }
 
 // TODO: handle near-plane clipping
-#[inline(always)]
-fn project(mat: &Mat4x32, pos: Vec3, viewport: &Viewport) -> IVec2 {
-    let pos = Vec4::new(pos.x, pos.y, pos.z, 1.0);
+fn project_vec3x2(mat: &Mat4x32, pos: __m256, viewport: &Viewport) -> (IVec2, IVec2) {
+    unsafe {
+        let px = _mm256_shuffle_ps(pos, pos, _MM_SHUFFLE(3, 3, 3, 3)); 
+        let py = _mm256_shuffle_ps(pos, pos, _MM_SHUFFLE(2, 2, 2, 2));
+        let pz = _mm256_shuffle_ps(pos, pos, _MM_SHUFFLE(1, 1, 1, 1));
 
-    let (x, y) = unsafe {
-        let x = _mm_mul_ps(mat.cols[0], _mm_set1_ps(pos.x));
-        let y = _mm_mul_ps(mat.cols[1], _mm_set1_ps(pos.y));
-        let z = _mm_mul_ps(mat.cols[2], _mm_set1_ps(pos.z));
-        let w = _mm_mul_ps(mat.cols[3], _mm_set1_ps(pos.w));
+        let result = _mm256_fmadd_ps(mat.cols[0],
+                px, _mm256_fmadd_ps(mat.cols[1],
+                    py, _mm256_fmadd_ps(mat.cols[2],
+                        pz, mat.cols[3]
+                    )
+                )
+            );
 
-        let n = _mm_add_ps(_mm_add_ps(x, y), _mm_add_ps(z, w));
-        let n = _mm_permute_ps(n, _MM_SHUFFLE(3, 2, 1, 0));
+        let pw = _mm256_permute_ps(result, _MM_SHUFFLE(0, 0, 0, 0));
+        let screen_coord = _mm256_mul_ps(result, _mm256_rcp_ps(pw));
 
-        let nw = _mm_div_ps(n, _mm_broadcastss_ps(n));
-        let nws = _mm_add_ps(_mm_mul_ps(nw, _mm_set1_ps(0.5)), _mm_set1_ps(0.5));
+        let view_coord = _mm256_fmadd_ps(screen_coord, viewport.scale, viewport.offset);
+        let raster_coord = _mm256_cvtps_epi32(_mm256_floor_ps(view_coord));
 
-        let viewport_scale = _mm_set_ps(viewport.width, viewport.height, 0.0, 0.0);
-        let viewport_origin = _mm_set_ps(viewport.x, viewport.y, 0.0, 0.0);
+        let result = _mm256_shuffle_epi32(raster_coord, _MM_SHUFFLE(0, 1, 2, 3));
 
-        let view_coord = _mm_add_ps(_mm_mul_ps(nws, viewport_scale), viewport_origin);
-        let raster_coord = _mm_cvtps_epi32(_mm_floor_ps(view_coord));
-
-        (_mm_extract_epi32(raster_coord, 3), _mm_extract_epi32(raster_coord, 2))
-    };
-    
-
-    IVec2 {
-        x, y
+        let a: IVec4 = mem::transmute(_mm256_extracti128_si256(result, 1));
+        let b: IVec4 = mem::transmute(_mm256_extracti128_si256(result, 0));
+        
+        (a.xy(), b.xy())
     }
 }
 
