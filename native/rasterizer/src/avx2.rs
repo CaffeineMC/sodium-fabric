@@ -287,10 +287,12 @@ impl Rasterizer {
                     let result = {
                         let tile_index = (tile_y as usize * self.tiles_x) + tile_x as usize;
 
-                        P::apply(self.tiles.as_mut_ptr()
-                            .add(tile_index as usize), mask)
+                        // only helps in benchmarks that draw large triangles
+                        _mm_prefetch(self.tiles.get_unchecked(tile_index + 1) as *const _ as *const i8, _MM_HINT_T0);
+
+                        P::apply(self.tiles.as_mut_ptr().add(tile_index), mask)
                     };
-                    
+
                     // The pixel function decides whether we should exit early or not. Depending on the pixel function used,
                     // the compiler may optimize this away entirely, such as for the write-only function which does not return early.
                     if result {
@@ -301,7 +303,7 @@ impl Rasterizer {
                     // bound = bound - 32
                     left_bound = _mm256_sub_epi32(left_bound, _mm256_set1_epi32(32));
                     right_bound = _mm256_sub_epi32(right_bound, _mm256_set1_epi32(32));
-                    
+
                     tile_x += 1;
                 }
 

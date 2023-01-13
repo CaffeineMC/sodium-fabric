@@ -30,6 +30,7 @@ import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.collections.WorkStealingFutureDrain;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
@@ -153,7 +154,7 @@ public class RenderSectionManager {
         }
 
         if (GLFW.glfwGetKey(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_P) == GLFW.GLFW_PRESS) {
-            this.rasterizer.saveDepthBuffer("/dev/shm/fb.png");
+            this.rasterizer.saveDepthBuffer(FabricLoader.getInstance().getGameDir().resolve("fb.png").toAbsolutePath().toString());
         }
 
         this.needsUpdate = false;
