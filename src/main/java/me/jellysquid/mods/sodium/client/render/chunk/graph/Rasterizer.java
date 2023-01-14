@@ -38,7 +38,7 @@ public class Rasterizer {
         }
     }
 
-    public void saveDepthBuffer(String filename) {
+    public void saveDebugInformation(String filename) {
         ByteBuffer buffer = MemoryUtil.memAlloc(this.width * this.height * 4);
         RustBindings.r_get_depth_buffer(this.handle, MemoryUtil.memAddress(buffer));
 
@@ -47,6 +47,8 @@ public class Rasterizer {
         STBImageWrite.stbi_flip_vertically_on_write(false);
 
         MemoryUtil.memFree(buffer);
+
+        RustBindings.r_print_stats(this.handle);
     }
 
     public void drawBoxes(VoxelBoxList boxes, int x, int y, int z) {

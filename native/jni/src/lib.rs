@@ -143,6 +143,18 @@ pub extern "system" fn Java_me_jellysquid_mods_sodium_ffi_RustBindings_r_1clear(
 }
 
 #[no_mangle]
+pub extern "system" fn Java_me_jellysquid_mods_sodium_ffi_RustBindings_r_1print_1stats(
+    _: JNIEnv,
+    _: JClass,
+    handle: JLong
+) {
+    let rasterizer = unsafe {
+        Box::leak(Box::from_raw(handle as *mut Rasterizer))
+    };
+    println!("Statistics since last frame clear: {:?}", rasterizer.stats());
+}
+
+#[no_mangle]
 pub extern "system" fn Java_me_jellysquid_mods_sodium_ffi_RustBindings_r_1destroy(
     _: JNIEnv,
     _: JClass,

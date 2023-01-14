@@ -153,7 +153,7 @@ public class RenderSectionManager {
         }
 
         if (GLFW.glfwGetKey(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_P) == GLFW.GLFW_PRESS) {
-            this.rasterizer.saveDepthBuffer("/dev/shm/fb.png");
+            this.rasterizer.saveDebugInformation("/dev/shm/fb.png");
         }
 
         this.needsUpdate = false;

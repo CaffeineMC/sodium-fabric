@@ -17,6 +17,7 @@ pub struct Rasterizer {
 
     viewport: Viewport,
 
+    #[cfg(feature="stats")]
     stats: Stats
 }
 
@@ -68,13 +69,19 @@ impl Rasterizer {
             camera_matrix: Mat4x32::from(Mat4::identity()),
             camera_position: Vec3::default(),
             viewport: Viewport::create(0, 0, width, height),
+
+            #[cfg(feature="stats")]
             stats: Stats::default()
         }
     }
 
     pub fn clear(&mut self) {
+        #[cfg(feature="stats")]
+        {
+            self.stats = Stats::default();
+        }
+
         self.tiles.fill(unsafe { _mm256_set1_epi32(0) });
-        self.stats = Stats::default();
     }
 
     pub fn set_camera(&mut self, position: Vec3, matrix: Mat4) {
@@ -85,6 +92,11 @@ impl Rasterizer {
     pub fn draw_aabb<T, E>(&mut self, min: Vec3, max: Vec3, faces: BoxFace) -> bool
         where T: PixelFunction, E: ResultAccumulator
     {
+        #[cfg(feature="stats")]
+        {
+            self.stats.primitive_box_count += 1;
+        }
+        
         let pos_x = faces.contains(BoxFace::POSITIVE_X) && self.camera_position.x > max.x;
         let neg_x = faces.contains(BoxFace::NEGATIVE_X) && self.camera_position.x < min.x;
 
@@ -101,7 +113,12 @@ impl Rasterizer {
         unsafe {
             let min = _mm256_broadcast_ps(&_mm_set_ps(min.x, min.y, min.z, 1.0));
             let max = _mm256_broadcast_ps(&_mm_set_ps(max.x, max.y, max.z, 1.0));
-            
+
+            #[cfg(feature="stats")]
+            {
+                self.stats.vertex_count += 8;
+            }
+
             let (c0, c1) = project_vec3x2(&self.camera_matrix, _mm256_blend_ps(min, max, 0b_0000_0100), &self.viewport);
             let (c2, c3) = project_vec3x2(&self.camera_matrix, _mm256_blend_ps(min, max, 0b_1000_1100), &self.viewport);
             let (c4, c5) = project_vec3x2(&self.camera_matrix, _mm256_blend_ps(min, max, 0b_0010_0110), &self.viewport);
@@ -178,7 +195,7 @@ impl Rasterizer {
                 (v3, v2)
             };
 
-            if self.draw_spans::<P>(Edge::new(v1, left), Edge::new(v1, right), v2.y, v1.y) { return true; }
+            if self.draw_spans::<P>(Edge::new(v1, left), Edge::new(v1, right)) { return true; }
         }
 
         // Bottom-half case
@@ -189,17 +206,23 @@ impl Rasterizer {
                 (v1, v2)
             };
 
-            if self.draw_spans::<P>(Edge::new(left, v3), Edge::new(right, v3), v3.y, v2.y) { return true; }
+            if self.draw_spans::<P>(Edge::new(left, v3), Edge::new(right, v3)) { return true; }
         }
         
         false
     }
 
-    #[allow(overflowing_literals)]
-    fn draw_spans<P>(&mut self, left: Edge, right: Edge, bounds_min_y: i32, bounds_max_y: i32) -> bool
+    fn draw_spans<P>(&mut self, left: Edge, right: Edge) -> bool
         where P: PixelFunction
     {
+        #[cfg(feature="stats")]
+        {
+            self.stats.processed_spans += 1;
+        }
+
         // Find the bounding box
+        let bounds_min_y = i32::max(left.end.y, right.end.y);
+        let bounds_max_y = i32::min(left.start.y, right.start.y);
         let bounds_min_x = i32::min(left.start.x, left.end.x);
         let bounds_max_x = i32::max(right.start.x, right.end.x);
 
@@ -290,7 +313,12 @@ impl Rasterizer {
                         P::apply(self.tiles.as_mut_ptr()
                             .add(tile_index as usize), mask)
                     };
-                    
+
+                    #[cfg(feature="stats")]
+                    {
+                        self.stats.processed_pixels += 256;
+                    }
+
                     // The pixel function decides whether we should exit early or not. Depending on the pixel function used,
                     // the compiler may optimize this away entirely, such as for the write-only function which does not return early.
                     if result {
@@ -331,8 +359,12 @@ impl Rasterizer {
         self.width
     }
 
-    pub fn stats(&self) -> Stats {
-        self.stats.clone()
+    pub fn stats(&self) -> Option<Stats> {
+        #[cfg(feature="stats")]
+        return Some(self.stats.clone());
+
+        #[cfg(not(feature="stats"))]
+        return None;
     }
 }
 
@@ -349,9 +381,15 @@ fn outside_viewport(min_x: i32, min_y: i32, max_x: i32, max_y: i32,
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct Stats {
-    pub rasterized_pixels: u64
+    pub primitive_box_count: u64,
+
+    pub vertex_count: u64,
+
+    pub processed_spans: u64,
+    pub processed_pixels: u64,
+    
 }
 
 pub trait PixelFunction {
