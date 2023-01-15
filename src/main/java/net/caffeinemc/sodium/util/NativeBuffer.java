@@ -79,9 +79,6 @@ public class NativeBuffer {
                             Arrays.stream(buf.allocationSite)
                                   .map(StackWalker.StackFrame::toString)
                                   .collect(Collectors.joining("\n")));
-            } else {
-                LOGGER.warn("Reclaimed {} bytes at address {} that were leaked from an unknown location (logging is disabled)",
-                        buf.length, buf.address);
             }
         }
     }

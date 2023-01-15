@@ -163,7 +163,21 @@ public class GlRenderDevice implements RenderDevice {
     public Fence createFence() {
         return new GlFence();
     }
-
+    
+    @Override
+    public void pushDebugGroup(String location) {
+        if (this.renderConfiguration.apiDebug) {
+            GL45C.glPushDebugGroup(GL45C.GL_DEBUG_SOURCE_APPLICATION, 0, location);
+        }
+    }
+    
+    @Override
+    public void popDebugGroup() {
+        if (this.renderConfiguration.apiDebug) {
+            GL45C.glPopDebugGroup();
+        }
+    }
+    
     @Override
     public RenderDeviceProperties properties() {
         return this.properties;
