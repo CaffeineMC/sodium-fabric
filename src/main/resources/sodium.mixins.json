@@ -46,6 +46,7 @@
     "features.gui.MixinDebugHud",
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
     "features.gui.font.MixinGlyphRenderer",
+    "features.gui.scale_debug_pie.MixinMinecraftClient",
     "features.item.MixinItemRenderer",
     "features.matrix_stack.MixinVertexConsumer",
     "features.model.MixinMultipartBakedModel",
