@@ -14,11 +14,13 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.*;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Predicate;
 
 @Mixin(MultipartBakedModel.class)
 public class MixinMultipartBakedModel {
-    private final Map<BlockState, List<BakedModel>> stateCacheFast = new Reference2ReferenceOpenHashMap<>();
+    private final Map<BlockState, BakedModel[]> stateCacheFast = new Reference2ReferenceOpenHashMap<>();
+    private final StampedLock lock = new StampedLock();
 
     @Shadow
     @Final
@@ -34,37 +36,41 @@ public class MixinMultipartBakedModel {
             return Collections.emptyList();
         }
 
-        List<BakedModel> models;
+        BakedModel[] models;
 
-        // FIXME: Synchronization-hack because getQuads must be thread-safe
-        // Vanilla is actually affected by the exact same issue safety issue, but crashes seem rare in practice
-        synchronized (this.stateCacheFast) {
+        long readStamp = this.lock.readLock();
+        try {
             models = this.stateCacheFast.get(state);
+        } finally {
+            this.lock.unlockRead(readStamp);
+        }
 
-            if (models == null) {
-                models = new ArrayList<>(this.components.size());
+        if (models == null) {
+            long writeStamp = this.lock.writeLock();
+            try {
+                List<BakedModel> modelList = new ArrayList<>(this.components.size());
 
                 for (Pair<Predicate<BlockState>, BakedModel> pair : this.components) {
-                    if ((pair.getLeft()).test(state)) {
-                        models.add(pair.getRight());
+                    if (pair.getLeft().test(state)) {
+                        modelList.add(pair.getRight());
                     }
                 }
 
+                models = modelList.toArray(BakedModel[]::new);
                 this.stateCacheFast.put(state, models);
+            } finally {
+                this.lock.unlockWrite(writeStamp);
             }
         }
 
-        List<BakedQuad> list = new ArrayList<>();
-
+        List<BakedQuad> quads = new ArrayList<>();
         long seed = random.nextLong();
 
         for (BakedModel model : models) {
             random.setSeed(seed);
-
-            list.addAll(model.getQuads(state, face, random));
+            quads.addAll(model.getQuads(state, face, random));
         }
 
-        return list;
+        return quads;
     }
-
 }
