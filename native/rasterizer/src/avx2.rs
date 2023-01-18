@@ -89,6 +89,217 @@ impl Rasterizer {
         self.camera_position = position;
     }
 
+    #[inline(always)]
+    fn grad(a: IVec2, b: IVec2) -> i32 {
+        let dx: i32 = (b.x - a.x) as i32;
+        let mut dy: i32 = (b.y - a.y) as i32;
+
+        if dy == 0 {
+            // TODO: min max?
+            dy = 1;
+        }
+
+        unsafe {
+            std::intrinsics::unchecked_div(dx << 10, dy)
+        }
+    }
+
+    pub fn draw_hex<P>(&mut self, points: [IVec2; 6]) -> bool
+        where P: PixelFunction
+    {
+        let mut trigger_start_y = [0i32; 6];
+        let mut grad_start = [0i32; 6];
+
+        let mut trigger_end_y = [0i32; 6];
+        let mut grad_end = [0i32; 6];
+
+        let mut end_index = 0;
+
+        while points[end_index].y < points[end_index + 1].y {
+            grad_end[end_index] = Self::grad(points[end_index], points[end_index + 1]);
+            trigger_end_y[end_index + 1] = points[end_index + 1].y;
+            end_index += 1;
+        }
+
+        let mut i = end_index;
+        let mut start_index = 5;
+
+        while i < 6 {
+            grad_start[start_index - 1] = Self::grad(points[i], points[(i + 1) % 6]);
+            trigger_start_y[start_index] = points[i].y;
+            
+            i += 1;
+            start_index -= 1;
+        }
+
+        self.draw_hexe_inner::<P>(points[0].y, points[end_index].y, points[0].x,
+            &trigger_start_y[(start_index - 1)..],
+            &grad_start[(start_index - 1)..],
+            &trigger_end_y[0..(end_index + 1)],
+            &grad_end[0..(end_index + 1)])
+    }
+
+    fn draw_hexe_inner<P>(&mut self,
+        start_y: i32, end_y: i32,
+        init_x: i32,
+        trigger_start_y: &[i32], grad_start_arr: &[i32],
+        trigger_end_y: &[i32], grad_end_arr: &[i32]
+    ) -> bool
+        where P: PixelFunction
+    {
+        // assert_eq!(trigger_start_y.len(), grad_start_arr.len());
+        // assert_eq!(trigger_end_y.len(), grad_end_arr.len());
+        
+        // assert_eq!(trigger_start_y.len(), trigger_end_y.len());
+        // assert_eq!(grad_start_arr.len(), grad_end_arr.len());
+
+        let mut start_idx: usize = 0;
+        let mut end_idx: usize = 0;
+        
+        let mut start_x = (init_x << 10) + (1 << 9);
+        let mut end_x = (init_x << 10) + (1 << 9);
+        
+        let mut grad_start = grad_start_arr[start_idx];
+        start_idx += 1;
+
+        let mut grad_end = grad_end_arr[end_idx];
+        end_idx += 1;
+        
+        let mut y1 = start_y;
+
+        while y1 != end_y {
+            let next_trigger_start = trigger_start_y[start_idx];
+            let next_trigger_end = trigger_end_y[end_idx];
+            
+            let y2 = i32::min(next_trigger_start, next_trigger_end);
+            
+            if self.draw_hex_spans::<P>(y1, y2, start_x, end_x, grad_start, grad_end) {
+                return true;
+            }
+            
+            let delta = y2 - y1;
+            
+            start_x += grad_start * delta;
+            end_x += grad_end * delta;
+    
+            y1 = y2;
+            
+            if y1 == next_trigger_start {
+                grad_start = grad_start_arr[start_idx];
+                start_idx += 1;
+            }
+            
+            if y1 == next_trigger_end {
+                grad_end = grad_end_arr[end_idx];
+                end_idx += 1;
+            }
+        }
+
+        false
+    }
+
+    fn draw_hex_spans<P>(&mut self, min_y: i32, max_y: i32, left_init: i32, right_init: i32, left_inc: i32, right_inc: i32) -> bool
+        where P: PixelFunction 
+    {        
+        #[cfg(feature="stats")]
+        {
+            self.stats.processed_spans += 1;
+        }
+
+        let tile_min_x = i32::min((left_init + ((max_y - min_y) * left_inc)) >> 10, left_init >> 10) >> 5;
+        let tile_max_x = i32::max((right_init + ((max_y - min_y) * right_inc)) >> 10, right_init >> 10) >> 5;
+
+        let tile_min_y = min_y >> 3;
+        let tile_max_y = max_y >> 3;
+
+        unsafe {
+            // The raster y-coordinate for each scanline in the tile 
+            // y_coord = (tile_y * 8) + (raster_y % 8)
+            let mut y_coord = _mm256_add_epi32(_mm256_set1_epi32(tile_min_y * 8), _mm256_set_epi32(0, 1, 2, 3, 4, 5, 6, 7));
+            let y_coord_relative = _mm256_sub_epi32(y_coord, _mm256_set1_epi32(min_y));
+
+            // The raster x-coordinate of each line being stepped
+            // init + (y_start * inc)
+            let mut left_x = _mm256_add_epi32(_mm256_set1_epi32(left_init), _mm256_mullo_epi32(y_coord_relative, _mm256_set1_epi32(left_inc)));
+            let mut right_x = _mm256_add_epi32(_mm256_set1_epi32(right_init), _mm256_mullo_epi32(y_coord_relative, _mm256_set1_epi32(right_inc)));
+
+            // The value by which left/right are advanced each tile
+            // x_step = (left_inc * 8) is equiv to x_step = (left_inc << 3)
+            let left_x_step = _mm256_slli_epi32(_mm256_set1_epi32(left_inc), 3);
+            let right_x_step = _mm256_slli_epi32(_mm256_set1_epi32(right_inc), 3);
+
+            let mut tile_y = tile_min_y;
+
+            // Step downward in parallel for each scanline
+            while tile_y <= tile_max_y {
+                // The bounds of the rendered scanline
+                let mut left_bound = _mm256_srai_epi32(left_x, 10);
+                let mut right_bound = _mm256_srai_epi32(right_x, 10);
+
+                // Since we render tiles, it's possible for rendering to start or end outside of the bounds. To avoid this,
+                // we generate a mask for each y-coordinate depending on whether or not it's within bounds.
+                // y_mask = ~(bounds_min_y > y_coord) & (bounds_max_y > y_coord)
+                let y_mask = _mm256_andnot_si256(_mm256_cmpgt_epi32(_mm256_set1_epi32(min_y), y_coord),
+                    _mm256_cmpgt_epi32(_mm256_set1_epi32(max_y), y_coord));
+
+                let mut tile_x = tile_min_x;
+
+                // Step across each word in a scanline
+                while tile_x <= tile_max_x {
+                    // Create a bitmask for the current tile given the scan line bounds  
+                    let mask = {
+                        // left_mask = (~0 >> max(0, left - x))
+                        let left_mask = _mm256_srlv_epi32(y_mask, _mm256_max_epi32(left_bound, _mm256_set1_epi32(0)));
+
+                        // right_mask = (~0 >> max(0, right - x))
+                        let right_mask = _mm256_srlv_epi32(y_mask, _mm256_max_epi32(right_bound, _mm256_set1_epi32(0)));
+
+                        // mask = left_mask & ~right_mask
+                        _mm256_andnot_si256(right_mask, left_mask)
+                    };
+
+                    // Apply the bitmask to the tile using the pixel function
+                    // Depending on the implementation, this may or may not write data
+                    let result = {
+                        let tile_index = (tile_y as usize * self.tiles_x) + tile_x as usize;
+
+                        P::apply(self.tiles.as_mut_ptr()
+                            .add(tile_index as usize), mask)
+                    };
+
+                    #[cfg(feature="stats")]
+                    {
+                        self.stats.processed_pixels += 256;
+                    }
+
+                    // The pixel function decides whether we should exit early or not. Depending on the pixel function used,
+                    // the compiler may optimize this away entirely, such as for the write-only function which does not return early.
+                    if result {
+                        return true;
+                    }
+
+                    // Advance the left/right bounds by one tile
+                    // bound = bound - 32
+                    left_bound = _mm256_sub_epi32(left_bound, _mm256_set1_epi32(32));
+                    right_bound = _mm256_sub_epi32(right_bound, _mm256_set1_epi32(32));
+                    
+                    tile_x += 1;
+                }
+
+                // Step the y-coordinates for the next scanlines
+                y_coord = _mm256_add_epi32(y_coord, _mm256_set1_epi32(8));
+
+                // Step the left/right bounds for the next scanlines
+                left_x = _mm256_add_epi32(left_x, left_x_step);
+                right_x = _mm256_add_epi32(right_x, right_x_step);
+
+                tile_y += 1;
+            }
+        }
+
+        false
+    }
+
     pub fn draw_aabb<T, E>(&mut self, min: Vec3, max: Vec3, faces: BoxFace) -> bool
         where T: PixelFunction, E: ResultAccumulator
     {
@@ -404,9 +615,9 @@ impl PixelFunction for SamplePixelFunction {
     unsafe fn apply(pixel: *mut __m256i, mask: __m256i) -> bool {
         let prev = _mm256_load_si256(pixel);
         let overlap = _mm256_and_si256(prev, mask);
-        let difference = _mm256_xor_si256(overlap, mask);
+        let difference = _mm256_cmpeq_epi32(overlap, mask);
 
-        _mm256_movemask_epi8(difference) != 0x0
+        _mm256_movemask_epi8(difference) != 0xFFFFFFFFu32 as i32
     }
 }
 

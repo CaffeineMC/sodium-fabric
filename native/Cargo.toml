@@ -2,7 +2,7 @@
 members = [ "harness", "rasterizer", "jni" ]
 
 [profile.release]
-lto = true
+lto = false
 debug = 1
 
 [profile.production]

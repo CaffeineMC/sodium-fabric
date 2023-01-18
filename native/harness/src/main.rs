@@ -1,10 +1,10 @@
 use minifb::{Key, Window, WindowOptions};
-use ultraviolet::{Mat4, Vec3};
+use ultraviolet::{Mat4, Vec3, IVec2};
 
-use rasterizer::{AllExecutionsFunction, BoxFace, Rasterizer, RasterPixelFunction};
+use rasterizer::{Rasterizer, RasterPixelFunction};
 
-const WIDTH: usize = 1280;
-const HEIGHT: usize = 720;
+const WIDTH: usize = 800;
+const HEIGHT: usize = 800;
 
 fn main() {
     let mut window = Window::new("Rasterizer test harness", WIDTH, HEIGHT, WindowOptions::default())
@@ -23,19 +23,24 @@ fn main() {
             time += 0.01;
         }
 
+        // TODO: allow moving the camera again
         let camera_target = Vec3::new(0.0, 0.0, 0.0);
         let camera_position = Vec3::new(time.cos() * 4.0, 3.0, time.sin() * 4.0);
-        
+            
         let view_matrix = Mat4::look_at(camera_position, camera_target, Vec3::new(0.0, 1.0, 0.0));
         let proj_matrix = ultraviolet::projection::perspective_gl(45.0f32.to_radians(), WIDTH as f32 / HEIGHT as f32, 0.01, 1000.0);
         
         rasterizer.clear();
         
         rasterizer.set_camera(camera_position, proj_matrix * view_matrix);
-        rasterizer.draw_aabb::<RasterPixelFunction, AllExecutionsFunction>(
-            Vec3::new(-1.0, -1.0, -1.0),
-            Vec3::new(1.0, 1.0, 1.0),
-            BoxFace::all());
+        rasterizer.draw_hex::<RasterPixelFunction>([
+            IVec2::new(25 * 10, 0 * 10),
+            IVec2::new(50 * 10, 16 * 10),
+            IVec2::new(50 * 10, 30 * 10),
+            IVec2::new(25 * 10, 45 * 10),
+            IVec2::new(0 * 10, 31 * 10),
+            IVec2::new(0 * 10, 15 * 10)
+        ]);
 
         rasterizer.get_depth_buffer(&mut framebuffer[..]);
 

@@ -1,5 +1,6 @@
 #![feature(stdarch)]
 #![feature(stdsimd)]
+#![feature(core_intrinsics)]
 
 // #[cfg(target_feature = "avx2")]
 #[path = "avx2.rs"]
