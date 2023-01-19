@@ -1,82 +1,82 @@
 {
 
-  "sodium.option_impact.low": "Low",
+  "sodium.option_impact.low": "Rendah",
 
-  "sodium.option_impact.medium": "Medium",
+  "sodium.option_impact.medium": "Sedang",
 
-  "sodium.option_impact.high": "High",
+  "sodium.option_impact.high": "Tinggi",
 
-  "sodium.option_impact.extreme": "Extreme",
+  "sodium.option_impact.extreme": "Sangat Tinggi",
 
-  "sodium.option_impact.varies": "Varies",
+  "sodium.option_impact.varies": "Bervariasi",
 
-  "sodium.options.pages.quality": "Quality",
+  "sodium.options.pages.quality": "Kualitas",
 
-  "sodium.options.pages.performance": "Performance",
+  "sodium.options.pages.performance": "Performa",
 
-  "sodium.options.pages.advanced": "Advanced",
+  "sodium.options.pages.advanced": "Lanjutan",
 
-  "sodium.options.view_distance.tooltip": "The render distance controls how far away terrain will be rendered. Shorter distances mean that less terrain will be rendered, improving frame rates.",
+  "sodium.options.view_distance.tooltip": "Render Distance menentukan jarak pandang anda dalam satuan chunk, mengurangi Render Distance berarti mengurangi jarak pandang anda tetapi dapat meningkatkan frame rate.",
 
-  "sodium.options.simulation_distance.tooltip": "The simulation distance controls how far away terrain and entities will be loaded and ticked. Shorter distances can reduce the internal server's load and may improve frame rates.",
+  "sodium.options.simulation_distance.tooltip": "Simulation Distance menentukan sejauh manakah area yang dimana blok/entitas dimuat, mengurangi Simulation Distance dapat mengurangi beban server internal dan dapat meningkatkan frame rate.",
 
-  "sodium.options.brightness.tooltip": "Controls the brightness (gamma) of the game.",
+  "sodium.options.brightness.tooltip": "Mengubah kecerahan (gamma) di game.",
 
-  "sodium.options.gui_scale.tooltip": "Sets the maximum scale factor to be used for the user interface. If 'auto' is used, then the largest scale factor will always be used.",
+  "sodium.options.gui_scale.tooltip": "Menentukan skala maksimal antarmuka pengguna, jika anda memilih auto, maka skala terbesar yang tersedia akan dipilih secara otomatis",
 
-  "sodium.options.fullscreen.tooltip": "If enabled, the game will display in full-screen (if supported).",
+  "sodium.options.fullscreen.tooltip": "Jika dinyalakan, game akan ditampilkan dalam mode layar penuh (jika didukung).",
 
-  "sodium.options.v_sync.tooltip": "If enabled, the game's frame rate will be synchronized to the monitor's refresh rate, making for a generally smoother experience at the expense of overall input latency. This setting might reduce performance if your system is too slow.",
+  "sodium.options.v_sync.tooltip": "Jika dinyalakan, frame rate game akan disinkronisasikan dengan refresh rate monitor, dapat membuat gameplay menjadi lebih halus tetapi dapat mempengaruhi input latency. Pengaturan ini dapat mengurangi performa jika device anda terlalu lambat.",
 
-  "sodium.options.fps_limit.tooltip": "Limits the maximum number of frames per second. This can help reduce battery usage and general system load when multi-tasking. If V-Sync is enabled, this option will be ignored unless it is lower than your display's refresh rate.",
+  "sodium.options.fps_limit.tooltip": "Membatasi frame rate maksimum. Ini dapat membantu mengurangi penggunaan baterai dan beban sistem saat multi-tasking. Jika V-Sync diaktifkan, limit ini akan diabaikan kecuali limit-nya lebih rendah dari refresh rate monitor anda.",
 
-  "sodium.options.view_bobbing.tooltip": "If enabled, the player's view will sway and bob when moving around. Players who experience motion sickness while playing can benefit from disabling this.",
+  "sodium.options.view_bobbing.tooltip": "Jika diaktifkan, pengelihatan pemain akan berayun saat pemain bergerak. Pemain yang mengalami motion sickness saat bermain dapat diuntungkan dengan mematikan opsi ini.",
 
-  "sodium.options.attack_indicator.tooltip": "Controls where the Attack Indicator is displayed on screen.",
+  "sodium.options.attack_indicator.tooltip": "Mengubah posisi indikator serangan di layar.",
 
-  "sodium.options.autosave_indicator.tooltip": "If enabled, an indicator will be shown when the game is saving the world to disk.",
+  "sodium.options.autosave_indicator.tooltip": "Jika diaktifkan, sebuah indikator akan muncul saat game sedang menyimpan berkas world ke dalam disk.",
 
-  "sodium.options.graphics_quality.tooltip": "The default graphics quality controls some legacy options and is necessary for mod compatibility. If the options below are left to \"Default\", they will use this setting.",
+  "sodium.options.graphics_quality.tooltip": "Kualitas Grafik Default mengubah beberapa opsi dan diperlukan untuk kompatibilitas mod. Jika opsi di bawah adalah \"Default\", opsi tersebut akan menggunakan pengaturan ini.",
 
-  "sodium.options.clouds_quality.tooltip": "Controls the quality of rendered clouds in the sky.",
+  "sodium.options.clouds_quality.tooltip": "Mengubah kualitas awan di langit.",
 
-  "sodium.options.weather_quality.tooltip": "Controls the quality of rain and snow effects.",
+  "sodium.options.weather_quality.tooltip": "Mengubah kualitas efek hujan dan salju.",
 
-  "sodium.options.leaves_quality.name": "Leaves Quality",
+  "sodium.options.leaves_quality.name": "Kualitas Daun",
 
-  "sodium.options.leaves_quality.tooltip": "Controls the quality of leaves.",
+  "sodium.options.leaves_quality.tooltip": "Mengubah kualitas blok daun.",
 
-  "sodium.options.particle_quality.name": "Particle Quality",
+  "sodium.options.particle_quality.name": "Kualitas Partikel",
 
-  "sodium.options.particle_quality.tooltip": "Controls the maximum number of particles which can be present on screen at any one time.",
+  "sodium.options.particle_quality.tooltip": "Mengubah jumlah partikel yang dapat muncul di layar.",
 
-  "sodium.options.smooth_lighting.tooltip": "Controls whether blocks will be smoothly lit and shaded. This slightly increases the amount of time needed to re-build a chunk, but doesn't affect frame rates.",
+  "sodium.options.smooth_lighting.tooltip": "Menentukan apakah blok akan diterangi secara halus. Ini akan sedikit menambah waktu yang dibutuhkan untuk membangun kembali chunk, tetapi tidak mengurangi frame rate.",
 
-  "sodium.options.biome_blend.value": "%s block(s)",
+  "sodium.options.biome_blend.value": "%s blok",
 
-  "sodium.options.biome_blend.tooltip": "Controls the range which biomes will be sampled for block colorization. Higher values greatly increase the amount of time it takes to build chunks for diminishing improvements in quality.",
+  "sodium.options.biome_blend.tooltip": "Mengubah jarak biome yang akan digunakan sebagai contoh untuk pewarnaan blok. Nilai yang lebih tinggi akan sangat menambah waktu yang dibutuhkan untuk membangun chunk, tetapi hanya meningkatkan kualitas dalam jumlah yang sedikit.",
 
-  "sodium.options.entity_distance.tooltip": "Controls how far away entities can render from the player. Higher values increase the render distance at the expense of frame rates.",
+  "sodium.options.entity_distance.tooltip": "Mengubah sejauh manakah entitas yang dapat dilihat oleh pemain. Nilai yang lebih tinggi meningkatkan jarak pandang terhadap entitas, tetapi dapat mengurangi frame rate.",
 
-  "sodium.options.entity_shadows.tooltip": "If enabled, basic shadows will be rendered beneath mobs and other entities.",
+  "sodium.options.entity_shadows.tooltip": "Jika diaktifkan, bayangan akan muncul dibawah mob dan entitas lain.",
 
   "sodium.options.vignette.name": "Vignette",
 
-  "sodium.options.vignette.tooltip": "If enabled, a vignette effect will be rendered on the player's view. This is very unlikely to make a difference to frame rates unless you are fill-rate limited.",
+  "sodium.options.vignette.tooltip": "Jika diaktifkan, efek vignette will akan terlihat di pengelihatan pemain. Ini tidak mungkin mempengaruhi frame rate.",
 
-  "sodium.options.mipmap_levels.tooltip": "Controls the number of mipmaps which will be used for block model textures. Higher values provide better rendering of blocks in the distance, but may adversely affect performance with many animated textures.",
+  "sodium.options.mipmap_levels.tooltip": "Mengubah jumlah mipmap yang akan digunakan untuk tekstur blok. Nilai yang lebih tinggi berarti meningkatkan kualitas rendering blok yang jauh, tetapi dapat mempengaruhi performa dengan tekstur beranimasi dalam jumlah yang banyak.",
 
-  "sodium.options.use_block_face_culling.name": "Use Block Face Culling",
+  "sodium.options.use_block_face_culling.name": "Gunakan Block Face Culling",
 
-  "sodium.options.use_block_face_culling.tooltip": "If enabled, only the sides of blocks which are facing the camera will be submitted for rendering. This can eliminate a large number of block faces very early in the rendering process, saving memory bandwidth and time on the GPU. Some resource packs may have issues with this option, so try disabling it if you're seeing holes in blocks.",
+  "sodium.options.use_block_face_culling.tooltip": "Jika diaktifkan, hanya sisi blok yang menghadap kamera yang akan di-render. Ini dapat menghilangkan banyak sisi blok lebih awal disaat proses rendering, menghemat bandwidth memori dan waktu di GPU. Beberapa resource pack mungkin bermasalah dengan opsi ini, cobalah untuk mematikan opsi ini jika anda melihat lubang di blok.",
 
-  "sodium.options.use_fog_occlusion.name": "Use Fog Occlusion",
+  "sodium.options.use_fog_occlusion.name": "Gunakan Fog Occlusion",
 
-  "sodium.options.use_fog_occlusion.tooltip": "If enabled, chunks which are determined to be fully hidden by fog effects will not be rendered, helping to improve performance. The improvement can be more dramatic when fog effects are heavier (such as while underwater), but it may cause undesirable visual artifacts between the sky and fog in some scenarios.",
+  "sodium.options.use_fog_occlusion.tooltip": "Jika diaktifkan, chunks yang tersembunyi oleh efek kabut tidak akan di-render, membantu meningkatkan performa. Peningkatannya dapat menjadi lebih dramatis saat efek kabut lebih berat (seperti saat dibawah air), tetapi dapat menimbulkan visual artifacts diantara langit dan kabut di beberapa skenario.",
 
-  "sodium.options.use_entity_culling.name": "Use Entity Culling",
+  "sodium.options.use_entity_culling.name": "Gunakan Entity Culling",
 
-  "sodium.options.use_entity_culling.tooltip": "If enabled, entities determined not to be in any visible chunks will be skipped during rendering. This can help improve performance by avoiding the rendering of entities located underground or behind walls.",
+  "sodium.options.use_entity_culling.tooltip": "Jika diaktifkan, entities determined not to be in any visible chunks will be skipped during rendering. This can help improve performance by avoiding the rendering of entities located underground or behind walls.",
 
   "sodium.options.use_particle_culling.name": "Use Particle Culling",
 
