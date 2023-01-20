@@ -1,9 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.features.item;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
@@ -19,6 +18,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Xoroshiro128PlusPlusRandom;
+import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -64,36 +64,41 @@ public class MixinItemRenderer {
      * @author JellySquid
      */
     @Overwrite
-    private void renderBakedItemQuads(MatrixStack matrices, VertexConsumer vertexConsumer, List<BakedQuad> quads, ItemStack stack, int light, int overlay) {
+    private void renderBakedItemQuads(MatrixStack matrices, VertexConsumer vertexConsumer, List<BakedQuad> quads, ItemStack itemStack, int light, int overlay) {
         MatrixStack.Entry entry = matrices.peek();
 
         ItemColorProvider colorProvider = null;
 
-        QuadVertexSink drain = VertexDrain.of(vertexConsumer)
-                .createSink(VanillaVertexTypes.QUADS);
-        drain.ensureCapacity(quads.size() * 4);
+        var writer = VertexBufferWriter.of(vertexConsumer);
 
-        for (BakedQuad bakedQuad : quads) {
-            int color = 0xFFFFFFFF;
+        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+            long buffer = stack.nmalloc(ModelVertex.STRIDE * 4);
 
-            if (!stack.isEmpty() && bakedQuad.hasColor()) {
-                if (colorProvider == null) {
-                    colorProvider = ((ItemColorsExtended) this.colors).getColorProvider(stack);
+            for (BakedQuad bakedQuad : quads) {
+                int color = 0xFFFFFFFF;
+
+                if (!itemStack.isEmpty() && bakedQuad.hasColor()) {
+                    if (colorProvider == null) {
+                        colorProvider = ((ItemColorsExtended) this.colors).getColorProvider(itemStack);
+                    }
+
+                    color = ColorARGB.toABGR((colorProvider.getColor(itemStack, bakedQuad.getColorIndex())), 255);
                 }
 
-                color = ColorARGB.toABGR((colorProvider.getColor(stack, bakedQuad.getColorIndex())), 255);
+                ModelQuadView quad = ((ModelQuadView) bakedQuad);
+                long ptr = buffer;
+
+                for (int i = 0; i < 4; i++) {
+                    ModelVertex.write(ptr, entry, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),
+                            light, overlay, ModelQuadUtil.getFacingNormal(bakedQuad.getFace()));
+
+                    ptr += ModelVertex.STRIDE;
+                }
+
+                writer.push(buffer, 4, ModelVertex.FORMAT);
+
+                SpriteUtil.markSpriteActive(quad.getSprite());
             }
-
-            ModelQuadView quad = ((ModelQuadView) bakedQuad);
-
-            for (int i = 0; i < 4; i++) {
-                drain.writeQuad(entry, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),
-                        light, overlay, ModelQuadUtil.getFacingNormal(bakedQuad.getFace()));
-            }
-
-            SpriteUtil.markSpriteActive(quad.getSprite());
         }
-
-        drain.flush();
     }
 }
