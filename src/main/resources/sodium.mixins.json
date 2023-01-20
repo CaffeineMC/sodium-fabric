@@ -1,28 +1,30 @@
 {
-  "package": "me.jellysquid.mods.sodium.mixin",
-  "required": true,
-  "compatibilityLevel": "JAVA_17",
-  "plugin": "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
-  "injectors": {
-    "defaultRequire": 1
+  "package" : "me.jellysquid.mods.sodium.mixin",
+  "required" : true,
+  "compatibilityLevel" : "JAVA_17",
+  "plugin" : "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
+  "injectors" : {
+    "defaultRequire" : 1
   },
-  "overwrites": {
-    "conformVisibility": true
+  "overwrites" : {
+    "conformVisibility" : true
   },
-  "client": [
+  "client" : [
     "core.MixinFrustum",
     "core.MixinMinecraftClient",
     "core.model.MixinBlockColors",
     "core.model.MixinItemColors",
     "core.pipeline.MixinBakedQuad",
-    "core.pipeline.MixinBufferBuilder",
-    "core.pipeline.MixinVertexConsumer",
-    "core.pipeline.MixinVertexFormat",
+    "core.pipeline.vertex.MixinBufferBuilder",
+    "core.pipeline.vertex.MixinOutlineVertexConsumer",
+    "core.pipeline.vertex.MixinOverlayVertexConsumer",
+    "core.pipeline.vertex.MixinSpriteTexturedVertexConsumer",
+    "core.pipeline.vertex.MixinVertexConsumers$MixinDual",
+    "core.pipeline.vertex.MixinVertexConsumers$MixinUnion",
     "features.block.MixinBlockModelRenderer",
     "features.block.MixinWorldRenderer",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinBufferBuilder",
-    "features.buffer_builder.intrinsics.MixinSpriteTexturedVertexConsumer",
     "features.buffer_builder.intrinsics.MixinWorldRenderer",
     "features.chunk_rendering.MixinChunkBuilder",
     "features.chunk_rendering.MixinClientChunkMap",
@@ -31,6 +33,7 @@
     "features.chunk_rendering.MixinPackedIntegerArray",
     "features.chunk_rendering.MixinPalettedContainer",
     "features.chunk_rendering.MixinWorldRenderer",
+    "features.clouds.MixinWorldRenderer",
     "features.debug.MixinDebugHud",
     "features.entity.cull.MixinEntityRenderer",
     "features.entity.fast_render.MixinCuboid",
@@ -53,16 +56,15 @@
     "features.render_layer.leaves.MixinLeavesBlock",
     "features.render_layer.leaves.MixinRenderLayers",
     "features.sky.MixinWorldRenderer",
-    "features.texture_tracking.MixinSpriteContents",
-    "features.texture_tracking.MixinSpriteContentsAnimatorImpl",
     "features.texture_tracking.MixinSpriteAtlasTexture",
     "features.texture_tracking.MixinSpriteBillboardParticle",
-    "features.texture_updates.MixinSpriteInterpolated",
+    "features.texture_tracking.MixinSpriteContents",
+    "features.texture_tracking.MixinSpriteContentsAnimatorImpl",
     "features.texture_updates.AnimationAccessor",
     "features.texture_updates.AnimationFrameAccessor",
-    "features.texture_updates.SpriteInfoAnimationAccessor",
+    "features.texture_updates.MixinSpriteInterpolated",
     "features.texture_updates.SpriteInfoAccessor",
-    "features.clouds.MixinWorldRenderer",
+    "features.texture_updates.SpriteInfoAnimationAccessor",
     "workarounds.MixinRenderSystem",
     "workarounds.issue1486.MixinMinecraftClient"
   ]

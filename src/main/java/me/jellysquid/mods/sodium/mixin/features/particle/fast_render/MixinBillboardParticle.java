@@ -1,8 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.particle.fast_render;
 
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.particle.ParticleVertexSink;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.ParticleVertex;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
@@ -12,15 +11,13 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
-import org.joml.Vector3f;
+import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(BillboardParticle.class)
 public abstract class MixinBillboardParticle extends Particle {
-    private static Vector3f POSITIVE_Z = new Vector3f(0, 0, 1);
-
     @Shadow
     public abstract float getSize(float tickDelta);
 
@@ -73,20 +70,20 @@ public abstract class MixinBillboardParticle extends Particle {
 
         int color = ColorABGR.pack(this.red , this.green, this.blue, this.alpha);
 
-        ParticleVertexSink drain = VertexDrain.of(vertexConsumer)
-                .createSink(VanillaVertexTypes.PARTICLES);
+        var writer = VertexBufferWriter.of(vertexConsumer);
 
-        addVertex(drain, quaternion,-1.0F, -1.0F, x, y, z, maxU, maxV, color, light, size);
-        addVertex(drain, quaternion,-1.0F, 1.0F, x, y, z, maxU, minV, color, light, size);
-        addVertex(drain, quaternion,1.0F, 1.0F, x, y, z, minU, minV, color, light, size);
-        addVertex(drain, quaternion,1.0F, -1.0F, x, y, z, minU, maxV, color, light, size);
-
-        drain.flush();
+        addVertex(writer, quaternion,-1.0F, -1.0F, x, y, z, maxU, maxV, color, light, size);
+        addVertex(writer, quaternion,-1.0F, 1.0F, x, y, z, maxU, minV, color, light, size);
+        addVertex(writer, quaternion,1.0F, 1.0F, x, y, z, minU, minV, color, light, size);
+        addVertex(writer, quaternion,1.0F, -1.0F, x, y, z, minU, maxV, color, light, size);
     }
 
     @SuppressWarnings("UnnecessaryLocalVariable")
-    private static void addVertex(ParticleVertexSink drain, Quaternionf rotation,
-                                  float x, float y, float posX, float posY, float posZ, float u, float v, int color, int light, float size) {
+    private static void addVertex(VertexBufferWriter writer,
+                                  Quaternionf rotation,
+                                  float posX, float posY,
+                                  float originX, float originY, float originZ,
+                                  float u, float v, int color, int light, float size) {
         // Quaternion q0 = new Quaternion(rotation);
         float q0x = rotation.x();
         float q0y = rotation.y();
@@ -94,10 +91,10 @@ public abstract class MixinBillboardParticle extends Particle {
         float q0w = rotation.w();
 
         // q0.hamiltonProduct(x, y, 0.0f, 0.0f)
-        float q1x = (q0w * x) - (q0z * y);
-        float q1y = (q0w * y) + (q0z * x);
-        float q1w = (q0x * y) - (q0y * x);
-        float q1z = -(q0x * x) - (q0y * y);
+        float q1x = (q0w * posX) - (q0z * posY);
+        float q1y = (q0w * posY) + (q0z * posX);
+        float q1w = (q0x * posY) - (q0y * posX);
+        float q1z = -(q0x * posX) - (q0y * posY);
 
         // Quaternion q2 = new Quaternion(rotation);
         // q2.conjugate()
@@ -114,10 +111,15 @@ public abstract class MixinBillboardParticle extends Particle {
         // Vector3f f = new Vector3f(q2.getX(), q2.getY(), q2.getZ())
         // f.multiply(size)
         // f.add(pos)
-        float fx = (q3x * size) + posX;
-        float fy = (q3y * size) + posY;
-        float fz = (q3z * size) + posZ;
+        float fx = (q3x * size) + originX;
+        float fy = (q3y * size) + originY;
+        float fz = (q3z * size) + originZ;
 
-        drain.writeParticle(fx, fy, fz, u, v, color, light);
+        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+            var buffer = stack.nmalloc(ParticleVertex.STRIDE);
+            ParticleVertex.write(buffer, fx, fy, fz, u, v, color, light);
+
+            writer.push(buffer, 1, ParticleVertex.FORMAT);
+        }
     }
 }
