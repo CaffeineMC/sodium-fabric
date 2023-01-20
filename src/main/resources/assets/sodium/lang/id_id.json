@@ -1,131 +1,66 @@
 {
-
   "sodium.option_impact.low": "Rendah",
-
   "sodium.option_impact.medium": "Sedang",
-
   "sodium.option_impact.high": "Tinggi",
-
   "sodium.option_impact.extreme": "Sangat Tinggi",
-
   "sodium.option_impact.varies": "Bervariasi",
-
   "sodium.options.pages.quality": "Kualitas",
-
   "sodium.options.pages.performance": "Performa",
-
   "sodium.options.pages.advanced": "Lanjutan",
-
   "sodium.options.view_distance.tooltip": "Render Distance menentukan jarak pandang anda dalam satuan chunk, mengurangi Render Distance berarti mengurangi jarak pandang anda tetapi dapat meningkatkan frame rate.",
-
   "sodium.options.simulation_distance.tooltip": "Simulation Distance menentukan sejauh manakah area yang dimana blok/entitas dimuat, mengurangi Simulation Distance dapat mengurangi beban server internal dan dapat meningkatkan frame rate.",
-
   "sodium.options.brightness.tooltip": "Mengubah kecerahan (gamma) di game.",
-
   "sodium.options.gui_scale.tooltip": "Menentukan skala maksimal antarmuka pengguna, jika anda memilih auto, maka skala terbesar yang tersedia akan dipilih secara otomatis",
-
   "sodium.options.fullscreen.tooltip": "Jika dinyalakan, game akan ditampilkan dalam mode layar penuh (jika didukung).",
-
   "sodium.options.v_sync.tooltip": "Jika dinyalakan, frame rate game akan disinkronisasikan dengan refresh rate monitor, dapat membuat gameplay menjadi lebih halus tetapi dapat mempengaruhi input latency. Pengaturan ini dapat mengurangi performa jika device anda terlalu lambat.",
-
   "sodium.options.fps_limit.tooltip": "Membatasi frame rate maksimum. Ini dapat membantu mengurangi penggunaan baterai dan beban sistem saat multi-tasking. Jika V-Sync diaktifkan, limit ini akan diabaikan kecuali limit-nya lebih rendah dari refresh rate monitor anda.",
-
   "sodium.options.view_bobbing.tooltip": "Jika diaktifkan, pengelihatan pemain akan berayun saat pemain bergerak. Pemain yang mengalami motion sickness saat bermain dapat diuntungkan dengan mematikan opsi ini.",
-
   "sodium.options.attack_indicator.tooltip": "Mengubah posisi indikator serangan di layar.",
-
   "sodium.options.autosave_indicator.tooltip": "Jika diaktifkan, sebuah indikator akan muncul saat game sedang menyimpan berkas world ke dalam disk.",
-
   "sodium.options.graphics_quality.tooltip": "Kualitas Grafik Default mengubah beberapa opsi dan diperlukan untuk kompatibilitas mod. Jika opsi di bawah adalah \"Default\", opsi tersebut akan menggunakan pengaturan ini.",
-
   "sodium.options.clouds_quality.tooltip": "Mengubah kualitas awan di langit.",
-
   "sodium.options.weather_quality.tooltip": "Mengubah kualitas efek hujan dan salju.",
-
   "sodium.options.leaves_quality.name": "Kualitas Daun",
-
   "sodium.options.leaves_quality.tooltip": "Mengubah kualitas blok daun.",
-
   "sodium.options.particle_quality.name": "Kualitas Partikel",
-
   "sodium.options.particle_quality.tooltip": "Mengubah jumlah partikel yang dapat muncul di layar.",
-
   "sodium.options.smooth_lighting.tooltip": "Menentukan apakah blok akan diterangi secara halus. Ini akan sedikit menambah waktu yang dibutuhkan untuk membangun kembali chunk, tetapi tidak mengurangi frame rate.",
-
   "sodium.options.biome_blend.value": "%s blok",
-
   "sodium.options.biome_blend.tooltip": "Mengubah jarak biome yang akan digunakan sebagai contoh untuk pewarnaan blok. Nilai yang lebih tinggi akan sangat menambah waktu yang dibutuhkan untuk membangun chunk, tetapi hanya meningkatkan kualitas dalam jumlah yang sedikit.",
-
   "sodium.options.entity_distance.tooltip": "Mengubah sejauh manakah entitas yang dapat dilihat oleh pemain. Nilai yang lebih tinggi meningkatkan jarak pandang terhadap entitas, tetapi dapat mengurangi frame rate.",
-
   "sodium.options.entity_shadows.tooltip": "Jika diaktifkan, bayangan akan muncul dibawah mob dan entitas lain.",
-
   "sodium.options.vignette.name": "Vignette",
-
   "sodium.options.vignette.tooltip": "Jika diaktifkan, efek vignette will akan terlihat di pengelihatan pemain. Ini tidak mungkin mempengaruhi frame rate.",
-
   "sodium.options.mipmap_levels.tooltip": "Mengubah jumlah mipmap yang akan digunakan untuk tekstur blok. Nilai yang lebih tinggi berarti meningkatkan kualitas rendering blok yang jauh, tetapi dapat mempengaruhi performa dengan tekstur beranimasi dalam jumlah yang banyak.",
-
   "sodium.options.use_block_face_culling.name": "Gunakan Block Face Culling",
-
   "sodium.options.use_block_face_culling.tooltip": "Jika diaktifkan, hanya sisi blok yang menghadap kamera yang akan di-render. Ini dapat menghilangkan banyak sisi blok lebih awal disaat proses rendering, menghemat bandwidth memori dan waktu di GPU. Beberapa resource pack mungkin bermasalah dengan opsi ini, cobalah untuk mematikan opsi ini jika anda melihat lubang di blok.",
-
   "sodium.options.use_fog_occlusion.name": "Gunakan Fog Occlusion",
-
   "sodium.options.use_fog_occlusion.tooltip": "Jika diaktifkan, chunks yang tersembunyi oleh efek kabut tidak akan di-render, membantu meningkatkan performa. Peningkatannya dapat menjadi lebih dramatis saat efek kabut lebih berat (seperti saat dibawah air), tetapi dapat menimbulkan visual artifacts diantara langit dan kabut di beberapa skenario.",
-
   "sodium.options.use_entity_culling.name": "Gunakan Entity Culling",
-
-  "sodium.options.use_entity_culling.tooltip": "Jika diaktifkan, entities determined not to be in any visible chunks will be skipped during rendering. This can help improve performance by avoiding the rendering of entities located underground or behind walls.",
-
-  "sodium.options.use_particle_culling.name": "Use Particle Culling",
-
-  "sodium.options.use_particle_culling.tooltip": "If enabled, only particles which are determined to be visible will be rendered. This can provide a significant improvement to frame rates when many particles are nearby.",
-
-  "sodium.options.animate_only_visible_textures.name": "Animate Only Visible Textures",
-
-  "sodium.options.animate_only_visible_textures.tooltip": "If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame rates on some hardware, especially with heavier resource packs. If you experience issues with some textures not being animated, try disabling this option.",
-
+  "sodium.options.use_entity_culling.tooltip": "Jika diaktifkan, entitas yang tidak dalam chunk yang terlihat akan diabaikan saat rendering. Ini dapat meningkatkan performa dengan menghindari rendering entitas yang berada dibawah tanah atau dibalik dinding.",
+  "sodium.options.use_particle_culling.name": "Gunakan Particle Culling",
+  "sodium.options.use_particle_culling.tooltip": "Jika diaktifkan, hanya partikel yang terlihat akan di-render. Ini dapat memberikan peningkatan secara signifikan terhadap frame rate ketika ada banyak partikel disekitar.",
+  "sodium.options.animate_only_visible_textures.name": "Hanya Animasikan Tekstur Yang Terlihat",
+  "sodium.options.animate_only_visible_textures.tooltip": "Jika diaktifkan, hanya tekstur beranimasi yang terlihat akan di-update. Ini dapat memberikan peningkatan signifikan terhadap frame rate di beberapa hardware, khususnya dengan resource pack yang berat. Jika anda mengalami isu dengan beberapa tekstur yang tidak dianimasikan, coba matikan opsi ini.",
   "sodium.options.cpu_render_ahead_limit.name": "CPU Render-Ahead Limit",
-
-  "sodium.options.cpu_render_ahead_limit.tooltip": "Specifies the maximum number of frames the CPU can be waiting on the GPU to finish rendering. Very low or high values may create frame rate instability.",
-
+  "sodium.options.cpu_render_ahead_limit.tooltip": "Menentukan jumlah maksimal frame dimana CPU dapat menunggu GPU untuk menyelesaikan rendering. Nilai yang sangat rendah atau tinggi mungkin menyebabkan ketidakstabilan frame rate.",
   "sodium.options.cpu_render_ahead_limit.value": "%s frame(s)",
-
   "sodium.options.allow_direct_memory_access.name": "Allow Direct Memory Access",
-
   "sodium.options.allow_direct_memory_access.tooltip": "If enabled, some critical code paths will be allowed to use direct memory access for performance. This often greatly reduces CPU overhead for chunk and entity rendering, but can make it harder to diagnose some bugs and crashes. You should only disable this if you've been asked to or otherwise know what you're doing.",
-
   "sodium.options.enable_memory_tracing.name": "Enable Memory Tracing",
-
   "sodium.options.enable_memory_tracing.tooltip": "Debugging feature. If enabled, stack traces will be collected alongside memory allocations to help improve diagnostic information when memory leaks are detected.",
-
   "sodium.options.performance_impact_string": "Performance Impact: %s",
-
   "sodium.options.use_persistent_mapping.name": "Use Persistent Mapping",
-
   "sodium.options.use_persistent_mapping.tooltip": "If enabled, a small amount of memory will be persistently mapped as a staging buffer for chunk uploading, helping to reduce CPU overhead and frame time instability when loading or updating chunks.\n\nRequires OpenGL 4.4 or ARB_buffer_storage.",
-
   "sodium.options.chunk_memory_allocator.name": "Chunk Memory Allocator",
-
   "sodium.options.chunk_memory_allocator.tooltip": "Selects the memory allocator that will be used for chunk rendering.\n- ASYNC: Fastest option, works well with most modern graphics drivers.\n- SWAP: Fallback option for older graphics drivers. May increase memory usage significantly.",
-
   "sodium.options.chunk_memory_allocator.async": "Async",
-
   "sodium.options.chunk_memory_allocator.swap": "Swap",
-
   "sodium.options.chunk_update_threads.name": "Chunk Update Threads",
-
   "sodium.options.chunk_update_threads.tooltip": "Specifies the number of threads to use for chunk building. Using more threads can speed up chunk loading and update speed, but may negatively impact frame times.",
-
   "sodium.options.always_defer_chunk_updates.name": "Always Defer Chunk Updates",
-
   "sodium.options.always_defer_chunk_updates.tooltip": "If enabled, rendering will never wait for chunk updates to finish, even if they are important. This can greatly improve frame rates in some scenarios, but it may create significant visual lag in the world.",
-
   "sodium.options.buttons.undo": "Undo",
-
   "sodium.options.buttons.apply": "Apply",
-
   "sodium.options.buttons.donate": "Buy us a coffee!"
-
 }
