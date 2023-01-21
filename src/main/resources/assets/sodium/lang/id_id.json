@@ -49,7 +49,7 @@
   "sodium.options.allow_direct_memory_access.tooltip": "Jika diaktifkan, beberapa kode kritikal akan diperbolehkan untuk menggunakan akses memori secara langsung untuk meningkatkan performa. Ini seringkali mengurangi CPU overhead untuk rendering chunk dan entitas, tapi dapat mempersulit diagnosis bug dan crash. Anda sebaiknya mematikan opsi ini jika anda diminta untuk mematikannya atau jika anda tau apa yang anda lakukan.",
   "sodium.options.enable_memory_tracing.name": "Gunakan Memory Tracing",
   "sodium.options.enable_memory_tracing.tooltip": "Fitur debugging. Jika diaktifkan, stack trace akan dikumpulkan bersama dengan alokasi memori untuk membantu meningkatkan informasi diagnostik saat kebocoran memori terdeteksi.",
-  "sodium.options.performance_impact_string": "Pengaruh Terhadap Performa: %s",
+  "sodium.options.performance_impact_string": "Efek Terhadap Performa: %s",
   "sodium.options.use_persistent_mapping.name": "Gunakan Persistent Mapping",
   "sodium.options.use_persistent_mapping.tooltip": "Jika diaktifkan, sebagian kecil memori akan digunakan sebagai staging buffer untuk pengunggahan chunk, membantu mengurangi CPU overhead dan ketidakstabilan frame time saat memuat atau memperbarui chunk.\n\nMemerlukan OpenGL 4.4 atau ARB_buffer_storage.",
   "sodium.options.chunk_memory_allocator.name": "Chunk Memory Allocator",
