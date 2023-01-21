@@ -69,18 +69,30 @@ public abstract class MixinBufferBuilder implements VertexBufferWriter {
         var dst = MemoryUtil.memAddress(this.buffer, this.elementOffset);
 
         if (src != dst) {
-            this.pushSlow(src, format, count);
+            this.copy(src, format, count);
         }
 
         this.vertexCount += count;
         this.elementOffset += count * this.formatDesc.stride;
     }
 
-    private void pushSlow(long src, VertexFormatDescription format, int count) {
+    private void copy(long src, VertexFormatDescription format, int count) {
         this.ensureBufferCapacity(count * format.stride);
 
         var dst = MemoryUtil.memAddress(this.buffer, this.elementOffset);
 
+        if (this.formatDesc == format) {
+            this.copyFast(src, dst, format, count);
+        } else {
+            this.copySlow(src, dst, format, count);
+        }
+    }
+
+    private void copyFast(long src, long dst, VertexFormatDescription format, int count) {
+        MemoryUtil.memCopy(src, dst, format.stride * count);
+    }
+
+    private void copySlow(long src, long dst, VertexFormatDescription format, int count) {
         if (this.lastSerializerFormat != format) {
             this.lastSerializerFormat = format;
             this.lastSerializer = VertexSerializerCache.get(format, this.formatDesc);

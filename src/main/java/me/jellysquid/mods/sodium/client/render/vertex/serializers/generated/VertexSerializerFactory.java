@@ -80,27 +80,45 @@ public class VertexSerializerFactory {
 
             // Generate instructions for each copy command
             for (var op : memoryCopies) {
-                for (int i = 0; i < op.length(); i++) {
+                int i = 0;
+
+                while (i < op.length()) {
+                    int remaining = op.length() - i;
+
                     Label labelMemoryTransfer = new Label();
                     methodVisitor.visitLabel(labelMemoryTransfer);
 
                     // Calculate the destination pointer
                     methodVisitor.visitVarInsn(Opcodes.LLOAD, localDstPointer);
-                    methodVisitor.visitLdcInsn((long) (op.dst() + (i * 4)));
+                    methodVisitor.visitLdcInsn((long) (op.dst() + i));
                     methodVisitor.visitInsn(Opcodes.LADD);
 
                     // Calculate the source pointer
                     methodVisitor.visitVarInsn(Opcodes.LLOAD, localSrcPointer);
-                    methodVisitor.visitLdcInsn((long) (op.src() + (i * 4)));
+                    methodVisitor.visitLdcInsn((long) (op.src() + i));
                     methodVisitor.visitInsn(Opcodes.LADD);
 
-                    // Fetch the memory from the source buffer
-                    // This pops the source pointer off the stack, and places the value onto the stack
-                    methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MemoryUtil.class), "memGetInt", "(J)I", false);
+                    if (remaining >= 8) {
+                        methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MemoryUtil.class), "memGetLong", "(J)J", false);
+                        methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MemoryUtil.class), "memPutLong", "(JJ)V", false);
 
-                    // Write the memory from the stack into the destination buffer
-                    // This pops the destination pointer and memory value off the stack
-                    methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MemoryUtil.class), "memPutInt", "(JI)V", false);
+                        i += 8;
+                    } else if (remaining >= 4) {
+                        methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MemoryUtil.class), "memGetInt", "(J)I", false);
+                        methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MemoryUtil.class), "memPutInt", "(JI)V", false);
+
+                        i += 4;
+                    } else if (remaining >= 2) {
+                        methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MemoryUtil.class), "memGetShort", "(J)S", false);
+                        methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MemoryUtil.class), "memPutShort", "(JS)V", false);
+
+                        i += 2;
+                    } else {
+                        methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MemoryUtil.class), "memGetByte", "(J)B", false);
+                        methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(MemoryUtil.class), "memPutByte", "(JB)V", false);
+
+                        i += 1;
+                    }
                 }
             }
 
