@@ -2,36 +2,35 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile.buffers;
 
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import net.minecraft.client.texture.Sprite;
 
 public class BakedChunkModelBuilder implements ChunkModelBuilder {
-    private final ModelVertexSink vertexSink;
-    private final IndexBufferBuilder[] indexBufferBuilders;
+    private final ChunkVertexBufferBuilder vertexBuffer;
+    private final IndexBufferBuilder[] indexBuffers;
 
     private final ChunkRenderData.Builder renderData;
     private final int id;
 
-    public BakedChunkModelBuilder(IndexBufferBuilder[] indexBufferBuilders,
-                                  ModelVertexSink vertexSink,
+    public BakedChunkModelBuilder(ChunkVertexBufferBuilder vertexBuffer, IndexBufferBuilder[] indexBuffers,
                                   ChunkRenderData.Builder renderData,
                                   int chunkId) {
-        this.indexBufferBuilders = indexBufferBuilders;
-        this.vertexSink = vertexSink;
+        this.indexBuffers = indexBuffers;
+        this.vertexBuffer = vertexBuffer;
 
         this.renderData = renderData;
         this.id = chunkId;
     }
 
     @Override
-    public ModelVertexSink getVertexSink() {
-        return this.vertexSink;
+    public ChunkVertexBufferBuilder getVertexBuffer() {
+        return this.vertexBuffer;
     }
 
     @Override
-    public IndexBufferBuilder getIndexBufferBuilder(ModelQuadFacing facing) {
-        return this.indexBufferBuilders[facing.ordinal()];
+    public IndexBufferBuilder getIndexBuffer(ModelQuadFacing facing) {
+        return this.indexBuffers[facing.ordinal()];
     }
 
     @Override

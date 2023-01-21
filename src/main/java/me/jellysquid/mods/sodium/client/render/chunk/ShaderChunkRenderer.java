@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.shader.*;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
@@ -28,7 +28,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     public ShaderChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         this.device = device;
         this.vertexType = vertexType;
-        this.vertexFormat = vertexType.getCustomVertexFormat();
+        this.vertexFormat = vertexType.getVertexFormat();
     }
 
     protected GlProgram<ChunkShaderInterface> compileProgram(ChunkShaderOptions options) {

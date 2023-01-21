@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.gl.compile;
 
-import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;

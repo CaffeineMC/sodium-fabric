@@ -3,9 +3,8 @@ package me.jellysquid.mods.sodium.mixin.features.gui.fast_loading_screen;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.screen_quad.BasicScreenQuadVertexSink;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.ColorVertex;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import net.minecraft.client.gui.WorldGenerationProgressTracker;
@@ -15,6 +14,7 @@ import net.minecraft.client.util.math.MatrixStack;
 
 import net.minecraft.world.chunk.ChunkStatus;
 import org.joml.Matrix4f;
+import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.*;
 
 /**
@@ -61,10 +61,10 @@ public class MixinLevelLoadingScreen {
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
         
-        BufferBuilder buffer = tessellator.getBuffer();
-        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        BufferBuilder bufferBuilder = tessellator.getBuffer();
+        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
-        BasicScreenQuadVertexSink sink = VertexDrain.of(buffer).createSink(VanillaVertexTypes.BASIC_SCREEN_QUADS);
+        var writer = VertexBufferWriter.of(bufferBuilder);
 
         int centerSize = tracker.getCenterSize();
         int size = tracker.getSize();
@@ -75,11 +75,10 @@ public class MixinLevelLoadingScreen {
             int mapRenderCenterSize = centerSize * tileSize - mapPadding;
             int radius = mapRenderCenterSize / 2 + 1;
 
-            sink.ensureCapacity(4 * 4);
-            addRect(matrix, sink, mapX - radius, mapY - radius, mapX - radius + 1, mapY + radius, DEFAULT_STATUS_COLOR);
-            addRect(matrix, sink, mapX + radius - 1, mapY - radius, mapX + radius, mapY + radius, DEFAULT_STATUS_COLOR);
-            addRect(matrix, sink, mapX - radius, mapY - radius, mapX + radius, mapY - radius + 1, DEFAULT_STATUS_COLOR);
-            addRect(matrix, sink, mapX - radius, mapY + radius - 1, mapX + radius, mapY + radius, DEFAULT_STATUS_COLOR);
+            addRect(writer, matrix, mapX - radius, mapY - radius, mapX - radius + 1, mapY + radius, DEFAULT_STATUS_COLOR);
+            addRect(writer, matrix, mapX + radius - 1, mapY - radius, mapX + radius, mapY + radius, DEFAULT_STATUS_COLOR);
+            addRect(writer, matrix, mapX - radius, mapY - radius, mapX + radius, mapY - radius + 1, DEFAULT_STATUS_COLOR);
+            addRect(writer, matrix, mapX - radius, mapY + radius - 1, mapX + radius, mapY + radius, DEFAULT_STATUS_COLOR);
         }
 
         int mapRenderSize = size * tileSize - mapPadding;
@@ -89,7 +88,6 @@ public class MixinLevelLoadingScreen {
         ChunkStatus prevStatus = null;
         int prevColor = NULL_STATUS_COLOR;
 
-        sink.ensureCapacity(size * size * 4);
         for (int x = 0; x < size; ++x) {
             int tileX = mapStartX + x * tileSize;
 
@@ -108,21 +106,34 @@ public class MixinLevelLoadingScreen {
                     prevColor = color;
                 }
 
-                addRect(matrix, sink, tileX, tileY, tileX + mapScale, tileY + mapScale, color);
+                addRect(writer, matrix, tileX, tileY, tileX + mapScale, tileY + mapScale, color);
             }
         }
 
-        sink.flush();
         tessellator.draw();
 
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
 
-    private static void addRect(Matrix4f matrix, BasicScreenQuadVertexSink sink, int x1, int y1, int x2, int y2, int color) {
-        sink.writeQuad(matrix, x1, y2, 0, color);
-        sink.writeQuad(matrix, x2, y2, 0, color);
-        sink.writeQuad(matrix, x2, y1, 0, color);
-        sink.writeQuad(matrix, x1, y1, 0, color);
+    private static void addRect(VertexBufferWriter writer, Matrix4f matrix, int x1, int y1, int x2, int y2, int color) {
+        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+            long buffer = stack.nmalloc(ColorVertex.STRIDE * 4);
+            long ptr = buffer;
+
+            ColorVertex.write(ptr, matrix, x1, y2, 0, color);
+            ptr += ColorVertex.STRIDE;
+
+            ColorVertex.write(ptr, matrix, x2, y2, 0, color);
+            ptr += ColorVertex.STRIDE;
+
+            ColorVertex.write(ptr, matrix, x2, y1, 0, color);
+            ptr += ColorVertex.STRIDE;
+
+            ColorVertex.write(ptr, matrix, x1, y1, 0, color);
+            ptr += ColorVertex.STRIDE;
+
+            writer.push(buffer, 4, ColorVertex.FORMAT);
+        }
     }
 }
