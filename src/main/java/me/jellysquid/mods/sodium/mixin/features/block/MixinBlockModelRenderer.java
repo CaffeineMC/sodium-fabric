@@ -34,6 +34,8 @@ public class MixinBlockModelRenderer {
     public void render(MatrixStack.Entry entry, VertexConsumer vertexConsumer, BlockState blockState, BakedModel bakedModel, float red, float green, float blue, int light, int overlay) {
         Xoroshiro128PlusPlusRandom random = this.random;
 
+        var writer = VertexBufferWriter.of(vertexConsumer);
+
         // Clamp color ranges
         red = MathHelper.clamp(red, 0.0F, 1.0F);
         green = MathHelper.clamp(green, 0.0F, 1.0F);
@@ -46,7 +48,7 @@ public class MixinBlockModelRenderer {
             List<BakedQuad> quads = bakedModel.getQuads(blockState, direction, random);
 
             if (!quads.isEmpty()) {
-                renderQuad(entry, vertexConsumer, defaultColor, quads, light, overlay);
+                renderQuad(entry, writer, defaultColor, quads, light, overlay);
             }
         }
 
@@ -54,18 +56,14 @@ public class MixinBlockModelRenderer {
         List<BakedQuad> quads = bakedModel.getQuads(blockState, null, random);
 
         if (!quads.isEmpty()) {
-            renderQuad(entry, vertexConsumer, defaultColor, quads, light, overlay);
+            renderQuad(entry, writer, defaultColor, quads, light, overlay);
         }
     }
 
-    private static void renderQuad(MatrixStack.Entry entry, VertexConsumer vertexConsumer, int defaultColor, List<BakedQuad> list, int light, int overlay) {
-        if (list.isEmpty()) {
-            return;
-        }
-
-        var writer = VertexBufferWriter.of(vertexConsumer);
-
-        for (BakedQuad bakedQuad : list) {
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private static void renderQuad(MatrixStack.Entry matrices, VertexBufferWriter writer, int defaultColor, List<BakedQuad> list, int light, int overlay) {
+        for (int j = 0; j < list.size(); j++) {
+            BakedQuad bakedQuad = list.get(j);
             int color = bakedQuad.hasColor() ? defaultColor : 0xFFFFFFFF;
 
             ModelQuadView quad = ((ModelQuadView) bakedQuad);
@@ -75,8 +73,8 @@ public class MixinBlockModelRenderer {
                 long ptr = buffer;
 
                 for (int i = 0; i < 4; i++) {
-                    ModelVertex.write(ptr, entry, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),
-                            light, overlay, ModelQuadUtil.getFacingNormal(bakedQuad.getFace()));
+                    ModelVertex.write(ptr, matrices, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),
+                            light, overlay, bakedQuad.getFace());
 
                     ptr += ModelVertex.STRIDE;
                 }
