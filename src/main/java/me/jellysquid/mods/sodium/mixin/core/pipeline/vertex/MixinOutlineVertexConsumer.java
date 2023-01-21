@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
 import net.minecraft.client.render.FixedColorVertexConsumer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormats;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,6 +20,12 @@ public abstract class MixinOutlineVertexConsumer extends FixedColorVertexConsume
     @Override
     public void push(long ptr, int count, VertexFormatDescription format) {
         this.writeVerticesSlow(ptr, count, format);
+    }
+
+    @Override
+    public long buffer(MemoryStack stack, int count, VertexFormatDescription format) {
+        return VertexBufferWriter.of(this.delegate)
+                .buffer(stack, count, format);
     }
 
     private void writeVerticesSlow(long ptr, int count, VertexFormatDescription format) {

@@ -71,21 +71,21 @@ public class MixinItemRenderer {
 
         var writer = VertexBufferWriter.of(vertexConsumer);
 
-        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            long buffer = stack.nmalloc(ModelVertex.STRIDE * 4);
+        for (BakedQuad bakedQuad : quads) {
+            int color = 0xFFFFFFFF;
 
-            for (BakedQuad bakedQuad : quads) {
-                int color = 0xFFFFFFFF;
-
-                if (!itemStack.isEmpty() && bakedQuad.hasColor()) {
-                    if (colorProvider == null) {
-                        colorProvider = ((ItemColorsExtended) this.colors).getColorProvider(itemStack);
-                    }
-
-                    color = ColorARGB.toABGR((colorProvider.getColor(itemStack, bakedQuad.getColorIndex())), 255);
+            if (!itemStack.isEmpty() && bakedQuad.hasColor()) {
+                if (colorProvider == null) {
+                    colorProvider = ((ItemColorsExtended) this.colors).getColorProvider(itemStack);
                 }
 
-                ModelQuadView quad = ((ModelQuadView) bakedQuad);
+                color = ColorARGB.toABGR((colorProvider.getColor(itemStack, bakedQuad.getColorIndex())), 255);
+            }
+
+            ModelQuadView quad = ((ModelQuadView) bakedQuad);
+
+            try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+                long buffer = writer.buffer(stack, 4, ModelVertex.FORMAT);
                 long ptr = buffer;
 
                 for (int i = 0; i < 4; i++) {
@@ -96,9 +96,9 @@ public class MixinItemRenderer {
                 }
 
                 writer.push(buffer, 4, ModelVertex.FORMAT);
-
-                SpriteUtil.markSpriteActive(quad.getSprite());
             }
+
+            SpriteUtil.markSpriteActive(quad.getSprite());
         }
     }
 }

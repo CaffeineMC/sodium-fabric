@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.LineVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
@@ -37,21 +38,20 @@ public class MixinModelPart {
         var writer = VertexBufferWriter.of(vertexConsumer);
         int color = ColorABGR.pack(red, green, blue, alpha);
 
-        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            var buffer = stack.nmalloc(ModelVertex.STRIDE * 4);
+        for (ModelPart.Cuboid cuboid : this.cuboids) {
+            for (ModelPart.Quad quad : ((ModelCuboidAccessor) cuboid).getQuads()) {
+                Matrix3f normal = matrices.getNormalMatrix();
+                Matrix4f matrix = matrices.getPositionMatrix();
 
-            for (ModelPart.Cuboid cuboid : this.cuboids) {
-                for (ModelPart.Quad quad : ((ModelCuboidAccessor) cuboid).getQuads()) {
-                    Matrix3f normal = matrices.getNormalMatrix();
-                    Matrix4f matrix = matrices.getPositionMatrix();
+                float normX = Math.fma(normal.m00(), quad.direction.x, Math.fma(normal.m10(), quad.direction.y, normal.m20() * quad.direction.z));
+                float normY = Math.fma(normal.m01(), quad.direction.x, Math.fma(normal.m11(), quad.direction.y, normal.m21() * quad.direction.z));
+                float normZ = Math.fma(normal.m02(), quad.direction.x, Math.fma(normal.m12(), quad.direction.y, normal.m22() * quad.direction.z));
 
-                    float normX = Math.fma(normal.m00(), quad.direction.x, Math.fma(normal.m10(), quad.direction.y, normal.m20() * quad.direction.z));
-                    float normY = Math.fma(normal.m01(), quad.direction.x, Math.fma(normal.m11(), quad.direction.y, normal.m21() * quad.direction.z));
-                    float normZ = Math.fma(normal.m02(), quad.direction.x, Math.fma(normal.m12(), quad.direction.y, normal.m22() * quad.direction.z));
+                int norm = Norm3b.pack(normX, normY, normZ);
 
-                    int norm = Norm3b.pack(normX, normY, normZ);
-
-                    var ptr = buffer;
+                try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+                    long buffer = writer.buffer(stack, 4, ModelVertex.FORMAT);
+                    long ptr = buffer;
 
                     for (ModelPart.Vertex vertex : quad.vertices) {
                         Vector3f pos = vertex.pos;

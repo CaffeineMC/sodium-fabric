@@ -6,6 +6,7 @@ import net.minecraft.client.render.SpriteTexturedVertexConsumer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.Sprite;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,6 +28,12 @@ public class MixinSpriteTexturedVertexConsumer implements VertexBufferWriter  {
 
         VertexBufferWriter.of(this.delegate)
                 .push(ptr, vertexCount, format);
+    }
+
+    @Override
+    public long buffer(MemoryStack stack, int count, VertexFormatDescription format) {
+        return VertexBufferWriter.of(this.delegate)
+                .buffer(stack, count, format);
     }
 
     private void transformVertices(final long ptr, int vertexCount, VertexFormatDescription format) {
