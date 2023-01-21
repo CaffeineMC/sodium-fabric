@@ -52,7 +52,6 @@
     "features.options.MixinInGameHud",
     "features.options.MixinOptionsScreen",
     "features.options.MixinWorldRenderer",
-    "features.particle.cull.MixinParticleManager",
     "features.particle.fast_render.MixinBillboardParticle",
     "features.render_layer.leaves.MixinLeavesBlock",
     "features.render_layer.leaves.MixinRenderLayers",
