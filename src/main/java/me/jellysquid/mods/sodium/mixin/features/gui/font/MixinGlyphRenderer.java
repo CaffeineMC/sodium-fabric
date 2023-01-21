@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.gui.font;
 
 import me.jellysquid.mods.sodium.client.render.vertex.formats.GlyphVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.font.GlyphRenderer;
 import net.minecraft.client.render.VertexConsumer;
@@ -67,7 +68,7 @@ public class MixinGlyphRenderer {
         var writer = VertexBufferWriter.of(vertexConsumer);
 
         try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            long buffer = stack.nmalloc(GlyphVertex.STRIDE * 4);
+            long buffer = writer.buffer(stack, 4, GlyphVertex.FORMAT);
             long ptr = buffer;
 
             write(ptr, matrix, x1 + w1, h1, 0.0F, color, this.minU, this.minV, light);

@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ColorVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import net.minecraft.client.gui.WorldGenerationProgressTracker;
@@ -118,7 +119,7 @@ public class MixinLevelLoadingScreen {
 
     private static void addRect(VertexBufferWriter writer, Matrix4f matrix, int x1, int y1, int x2, int y2, int color) {
         try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            long buffer = stack.nmalloc(ColorVertex.STRIDE * 4);
+            long buffer = writer.buffer(stack, 4, ColorVertex.FORMAT);
             long ptr = buffer;
 
             ColorVertex.write(ptr, matrix, x1, y2, 0, color);

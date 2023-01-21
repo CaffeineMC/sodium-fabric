@@ -71,7 +71,7 @@ public class MixinBlockModelRenderer {
             ModelQuadView quad = ((ModelQuadView) bakedQuad);
 
             try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-                long buffer = stack.nmalloc(ModelVertex.STRIDE * 4);
+                long buffer = writer.buffer(stack, 4, ModelVertex.FORMAT);
                 long ptr = buffer;
 
                 for (int i = 0; i < 4; i++) {

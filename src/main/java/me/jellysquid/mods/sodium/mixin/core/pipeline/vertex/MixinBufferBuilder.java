@@ -8,6 +8,7 @@ import me.jellysquid.mods.sodium.client.render.vertex.serializers.VertexSerializ
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.util.GlAllocationUtils;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
@@ -51,28 +52,35 @@ public abstract class MixinBufferBuilder implements VertexBufferWriter {
     }
 
     @Override
-    public void push(long src, int count, VertexFormatDescription format) {
-        var length = count * this.formatDesc.stride;
+    public long buffer(MemoryStack stack, int count, VertexFormatDescription format) {
+        var length = count * format.stride;
+
+        if (this.formatDesc != format) {
+            return stack.nmalloc(length);
+        }
 
         this.ensureBufferCapacity(length);
 
+        return MemoryUtil.memAddress(this.buffer, this.elementOffset);
+    }
+
+    @Override
+    public void push(long src, int count, VertexFormatDescription format) {
         var dst = MemoryUtil.memAddress(this.buffer, this.elementOffset);
 
-        if (this.formatDesc == format) {
-            this.pushFast(src, dst, format, count);
-        } else {
-            this.pushSlow(src, dst, format, count);
+        if (src != dst) {
+            this.pushSlow(src, format, count);
         }
 
         this.vertexCount += count;
-        this.elementOffset += length;
+        this.elementOffset += count * this.formatDesc.stride;
     }
 
-    private void pushFast(long src, long dst, VertexFormatDescription format, int count) {
-        MemoryUtil.memCopy(src, dst, count * format.stride);
-    }
+    private void pushSlow(long src, VertexFormatDescription format, int count) {
+        this.ensureBufferCapacity(count * format.stride);
 
-    private void pushSlow(long src, long dst, VertexFormatDescription format, int count) {
+        var dst = MemoryUtil.memAddress(this.buffer, this.elementOffset);
+
         if (this.lastSerializerFormat != format) {
             this.lastSerializerFormat = format;
             this.lastSerializer = VertexSerializerCache.get(format, this.formatDesc);
@@ -85,10 +93,12 @@ public abstract class MixinBufferBuilder implements VertexBufferWriter {
         // Ensure that there is always space for 1 more vertex; see BufferBuilder.next()
         bytes += this.formatDesc.stride;
 
-        if (this.elementOffset + bytes <= this.buffer.capacity()) {
-            return;
+        if (this.elementOffset + bytes > this.buffer.capacity()) {
+            this.growBuffer(bytes);
         }
+    }
 
+    private void growBuffer(int bytes) {
         int newSize = this.buffer.capacity() + roundBufferSize(bytes);
 
         LOGGER.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.buffer.capacity(), newSize);

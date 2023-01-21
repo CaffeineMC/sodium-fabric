@@ -11,6 +11,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,6 +38,12 @@ public class MixinOverlayVertexConsumer implements VertexBufferWriter {
     @Override
     public void push(long ptr, int count, VertexFormatDescription format) {
         this.writeVerticesSlow(ptr, count, format);
+    }
+
+    @Override
+    public long buffer(MemoryStack stack, int count, VertexFormatDescription format) {
+        return VertexBufferWriter.of(this.delegate)
+                .buffer(stack, count, format);
     }
 
     private void writeVerticesSlow(long ptr, int count, VertexFormatDescription format) {
