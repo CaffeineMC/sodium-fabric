@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
@@ -15,6 +16,8 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.Xoroshiro128PlusPlusRandom;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -67,20 +70,7 @@ public class MixinBlockModelRenderer {
 
             ModelQuadView quad = ((ModelQuadView) bakedQuad);
 
-            try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-                long buffer = writer.buffer(stack, 4, ModelVertex.STRIDE, ModelVertex.FORMAT);
-                long ptr = buffer;
-
-                for (int i = 0; i < 4; i++) {
-                    ModelVertex.write(ptr, matrices, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),
-                            light, overlay, bakedQuad.getFace());
-
-                    ptr += ModelVertex.STRIDE;
-                }
-
-                writer.push(buffer, 4, ModelVertex.STRIDE, ModelVertex.FORMAT);
-            }
-
+            ModelVertex.writeQuadVertices(writer, matrices, quad, light, overlay, color);
 
             SpriteUtil.markSpriteActive(quad.getSprite());
         }
