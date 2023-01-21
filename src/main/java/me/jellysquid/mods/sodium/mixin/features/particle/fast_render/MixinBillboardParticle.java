@@ -73,7 +73,7 @@ public abstract class MixinBillboardParticle extends Particle {
         var writer = VertexBufferWriter.of(vertexConsumer);
 
         try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            long buffer = writer.buffer(stack, 4, ParticleVertex.FORMAT);
+            long buffer = writer.buffer(stack, 4, ParticleVertex.STRIDE, ParticleVertex.FORMAT);
             long ptr = buffer;
 
             writeVertex(ptr, quaternion,-1.0F, -1.0F, x, y, z, maxU, maxV, color, light, size);
@@ -88,7 +88,7 @@ public abstract class MixinBillboardParticle extends Particle {
             writeVertex(ptr, quaternion,1.0F, -1.0F, x, y, z, minU, maxV, color, light, size);
             ptr += ParticleVertex.STRIDE;
 
-            writer.push(buffer, 4, ParticleVertex.FORMAT);
+            writer.push(buffer, 4, ParticleVertex.STRIDE, ParticleVertex.FORMAT);
         }
 
     }

@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.client.world.biome.ItemColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -86,7 +85,7 @@ public class MixinItemRenderer {
             ModelQuadView quad = ((ModelQuadView) bakedQuad);
 
             try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-                long buffer = writer.buffer(stack, 4, ModelVertex.FORMAT);
+                long buffer = writer.buffer(stack, 4, ModelVertex.STRIDE, ModelVertex.FORMAT);
                 long ptr = buffer;
 
                 for (int i = 0; i < 4; i++) {
@@ -96,7 +95,7 @@ public class MixinItemRenderer {
                     ptr += ModelVertex.STRIDE;
                 }
 
-                writer.push(buffer, 4, ModelVertex.FORMAT);
+                writer.push(buffer, 4, ModelVertex.STRIDE, ModelVertex.FORMAT);
             }
 
             SpriteUtil.markSpriteActive(quad.getSprite());

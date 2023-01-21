@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
@@ -69,7 +68,7 @@ public class MixinBlockModelRenderer {
             ModelQuadView quad = ((ModelQuadView) bakedQuad);
 
             try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-                long buffer = writer.buffer(stack, 4, ModelVertex.FORMAT);
+                long buffer = writer.buffer(stack, 4, ModelVertex.STRIDE, ModelVertex.FORMAT);
                 long ptr = buffer;
 
                 for (int i = 0; i < 4; i++) {
@@ -79,7 +78,7 @@ public class MixinBlockModelRenderer {
                     ptr += ModelVertex.STRIDE;
                 }
 
-                writer.push(buffer, 4, ModelVertex.FORMAT);
+                writer.push(buffer, 4, ModelVertex.STRIDE, ModelVertex.FORMAT);
             }
 
 

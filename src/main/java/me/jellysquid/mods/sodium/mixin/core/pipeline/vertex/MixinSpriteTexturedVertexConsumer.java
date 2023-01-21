@@ -23,24 +23,24 @@ public class MixinSpriteTexturedVertexConsumer implements VertexBufferWriter  {
     private Sprite sprite;
 
     @Override
-    public void push(final long ptr, int vertexCount, VertexFormatDescription format) {
-        this.transformVertices(ptr, vertexCount, format);
+    public void push(final long ptr, int vertexCount, int stride, VertexFormatDescription format) {
+        this.transformVertices(ptr, vertexCount, stride, format);
 
         VertexBufferWriter.of(this.delegate)
-                .push(ptr, vertexCount, format);
+                .push(ptr, vertexCount, stride, format);
     }
 
     @Override
-    public long buffer(MemoryStack stack, int count, VertexFormatDescription format) {
+    public long buffer(MemoryStack stack, int count, int stride, VertexFormatDescription format) {
         return VertexBufferWriter.of(this.delegate)
-                .buffer(stack, count, format);
+                .buffer(stack, count, stride, format);
     }
 
-    private void transformVertices(final long ptr, int vertexCount, VertexFormatDescription format) {
+    private void transformVertices(final long ptr, int count, int stride, VertexFormatDescription format) {
         long offset = ptr;
         long offsetUV = format.getOffset(VertexFormats.TEXTURE_ELEMENT);
 
-        for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++) {
+        for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
             float u = MemoryUtil.memGetFloat(offset + offsetUV + 0);
             float v = MemoryUtil.memGetFloat(offset + offsetUV + 4);
 
@@ -50,7 +50,7 @@ public class MixinSpriteTexturedVertexConsumer implements VertexBufferWriter  {
             MemoryUtil.memPutFloat(offset + offsetUV + 0, u);
             MemoryUtil.memPutFloat(offset + offsetUV + 4, v);
 
-            offset += format.stride;
+            offset += stride;
         }
     }
 }

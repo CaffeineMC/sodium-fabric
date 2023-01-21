@@ -12,7 +12,7 @@ import java.util.List;
 public class VertexSerializerFactory {
     private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
-    public static Bytecode generate(List<MemoryTransfer> memoryCopies, VertexFormatDescription srcFormat, VertexFormatDescription dstFormat, String identifier) {
+    public static Bytecode generate(List<MemoryTransfer> memoryCopies, String identifier) {
         var name = "me/jellysquid/mods/sodium/client/render/vertex/serializers/generated/VertexSerializer$Impl$" + identifier;
 
         ClassWriter classWriter = new ClassWriter(0);
@@ -53,12 +53,14 @@ public class VertexSerializerFactory {
             // Local variable table slots
             final int localThis = 0;
             final int localSrcPointer = 1;
-            final int localDstPointer = 3;
-            final int localVertexCount = 5;
-            final int localVertexIndex = 6;
+            final int localSrcStride = 3;
+            final int localDstPointer = 4;
+            final int localDstStride = 6;
+            final int localVertexCount = 7;
+            final int localVertexIndex = 8;
 
             // Serialization method
-            MethodVisitor methodVisitor = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "serialize", "(JJI)V", null, null);
+            MethodVisitor methodVisitor = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "serialize", "(JIJII)V", null, null);
             methodVisitor.visitCode();
 
             // Set up the loop's accumulator (vertexIndex)
@@ -126,7 +128,8 @@ public class VertexSerializerFactory {
             Label labelIncrementSourcePointer = new Label();
             methodVisitor.visitLabel(labelIncrementSourcePointer);
             methodVisitor.visitVarInsn(Opcodes.LLOAD, localSrcPointer);
-            methodVisitor.visitLdcInsn((long) srcFormat.stride);
+            methodVisitor.visitVarInsn(Opcodes.ILOAD, localSrcStride);
+            methodVisitor.visitInsn(Opcodes.I2L);
             methodVisitor.visitInsn(Opcodes.LADD);
             methodVisitor.visitVarInsn(Opcodes.LSTORE, localSrcPointer);
 
@@ -134,7 +137,8 @@ public class VertexSerializerFactory {
             Label labelIncrementDestinationPointer = new Label();
             methodVisitor.visitLabel(labelIncrementDestinationPointer);
             methodVisitor.visitVarInsn(Opcodes.LLOAD, localDstPointer);
-            methodVisitor.visitLdcInsn((long) dstFormat.stride);
+            methodVisitor.visitVarInsn(Opcodes.ILOAD, localDstStride);
+            methodVisitor.visitInsn(Opcodes.I2L);
             methodVisitor.visitInsn(Opcodes.LADD);
             methodVisitor.visitVarInsn(Opcodes.LSTORE, localDstPointer);
 
@@ -152,10 +156,12 @@ public class VertexSerializerFactory {
             methodVisitor.visitLabel(labelExit);
             methodVisitor.visitLocalVariable("this", "L" + name + ";", null, labelLoopInit, labelExit, localThis);
             methodVisitor.visitLocalVariable("src", "J", null, labelLoopInit, labelExit, localSrcPointer);
+            methodVisitor.visitLocalVariable("srcStride", "I", null, labelLoopInit, labelExit, localSrcStride);
             methodVisitor.visitLocalVariable("dst", "J", null, labelLoopInit, labelExit, localDstPointer);
+            methodVisitor.visitLocalVariable("dstStride", "I", null, labelLoopInit, labelExit, localDstStride);
             methodVisitor.visitLocalVariable("vertexCount", "I", null, labelLoopInit, labelExit, localVertexCount);
             methodVisitor.visitLocalVariable("vertexIndex", "I", null, labelLoopConditionSetup, labelLoopConditionComparison, localVertexIndex);
-            methodVisitor.visitMaxs(6, 7);
+            methodVisitor.visitMaxs(6, 9);
             methodVisitor.visitEnd();
         }
 

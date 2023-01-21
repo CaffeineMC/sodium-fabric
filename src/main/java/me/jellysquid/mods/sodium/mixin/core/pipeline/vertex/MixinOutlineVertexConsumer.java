@@ -18,17 +18,17 @@ public abstract class MixinOutlineVertexConsumer extends FixedColorVertexConsume
     private VertexConsumer delegate;
 
     @Override
-    public void push(long ptr, int count, VertexFormatDescription format) {
-        this.writeVerticesSlow(ptr, count, format);
+    public void push(long ptr, int count, int stride, VertexFormatDescription format) {
+        this.writeVerticesSlow(ptr, count, stride, format);
     }
 
     @Override
-    public long buffer(MemoryStack stack, int count, VertexFormatDescription format) {
+    public long buffer(MemoryStack stack, int count, int stride, VertexFormatDescription format) {
         return VertexBufferWriter.of(this.delegate)
-                .buffer(stack, count, format);
+                .buffer(stack, count, stride, format);
     }
 
-    private void writeVerticesSlow(long ptr, int count, VertexFormatDescription format) {
+    private void writeVerticesSlow(long ptr, int count, int stride, VertexFormatDescription format) {
         var offsetPosition = format.getOffset(VertexFormats.POSITION_ELEMENT);
         var offsetTexture = format.getOffset(VertexFormats.TEXTURE_ELEMENT);
 
@@ -45,7 +45,7 @@ public abstract class MixinOutlineVertexConsumer extends FixedColorVertexConsume
                     .texture(textureU, textureV)
                     .next();
 
-            ptr += format.stride;
+            ptr += stride;
         }
     }
 }

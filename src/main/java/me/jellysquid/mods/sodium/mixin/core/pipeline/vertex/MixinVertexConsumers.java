@@ -20,12 +20,12 @@ public class MixinVertexConsumers {
         private VertexConsumer second;
 
         @Override
-        public void push(long ptr, int count, VertexFormatDescription format) {
+        public void push(long ptr, int count, int stride, VertexFormatDescription format) {
             VertexBufferWriter.of(this.first)
-                    .push(ptr, count, format);
+                    .push(ptr, count, stride, format);
 
             VertexBufferWriter.of(this.second)
-                    .push(ptr, count, format);
+                    .push(ptr, count, stride, format);
         }
     }
 
@@ -36,10 +36,10 @@ public class MixinVertexConsumers {
         private VertexConsumer[] delegates;
 
         @Override
-        public void push(long ptr, int count, VertexFormatDescription format) {
+        public void push(long ptr, int count, int stride, VertexFormatDescription format) {
             for (var delegate : this.delegates) {
                 VertexBufferWriter.of(delegate)
-                        .push(ptr, count, format);
+                        .push(ptr, count, stride, format);
             }
         }
     }

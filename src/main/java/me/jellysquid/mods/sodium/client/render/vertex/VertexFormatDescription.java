@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 public class VertexFormatDescription {
     public final int id;
-    public final int stride;
 
     public final VertexFormatElement[] elements;
     public final int[] offsets;
@@ -20,7 +19,6 @@ public class VertexFormatDescription {
                 .toArray(VertexFormatElement[]::new);
         this.offsets = format.offsets
                 .toIntArray();
-        this.stride = format.getVertexSizeByte();
     }
 
     public int getOffset(VertexFormatElement element) {

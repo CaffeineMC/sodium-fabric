@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
-import me.jellysquid.mods.sodium.client.render.vertex.formats.LineVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
@@ -50,7 +49,7 @@ public class MixinModelPart {
                 int norm = Norm3b.pack(normX, normY, normZ);
 
                 try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-                    long buffer = writer.buffer(stack, 4, ModelVertex.FORMAT);
+                    long buffer = writer.buffer(stack, 4, ModelVertex.STRIDE, ModelVertex.FORMAT);
                     long ptr = buffer;
 
                     for (ModelPart.Vertex vertex : quad.vertices) {
@@ -69,7 +68,7 @@ public class MixinModelPart {
                         ptr += ModelVertex.STRIDE;
                     }
 
-                    writer.push(buffer, 4, ModelVertex.FORMAT);
+                    writer.push(buffer, 4, ModelVertex.STRIDE, ModelVertex.FORMAT);
                 }
             }
         }
