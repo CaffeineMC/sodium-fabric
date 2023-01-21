@@ -292,10 +292,10 @@ public class CloudRenderer {
     }
 
     private static void writeVertex(VertexBufferWriter writer, float x, float y, float z, int color) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            long buffer = stack.nmalloc(ColorVertex.STRIDE);
+        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+            long buffer = writer.buffer(stack, 1, ColorVertex.STRIDE, ColorVertex.FORMAT);
             ColorVertex.write(buffer, x, y, z, color);
-            writer.push(buffer, 1, ColorVertex.FORMAT);
+            writer.push(buffer, 1, ColorVertex.STRIDE, ColorVertex.FORMAT);
         }
     }
 
