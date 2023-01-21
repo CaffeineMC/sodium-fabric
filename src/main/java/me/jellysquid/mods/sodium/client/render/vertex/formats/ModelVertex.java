@@ -5,9 +5,10 @@ import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatRegistry;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
-import org.joml.Math;
+import net.minecraft.util.math.Direction;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.system.MemoryUtil;
 
 public final class ModelVertex {
@@ -24,21 +25,21 @@ public final class ModelVertex {
 
     public static void write(long ptr,
                              MatrixStack.Entry matrices,
-                             float x, float y, float z, int color, float u, float v, int light, int overlay, int normal) {
+                             float x, float y, float z, int color, float u, float v, int light, int overlay, Direction direction) {
         Matrix4f positionMat = matrices.getPositionMatrix();
         Matrix3f normalMat = matrices.getNormalMatrix();
 
-        float x2 = Math.fma(positionMat.m00(), x, Math.fma(positionMat.m10(), y, Math.fma(positionMat.m20(), z, positionMat.m30())));
-        float y2 = Math.fma(positionMat.m01(), x, Math.fma(positionMat.m11(), y, Math.fma(positionMat.m21(), z, positionMat.m31())));
-        float z2 = Math.fma(positionMat.m02(), x, Math.fma(positionMat.m12(), y, Math.fma(positionMat.m22(), z, positionMat.m32())));
+        float x2 = (positionMat.m00() * x) + (positionMat.m10() * y) + (positionMat.m20() * z) + positionMat.m30();
+        float y2 = (positionMat.m01() * x) + (positionMat.m11() * y) + (positionMat.m21() * z) + positionMat.m31();
+        float z2 = (positionMat.m02() * x) + (positionMat.m12() * y) + (positionMat.m22() * z) + positionMat.m32();
 
-        float normX1 = Norm3b.unpackX(normal);
-        float normY1 = Norm3b.unpackY(normal);
-        float normZ1 = Norm3b.unpackZ(normal);
+        float normX1 = direction.getOffsetX();
+        float normY1 = direction.getOffsetY();
+        float normZ1 = direction.getOffsetZ();
 
-        float normX2 = Math.fma(normalMat.m00(), normX1, Math.fma(normalMat.m10(), normY1, normalMat.m20() * normZ1));
-        float normY2 = Math.fma(normalMat.m01(), normX1, Math.fma(normalMat.m11(), normY1, normalMat.m21() * normZ1));
-        float normZ2 = Math.fma(normalMat.m02(), normX1, Math.fma(normalMat.m12(), normY1, normalMat.m22() * normZ1));
+        float normX2 = (normalMat.m00() * normX1) + (normalMat.m10() * normY1) + (normalMat.m20() * normZ1);
+        float normY2 = (normalMat.m01() * normX1) + (normalMat.m11() * normY1) + (normalMat.m21() * normZ1);
+        float normZ2 = (normalMat.m02() * normX1) + (normalMat.m12() * normY1) + (normalMat.m22() * normZ1);
 
         ModelVertex.write(ptr, x2, y2, z2, color, u, v, light, overlay, Norm3b.pack(normX2, normY2, normZ2));
     }
@@ -60,4 +61,5 @@ public final class ModelVertex {
 
         MemoryUtil.memPutInt(ptr + OFFSET_NORMAL, normal);
     }
+
 }

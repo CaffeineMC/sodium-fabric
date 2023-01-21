@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.util;
 
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.util.math.Direction;
+import org.joml.Vector3f;
 
 /**
  * Provides some utilities and constants for interacting with vanilla's model quad vertex format.
@@ -27,22 +28,6 @@ public class ModelQuadUtil {
 
     // Size of vertex format in 4-byte integers
     public static final int VERTEX_SIZE = 8;
-
-    // Cached array of normals for every facing to avoid expensive computation
-    static final int[] NORMALS = new int[DirectionUtil.ALL_DIRECTIONS.length];
-
-    static {
-        for (int i = 0; i < NORMALS.length; i++) {
-            NORMALS[i] = Norm3b.pack(DirectionUtil.ALL_DIRECTIONS[i].getVector());
-        }
-    }
-
-    /**
-     * Returns the normal vector for a model quad with the given {@param facing}.
-     */
-    public static int getFacingNormal(Direction facing) {
-        return NORMALS[facing.ordinal()];
-    }
 
     /**
      * @param vertexIndex The index of the vertex to access
