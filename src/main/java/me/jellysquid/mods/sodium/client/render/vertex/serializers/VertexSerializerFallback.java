@@ -41,7 +41,7 @@ final class VertexSerializerFallback implements VertexSerializer {
     public void serialize(long src, long dst, int vertexCount) {
         for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++) {
             for (int elementIndex = 0; elementIndex < this.elementCount; elementIndex++) {
-                MemoryUtil.memCopy(src + this.srcOffsets[elementIndex], dst + this.dstOffsets[elementIndex], this.lengths[elementIndex] * 4);
+                MemoryUtil.memCopy(src + this.srcOffsets[elementIndex], dst + this.dstOffsets[elementIndex], this.lengths[elementIndex]);
             }
 
             src += this.srcStride;

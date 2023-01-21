@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
 import me.jellysquid.mods.sodium.client.render.vertex.serializers.generated.VertexSerializerFactory;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,8 @@ public class VertexSerializerCache {
     private static final Long2ReferenceMap<VertexSerializer> CACHE = new Long2ReferenceOpenHashMap<>();
 
     public static VertexSerializer get(VertexFormatDescription srcFormat, VertexFormatDescription dstFormat) {
+        Validate.isTrue(srcFormat != dstFormat, "Source and destination formats must not be the same");
+
         var identifier = getSerializerKey(srcFormat, dstFormat);
         var serializer = CACHE.get(identifier);
 
@@ -89,11 +92,40 @@ public class VertexSerializerCache {
             var srcOffset = srcOffsets[srcIndex];
             var dstOffset = dstOffsets[dstIndex];
 
-            var intLength = MathHelper.roundUpToMultiple(dstElement.getByteLength(), 4) / 4;
-            ops.add(new MemoryTransfer(srcOffset, dstOffset, intLength));
+            ops.add(new MemoryTransfer(srcOffset, dstOffset, dstElement.getByteLength()));
         }
 
-        return ops;
+        return mergeAdjacentMemoryTransfers(ops);
+    }
+
+    private static List<MemoryTransfer> mergeAdjacentMemoryTransfers(ArrayList<MemoryTransfer> src) {
+        var dst = new ArrayList<MemoryTransfer>(src.size());
+
+        var srcOffset = 0;
+        var dstOffset = 0;
+
+        var length = 0;
+
+        for (var op : src) {
+            if (srcOffset + length == op.src() && dstOffset + length == op.dst()) {
+                length += op.length();
+                continue;
+            }
+
+            if (length > 0) {
+                dst.add(new MemoryTransfer(srcOffset, dstOffset, length));
+            }
+
+            srcOffset = op.src();
+            dstOffset = op.dst();
+            length = op.length();
+        }
+
+        if (length > 0) {
+            dst.add(new MemoryTransfer(srcOffset, dstOffset, length));
+        }
+
+        return dst;
     }
 
     private static VertexSerializer generateFallbackImpl(List<MemoryTransfer> ops, VertexFormatDescription srcVertexFormat, VertexFormatDescription dstVertexFormat) {
