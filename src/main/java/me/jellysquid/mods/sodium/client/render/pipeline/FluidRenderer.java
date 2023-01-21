@@ -58,11 +58,7 @@ public class FluidRenderer {
     private final int[] quadColors = new int[4];
 
     public FluidRenderer(LightPipelineProvider lighters, ColorBlender colorBlender) {
-        int normal = Norm3b.pack(0.0f, 1.0f, 0.0f);
-
-        for (int i = 0; i < 4; i++) {
-            this.quad.setNormal(i, normal);
-        }
+        this.quad.setNormal(Norm3b.pack(0.0f, 1.0f, 0.0f));
 
         this.lighters = lighters;
         this.colorBlender = colorBlender;

@@ -17,7 +17,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Xoroshiro128PlusPlusRandom;
-import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -73,6 +72,7 @@ public class MixinItemRenderer {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private void sodium$renderBakedItemQuads(MatrixStack.Entry matrices, VertexBufferWriter writer, List<BakedQuad> quads, ItemStack itemStack, ItemColorProvider colorProvider, int light, int overlay) {
+
         for (int j = 0; j < quads.size(); j++) {
             BakedQuad bakedQuad = quads.get(j);
 
@@ -84,19 +84,7 @@ public class MixinItemRenderer {
 
             ModelQuadView quad = ((ModelQuadView) bakedQuad);
 
-            try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-                long buffer = writer.buffer(stack, 4, ModelVertex.STRIDE, ModelVertex.FORMAT);
-                long ptr = buffer;
-
-                for (int i = 0; i < 4; i++) {
-                    ModelVertex.write(ptr, matrices, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),
-                            light, overlay, bakedQuad.getFace());
-
-                    ptr += ModelVertex.STRIDE;
-                }
-
-                writer.push(buffer, 4, ModelVertex.STRIDE, ModelVertex.FORMAT);
-            }
+            ModelVertex.writeQuadVertices(writer, matrices, quad, light, overlay, color);
 
             SpriteUtil.markSpriteActive(quad.getSprite());
         }
