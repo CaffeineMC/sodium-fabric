@@ -39,15 +39,24 @@ public class MixinItemRenderer {
      * @author JellySquid
      */
     @Overwrite
-    private void renderBakedItemModel(BakedModel model, ItemStack stack, int light, int overlay, MatrixStack matrices, VertexConsumer vertices) {
+    private void renderBakedItemModel(BakedModel model, ItemStack itemStack, int light, int overlay, MatrixStack matricStack, VertexConsumer vertexConsumer) {
+        var writer = VertexBufferWriter.of(vertexConsumer);
+
         Xoroshiro128PlusPlusRandom random = this.random;
+        MatrixStack.Entry matrices = matricStack.peek();
+
+        ItemColorProvider colorProvider = null;
+
+        if (!itemStack.isEmpty()) {
+            colorProvider = ((ItemColorsExtended) this.colors).getColorProvider(itemStack);
+        }
 
         for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {
             random.setSeed(42L);
             List<BakedQuad> quads = model.getQuads(null, direction, random);
 
             if (!quads.isEmpty()) {
-                this.renderBakedItemQuads(matrices, vertices, quads, stack, light, overlay);
+                this.sodium$renderBakedItemQuads(matrices, writer, quads, itemStack, colorProvider, light, overlay);
             }
         }
 
@@ -55,7 +64,7 @@ public class MixinItemRenderer {
         List<BakedQuad> quads = model.getQuads(null, null, random);
 
         if (!quads.isEmpty()) {
-            this.renderBakedItemQuads(matrices, vertices, quads, stack, light, overlay);
+            this.sodium$renderBakedItemQuads(matrices, writer, quads, itemStack, colorProvider, light, overlay);
         }
     }
 
@@ -63,42 +72,34 @@ public class MixinItemRenderer {
      * @reason Use vertex building intrinsics
      * @author JellySquid
      */
-    @Overwrite
-    private void renderBakedItemQuads(MatrixStack matrices, VertexConsumer vertexConsumer, List<BakedQuad> quads, ItemStack itemStack, int light, int overlay) {
-        MatrixStack.Entry entry = matrices.peek();
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private void sodium$renderBakedItemQuads(MatrixStack.Entry matrices, VertexBufferWriter writer, List<BakedQuad> quads, ItemStack itemStack, ItemColorProvider colorProvider, int light, int overlay) {
+        for (int j = 0; j < quads.size(); j++) {
+            BakedQuad bakedQuad = quads.get(j);
 
-        ItemColorProvider colorProvider = null;
+            int color = 0xFFFFFFFF;
 
-        var writer = VertexBufferWriter.of(vertexConsumer);
+            if (colorProvider != null && bakedQuad.hasColor()) {
+                color = ColorARGB.toABGR((colorProvider.getColor(itemStack, bakedQuad.getColorIndex())), 255);
+            }
 
-        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            long buffer = stack.nmalloc(ModelVertex.STRIDE * 4);
+            ModelQuadView quad = ((ModelQuadView) bakedQuad);
 
-            for (BakedQuad bakedQuad : quads) {
-                int color = 0xFFFFFFFF;
-
-                if (!itemStack.isEmpty() && bakedQuad.hasColor()) {
-                    if (colorProvider == null) {
-                        colorProvider = ((ItemColorsExtended) this.colors).getColorProvider(itemStack);
-                    }
-
-                    color = ColorARGB.toABGR((colorProvider.getColor(itemStack, bakedQuad.getColorIndex())), 255);
-                }
-
-                ModelQuadView quad = ((ModelQuadView) bakedQuad);
+            try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+                long buffer = writer.buffer(stack, 4, ModelVertex.FORMAT);
                 long ptr = buffer;
 
                 for (int i = 0; i < 4; i++) {
-                    ModelVertex.write(ptr, entry, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),
-                            light, overlay, ModelQuadUtil.getFacingNormal(bakedQuad.getFace()));
+                    ModelVertex.write(ptr, matrices, quad.getX(i), quad.getY(i), quad.getZ(i), color, quad.getTexU(i), quad.getTexV(i),
+                            light, overlay, bakedQuad.getFace());
 
                     ptr += ModelVertex.STRIDE;
                 }
 
                 writer.push(buffer, 4, ModelVertex.FORMAT);
-
-                SpriteUtil.markSpriteActive(quad.getSprite());
             }
+
+            SpriteUtil.markSpriteActive(quad.getSprite());
         }
     }
 }

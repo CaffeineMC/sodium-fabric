@@ -72,18 +72,33 @@ public abstract class MixinBillboardParticle extends Particle {
 
         var writer = VertexBufferWriter.of(vertexConsumer);
 
-        addVertex(writer, quaternion,-1.0F, -1.0F, x, y, z, maxU, maxV, color, light, size);
-        addVertex(writer, quaternion,-1.0F, 1.0F, x, y, z, maxU, minV, color, light, size);
-        addVertex(writer, quaternion,1.0F, 1.0F, x, y, z, minU, minV, color, light, size);
-        addVertex(writer, quaternion,1.0F, -1.0F, x, y, z, minU, maxV, color, light, size);
+        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+            long buffer = writer.buffer(stack, 4, ParticleVertex.FORMAT);
+            long ptr = buffer;
+
+            writeVertex(ptr, quaternion,-1.0F, -1.0F, x, y, z, maxU, maxV, color, light, size);
+            ptr += ParticleVertex.STRIDE;
+
+            writeVertex(ptr, quaternion,-1.0F, 1.0F, x, y, z, maxU, minV, color, light, size);
+            ptr += ParticleVertex.STRIDE;
+
+            writeVertex(ptr, quaternion,1.0F, 1.0F, x, y, z, minU, minV, color, light, size);
+            ptr += ParticleVertex.STRIDE;
+
+            writeVertex(ptr, quaternion,1.0F, -1.0F, x, y, z, minU, maxV, color, light, size);
+            ptr += ParticleVertex.STRIDE;
+
+            writer.push(buffer, 4, ParticleVertex.FORMAT);
+        }
+
     }
 
     @SuppressWarnings("UnnecessaryLocalVariable")
-    private static void addVertex(VertexBufferWriter writer,
-                                  Quaternionf rotation,
-                                  float posX, float posY,
-                                  float originX, float originY, float originZ,
-                                  float u, float v, int color, int light, float size) {
+    private static void writeVertex(long buffer,
+                                    Quaternionf rotation,
+                                    float posX, float posY,
+                                    float originX, float originY, float originZ,
+                                    float u, float v, int color, int light, float size) {
         // Quaternion q0 = new Quaternion(rotation);
         float q0x = rotation.x();
         float q0y = rotation.y();
@@ -115,11 +130,6 @@ public abstract class MixinBillboardParticle extends Particle {
         float fy = (q3y * size) + originY;
         float fz = (q3z * size) + originZ;
 
-        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            var buffer = stack.nmalloc(ParticleVertex.STRIDE);
-            ParticleVertex.write(buffer, fx, fy, fz, u, v, color, light);
-
-            writer.push(buffer, 1, ParticleVertex.FORMAT);
-        }
+        ParticleVertex.write(buffer, fx, fy, fz, u, v, color, light);
     }
 }

@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
 import me.jellysquid.mods.sodium.client.render.vertex.formats.LineVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.render.VertexConsumer;
@@ -106,7 +107,7 @@ public class MixinWorldRenderer {
 
     private static void writeLineVertices(VertexBufferWriter writer, float x, float y, float z, int color, int normal) {
         try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            long buffer = stack.nmalloc(LineVertex.STRIDE * 2);
+            long buffer = writer.buffer(stack, 2, LineVertex.FORMAT);
             long ptr = buffer;
 
             for (int i = 0; i < 2; i++) {

@@ -1,15 +1,15 @@
 {
-  "package" : "me.jellysquid.mods.sodium.mixin",
-  "required" : true,
-  "compatibilityLevel" : "JAVA_17",
-  "plugin" : "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
-  "injectors" : {
-    "defaultRequire" : 1
+  "package": "me.jellysquid.mods.sodium.mixin",
+  "required": true,
+  "compatibilityLevel": "JAVA_17",
+  "plugin": "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
+  "injectors": {
+    "defaultRequire": 1
   },
-  "overwrites" : {
-    "conformVisibility" : true
+  "overwrites": {
+    "conformVisibility": true
   },
-  "client" : [
+  "client": [
     "core.MixinFrustum",
     "core.MixinMinecraftClient",
     "core.model.MixinBlockColors",
@@ -24,6 +24,7 @@
     "features.block.MixinBlockModelRenderer",
     "features.block.MixinWorldRenderer",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
+    "features.buffer_builder.fast_sort.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinWorldRenderer",
     "features.chunk_rendering.MixinChunkBuilder",
@@ -51,7 +52,6 @@
     "features.options.MixinInGameHud",
     "features.options.MixinOptionsScreen",
     "features.options.MixinWorldRenderer",
-    "features.particle.cull.MixinParticleManager",
     "features.particle.fast_render.MixinBillboardParticle",
     "features.render_layer.leaves.MixinLeavesBlock",
     "features.render_layer.leaves.MixinRenderLayers",
