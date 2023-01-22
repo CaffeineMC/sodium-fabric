@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.model;
 
-import net.minecraft.client.model.ModelPart;
+import me.jellysquid.mods.sodium.client.render.ModelCuboid;
 
 public interface ModelCuboidAccessor {
-    ModelPart.Quad[] getQuads();
+    ModelCuboid copy();
 }
