@@ -116,6 +116,7 @@ public class ChunkBuilder {
         // Delete any queued tasks and resources attached to them
         for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
+            job.task.releaseResources();
         }
 
         // Delete any results in the deferred queue
@@ -288,6 +289,8 @@ public class ChunkBuilder {
             job.future.completeExceptionally(e);
             e.printStackTrace();
             return;
+        } finally {
+            job.task.releaseResources();
         }
 
         // The result can be null if the task is cancelled
