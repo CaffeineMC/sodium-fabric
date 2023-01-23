@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.pipeline;
+package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
