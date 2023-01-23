@@ -22,7 +22,6 @@
     "core.pipeline.vertex.MixinVertexConsumers$MixinDual",
     "core.pipeline.vertex.MixinVertexConsumers$MixinUnion",
     "features.block.MixinBlockModelRenderer",
-    "features.block.MixinWorldRenderer",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
     "features.buffer_builder.fast_sort.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinBufferBuilder",
