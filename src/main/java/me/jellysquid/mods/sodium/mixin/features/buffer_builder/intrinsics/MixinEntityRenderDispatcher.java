@@ -27,6 +27,10 @@ public class MixinEntityRenderDispatcher {
      */
     @Overwrite
     private static void drawShadowVertex(MatrixStack.Entry entry, VertexConsumer vertices, float alpha, float x, float y, float z, float u, float v) {
+        drawOptimizedShadowVertex(entry, vertices, alpha, x, y, z, u, v);
+    }
+
+    private static void drawOptimizedShadowVertex(MatrixStack.Entry entry, VertexConsumer vertices, float alpha, float x, float y, float z, float u, float v) {
         var writer = VertexBufferWriter.of(vertices);
 
         var matNormal = entry.getNormalMatrix();
@@ -56,5 +60,4 @@ public class MixinEntityRenderDispatcher {
             writer.push(buffer, 1, ModelVertex.STRIDE, ModelVertex.FORMAT);
         }
     }
-
 }
