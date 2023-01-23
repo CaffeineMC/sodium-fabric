@@ -25,4 +25,6 @@ public abstract class ChunkRenderBuildTask {
      *         if the task was cancelled.
      */
     public abstract ChunkBuildResult performBuild(ChunkBuildContext context, CancellationSource cancellationSource);
+
+    public abstract void releaseResources();
 }
