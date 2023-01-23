@@ -56,4 +56,8 @@ public interface ModelQuadView {
      * @return The normal vector of the quad in 3-byte packed format
      */
     int getNormal();
+
+    default boolean hasColor() {
+        return this.getColorIndex() != -1;
+    }
 }

@@ -1,18 +1,17 @@
-package me.jellysquid.mods.sodium.client.render.pipeline.context;
+package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.client.model.light.cache.ArrayLightDataCache;
 import me.jellysquid.mods.sodium.client.model.quad.blender.ColorBlender;
-import me.jellysquid.mods.sodium.client.render.pipeline.BlockRenderer;
-import me.jellysquid.mods.sodium.client.render.pipeline.ChunkRenderCache;
-import me.jellysquid.mods.sodium.client.render.pipeline.FluidRenderer;
+import me.jellysquid.mods.sodium.client.model.quad.blender.FlatColorBlender;
+import me.jellysquid.mods.sodium.client.model.quad.blender.LinearColorBlender;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.BlockModels;
 import net.minecraft.world.World;
 
-public class ChunkRenderCacheLocal extends ChunkRenderCache {
+public class BlockRenderCache {
     private final ArrayLightDataCache lightDataCache;
 
     private final BlockRenderer blockRenderer;
@@ -21,12 +20,12 @@ public class ChunkRenderCacheLocal extends ChunkRenderCache {
     private final BlockModels blockModels;
     private final WorldSlice worldSlice;
 
-    public ChunkRenderCacheLocal(MinecraftClient client, World world) {
+    public BlockRenderCache(MinecraftClient client, World world) {
         this.worldSlice = new WorldSlice(world);
         this.lightDataCache = new ArrayLightDataCache(this.worldSlice);
 
         LightPipelineProvider lightPipelineProvider = new LightPipelineProvider(this.lightDataCache);
-        ColorBlender colorBlender = this.createBiomeColorBlender();
+        ColorBlender colorBlender = createBiomeColorBlender();
 
         this.blockRenderer = new BlockRenderer(client, lightPipelineProvider, colorBlender);
         this.fluidRenderer = new FluidRenderer(lightPipelineProvider, colorBlender);
@@ -53,5 +52,9 @@ public class ChunkRenderCacheLocal extends ChunkRenderCache {
 
     public WorldSlice getWorldSlice() {
         return this.worldSlice;
+    }
+
+    private static ColorBlender createBiomeColorBlender() {
+        return MinecraftClient.getInstance().options.getBiomeBlendRadius().getValue() <= 0 ? new FlatColorBlender() : new LinearColorBlender();
     }
 }
