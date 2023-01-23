@@ -54,15 +54,18 @@ public class BlockRenderer {
         this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
     }
 
-    public void renderModel(BlockRenderContext ctx, ChunkModelBuilder buffers) {
+    public boolean renderModel(BlockRenderContext ctx, ChunkModelBuilder buffers) {
         LightPipeline lighter = this.lighters.getLighter(this.getLightingMode(ctx.state(), ctx.model()));
         Vec3d renderOffset = ctx.state().getModelOffset(ctx.world(), ctx.pos());
+
+        var rendered = false;
 
         for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
             List<BakedQuad> quads = this.getGeometry(ctx, face);
 
             if (!quads.isEmpty() && this.isFaceVisible(ctx, face)) {
                 this.renderQuadList(ctx, lighter, renderOffset, buffers, quads, face);
+                rendered = true;
             }
         }
 
@@ -70,7 +73,10 @@ public class BlockRenderer {
 
         if (!all.isEmpty()) {
             this.renderQuadList(ctx, lighter, renderOffset, buffers, all, null);
+            rendered = true;
         }
+
+        return rendered;
     }
 
     private List<BakedQuad> getGeometry(BlockRenderContext ctx, Direction face) {
