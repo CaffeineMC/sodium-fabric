@@ -12,5 +12,4 @@ public interface ChunkModelBuilder {
 
     void addSprite(Sprite sprite);
 
-    int getChunkId();
 }
