@@ -56,18 +56,18 @@ public class CompactChunkVertex implements ChunkVertexType {
     }
     @Override
     public ChunkVertexEncoder getEncoder() {
-        return (ptr, x, y, z, color, u, v, light, chunk) -> {
-            MemoryUtil.memPutShort(ptr + 0, encodePosition(x));
-            MemoryUtil.memPutShort(ptr + 2, encodePosition(y));
-            MemoryUtil.memPutShort(ptr + 4, encodePosition(z));
+        return (ptr, vertex, chunk) -> {
+            MemoryUtil.memPutShort(ptr + 0, encodePosition(vertex.x));
+            MemoryUtil.memPutShort(ptr + 2, encodePosition(vertex.y));
+            MemoryUtil.memPutShort(ptr + 4, encodePosition(vertex.z));
             MemoryUtil.memPutShort(ptr + 6, (short) chunk);
 
-            MemoryUtil.memPutInt(ptr + 8, color);
+            MemoryUtil.memPutInt(ptr + 8, vertex.color);
 
-            MemoryUtil.memPutShort(ptr + 12, encodeBlockTexture(u));
-            MemoryUtil.memPutShort(ptr + 14, encodeBlockTexture(v));
+            MemoryUtil.memPutShort(ptr + 12, encodeBlockTexture(vertex.u));
+            MemoryUtil.memPutShort(ptr + 14, encodeBlockTexture(vertex.v));
 
-            MemoryUtil.memPutInt(ptr + 16, light);
+            MemoryUtil.memPutInt(ptr + 16, vertex.light);
 
             return ptr + STRIDE;
         };

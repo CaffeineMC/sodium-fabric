@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.vertex.type;
 
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import net.minecraft.util.math.Vec3i;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -15,6 +14,7 @@ public class ChunkVertexBufferBuilder {
     private ByteBuffer buffer;
     private int count;
     private int capacity;
+    private int chunkId;
 
     public ChunkVertexBufferBuilder(ChunkVertexType vertexType, int initialCapacity) {
         this.encoder = vertexType.getEncoder();
@@ -26,15 +26,23 @@ public class ChunkVertexBufferBuilder {
         this.initialCapacity = initialCapacity;
     }
 
-    public void writeVertex(Vec3i offset,
-                            float x, float y, float z, int color, float u, float v, int light, int chunk) {
-        if (this.count + 1 >= this.capacity) {
-            this.grow(this.stride);
+    public int push(ChunkVertexEncoder.Vertex[] vertices) {
+        var vertexStart = this.count;
+        var vertexCount = vertices.length;
+
+        if (this.count + vertexCount >= this.capacity) {
+            this.grow(this.stride * vertexCount);
         }
 
-        this.encoder.write(MemoryUtil.memAddress(this.buffer, this.count * this.stride),
-                offset, x, y, z, color, u, v, light, chunk);
-        this.count++;
+        long ptr = MemoryUtil.memAddress(this.buffer, this.count * this.stride);
+
+        for (ChunkVertexEncoder.Vertex vertex : vertices) {
+            ptr = this.encoder.write(ptr, vertex, this.chunkId);
+        }
+
+        this.count += vertexCount;
+
+        return vertexStart;
     }
 
     private void grow(int len) {
@@ -50,12 +58,9 @@ public class ChunkVertexBufferBuilder {
         this.capacity = capacity;
     }
 
-    public int getVertexCount() {
-        return this.count;
-    }
-
-    public void start() {
+    public void start(int chunkId) {
         this.count = 0;
+        this.chunkId = chunkId;
 
         this.setBufferSize(this.initialCapacity);
     }

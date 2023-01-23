@@ -1,12 +1,25 @@
 package me.jellysquid.mods.sodium.client.render.vertex.type;
 
-import net.minecraft.util.math.Vec3i;
-
 public interface ChunkVertexEncoder {
-    default long write(long ptr,
-                       Vec3i offset, float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId) {
-        return this.write(ptr, offset.getX() + posX, offset.getY() + posY, offset.getZ() + posZ, color, u, v, light, chunkId);
+    long write(long ptr, Vertex vertex, int chunkId);
+
+    class Vertex {
+        public float x;
+        public float y;
+        public float z;
+        public int color;
+        public float u;
+        public float v;
+        public int light;
+
+        public static Vertex[] uninitializedQuad() {
+            Vertex[] vertices = new Vertex[4];
+
+            for (int i = 0; i < 4; i++) {
+                vertices[i] = new Vertex();
+            }
+
+            return vertices;
+        }
     }
-    long write(long ptr,
-               float posX, float posY, float posZ, int color, float u, float v, int light, int chunkId);
 }

@@ -14,6 +14,8 @@ import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
 import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
+import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexEncoder;
+import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -40,6 +42,8 @@ public class BlockRenderer {
 
     private final ColorBlender colorBlender;
     private final LightPipelineProvider lighters;
+
+    private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
 
     private final boolean useAmbientOcclusion;
 
@@ -112,7 +116,7 @@ public class BlockRenderer {
         }
     }
 
-    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, ChunkVertexBufferBuilder vertices, IndexBufferBuilder indices, Vec3d blockOffset,
+    private void renderQuad(BlockRenderView world, BlockState state, BlockPos pos, BlockPos origin, ChunkVertexBufferBuilder vertexBuffer, IndexBufferBuilder indexBuffer, Vec3d blockOffset,
                             ColorSampler<BlockState> colorSampler, BakedQuad bakedQuad, QuadLightData light, ChunkModelBuilder model) {
         ModelQuadView src = (ModelQuadView) bakedQuad;
         ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(light.br);
@@ -123,26 +127,25 @@ public class BlockRenderer {
             colors = this.colorBlender.getColors(world, pos, src, colorSampler, state);
         }
 
-        int vertexStart = vertices.getVertexCount();
+        var vertices = this.vertices;
 
         for (int i = 0; i < 4; i++) {
             int j = orientation.getVertexIndex(i);
 
-            float x = src.getX(j) + (float) blockOffset.getX();
-            float y = src.getY(j) + (float) blockOffset.getY();
-            float z = src.getZ(j) + (float) blockOffset.getZ();
+            var out = vertices[i];
+            out.x = origin.getX() + src.getX(j) + (float) blockOffset.getX();
+            out.y = origin.getY() + src.getY(j) + (float) blockOffset.getY();
+            out.z = origin.getZ() + src.getZ(j) + (float) blockOffset.getZ();
 
-            int color = ColorABGR.mul(colors != null ? colors[j] : 0xFFFFFFFF, light.br[j]);
+            out.color = ColorABGR.mul(colors != null ? colors[j] : 0xFFFFFFFF, light.br[j]);
 
-            float u = src.getTexU(j);
-            float v = src.getTexV(j);
+            out.u = src.getTexU(j);
+            out.v = src.getTexV(j);
 
-            int lm = light.lm[j];
-
-            vertices.writeVertex(origin, x, y, z, color, u, v, lm, model.getChunkId());
+            out.light = light.lm[j];
         }
 
-        indices.add(vertexStart, ModelQuadWinding.CLOCKWISE);
+        indexBuffer.add(vertexBuffer.push(vertices), ModelQuadWinding.CLOCKWISE);
 
         Sprite sprite = src.getSprite();
 

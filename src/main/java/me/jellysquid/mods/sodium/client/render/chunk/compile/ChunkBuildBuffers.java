@@ -58,7 +58,7 @@ public class ChunkBuildBuffers {
 
     public void init(ChunkRenderData.Builder renderData, int chunkId) {
         for (ChunkVertexBufferBuilder vertexBuffer : this.vertexBuffers) {
-            vertexBuffer.start();
+            vertexBuffer.start(chunkId);
         }
 
         for (IndexBufferBuilder[] indexBuffers : this.indexBuffers) {
@@ -68,7 +68,7 @@ public class ChunkBuildBuffers {
         }
 
         for (int i = 0; i < this.delegates.length; i++) {
-            this.delegates[i] = new BakedChunkModelBuilder(this.vertexBuffers[i], this.indexBuffers[i], renderData, chunkId);
+            this.delegates[i] = new BakedChunkModelBuilder(this.vertexBuffers[i], this.indexBuffers[i], renderData);
         }
     }
 

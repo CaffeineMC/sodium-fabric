@@ -5,14 +5,15 @@ import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
 import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuad;
-import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
 import me.jellysquid.mods.sodium.client.model.quad.blender.ColorBlender;
+import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
+import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -56,6 +57,8 @@ public class FluidRenderer {
 
     private final QuadLightData quadLightData = new QuadLightData();
     private final int[] quadColors = new int[4];
+
+    private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
 
     public FluidRenderer(LightPipelineProvider lighters, ColorBlender colorBlender) {
         this.quad.setNormal(Norm3b.pack(0.0f, 1.0f, 0.0f));
@@ -398,22 +401,18 @@ public class FluidRenderer {
     }
 
     private int writeVertices(ChunkModelBuilder builder, BlockPos offset, ModelQuadView quad) {
-        var vertices = builder.getVertexBuffer();
-        var vertexStart = vertices.getVertexCount();
-
+        var vertexBuffer = builder.getVertexBuffer();
+        var vertices = this.vertices;
+        
         for (int i = 0; i < 4; i++) {
-            float x = quad.getX(i);
-            float y = quad.getY(i);
-            float z = quad.getZ(i);
-
-            int color = this.quadColors[i];
-
-            float u = quad.getTexU(i);
-            float v = quad.getTexV(i);
-
-            int light = this.quadLightData.lm[i];
-
-            vertices.writeVertex(offset, x, y, z, color, u, v, light, builder.getChunkId());
+            var out = vertices[i];
+            out.x = offset.getX() + quad.getX(i);
+            out.y = offset.getY() + quad.getY(i);
+            out.z = offset.getZ() + quad.getZ(i);
+            out.color = this.quadColors[i];
+            out.u = quad.getTexU(i);
+            out.v = quad.getTexV(i);
+            out.light = this.quadLightData.lm[i];
         }
 
         Sprite sprite = quad.getSprite();
@@ -422,7 +421,7 @@ public class FluidRenderer {
             builder.addSprite(sprite);
         }
 
-        return vertexStart;
+        return vertexBuffer.push(vertices);
     }
 
     private void setVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {
