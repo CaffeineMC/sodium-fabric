@@ -15,6 +15,8 @@ import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.random.LocalRandom;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.util.math.random.Xoroshiro128PlusPlusRandom;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -26,7 +28,7 @@ import java.util.List;
 
 @Mixin(BlockModelRenderer.class)
 public class MixinBlockModelRenderer {
-    private final Xoroshiro128PlusPlusRandom random = new Xoroshiro128PlusPlusRandom(42L);
+    private final Random random = new LocalRandom(42L);
 
     /**
      * @reason Use optimized vertex writer intrinsics, avoid allocations
@@ -34,7 +36,7 @@ public class MixinBlockModelRenderer {
      */
     @Overwrite
     public void render(MatrixStack.Entry entry, VertexConsumer vertexConsumer, BlockState blockState, BakedModel bakedModel, float red, float green, float blue, int light, int overlay) {
-        Xoroshiro128PlusPlusRandom random = this.random;
+        Random random = this.random;
 
         var writer = VertexBufferWriter.of(vertexConsumer);
 
