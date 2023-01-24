@@ -43,16 +43,6 @@ public interface ModelQuadView {
     int getFlags();
 
     /**
-     * @return The lightmap texture coordinates for the vertex at index {@param idx}
-     */
-    int getLight(int idx);
-
-    /**
-     * @return The integer-encoded normal vector for the vertex at index {@param idx}
-     */
-    int getNormal(int idx);
-
-    /**
      * @return The color index of this quad.
      */
     int getColorIndex();
@@ -61,4 +51,13 @@ public interface ModelQuadView {
      * @return The sprite texture used by this quad, or null if none is attached
      */
     Sprite getSprite();
+
+    /**
+     * @return The normal vector of the quad in 3-byte packed format
+     */
+    int getNormal();
+
+    default boolean hasColor() {
+        return this.getColorIndex() != -1;
+    }
 }

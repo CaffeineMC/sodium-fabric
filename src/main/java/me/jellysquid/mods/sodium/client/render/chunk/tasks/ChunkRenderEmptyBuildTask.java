@@ -27,4 +27,9 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
     public ChunkBuildResult performBuild(ChunkBuildContext context, CancellationSource cancellationSource) {
         return new ChunkBuildResult(this.render, ChunkRenderData.EMPTY, Collections.emptyMap(), this.frame);
     }
+
+    @Override
+    public void releaseResources() {
+
+    }
 }

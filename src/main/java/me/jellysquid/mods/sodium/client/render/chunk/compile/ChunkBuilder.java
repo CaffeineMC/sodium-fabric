@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.compile.ChunkBuildContext;
-import me.jellysquid.mods.sodium.client.model.vertex.type.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
@@ -116,6 +116,7 @@ public class ChunkBuilder {
         // Delete any queued tasks and resources attached to them
         for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
+            job.task.releaseResources();
         }
 
         // Delete any results in the deferred queue
@@ -288,6 +289,8 @@ public class ChunkBuilder {
             job.future.completeExceptionally(e);
             e.printStackTrace();
             return;
+        } finally {
+            job.task.releaseResources();
         }
 
         // The result can be null if the task is cancelled

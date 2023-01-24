@@ -8,7 +8,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.pipeline.context.ChunkRenderCacheLocal;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -54,7 +55,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         ChunkBuildBuffers buffers = buildContext.buffers;
         buffers.init(renderData, this.render.getChunkId());
 
-        ChunkRenderCacheLocal cache = buildContext.cache;
+        BlockRenderCache cache = buildContext.cache;
         cache.init(this.renderContext);
 
         WorldSlice slice = cache.getWorldSlice();
@@ -68,7 +69,9 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         int maxZ = minZ + 16;
 
         BlockPos.Mutable blockPos = new BlockPos.Mutable();
-        BlockPos.Mutable offset = new BlockPos.Mutable();
+        BlockPos.Mutable modelOffset = new BlockPos.Mutable();
+
+        BlockRenderContext context = new BlockRenderContext(slice);
 
         for (int y = minY; y < maxY; y++) {
             if (cancellationSource.isCancelled()) {
@@ -84,9 +87,9 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     }
 
                     blockPos.set(x, y, z);
-                    offset.set(x & 15, y & 15, z & 15);
+                    modelOffset.set(x & 15, y & 15, z & 15);
 
-                    boolean rendered = false;
+                    var rendered = false;
 
                     if (blockState.getRenderType() == BlockRenderType.MODEL) {
                         RenderLayer layer = RenderLayers.getBlockLayer(blockState);
@@ -96,7 +99,9 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                         long seed = blockState.getRenderingSeed(blockPos);
 
-                        if (cache.getBlockRenderer().renderModel(slice, blockState, blockPos, offset, model, buffers.get(layer), true, seed)) {
+                        context.update(blockPos, modelOffset, blockState, model, seed);
+
+                        if (cache.getBlockRenderer().renderModel(context, buffers.get(layer))) {
                             rendered = true;
                         }
                     }
@@ -106,7 +111,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     if (!fluidState.isEmpty()) {
                         RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
 
-                        if (cache.getFluidRenderer().render(slice, fluidState, blockPos, offset, buffers.get(layer))) {
+                        if (cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers.get(layer))) {
                             rendered = true;
                         }
                     }
@@ -119,7 +124,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                             if (renderer != null) {
                                 renderData.addBlockEntity(entity, !renderer.rendersOutsideBoundingBox(entity));
-                                rendered = true;
                             }
                         }
                     }
@@ -149,5 +153,10 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
 
         return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
+    }
+
+    @Override
+    public void releaseResources() {
+        this.renderContext.releaseResources();
     }
 }
