@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.mixin.core.pipeline.vertex;
 
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
+import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.render.FixedColorVertexConsumer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexFormats;
@@ -34,7 +35,7 @@ public abstract class MixinOutlineVertexConsumer extends FixedColorVertexConsume
         long offset = ptr;
         var offsetColor = format.getOffset(VertexFormats.COLOR_ELEMENT);
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
-            MemoryUtil.memPutInt(offset + offsetColor, (this.fixedAlpha << 24) | (this.fixedBlue << 16) | (this.fixedGreen << 8) | this.fixedRed);
+            MemoryUtil.memPutInt(offset + offsetColor, ColorABGR.pack(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha));
             offset += stride;
         }
     }
