@@ -2,8 +2,8 @@ package me.jellysquid.mods.sodium.client.render;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.ColorVertex;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
@@ -24,11 +24,11 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.biome.Biome;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL30C;
+import org.lwjgl.system.MemoryStack;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -213,8 +213,7 @@ public class CloudRenderer {
     }
 
     private void rebuildGeometry(BufferBuilder bufferBuilder, int cloudDistance, int centerCellX, int centerCellZ) {
-        var sink = VertexDrain.of(bufferBuilder)
-                .createSink(VanillaVertexTypes.BASIC_SCREEN_QUADS);
+        var writer = VertexBufferWriter.of(bufferBuilder);
 
         for (int offsetX = -cloudDistance; offsetX < cloudDistance; offsetX++) {
             for (int offsetZ = -cloudDistance; offsetZ < cloudDistance; offsetZ++) {
@@ -232,66 +231,72 @@ public class CloudRenderer {
                 // -Y
                 if ((connectedEdges & DIR_NEG_Y) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_Y);
-                    sink.ensureCapacity(4);
-                    sink.writeQuad(x + 12, 0.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 0.0f, 0.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                    sink.writeQuad(x + 12, 0.0f, z + 0.0f, mixedColor);
+
+                    writeVertex(writer, x + 12, 0.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 0.0f, 0.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
+                    writeVertex(writer, x + 12, 0.0f, z + 0.0f, mixedColor);
                 }
 
                 // +Y
                 if ((connectedEdges & DIR_POS_Y) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_Y);
-                    sink.ensureCapacity(4);
-                    sink.writeQuad(x + 0.0f, 4.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 12, 4.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 12, 4.0f, z + 0.0f, mixedColor);
-                    sink.writeQuad(x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+
+                    writeVertex(writer, x + 0.0f, 4.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 12, 4.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 12, 4.0f, z + 0.0f, mixedColor);
+                    writeVertex(writer, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
                 }
 
                 // -X
                 if ((connectedEdges & DIR_NEG_X) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_X);
-                    sink.ensureCapacity(4);
-                    sink.writeQuad(x + 0.0f, 0.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 0.0f, 4.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 0.0f, 4.0f, z + 0.0f, mixedColor);
-                    sink.writeQuad(x + 0.0f, 0.0f, z + 0.0f, mixedColor);
+
+                    writeVertex(writer, x + 0.0f, 0.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 0.0f, 4.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+                    writeVertex(writer, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
                 }
 
                 // +X
                 if ((connectedEdges & DIR_POS_X) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_X);
-                    sink.ensureCapacity(4);
-                    sink.writeQuad(x + 12, 4.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 12, 0.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 12, 0.0f, z + 0.0f, mixedColor);
-                    sink.writeQuad(x + 12, 4.0f, z + 0.0f, mixedColor);
+
+                    writeVertex(writer, x + 12, 4.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 12, 0.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 12, 0.0f, z + 0.0f, mixedColor);
+                    writeVertex(writer, x + 12, 4.0f, z + 0.0f, mixedColor);
                 }
 
                 // -Z
                 if ((connectedEdges & DIR_NEG_Z) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_Z);
-                    sink.ensureCapacity(4);
-                    sink.writeQuad(x + 12, 4.0f, z + 0.0f, mixedColor);
-                    sink.writeQuad(x + 12, 0.0f, z + 0.0f, mixedColor);
-                    sink.writeQuad(x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                    sink.writeQuad(x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+
+                    writeVertex(writer, x + 12, 4.0f, z + 0.0f, mixedColor);
+                    writeVertex(writer, x + 12, 0.0f, z + 0.0f, mixedColor);
+                    writeVertex(writer, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
+                    writeVertex(writer, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
                 }
 
                 // +Z
                 if ((connectedEdges & DIR_POS_Z) != 0) {
                     int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_Z);
-                    sink.ensureCapacity(4);
-                    sink.writeQuad(x + 12, 0.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 12, 4.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 0.0f, 4.0f, z + 12, mixedColor);
-                    sink.writeQuad(x + 0.0f, 0.0f, z + 12, mixedColor);
+
+                    writeVertex(writer, x + 12, 0.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 12, 4.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 0.0f, 4.0f, z + 12, mixedColor);
+                    writeVertex(writer, x + 0.0f, 0.0f, z + 12, mixedColor);
                 }
             }
         }
+    }
 
-        sink.flush();
+    private static void writeVertex(VertexBufferWriter writer, float x, float y, float z, int color) {
+        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+            long buffer = writer.buffer(stack, 1, ColorVertex.STRIDE, ColorVertex.FORMAT);
+            ColorVertex.write(buffer, x, y, z, color);
+            writer.push(buffer, 1, ColorVertex.STRIDE, ColorVertex.FORMAT);
+        }
     }
 
     public void reloadTextures(ResourceFactory factory) {

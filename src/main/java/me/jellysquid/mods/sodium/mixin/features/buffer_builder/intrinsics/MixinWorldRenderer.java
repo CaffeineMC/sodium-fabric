@@ -1,8 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.line.LineVertexSink;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.LineVertex;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.render.VertexConsumer;
@@ -12,6 +11,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Math;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -76,47 +76,47 @@ public class MixinWorldRenderer {
         float v8y = Math.fma(position.m01(), x2f, Math.fma(position.m11(), y2f, Math.fma(position.m21(), z2f, position.m31())));
         float v8z = Math.fma(position.m02(), x2f, Math.fma(position.m12(), y2f, Math.fma(position.m22(), z2f, position.m32())));
 
-        LineVertexSink lines = VertexDrain.of(vertexConsumer)
-                .createSink(VanillaVertexTypes.LINES);
-        lines.ensureCapacity(24);
+        var writer = VertexBufferWriter.of(vertexConsumer);
 
-        lines.vertexLine(v1x, v1y, v1z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
-        lines.vertexLine(v2x, v2y, v2z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
+        writeLineVertices(writer, v1x, v1y, v1z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
+        writeLineVertices(writer, v2x, v2y, v2z, ColorABGR.pack(red, yAxisGreen, zAxisBlue, alpha), Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
+        writeLineVertices(writer, v1x, v1y, v1z, ColorABGR.pack(xAxisRed, green, zAxisBlue, alpha), Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
+        writeLineVertices(writer, v3x, v3y, v3z, ColorABGR.pack(xAxisRed, green, zAxisBlue, alpha), Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
+        writeLineVertices(writer, v1x, v1y, v1z, ColorABGR.pack(xAxisRed, yAxisGreen, blue, alpha), Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
+        writeLineVertices(writer, v4x, v4y, v4z, ColorABGR.pack(xAxisRed, yAxisGreen, blue, alpha), Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
+        writeLineVertices(writer, v2x, v2y, v2z, color, Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
+        writeLineVertices(writer, v5x, v5y, v5z, color, Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
+        writeLineVertices(writer, v5x, v5y, v5z, color, Norm3b.pack(-normal.m00(), -normal.m10(), -normal.m20()));
+        writeLineVertices(writer, v3x, v3y, v3z, color, Norm3b.pack(-normal.m00(), -normal.m10(), -normal.m20()));
+        writeLineVertices(writer, v3x, v3y, v3z, color, Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
+        writeLineVertices(writer, v6x, v6y, v6z, color, Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
+        writeLineVertices(writer, v6x, v6y, v6z, color, Norm3b.pack(-normal.m01(), -normal.m11(), -normal.m21()));
+        writeLineVertices(writer, v4x, v4y, v4z, color, Norm3b.pack(-normal.m01(), -normal.m11(), -normal.m21()));
+        writeLineVertices(writer, v4x, v4y, v4z, color, Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
+        writeLineVertices(writer, v7x, v7y, v7z, color, Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
+        writeLineVertices(writer, v7x, v7y, v7z, color, Norm3b.pack(-normal.m02(), -normal.m12(), -normal.m22()));
+        writeLineVertices(writer, v2x, v2y, v2z, color, Norm3b.pack(-normal.m02(), -normal.m12(), -normal.m22()));
+        writeLineVertices(writer, v6x, v6y, v6z, color, Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
+        writeLineVertices(writer, v8x, v8y, v8z, color, Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
+        writeLineVertices(writer, v7x, v7y, v7z, color, Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
+        writeLineVertices(writer, v8x, v8y, v8z, color, Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
+        writeLineVertices(writer, v5x, v5y, v5z, color, Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
+        writeLineVertices(writer, v8x, v8y, v8z, color, Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
+    }
 
-        lines.vertexLine(v1x, v1y, v1z, ColorABGR.pack(xAxisRed, green, zAxisBlue, alpha), Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
-        lines.vertexLine(v3x, v3y, v3z, ColorABGR.pack(xAxisRed, green, zAxisBlue, alpha), Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
+    private static void writeLineVertices(VertexBufferWriter writer, float x, float y, float z, int color, int normal) {
+        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+            long buffer = writer.buffer(stack, 2, LineVertex.STRIDE, LineVertex.FORMAT);
+            long ptr = buffer;
 
-        lines.vertexLine(v1x, v1y, v1z, ColorABGR.pack(xAxisRed, yAxisGreen, blue, alpha), Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
-        lines.vertexLine(v4x, v4y, v4z, ColorABGR.pack(xAxisRed, yAxisGreen, blue, alpha), Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
+            for (int i = 0; i < 2; i++) {
+                LineVertex.write(ptr, x, y, z, color, normal);
+                ptr += LineVertex.STRIDE;
+            }
 
-        lines.vertexLine(v2x, v2y, v2z, color, Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
-        lines.vertexLine(v5x, v5y, v5z, color, Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
+            writer.push(buffer, 2, LineVertex.STRIDE, LineVertex.FORMAT);
+        }
 
-        lines.vertexLine(v5x, v5y, v5z, color, Norm3b.pack(-normal.m00(), -normal.m10(), -normal.m20()));
-        lines.vertexLine(v3x, v3y, v3z, color, Norm3b.pack(-normal.m00(), -normal.m10(), -normal.m20()));
-
-        lines.vertexLine(v3x, v3y, v3z, color, Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
-        lines.vertexLine(v6x, v6y, v6z, color, Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
-
-        lines.vertexLine(v6x, v6y, v6z, color, Norm3b.pack(-normal.m01(), -normal.m11(), -normal.m21()));
-        lines.vertexLine(v4x, v4y, v4z, color, Norm3b.pack(-normal.m01(), -normal.m11(), -normal.m21()));
-
-        lines.vertexLine(v4x, v4y, v4z, color, Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
-        lines.vertexLine(v7x, v7y, v7z, color, Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
-
-        lines.vertexLine(v7x, v7y, v7z, color, Norm3b.pack(-normal.m02(), -normal.m12(), -normal.m22()));
-        lines.vertexLine(v2x, v2y, v2z, color, Norm3b.pack(-normal.m02(), -normal.m12(), -normal.m22()));
-
-        lines.vertexLine(v6x, v6y, v6z, color, Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
-        lines.vertexLine(v8x, v8y, v8z, color, Norm3b.pack(normal.m00(), normal.m10(), normal.m20()));
-
-        lines.vertexLine(v7x, v7y, v7z, color, Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
-        lines.vertexLine(v8x, v8y, v8z, color, Norm3b.pack(normal.m01(), normal.m11(), normal.m21()));
-
-        lines.vertexLine(v5x, v5y, v5z, color, Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
-        lines.vertexLine(v8x, v8y, v8z, color, Norm3b.pack(normal.m02(), normal.m12(), normal.m22()));
-
-        lines.flush();
     }
 
 }

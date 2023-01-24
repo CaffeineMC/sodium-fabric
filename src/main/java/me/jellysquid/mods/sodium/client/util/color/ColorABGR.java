@@ -21,6 +21,15 @@ public class ColorABGR implements ColorU8 {
     }
 
     /**
+     * Packs the specified color components into ABGR format.
+     * @param rgb The red/green/blue component of the color
+     * @param alpha The alpha component of the color
+     */
+    public static int withAlpha(int rgb, float alpha) {
+        return ((int) (alpha * COMPONENT_RANGE) & 0xFF) << 24 | (rgb & 0xFFFFFF);
+    }
+
+    /**
      * @see ColorABGR#pack(int, int, int, int)
      */
     public static int pack(float r, float g, float b, float a) {

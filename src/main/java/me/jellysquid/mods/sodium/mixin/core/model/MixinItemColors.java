@@ -16,12 +16,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinItemColors implements ItemColorsExtended {
     private Reference2ReferenceMap<ItemConvertible, ItemColorProvider> itemsToColor;
 
-    private static final ItemColorProvider DEFAULT_PROVIDER = (stack, tintIdx) -> -1;
-
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(CallbackInfo ci) {
         this.itemsToColor = new Reference2ReferenceOpenHashMap<>();
-        this.itemsToColor.defaultReturnValue(DEFAULT_PROVIDER);
     }
 
     @Inject(method = "register", at = @At("HEAD"))

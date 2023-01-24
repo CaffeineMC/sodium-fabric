@@ -1,32 +1,38 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
-import me.jellysquid.mods.sodium.client.model.vertex.VanillaVertexTypes;
-import me.jellysquid.mods.sodium.client.model.vertex.VertexDrain;
-import me.jellysquid.mods.sodium.client.model.vertex.formats.quad.QuadVertexSink;
-import me.jellysquid.mods.sodium.client.util.Norm3b;
+import me.jellysquid.mods.sodium.client.render.ModelCuboid;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
-import org.joml.Math;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.spongepowered.asm.mixin.Final;
+import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
+import java.util.Map;
 
 @Mixin(ModelPart.class)
 public class MixinModelPart {
-    private static final float NORM = 1.0F / 16.0F;
+    private ModelCuboid[] sodium$cuboids;
 
-    @Shadow
-    @Final
-    private List<ModelPart.Cuboid> cuboids;
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void onInit(List<ModelPart.Cuboid> cuboids, Map<String, ModelPart> children, CallbackInfo ci) {
+        var copies = new ModelCuboid[cuboids.size()];
+
+        for (int i = 0; i < cuboids.size(); i++) {
+            var accessor = (ModelCuboidAccessor) cuboids.get(i);
+            copies[i] = accessor.copy();
+        }
+
+        this.sodium$cuboids = copies;
+    }
 
     /**
      * @author JellySquid
@@ -34,38 +40,31 @@ public class MixinModelPart {
      */
     @Overwrite
     private void renderCuboids(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
-        QuadVertexSink drain = VertexDrain.of(vertexConsumer).createSink(VanillaVertexTypes.QUADS);
-        drain.ensureCapacity(this.cuboids.size() * 6 * 4);
-
+        var writer = VertexBufferWriter.of(vertexConsumer);
         int color = ColorABGR.pack(red, green, blue, alpha);
 
-        for (ModelPart.Cuboid cuboid : this.cuboids) {
-            for (ModelPart.Quad quad : ((ModelCuboidAccessor) cuboid).getQuads()) {
-                Matrix3f normal = matrices.getNormalMatrix();
-                float normX = Math.fma(normal.m00(), quad.direction.x, Math.fma(normal.m10(), quad.direction.y, normal.m20() * quad.direction.z));
-                float normY = Math.fma(normal.m01(), quad.direction.x, Math.fma(normal.m11(), quad.direction.y, normal.m21() * quad.direction.z));
-                float normZ = Math.fma(normal.m02(), quad.direction.x, Math.fma(normal.m12(), quad.direction.y, normal.m22() * quad.direction.z));
+        for (ModelCuboid cuboid : this.sodium$cuboids) {
+            cuboid.updateVertices(matrices.getPositionMatrix());
 
-                int norm = Norm3b.pack(normX, normY, normZ);
+            try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
+                long buffer = writer.buffer(stack, 4 * 6, ModelVertex.STRIDE, ModelVertex.FORMAT);
+                long ptr = buffer;
 
-                for (ModelPart.Vertex vertex : quad.vertices) {
-                    Vector3f pos = vertex.pos;
+                for (ModelCuboid.Quad quad : cuboid.quads) {
+                    var normal = quad.getNormal(matrices.getNormalMatrix());
 
-                    float x1 = pos.x() * NORM;
-                    float y1 = pos.y() * NORM;
-                    float z1 = pos.z() * NORM;
+                    for (int i = 0; i < 4; i++) {
+                        var pos = quad.positions[i];
+                        var tex = quad.textures[i];
 
-                    Matrix4f matrix = matrices.getPositionMatrix();
+                        ModelVertex.write(ptr, pos.x, pos.y, pos.z, color, tex.x, tex.y, light, overlay, normal);
 
-                    float x2 = Math.fma(matrix.m00(), x1, Math.fma(matrix.m10(), y1, Math.fma(matrix.m20(), z1, matrix.m30())));
-                    float y2 = Math.fma(matrix.m01(), x1, Math.fma(matrix.m11(), y1, Math.fma(matrix.m21(), z1, matrix.m31())));
-                    float z2 = Math.fma(matrix.m02(), x1, Math.fma(matrix.m12(), y1, Math.fma(matrix.m22(), z1, matrix.m32())));
-
-                    drain.writeQuad(x2, y2, z2, color, vertex.u, vertex.v, light, overlay, norm);
+                        ptr += ModelVertex.STRIDE;
+                    }
                 }
+
+                writer.push(buffer, 4 * 6, ModelVertex.STRIDE, ModelVertex.FORMAT);
             }
         }
-
-        drain.flush();
     }
 }
