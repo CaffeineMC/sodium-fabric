@@ -25,12 +25,13 @@ import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Xoroshiro128PlusPlusRandom;
+import net.minecraft.util.math.random.LocalRandom;
+import net.minecraft.util.math.random.Random;
 
 import java.util.List;
 
 public class BlockRenderer {
-    private final Xoroshiro128PlusPlusRandom random = new Xoroshiro128PlusPlusRandom(42L);
+    private final Random random = new LocalRandom(42L);
 
     private final BlockColorsExtended blockColors;
     private final BlockOcclusionCache occlusionCache;
