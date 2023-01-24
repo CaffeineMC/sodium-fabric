@@ -10,6 +10,7 @@
     "conformVisibility" : true
   },
   "client" : [
+    "core.MixinDirection",
     "core.MixinFrustum",
     "core.MixinMinecraftClient",
     "core.model.MixinBlockColors",
