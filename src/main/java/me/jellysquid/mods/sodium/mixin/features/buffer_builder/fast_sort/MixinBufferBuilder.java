@@ -43,31 +43,31 @@ public abstract class MixinBufferBuilder {
     @Shadow
     private VertexFormat format;
 
+    @Shadow
+    private int batchOffset;
+
     /**
      * @author JellySquid
      * @reason Avoid slow memory accesses
      */
     @Overwrite
     private Vector3f[] buildPrimitiveCenters() {
-        int primitiveCount = this.vertexCount / this.drawMode.additionalVertexCount;
+        int vertexStride = this.format.getVertexSizeByte();
+        int primitiveCount = this.vertexCount / 4;
 
         Vector3f[] centers = new Vector3f[primitiveCount];
-        long start = MemoryUtil.memAddress(this.buffer, this.elementOffset);
-
-        long vertexStride = this.format.getVertexSizeByte();
-        long primitiveStride = vertexStride * this.drawMode.additionalVertexCount;
 
         for (int index = 0; index < primitiveCount; ++index) {
-            long c1 = start + (index * primitiveStride);
-            long c2 = c1 + (vertexStride * 2);
+            long v1 = MemoryUtil.memAddress(this.buffer, this.batchOffset + (((index * 4) + 0) * vertexStride));
+            long v2 = MemoryUtil.memAddress(this.buffer, this.batchOffset + (((index * 4) + 2) * vertexStride));
 
-            float x1 = MemoryUtil.memGetFloat(c1);
-            float y1 = MemoryUtil.memGetFloat(c1 + 4);
-            float z1 = MemoryUtil.memGetFloat(c1 + 8);
+            float x1 = MemoryUtil.memGetFloat(v1 + 0);
+            float y1 = MemoryUtil.memGetFloat(v1 + 4);
+            float z1 = MemoryUtil.memGetFloat(v1 + 8);
 
-            float x2 = MemoryUtil.memGetFloat(c2);
-            float y2 = MemoryUtil.memGetFloat(c2 + 4);
-            float z2 = MemoryUtil.memGetFloat(c2 + 8);
+            float x2 = MemoryUtil.memGetFloat(v2 + 0);
+            float y2 = MemoryUtil.memGetFloat(v2 + 4);
+            float z2 = MemoryUtil.memGetFloat(v2 + 8);
 
             centers[index] = new Vector3f((x1 + x2) * 0.5F, (y1 + y2) * 0.5F, (z1 + z2) * 0.5F);
         }
@@ -84,8 +84,22 @@ public abstract class MixinBufferBuilder {
         float[] distance = new float[this.sortingPrimitiveCenters.length];
         int[] indices = new int[this.sortingPrimitiveCenters.length];
 
-        for(int i = 0; i < this.sortingPrimitiveCenters.length; ) {
+        this.calculatePrimitiveDistances(distance, indices);
+
+        GeometrySort.mergeSort(indices, distance);
+
+        this.writePrimitiveIndices(indexType, indices);
+    }
+
+    private void calculatePrimitiveDistances(float[] distance, int[] indices) {
+        int i = 0;
+
+        while (i < this.sortingPrimitiveCenters.length) {
             Vector3f pos = this.sortingPrimitiveCenters[i];
+
+            if (pos == null) {
+                throw new NullPointerException("Primitive center is null");
+            }
 
             float x = pos.x() - this.sortingCameraX;
             float y = pos.y() - this.sortingCameraY;
@@ -94,53 +108,42 @@ public abstract class MixinBufferBuilder {
             distance[i] = (x * x) + (y * y) + (z * z);
             indices[i] = i++;
         }
+    }
 
-        GeometrySort.mergeSort(indices, distance);
+    private static final int[] VERTEX_ORDER = new int[] { 0, 1, 2, 2, 3, 0 };
 
+    private void writePrimitiveIndices(VertexFormat.IndexType indexType, int[] indices) {
         long ptr = MemoryUtil.memAddress(this.buffer, this.elementOffset);
-        int verticesPerPrimitive = this.drawMode.additionalVertexCount;
 
         switch (indexType) {
             case BYTE -> {
                 for (int index : indices) {
-                    int start = index * verticesPerPrimitive;
+                    int start = index * 4;
 
-                    MemoryUtil.memPutByte(ptr + 0, (byte) (start + 0));
-                    MemoryUtil.memPutByte(ptr + 1, (byte) (start + 1));
-                    MemoryUtil.memPutByte(ptr + 2, (byte) (start + 2));
-                    MemoryUtil.memPutByte(ptr + 3, (byte) (start + 2));
-                    MemoryUtil.memPutByte(ptr + 4, (byte) (start + 3));
-                    MemoryUtil.memPutByte(ptr + 5, (byte) (start + 0));
-
-                    ptr += 6;
+                    for (int offset : VERTEX_ORDER) {
+                        MemoryUtil.memPutByte(ptr, (byte) (start + offset));
+                        ptr += Byte.BYTES;
+                    }
                 }
             }
             case SHORT -> {
                 for (int index : indices) {
-                    int start = index * verticesPerPrimitive;
+                    int start = index * 4;
 
-                    MemoryUtil.memPutShort(ptr + 0, (short) (start + 0));
-                    MemoryUtil.memPutShort(ptr + 2, (short) (start + 1));
-                    MemoryUtil.memPutShort(ptr + 4, (short) (start + 2));
-                    MemoryUtil.memPutShort(ptr + 6, (short) (start + 2));
-                    MemoryUtil.memPutShort(ptr + 8, (short) (start + 3));
-                    MemoryUtil.memPutShort(ptr + 10, (short) (start + 0));
-
-                    ptr += 12;
+                    for (int offset : VERTEX_ORDER) {
+                        MemoryUtil.memPutShort(ptr, (short) (start + offset));
+                        ptr += Short.BYTES;
+                    }
                 }
             }
             case INT -> {
                 for (int index : indices) {
-                    int start = index * verticesPerPrimitive;
+                    int start = index * 4;
 
-                    MemoryUtil.memPutInt(ptr + 0, start + 0);
-                    MemoryUtil.memPutInt(ptr + 4, start + 1);
-                    MemoryUtil.memPutInt(ptr + 8, start + 2);
-                    MemoryUtil.memPutInt(ptr + 12, start + 2);
-                    MemoryUtil.memPutInt(ptr + 16, start + 3);
-                    MemoryUtil.memPutInt(ptr + 20, start + 0);
-
-                    ptr += 24;
+                    for (int offset : VERTEX_ORDER) {
+                        MemoryUtil.memPutInt(ptr, (start + offset));
+                        ptr += Integer.BYTES;
+                    }
                 }
             }
         }
