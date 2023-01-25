@@ -59,14 +59,14 @@ public class GeometrySort {
         mergeSort(supp, from, mid, distance, indices);
         mergeSort(supp, mid, to, distance, indices);
 
-        // If list is already sorted, just copy from supp to a. This is an
+        // If list is already sorted, just copy from supp to indices. This is an
         // optimization that results in faster sorts for nearly ordered lists.
-        if (Floats.compare(distance[supp[mid]], distance[supp[mid - 1]]) <= 0) {
+        if (Floats.compare(distance[supp[mid - 1]], distance[supp[mid]]) <= 0) {
             System.arraycopy(supp, from, indices, from, len);
             return;
         }
 
-        // Merge sorted halves (now in supp) into a
+        // Merge sorted halves (now in supp) into indices
         int i = from, p = from, q = mid;
 
         while (i < to) {
@@ -88,7 +88,7 @@ public class GeometrySort {
 
             int u = a[j - 1];
 
-            while (Floats.compare(distance[t], distance[u]) < 0) {
+            while (Floats.compare(distance[u], distance[t]) < 0) {
                 a[j] = u;
 
                 if (from == j - 1) {
