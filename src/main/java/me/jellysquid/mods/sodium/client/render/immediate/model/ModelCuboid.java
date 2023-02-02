@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render;
+package me.jellysquid.mods.sodium.client.render.immediate.model;
 
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.util.math.Direction;

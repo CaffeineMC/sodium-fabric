@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.clouds;
 
-import me.jellysquid.mods.sodium.client.render.CloudRenderer;
+import me.jellysquid.mods.sodium.client.render.immediate.CloudRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
