@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
+import me.jellysquid.mods.sodium.client.render.RenderGlobal;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.LineVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
@@ -105,8 +106,8 @@ public class MixinWorldRenderer {
     }
 
     private static void writeLineVertices(VertexBufferWriter writer, float x, float y, float z, int color, int normal) {
-        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            long buffer = writer.buffer(stack, 2, LineVertex.STRIDE, LineVertex.FORMAT);
+        try (MemoryStack stack = RenderGlobal.VERTEX_DATA.push()) {
+            long buffer = stack.nmalloc(2 * LineVertex.STRIDE);
             long ptr = buffer;
 
             for (int i = 0; i < 2; i++) {
@@ -114,7 +115,7 @@ public class MixinWorldRenderer {
                 ptr += LineVertex.STRIDE;
             }
 
-            writer.push(buffer, 2, LineVertex.STRIDE, LineVertex.FORMAT);
+            writer.push(stack, buffer, 2, LineVertex.FORMAT);
         }
 
     }

@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
+import me.jellysquid.mods.sodium.client.render.RenderGlobal;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
-import me.jellysquid.mods.sodium.client.render.vertex.formats.LineVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -47,8 +47,8 @@ public class MixinEntityRenderDispatcher {
 
         int norm = Norm3b.pack(nxt, nyt, nzt);
 
-        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            long buffer = writer.buffer(stack, 1, ModelVertex.STRIDE, ModelVertex.FORMAT);
+        try (MemoryStack stack = RenderGlobal.VERTEX_DATA.push()) {
+            long buffer = stack.nmalloc(1 * ModelVertex.STRIDE);
 
             // The transformed position vector
             float xt = (matPosition.m00() * x) + (matPosition.m10() * y) + (matPosition.m20() * z) + matPosition.m30();
@@ -57,7 +57,7 @@ public class MixinEntityRenderDispatcher {
 
             ModelVertex.write(buffer, xt, yt, zt, ColorABGR.withAlpha(SHADOW_COLOR, alpha), u, v, OverlayTexture.DEFAULT_UV, LightmapTextureManager.MAX_LIGHT_COORDINATE, norm);
 
-            writer.push(buffer, 1, ModelVertex.STRIDE, ModelVertex.FORMAT);
+            writer.push(stack, buffer, 1, ModelVertex.FORMAT);
         }
     }
 }

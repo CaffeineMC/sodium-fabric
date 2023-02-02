@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.particle.fast_render;
 
+import me.jellysquid.mods.sodium.client.render.RenderGlobal;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ParticleVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -72,8 +73,8 @@ public abstract class MixinBillboardParticle extends Particle {
 
         var writer = VertexBufferWriter.of(vertexConsumer);
 
-        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            long buffer = writer.buffer(stack, 4, ParticleVertex.STRIDE, ParticleVertex.FORMAT);
+        try (MemoryStack stack = RenderGlobal.VERTEX_DATA.push()) {
+            long buffer = stack.nmalloc(4 * ParticleVertex.STRIDE);
             long ptr = buffer;
 
             writeVertex(ptr, quaternion,-1.0F, -1.0F, x, y, z, maxU, maxV, color, light, size);
@@ -88,7 +89,7 @@ public abstract class MixinBillboardParticle extends Particle {
             writeVertex(ptr, quaternion,1.0F, -1.0F, x, y, z, minU, maxV, color, light, size);
             ptr += ParticleVertex.STRIDE;
 
-            writer.push(buffer, 4, ParticleVertex.STRIDE, ParticleVertex.FORMAT);
+            writer.push(stack, buffer, 4, ParticleVertex.FORMAT);
         }
 
     }

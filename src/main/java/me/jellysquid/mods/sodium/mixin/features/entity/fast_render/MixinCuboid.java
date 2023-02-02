@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
-import me.jellysquid.mods.sodium.client.render.ModelCuboid;
+import me.jellysquid.mods.sodium.client.render.immediate.model.ModelCuboid;
 import net.minecraft.client.model.ModelPart;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;

@@ -3,7 +3,9 @@ package me.jellysquid.mods.sodium.mixin.core.pipeline.vertex;
 
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
+import me.jellysquid.mods.sodium.client.render.vertex.transform.VertexTransform;
 import net.minecraft.client.render.VertexConsumer;
+import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -20,12 +22,9 @@ public class MixinVertexConsumers {
         private VertexConsumer second;
 
         @Override
-        public void push(long ptr, int count, int stride, VertexFormatDescription format) {
-            VertexBufferWriter.of(this.first)
-                    .push(ptr, count, stride, format);
-
-            VertexBufferWriter.of(this.second)
-                    .push(ptr, count, stride, format);
+        public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
+            VertexTransform.copyPush(this.first, stack, ptr, count, format);
+            VertexTransform.copyPush(this.second, stack, ptr, count, format);
         }
     }
 
@@ -36,10 +35,9 @@ public class MixinVertexConsumers {
         private VertexConsumer[] delegates;
 
         @Override
-        public void push(long ptr, int count, int stride, VertexFormatDescription format) {
+        public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
             for (var delegate : this.delegates) {
-                VertexBufferWriter.of(delegate)
-                        .push(ptr, count, stride, format);
+                VertexTransform.copyPush(delegate, stack, ptr, count, format);
             }
         }
     }

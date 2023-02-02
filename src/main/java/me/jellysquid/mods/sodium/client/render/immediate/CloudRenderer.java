@@ -1,7 +1,8 @@
-package me.jellysquid.mods.sodium.client.render;
+package me.jellysquid.mods.sodium.client.render.immediate;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import me.jellysquid.mods.sodium.client.render.RenderGlobal;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ColorVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
@@ -102,14 +103,14 @@ public class CloudRenderer {
 
         float previousEnd = RenderSystem.getShaderFogEnd();
         float previousStart = RenderSystem.getShaderFogStart();
-        fogData.fogEnd = cloudDistance * 8;
-        fogData.fogStart = (cloudDistance * 8) - 16;
+        this.fogData.fogEnd = cloudDistance * 8;
+        this.fogData.fogStart = (cloudDistance * 8) - 16;
 
-        applyFogModifiers(world, fogData, player, cloudDistance * 8, tickDelta);
+        applyFogModifiers(world, this.fogData, player, cloudDistance * 8, tickDelta);
 
 
-        RenderSystem.setShaderFogEnd(fogData.fogEnd);
-        RenderSystem.setShaderFogStart(fogData.fogStart);
+        RenderSystem.setShaderFogEnd(this.fogData.fogEnd);
+        RenderSystem.setShaderFogStart(this.fogData.fogStart);
 
         float translateX = (float) (cloudCenterX - (centerCellX * 12));
         float translateZ = (float) (cloudCenterZ - (centerCellZ * 12));
@@ -139,7 +140,7 @@ public class CloudRenderer {
         RenderSystem.depthMask(true);
         RenderSystem.colorMask(false, false, false, false);
 
-        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, clouds);
+        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.clouds);
 
         // PASS 2: Render geometry
         RenderSystem.enableBlend();
@@ -149,7 +150,7 @@ public class CloudRenderer {
         RenderSystem.depthFunc(GL30C.GL_EQUAL);
         RenderSystem.colorMask(true, true, true, true);
 
-        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, clouds);
+        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.clouds);
 
         matrices.pop();
 
@@ -228,82 +229,102 @@ public class CloudRenderer {
                 float x = offsetX * 12;
                 float z = offsetZ * 12;
 
-                // -Y
-                if ((connectedEdges & DIR_NEG_Y) != 0) {
-                    int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_Y);
+                try (MemoryStack stack = RenderGlobal.VERTEX_DATA.push()) {
+                    final long buffer = stack.nmalloc(6 * 4 * ColorVertex.STRIDE);
 
-                    writeVertex(writer, x + 12, 0.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 0.0f, 0.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                    writeVertex(writer, x + 12, 0.0f, z + 0.0f, mixedColor);
-                }
+                    long ptr = buffer;
+                    int count = 0;
 
-                // +Y
-                if ((connectedEdges & DIR_POS_Y) != 0) {
-                    int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_Y);
+                    // -Y
+                    if ((connectedEdges & DIR_NEG_Y) != 0) {
+                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_Y);
 
-                    writeVertex(writer, x + 0.0f, 4.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 12, 4.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 12, 4.0f, z + 0.0f, mixedColor);
-                    writeVertex(writer, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
-                }
+                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
 
-                // -X
-                if ((connectedEdges & DIR_NEG_X) != 0) {
-                    int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_X);
+                        count += 4;
+                    }
 
-                    writeVertex(writer, x + 0.0f, 0.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 0.0f, 4.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
-                    writeVertex(writer, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                }
+                    // +Y
+                    if ((connectedEdges & DIR_POS_Y) != 0) {
+                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_Y);
 
-                // +X
-                if ((connectedEdges & DIR_POS_X) != 0) {
-                    int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_X);
+                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
 
-                    writeVertex(writer, x + 12, 4.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 12, 0.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 12, 0.0f, z + 0.0f, mixedColor);
-                    writeVertex(writer, x + 12, 4.0f, z + 0.0f, mixedColor);
-                }
+                        count += 4;
+                    }
 
-                // -Z
-                if ((connectedEdges & DIR_NEG_Z) != 0) {
-                    int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_Z);
+                    // -X
+                    if ((connectedEdges & DIR_NEG_X) != 0) {
+                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_X);
 
-                    writeVertex(writer, x + 12, 4.0f, z + 0.0f, mixedColor);
-                    writeVertex(writer, x + 12, 0.0f, z + 0.0f, mixedColor);
-                    writeVertex(writer, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-                    writeVertex(writer, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
-                }
+                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
 
-                // +Z
-                if ((connectedEdges & DIR_POS_Z) != 0) {
-                    int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_Z);
+                        count += 4;
+                    }
 
-                    writeVertex(writer, x + 12, 0.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 12, 4.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 0.0f, 4.0f, z + 12, mixedColor);
-                    writeVertex(writer, x + 0.0f, 0.0f, z + 12, mixedColor);
+                    // +X
+                    if ((connectedEdges & DIR_POS_X) != 0) {
+                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_X);
+
+                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
+
+                        count += 4;
+                    }
+
+                    // -Z
+                    if ((connectedEdges & DIR_NEG_Z) != 0) {
+                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_Z);
+
+                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
+
+                        count += 4;
+                    }
+
+                    // +Z
+                    if ((connectedEdges & DIR_POS_Z) != 0) {
+                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_Z);
+
+                        ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
+                        ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
+
+                        count += 4;
+                    }
+
+                    if (count > 0) {
+                        writer.push(stack, buffer, count, ColorVertex.FORMAT);
+                    }
                 }
             }
         }
     }
 
-    private static void writeVertex(VertexBufferWriter writer, float x, float y, float z, int color) {
-        try (MemoryStack stack = VertexBufferWriter.STACK.push()) {
-            long buffer = writer.buffer(stack, 1, ColorVertex.STRIDE, ColorVertex.FORMAT);
-            ColorVertex.write(buffer, x, y, z, color);
-            writer.push(buffer, 1, ColorVertex.STRIDE, ColorVertex.FORMAT);
-        }
+    private static long writeVertex(long buffer, float x, float y, float z, int color) {
+        ColorVertex.write(buffer, x, y, z, color);
+        return buffer + ColorVertex.STRIDE;
     }
 
     public void reloadTextures(ResourceFactory factory) {
         this.edges = createCloudEdges();
 
-        if (clouds != null) {
-            clouds.close();
+        if (this.clouds != null) {
+            this.clouds.close();
         }
 
         try {
@@ -319,7 +340,8 @@ public class CloudRenderer {
     }
 
     public void destroy() {
-        clouds.close();
+        this.clouds.close();
+
         if (this.vertexBuffer != null) {
             this.vertexBuffer.close();
             this.vertexBuffer = null;

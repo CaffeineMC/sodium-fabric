@@ -53,7 +53,7 @@ public class VertexSerializerCache {
         var identifier = String.format("%04X$%04X", srcVertexFormat.id, dstVertexFormat.id);
         var desc = createMemoryTransferList(srcVertexFormat, dstVertexFormat);
 
-        var bytecode = VertexSerializerFactory.generate(desc, identifier);
+        var bytecode = VertexSerializerFactory.generate(desc, srcVertexFormat, dstVertexFormat, identifier);
 
         if (CLASS_DUMP_PATH != null) {
             dumpClass(identifier, bytecode);
@@ -88,29 +88,28 @@ public class VertexSerializerCache {
     }
 
     private static List<MemoryTransfer> createMemoryTransferList(VertexFormatDescription srcVertexFormat, VertexFormatDescription dstVertexFormat) {
-        if (srcVertexFormat.elements.length < dstVertexFormat.elements.length) {
+        if (srcVertexFormat.elementCount < dstVertexFormat.elementCount) {
             throw new IllegalArgumentException("Source format has fewer elements than destination format");
         }
 
         var ops = new ArrayList<MemoryTransfer>();
 
-        var srcElements = srcVertexFormat.elements;
-        var srcOffsets = srcVertexFormat.offsets;
+        var srcElements = srcVertexFormat.getElements();
+        var srcOffsets = srcVertexFormat.getOffsets();
 
-        var dstElements = dstVertexFormat.elements;
-        var dstOffsets = dstVertexFormat.offsets;
+        var dstElements = dstVertexFormat.getElements();
+        var dstOffsets = dstVertexFormat.getOffsets();
 
-        for (int dstIndex = 0; dstIndex < dstElements.length; dstIndex++) {
-            var dstElement = dstElements[dstIndex];
+        for (int dstIndex = 0; dstIndex < dstElements.size(); dstIndex++) {
+            var dstElement = dstElements.get(dstIndex);
+            var srcIndex = srcElements.indexOf(dstElement);
 
-            var srcIndex = ArrayUtils.indexOf(srcElements, dstElement);
-
-            if (srcIndex == ArrayUtils.INDEX_NOT_FOUND) {
+            if (srcIndex == -1) {
                 throw new RuntimeException("Source vertex format does not contain element: " + dstElement);
             }
 
-            var srcOffset = srcOffsets[srcIndex];
-            var dstOffset = dstOffsets[dstIndex];
+            var srcOffset = srcOffsets.getInt(srcIndex);
+            var dstOffset = dstOffsets.getInt(dstIndex);
 
             ops.add(new MemoryTransfer(srcOffset, dstOffset, dstElement.getByteLength()));
         }
