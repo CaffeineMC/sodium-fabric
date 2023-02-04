@@ -61,7 +61,7 @@ public class GeometrySort {
 
         // If list is already sorted, just copy from supp to indices. This is an
         // optimization that results in faster sorts for nearly ordered lists.
-        if (Floats.compare(distance[supp[mid - 1]], distance[supp[mid]]) <= 0) {
+        if (Floats.compare(distance[supp[mid]], distance[supp[mid - 1]]) <= 0) {
             System.arraycopy(supp, from, indices, from, len);
             return;
         }
