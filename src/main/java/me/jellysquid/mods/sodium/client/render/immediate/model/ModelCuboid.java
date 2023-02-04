@@ -1,9 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.immediate.model;
 
-import me.jellysquid.mods.sodium.client.util.Norm3b;
+import me.jellysquid.mods.sodium.common.util.MatrixHelper;
 import net.minecraft.util.math.Direction;
 import org.joml.*;
-import org.joml.Math;
 
 public class ModelCuboid {
     public final Quad[] quads;
@@ -77,9 +76,7 @@ public class ModelCuboid {
             var src = this.vertices[i];
             var dst = this.shared[i];
 
-            dst.x = Math.fma(mat.m00(), src.x(), Math.fma(mat.m10(), src.y(), Math.fma(mat.m20(), src.z(), mat.m30())));
-            dst.y = Math.fma(mat.m01(), src.x(), Math.fma(mat.m11(), src.y(), Math.fma(mat.m21(), src.z(), mat.m31())));
-            dst.z = Math.fma(mat.m02(), src.x(), Math.fma(mat.m12(), src.y(), Math.fma(mat.m22(), src.z(), mat.m32())));
+            src.mulPosition(mat, dst);
         }
     }
 
@@ -122,13 +119,7 @@ public class ModelCuboid {
         }
 
         public int getNormal(Matrix3f mat) {
-            Vector3f dir = this.direction;
-
-            float normX = Math.fma(mat.m00(), dir.x, Math.fma(mat.m10(), dir.y, mat.m20() * dir.z));
-            float normY = Math.fma(mat.m01(), dir.x, Math.fma(mat.m11(), dir.y, mat.m21() * dir.z));
-            float normZ = Math.fma(mat.m02(), dir.x, Math.fma(mat.m12(), dir.y, mat.m22() * dir.z));
-
-            return Norm3b.pack(normX, normY, normZ);
+            return MatrixHelper.transformNormal(mat, this.direction.x, this.direction.y, this.direction.z);
         }
     }
 }
