@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.render.RenderGlobal;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.GlyphVertex;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
+import me.jellysquid.mods.sodium.common.util.MatrixHelper;
 import net.minecraft.client.font.GlyphRenderer;
 import net.minecraft.client.render.VertexConsumer;
 import org.joml.Math;
@@ -89,9 +90,9 @@ public class MixinGlyphRenderer {
 
     private static void write(long buffer,
                               Matrix4f matrix, float x, float y, float z, int color, float u, float v, int light) {
-        float x2 = Math.fma(matrix.m00(), x, Math.fma(matrix.m10(), y, Math.fma(matrix.m20(), z, matrix.m30())));
-        float y2 = Math.fma(matrix.m01(), x, Math.fma(matrix.m11(), y, Math.fma(matrix.m21(), z, matrix.m31())));
-        float z2 = Math.fma(matrix.m02(), x, Math.fma(matrix.m12(), y, Math.fma(matrix.m22(), z, matrix.m32())));
+        float x2 = MatrixHelper.transformPositionX(matrix, x, y, z);
+        float y2 = MatrixHelper.transformPositionY(matrix, x, y, z);
+        float z2 = MatrixHelper.transformPositionZ(matrix, x, y, z);
 
         GlyphVertex.write(buffer, x2, y2, z2, color, u, v, light);
     }

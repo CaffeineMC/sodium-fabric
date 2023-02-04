@@ -42,36 +42,29 @@ public class MixinWorldRenderer {
         float v1y = Math.fma(position.m01(), x1f, Math.fma(position.m11(), y1f, Math.fma(position.m21(), z1f, position.m31())));
         float v1z = Math.fma(position.m02(), x1f, Math.fma(position.m12(), y1f, Math.fma(position.m22(), z1f, position.m32())));
 
-
         float v2x = Math.fma(position.m00(), x2f, Math.fma(position.m10(), y1f, Math.fma(position.m20(), z1f, position.m30())));
         float v2y = Math.fma(position.m01(), x2f, Math.fma(position.m11(), y1f, Math.fma(position.m21(), z1f, position.m31())));
         float v2z = Math.fma(position.m02(), x2f, Math.fma(position.m12(), y1f, Math.fma(position.m22(), z1f, position.m32())));
-
 
         float v3x = Math.fma(position.m00(), x1f, Math.fma(position.m10(), y2f, Math.fma(position.m20(), z1f, position.m30())));
         float v3y = Math.fma(position.m01(), x1f, Math.fma(position.m11(), y2f, Math.fma(position.m21(), z1f, position.m31())));
         float v3z = Math.fma(position.m02(), x1f, Math.fma(position.m12(), y2f, Math.fma(position.m22(), z1f, position.m32())));
 
-
         float v4x = Math.fma(position.m00(), x1f, Math.fma(position.m10(), y1f, Math.fma(position.m20(), z2f, position.m30())));
         float v4y = Math.fma(position.m01(), x1f, Math.fma(position.m11(), y1f, Math.fma(position.m21(), z2f, position.m31())));
         float v4z = Math.fma(position.m02(), x1f, Math.fma(position.m12(), y1f, Math.fma(position.m22(), z2f, position.m32())));
-
 
         float v5x = Math.fma(position.m00(), x2f, Math.fma(position.m10(), y2f, Math.fma(position.m20(), z1f, position.m30())));
         float v5y = Math.fma(position.m01(), x2f, Math.fma(position.m11(), y2f, Math.fma(position.m21(), z1f, position.m31())));
         float v5z = Math.fma(position.m02(), x2f, Math.fma(position.m12(), y2f, Math.fma(position.m22(), z1f, position.m32())));
 
-
         float v6x = Math.fma(position.m00(), x1f, Math.fma(position.m10(), y2f, Math.fma(position.m20(), z2f, position.m30())));
         float v6y = Math.fma(position.m01(), x1f, Math.fma(position.m11(), y2f, Math.fma(position.m21(), z2f, position.m31())));
         float v6z = Math.fma(position.m02(), x1f, Math.fma(position.m12(), y2f, Math.fma(position.m22(), z2f, position.m32())));
 
-
         float v7x = Math.fma(position.m00(), x2f, Math.fma(position.m10(), y1f, Math.fma(position.m20(), z2f, position.m30())));
         float v7y = Math.fma(position.m01(), x2f, Math.fma(position.m11(), y1f, Math.fma(position.m21(), z2f, position.m31())));
         float v7z = Math.fma(position.m02(), x2f, Math.fma(position.m12(), y1f, Math.fma(position.m22(), z2f, position.m32())));
-
 
         float v8x = Math.fma(position.m00(), x2f, Math.fma(position.m10(), y2f, Math.fma(position.m20(), z2f, position.m30())));
         float v8y = Math.fma(position.m01(), x2f, Math.fma(position.m11(), y2f, Math.fma(position.m21(), z2f, position.m31())));
