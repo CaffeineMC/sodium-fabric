@@ -52,8 +52,9 @@ public class MixinSpriteInterpolated {
 
         float delta = 1.0F - (float) accessor.getFrameTicks() / (float) animationFrame.getTime();
 
-        int f1 = ColorMixer.getStartRatio(delta);
-        int f2 = ColorMixer.getEndRatio(delta);
+        // The interpolation factors between the current and next frame
+        int factor1 = ColorMixer.getStartRatio(delta);
+        int factor2 = ColorMixer.getEndRatio(delta);
 
         for (int layer = 0; layer < this.images.length; layer++) {
             int width = this.parent.getWidth() >> layer;
@@ -68,21 +69,30 @@ public class MixinSpriteInterpolated {
             NativeImage src = ((SpriteInfoAccessor) this.parent).getImages()[layer];
             NativeImage dst = this.images[layer];
 
-            // Source pointers
-            long s1p = src.pointer + (curX + (long) curY * src.getWidth() * STRIDE);
-            long s2p = src.pointer + (nextX + (long) nextY * src.getWidth() * STRIDE);
+            // Pointers to the pixel array for the current and next frame
+            long pRgba1 = src.pointer + (curX + (long) curY * src.getWidth() * STRIDE);
+            long pRgba2 = src.pointer + (nextX + (long) nextY * src.getWidth() * STRIDE);
 
-            // Destination pointers
-            long dp = dst.pointer;
+            // Pointer to the pixel array where the interpolated results will be written
+            long pInterpolatedRgba = dst.pointer;
 
-            int pixelCount = width * height;
+            for (int pixelIndex = 0, pixelCount = width * height; pixelIndex < pixelCount; pixelIndex++) {
+                int rgba1 = MemoryUtil.memGetInt(pRgba1);
+                int rgba2 = MemoryUtil.memGetInt(pRgba2);
 
-            for (int i = 0; i < pixelCount; i++) {
-                MemoryUtil.memPutInt(dp, ColorMixer.mix(MemoryUtil.memGetInt(s1p), MemoryUtil.memGetInt(s2p), f1, f2));
+                // Mix the RGB components and truncate the A component
+                int mixedRgb = ColorMixer.mix(rgba1, rgba2, factor1, factor2) & 0x00FFFFFF;
 
-                s1p += STRIDE;
-                s2p += STRIDE;
-                dp += STRIDE;
+                // Take the A component from the source pixel
+                int alpha = rgba1 & 0xFF000000;
+
+                // Update the pixel within the interpolated frame using the combined RGB and A components
+                MemoryUtil.memPutInt(pInterpolatedRgba, mixedRgb | alpha);
+
+                pRgba1 += STRIDE;
+                pRgba2 += STRIDE;
+
+                pInterpolatedRgba += STRIDE;
             }
         }
 
