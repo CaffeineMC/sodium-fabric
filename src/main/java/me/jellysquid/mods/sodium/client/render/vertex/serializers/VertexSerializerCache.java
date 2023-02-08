@@ -4,8 +4,7 @@ import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
 import me.jellysquid.mods.sodium.client.render.vertex.serializers.generated.VertexSerializerFactory;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.Validate;
+import me.jellysquid.mods.sodium.client.render.vertex.transform.CommonVertexElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,30 +87,23 @@ public class VertexSerializerCache {
     }
 
     private static List<MemoryTransfer> createMemoryTransferList(VertexFormatDescription srcVertexFormat, VertexFormatDescription dstVertexFormat) {
-        if (srcVertexFormat.elementCount < dstVertexFormat.elementCount) {
-            throw new IllegalArgumentException("Source format has fewer elements than destination format");
-        }
-
         var ops = new ArrayList<MemoryTransfer>();
 
-        var srcElements = srcVertexFormat.getElements();
-        var srcOffsets = srcVertexFormat.getOffsets();
-
-        var dstElements = dstVertexFormat.getElements();
-        var dstOffsets = dstVertexFormat.getOffsets();
-
-        for (int dstIndex = 0; dstIndex < dstElements.size(); dstIndex++) {
-            var dstElement = dstElements.get(dstIndex);
-            var srcIndex = srcElements.indexOf(dstElement);
-
-            if (srcIndex == -1) {
-                throw new RuntimeException("Source vertex format does not contain element: " + dstElement);
+        for (var elementType : CommonVertexElement.values()) {
+            // Check if we need to transfer the element into the destination format
+            if (!dstVertexFormat.hasElement(elementType)) {
+                continue;
             }
 
-            var srcOffset = srcOffsets.getInt(srcIndex);
-            var dstOffset = dstOffsets.getInt(dstIndex);
+            // If the destination format has the element, then the source format needs to have it as well
+            if (!srcVertexFormat.hasElement(elementType)) {
+                throw new RuntimeException("Source format is missing element %s as required by destination format".formatted(elementType));
+            }
 
-            ops.add(new MemoryTransfer(srcOffset, dstOffset, dstElement.getByteLength()));
+            var srcOffset = srcVertexFormat.getElementOffset(elementType);
+            var dstOffset = dstVertexFormat.getElementOffset(elementType);
+
+            ops.add(new MemoryTransfer(srcOffset, dstOffset, elementType.getByteLength()));
         }
 
         return mergeAdjacentMemoryTransfers(ops);

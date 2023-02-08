@@ -30,7 +30,7 @@ public class VertexTransform {
     public static void transformSprite(long ptr, int count, VertexFormatDescription format,
                                        float minU, float minV, float maxU, float maxV) {
         long stride = format.stride;
-        long offsetUV = format.getOffset(CommonVertexElement.TEXTURE);
+        long offsetUV = format.getElementOffset(CommonVertexElement.TEXTURE);
 
         // The width/height of the sprite
         float w = maxU - minU;
@@ -62,7 +62,7 @@ public class VertexTransform {
      */
     public static void transformColor(long ptr, int count, VertexFormatDescription format,
                                       int color) {
-        var offsetColor = format.getOffset(CommonVertexElement.COLOR);
+        var offsetColor = format.getElementOffset(CommonVertexElement.COLOR);
 
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
             MemoryUtil.memPutInt(ptr + offsetColor, color);
@@ -82,10 +82,10 @@ public class VertexTransform {
      */
     public static void transformOverlay(long ptr, int count, VertexFormatDescription format,
                                         Matrix3f inverseNormalMatrix, Matrix4f inverseTextureMatrix, float textureScale) {
-        var offsetPosition = format.getOffset(CommonVertexElement.POSITION);
-        var offsetColor = format.getOffset(CommonVertexElement.COLOR);
-        var offsetNormal = format.getOffset(CommonVertexElement.NORMAL);
-        var offsetTexture = format.getOffset(CommonVertexElement.TEXTURE);
+        var offsetPosition = format.getElementOffset(CommonVertexElement.POSITION);
+        var offsetColor = format.getElementOffset(CommonVertexElement.COLOR);
+        var offsetNormal = format.getElementOffset(CommonVertexElement.NORMAL);
+        var offsetTexture = format.getElementOffset(CommonVertexElement.TEXTURE);
 
         int color = ColorABGR.pack(1.0f, 1.0f, 1.0f, 1.0f);
 
