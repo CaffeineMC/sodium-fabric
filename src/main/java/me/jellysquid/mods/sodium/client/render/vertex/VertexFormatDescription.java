@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.vertex;
 
-import me.jellysquid.mods.sodium.client.render.vertex.transform.CommonVertexElement;
 import net.minecraft.client.render.VertexFormat;
 
 import java.util.NoSuchElementException;
@@ -15,14 +14,14 @@ public class VertexFormatDescription {
         this.id = id;
         this.stride = format.getVertexSizeByte();
 
-        this.offsets = CommonVertexElement.getOffsets(format);
+        this.offsets = VertexElementType.getOffsets(format);
     }
 
-    public boolean hasElement(CommonVertexElement element) {
+    public boolean hasElement(VertexElementType element) {
         return this.offsets[element.ordinal()] != -1;
     }
 
-    public int getElementOffset(CommonVertexElement element) {
+    public int getElementOffset(VertexElementType element) {
         int offset = this.offsets[element.ordinal()];
 
         if (offset == -1) {

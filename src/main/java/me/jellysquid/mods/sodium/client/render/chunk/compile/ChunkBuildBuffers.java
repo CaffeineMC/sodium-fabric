@@ -5,8 +5,8 @@ import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexBufferBuilder;
-import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.BakedChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
@@ -29,7 +29,7 @@ import java.util.Map;
 public class ChunkBuildBuffers {
     private final ChunkModelBuilder[] delegates;
 
-    private final ChunkVertexBufferBuilder[] vertexBuffers;
+    private final ChunkMeshBufferBuilder[] vertexBuffers;
     private final IndexBufferBuilder[][] indexBuffers;
 
     private final ChunkVertexType vertexType;
@@ -42,7 +42,7 @@ public class ChunkBuildBuffers {
 
         this.delegates = new ChunkModelBuilder[BlockRenderPass.COUNT];
 
-        this.vertexBuffers = new ChunkVertexBufferBuilder[BlockRenderPass.COUNT];
+        this.vertexBuffers = new ChunkMeshBufferBuilder[BlockRenderPass.COUNT];
         this.indexBuffers = new IndexBufferBuilder[BlockRenderPass.COUNT][ModelQuadFacing.COUNT];
 
         for (BlockRenderPass pass : BlockRenderPass.VALUES) {
@@ -52,12 +52,12 @@ public class ChunkBuildBuffers {
                 indexBuffers[facing] = new IndexBufferBuilder(1024);
             }
 
-            this.vertexBuffers[pass.ordinal()] = new ChunkVertexBufferBuilder(this.vertexType, pass.getLayer().getExpectedBufferSize());
+            this.vertexBuffers[pass.ordinal()] = new ChunkMeshBufferBuilder(this.vertexType, pass.getLayer().getExpectedBufferSize());
         }
     }
 
     public void init(ChunkRenderData.Builder renderData, int chunkId) {
-        for (ChunkVertexBufferBuilder vertexBuffer : this.vertexBuffers) {
+        for (ChunkMeshBufferBuilder vertexBuffer : this.vertexBuffers) {
             vertexBuffer.start(chunkId);
         }
 
@@ -131,7 +131,7 @@ public class ChunkBuildBuffers {
     }
 
     public void destroy() {
-        for (ChunkVertexBufferBuilder builder : this.vertexBuffers) {
+        for (ChunkMeshBufferBuilder builder : this.vertexBuffers) {
             builder.destroy();
         }
     }

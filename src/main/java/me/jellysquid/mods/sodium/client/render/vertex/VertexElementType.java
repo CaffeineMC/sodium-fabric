@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.vertex.transform;
+package me.jellysquid.mods.sodium.client.render.vertex;
 
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormatElement;
@@ -6,7 +6,7 @@ import net.minecraft.client.render.VertexFormats;
 
 import java.util.Arrays;
 
-public enum CommonVertexElement {
+public enum VertexElementType {
     POSITION(VertexFormats.POSITION_ELEMENT),
     COLOR(VertexFormats.COLOR_ELEMENT),
     TEXTURE(VertexFormats.TEXTURE_ELEMENT),
@@ -16,14 +16,14 @@ public enum CommonVertexElement {
 
     private final VertexFormatElement element;
 
-    public static final int COUNT = CommonVertexElement.values().length;
+    public static final int COUNT = VertexElementType.values().length;
 
-    CommonVertexElement(VertexFormatElement element) {
+    VertexElementType(VertexFormatElement element) {
         this.element = element;
     }
 
-    public static CommonVertexElement getCommonType(VertexFormatElement element) {
-        for (var type : CommonVertexElement.values()) {
+    public static VertexElementType getCommonType(VertexFormatElement element) {
+        for (var type : VertexElementType.values()) {
             if (type.element == element) {
                 return type;
             }

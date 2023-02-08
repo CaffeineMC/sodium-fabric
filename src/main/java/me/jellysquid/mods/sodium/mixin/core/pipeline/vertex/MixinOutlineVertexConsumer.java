@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline.vertex;
 
-import me.jellysquid.mods.sodium.client.render.vertex.transform.VertexTransform;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexTransformers;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.render.FixedColorVertexConsumer;
@@ -19,7 +19,7 @@ public abstract class MixinOutlineVertexConsumer extends FixedColorVertexConsume
 
     @Override
     public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
-        VertexTransform.transformColor(ptr, count, format,
+        VertexTransformers.transformColor(ptr, count, format,
                 ColorABGR.pack(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha));
 
         VertexBufferWriter.of(this.delegate)

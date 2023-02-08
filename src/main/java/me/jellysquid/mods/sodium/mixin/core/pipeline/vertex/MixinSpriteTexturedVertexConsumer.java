@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline.vertex;
 
-import me.jellysquid.mods.sodium.client.render.vertex.transform.VertexTransform;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexTransformers;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
 import net.minecraft.client.render.SpriteTexturedVertexConsumer;
 import net.minecraft.client.render.VertexConsumer;
@@ -33,7 +33,7 @@ public class MixinSpriteTexturedVertexConsumer implements VertexBufferWriter {
 
     @Override
     public void push(MemoryStack stack, final long ptr, int count, VertexFormatDescription format) {
-        VertexTransform.transformSprite(ptr, count, format,
+        VertexTransformers.transformSprite(ptr, count, format,
                 this.minU, this.minV, this.maxU, this.maxV);
 
         VertexBufferWriter.of(this.delegate)

@@ -5,15 +5,13 @@ import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
 import me.jellysquid.mods.sodium.common.util.MatrixHelper;
 import net.minecraft.client.render.VertexFormats;
 import org.joml.Matrix4f;
-import org.lwjgl.system.MemoryUtil;
+
+import static me.jellysquid.mods.sodium.client.render.vertex.VertexElementSerializer.*;
 
 public final class ColorVertex {
     public static final VertexFormatDescription FORMAT = VertexFormatRegistry.get(VertexFormats.POSITION_COLOR);
 
     public static final int STRIDE = 16;
-
-    private static final int OFFSET_POSITION = 0;
-    private static final int OFFSET_COLOR = 12;
 
     public static void write(long ptr, Matrix4f matrix, float x, float y, float z, int color) {
         float x2 = MatrixHelper.transformPositionX(matrix, x, y, z);
@@ -24,11 +22,7 @@ public final class ColorVertex {
     }
 
     public static void write(long ptr, float x, float y, float z, int color) {
-        MemoryUtil.memPutFloat(ptr + OFFSET_POSITION + 0, x);
-        MemoryUtil.memPutFloat(ptr + OFFSET_POSITION + 4, y);
-        MemoryUtil.memPutFloat(ptr + OFFSET_POSITION + 8, z);
-
-        MemoryUtil.memPutInt(ptr + OFFSET_COLOR + 0, color);
+        setPositionXYZ(ptr + 0, x, y, z);
+        setColorABGR(ptr + 12, color);
     }
-
 }

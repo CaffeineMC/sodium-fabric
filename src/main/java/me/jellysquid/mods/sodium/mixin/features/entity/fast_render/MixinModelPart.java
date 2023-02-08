@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
 import me.jellysquid.mods.sodium.client.render.RenderGlobal;
 import me.jellysquid.mods.sodium.client.render.immediate.model.ModelCuboid;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.MatrixHelper;
@@ -72,7 +72,7 @@ public class MixinModelPart {
                         var pos = quad.positions[i];
                         var tex = quad.textures[i];
 
-                        ModelVertex.write(ptr, pos.x, pos.y, pos.z, color, tex.x, tex.y, light, overlay, normal);
+                        ModelVertex.write(ptr, pos.x, pos.y, pos.z, color, tex.x, tex.y, overlay, light, normal);
 
                         ptr += ModelVertex.STRIDE;
                     }

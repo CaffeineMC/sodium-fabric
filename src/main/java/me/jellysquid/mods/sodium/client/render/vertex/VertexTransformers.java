@@ -1,6 +1,7 @@
-package me.jellysquid.mods.sodium.client.render.vertex.transform;
+package me.jellysquid.mods.sodium.client.render.vertex;
 
-import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexElementType;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
@@ -14,7 +15,9 @@ import org.joml.Vector4f;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
-public class VertexTransform {
+import static me.jellysquid.mods.sodium.client.render.vertex.VertexElementSerializer.*;
+
+public class VertexTransformers {
     /**
      * Transforms the texture UVs for each vertex from their absolute coordinates into the sprite area specified
      * by the parameters.
@@ -30,23 +33,22 @@ public class VertexTransform {
     public static void transformSprite(long ptr, int count, VertexFormatDescription format,
                                        float minU, float minV, float maxU, float maxV) {
         long stride = format.stride;
-        long offsetUV = format.getElementOffset(CommonVertexElement.TEXTURE);
+        long offsetUV = format.getElementOffset(VertexElementType.TEXTURE);
 
         // The width/height of the sprite
         float w = maxU - minU;
         float h = maxV - minV;
 
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
-            // The coordinate relative to the sprite bounds
-            float u = MemoryUtil.memGetFloat(ptr + offsetUV + 0);
-            float v = MemoryUtil.memGetFloat(ptr + offsetUV + 4);
+            // The texture coordinates relative to the sprite bounds
+            float u = getTextureU(ptr + offsetUV);
+            float v = getTextureV(ptr + offsetUV);
 
-            // The coordinate absolute to the sprite sheet
+            // The texture coordinates in absolute space on the sprite sheet
             float ut = minU + (w * u);
             float vt = minV + (h * v);
 
-            MemoryUtil.memPutFloat(ptr + offsetUV + 0, ut);
-            MemoryUtil.memPutFloat(ptr + offsetUV + 4, vt);
+            setTextureUV(ptr + offsetUV, ut, vt);
 
             ptr += stride;
         }
@@ -62,10 +64,10 @@ public class VertexTransform {
      */
     public static void transformColor(long ptr, int count, VertexFormatDescription format,
                                       int color) {
-        var offsetColor = format.getElementOffset(CommonVertexElement.COLOR);
+        var offsetColor = format.getElementOffset(VertexElementType.COLOR);
 
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
-            MemoryUtil.memPutInt(ptr + offsetColor, color);
+            setColorABGR(ptr + offsetColor, color);
             ptr += format.stride;
         }
     }
@@ -82,10 +84,10 @@ public class VertexTransform {
      */
     public static void transformOverlay(long ptr, int count, VertexFormatDescription format,
                                         Matrix3f inverseNormalMatrix, Matrix4f inverseTextureMatrix, float textureScale) {
-        var offsetPosition = format.getElementOffset(CommonVertexElement.POSITION);
-        var offsetColor = format.getElementOffset(CommonVertexElement.COLOR);
-        var offsetNormal = format.getElementOffset(CommonVertexElement.NORMAL);
-        var offsetTexture = format.getElementOffset(CommonVertexElement.TEXTURE);
+        var offsetPosition = format.getElementOffset(VertexElementType.POSITION);
+        var offsetColor = format.getElementOffset(VertexElementType.COLOR);
+        var offsetNormal = format.getElementOffset(VertexElementType.NORMAL);
+        var offsetTexture = format.getElementOffset(VertexElementType.TEXTURE);
 
         int color = ColorABGR.pack(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -114,10 +116,8 @@ public class VertexTransform {
             float textureU = -transformedTexture.x() * textureScale;
             float textureV = -transformedTexture.y() * textureScale;
 
-            MemoryUtil.memPutInt(ptr + offsetColor, color);
-
-            MemoryUtil.memPutFloat(ptr + offsetTexture + 0, textureU);
-            MemoryUtil.memPutFloat(ptr + offsetTexture + 4, textureV);
+            setColorABGR(ptr + offsetColor, color);
+            setTextureUV(ptr + offsetTexture, textureU, textureV);
 
             ptr += format.stride;
         }

@@ -1,11 +1,13 @@
-package me.jellysquid.mods.sodium.client.render.vertex.type;
+package me.jellysquid.mods.sodium.client.render.chunk.vertex.builder;
 
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
-public class ChunkVertexBufferBuilder {
+public class ChunkMeshBufferBuilder {
     private final ChunkVertexEncoder encoder;
     private final int stride;
 
@@ -16,7 +18,7 @@ public class ChunkVertexBufferBuilder {
     private int capacity;
     private int chunkId;
 
-    public ChunkVertexBufferBuilder(ChunkVertexType vertexType, int initialCapacity) {
+    public ChunkMeshBufferBuilder(ChunkVertexType vertexType, int initialCapacity) {
         this.encoder = vertexType.getEncoder();
         this.stride = vertexType.getVertexFormat().getStride();
 

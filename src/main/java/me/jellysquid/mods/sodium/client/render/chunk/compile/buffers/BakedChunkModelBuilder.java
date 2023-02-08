@@ -2,17 +2,17 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile.buffers;
 
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexBufferBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import net.minecraft.client.texture.Sprite;
 
 public class BakedChunkModelBuilder implements ChunkModelBuilder {
-    private final ChunkVertexBufferBuilder vertexBuffer;
+    private final ChunkMeshBufferBuilder vertexBuffer;
     private final IndexBufferBuilder[] indexBuffers;
 
     private final ChunkRenderData.Builder renderData;
 
-    public BakedChunkModelBuilder(ChunkVertexBufferBuilder vertexBuffer, IndexBufferBuilder[] indexBuffers,
+    public BakedChunkModelBuilder(ChunkMeshBufferBuilder vertexBuffer, IndexBufferBuilder[] indexBuffers,
                                   ChunkRenderData.Builder renderData) {
         this.indexBuffers = indexBuffers;
         this.vertexBuffer = vertexBuffer;
@@ -21,7 +21,7 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
     }
 
     @Override
-    public ChunkVertexBufferBuilder getVertexBuffer() {
+    public ChunkMeshBufferBuilder getVertexBuffer() {
         return this.vertexBuffer;
     }
 

@@ -1,7 +1,6 @@
-package me.jellysquid.mods.sodium.client.render.vertex.type;
+package me.jellysquid.mods.sodium.client.render.chunk.vertex.format;
 
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
-import me.jellysquid.mods.sodium.client.render.chunk.format.ChunkMeshAttribute;
 
 public interface ChunkVertexType {
     /**
