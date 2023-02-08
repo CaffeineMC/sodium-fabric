@@ -7,62 +7,51 @@ import net.minecraft.client.render.VertexFormats;
 import java.util.Arrays;
 
 public enum CommonVertexElement {
-    POSITION,
-    COLOR,
-    TEXTURE,
-    OVERLAY,
-    LIGHT,
-    NORMAL;
+    POSITION(VertexFormats.POSITION_ELEMENT),
+    COLOR(VertexFormats.COLOR_ELEMENT),
+    TEXTURE(VertexFormats.TEXTURE_ELEMENT),
+    OVERLAY(VertexFormats.OVERLAY_ELEMENT),
+    LIGHT(VertexFormats.LIGHT_ELEMENT),
+    NORMAL(VertexFormats.NORMAL_ELEMENT);
+
+    private final VertexFormatElement element;
 
     public static final int COUNT = CommonVertexElement.values().length;
 
+    CommonVertexElement(VertexFormatElement element) {
+        this.element = element;
+    }
+
     public static CommonVertexElement getCommonType(VertexFormatElement element) {
-        if (element == VertexFormats.POSITION_ELEMENT) {
-            return POSITION;
-        }
-
-        if (element == VertexFormats.COLOR_ELEMENT) {
-            return COLOR;
-        }
-
-        if (element == VertexFormats.TEXTURE_ELEMENT) {
-            return TEXTURE;
-        }
-
-        if (element == VertexFormats.OVERLAY_ELEMENT) {
-            return OVERLAY;
-        }
-
-        if (element == VertexFormats.LIGHT_ELEMENT) {
-            return LIGHT;
-        }
-
-        if (element == VertexFormats.NORMAL_ELEMENT) {
-            return NORMAL;
+        for (var type : CommonVertexElement.values()) {
+            if (type.element == element) {
+                return type;
+            }
         }
 
         return null;
     }
 
     public static int[] getOffsets(VertexFormat format) {
-        var results = new int[CommonVertexElement.COUNT];
+        final int[] offsets = new int[COUNT];
 
-        Arrays.fill(results, -1);
+        Arrays.fill(offsets, -1);
 
         var elements = format.getElements();
-        var offsets = format.offsets;
 
-        for (int i = 0; i < elements.size(); i++) {
-            var element = elements.get(i);
-            var offset = offsets.getInt(i);
+        for (int elementIndex = 0; elementIndex < elements.size(); elementIndex++) {
+            var element = elements.get(elementIndex);
+            var commonType = getCommonType(element);
 
-            var type = CommonVertexElement.getCommonType(element);
-
-            if (type != null) {
-                results[type.ordinal()] = offset;
+            if (commonType != null) {
+                offsets[commonType.ordinal()] = format.offsets.getInt(elementIndex);
             }
         }
 
-        return results;
+        return offsets;
+    }
+
+    public int getByteLength() {
+        return this.element.getByteLength();
     }
 }
