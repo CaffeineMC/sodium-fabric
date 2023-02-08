@@ -13,7 +13,7 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
-import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexEncoder;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;

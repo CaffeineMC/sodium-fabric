@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.format;
+package me.jellysquid.mods.sodium.client.render.chunk.vertex.format;
 
 public enum ChunkMeshAttribute {
     POSITION_ID,

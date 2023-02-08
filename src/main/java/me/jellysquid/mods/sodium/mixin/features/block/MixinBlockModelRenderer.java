@@ -2,9 +2,8 @@ package me.jellysquid.mods.sodium.mixin.features.block;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.util.Norm3b;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
@@ -17,10 +16,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.LocalRandom;
 import net.minecraft.util.math.random.Random;
-import net.minecraft.util.math.random.Xoroshiro128PlusPlusRandom;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
-import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 

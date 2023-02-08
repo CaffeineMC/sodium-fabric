@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.particle.fast_render;
 
 import me.jellysquid.mods.sodium.client.render.RenderGlobal;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ParticleVertex;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
@@ -131,6 +131,6 @@ public abstract class MixinBillboardParticle extends Particle {
         float fy = (q3y * size) + originY;
         float fz = (q3z * size) + originZ;
 
-        ParticleVertex.write(buffer, fx, fy, fz, color, u, v, light);
+        ParticleVertex.write(buffer, fx, fy, fz, u, v, color, light);
     }
 }

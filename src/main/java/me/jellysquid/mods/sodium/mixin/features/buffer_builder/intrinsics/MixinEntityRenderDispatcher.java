@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
 import me.jellysquid.mods.sodium.client.render.RenderGlobal;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.MatrixHelper;
@@ -114,6 +114,6 @@ public class MixinEntityRenderDispatcher {
         float yt = MatrixHelper.transformPositionY(matPosition, x, y, z);
         float zt = MatrixHelper.transformPositionZ(matPosition, x, y, z);
 
-        ModelVertex.write(ptr, xt, yt, zt, color, u, v, OverlayTexture.DEFAULT_UV, LightmapTextureManager.MAX_LIGHT_COORDINATE, normal);
+        ModelVertex.write(ptr, xt, yt, zt, color, u, v, LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV, normal);
     }
 }

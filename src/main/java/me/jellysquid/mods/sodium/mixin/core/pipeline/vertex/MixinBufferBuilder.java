@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline.vertex;
 
-import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatRegistry;
 import me.jellysquid.mods.sodium.client.render.vertex.serializers.VertexSerializerCache;

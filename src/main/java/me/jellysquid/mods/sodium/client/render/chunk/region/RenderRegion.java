@@ -8,7 +8,7 @@ import me.jellysquid.mods.sodium.client.gl.arena.SwapBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkModelVertexFormats;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
@@ -151,7 +151,7 @@ public class RenderRegion {
             int expectedVertexCount = REGION_SIZE * 756;
             int expectedIndexCount = (expectedVertexCount / 4) * 6;
 
-            this.vertexBuffers = createArena(commandList, expectedVertexCount * ChunkModelVertexFormats.COMPACT.getVertexFormat().getStride(), stagingBuffer);
+            this.vertexBuffers = createArena(commandList, expectedVertexCount * ChunkMeshFormats.COMPACT.getVertexFormat().getStride(), stagingBuffer);
             this.indexBuffers = createArena(commandList, expectedIndexCount * 4, stagingBuffer);
         }
 

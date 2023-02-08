@@ -2,12 +2,11 @@ package me.jellysquid.mods.sodium.mixin.features.gui.font;
 
 import me.jellysquid.mods.sodium.client.render.RenderGlobal;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.GlyphVertex;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.MatrixHelper;
 import net.minecraft.client.font.GlyphRenderer;
 import net.minecraft.client.render.VertexConsumer;
-import org.joml.Math;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;

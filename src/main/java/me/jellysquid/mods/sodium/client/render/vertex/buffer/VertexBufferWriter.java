@@ -1,5 +1,6 @@
-package me.jellysquid.mods.sodium.client.render.vertex;
+package me.jellysquid.mods.sodium.client.render.vertex.buffer;
 
+import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
 import net.minecraft.client.render.VertexConsumer;
 import org.lwjgl.system.MemoryStack;
 

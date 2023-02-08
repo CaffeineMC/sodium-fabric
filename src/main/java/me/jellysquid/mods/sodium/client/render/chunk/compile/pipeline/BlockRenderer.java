@@ -11,10 +11,10 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
-import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexBufferBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
-import me.jellysquid.mods.sodium.client.render.vertex.type.ChunkVertexEncoder;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -96,7 +96,7 @@ public class BlockRenderer {
         ModelQuadFacing facing = cullFace == null ? ModelQuadFacing.UNASSIGNED : ModelQuadFacing.fromDirection(cullFace);
         ColorSampler<BlockState> colorizer = null;
 
-        ChunkVertexBufferBuilder vertexBuffer = builder.getVertexBuffer();
+        ChunkMeshBufferBuilder vertexBuffer = builder.getVertexBuffer();
         IndexBufferBuilder indexBuffer = builder.getIndexBuffer(facing);
 
         QuadLightData lightData = this.cachedQuadLightData;
@@ -130,7 +130,7 @@ public class BlockRenderer {
     }
 
     private void writeGeometry(BlockRenderContext ctx,
-                               ChunkVertexBufferBuilder vertexBuffer, IndexBufferBuilder indexBuffer,
+                               ChunkMeshBufferBuilder vertexBuffer, IndexBufferBuilder indexBuffer,
                                Vec3d offset,
                                ModelQuadView quad,
                                int[] colors,

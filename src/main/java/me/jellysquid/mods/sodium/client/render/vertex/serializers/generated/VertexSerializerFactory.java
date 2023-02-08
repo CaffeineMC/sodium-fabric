@@ -1,18 +1,21 @@
 package me.jellysquid.mods.sodium.client.render.vertex.serializers.generated;
 
+import me.jellysquid.mods.sodium.client.render.vertex.VertexElementType;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
-import me.jellysquid.mods.sodium.client.render.vertex.serializers.MemoryTransfer;
 import me.jellysquid.mods.sodium.client.render.vertex.serializers.VertexSerializer;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.*;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.List;
 
 public class VertexSerializerFactory {
     private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
-    public static Bytecode generate(List<MemoryTransfer> memoryCopies, VertexFormatDescription srcFormat, VertexFormatDescription dstFormat, String identifier) {
+    public static Bytecode generate(VertexFormatDescription srcFormat, VertexFormatDescription dstFormat, String identifier) {
+        var memoryCopies = createMemoryTransferList(srcFormat, dstFormat);
+
         var name = "me/jellysquid/mods/sodium/client/render/vertex/serializers/generated/VertexSerializer$Impl$" + identifier;
 
         ClassWriter classWriter = new ClassWriter(0);
@@ -164,6 +167,59 @@ public class VertexSerializerFactory {
         return new Bytecode(classWriter.toByteArray());
     }
 
+    private static List<MemoryTransfer> createMemoryTransferList(VertexFormatDescription srcVertexFormat, VertexFormatDescription dstVertexFormat) {
+        var ops = new ArrayList<MemoryTransfer>();
+
+        for (var elementType : VertexElementType.values()) {
+            // Check if we need to transfer the element into the destination format
+            if (!dstVertexFormat.hasElement(elementType)) {
+                continue;
+            }
+
+            // If the destination format has the element, then the source format needs to have it as well
+            if (!srcVertexFormat.hasElement(elementType)) {
+                throw new RuntimeException("Source format is missing element %s as required by destination format".formatted(elementType));
+            }
+
+            var srcOffset = srcVertexFormat.getElementOffset(elementType);
+            var dstOffset = dstVertexFormat.getElementOffset(elementType);
+
+            ops.add(new MemoryTransfer(srcOffset, dstOffset, elementType.getByteLength()));
+        }
+
+        return mergeAdjacentMemoryTransfers(ops);
+    }
+
+    private static List<MemoryTransfer> mergeAdjacentMemoryTransfers(ArrayList<MemoryTransfer> src) {
+        var dst = new ArrayList<MemoryTransfer>(src.size());
+
+        var srcOffset = 0;
+        var dstOffset = 0;
+
+        var length = 0;
+
+        for (var op : src) {
+            if (srcOffset + length == op.src() && dstOffset + length == op.dst()) {
+                length += op.length();
+                continue;
+            }
+
+            if (length > 0) {
+                dst.add(new MemoryTransfer(srcOffset, dstOffset, length));
+            }
+
+            srcOffset = op.src();
+            dstOffset = op.dst();
+            length = op.length();
+        }
+
+        if (length > 0) {
+            dst.add(new MemoryTransfer(srcOffset, dstOffset, length));
+        }
+
+        return dst;
+    }
+
     public static Class<?> define(Bytecode bytecode) {
         try {
             return LOOKUP.defineClass(bytecode.data);
@@ -184,5 +240,9 @@ public class VertexSerializerFactory {
         public byte[] copy() {
             return this.data.clone();
         }
+    }
+
+    public record MemoryTransfer(int src, int dst, int length) {
+
     }
 }

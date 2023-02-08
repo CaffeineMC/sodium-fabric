@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.item;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.client.world.biome.ItemColorsExtended;

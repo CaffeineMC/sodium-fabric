@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.vertex.type;
+package me.jellysquid.mods.sodium.client.render.chunk.vertex.format;
 
 public interface ChunkVertexEncoder {
     long write(long ptr, Vertex vertex, int chunkId);
