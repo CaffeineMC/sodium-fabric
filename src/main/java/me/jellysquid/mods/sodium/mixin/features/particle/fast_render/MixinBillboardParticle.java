@@ -131,6 +131,6 @@ public abstract class MixinBillboardParticle extends Particle {
         float fy = (q3y * size) + originY;
         float fz = (q3z * size) + originZ;
 
-        ParticleVertex.write(buffer, fx, fy, fz, u, v, color, light);
+        ParticleVertex.write(buffer, fx, fy, fz, color, u, v, light);
     }
 }
