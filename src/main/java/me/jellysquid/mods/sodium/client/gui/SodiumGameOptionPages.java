@@ -16,6 +16,8 @@ import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.*;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GLCapabilities;
 
 import javax.sound.sampled.BooleanControl;
 import java.util.ArrayList;
@@ -296,9 +298,23 @@ public class SodiumGameOptionPages {
                         .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
                         .build()
                 )
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(Text.translatable("sodium.options.use_no_error_context.name"))
+                        .setTooltip(Text.translatable("sodium.options.use_no_error_context.tooltip"))
+                        .setControl(TickBoxControl::new)
+                        .setImpact(OptionImpact.LOW)
+                        .setBinding((opts, value) -> opts.performance.useNoErrorGLContext = value, opts -> opts.performance.useNoErrorGLContext)
+                        .setEnabled(supportsNoErrorContext())
+                        .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
+                        .build())
                 .build());
 
         return new OptionPage(Text.translatable("sodium.options.pages.performance"), ImmutableList.copyOf(groups));
+    }
+
+    private static boolean supportsNoErrorContext() {
+        GLCapabilities capabilities = GL.getCapabilities();
+        return capabilities.OpenGL46 || capabilities.GL_KHR_no_error;
     }
 
     public static OptionPage advanced() {

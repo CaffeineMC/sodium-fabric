@@ -43,6 +43,7 @@ public class SodiumGameOptions {
         public boolean useEntityCulling = true;
         public boolean useFogOcclusion = true;
         public boolean useBlockFaceCulling = true;
+        public boolean useNoErrorGLContext = true;
     }
 
     public static class AdvancedSettings {
