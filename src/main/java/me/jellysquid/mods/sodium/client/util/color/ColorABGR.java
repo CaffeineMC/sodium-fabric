@@ -26,7 +26,16 @@ public class ColorABGR implements ColorU8 {
      * @param alpha The alpha component of the color
      */
     public static int withAlpha(int rgb, float alpha) {
-        return ((int) (alpha * COMPONENT_RANGE) & 0xFF) << 24 | (rgb & 0xFFFFFF);
+        return withAlpha(rgb, (int) (alpha * COMPONENT_RANGE) & 0xFF);
+    }
+
+    /**
+     * Packs the specified color components into ABGR format.
+     * @param rgb The red/green/blue component of the color
+     * @param alpha The alpha component of the color
+     */
+    public static int withAlpha(int rgb, int alpha) {
+        return alpha << 24 | (rgb & 0xFFFFFF);
     }
 
     /**
@@ -34,25 +43,6 @@ public class ColorABGR implements ColorU8 {
      */
     public static int pack(float r, float g, float b, float a) {
         return pack((int) (r * COMPONENT_RANGE), (int) (g * COMPONENT_RANGE), (int) (b * COMPONENT_RANGE), (int) (a * COMPONENT_RANGE));
-    }
-
-    /**
-     * Multiplies the RGB components of the packed ABGR color using the given scale factors.
-     * @param color The ABGR packed color to be multiplied
-     * @param rw The red component scale factor
-     * @param gw The green component scale factor
-     * @param bw The blue component scale factor
-     */
-    public static int mul(int color, float rw, float gw, float bw) {
-        float r = unpackRed(color) * rw;
-        float g = unpackGreen(color) * gw;
-        float b = unpackBlue(color) * bw;
-
-        return pack((int) r, (int) g, (int) b, 0xFF);
-    }
-
-    public static int mul(int color, float w) {
-        return mul(color, w, w, w);
     }
 
     /**

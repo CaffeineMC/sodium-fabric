@@ -224,7 +224,7 @@ public class CloudRenderer {
                     continue;
                 }
 
-                int baseColor = this.edges.getColor(centerCellX + offsetX, centerCellZ + offsetZ);
+                int texel = this.edges.getColor(centerCellX + offsetX, centerCellZ + offsetZ);
 
                 float x = offsetX * 12;
                 float z = offsetZ * 12;
@@ -237,7 +237,7 @@ public class CloudRenderer {
 
                     // -Y
                     if ((connectedEdges & DIR_NEG_Y) != 0) {
-                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_Y);
+                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Y);
 
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
@@ -249,7 +249,7 @@ public class CloudRenderer {
 
                     // +Y
                     if ((connectedEdges & DIR_POS_Y) != 0) {
-                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_Y);
+                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Y);
 
                         ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
@@ -261,7 +261,7 @@ public class CloudRenderer {
 
                     // -X
                     if ((connectedEdges & DIR_NEG_X) != 0) {
-                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_X);
+                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_X);
 
                         ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
@@ -273,7 +273,7 @@ public class CloudRenderer {
 
                     // +X
                     if ((connectedEdges & DIR_POS_X) != 0) {
-                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_X);
+                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_X);
 
                         ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
@@ -285,7 +285,7 @@ public class CloudRenderer {
 
                     // -Z
                     if ((connectedEdges & DIR_NEG_Z) != 0) {
-                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_NEG_Z);
+                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Z);
 
                         ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
@@ -297,7 +297,7 @@ public class CloudRenderer {
 
                     // +Z
                     if ((connectedEdges & DIR_POS_Z) != 0) {
-                        int mixedColor = ColorMixer.mulARGB(baseColor, CLOUD_COLOR_POS_Z);
+                        int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Z);
 
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);

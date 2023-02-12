@@ -50,11 +50,8 @@ public class MixinSpriteInterpolated {
             return;
         }
 
-        float delta = 1.0F - (float) accessor.getFrameTicks() / (float) animationFrame.getTime();
-
-        // The interpolation factors between the current and next frame
-        int factor1 = ColorMixer.getStartRatio(delta);
-        int factor2 = ColorMixer.getEndRatio(delta);
+        // The mix factor between the current and next frame
+        float mix = 1.0F - (float) accessor.getFrameTicks() / (float) animationFrame.getTime();
 
         for (int layer = 0; layer < this.images.length; layer++) {
             int width = this.parent.getWidth() >> layer;
@@ -81,7 +78,7 @@ public class MixinSpriteInterpolated {
                 int rgba2 = MemoryUtil.memGetInt(pRgba2);
 
                 // Mix the RGB components and truncate the A component
-                int mixedRgb = ColorMixer.mix(rgba1, rgba2, factor1, factor2) & 0x00FFFFFF;
+                int mixedRgb = ColorMixer.mix(rgba1, rgba2, mix) & 0x00FFFFFF;
 
                 // Take the A component from the source pixel
                 int alpha = rgba1 & 0xFF000000;

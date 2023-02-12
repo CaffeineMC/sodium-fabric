@@ -148,7 +148,7 @@ public class BlockRenderer {
             out.y = ctx.origin().y() + quad.getY(srcIndex) + (float) offset.getY();
             out.z = ctx.origin().z() + quad.getZ(srcIndex) + (float) offset.getZ();
 
-            out.color = ColorABGR.mul(colors != null ? colors[srcIndex] : 0xFFFFFFFF, brightness[srcIndex]);
+            out.color = ColorABGR.withAlpha(colors != null ? colors[srcIndex] : 0xFFFFFFFF, brightness[srcIndex]);
 
             out.u = quad.getTexU(srcIndex);
             out.v = quad.getTexV(srcIndex);

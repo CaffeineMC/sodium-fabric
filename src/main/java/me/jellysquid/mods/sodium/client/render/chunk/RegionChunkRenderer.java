@@ -44,7 +44,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID,
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_ID)),
                 new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
-                        this.vertexFormat.getAttribute(ChunkMeshAttribute.COLOR)),
+                        this.vertexFormat.getAttribute(ChunkMeshAttribute.COLOR_SHADE)),
                 new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE,
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.BLOCK_TEXTURE)),
                 new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,

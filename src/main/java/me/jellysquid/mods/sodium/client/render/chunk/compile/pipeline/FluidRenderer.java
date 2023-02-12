@@ -384,7 +384,7 @@ public class FluidRenderer {
         int[] biomeColors = this.colorBlender.getColors(world, pos, quad, colorSampler, fluidState);
 
         for (int i = 0; i < 4; i++) {
-            this.quadColors[i] = ColorABGR.mul(biomeColors != null ? biomeColors[i] : 0xFFFFFFFF, light.br[i] * brightness);
+            this.quadColors[i] = ColorABGR.withAlpha(biomeColors != null ? biomeColors[i] : 0xFFFFFFFF, light.br[i] * brightness);
         }
     }
 
