@@ -60,15 +60,11 @@ public class LinearColorBlender implements ColorBlender {
         final float fracZ = z - intZ;
 
         // Linear interpolation across the Z-axis
-        int dz1 = ColorMixer.getStartRatio(fracZ);
-        int dz2 = ColorMixer.getEndRatio(fracZ);
-        int rz0 = ColorMixer.mix(c00, c01, dz1, dz2);
-        int rz1 = ColorMixer.mix(c10, c11, dz1, dz2);
+        int rz0 = ColorMixer.mix(c00, c01, fracZ);
+        int rz1 = ColorMixer.mix(c10, c11, fracZ);
 
         // Linear interpolation across the X-axis
-        int dx1 = ColorMixer.getStartRatio(fracX);
-        int dx2 = ColorMixer.getEndRatio(fracX);
-        int rx = ColorMixer.mix(rz0, rz1, dx1, dx2);
+        int rx = ColorMixer.mix(rz0, rz1, fracX);
 
         return ColorARGB.toABGR(rx);
     }

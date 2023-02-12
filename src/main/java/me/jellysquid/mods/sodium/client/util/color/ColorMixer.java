@@ -1,53 +1,62 @@
 package me.jellysquid.mods.sodium.client.util.color;
 
 public class ColorMixer {
-    private static final long MASK1 = 0x00FF00FF;
-    private static final long MASK2 = 0xFF00FF00;
+    private static final int MASK = 0x00FF00FF;
 
     /**
-     * Mixes two ARGB colors using the given ratios. Use {@link ColorMixer#getStartRatio(float)} and
-     * {@link ColorMixer#getEndRatio(float)} to convert a floating-point ratio into a integer ratio.
+     * Mixes a 32-bit color (with packed 8-bit components) into another using the given ratio. This is equivalent to
+     * (color1 * ratio) + (color2 * (1.0 - ratio)) but uses bitwise trickery for maximum performance.
+     * <p>
+     * The order of the channels within the packed color does not matter, and the output color will always
+     * have the same ordering as the input colors.
      *
-     * This method takes 64-bit inputs to avoid overflows when mixing the alpha channel. The helper method
-     * {@link ColorMixer#mix(int, int, int, int)} can be used with 32-bit inputs.
-     *
-     * @param c1 The first (starting) color to blend with in ARGB format
-     * @param c2 The second (ending) color to blend with in ARGB format
-     * @param f1 The ratio of the color {@param c1} as calculated by {@link ColorMixer#getStartRatio(float)}
-     * @param f2 The ratio of the color {@param c2} as calculated by {@link ColorMixer#getEndRatio(float)}
-     * @return The result of ((c1 * f1) + (c2 * f2) as an ARGB-encoded color
+     * @param aColor The color to mix towards
+     * @param bColor The color to mix away from
+     * @param ratio The percentage (in 0.0..1.0 range) to mix the first color into the second color
+     * @return The mixed color in packed 32-bit format
      */
-    public static long mix(long c1, long c2, int f1, int f2) {
-        return ((((((c1 & MASK1) * f1) + ((c2 & MASK1) * f2)) >> 8) & MASK1) |
-                        (((((c1 & MASK2) * f1) + ((c2 & MASK2) * f2)) >> 8) & MASK2));
+    public static int mix(int aColor, int bColor, float ratio) {
+        int aRatio = (int) (256 * ratio); // int(ratio)
+        int bRatio = 256 - aRatio; // int(1.0 - ratio)
+
+        // Mask off and shift two components from each color into a packed vector of 16-bit components, where the
+        // high 8 bits are all zeroes.
+        int a1 = (aColor >> 0) & MASK;
+        int b1 = (bColor >> 0) & MASK;
+        int a2 = (aColor >> 8) & MASK;
+        int b2 = (bColor >> 8) & MASK;
+
+        // Multiply the packed 16-bit components against each mix factor, and add the components of each color
+        // to produce the mixed result. This will never overflow since both 16-bit integers are in 0..255 range.
+
+        // Then, shift the high 8 bits of each packed 16-bit component into the low 8 bits, and mask off the high bits of
+        // each 16-bit component to produce a vector of packed 8-bit components, where every other component is empty.
+        int c1 = (((a1 * aRatio) + (b1 * bRatio)) >> 8) & MASK;
+        int c2 = (((a2 * aRatio) + (b2 * bRatio)) >> 8) & MASK;
+
+        // Join the color components into the original order
+        return ((c1 << 0) | (c2 << 8));
     }
 
     /**
-     * Helper method to convert 32-bit integers to 64-bit integers and back.
-     * @see ColorMixer#mix(long, long, int, int)
+     * Multiplies the 32-bit colors (with packed 8-bit components) together.
+     * <p>
+     * The order of the channels within the packed color does not matter, and the output color will always
+     * have the same ordering as the input colors.
+     *
+     * @param a The first color to multiply
+     * @param b The second color to multiply
+     * @return The multiplied color in packed 32-bit format
      */
-    public static int mix(int c1, int c2, int f1, int f2) {
-        return (int) mix(Integer.toUnsignedLong(c1), Integer.toUnsignedLong(c2), f1, f2);
-    }
+    public static int mul(int a, int b) {
+        // Take each 8-bit component pair, multiply them together to create intermediate 16-bit integers,
+        // and then shift the high half of each 16-bit integer into 8-bit integers.
+        int c0 = (((a >>  0) & 0xFF) * ((b >>  0) & 0xFF)) >> 8;
+        int c1 = (((a >>  8) & 0xFF) * ((b >>  8) & 0xFF)) >> 8;
+        int c2 = (((a >> 16) & 0xFF) * ((b >> 16) & 0xFF)) >> 8;
+        int c3 = (((a >> 24) & 0xFF) * ((b >> 24) & 0xFF)) >> 8;
 
-    public static int getStartRatio(float frac) {
-        return (int) (256 * frac);
-    }
-
-    public static int getEndRatio(float frac) {
-        return 256 - getStartRatio(frac);
-    }
-
-
-    public static int mulARGB(int a, int b) {
-        float cr = ColorARGB.unpackRed(a) * ColorARGB.unpackRed(b);
-        float cg = ColorARGB.unpackGreen(a) * ColorARGB.unpackGreen(b);
-        float cb = ColorARGB.unpackBlue(a) * ColorARGB.unpackBlue(b);
-        float ca = ColorARGB.unpackAlpha(a) * ColorARGB.unpackAlpha(b);
-
-        return ColorARGB.pack((int) ColorU8.normalize(cr),
-                (int) ColorU8.normalize(cg),
-                (int) ColorU8.normalize(cb),
-                (int) ColorU8.normalize(ca));
+        // Pack the components
+        return (c0 <<  0) | (c1 <<  8) | (c2 << 16) | (c3 << 24);
     }
 }

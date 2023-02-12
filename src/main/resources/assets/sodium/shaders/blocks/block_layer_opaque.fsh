@@ -23,7 +23,8 @@ void main() {
     }
 #endif
 
-    diffuseColor *= v_Color;
+    diffuseColor.rgb *= v_Color.rgb;
+    diffuseColor *= v_Color.a;
 
     fragColor = _linearFog(diffuseColor, v_FragDistance, u_FogColor, u_FogStart, u_FogEnd);
 }
