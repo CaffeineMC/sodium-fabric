@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
-import me.jellysquid.mods.sodium.client.render.RenderGlobal;
+import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import me.jellysquid.mods.sodium.client.render.immediate.model.ModelCuboid;
-import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
-import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.common.util.MatrixHelper;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
@@ -61,7 +61,7 @@ public class MixinModelPart {
         for (ModelCuboid cuboid : this.sodium$cuboids) {
             cuboid.updateVertices(matrices.getPositionMatrix());
 
-            try (MemoryStack stack = RenderGlobal.VERTEX_DATA.push()) {
+            try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
                 long buffer = stack.nmalloc(4 * 6 * ModelVertex.STRIDE);
                 long ptr = buffer;
 

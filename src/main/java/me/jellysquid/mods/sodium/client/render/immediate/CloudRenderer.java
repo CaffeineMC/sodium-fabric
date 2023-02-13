@@ -2,13 +2,13 @@ package me.jellysquid.mods.sodium.client.render.immediate;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.jellysquid.mods.sodium.client.render.RenderGlobal;
-import me.jellysquid.mods.sodium.client.render.vertex.formats.ColorVertex;
-import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
+import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
-import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
+import net.caffeinemc.mods.sodium.api.util.ColorMixer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
@@ -229,7 +229,7 @@ public class CloudRenderer {
                 float x = offsetX * 12;
                 float z = offsetZ * 12;
 
-                try (MemoryStack stack = RenderGlobal.VERTEX_DATA.push()) {
+                try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
                     final long buffer = stack.nmalloc(6 * 4 * ColorVertex.STRIDE);
 
                     long ptr = buffer;
@@ -316,7 +316,7 @@ public class CloudRenderer {
     }
 
     private static long writeVertex(long buffer, float x, float y, float z, int color) {
-        ColorVertex.write(buffer, x, y, z, color);
+        ColorVertex.put(buffer, x, y, z, color);
         return buffer + ColorVertex.STRIDE;
     }
 

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.immediate.model;
 
-import me.jellysquid.mods.sodium.common.util.MatrixHelper;
+import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.minecraft.util.math.Direction;
 import org.joml.*;
 

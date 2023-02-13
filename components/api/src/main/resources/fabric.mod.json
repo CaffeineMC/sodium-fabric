@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "sodium-api",
+  "version": "${version}",
+  "name": "Sodium API",
+  "description": "The official library for allowing other mods to interact with Sodium.",
+  "authors": [
+    "JellySquid"
+  ],
+  "contact": {
+    "homepage": "https://github.com/CaffeineMC/sodium-fabric",
+    "sources": "https://github.com/CaffeineMC/sodium-fabric",
+    "issues": "https://github.com/CaffeineMC/sodium-fabric/issues"
+  },
+  "license": "LGPL-3.0-only",
+  "environment": "client",
+  "depends" : {
+    "sodium": "${version}"
+  },
+  "custom": {
+    "modmenu": {
+      "badges": [ "library" ],
+      "parent": "sodium"
+    }
+  }
+}

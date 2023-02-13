@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.mixin.features.gui.font;
 
-import me.jellysquid.mods.sodium.client.render.RenderGlobal;
-import me.jellysquid.mods.sodium.client.render.vertex.formats.GlyphVertex;
-import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.common.util.MatrixHelper;
+import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.GlyphVertex;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.minecraft.client.font.GlyphRenderer;
 import net.minecraft.client.render.VertexConsumer;
 import org.joml.Matrix4f;
@@ -67,7 +67,7 @@ public class MixinGlyphRenderer {
 
         var writer = VertexBufferWriter.of(vertexConsumer);
 
-        try (MemoryStack stack = RenderGlobal.VERTEX_DATA.push()) {
+        try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
             long buffer = stack.nmalloc(4 * GlyphVertex.STRIDE);
             long ptr = buffer;
 
@@ -93,7 +93,7 @@ public class MixinGlyphRenderer {
         float y2 = MatrixHelper.transformPositionY(matrix, x, y, z);
         float z2 = MatrixHelper.transformPositionZ(matrix, x, y, z);
 
-        GlyphVertex.write(buffer, x2, y2, z2, color, u, v, light);
+        GlyphVertex.put(buffer, x2, y2, z2, color, u, v, light);
     }
 
 }

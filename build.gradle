@@ -3,8 +3,8 @@ plugins {
     id 'org.ajoberstar.grgit' version '4.1.0'
 }
 
-sourceCompatibility = "17"
-targetCompatibility = "17"
+apply from: "${rootProject.projectDir}/gradle/fabric.gradle"
+apply from: "${rootProject.projectDir}/gradle/java.gradle"
 
 archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}"
 version = "${project.mod_version}+${getVersionMetadata()}"
@@ -20,6 +20,11 @@ configurations {
 
     include.extendsFrom modIncludeImplementation
     modImplementation.extendsFrom modIncludeImplementation
+
+    includeApi
+
+    api.extendsFrom includeApi
+    include.extendsFrom includeApi
 }
 
 dependencies {
@@ -28,34 +33,16 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
+    afterEvaluate {
+        api project(path: ":components:api", configuration: "namedElements")
+        include project(path: ":components:api", configuration: "namedElements")
+    }
+
     // Fabric API
     modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
     modIncludeImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
-}
-
-processResources {
-    inputs.property "version", project.version
-
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
-    }
-}
-
-// ensure that the encoding is set to UTF-8, no matter what the system default is
-// this fixes some edge cases with special characters not displaying correctly
-// see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-java {
-    withSourcesJar()
-}
-
-jar {
-    from "LICENSE.txt"
 }
 
 def getVersionMetadata() {

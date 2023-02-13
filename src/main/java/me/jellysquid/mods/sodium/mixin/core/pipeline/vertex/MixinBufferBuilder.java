@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline.vertex;
 
-import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatRegistry;
-import me.jellysquid.mods.sodium.client.render.vertex.serializers.VertexSerializerCache;
-import me.jellysquid.mods.sodium.common.util.UnsafeUtil;
+import net.caffeinemc.mods.sodium.api.memory.MemoryIntrinsics;
+import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
+import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatRegistry;
+import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializerRegistry;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexFormat;
 import org.lwjgl.system.MemoryStack;
@@ -36,7 +36,8 @@ public abstract class MixinBufferBuilder implements VertexBufferWriter {
 
     @Inject(method = "setFormat", at = @At("RETURN"))
     private void onFormatChanged(VertexFormat format, CallbackInfo ci) {
-        this.format = VertexFormatRegistry.get(format);
+        this.format = VertexFormatRegistry.instance()
+                .get(format);
         this.stride = format.getVertexSizeByte();
     }
 
@@ -54,7 +55,7 @@ public abstract class MixinBufferBuilder implements VertexBufferWriter {
         if (format == this.format) {
             // The layout is the same, so we can just perform a memory copy
             // The stride of a vertex format is always 4 bytes, so this aligned copy is always safe
-            UnsafeUtil.copyMemory(src, dst, length);
+            MemoryIntrinsics.copyMemory(src, dst, length);
         } else {
             // The layout differs, so we need to perform a conversion on the vertex data
             this.copySlow(src, dst, count, format);
@@ -65,7 +66,8 @@ public abstract class MixinBufferBuilder implements VertexBufferWriter {
     }
 
     private void copySlow(long src, long dst, int count, VertexFormatDescription format) {
-        VertexSerializerCache.get(format, this.format)
+        VertexSerializerRegistry.instance()
+                .get(format, this.format)
                 .serialize(src, dst, count);
     }
 }

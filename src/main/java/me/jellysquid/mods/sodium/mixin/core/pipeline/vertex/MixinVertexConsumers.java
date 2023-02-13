@@ -1,9 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline.vertex;
 
 
-import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexTransformers;
+import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.minecraft.client.render.VertexConsumer;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
@@ -23,8 +22,8 @@ public class MixinVertexConsumers {
 
         @Override
         public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
-            VertexTransformers.copyPush(this.first, stack, ptr, count, format);
-            VertexTransformers.copyPush(this.second, stack, ptr, count, format);
+            VertexBufferWriter.copyInto(VertexBufferWriter.of(this.first), stack, ptr, count, format);
+            VertexBufferWriter.copyInto(VertexBufferWriter.of(this.second), stack, ptr, count, format);
         }
     }
 
@@ -37,7 +36,7 @@ public class MixinVertexConsumers {
         @Override
         public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
             for (var delegate : this.delegates) {
-                VertexTransformers.copyPush(delegate, stack, ptr, count, format);
+                VertexBufferWriter.copyInto(VertexBufferWriter.of(delegate), stack, ptr, count, format);
             }
         }
     }

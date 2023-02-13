@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.vertex.serializers.generated;
 
-import me.jellysquid.mods.sodium.client.render.vertex.VertexElementType;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
-import me.jellysquid.mods.sodium.client.render.vertex.serializers.VertexSerializer;
+import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
+import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
+import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializer;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.*;
 
@@ -129,7 +129,7 @@ public class VertexSerializerFactory {
             Label labelIncrementSourcePointer = new Label();
             methodVisitor.visitLabel(labelIncrementSourcePointer);
             methodVisitor.visitVarInsn(Opcodes.LLOAD, localSrcPointer);
-            methodVisitor.visitLdcInsn((long) srcFormat.stride);
+            methodVisitor.visitLdcInsn((long) srcFormat.stride());
             methodVisitor.visitInsn(Opcodes.LADD);
             methodVisitor.visitVarInsn(Opcodes.LSTORE, localSrcPointer);
 
@@ -137,7 +137,7 @@ public class VertexSerializerFactory {
             Label labelIncrementDestinationPointer = new Label();
             methodVisitor.visitLabel(labelIncrementDestinationPointer);
             methodVisitor.visitVarInsn(Opcodes.LLOAD, localDstPointer);
-            methodVisitor.visitLdcInsn((long) dstFormat.stride);
+            methodVisitor.visitLdcInsn((long) dstFormat.stride());
             methodVisitor.visitInsn(Opcodes.LADD);
             methodVisitor.visitVarInsn(Opcodes.LSTORE, localDstPointer);
 
@@ -170,14 +170,14 @@ public class VertexSerializerFactory {
     private static List<MemoryTransfer> createMemoryTransferList(VertexFormatDescription srcVertexFormat, VertexFormatDescription dstVertexFormat) {
         var ops = new ArrayList<MemoryTransfer>();
 
-        for (var elementType : VertexElementType.values()) {
+        for (var elementType : CommonVertexAttribute.values()) {
             // Check if we need to transfer the element into the destination format
-            if (!dstVertexFormat.hasElement(elementType)) {
+            if (!dstVertexFormat.containsElement(elementType)) {
                 continue;
             }
 
             // If the destination format has the element, then the source format needs to have it as well
-            if (!srcVertexFormat.hasElement(elementType)) {
+            if (!srcVertexFormat.containsElement(elementType)) {
                 throw new RuntimeException("Source format is missing element %s as required by destination format".formatted(elementType));
             }
 

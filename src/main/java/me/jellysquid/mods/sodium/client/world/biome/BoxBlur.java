@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
-import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import org.apache.commons.lang3.Validate;
 
 public class BoxBlur {
