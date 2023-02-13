@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
+import me.jellysquid.mods.sodium.client.render.chunk.materials.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.materials.Material;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -11,6 +13,7 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.occlusion.BlockOcclusionCache;
@@ -55,7 +58,10 @@ public class BlockRenderer {
         this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
     }
 
-    public boolean renderModel(BlockRenderContext ctx, ChunkModelBuilder buffers) {
+    public boolean renderModel(BlockRenderContext ctx, ChunkBuildBuffers buffers) {
+        var material = DefaultMaterials.forBlockState(ctx.state());
+        var meshBuilder = buffers.get(material);
+
         LightPipeline lighter = this.lighters.getLighter(this.getLightingMode(ctx.state(), ctx.model()));
         Vec3d renderOffset = ctx.state().getModelOffset(ctx.world(), ctx.pos());
 
@@ -65,7 +71,7 @@ public class BlockRenderer {
             List<BakedQuad> quads = this.getGeometry(ctx, face);
 
             if (!quads.isEmpty() && this.isFaceVisible(ctx, face)) {
-                this.renderQuadList(ctx, lighter, renderOffset, buffers, quads, face);
+                this.renderQuadList(ctx, material, lighter, renderOffset, meshBuilder, quads, face);
                 rendered = true;
             }
         }
@@ -73,7 +79,7 @@ public class BlockRenderer {
         List<BakedQuad> all = this.getGeometry(ctx, null);
 
         if (!all.isEmpty()) {
-            this.renderQuadList(ctx, lighter, renderOffset, buffers, all, null);
+            this.renderQuadList(ctx, material, lighter, renderOffset, meshBuilder, all, null);
             rendered = true;
         }
 
@@ -91,7 +97,7 @@ public class BlockRenderer {
         return this.occlusionCache.shouldDrawSide(ctx.state(), ctx.world(), ctx.pos(), face);
     }
 
-    private void renderQuadList(BlockRenderContext ctx, LightPipeline lighter, Vec3d offset,
+    private void renderQuadList(BlockRenderContext ctx, Material material, LightPipeline lighter, Vec3d offset,
                                 ChunkModelBuilder builder, List<BakedQuad> quads, Direction cullFace) {
         ModelQuadFacing facing = cullFace == null ? ModelQuadFacing.UNASSIGNED : ModelQuadFacing.fromDirection(cullFace);
         ColorSampler<BlockState> colorizer = null;
@@ -119,7 +125,7 @@ public class BlockRenderer {
                 colors = this.colorBlender.getColors(ctx.world(), ctx.pos(), quadView, colorizer, ctx.state());
             }
 
-            this.writeGeometry(ctx, vertexBuffer, indexBuffer, offset, quadView, colors, lightData.br, lightData.lm);
+            this.writeGeometry(ctx, vertexBuffer, indexBuffer, offset, material, quadView, colors, lightData.br, lightData.lm);
 
             Sprite sprite = quad.getSprite();
 
@@ -132,6 +138,7 @@ public class BlockRenderer {
     private void writeGeometry(BlockRenderContext ctx,
                                ChunkMeshBufferBuilder vertexBuffer, IndexBufferBuilder indexBuffer,
                                Vec3d offset,
+                               Material material,
                                ModelQuadView quad,
                                int[] colors,
                                float[] brightness,
@@ -156,7 +163,7 @@ public class BlockRenderer {
             out.light = lightmap[srcIndex];
         }
 
-        indexBuffer.add(vertexBuffer.push(vertices), ModelQuadWinding.CLOCKWISE);
+        indexBuffer.add(vertexBuffer.push(vertices, material), ModelQuadWinding.CLOCKWISE);
     }
 
     private LightMode getLightingMode(BlockState state, BakedModel model) {

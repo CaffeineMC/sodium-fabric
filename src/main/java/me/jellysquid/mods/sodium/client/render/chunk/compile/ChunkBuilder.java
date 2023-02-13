@@ -2,9 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.compile.ChunkBuildContext;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.common.util.collections.QueueDrainingIterator;
 import net.minecraft.client.world.ClientWorld;
@@ -33,8 +32,6 @@ public class ChunkBuilder {
     private int idleThreads;
 
     private World world;
-    private BlockRenderPassManager renderPassManager;
-
     private final int limitThreads;
     private final ChunkVertexType vertexType;
 
@@ -68,7 +65,7 @@ public class ChunkBuilder {
         }
 
         for (int i = 0; i < this.limitThreads; i++) {
-            ChunkBuildContext context = new ChunkBuildContext(this.world, this.vertexType, this.renderPassManager);
+            ChunkBuildContext context = new ChunkBuildContext(this.world, this.vertexType);
             WorkerRunnable worker = new WorkerRunnable(context);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
@@ -181,9 +178,8 @@ public class ChunkBuilder {
      * a world teleportation event), the worker threads will first be stopped and all pending tasks will be discarded
      * before being started again.
      * @param world The world instance
-     * @param renderPassManager The render pass manager used for the world
      */
-    public void init(ClientWorld world, BlockRenderPassManager renderPassManager) {
+    public void init(ClientWorld world) {
         if (world == null) {
             throw new NullPointerException("World is null");
         }
@@ -191,7 +187,6 @@ public class ChunkBuilder {
         this.stopWorkers();
 
         this.world = world;
-        this.renderPassManager = renderPassManager;
 
         this.startWorkers();
     }
@@ -239,7 +234,7 @@ public class ChunkBuilder {
         ChunkBuildContext context = this.localContexts.get();
 
         if (context == null) {
-            this.localContexts.set(context = new ChunkBuildContext(this.world, this.vertexType, this.renderPassManager));
+            this.localContexts.set(context = new ChunkBuildContext(this.world, this.vertexType));
         }
 
         try {

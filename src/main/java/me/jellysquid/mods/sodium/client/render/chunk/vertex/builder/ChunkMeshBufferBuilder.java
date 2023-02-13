@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.vertex.builder;
 
+import me.jellysquid.mods.sodium.client.render.chunk.materials.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
@@ -28,7 +29,7 @@ public class ChunkMeshBufferBuilder {
         this.initialCapacity = initialCapacity;
     }
 
-    public int push(ChunkVertexEncoder.Vertex[] vertices) {
+    public int push(ChunkVertexEncoder.Vertex[] vertices, Material material) {
         var vertexStart = this.count;
         var vertexCount = vertices.length;
 
@@ -39,7 +40,7 @@ public class ChunkMeshBufferBuilder {
         long ptr = MemoryUtil.memAddress(this.buffer, this.count * this.stride);
 
         for (ChunkVertexEncoder.Vertex vertex : vertices) {
-            ptr = this.encoder.write(ptr, vertex, this.chunkId);
+            ptr = this.encoder.write(ptr, material, vertex, this.chunkId);
         }
 
         this.count += vertexCount;

@@ -31,16 +31,20 @@ public class AsyncBufferArena implements GlBufferArena {
     private int capacity;
     private int used;
 
-    public AsyncBufferArena(CommandList commands, int initialCapacity, StagingBuffer stagingBuffer) {
-        this.resizeIncrement = initialCapacity / 16;
+    private final int stride;
+
+    public AsyncBufferArena(CommandList commands, int initialCapacity, int stride, StagingBuffer stagingBuffer) {
         this.capacity = initialCapacity;
+        this.resizeIncrement = initialCapacity / 16;
+
+        this.stride = stride;
 
         this.head = new GlBufferSegment(this, 0, initialCapacity);
         this.head.setFree(true);
 
         this.arenaBuffer = commands.createMutableBuffer();
 
-        commands.allocateStorage(this.arenaBuffer, initialCapacity, BUFFER_USAGE);
+        commands.allocateStorage(this.arenaBuffer, this.capacity * stride, BUFFER_USAGE);
 
         this.stagingBuffer = stagingBuffer;
     }
@@ -52,14 +56,14 @@ public class AsyncBufferArena implements GlBufferArena {
 
         this.checkAssertions();
 
-        int freeBytes = newCapacity - this.used;
+        int tail = newCapacity - this.used;
 
         List<GlBufferSegment> usedSegments = this.getUsedSegments();
-        List<PendingBufferCopyCommand> pendingCopies = this.buildTransferList(usedSegments, freeBytes);
+        List<PendingBufferCopyCommand> pendingCopies = this.buildTransferList(usedSegments, tail);
 
         this.transferSegments(commandList, pendingCopies, newCapacity);
 
-        this.head = new GlBufferSegment(this, 0, freeBytes);
+        this.head = new GlBufferSegment(this, 0, tail);
         this.head.setFree(true);
 
         if (usedSegments.isEmpty()) {
@@ -120,14 +124,13 @@ public class AsyncBufferArena implements GlBufferArena {
         GlMutableBuffer srcBufferObj = this.arenaBuffer;
         GlMutableBuffer dstBufferObj = commandList.createMutableBuffer();
 
-        commandList.allocateStorage(dstBufferObj, capacity, BUFFER_USAGE);
-
+        commandList.allocateStorage(dstBufferObj, capacity * this.stride, BUFFER_USAGE);
 
         for (PendingBufferCopyCommand cmd : list) {
             commandList.copyBufferSubData(srcBufferObj, dstBufferObj,
-                    cmd.readOffset,
-                    cmd.writeOffset,
-                    cmd.length);
+                    cmd.readOffset * this.stride,
+                    cmd.writeOffset * this.stride,
+                    cmd.length * this.stride);
         }
 
         commandList.deleteBuffer(srcBufferObj);
@@ -155,12 +158,12 @@ public class AsyncBufferArena implements GlBufferArena {
 
     @Override
     public int getDeviceUsedMemory() {
-        return this.used;
+        return this.used * this.stride;
     }
 
     @Override
     public int getDeviceAllocatedMemory() {
-        return this.capacity;
+        return this.capacity * this.stride;
     }
 
     private GlBufferSegment alloc(int size) {
@@ -304,7 +307,7 @@ public class AsyncBufferArena implements GlBufferArena {
         ByteBuffer data = upload.getDataBuffer()
                 .getDirectBuffer();
 
-        int elementCount = data.remaining();
+        int elementCount = data.remaining() / this.stride;
 
         GlBufferSegment dst = this.alloc(elementCount);
 
@@ -313,7 +316,7 @@ public class AsyncBufferArena implements GlBufferArena {
         }
 
         // Copy the data into our staging buffer, then copy it into the arena's buffer
-        this.stagingBuffer.enqueueCopy(commandList, data, this.arenaBuffer, dst.getOffset());
+        this.stagingBuffer.enqueueCopy(commandList, data, this.arenaBuffer, dst.getOffset() * this.stride);
 
         upload.setResult(dst);
 

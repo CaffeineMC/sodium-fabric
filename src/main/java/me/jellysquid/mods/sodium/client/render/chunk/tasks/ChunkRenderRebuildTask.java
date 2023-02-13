@@ -1,15 +1,17 @@
 package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.compile.ChunkBuildContext;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.DefaultRenderPasses;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -17,15 +19,12 @@ import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.EnumMap;
 import java.util.Map;
 
 /**
@@ -92,8 +91,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     var rendered = false;
 
                     if (blockState.getRenderType() == BlockRenderType.MODEL) {
-                        RenderLayer layer = RenderLayers.getBlockLayer(blockState);
-
                         BakedModel model = cache.getBlockModels()
                                 .getModel(blockState);
 
@@ -101,7 +98,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                         context.update(blockPos, modelOffset, blockState, model, seed);
 
-                        if (cache.getBlockRenderer().renderModel(context, buffers.get(layer))) {
+                        if (cache.getBlockRenderer().renderModel(context, buffers)) {
                             rendered = true;
                         }
                     }
@@ -109,9 +106,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     FluidState fluidState = blockState.getFluidState();
 
                     if (!fluidState.isEmpty()) {
-                        RenderLayer layer = RenderLayers.getFluidLayer(fluidState);
-
-                        if (cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers.get(layer))) {
+                        if (cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers)) {
                             rendered = true;
                         }
                     }
@@ -139,13 +134,14 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        Map<BlockRenderPass, ChunkMeshData> meshes = new EnumMap<>(BlockRenderPass.class);
+        Map<RenderPass, ChunkMeshData> meshes = new Reference2ReferenceOpenHashMap<>();
 
-        for (BlockRenderPass pass : BlockRenderPass.VALUES) {
+        for (RenderPass pass : DefaultRenderPasses.ALL) {
             ChunkMeshData mesh = buffers.createMesh(pass);
 
             if (mesh != null) {
                 meshes.put(pass, mesh);
+                renderData.addRenderPass(pass);
             }
         }
 

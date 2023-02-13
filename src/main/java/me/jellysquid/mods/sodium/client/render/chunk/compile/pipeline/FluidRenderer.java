@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
+import me.jellysquid.mods.sodium.client.render.chunk.materials.DefaultMaterials;
+import me.jellysquid.mods.sodium.client.render.chunk.materials.Material;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -12,6 +14,7 @@ import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
@@ -101,7 +104,10 @@ public class FluidRenderer {
         return true;
     }
 
-    public boolean render(BlockRenderView world, FluidState fluidState, BlockPos pos, BlockPos offset, ChunkModelBuilder buffers) {
+    public boolean render(BlockRenderView world, FluidState fluidState, BlockPos pos, BlockPos offset, ChunkBuildBuffers buffers) {
+        var material = DefaultMaterials.forFluidState(fluidState);
+        var meshBuilder = buffers.get(material);
+
         int posX = pos.getX();
         int posY = pos.getY();
         int posZ = pos.getZ();
@@ -225,10 +231,10 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
 
             this.updateQuad(quad, world, pos, lighter, Direction.UP, 1.0F, colorizer, fluidState);
-            this.writeQuad(buffers, offset, quad, facing, ModelQuadWinding.CLOCKWISE);
+            this.writeQuad(meshBuilder, material, offset, quad, facing, ModelQuadWinding.CLOCKWISE);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.writeQuad(buffers, offset, quad,
+                this.writeQuad(meshBuilder, material, offset, quad,
                         ModelQuadFacing.DOWN, ModelQuadWinding.COUNTERCLOCKWISE);
 
             }
@@ -251,7 +257,7 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.updateQuad(quad, world, pos, lighter, Direction.DOWN, 1.0F, colorizer, fluidState);
-            this.writeQuad(buffers, offset, quad, ModelQuadFacing.DOWN, ModelQuadWinding.CLOCKWISE);
+            this.writeQuad(meshBuilder, material, offset, quad, ModelQuadFacing.DOWN, ModelQuadWinding.CLOCKWISE);
 
             rendered = true;
         }
@@ -356,10 +362,10 @@ public class FluidRenderer {
                 ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
 
                 this.updateQuad(quad, world, pos, lighter, dir, br, colorizer, fluidState);
-                this.writeQuad(buffers, offset, quad, facing, ModelQuadWinding.CLOCKWISE);
+                this.writeQuad(meshBuilder, material, offset, quad, facing, ModelQuadWinding.CLOCKWISE);
 
                 if (!isOverlay) {
-                    this.writeQuad(buffers, offset, quad, facing.getOpposite(), ModelQuadWinding.COUNTERCLOCKWISE);
+                    this.writeQuad(meshBuilder, material, offset, quad, facing.getOpposite(), ModelQuadWinding.COUNTERCLOCKWISE);
                 }
 
                 rendered = true;
@@ -388,7 +394,7 @@ public class FluidRenderer {
         }
     }
 
-    private void writeQuad(ChunkModelBuilder builder, BlockPos offset, ModelQuadView quad,
+    private void writeQuad(ChunkModelBuilder builder, Material material, BlockPos offset, ModelQuadView quad,
                            ModelQuadFacing facing, ModelQuadWinding winding) {
         var vertexBuffer = builder.getVertexBuffer();
         var vertices = this.vertices;
@@ -411,7 +417,7 @@ public class FluidRenderer {
         }
 
         builder.getIndexBuffer(facing)
-                .add(vertexBuffer.push(vertices), winding);
+                .add(vertexBuffer.push(vertices, material), winding);
     }
 
     private static void setVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {

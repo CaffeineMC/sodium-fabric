@@ -18,8 +18,6 @@ public class ChunkShaderInterface {
     private final GlUniformMatrix4f uniformProjectionMatrix;
     private final GlUniformFloat3v uniformRegionOffset;
 
-    private final GlUniformBlock uniformBlockDrawParameters;
-
     // The fog shader component used by this program in order to setup the appropriate GL state
     private final ChunkShaderFogComponent fogShader;
 
@@ -31,19 +29,16 @@ public class ChunkShaderInterface {
         this.uniformBlockTex = context.bindUniform("u_BlockTex", GlUniformInt::new);
         this.uniformLightTex = context.bindUniform("u_LightTex", GlUniformInt::new);
 
-        this.uniformBlockDrawParameters = context.bindUniformBlock("ubo_DrawParameters", 0);
-
         this.fogShader = options.fog().getFactory().apply(context);
     }
 
-    public void setup(ChunkVertexType vertexType) {
+    public void setup() {
         RenderSystem.activeTexture(GL32C.GL_TEXTURE0);
         RenderSystem.bindTexture(RenderSystem.getShaderTexture(0));
+        this.uniformBlockTex.setInt(0);
 
         RenderSystem.activeTexture(GL32C.GL_TEXTURE2);
         RenderSystem.bindTexture(RenderSystem.getShaderTexture(2));
-
-        this.uniformBlockTex.setInt(0);
         this.uniformLightTex.setInt(2);
 
         this.fogShader.setup();
@@ -55,10 +50,6 @@ public class ChunkShaderInterface {
 
     public void setModelViewMatrix(Matrix4f matrix) {
         this.uniformModelViewMatrix.set(matrix);
-    }
-
-    public void setDrawUniforms(GlMutableBuffer buffer) {
-        this.uniformBlockDrawParameters.bindBuffer(buffer);
     }
 
     public void setRegionOffset(float x, float y, float z) {

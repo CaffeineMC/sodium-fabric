@@ -11,5 +11,4 @@ public interface ChunkModelBuilder {
     IndexBufferBuilder getIndexBuffer(ModelQuadFacing facing);
 
     void addSprite(Sprite sprite);
-
 }

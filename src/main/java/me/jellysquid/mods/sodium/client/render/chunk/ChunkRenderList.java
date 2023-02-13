@@ -1,5 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceSortedMap;
 import it.unimi.dsi.fastutil.objects.*;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 
@@ -9,19 +13,19 @@ import java.util.List;
 import java.util.Map;
 
 public class ChunkRenderList {
-    private final Reference2ObjectLinkedOpenHashMap<RenderRegion, List<RenderSection>> entries = new Reference2ObjectLinkedOpenHashMap<>();
+    private final Long2ReferenceLinkedOpenHashMap<List<RenderSection>> entries = new Long2ReferenceLinkedOpenHashMap<>();
 
-    public Iterable<Map.Entry<RenderRegion, List<RenderSection>>> sorted(boolean reverse) {
+    public Iterable<Long2ReferenceMap.Entry<List<RenderSection>>> sorted(boolean reverse) {
         if (this.entries.isEmpty()) {
             return Collections.emptyList();
         }
 
-        Reference2ObjectSortedMap.FastSortedEntrySet<RenderRegion, List<RenderSection>> entries =
-                this.entries.reference2ObjectEntrySet();
+        Long2ReferenceSortedMap.FastSortedEntrySet<List<RenderSection>> entries =
+                this.entries.long2ReferenceEntrySet();
 
         if (reverse) {
             return () -> new Iterator<>() {
-                final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, List<RenderSection>>> iterator =
+                final ObjectBidirectionalIterator<Long2ReferenceMap.Entry<List<RenderSection>>> iterator =
                         entries.fastIterator(entries.last());
 
                 @Override
@@ -30,13 +34,13 @@ public class ChunkRenderList {
                 }
 
                 @Override
-                public Map.Entry<RenderRegion, List<RenderSection>> next() {
+                public Long2ReferenceMap.Entry<List<RenderSection>> next() {
                     return this.iterator.previous();
                 }
             };
         } else {
             return () -> new Iterator<>() {
-                final ObjectBidirectionalIterator<Reference2ObjectMap.Entry<RenderRegion, List<RenderSection>>> iterator =
+                final ObjectBidirectionalIterator<Long2ReferenceMap.Entry<List<RenderSection>>> iterator =
                         entries.fastIterator();
 
                 @Override
@@ -45,7 +49,7 @@ public class ChunkRenderList {
                 }
 
                 @Override
-                public Map.Entry<RenderRegion, List<RenderSection>> next() {
+                public Long2ReferenceMap.Entry<List<RenderSection>> next() {
                     return this.iterator.next();
                 }
             };
@@ -57,9 +61,12 @@ public class ChunkRenderList {
     }
 
     public void add(RenderSection render) {
-        RenderRegion region = render.getRegion();
+        List<RenderSection> sections = this.entries.get(render.getRegionId());
 
-        List<RenderSection> sections = this.entries.computeIfAbsent(region, (key) -> new ObjectArrayList<>());
+        if (sections == null) {
+            this.entries.put(render.getRegionId(), sections = new ObjectArrayList<>(RenderRegion.REGION_SIZE));
+        }
+
         sections.add(render);
     }
 

@@ -34,7 +34,7 @@ public class ColorARGB implements ColorU8 {
      * @return The red color component in the range of 0..255
      */
     public static int unpackAlpha(int color) {
-        return color >> RED_COMPONENT_OFFSET & COMPONENT_MASK;
+        return color >> ALPHA_COMPONENT_OFFSET & COMPONENT_MASK;
     }
 
     /**
