@@ -1,15 +1,15 @@
-package me.jellysquid.mods.sodium.client.render.chunk.passes;
+package me.jellysquid.mods.sodium.client.render.chunk.terrain;
 
 import net.minecraft.client.render.RenderLayer;
 
-public class RenderPass {
+public class TerrainRenderPass {
     @Deprecated(forRemoval = true)
     private final RenderLayer layer;
 
     private final boolean useReverseOrder;
     private final boolean fragmentDiscard;
 
-    public RenderPass(RenderLayer layer, boolean useReverseOrder, boolean allowFragmentDiscard) {
+    public TerrainRenderPass(RenderLayer layer, boolean useReverseOrder, boolean allowFragmentDiscard) {
         this.layer = layer;
 
         this.useReverseOrder = useReverseOrder;

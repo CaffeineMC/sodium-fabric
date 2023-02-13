@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.materials;
+package me.jellysquid.mods.sodium.client.render.chunk.terrain.material.parameters;
 
 public class MaterialParameters {
     public static final int OFFSET_USE_MIP = 0;

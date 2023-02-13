@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
-import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
@@ -15,17 +15,17 @@ import java.util.Map;
 public class ChunkBuildResult {
     public final RenderSection render;
     public final ChunkRenderData data;
-    public final Map<RenderPass, ChunkMeshData> meshes;
+    public final Map<TerrainRenderPass, ChunkMeshData> meshes;
     public final int buildTime;
 
-    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<RenderPass, ChunkMeshData> meshes, int buildTime) {
+    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<TerrainRenderPass, ChunkMeshData> meshes, int buildTime) {
         this.render = render;
         this.data = data;
         this.meshes = meshes;
         this.buildTime = buildTime;
     }
 
-    public ChunkMeshData getMesh(RenderPass pass) {
+    public ChunkMeshData getMesh(TerrainRenderPass pass) {
         return this.meshes.get(pass);
     }
 

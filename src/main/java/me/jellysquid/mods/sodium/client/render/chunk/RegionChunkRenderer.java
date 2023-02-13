@@ -13,7 +13,7 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
 import me.jellysquid.mods.sodium.client.gl.util.MultiDrawBatch;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
@@ -50,10 +50,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     @Override
     public void render(ChunkRenderMatrices matrices, CommandList commandList,
-                       ChunkRenderList list, RenderPass pass,
-                       ChunkCameraContext camera, RenderRegionManager regions) {
-        pass.startDrawing();
-
+                       RenderRegionManager regions, ChunkRenderList list, TerrainRenderPass pass,
+                       ChunkCameraContext camera) {
         super.begin(pass);
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();
@@ -74,12 +72,10 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             this.executeDrawBatch(commandList, this.createTessellationForRegion(commandList, region, pass));
         }
 
-        super.end();
-
-        pass.endDrawing();
+        super.end(pass);
     }
 
-    private boolean buildDrawBatches(RenderRegion.RenderRegionStorage storage, List<RenderSection> sections, RenderPass pass, ChunkCameraContext camera) {
+    private boolean buildDrawBatches(RenderRegion.RenderRegionStorage storage, List<RenderSection> sections, TerrainRenderPass pass, ChunkCameraContext camera) {
         this.batch.begin();
 
         for (RenderSection render : sortedChunks(sections, pass.isReverseOrder())) {
@@ -135,7 +131,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         return !this.batch.isEmpty();
     }
 
-    private GlTessellation createTessellationForRegion(CommandList commandList, RenderRegion region, RenderPass pass) {
+    private GlTessellation createTessellationForRegion(CommandList commandList, RenderRegion region, TerrainRenderPass pass) {
         var storage = region.getStorage(pass);
         var tessellation = storage.getTessellation();
 
