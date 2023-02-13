@@ -29,7 +29,7 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
 
     @Override
     public void addSprite(Sprite sprite) {
-//        this.renderData.addSprite(sprite);
+        this.renderData.addSprite(sprite);
     }
 
     public IndexBufferBuilder[] getIndexBuffers() {
