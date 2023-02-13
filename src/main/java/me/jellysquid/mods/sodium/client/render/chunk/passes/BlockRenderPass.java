@@ -6,7 +6,7 @@ import net.minecraft.client.render.RenderLayer;
 public enum BlockRenderPass {
     SOLID(RenderLayer.getSolid(), false, 0.0f),
     CUTOUT(RenderLayer.getCutout(), false, 0.1f),
-    CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false, 0.5f),
+    CUTOUT_MIPPED(RenderLayer.getCutoutMipped(), false, 0.1f),
     TRANSLUCENT(RenderLayer.getTranslucent(), true, 0.0f),
     TRIPWIRE(RenderLayer.getTripwire(), true, 0.1f);
 
