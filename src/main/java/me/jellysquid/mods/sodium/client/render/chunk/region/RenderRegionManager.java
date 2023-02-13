@@ -10,12 +10,12 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.DefaultRenderPasses;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 
 import java.util.*;
 
@@ -26,14 +26,6 @@ public class RenderRegionManager {
 
     public RenderRegionManager(CommandList commandList) {
         this.stagingBuffer = createStagingBuffer(commandList);
-    }
-
-    public void updateVisibility(Frustum frustum) {
-        for (RenderRegion region : this.regions.values()) {
-            if (!region.isEmpty()) {
-                region.updateVisibility(frustum);
-            }
-        }
     }
 
     public void cleanup() {
@@ -47,7 +39,7 @@ public class RenderRegionManager {
                 RenderRegion region = it.next();
 
                 if (region.isEmpty()) {
-                    region.deleteResources(commandList);
+                    region.delete(commandList);
 
                     it.remove();
                 }
@@ -56,7 +48,7 @@ public class RenderRegionManager {
     }
 
     public void upload(CommandList commandList, Iterator<ChunkBuildResult> queue) {
-        for (Map.Entry<RenderRegion, List<ChunkBuildResult>> entry : this.setupUploadBatches(queue).entrySet()) {
+        for (Map.Entry<RenderRegion, List<ChunkBuildResult>> entry : this.setupUploadBatches(commandList, queue).entrySet()) {
             RenderRegion region = entry.getKey();
             List<ChunkBuildResult> uploadQueue = entry.getValue();
 
@@ -74,13 +66,17 @@ public class RenderRegionManager {
         List<PendingSectionUpload> sectionUploads = new ArrayList<>();
 
         for (ChunkBuildResult result : results) {
-            for (BlockRenderPass pass : BlockRenderPass.VALUES) {
-                ChunkGraphicsState graphics = result.render.setGraphicsState(pass, null);
+            for (RenderPass pass : DefaultRenderPasses.ALL) {
+                var storage = region.getStorage(pass);
 
-                // De-allocate all storage for data we're about to replace
-                // This will allow it to be cheaply re-allocated just below
-                if (graphics != null) {
-                    graphics.delete();
+                if (storage != null) {
+                    var graphics = storage.setState(result.render, null);
+
+                    // De-allocate all storage for data we're about to replace
+                    // This will allow it to be cheaply re-allocated just below
+                    if (graphics != null) {
+                        graphics.delete();
+                    }
                 }
 
                 ChunkMeshData meshData = result.getMesh(pass);
@@ -100,24 +96,23 @@ public class RenderRegionManager {
             return;
         }
 
-        RenderRegion.RenderRegionArenas arenas = region.getOrCreateArenas(commandList);
-
-        boolean bufferChanged = arenas.vertexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.vertexUpload));
-        bufferChanged |= arenas.indexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.indicesUpload));
+        boolean bufferChanged = region.vertexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.vertexUpload));
+        bufferChanged |= region.indexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.indicesUpload));
 
         // If any of the buffers changed, the tessellation will need to be updated
         // Once invalidated the tessellation will be re-created on the next attempted use
         if (bufferChanged) {
-            arenas.deleteTessellations(commandList);
+            region.deleteTessellations(commandList);
         }
 
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
-            upload.section.setGraphicsState(upload.pass, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
+            region.createStorage(upload.pass)
+                    .setState(upload.section, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
         }
     }
 
-    private Map<RenderRegion, List<ChunkBuildResult>> setupUploadBatches(Iterator<ChunkBuildResult> renders) {
+    private Map<RenderRegion, List<ChunkBuildResult>> setupUploadBatches(CommandList commandList, Iterator<ChunkBuildResult> renders) {
         Map<RenderRegion, List<ChunkBuildResult>> map = new Reference2ObjectLinkedOpenHashMap<>();
 
         while (renders.hasNext()) {
@@ -130,14 +125,7 @@ public class RenderRegionManager {
                 continue;
             }
 
-            RenderRegion region = this.regions.get(RenderRegion.getRegionKeyForChunk(render.getChunkX(), render.getChunkY(), render.getChunkZ()));
-
-            if (region == null) {
-                // Discard the result if the region is no longer loaded
-                result.delete();
-
-                continue;
-            }
+            RenderRegion region = this.prepareRegionForChunk(commandList, render.getChunkX(), render.getChunkY(), render.getChunkZ());
 
             List<ChunkBuildResult> uploadQueue = map.computeIfAbsent(region, k -> new ArrayList<>());
             uploadQueue.add(result);
@@ -146,12 +134,12 @@ public class RenderRegionManager {
         return map;
     }
 
-    public RenderRegion createRegionForChunk(int x, int y, int z) {
+    public RenderRegion prepareRegionForChunk(CommandList commandList, int x, int y, int z) {
         long key = RenderRegion.getRegionKeyForChunk(x, y, z);
         RenderRegion region = this.regions.get(key);
 
         if (region == null) {
-            this.regions.put(key, region = RenderRegion.createRegionForChunk(this, x, y, z));
+            this.regions.put(key, region = RenderRegion.createRegionForChunk(commandList, this.stagingBuffer, x, y, z));
         }
 
         return region;
@@ -159,7 +147,7 @@ public class RenderRegionManager {
 
     public void delete(CommandList commandList) {
         for (RenderRegion region : this.regions.values()) {
-            region.deleteResources(commandList);
+            region.delete(commandList);
         }
 
         this.regions.clear();
@@ -174,10 +162,6 @@ public class RenderRegionManager {
         return this.stagingBuffer;
     }
 
-    protected RenderRegion.RenderRegionArenas createRegionArenas(CommandList commandList) {
-        return new RenderRegion.RenderRegionArenas(commandList, this.stagingBuffer);
-    }
-
     private static StagingBuffer createStagingBuffer(CommandList commandList) {
         if (SodiumClientMod.options().advanced.useAdvancedStagingBuffers && MappedStagingBuffer.isSupported(RenderDevice.INSTANCE)) {
             return new MappedStagingBuffer(commandList);
@@ -186,7 +170,11 @@ public class RenderRegionManager {
         return new FallbackStagingBuffer(commandList);
     }
 
-    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, BlockRenderPass pass,
+    public RenderRegion getRegion(long longKey) {
+        return this.regions.get(longKey);
+    }
+
+    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, RenderPass pass,
                                         PendingUpload vertexUpload, PendingUpload indicesUpload) {
     }
 }

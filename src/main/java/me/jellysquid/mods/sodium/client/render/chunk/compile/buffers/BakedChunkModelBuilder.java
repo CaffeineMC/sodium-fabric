@@ -10,14 +10,11 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
     private final ChunkMeshBufferBuilder vertexBuffer;
     private final IndexBufferBuilder[] indexBuffers;
 
-    private final ChunkRenderData.Builder renderData;
+    private ChunkRenderData.Builder renderData;
 
-    public BakedChunkModelBuilder(ChunkMeshBufferBuilder vertexBuffer, IndexBufferBuilder[] indexBuffers,
-                                  ChunkRenderData.Builder renderData) {
+    public BakedChunkModelBuilder(ChunkMeshBufferBuilder vertexBuffer, IndexBufferBuilder[] indexBuffers) {
         this.indexBuffers = indexBuffers;
         this.vertexBuffer = vertexBuffer;
-
-        this.renderData = renderData;
     }
 
     @Override
@@ -32,7 +29,24 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
 
     @Override
     public void addSprite(Sprite sprite) {
-        this.renderData.addSprite(sprite);
+//        this.renderData.addSprite(sprite);
     }
 
+    public IndexBufferBuilder[] getIndexBuffers() {
+        return this.indexBuffers;
+    }
+
+    public void destroy() {
+        this.vertexBuffer.destroy();
+    }
+
+    public void begin(ChunkRenderData.Builder renderData, int chunkId) {
+        this.renderData = renderData;
+
+        this.vertexBuffer.start(chunkId);
+
+        for (var indexBuffer : this.indexBuffers) {
+            indexBuffer.start();
+        }
+    }
 }

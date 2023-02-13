@@ -2,10 +2,9 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -15,8 +14,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -27,14 +24,10 @@ public class RenderSection {
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
-    private final Map<BlockRenderPass, ChunkGraphicsState> graphicsStates;
-    private final RenderRegion region;
     private final ChunkGraphInfo graphInfo;
     private final int chunkId;
+    private final long regionId;
 
-    private final float regionOffsetX;
-    private final float regionOffsetY;
-    private final float regionOffsetZ;
 
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
@@ -48,9 +41,8 @@ public class RenderSection {
 
     private int lastAcceptedBuildTime = -1;
 
-    public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, RenderRegion region) {
+    public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
         this.worldRenderer = worldRenderer;
-        this.region = region;
 
         this.chunkX = chunkX;
         this.chunkY = chunkY;
@@ -58,17 +50,12 @@ public class RenderSection {
 
         this.graphInfo = new ChunkGraphInfo(this);
 
-        this.graphicsStates = new EnumMap<>(BlockRenderPass.class);
-
         int rX = this.getChunkX() & (RenderRegion.REGION_WIDTH - 1);
         int rY = this.getChunkY() & (RenderRegion.REGION_HEIGHT - 1);
         int rZ = this.getChunkZ() & (RenderRegion.REGION_LENGTH - 1);
 
-        this.regionOffsetX = rX * 16.0f;
-        this.regionOffsetY = rY * 16.0f;
-        this.regionOffsetZ = rZ * 16.0f;
-
         this.chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
+        this.regionId = RenderRegion.getRegionKeyForChunk(this.chunkX, this.chunkY, this.chunkZ);
     }
 
 
@@ -103,17 +90,8 @@ public class RenderSection {
     public void delete() {
         this.cancelRebuildTask();
         this.setData(ChunkRenderData.ABSENT);
-        this.deleteGraphicsState();
 
         this.disposed = true;
-    }
-
-    private void deleteGraphicsState() {
-        for (ChunkGraphicsState state : this.graphicsStates.values()) {
-            state.delete();
-        }
-
-        this.graphicsStates.clear();
     }
 
     public void setData(ChunkRenderData info) {
@@ -131,7 +109,7 @@ public class RenderSection {
      * @return True if the chunk render contains no data, otherwise false
      */
     public boolean isEmpty() {
-        return this.graphicsStates.isEmpty() && this.data.isEmpty();
+        return this.data.isEmpty();
     }
 
     /**
@@ -212,14 +190,6 @@ public class RenderSection {
         return this.getOriginZ() + 8.0D;
     }
 
-    public ChunkGraphicsState setGraphicsState(BlockRenderPass pass, ChunkGraphicsState state) {
-        if (state == null) {
-            return this.graphicsStates.remove(pass);
-        } else {
-            return this.graphicsStates.put(pass, state);
-        }
-    }
-
     /**
      * @return The squared distance from the center of this chunk in the world to the given position
      */
@@ -246,16 +216,8 @@ public class RenderSection {
         return this.data.getBounds();
     }
 
-    public ChunkGraphicsState getGraphicsState(BlockRenderPass pass) {
-        return this.graphicsStates.get(pass);
-    }
-
     public boolean isTickable() {
         return this.tickable;
-    }
-
-    public RenderRegion getRegion() {
-        return this.region;
     }
 
     public boolean isDisposed() {
@@ -313,15 +275,7 @@ public class RenderSection {
         return this.chunkId;
     }
 
-    public float getRegionOffsetX() {
-        return this.regionOffsetX;
-    }
-
-    public float getRegionOffsetY() {
-        return this.regionOffsetY;
-    }
-
-    public float getRegionOffsetZ() {
-        return this.regionOffsetZ;
+    public long getRegionId() {
+        return this.regionId;
     }
 }

@@ -13,6 +13,9 @@ vec4 _vert_color;
 // The index of the draw command which this vertex belongs to
 uint _draw_id;
 
+// The material bits for the primitive
+uint _material_params;
+
 #ifdef USE_VERTEX_COMPRESSION
 in vec4 a_PosId;
 in vec4 a_Color;
@@ -33,12 +36,12 @@ void _vert_init() {
     _vert_tex_light_coord = a_LightCoord;
     _vert_color = a_Color;
 
-    _draw_id = uint(a_PosId.w);
+    uint params = uint(a_PosId.w);
+
+    _draw_id = (params >> 8u) & 0xFFu;
+    _material_params = (params >> 0u) & 0xFFu;
 }
 
 #else
 #error "Vertex compression must be enabled"
 #endif
-
-// The translation vector of the current draw command
-#define _draw_translation Chunks[_draw_id].offset.xyz

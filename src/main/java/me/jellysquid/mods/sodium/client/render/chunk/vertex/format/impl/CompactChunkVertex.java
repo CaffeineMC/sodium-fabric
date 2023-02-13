@@ -9,7 +9,7 @@ import org.lwjgl.system.MemoryUtil;
 
 public class CompactChunkVertex implements ChunkVertexType {
     public static final GlVertexFormat<ChunkMeshAttribute> VERTEX_FORMAT = GlVertexFormat.builder(ChunkMeshAttribute.class, 20)
-            .addElement(ChunkMeshAttribute.POSITION_ID, 0, GlVertexAttributeFormat.UNSIGNED_SHORT, 4, false, false)
+            .addElement(ChunkMeshAttribute.POSITION_MATERIAL_MESH, 0, GlVertexAttributeFormat.UNSIGNED_SHORT, 4, false, false)
             .addElement(ChunkMeshAttribute.COLOR_SHADE, 8, GlVertexAttributeFormat.UNSIGNED_BYTE, 4, true, false)
             .addElement(ChunkMeshAttribute.BLOCK_TEXTURE, 12, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false, false)
             .addElement(ChunkMeshAttribute.LIGHT_TEXTURE, 16, GlVertexAttributeFormat.UNSIGNED_SHORT, 2, false, true)
@@ -55,13 +55,17 @@ public class CompactChunkVertex implements ChunkVertexType {
     public GlVertexFormat<ChunkMeshAttribute> getVertexFormat() {
         return VERTEX_FORMAT;
     }
+
     @Override
     public ChunkVertexEncoder getEncoder() {
-        return (ptr, vertex, chunk) -> {
+        return (ptr, material, vertex, chunk) -> {
             MemoryUtil.memPutShort(ptr + 0, encodePosition(vertex.x));
             MemoryUtil.memPutShort(ptr + 2, encodePosition(vertex.y));
             MemoryUtil.memPutShort(ptr + 4, encodePosition(vertex.z));
-            MemoryUtil.memPutShort(ptr + 6, (short) chunk);
+
+            MemoryUtil.memPutShort(ptr + 6, material.bits());
+
+            MemoryUtil.memPutShort(ptr + 7, (byte) chunk);
 
             MemoryUtil.memPutInt(ptr + 8, vertex.color);
 

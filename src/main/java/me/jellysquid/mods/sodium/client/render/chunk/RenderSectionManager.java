@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
@@ -17,9 +18,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
@@ -101,14 +99,14 @@ public class RenderSectionManager {
 
     private final ChunkTracker tracker;
 
-    public RenderSectionManager(SodiumWorldRenderer worldRenderer, BlockRenderPassManager renderPassManager, ClientWorld world, int renderDistance, CommandList commandList) {
+    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
         this.worldRenderer = worldRenderer;
         this.world = world;
 
         this.builder = new ChunkBuilder(ChunkMeshFormats.COMPACT);
-        this.builder.init(world, renderPassManager);
+        this.builder.init(world);
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
@@ -130,8 +128,6 @@ public class RenderSectionManager {
 
     public void update(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.resetLists();
-
-        this.regions.updateVisibility(frustum);
 
         this.setup(camera);
         this.iterateChunks(camera, frustum, frame, spectator);
@@ -244,10 +240,7 @@ public class RenderSectionManager {
     }
 
     private boolean loadSection(int x, int y, int z) {
-        RenderRegion region = this.regions.createRegionForChunk(x, y, z);
-
-        RenderSection render = new RenderSection(this.worldRenderer, x, y, z, region);
-        region.addChunk(render);
+        RenderSection render = new RenderSection(this.worldRenderer, x, y, z);
 
         this.sections.put(ChunkSectionPos.asLong(x, y, z), render);
 
@@ -276,17 +269,14 @@ public class RenderSectionManager {
 
         this.disconnectNeighborNodes(chunk);
 
-        RenderRegion region = chunk.getRegion();
-        region.removeChunk(chunk);
-
         return true;
     }
 
-    public void renderLayer(ChunkRenderMatrices matrices, BlockRenderPass pass, double x, double y, double z) {
+    public void renderLayer(ChunkRenderMatrices matrices, RenderPass pass, double x, double y, double z) {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRenderer.render(matrices, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRenderer.render(matrices, commandList, this.chunkRenderList, pass, new ChunkCameraContext(x, y, z), this.regions);
 
         commandList.flush();
     }
@@ -452,13 +442,7 @@ public class RenderSectionManager {
     }
 
     public int getTotalSections() {
-        int sum = 0;
-
-        for (RenderRegion region : this.regions.getLoadedRegions()) {
-            sum += region.getChunkCount();
-        }
-
-        return sum;
+        return this.sections.size();
     }
 
     public int getVisibleChunkCount() {
@@ -578,11 +562,7 @@ public class RenderSectionManager {
             return;
         }
 
-        Frustum.Visibility parentVisibility = parent.getRegion().getVisibility();
-
-        if (parentVisibility == Frustum.Visibility.OUTSIDE) {
-            return;
-        } else if (parentVisibility == Frustum.Visibility.INTERSECT && info.isCulledByFrustum(this.frustum)) {
+        if (info.isCulledByFrustum(this.frustum)) {
             return;
         }
 
@@ -636,21 +616,14 @@ public class RenderSectionManager {
     public Collection<String> getDebugStrings() {
         List<String> list = new ArrayList<>();
 
-        Iterator<RenderRegion.RenderRegionArenas> it = this.regions.getLoadedRegions()
-                .stream()
-                .map(RenderRegion::getArenas)
-                .filter(Objects::nonNull)
-                .iterator();
-
         int count = 0;
 
         long deviceUsed = 0;
         long deviceAllocated = 0;
 
-        while (it.hasNext()) {
-            RenderRegion.RenderRegionArenas arena = it.next();
-            deviceUsed += arena.getDeviceUsedMemory();
-            deviceAllocated += arena.getDeviceAllocatedMemory();
+        for (var region : this.regions.getLoadedRegions()) {
+            deviceUsed += region.getDeviceUsedMemory();
+            deviceAllocated += region.getDeviceAllocatedMemory();
 
             count++;
         }

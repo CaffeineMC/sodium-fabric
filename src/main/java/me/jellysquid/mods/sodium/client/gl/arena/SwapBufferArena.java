@@ -21,10 +21,13 @@ public class SwapBufferArena implements GlBufferArena {
     private final GlMutableBuffer stagingBuffer;
 
     private int used;
+    private int stride;
 
-    public SwapBufferArena(CommandList commandList) {
+    public SwapBufferArena(CommandList commandList, int stride) {
         this.deviceBuffer = commandList.createMutableBuffer();
         this.stagingBuffer = commandList.createMutableBuffer();
+
+        this.stride = stride;
     }
 
     @Override
@@ -108,7 +111,7 @@ public class SwapBufferArena implements GlBufferArena {
 
             MemoryUtil.memCopy(
                     MemoryUtil.memAddress(payload),
-                    MemoryUtil.memAddress(buffer, seg.getOffset()),
+                    MemoryUtil.memAddress(buffer, seg.getOffset() * this.stride),
                     seg.getLength()
             );
 

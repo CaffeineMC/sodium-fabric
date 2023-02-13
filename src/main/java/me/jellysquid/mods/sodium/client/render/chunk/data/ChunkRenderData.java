@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteExtended;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
@@ -19,6 +20,7 @@ public class ChunkRenderData {
             .build();
     public static final ChunkRenderData EMPTY = createEmptyData();
 
+    private List<RenderPass> renderPasses;
     private List<BlockEntity> globalBlockEntities;
     private List<BlockEntity> blockEntities;
 
@@ -64,12 +66,17 @@ public class ChunkRenderData {
     }
 
     public static class Builder {
+        private final List<RenderPass> renderPasses = new ArrayList<>();
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
+
+        public void addRenderPass(RenderPass pass) {
+            this.renderPasses.add(pass);
+        }
 
         public void setBounds(ChunkRenderBounds bounds) {
             this.bounds = bounds;
@@ -106,7 +113,7 @@ public class ChunkRenderData {
             data.occlusionData = this.occlusionData;
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
-            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty();
+            data.isEmpty = this.globalBlockEntities.isEmpty() && this.blockEntities.isEmpty() && this.renderPasses.isEmpty();
 
             return data;
         }

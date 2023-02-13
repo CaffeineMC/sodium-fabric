@@ -1,16 +1,16 @@
 package me.jellysquid.mods.sodium.client.render.chunk.shader;
 
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderConstants;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
 
-public record ChunkShaderOptions(ChunkFogMode fog, BlockRenderPass pass, ChunkVertexType vertexType) {
+public record ChunkShaderOptions(ChunkFogMode fog, RenderPass pass, ChunkVertexType vertexType) {
     public ShaderConstants constants() {
         ShaderConstants.Builder constants = ShaderConstants.builder();
         constants.addAll(this.fog.getDefines());
 
-        if (this.pass.getAlphaCutoff() != 0.0f) {
-            constants.add("ALPHA_CUTOFF", String.valueOf(this.pass.getAlphaCutoff()));
+        if (this.pass.supportsFragmentDiscard()) {
+            constants.add("USE_FRAGMENT_DISCARD");
         }
 
         constants.add("USE_VERTEX_COMPRESSION"); // TODO: allow compact vertex format to be disabled

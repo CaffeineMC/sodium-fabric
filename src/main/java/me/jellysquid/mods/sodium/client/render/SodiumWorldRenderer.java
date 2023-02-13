@@ -6,12 +6,11 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.render.chunk.passes.DefaultRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.BlockRenderPassManager;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
@@ -50,7 +49,6 @@ public class SodiumWorldRenderer {
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
     private RenderSectionManager renderSectionManager;
-    private BlockRenderPassManager renderPassManager;
     private ChunkTracker chunkTracker;
 
     /**
@@ -209,12 +207,14 @@ public class SodiumWorldRenderer {
      * Performs a render pass for the given {@link RenderLayer} and draws all visible chunks for it.
      */
     public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
-        BlockRenderPass pass = this.renderPassManager.getRenderPassForLayer(renderLayer);
-        pass.startDrawing();
+        ChunkRenderMatrices matrices = ChunkRenderMatrices.from(matrixStack);
 
-        this.renderSectionManager.renderLayer(ChunkRenderMatrices.from(matrixStack), pass, x, y, z);
-
-        pass.endDrawing();
+        if (renderLayer == RenderLayer.getSolid()) {
+            this.renderSectionManager.renderLayer(matrices, DefaultRenderPasses.SOLID, x, y, z);
+            this.renderSectionManager.renderLayer(matrices, DefaultRenderPasses.CUTOUT, x, y, z);
+        } else if (renderLayer == RenderLayer.getTranslucent()) {
+            this.renderSectionManager.renderLayer(matrices, DefaultRenderPasses.TRANSLUCENT, x, y, z);
+        }
     }
 
     public void reload() {
@@ -235,9 +235,7 @@ public class SodiumWorldRenderer {
 
         this.renderDistance = this.client.options.getClampedViewDistance();
 
-        this.renderPassManager = BlockRenderPassManager.createDefaultMappings();
-
-        this.renderSectionManager = new RenderSectionManager(this, this.renderPassManager, this.world, this.renderDistance, commandList);
+        this.renderSectionManager = new RenderSectionManager(this, this.world, this.renderDistance, commandList);
         this.renderSectionManager.reloadChunks(this.chunkTracker);
     }
 
