@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.vertex.builder;
 
-import me.jellysquid.mods.sodium.client.render.chunk.materials.Material;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;

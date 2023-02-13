@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteExtended;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
@@ -20,7 +20,7 @@ public class ChunkRenderData {
             .build();
     public static final ChunkRenderData EMPTY = createEmptyData();
 
-    private List<RenderPass> renderPasses;
+    private List<TerrainRenderPass> renderPasses;
     private List<BlockEntity> globalBlockEntities;
     private List<BlockEntity> blockEntities;
 
@@ -66,7 +66,7 @@ public class ChunkRenderData {
     }
 
     public static class Builder {
-        private final List<RenderPass> renderPasses = new ArrayList<>();
+        private final List<TerrainRenderPass> renderPasses = new ArrayList<>();
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
@@ -74,7 +74,7 @@ public class ChunkRenderData {
         private ChunkOcclusionData occlusionData;
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
 
-        public void addRenderPass(RenderPass pass) {
+        public void addRenderPass(TerrainRenderPass pass) {
             this.renderPasses.add(pass);
         }
 

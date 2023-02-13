@@ -10,8 +10,8 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.DefaultRenderPasses;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
@@ -66,7 +66,7 @@ public class RenderRegionManager {
         List<PendingSectionUpload> sectionUploads = new ArrayList<>();
 
         for (ChunkBuildResult result : results) {
-            for (RenderPass pass : DefaultRenderPasses.ALL) {
+            for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
                 var storage = region.getStorage(pass);
 
                 if (storage != null) {
@@ -174,7 +174,7 @@ public class RenderRegionManager {
         return this.regions.get(longKey);
     }
 
-    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, RenderPass pass,
+    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, TerrainRenderPass pass,
                                         PendingUpload vertexUpload, PendingUpload indicesUpload) {
     }
 }

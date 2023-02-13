@@ -2,8 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.compile.ChunkBuildContext;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.DefaultRenderPasses;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
@@ -134,9 +134,9 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        Map<RenderPass, ChunkMeshData> meshes = new Reference2ReferenceOpenHashMap<>();
+        Map<TerrainRenderPass, ChunkMeshData> meshes = new Reference2ReferenceOpenHashMap<>();
 
-        for (RenderPass pass : DefaultRenderPasses.ALL) {
+        for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
             ChunkMeshData mesh = buffers.createMesh(pass);
 
             if (mesh != null) {

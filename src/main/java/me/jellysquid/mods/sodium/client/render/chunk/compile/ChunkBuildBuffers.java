@@ -4,10 +4,10 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.DefaultRenderPasses;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.materials.Material;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.BakedChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
@@ -28,14 +28,14 @@ import java.util.Map;
  * shrink a buffer.
  */
 public class ChunkBuildBuffers {
-    private final Reference2ReferenceOpenHashMap<RenderPass, BakedChunkModelBuilder> builders = new Reference2ReferenceOpenHashMap<>();
+    private final Reference2ReferenceOpenHashMap<TerrainRenderPass, BakedChunkModelBuilder> builders = new Reference2ReferenceOpenHashMap<>();
 
     private final ChunkVertexType vertexType;
 
     public ChunkBuildBuffers(ChunkVertexType vertexType) {
         this.vertexType = vertexType;
 
-        for (RenderPass pass : DefaultRenderPasses.ALL) {
+        for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
             var vertexBuffer = new ChunkMeshBufferBuilder(this.vertexType, 2 * 1024 * 1024);
             var indexBuffers = new IndexBufferBuilder[ModelQuadFacing.COUNT];
 
@@ -62,7 +62,7 @@ public class ChunkBuildBuffers {
      * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
      * times to return multiple copies.
      */
-    public ChunkMeshData createMesh(RenderPass pass) {
+    public ChunkMeshData createMesh(TerrainRenderPass pass) {
         var builder = this.builders.get(pass);
         var vertexBuffer = builder.getVertexBuffer().pop();
 

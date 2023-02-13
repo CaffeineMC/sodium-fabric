@@ -5,7 +5,7 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.shader.*;
 import me.jellysquid.mods.sodium.client.gl.texture.GlSampler;
-import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.*;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
@@ -75,7 +75,9 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         }
     }
 
-    protected void begin(RenderPass pass) {
+    protected void begin(TerrainRenderPass pass) {
+        pass.startDrawing();
+
         ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass, this.vertexType);
 
         this.activeProgram = this.compileProgram(options);
@@ -84,22 +86,22 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
                 .startDrawing(this.samplers);
     }
 
-    protected void end() {
+    protected void end(TerrainRenderPass pass) {
         this.activeProgram.getInterface()
                 .endDrawing();
         this.activeProgram.unbind();
         this.activeProgram = null;
+
+        pass.endDrawing();
     }
 
     @Override
     public void delete() {
+        this.samplers.values()
+                .forEach(GlSampler::delete);
+
         this.programs.values()
                 .forEach(GlProgram::delete);
-        this.programs.clear();
     }
 
-    @Override
-    public ChunkVertexType getVertexType() {
-        return this.vertexType;
-    }
 }
