@@ -1,9 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.features.matrix_stack;
 
-import me.jellysquid.mods.sodium.common.util.MatrixHelper;
+import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.minecraft.client.render.VertexConsumer;
 
-import org.joml.Math;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;

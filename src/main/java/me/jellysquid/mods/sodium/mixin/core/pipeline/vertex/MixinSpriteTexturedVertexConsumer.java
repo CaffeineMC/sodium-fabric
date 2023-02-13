@@ -1,8 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline.vertex;
 
-import me.jellysquid.mods.sodium.client.render.vertex.VertexTransformers;
-import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
-import me.jellysquid.mods.sodium.client.render.vertex.VertexFormatDescription;
+import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
+import net.caffeinemc.mods.sodium.api.vertex.attributes.common.TextureAttribute;
+import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.minecraft.client.render.SpriteTexturedVertexConsumer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.texture.Sprite;
@@ -19,6 +20,7 @@ public class MixinSpriteTexturedVertexConsumer implements VertexBufferWriter {
     @Shadow
     @Final
     private VertexConsumer delegate;
+
     private float minU, minV;
     private float maxU, maxV;
 
@@ -33,10 +35,46 @@ public class MixinSpriteTexturedVertexConsumer implements VertexBufferWriter {
 
     @Override
     public void push(MemoryStack stack, final long ptr, int count, VertexFormatDescription format) {
-        VertexTransformers.transformSprite(ptr, count, format,
+        transform(ptr, count, format,
                 this.minU, this.minV, this.maxU, this.maxV);
 
         VertexBufferWriter.of(this.delegate)
                 .push(stack, ptr, count, format);
+    }
+
+    /**
+     * Transforms the texture UVs for each vertex from their absolute coordinates into the sprite area specified
+     * by the parameters.
+     *
+     * @param ptr    The buffer of vertices to transform
+     * @param count  The number of vertices to transform
+     * @param format The format of the vertices
+     * @param minU   The minimum X-coordinate of the sprite bounds
+     * @param minV   The minimum Y-coordinate of the sprite bounds
+     * @param maxU   The maximum X-coordinate of the sprite bounds
+     * @param maxV   The maximum Y-coordinate of the sprite bounds
+     */
+    private static void transform(long ptr, int count, VertexFormatDescription format,
+                                 float minU, float minV, float maxU, float maxV) {
+        long stride = format.stride();
+        long offsetUV = format.getElementOffset(CommonVertexAttribute.TEXTURE);
+
+        // The width/height of the sprite
+        float w = maxU - minU;
+        float h = maxV - minV;
+
+        for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
+            // The texture coordinates relative to the sprite bounds
+            float u = TextureAttribute.getU(ptr + offsetUV);
+            float v = TextureAttribute.getV(ptr + offsetUV);
+
+            // The texture coordinates in absolute space on the sprite sheet
+            float ut = minU + (w * u);
+            float vt = minV + (h * v);
+
+            TextureAttribute.put(ptr + offsetUV, ut, vt);
+
+            ptr += stride;
+        }
     }
 }

@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.model.quad.blender;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
-import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
+import net.caffeinemc.mods.sodium.api.util.ColorMixer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockRenderView;

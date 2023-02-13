@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.util;
 
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.util.math.Direction;
-import org.joml.Vector3f;
 
 /**
  * Provides some utilities and constants for interacting with vanilla's model quad vertex format.
@@ -34,7 +34,7 @@ public class ModelQuadUtil {
 
     static {
         for (int i = 0; i < NORMALS.length; i++) {
-            NORMALS[i] = Norm3b.pack(DirectionUtil.ALL_DIRECTIONS[i].getVector());
+            NORMALS[i] = NormI8.pack(DirectionUtil.ALL_DIRECTIONS[i].getUnitVector());
         }
     }
 

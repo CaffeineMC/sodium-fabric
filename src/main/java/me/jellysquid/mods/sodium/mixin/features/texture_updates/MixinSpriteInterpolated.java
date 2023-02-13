@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.texture_updates;
 
-import me.jellysquid.mods.sodium.client.util.color.ColorMixer;
+import net.caffeinemc.mods.sodium.api.util.ColorMixer;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.SpriteContents;
 import org.lwjgl.system.MemoryUtil;

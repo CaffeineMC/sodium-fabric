@@ -1,9 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.features.particle.fast_render;
 
-import me.jellysquid.mods.sodium.client.render.RenderGlobal;
-import me.jellysquid.mods.sodium.client.render.vertex.formats.ParticleVertex;
-import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
+import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.ParticleVertex;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.Camera;
@@ -73,7 +73,7 @@ public abstract class MixinBillboardParticle extends Particle {
 
         var writer = VertexBufferWriter.of(vertexConsumer);
 
-        try (MemoryStack stack = RenderGlobal.VERTEX_DATA.push()) {
+        try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
             long buffer = stack.nmalloc(4 * ParticleVertex.STRIDE);
             long ptr = buffer;
 
@@ -131,6 +131,6 @@ public abstract class MixinBillboardParticle extends Particle {
         float fy = (q3y * size) + originY;
         float fz = (q3z * size) + originZ;
 
-        ParticleVertex.write(buffer, fx, fy, fz, u, v, color, light);
+        ParticleVertex.put(buffer, fx, fy, fz, u, v, color, light);
     }
 }

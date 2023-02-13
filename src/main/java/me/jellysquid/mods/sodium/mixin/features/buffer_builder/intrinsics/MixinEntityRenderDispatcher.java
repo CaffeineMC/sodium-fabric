@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.intrinsics;
 
-import me.jellysquid.mods.sodium.client.render.RenderGlobal;
-import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
-import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
-import me.jellysquid.mods.sodium.common.util.MatrixHelper;
+import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -87,7 +87,7 @@ public class MixinEntityRenderDispatcher {
         var color = ColorABGR.withAlpha(SHADOW_COLOR, alpha);
         var normal = MatrixHelper.transformNormal(matNormal, 0.0f, 1.0f, 0.0f);
 
-        try (MemoryStack stack = RenderGlobal.VERTEX_DATA.push()) {
+        try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
             long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
             long ptr = buffer;
 

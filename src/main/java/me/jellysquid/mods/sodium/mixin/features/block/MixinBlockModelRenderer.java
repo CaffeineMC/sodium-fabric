@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.mixin.features.block;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
-import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
-import me.jellysquid.mods.sodium.client.render.vertex.buffer.VertexBufferWriter;
+import me.jellysquid.mods.sodium.client.render.immediate.model.BakedModelEncoder;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.VertexConsumer;
@@ -67,7 +67,7 @@ public class MixinBlockModelRenderer {
 
             ModelQuadView quad = ((ModelQuadView) bakedQuad);
 
-            ModelVertex.writeQuadVertices(writer, matrices, quad, light, overlay, color);
+            BakedModelEncoder.writeQuadVertices(writer, matrices, quad, light, overlay, color);
 
             SpriteUtil.markSpriteActive(quad.getSprite());
         }
