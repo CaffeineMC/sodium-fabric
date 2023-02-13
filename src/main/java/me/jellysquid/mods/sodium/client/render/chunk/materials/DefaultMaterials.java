@@ -9,9 +9,8 @@ import net.minecraft.fluid.FluidState;
 public class DefaultMaterials {
     public static final Material SOLID = new Material(DefaultRenderPasses.SOLID, AlphaCutoffParameter.ZERO, true);
     public static final Material CUTOUT = new Material(DefaultRenderPasses.CUTOUT, AlphaCutoffParameter.ONE_TENTH, false);
-    public static final Material CUTOUT_MIPPED = new Material(DefaultRenderPasses.CUTOUT, AlphaCutoffParameter.HALF, true);
+    public static final Material CUTOUT_MIPPED = new Material(DefaultRenderPasses.CUTOUT, AlphaCutoffParameter.ONE_TENTH, true);
     public static final Material TRANSLUCENT = new Material(DefaultRenderPasses.TRANSLUCENT, AlphaCutoffParameter.ZERO, true);
-    public static final Material TRIPWIRE = new Material(DefaultRenderPasses.CUTOUT, AlphaCutoffParameter.ONE_TENTH, true);
 
     public static Material forBlockState(BlockState state) {
         return forRenderLayer(RenderLayers.getBlockLayer(state));
@@ -26,12 +25,10 @@ public class DefaultMaterials {
             return SOLID;
         } else if (layer == RenderLayer.getCutout()) {
             return CUTOUT;
-        } else if (layer == RenderLayer.getCutoutMipped()) {
+        } else if (layer == RenderLayer.getCutoutMipped() || layer == RenderLayer.getTripwire()) {
             return CUTOUT_MIPPED;
         } else if (layer == RenderLayer.getTranslucent()) {
             return TRANSLUCENT;
-        } else if (layer == RenderLayer.getTripwire()) {
-            return TRIPWIRE;
         }
 
         throw new IllegalArgumentException("No material mapping exists for " + layer);

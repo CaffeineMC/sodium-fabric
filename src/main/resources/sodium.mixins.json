@@ -49,6 +49,8 @@
     "features.item.MixinItemRenderer",
     "features.matrix_stack.MixinMatrixStack",
     "features.matrix_stack.MixinVertexConsumer",
+    "features.mipmaps.MixinMipmapHelper",
+    "features.mipmaps.MixinSpriteContents",
     "features.model.MixinMultipartBakedModel",
     "features.model.MixinWeightedBakedModel",
     "features.options.MixinInGameHud",
