@@ -4,15 +4,15 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.shader.*;
+import me.jellysquid.mods.sodium.client.gl.texture.GlSampler;
 import me.jellysquid.mods.sodium.client.render.chunk.passes.RenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkFogMode;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderOptions;
+import me.jellysquid.mods.sodium.client.render.chunk.shader.*;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.util.TextureUtil;
 import net.minecraft.util.Identifier;
 
+import java.util.EnumMap;
 import java.util.Map;
 
 public abstract class ShaderChunkRenderer implements ChunkRenderer {
@@ -23,12 +23,21 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
 
     protected final RenderDevice device;
 
+    protected final EnumMap<ChunkShaderTextureSlot, GlSampler> samplers;
+
     protected GlProgram<ChunkShaderInterface> activeProgram;
 
     public ShaderChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         this.device = device;
         this.vertexType = vertexType;
         this.vertexFormat = vertexType.getVertexFormat();
+
+        var samplers = new EnumMap<ChunkShaderTextureSlot, GlSampler>(ChunkShaderTextureSlot.class);
+        samplers.put(ChunkShaderTextureSlot.BLOCK, TextureUtil.createBlockTextureSampler(false));
+        samplers.put(ChunkShaderTextureSlot.BLOCK_MIPPED, TextureUtil.createBlockTextureSampler(true));
+        samplers.put(ChunkShaderTextureSlot.LIGHT, TextureUtil.createLightTextureSampler());
+
+        this.samplers = samplers;
     }
 
     protected GlProgram<ChunkShaderInterface> compileProgram(ChunkShaderOptions options) {
@@ -72,10 +81,12 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         this.activeProgram = this.compileProgram(options);
         this.activeProgram.bind();
         this.activeProgram.getInterface()
-                .setup();
+                .startDrawing(this.samplers);
     }
 
     protected void end() {
+        this.activeProgram.getInterface()
+                .endDrawing();
         this.activeProgram.unbind();
         this.activeProgram = null;
     }
