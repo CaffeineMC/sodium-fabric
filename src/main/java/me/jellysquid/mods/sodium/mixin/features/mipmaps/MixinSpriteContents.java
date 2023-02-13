@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.mipmaps;
 
+import me.jellysquid.mods.sodium.client.util.color.ColorSRGB;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.SpriteContents;
 import net.minecraft.util.Identifier;
@@ -21,14 +22,6 @@ public class MixinSpriteContents {
     @Shadow
     @Final
     private NativeImage image;
-    // Generate some color tables for gamma correction.
-    private static final float[] SRGB_TO_LINEAR = new float[256];
-
-    static {
-        for (int i = 0; i < 256; i++) {
-            SRGB_TO_LINEAR[i] = (float) Math.pow(i / 255.0, 2.2);
-        }
-    }
 
     // While Fabric allows us to @Inject into the constructor here, that's just a specific detail of FabricMC's mixin
     // fork. Upstream Mixin doesn't allow arbitrary @Inject usage in constructor. However, we can use @ModifyVariable
@@ -39,17 +32,9 @@ public class MixinSpriteContents {
     // can remain minimal. Being less dependent on specific details of Fabric is good, since it means we can be more
     // cross-platform.
     @Redirect(method = "<init>", at = @At(value = "FIELD", target = "Lnet/minecraft/client/texture/SpriteContents;image:Lnet/minecraft/client/texture/NativeImage;", opcode = Opcodes.PUTFIELD))
-    private void iris$beforeGenerateMipLevels(SpriteContents instance, NativeImage nativeImage, Identifier identifier) {
+    private void sodium$beforeGenerateMipLevels(SpriteContents instance, NativeImage nativeImage, Identifier identifier) {
         // We're injecting after the "info" field has been set, so this is safe even though we're in a constructor.
-        if (identifier.getPath().contains("leaves")) {
-            // Don't ruin the textures of leaves on fast graphics, since they're supposed to have black pixels
-            // apparently.
-            this.image = nativeImage;
-            return;
-        }
-
-
-        iris$fillInTransparentPixelColors(nativeImage);
+        sodium$fillInTransparentPixelColors(nativeImage);
 
         this.image = nativeImage;
     }
@@ -63,7 +48,7 @@ public class MixinSpriteContents {
      * black color does not leak over into sampling.
      */
     @Unique
-    private static void iris$fillInTransparentPixelColors(NativeImage nativeImage) {
+    private static void sodium$fillInTransparentPixelColors(NativeImage nativeImage) {
         // Calculate an average color from all pixels that are not completely transparent.
         //
         // This average is weighted based on the (non-zero) alpha value of the pixel.
@@ -75,7 +60,7 @@ public class MixinSpriteContents {
         for (int y = 0; y < nativeImage.getHeight(); y++) {
             for (int x = 0; x < nativeImage.getWidth(); x++) {
                 int color = nativeImage.getColor(x, y);
-                int alpha = (color >> 24) & 255;
+                int alpha = NativeImage.getAlpha(color);
 
                 if (alpha == 0) {
                     // Ignore all fully-transparent pixels for the purposes of computing an average color.
@@ -85,9 +70,9 @@ public class MixinSpriteContents {
                 totalAlpha += alpha;
 
                 // Make sure to convert to linear space so that we don't lose brightness.
-                r += iris$unpackLinearComponent(color, 0) * alpha;
-                g += iris$unpackLinearComponent(color, 8) * alpha;
-                b += iris$unpackLinearComponent(color, 16) * alpha;
+                r += ColorSRGB.convertToSRGB(NativeImage.getRed(color)) * alpha;
+                g += ColorSRGB.convertToSRGB(NativeImage.getGreen(color)) * alpha;
+                b += ColorSRGB.convertToSRGB(NativeImage.getBlue(color)) * alpha;
             }
         }
 
@@ -102,7 +87,7 @@ public class MixinSpriteContents {
 
         // Convert that color in linear space back to sRGB.
         // Use an alpha value of zero - this works since we only replace pixels with an alpha value of 0.
-        int resultColor = iris$packLinearToSrgb(r, g, b);
+        int resultColor = ColorSRGB.convertToPackedLinear(r, g, b, 0);
 
         for (int y = 0; y < nativeImage.getHeight(); y++) {
             for (int x = 0; x < nativeImage.getWidth(); x++) {
@@ -118,21 +103,5 @@ public class MixinSpriteContents {
                 nativeImage.setColor(x, y, resultColor);
             }
         }
-    }
-
-    // Unpacks a single color component into linear color space from sRGB.
-    @Unique
-    private static float iris$unpackLinearComponent(int color, int shift) {
-        return SRGB_TO_LINEAR[(color >> shift) & 255];
-    }
-
-    // Packs 3 color components into sRGB from linear color space.
-    @Unique
-    private static int iris$packLinearToSrgb(float r, float g, float b) {
-        int srgbR = (int) (Math.pow(r, 1.0 / 2.2) * 255.0);
-        int srgbG = (int) (Math.pow(g, 1.0 / 2.2) * 255.0);
-        int srgbB = (int) (Math.pow(b, 1.0 / 2.2) * 255.0);
-
-        return (srgbB << 16) | (srgbG << 8) | srgbR;
     }
 }

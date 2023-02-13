@@ -1,6 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.features.mipmaps;
 
+import me.jellysquid.mods.sodium.client.util.color.ColorSRGB;
+import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.minecraft.client.texture.MipmapHelper;
+import net.minecraft.client.texture.NativeImage;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
@@ -26,15 +29,6 @@ import org.spongepowered.asm.mixin.Unique;
  */
 @Mixin(MipmapHelper.class)
 public class MixinMipmapHelper {
-    // Generate some color tables for gamma correction.
-    private static final float[] SRGB_TO_LINEAR = new float[256];
-
-    static {
-        for (int i = 0; i < 256; i++) {
-            SRGB_TO_LINEAR[i] = (float) Math.pow(i / 255.0, 2.2);
-        }
-    }
-
     /**
      * @author coderbot
      * @reason replace the vanilla blending function with our improved function
@@ -48,14 +42,9 @@ public class MixinMipmapHelper {
     }
 
     @Unique
-    private static int unpackAlpha(int color) {
-        return (color >>> 24) & 255;
-    }
-
-    @Unique
     private static int weightedAverageColor(int one, int two) {
-        int alphaOne = unpackAlpha(one);
-        int alphaTwo = unpackAlpha(two);
+        int alphaOne = NativeImage.getAlpha(one);
+        int alphaTwo = NativeImage.getAlpha(two);
 
         // In the case where the alpha values of the same, we can get by with an unweighted average.
         if (alphaOne == alphaTwo) {
@@ -79,12 +68,12 @@ public class MixinMipmapHelper {
         float relativeWeightTwo = alphaTwo * scale;
 
         // Convert the color components into linear space, then multiply the corresponding weight.
-        float oneR = unpackLinearComponent(one, 0) * relativeWeightOne;
-        float oneG = unpackLinearComponent(one, 8) * relativeWeightOne;
-        float oneB = unpackLinearComponent(one, 16) * relativeWeightOne;
-        float twoR = unpackLinearComponent(two, 0) * relativeWeightTwo;
-        float twoG = unpackLinearComponent(two, 8) * relativeWeightTwo;
-        float twoB = unpackLinearComponent(two, 16) * relativeWeightTwo;
+        float oneR = ColorSRGB.convertToSRGB(NativeImage.getRed(one)) * relativeWeightOne;
+        float oneG = ColorSRGB.convertToSRGB(NativeImage.getGreen(one)) * relativeWeightOne;
+        float oneB = ColorSRGB.convertToSRGB(NativeImage.getBlue(one)) * relativeWeightOne;
+        float twoR = ColorSRGB.convertToSRGB(NativeImage.getRed(two)) * relativeWeightTwo;
+        float twoG = ColorSRGB.convertToSRGB(NativeImage.getGreen(two)) * relativeWeightTwo;
+        float twoB = ColorSRGB.convertToSRGB(NativeImage.getBlue(two)) * relativeWeightTwo;
 
         // Combine the color components of each color
         float linearR = oneR + twoR;
@@ -95,33 +84,19 @@ public class MixinMipmapHelper {
         int averageAlpha = (alphaOne + alphaTwo) / 2;
 
         // Convert to sRGB and pack the colors back into an integer.
-        return packLinearToSrgb(linearR, linearG, linearB, averageAlpha);
-    }
-
-    @Unique
-    private static float unpackLinearComponent(int color, int shift) {
-        return SRGB_TO_LINEAR[(color >> shift) & 255];
-    }
-
-    @Unique
-    private static int packLinearToSrgb(float r, float g, float b, int a) {
-        int srgbR = (int) (Math.pow(r, 1.0 / 2.2) * 255.0);
-        int srgbG = (int) (Math.pow(g, 1.0 / 2.2) * 255.0);
-        int srgbB = (int) (Math.pow(b, 1.0 / 2.2) * 255.0);
-
-        return (a << 24) | (srgbB << 16) | (srgbG << 8) | srgbR;
+        return ColorSRGB.convertToPackedLinear(linearR, linearG, linearB, averageAlpha);
     }
 
     // Computes a non-weighted average of the two sRGB colors in linear space, avoiding brightness losses.
     @Unique
     private static int averageRgb(int a, int b, int alpha) {
-        float ar = unpackLinearComponent(a, 0);
-        float ag = unpackLinearComponent(a, 8);
-        float ab = unpackLinearComponent(a, 16);
-        float br = unpackLinearComponent(b, 0);
-        float bg = unpackLinearComponent(b, 8);
-        float bb = unpackLinearComponent(b, 16);
+        float ar = ColorSRGB.convertToSRGB(NativeImage.getRed(a));
+        float ag = ColorSRGB.convertToSRGB(NativeImage.getGreen(a));
+        float ab = ColorSRGB.convertToSRGB(NativeImage.getBlue(a));
+        float br = ColorSRGB.convertToSRGB(NativeImage.getRed(b));
+        float bg = ColorSRGB.convertToSRGB(NativeImage.getGreen(b));
+        float bb = ColorSRGB.convertToSRGB(NativeImage.getBlue(b));
 
-        return packLinearToSrgb((ar + br) / 2.0f, (ag + bg) / 2.0f, (ab + bb) / 2.0f, alpha);
+        return ColorSRGB.convertToPackedLinear((ar + br) / 2.0f, (ag + bg) / 2.0f, (ab + bb) / 2.0f, alpha);
     }
 }
