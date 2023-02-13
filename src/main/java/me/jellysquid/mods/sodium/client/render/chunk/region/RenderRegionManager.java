@@ -108,7 +108,7 @@ public class RenderRegionManager {
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
             region.createStorage(upload.pass)
-                    .setState(upload.section, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
+                    .replaceState(upload.section, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
         }
     }
 

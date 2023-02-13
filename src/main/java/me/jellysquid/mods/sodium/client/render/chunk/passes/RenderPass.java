@@ -21,12 +21,12 @@ public class RenderPass {
     }
 
     @Deprecated
-    public void begin() {
+    public void startDrawing() {
         this.layer.startDrawing();
     }
 
     @Deprecated
-    public void end() {
+    public void endDrawing() {
         this.layer.endDrawing();
     }
 
