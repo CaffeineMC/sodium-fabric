@@ -52,7 +52,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     public void render(ChunkRenderMatrices matrices, CommandList commandList,
                        ChunkRenderList list, RenderPass pass,
                        ChunkCameraContext camera, RenderRegionManager regions) {
-        pass.begin();
+        pass.startDrawing();
 
         super.begin(pass);
 
@@ -76,7 +76,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
         super.end();
 
-        pass.end();
+        pass.endDrawing();
     }
 
     private boolean buildDrawBatches(RenderRegion.RenderRegionStorage storage, List<RenderSection> sections, RenderPass pass, ChunkCameraContext camera) {

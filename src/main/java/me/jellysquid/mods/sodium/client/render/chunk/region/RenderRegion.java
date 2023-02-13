@@ -167,9 +167,13 @@ public class RenderRegion {
         public void delete(CommandList commandList) {
             this.deleteTessellation(commandList);
 
-            for (ChunkGraphicsState state : this.graphicsStates) {
+            for (int i = 0; i < this.graphicsStates.length; i++) {
+                ChunkGraphicsState state = this.graphicsStates[i];
+
                 if (state != null) {
                     state.delete();
+
+                    this.graphicsStates[i] = null;
                 }
             }
         }
@@ -181,11 +185,11 @@ public class RenderRegion {
             }
         }
 
-        public void deleteState(RenderSection chunk) {
-            var state = this.setState(chunk, null);
+        public void replaceState(RenderSection section, ChunkGraphicsState state) {
+            var prev = this.setState(section, state);
 
-            if (state != null) {
-                state.delete();
+            if (prev != null) {
+                prev.delete();
             }
         }
     }
