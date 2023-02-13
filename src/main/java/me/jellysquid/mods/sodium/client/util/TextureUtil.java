@@ -17,7 +17,7 @@ public class TextureUtil {
 
     public static GlSampler createBlockTextureSampler(boolean mipped) {
         var sampler = new GlSampler();
-        sampler.setParameter(GL33C.GL_TEXTURE_MIN_FILTER, mipped ? GL33C.GL_NEAREST_MIPMAP_NEAREST : GL33C.GL_NEAREST);
+        sampler.setParameter(GL33C.GL_TEXTURE_MIN_FILTER, mipped ? GL33C.GL_NEAREST_MIPMAP_LINEAR : GL33C.GL_NEAREST);
         sampler.setParameter(GL33C.GL_TEXTURE_MAG_FILTER, GL33C.GL_NEAREST);
         sampler.setParameter(GL33C.GL_TEXTURE_WRAP_S, GL33C.GL_CLAMP_TO_EDGE);
         sampler.setParameter(GL33C.GL_TEXTURE_WRAP_T, GL33C.GL_CLAMP_TO_EDGE);
