@@ -12,7 +12,7 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
 import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
-import me.jellysquid.mods.sodium.client.gl.util.MultiDrawBatch;
+import me.jellysquid.mods.sodium.client.gl.device.MultiDrawBatch;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
@@ -45,7 +45,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                         this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_TEXTURE))
         };
 
-        this.batch = MultiDrawBatch.create(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
+        this.batch = new MultiDrawBatch(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
     }
 
     @Override
@@ -64,28 +64,31 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
             var storage = region.getStorage(pass);
 
-            if (storage == null || !this.buildDrawBatches(storage, sections, pass, camera)) {
+            if (storage == null) {
                 continue;
             }
 
-            this.setModelMatrixUniforms(shader, region, camera);
-            this.executeDrawBatch(commandList, this.createTessellationForRegion(commandList, region, pass));
+            var batch = this.buildDrawBatches(storage, sections, pass, camera);
+
+            if (!batch.isEmpty()) {
+                this.setModelMatrixUniforms(shader, region, camera);
+                this.executeDrawBatch(commandList, this.createTessellationForRegion(commandList, region, pass));
+            }
         }
 
         super.end(pass);
     }
 
-    private boolean buildDrawBatches(RenderRegion.RenderRegionStorage storage, List<RenderSection> sections, TerrainRenderPass pass, ChunkCameraContext camera) {
-        this.batch.begin();
+    private MultiDrawBatch buildDrawBatches(RenderRegion.RenderRegionStorage storage, List<RenderSection> sections, TerrainRenderPass pass, ChunkCameraContext camera) {
+        var batch = this.batch;
+        batch.clear();
 
-        for (RenderSection render : sortedChunks(sections, pass.isReverseOrder())) {
-            ChunkGraphicsState state = storage.getState(render);
+        for (RenderSection section : sortedChunks(sections, pass.isReverseOrder())) {
+            ChunkGraphicsState state = storage.getState(section);
 
             if (state == null) {
                 continue;
             }
-
-            ChunkRenderBounds bounds = render.getBounds();
 
             long indexOffset = state.getIndexSegment()
                     .getOffset() * Integer.BYTES;
@@ -93,42 +96,46 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             int baseVertex = state.getVertexSegment()
                     .getOffset();
 
-            this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
-
-            if (this.isBlockFaceCullingEnabled) {
-                if (camera.posY > bounds.y1) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
-                }
-
-                if (camera.posY < bounds.y2) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.DOWN), indexOffset, baseVertex);
-                }
-
-                if (camera.posX > bounds.x1) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.EAST), indexOffset, baseVertex);
-                }
-
-                if (camera.posX < bounds.x2) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.WEST), indexOffset, baseVertex);
-                }
-
-                if (camera.posZ > bounds.z1) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
-                }
-
-                if (camera.posZ < bounds.z2) {
-                    this.addDrawCall(state.getModelPart(ModelQuadFacing.NORTH), indexOffset, baseVertex);
-                }
-            } else {
-                for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
-                    this.addDrawCall(state.getModelPart(facing), indexOffset, baseVertex);
-                }
-            }
+            this.addDrawCalls(camera, section, state, indexOffset, baseVertex);
         }
 
-        this.batch.end();
+        return batch;
+    }
 
-        return !this.batch.isEmpty();
+    private void addDrawCalls(ChunkCameraContext camera, RenderSection section, ChunkGraphicsState state, long indexOffset, int baseVertex) {
+        this.addDrawCall(state.getModelPart(ModelQuadFacing.UNASSIGNED), indexOffset, baseVertex);
+
+        if (this.isBlockFaceCullingEnabled) {
+            ChunkRenderBounds bounds = section.getBounds();
+
+            if (camera.posY > bounds.y1) {
+                this.addDrawCall(state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
+            }
+
+            if (camera.posY < bounds.y2) {
+                this.addDrawCall(state.getModelPart(ModelQuadFacing.DOWN), indexOffset, baseVertex);
+            }
+
+            if (camera.posX > bounds.x1) {
+                this.addDrawCall(state.getModelPart(ModelQuadFacing.EAST), indexOffset, baseVertex);
+            }
+
+            if (camera.posX < bounds.x2) {
+                this.addDrawCall(state.getModelPart(ModelQuadFacing.WEST), indexOffset, baseVertex);
+            }
+
+            if (camera.posZ > bounds.z1) {
+                this.addDrawCall(state.getModelPart(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
+            }
+
+            if (camera.posZ < bounds.z2) {
+                this.addDrawCall(state.getModelPart(ModelQuadFacing.NORTH), indexOffset, baseVertex);
+            }
+        } else {
+            for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
+                this.addDrawCall(state.getModelPart(facing), indexOffset, baseVertex);
+            }
+        }
     }
 
     private GlTessellation createTessellationForRegion(CommandList commandList, RenderRegion region, TerrainRenderPass pass) {
@@ -146,7 +153,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         MultiDrawBatch batch = this.batch;
 
         try (DrawCommandList drawCommandList = commandList.beginTessellating(tessellation)) {
-            drawCommandList.multiDrawElementsBaseVertex(batch.getPointerBuffer(), batch.getCountBuffer(), batch.getBaseVertexBuffer(), GlIndexType.UNSIGNED_INT);
+            drawCommandList.multiDrawElementsBaseVertex(batch, GlIndexType.UNSIGNED_INT);
         }
     }
 

@@ -343,17 +343,6 @@ public class SodiumGameOptionPages {
                 )
                 .build());
 
-        groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
-                        .setName(Text.translatable("sodium.options.allow_direct_memory_access.name"))
-                        .setTooltip(Text.translatable("sodium.options.allow_direct_memory_access.tooltip"))
-                        .setControl(TickBoxControl::new)
-                        .setImpact(OptionImpact.HIGH)
-                        .setBinding((opts, value) -> opts.advanced.allowDirectMemoryAccess = value, opts -> opts.advanced.allowDirectMemoryAccess)
-                        .build()
-                )
-                .build());
-
         return new OptionPage(Text.translatable("sodium.options.pages.advanced"), ImmutableList.copyOf(groups));
     }
 }

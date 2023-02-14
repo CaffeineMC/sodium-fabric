@@ -46,7 +46,6 @@ public class SodiumGameOptions {
     }
 
     public static class AdvancedSettings {
-        public boolean allowDirectMemoryAccess = true;
         public boolean enableMemoryTracing = false;
         public boolean useAdvancedStagingBuffers = true;
 

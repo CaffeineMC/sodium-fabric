@@ -80,8 +80,4 @@ public class SodiumClientMod implements ClientModInitializer {
 
         return MOD_VERSION;
     }
-
-    public static boolean isDirectMemoryAccessEnabled() {
-        return options().advanced.allowDirectMemoryAccess;
-    }
 }
