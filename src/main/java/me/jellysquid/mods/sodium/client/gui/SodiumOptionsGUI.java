@@ -7,15 +7,18 @@ import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
+import net.caffeinemc.mods.sodium.api.util.ColorMixer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.OrderedText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Language;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
@@ -23,6 +26,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 public class SodiumOptionsGUI extends Screen {
@@ -40,6 +44,8 @@ public class SodiumOptionsGUI extends Screen {
     private boolean hasPendingChanges;
     private ControlElement<?> hoveredElement;
 
+    private final double openTime;
+
     public SodiumOptionsGUI(Screen prevScreen) {
         super(Text.translatable("Sodium Options"));
 
@@ -49,6 +55,8 @@ public class SodiumOptionsGUI extends Screen {
         this.pages.add(SodiumGameOptionPages.quality());
         this.pages.add(SodiumGameOptionPages.performance());
         this.pages.add(SodiumGameOptionPages.advanced());
+
+        this.openTime = GLFW.glfwGetTime();
     }
 
     public void setPage(OptionPage page) {
@@ -96,6 +104,13 @@ public class SodiumOptionsGUI extends Screen {
         this.addDrawableChild(this.closeButton);
         this.addDrawableChild(this.donateButton);
         this.addDrawableChild(this.hideDonateButton);
+    }
+
+    private Style createDonateButtonStyle() {
+        var cycle = Math.cos(GLFW.glfwGetTime() - this.openTime);
+        var color = ColorMixer.mix(0xFFAA00, 0xFFFFFF, 0.5F + (float) (cycle / 2.0D));
+
+        return Style.EMPTY.withColor(color);
     }
 
     private void setDonationButtonVisibility(boolean value) {
@@ -158,6 +173,9 @@ public class SodiumOptionsGUI extends Screen {
     @Override
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
         super.renderBackground(matrixStack);
+
+        this.donateButton.setLabel(this.donateButton.getLabel()
+                .copy().setStyle(createDonateButtonStyle()));
 
         this.updateControls();
 

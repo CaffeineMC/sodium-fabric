@@ -7,12 +7,13 @@ import net.minecraft.text.Text;
 
 public class FlatButtonWidget extends AbstractWidget implements Drawable {
     private final Dim2i dim;
-    private final Text label;
     private final Runnable action;
 
     private boolean selected;
     private boolean enabled = true;
     private boolean visible = true;
+
+    private Text label;
 
     public FlatButtonWidget(Dim2i dim, Text label, Runnable action) {
         this.dim = dim;
@@ -67,5 +68,13 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
 
     public void setVisible(boolean visible) {
         this.visible = visible;
+    }
+
+    public void setLabel(Text text) {
+        this.label = text;
+    }
+
+    public Text getLabel() {
+        return this.label;
     }
 }
