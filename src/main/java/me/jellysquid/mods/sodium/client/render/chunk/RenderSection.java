@@ -41,6 +41,8 @@ public class RenderSection {
 
     private int lastAcceptedBuildTime = -1;
 
+    private int flags;
+
     public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
         this.worldRenderer = worldRenderer;
 
@@ -103,13 +105,11 @@ public class RenderSection {
         this.data = info;
 
         this.tickable = !info.getAnimatedSprites().isEmpty();
+        this.flags = info.getFlags();
     }
 
-    /**
-     * @return True if the chunk render contains no data, otherwise false
-     */
-    public boolean isEmpty() {
-        return this.data.isEmpty();
+    public int getFlags() {
+        return this.flags;
     }
 
     /**

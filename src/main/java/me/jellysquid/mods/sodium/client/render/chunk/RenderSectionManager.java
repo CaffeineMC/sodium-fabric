@@ -213,7 +213,8 @@ public class RenderSectionManager {
     }
 
     private void addEntitiesToRenderLists(RenderSection render) {
-        Collection<BlockEntity> blockEntities = render.getData().getBlockEntities();
+        Collection<BlockEntity> blockEntities = render.getData()
+                .getBlockEntities();
 
         if (!blockEntities.isEmpty()) {
             this.visibleBlockEntities.addAll(blockEntities);
@@ -589,8 +590,13 @@ public class RenderSectionManager {
             return;
         }
 
-        if (!render.isEmpty()) {
+        int flags = render.getFlags();
+
+        if ((flags & RenderSectionFlags.HAS_BLOCK_GEOMETRY) != 0) {
             this.addChunkToVisible(list, render);
+        }
+
+        if ((flags & RenderSectionFlags.HAS_BLOCK_ENTITIES) != 0) {
             this.addEntitiesToRenderLists(render);
         }
     }
