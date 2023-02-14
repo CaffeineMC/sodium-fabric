@@ -321,15 +321,6 @@ public class SodiumGameOptionPages {
         List<OptionGroup> groups = new ArrayList<>();
 
         groups.add(OptionGroup.createBuilder()
-                .add(OptionImpl.createBuilder(SodiumGameOptions.ArenaMemoryAllocator.class, sodiumOpts)
-                        .setName(Text.translatable("sodium.options.chunk_memory_allocator.name"))
-                        .setTooltip(Text.translatable("sodium.options.chunk_memory_allocator.tooltip"))
-                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.ArenaMemoryAllocator.class))
-                        .setImpact(OptionImpact.HIGH)
-                        .setBinding((opts, value) -> opts.advanced.arenaMemoryAllocator = value, opts -> opts.advanced.arenaMemoryAllocator)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        .build()
-                )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
                         .setName(Text.translatable("sodium.options.use_persistent_mapping.name"))
                         .setTooltip(Text.translatable("sodium.options.use_persistent_mapping.tooltip"))
