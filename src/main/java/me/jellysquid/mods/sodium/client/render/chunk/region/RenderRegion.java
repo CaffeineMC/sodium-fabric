@@ -1,10 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.region;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.arena.AsyncBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
-import me.jellysquid.mods.sodium.client.gl.arena.SwapBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
@@ -57,8 +54,9 @@ public class RenderRegion {
         int expectedVertexCount = REGION_SIZE * 756;
         int expectedIndexCount = (expectedVertexCount / 4) * 6;
 
-        this.vertexBuffers = createArena(commandList, expectedVertexCount, ChunkMeshFormats.COMPACT.getVertexFormat().getStride(), stagingBuffer);
-        this.indexBuffers = createArena(commandList, expectedIndexCount, Integer.BYTES, stagingBuffer);
+        int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
+        this.vertexBuffers = new GlBufferArena(commandList, expectedVertexCount, stride, stagingBuffer);
+        this.indexBuffers = new GlBufferArena(commandList, expectedIndexCount, Integer.BYTES, stagingBuffer);
     }
 
     public static RenderRegion createRegionForChunk(CommandList commandList, StagingBuffer stagingBuffer, int x, int y, int z) {
@@ -112,13 +110,6 @@ public class RenderRegion {
 
     public long getDeviceAllocatedMemory() {
         return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
-    }
-
-    private static GlBufferArena createArena(CommandList commandList, int initialCapacity, int stride, StagingBuffer stagingBuffer) {
-        return switch (SodiumClientMod.options().advanced.arenaMemoryAllocator) {
-            case ASYNC -> new AsyncBufferArena(commandList, initialCapacity, stride, stagingBuffer);
-            case SWAP -> new SwapBufferArena(commandList, stride);
-        };
     }
 
     public RenderRegionStorage getStorage(TerrainRenderPass pass) {

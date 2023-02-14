@@ -30,7 +30,6 @@ public class SodiumGameOptions {
     public static SodiumGameOptions defaults() {
         var options = new SodiumGameOptions();
         options.configPath = getConfigPath(DEFAULT_FILE_NAME);
-        options.sanitize();
 
         return options;
     }
@@ -47,8 +46,6 @@ public class SodiumGameOptions {
     }
 
     public static class AdvancedSettings {
-        public ArenaMemoryAllocator arenaMemoryAllocator = null;
-
         public boolean allowDirectMemoryAccess = true;
         public boolean enableMemoryTracing = false;
         public boolean useAdvancedStagingBuffers = true;
@@ -129,7 +126,6 @@ public class SodiumGameOptions {
         }
 
         config.configPath = path;
-        config.sanitize();
 
         try {
             config.writeChanges();
@@ -138,12 +134,6 @@ public class SodiumGameOptions {
         }
 
         return config;
-    }
-
-    private void sanitize() {
-        if (this.advanced.arenaMemoryAllocator == null) {
-            this.advanced.arenaMemoryAllocator = ArenaMemoryAllocator.ASYNC;
-        }
     }
 
     private static Path getConfigPath(String name) {
