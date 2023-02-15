@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.util.color;
 
-import net.caffeinemc.mods.sodium.api.util.ColorARGB;
+import net.minecraft.client.texture.NativeImage;
 import org.spongepowered.asm.mixin.Unique;
 
 public class ColorSRGB {
@@ -15,17 +15,17 @@ public class ColorSRGB {
         }
     }
 
-    public static float convertToSRGB(int linear) {
+    public static float convertSRGBToLinear(int linear) {
         return SRGB_TO_LINEAR[linear];
     }
 
     // Packs 3 color components and a linear alpha into sRGB from linear color space.
     @Unique
-    public static int convertToPackedLinear(float r, float g, float b, int a) {
+    public static int convertLinearToSRGB(float r, float g, float b, int a) {
         int srgbR = (int) (Math.pow(r, SRGB_CONVERSION_COMPONENT) * 255.0);
         int srgbG = (int) (Math.pow(g, SRGB_CONVERSION_COMPONENT) * 255.0);
         int srgbB = (int) (Math.pow(b, SRGB_CONVERSION_COMPONENT) * 255.0);
 
-        return ColorARGB.pack(srgbR, srgbG, srgbB, a);
+        return NativeImage.packColor(a, srgbB, srgbG, srgbR);
     }
 }

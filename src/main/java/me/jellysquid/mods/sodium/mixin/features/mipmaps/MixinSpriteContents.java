@@ -77,9 +77,9 @@ public class MixinSpriteContents {
             totalAlpha += alpha;
 
             // Make sure to convert to linear space so that we don't lose brightness.
-            r += ColorSRGB.convertToSRGB(NativeImage.getRed(color)) * alpha;
-            g += ColorSRGB.convertToSRGB(NativeImage.getGreen(color)) * alpha;
-            b += ColorSRGB.convertToSRGB(NativeImage.getBlue(color)) * alpha;
+            r += ColorSRGB.convertSRGBToLinear(NativeImage.getRed(color)) * alpha;
+            g += ColorSRGB.convertSRGBToLinear(NativeImage.getGreen(color)) * alpha;
+            b += ColorSRGB.convertSRGBToLinear(NativeImage.getBlue(color)) * alpha;
         }
 
         r /= totalAlpha;
@@ -93,7 +93,7 @@ public class MixinSpriteContents {
 
         // Convert that color in linear space back to sRGB.
         // Use an alpha value of zero - this works since we only replace pixels with an alpha value of 0.
-        int resultColor = ColorSRGB.convertToPackedLinear(r, g, b, 0);
+        int resultColor = ColorSRGB.convertLinearToSRGB(r, g, b, 0);
 
         for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
             long pPixel = ppPixel + (pixelIndex * 4);
