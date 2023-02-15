@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.texture_updates;
 
+import me.jellysquid.mods.sodium.client.util.NativeImageHelper;
 import net.caffeinemc.mods.sodium.api.util.ColorMixer;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.SpriteContents;
@@ -66,12 +67,12 @@ public class MixinSpriteInterpolated {
             NativeImage src = ((SpriteInfoAccessor) this.parent).getImages()[layer];
             NativeImage dst = this.images[layer];
 
-            // Pointers to the pixel array for the current and next frame
-            long pRgba1 = src.pointer + (curX + (long) curY * src.getWidth() * STRIDE);
-            long pRgba2 = src.pointer + (nextX + (long) nextY * src.getWidth() * STRIDE);
+            long ppSrcPixel = NativeImageHelper.getPointerRGBA(src);
+            long ppDstPixel = NativeImageHelper.getPointerRGBA(dst);
 
-            // Pointer to the pixel array where the interpolated results will be written
-            long pInterpolatedRgba = dst.pointer;
+            // Pointers to the pixel array for the current and next frame
+            long pRgba1 = ppSrcPixel + (curX + (long) curY * src.getWidth() * STRIDE);
+            long pRgba2 = ppSrcPixel + (nextX + (long) nextY * src.getWidth() * STRIDE);
 
             for (int pixelIndex = 0, pixelCount = width * height; pixelIndex < pixelCount; pixelIndex++) {
                 int rgba1 = MemoryUtil.memGetInt(pRgba1);
@@ -84,12 +85,12 @@ public class MixinSpriteInterpolated {
                 int alpha = rgba1 & 0xFF000000;
 
                 // Update the pixel within the interpolated frame using the combined RGB and A components
-                MemoryUtil.memPutInt(pInterpolatedRgba, mixedRgb | alpha);
+                MemoryUtil.memPutInt(ppDstPixel, mixedRgb | alpha);
 
                 pRgba1 += STRIDE;
                 pRgba2 += STRIDE;
 
-                pInterpolatedRgba += STRIDE;
+                ppDstPixel += STRIDE;
             }
         }
 

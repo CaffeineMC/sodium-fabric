@@ -1,9 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.features.mipmaps;
 
+import me.jellysquid.mods.sodium.client.util.NativeImageHelper;
 import me.jellysquid.mods.sodium.client.util.color.ColorSRGB;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.SpriteContents;
 import net.minecraft.util.Identifier;
+import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -49,6 +51,8 @@ public class MixinSpriteContents {
      */
     @Unique
     private static void sodium$fillInTransparentPixelColors(NativeImage nativeImage) {
+        final long ppPixel = NativeImageHelper.getPointerRGBA(nativeImage);
+
         // Calculate an average color from all pixels that are not completely transparent.
         //
         // This average is weighted based on the (non-zero) alpha value of the pixel.
@@ -57,23 +61,25 @@ public class MixinSpriteContents {
         float b = 0.0f;
         float totalAlpha = 0.0f;
 
-        for (int y = 0; y < nativeImage.getHeight(); y++) {
-            for (int x = 0; x < nativeImage.getWidth(); x++) {
-                int color = nativeImage.getColor(x, y);
-                int alpha = NativeImage.getAlpha(color);
+        int pixelCount = nativeImage.getHeight() * nativeImage.getWidth();
 
-                if (alpha == 0) {
-                    // Ignore all fully-transparent pixels for the purposes of computing an average color.
-                    continue;
-                }
+        for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
+            long pPixel = ppPixel + (pixelIndex * 4);
 
-                totalAlpha += alpha;
+            int color = MemoryUtil.memGetInt(pPixel);
+            int alpha = NativeImage.getAlpha(color);
 
-                // Make sure to convert to linear space so that we don't lose brightness.
-                r += ColorSRGB.convertToSRGB(NativeImage.getRed(color)) * alpha;
-                g += ColorSRGB.convertToSRGB(NativeImage.getGreen(color)) * alpha;
-                b += ColorSRGB.convertToSRGB(NativeImage.getBlue(color)) * alpha;
+            if (alpha == 0) {
+                // Ignore all fully-transparent pixels for the purposes of computing an average color.
+                continue;
             }
+
+            totalAlpha += alpha;
+
+            // Make sure to convert to linear space so that we don't lose brightness.
+            r += ColorSRGB.convertToSRGB(NativeImage.getRed(color)) * alpha;
+            g += ColorSRGB.convertToSRGB(NativeImage.getGreen(color)) * alpha;
+            b += ColorSRGB.convertToSRGB(NativeImage.getBlue(color)) * alpha;
         }
 
         r /= totalAlpha;
@@ -89,19 +95,19 @@ public class MixinSpriteContents {
         // Use an alpha value of zero - this works since we only replace pixels with an alpha value of 0.
         int resultColor = ColorSRGB.convertToPackedLinear(r, g, b, 0);
 
-        for (int y = 0; y < nativeImage.getHeight(); y++) {
-            for (int x = 0; x < nativeImage.getWidth(); x++) {
-                int color = nativeImage.getColor(x, y);
-                int alpha = (color >> 24) & 255;
+        for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
+            long pPixel = ppPixel + (pixelIndex * 4);
 
-                // If this pixel has nonzero alpha, don't touch it.
-                if (alpha > 0) {
-                    continue;
-                }
+            int color = MemoryUtil.memGetInt(pPixel);
+            int alpha = (color >> 24) & 255;
 
-                // Replace the color values of this pixel with the average colors.
-                nativeImage.setColor(x, y, resultColor);
+            // If this pixel has nonzero alpha, don't touch it.
+            if (alpha > 0) {
+                continue;
             }
+
+            // Replace the color values of this pixel with the average colors.
+            MemoryUtil.memPutInt(pPixel, resultColor);
         }
     }
 }
