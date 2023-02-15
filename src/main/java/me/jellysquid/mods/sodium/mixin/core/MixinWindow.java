@@ -15,9 +15,5 @@ public class MixinWindow {
         if (SodiumClientMod.options().performance.useNoErrorGLContext) {
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_NO_ERROR, GLFW.GLFW_TRUE);
         }
-
-        // We need OpenGL 3.3 for sampler objects.
-        GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
-        GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
     }
 }
