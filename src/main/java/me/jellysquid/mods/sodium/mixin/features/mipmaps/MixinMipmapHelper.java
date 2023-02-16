@@ -54,48 +54,51 @@ public class MixinMipmapHelper {
         // We just take the value of the other pixel as-is. To compensate for not changing the color value, we
         // divide the alpha value by 4 instead of 2.
         if (alphaOne == 0) {
-            return (two & 0x00FFFFFF) | ((alphaTwo / 4) << 24);
+            return (two & 0x00FFFFFF) | ((alphaTwo >> 2) << 24);
         }
 
         if (alphaTwo == 0) {
-            return (one & 0x00FFFFFF) | ((alphaOne / 4) << 24);
+            return (one & 0x00FFFFFF) | ((alphaOne >> 2) << 24);
         }
 
         // Use the alpha values to compute relative weights of each color.
         float scale = 1.0f / (alphaOne + alphaTwo);
+
         float relativeWeightOne = alphaOne * scale;
         float relativeWeightTwo = alphaTwo * scale;
 
         // Convert the color components into linear space, then multiply the corresponding weight.
-        float oneR = ColorSRGB.convertSRGBToLinear(NativeImage.getRed(one)) * relativeWeightOne;
-        float oneG = ColorSRGB.convertSRGBToLinear(NativeImage.getGreen(one)) * relativeWeightOne;
-        float oneB = ColorSRGB.convertSRGBToLinear(NativeImage.getBlue(one)) * relativeWeightOne;
-        float twoR = ColorSRGB.convertSRGBToLinear(NativeImage.getRed(two)) * relativeWeightTwo;
-        float twoG = ColorSRGB.convertSRGBToLinear(NativeImage.getGreen(two)) * relativeWeightTwo;
-        float twoB = ColorSRGB.convertSRGBToLinear(NativeImage.getBlue(two)) * relativeWeightTwo;
+        float oneR = ColorSRGB.srgbToLinear(NativeImage.getRed(one)) * relativeWeightOne;
+        float oneG = ColorSRGB.srgbToLinear(NativeImage.getGreen(one)) * relativeWeightOne;
+        float oneB = ColorSRGB.srgbToLinear(NativeImage.getBlue(one)) * relativeWeightOne;
+
+        float twoR = ColorSRGB.srgbToLinear(NativeImage.getRed(two)) * relativeWeightTwo;
+        float twoG = ColorSRGB.srgbToLinear(NativeImage.getGreen(two)) * relativeWeightTwo;
+        float twoB = ColorSRGB.srgbToLinear(NativeImage.getBlue(two)) * relativeWeightTwo;
 
         // Combine the color components of each color
         float linearR = oneR + twoR;
         float linearG = oneG + twoG;
         float linearB = oneB + twoB;
 
-        // Take the average alpha of both pixels
-        int averageAlpha = (alphaOne + alphaTwo) / 2;
+        // Take the average alpha of both alpha values
+        int averageAlpha = (alphaOne + alphaTwo) >> 1;
 
         // Convert to sRGB and pack the colors back into an integer.
-        return ColorSRGB.convertLinearToSRGB(linearR, linearG, linearB, averageAlpha);
+        return ColorSRGB.linearToSrgb(linearR, linearG, linearB, averageAlpha);
     }
 
     // Computes a non-weighted average of the two sRGB colors in linear space, avoiding brightness losses.
     @Unique
     private static int averageRgb(int a, int b, int alpha) {
-        float ar = ColorSRGB.convertSRGBToLinear(NativeImage.getRed(a));
-        float ag = ColorSRGB.convertSRGBToLinear(NativeImage.getGreen(a));
-        float ab = ColorSRGB.convertSRGBToLinear(NativeImage.getBlue(a));
-        float br = ColorSRGB.convertSRGBToLinear(NativeImage.getRed(b));
-        float bg = ColorSRGB.convertSRGBToLinear(NativeImage.getGreen(b));
-        float bb = ColorSRGB.convertSRGBToLinear(NativeImage.getBlue(b));
+        float ar = ColorSRGB.srgbToLinear(NativeImage.getRed(a));
+        float ag = ColorSRGB.srgbToLinear(NativeImage.getGreen(a));
+        float ab = ColorSRGB.srgbToLinear(NativeImage.getBlue(a));
 
-        return ColorSRGB.convertLinearToSRGB((ar + br) / 2.0f, (ag + bg) / 2.0f, (ab + bb) / 2.0f, alpha);
+        float br = ColorSRGB.srgbToLinear(NativeImage.getRed(b));
+        float bg = ColorSRGB.srgbToLinear(NativeImage.getGreen(b));
+        float bb = ColorSRGB.srgbToLinear(NativeImage.getBlue(b));
+
+        return ColorSRGB.linearToSrgb((ar + br) * 0.5f, (ag + bg) * 0.5f, (ab + bb) * 0.5f, alpha);
     }
 }
