@@ -11,4 +11,10 @@ public class MathUtil {
     public static long toMib(long x) {
         return x / 1024L / 1024L;
     }
+
+    public static int align(int num, int alignment) {
+        int additive = alignment - 1;
+        int mask = ~additive;
+        return (num + additive) & mask;
+    }
 }

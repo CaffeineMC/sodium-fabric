@@ -24,6 +24,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
+import me.jellysquid.mods.sodium.client.util.BitArray;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -42,6 +43,8 @@ import org.apache.commons.lang3.Validate;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+
+import static org.joml.FrustumIntersection.*;
 
 public class RenderSectionManager {
     /**
@@ -85,7 +88,7 @@ public class RenderSectionManager {
     private final int renderDistance;
 
     private float cameraX, cameraY, cameraZ;
-    private int centerChunkX, centerChunkZ;
+    private int centerChunkX, centerChunkY, centerChunkZ;
 
     private boolean needsUpdate;
 
@@ -96,12 +99,17 @@ public class RenderSectionManager {
 
     private Frustum frustum;
 
+    private RenderSectionUtils rsu;
+
     private int currentFrame = 0;
     private boolean alwaysDeferChunkUpdates;
 
     private final ChunkTracker tracker;
 
     private ChunkRenderList chunkRenderList;
+
+    private final int topSectionCoord;
+    private final int bottomSectionCoord;
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
@@ -123,6 +131,10 @@ public class RenderSectionManager {
         }
 
         this.tracker = this.worldRenderer.getChunkTracker();
+        this.rsu = new RenderSectionUtils(renderDistance, world);
+
+        this.topSectionCoord = world.getTopSectionCoord();
+        this.bottomSectionCoord = world.getBottomSectionCoord();
     }
 
     public void reloadChunks(ChunkTracker tracker) {
@@ -131,6 +143,8 @@ public class RenderSectionManager {
     }
 
     public void update(Camera camera, Frustum frustum, int frame, boolean spectator) {
+        this.rsu.clear();
+        this.rsu.setFrustum(frustum);
         this.resetLists();
 
         var list = new ChunkRenderListBuilder();
@@ -169,6 +183,7 @@ public class RenderSectionManager {
         this.initSearch(list, camera, frustum, frame, spectator);
 
         ChunkGraphIterationQueue queue = this.iterationQueue;
+        boolean useRayCulling = SodiumClientMod.options().performance.useRaycastCulling;
 
         for (int i = 0; i < queue.size(); i++) {
             RenderSection section = queue.getRender(i);
@@ -176,6 +191,16 @@ public class RenderSectionManager {
 
             this.schedulePendingUpdates(section);
 
+
+            if (useRayCulling) {
+                int distance = Math.abs(section.getChunkX() - centerChunkX) +
+                        Math.abs(section.getChunkY() - centerChunkY) +
+                        Math.abs(section.getChunkZ() - centerChunkZ);
+                this.rsu.setVisible(section.getChunkX(), section.getChunkY(), section.getChunkZ());
+                if (distance > 5 && raycast(section.getChunkX(), section.getChunkY(), section.getChunkZ(), centerChunkX, centerChunkY, centerChunkZ)) {
+                    continue;
+                }
+            }
             for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
                 if (this.isCulled(section.getGraphInfo(), flow, dir)) {
                     continue;
@@ -189,6 +214,80 @@ public class RenderSectionManager {
             }
         }
     }
+
+
+
+
+    private boolean raycast(final int x0, final int y0, final int z0, final int x1, final int y1, final int z1)  {
+        if (y1 <= this.bottomSectionCoord || y1 >= this.topSectionCoord) {
+            return false;
+        }
+
+        final int deltaX = x1 - x0;
+        final int deltaY = y1 - y0;
+        final int deltaZ = z1 - z0;
+
+        final int lenX = Math.abs(deltaX);
+        final int lenY = Math.abs(deltaY);
+        final int lenZ = Math.abs(deltaZ);
+
+        final int longest = Math.max(lenX, Math.max(lenY, lenZ));
+
+        final int signX = Integer.compare(deltaX, 0);
+        final int signY = Integer.compare(deltaY, 0);
+        final int signZ = Integer.compare(deltaZ, 0);
+
+        // Divide by 2
+        int errX = longest >> 1;
+        int errY = longest >> 1;
+        int errZ = longest >> 1;
+
+        int x = x0;
+        int y = y0;
+        int z = z0;
+
+        int valid = 0;
+
+        for (int step = 0; step < longest; step++) {
+            errX -= lenX;
+            errY -= lenY;
+            errZ -= lenZ;
+
+            if (errX < 0) {
+                errX += longest;
+                x += signX;
+            }
+
+            if (errY < 0) {
+                errY += longest;
+                y += signY;
+            }
+
+            if (errZ < 0) {
+                errZ += longest;
+                z += signZ;
+            }
+
+            if (this.rsu.isVisible(x,y,z)) {
+                valid++;
+            } else {
+                switch (this.rsu.frustumCheck(x, y, z)) {
+                    case OUTSIDE:
+                        return false;
+                    case INTERSECT:
+                        break;
+                    case INSIDE:
+                        return true;
+                }
+            }
+
+            if (valid >= 5) {
+                break;
+            }
+        }
+        return false;
+    }
+
 
     private void schedulePendingUpdates(RenderSection section) {
         if (section.getPendingUpdate() == null || !this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
@@ -517,6 +616,7 @@ public class RenderSectionManager {
         int chunkZ = origin.getZ() >> 4;
 
         this.centerChunkX = chunkX;
+        this.centerChunkY = chunkY;
         this.centerChunkZ = chunkZ;
 
         RenderSection rootRender = this.getRenderSection(chunkX, chunkY, chunkZ);
@@ -573,7 +673,7 @@ public class RenderSectionManager {
             return;
         }
 
-        if (info.isCulledByFrustum(this.frustum)) {
+        if (this.rsu.frustumCheck(render.getChunkX(), render.getChunkY(), render.getChunkZ())==OUTSIDE) {
             return;
         }
 

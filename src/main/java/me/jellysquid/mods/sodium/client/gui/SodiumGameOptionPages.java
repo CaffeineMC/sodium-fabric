@@ -307,8 +307,15 @@ public class SodiumGameOptionPages {
                         .setEnabled(supportsNoErrorContext())
                         .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
                         .build())
+                .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
+                        .setName(Text.translatable("sodium.options.raycast_culling.name"))
+                        .setTooltip(Text.translatable("sodium.options.raycast_culling..tooltip"))
+                        .setControl(TickBoxControl::new)
+                        .setBinding((opts, value) -> opts.performance.useRaycastCulling = value, opts -> opts.performance.useRaycastCulling)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
+                        .build()
+                )
                 .build());
-
         return new OptionPage(Text.translatable("sodium.options.pages.performance"), ImmutableList.copyOf(groups));
     }
 

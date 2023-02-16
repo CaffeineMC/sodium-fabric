@@ -21,12 +21,13 @@ public class JomlFrustum implements Frustum {
     }
 
     @Override
-    public Visibility testBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-        return switch (this.intersection.intersectAab(minX - this.offset.x, minY - this.offset.y, minZ - this.offset.z,
-                maxX - this.offset.x, maxY - this.offset.y, maxZ - this.offset.z)) {
-            case FrustumIntersection.INTERSECT -> Visibility.INTERSECT;
-            case FrustumIntersection.INSIDE -> Visibility.INSIDE;
-            default -> Visibility.OUTSIDE;
+    public int testBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        int res = this.intersection.intersectAab(minX - this.offset.x, minY - this.offset.y, minZ - this.offset.z,
+                maxX - this.offset.x, maxY - this.offset.y, maxZ - this.offset.z);
+        return switch (res) {
+            case FrustumIntersection.INTERSECT -> FrustumIntersection.INTERSECT;
+            case FrustumIntersection.INSIDE -> FrustumIntersection.INSIDE;
+            default -> FrustumIntersection.OUTSIDE;
         };
     }
 }
