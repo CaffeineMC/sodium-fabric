@@ -7,6 +7,7 @@ import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import net.minecraft.client.gui.screen.narration.NarrationPart;
 import net.minecraft.client.render.*;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.math.MatrixStack;
@@ -18,6 +19,8 @@ import java.util.function.Consumer;
 
 public abstract class AbstractWidget implements Drawable, Element, Selectable {
     protected final TextRenderer font;
+    protected boolean focused;
+    protected boolean hovered;
 
     protected AbstractWidget() {
         this.font = MinecraftClient.getInstance().textRenderer;
@@ -29,6 +32,10 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
 
     protected void drawString(MatrixStack matrixStack, Text text, int x, int y, int color) {
         this.font.draw(matrixStack, text, x, y, color);
+    }
+
+    public boolean isHovered() {
+        return this.hovered;
     }
 
     protected void drawRect(double x1, double y1, double x2, double y2, int color) {
@@ -44,7 +51,6 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
         RenderSystem.enableBlend();
-        RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
 
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
@@ -55,7 +61,6 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
         BufferBuilder.BuiltBuffer output = bufferBuilder.end();
 
         BufferRenderer.drawWithGlobalProgram(output);
-        RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
 
@@ -80,17 +85,31 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
     }
 
     public Selectable.SelectionType getType() {
-        // FIXME
-        return SelectionType.NONE;
-    }
-
-    public boolean method_37303() {
-        // FIXME
-        return true;
+        if (this.focused) {
+            return Selectable.SelectionType.FOCUSED;
+        }
+        if (this.hovered) {
+            return Selectable.SelectionType.HOVERED;
+        }
+        return Selectable.SelectionType.NONE;
     }
 
     @Override
     public void appendNarrations(NarrationMessageBuilder builder) {
-        // FIXME
+        if (focused) {
+            builder.put(NarrationPart.USAGE, Text.translatable("narration.button.usage.focused"));
+        } else if (hovered) {
+            builder.put(NarrationPart.USAGE, Text.translatable("narration.button.usage.hovered"));
+        }
+    }
+
+    @Override
+    public void setFocused(boolean focused) {
+        this.focused = focused;
+    }
+
+    @Override
+    public boolean isFocused() {
+        return focused;
     }
 }

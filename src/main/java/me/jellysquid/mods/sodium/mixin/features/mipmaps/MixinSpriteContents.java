@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.util.color.ColorSRGB;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.SpriteContents;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 import org.lwjgl.system.MemoryUtil;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
@@ -66,16 +67,16 @@ public class MixinSpriteContents {
             long pPixel = ppPixel + (pixelIndex * 4);
 
             int color = MemoryUtil.memGetInt(pPixel);
-            int alpha = NativeImage.getAlpha(color);
+            int alpha = ColorHelper.Abgr.getAlpha(color);
 
             // Ignore all fully-transparent pixels for the purposes of computing an average color.
             if (alpha != 0) {
                 float weight = (float) alpha;
 
                 // Make sure to convert to linear space so that we don't lose brightness.
-                r += ColorSRGB.srgbToLinear(NativeImage.getRed(color)) * weight;
-                g += ColorSRGB.srgbToLinear(NativeImage.getGreen(color)) * weight;
-                b += ColorSRGB.srgbToLinear(NativeImage.getBlue(color)) * weight;
+                r += ColorSRGB.srgbToLinear(ColorHelper.Abgr.getRed(color)) * weight;
+                g += ColorSRGB.srgbToLinear(ColorHelper.Abgr.getGreen(color)) * weight;
+                b += ColorSRGB.srgbToLinear(ColorHelper.Abgr.getBlue(color)) * weight;
 
                 totalWeight += weight;
             }
@@ -98,7 +99,7 @@ public class MixinSpriteContents {
             long pPixel = ppPixel + (pixelIndex * 4);
 
             int color = MemoryUtil.memGetInt(pPixel);
-            int alpha = NativeImage.getAlpha(color);
+            int alpha = ColorHelper.Abgr.getAlpha(color);
 
             // Replace the color values of pixels which are fully transparent, since they have no color data.
             if (alpha == 0) {

@@ -66,6 +66,8 @@ public class MixinModelPart {
                 long ptr = buffer;
 
                 for (ModelCuboid.Quad quad : cuboid.quads) {
+                    if (quad == null) continue;
+
                     var normal = quad.getNormal(matrices.getNormalMatrix());
 
                     for (int i = 0; i < 4; i++) {
