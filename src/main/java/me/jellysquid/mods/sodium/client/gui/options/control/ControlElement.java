@@ -11,15 +11,9 @@ public class ControlElement<T> extends AbstractWidget {
 
     protected final Dim2i dim;
 
-    protected boolean hovered;
-
     public ControlElement(Option<T> option, Dim2i dim) {
         this.option = option;
         this.dim = dim;
-    }
-
-    public boolean isHovered() {
-        return this.hovered;
     }
 
     @Override

@@ -27,7 +27,7 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
             return;
         }
 
-        boolean hovered = this.dim.containsCursor(mouseX, mouseY);
+        this.hovered = this.dim.containsCursor(mouseX, mouseY);
 
         int backgroundColor = this.enabled ? (hovered ? 0xE0000000 : 0x90000000) : 0x60000000;
         int textColor = this.enabled ? 0xFFFFFFFF : 0x90FFFFFF;

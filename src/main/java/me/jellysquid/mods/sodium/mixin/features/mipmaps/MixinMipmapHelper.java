@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.features.mipmaps;
 import me.jellysquid.mods.sodium.client.util.color.ColorSRGB;
 import net.minecraft.client.texture.MipmapHelper;
 import net.minecraft.client.texture.NativeImage;
+import net.minecraft.util.math.ColorHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
@@ -42,8 +43,8 @@ public class MixinMipmapHelper {
 
     @Unique
     private static int weightedAverageColor(int one, int two) {
-        int alphaOne = NativeImage.getAlpha(one);
-        int alphaTwo = NativeImage.getAlpha(two);
+        int alphaOne = ColorHelper.Abgr.getAlpha(one);
+        int alphaTwo = ColorHelper.Abgr.getAlpha(two);
 
         // In the case where the alpha values of the same, we can get by with an unweighted average.
         if (alphaOne == alphaTwo) {
@@ -68,13 +69,13 @@ public class MixinMipmapHelper {
         float relativeWeightTwo = alphaTwo * scale;
 
         // Convert the color components into linear space, then multiply the corresponding weight.
-        float oneR = ColorSRGB.srgbToLinear(NativeImage.getRed(one)) * relativeWeightOne;
-        float oneG = ColorSRGB.srgbToLinear(NativeImage.getGreen(one)) * relativeWeightOne;
-        float oneB = ColorSRGB.srgbToLinear(NativeImage.getBlue(one)) * relativeWeightOne;
+        float oneR = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getRed(one)) * relativeWeightOne;
+        float oneG = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getGreen(one)) * relativeWeightOne;
+        float oneB = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getBlue(one)) * relativeWeightOne;
 
-        float twoR = ColorSRGB.srgbToLinear(NativeImage.getRed(two)) * relativeWeightTwo;
-        float twoG = ColorSRGB.srgbToLinear(NativeImage.getGreen(two)) * relativeWeightTwo;
-        float twoB = ColorSRGB.srgbToLinear(NativeImage.getBlue(two)) * relativeWeightTwo;
+        float twoR = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getRed(two)) * relativeWeightTwo;
+        float twoG = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getGreen(two)) * relativeWeightTwo;
+        float twoB = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getBlue(two)) * relativeWeightTwo;
 
         // Combine the color components of each color
         float linearR = oneR + twoR;
@@ -91,13 +92,13 @@ public class MixinMipmapHelper {
     // Computes a non-weighted average of the two sRGB colors in linear space, avoiding brightness losses.
     @Unique
     private static int averageRgb(int a, int b, int alpha) {
-        float ar = ColorSRGB.srgbToLinear(NativeImage.getRed(a));
-        float ag = ColorSRGB.srgbToLinear(NativeImage.getGreen(a));
-        float ab = ColorSRGB.srgbToLinear(NativeImage.getBlue(a));
+        float ar = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getRed(a));
+        float ag = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getGreen(a));
+        float ab = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getBlue(a));
 
-        float br = ColorSRGB.srgbToLinear(NativeImage.getRed(b));
-        float bg = ColorSRGB.srgbToLinear(NativeImage.getGreen(b));
-        float bb = ColorSRGB.srgbToLinear(NativeImage.getBlue(b));
+        float br = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getRed(b));
+        float bg = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getGreen(b));
+        float bb = ColorSRGB.srgbToLinear(ColorHelper.Abgr.getBlue(b));
 
         return ColorSRGB.linearToSrgb((ar + br) * 0.5f, (ag + bg) * 0.5f, (ab + bb) * 0.5f, alpha);
     }
