@@ -190,7 +190,10 @@ public class SodiumOptionsGUI extends Screen {
         ControlElement<?> hovered = this.getActiveControls()
                 .filter(ControlElement::isHovered)
                 .findFirst()
-                .orElse(null);
+                .orElse(this.getActiveControls() // If there is no hovered element, use the focused element.
+                        .filter(ControlElement::isFocused)
+                        .findFirst()
+                        .orElse(null));
 
         boolean hasChanges = this.getAllOptions()
                 .anyMatch(Option::hasChanged);
