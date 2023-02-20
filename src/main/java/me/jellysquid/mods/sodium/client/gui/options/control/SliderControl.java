@@ -70,7 +70,7 @@ public class SliderControl implements Control<Integer> {
         public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
             super.render(matrixStack, mouseX, mouseY, delta);
 
-            if (this.option.isAvailable() && this.hovered) {
+            if (this.option.isAvailable() && (this.hovered || this.isFocused())) {
                 this.renderSlider(matrixStack);
             } else {
                 this.renderStandaloneValue(matrixStack);
@@ -100,7 +100,7 @@ public class SliderControl implements Control<Integer> {
             double thumbOffset = MathHelper.clamp((double) (this.getIntValue() - this.min) / this.range * sliderWidth, 0, sliderWidth);
 
             double thumbX = sliderX + thumbOffset - THUMB_WIDTH;
-            double trackY = sliderY + (sliderHeight / 2) - ((double) TRACK_HEIGHT / 2);
+            double trackY = sliderY + (sliderHeight / 2f) - ((double) TRACK_HEIGHT / 2);
 
             this.drawRect(thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
             this.drawRect(sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
@@ -139,7 +139,7 @@ public class SliderControl implements Control<Integer> {
             this.setValue((d - (double) this.sliderBounds.getX()) / (double) this.sliderBounds.getWidth());
         }
 
-        private void setValue(double d) {
+        public void setValue(double d) {
             this.thumbPosition = MathHelper.clamp(d, 0.0D, 1.0D);
 
             int value = this.getIntValue();

@@ -2,8 +2,13 @@ package me.jellysquid.mods.sodium.client.gui.widgets;
 
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.navigation.FocusedRect;
+import net.minecraft.client.gui.navigation.GuiNavigation;
+import net.minecraft.client.gui.navigation.GuiNavigationPath;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 
 public class FlatButtonWidget extends AbstractWidget implements Drawable {
     private final Dim2i dim;
@@ -40,6 +45,9 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
         if (this.enabled && this.selected) {
             this.drawRect(this.dim.x(), this.dim.getLimitY() - 1, this.dim.getLimitX(), this.dim.getLimitY(), 0xFF94E4D3);
         }
+        if (this.enabled && this.isFocused()) {
+            this.drawBorder(this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY());
+        }
     }
 
     public void setSelected(boolean selected) {
@@ -53,13 +61,30 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
         }
 
         if (button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
-            this.action.run();
-            this.playClickSound();
+            doAction();
 
             return true;
         }
 
         return false;
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (!this.isFocused())
+            return false;
+
+        if (keyCode == InputUtil.GLFW_KEY_ENTER) {
+            doAction();
+            return true;
+        }
+
+        return false;
+    }
+
+    private void doAction() {
+        this.action.run();
+        this.playClickSound();
     }
 
     public void setEnabled(boolean enabled) {
@@ -76,5 +101,17 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
 
     public Text getLabel() {
         return this.label;
+    }
+
+    @Override
+    public @Nullable GuiNavigationPath getNavigationPath(GuiNavigation navigation) {
+        if (!enabled || !visible)
+            return null;
+        return super.getNavigationPath(navigation);
+    }
+
+    @Override
+    public FocusedRect getNavigationFocus() {
+        return new FocusedRect(this.dim.x(), this.dim.y(), this.dim.width(), this.dim.height());
     }
 }
