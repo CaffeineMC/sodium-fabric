@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.Rect2i;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
@@ -49,6 +50,7 @@ public class SliderControl implements Control<Integer> {
         private final ControlValueFormatter formatter;
 
         private final int min;
+        private final int max;
         private final int range;
         private final int interval;
 
@@ -58,6 +60,7 @@ public class SliderControl implements Control<Integer> {
             super(option, dim);
 
             this.min = min;
+            this.max = max;
             this.range = max - min;
             this.interval = interval;
             this.thumbPosition = this.getThumbPositionForValue(option.getValue());
@@ -126,8 +129,13 @@ public class SliderControl implements Control<Integer> {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (this.option.isAvailable() && button == 0 && this.sliderBounds.contains((int) mouseX, (int) mouseY)) {
-                this.setValueFromMouse(mouseX);
+            // What is this?
+            // It's a ridiculous solution to the slider element not getting "focused" when it is clicked unless it is in the slider bounds. This breaks what every other element does,
+            // so we need this stupid hack.
+            if (this.option.isAvailable() && button == 0 && mouseY >= this.sliderBounds.getY() && mouseY <= this.sliderBounds.getY() + this.sliderBounds.getHeight()) {
+                if (this.sliderBounds.contains((int) mouseX, (int) mouseY)) {
+                    this.setValueFromMouse(mouseX);
+                }
 
                 return true;
             }
@@ -147,6 +155,21 @@ public class SliderControl implements Control<Integer> {
             if (this.option.getValue() != value) {
                 this.option.setValue(value);
             }
+        }
+
+        @Override
+        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+            if (!isFocused()) return false;
+
+            if (keyCode == InputUtil.GLFW_KEY_LEFT) {
+                this.option.setValue(MathHelper.clamp(this.option.getValue() - interval, min, max));
+                return true;
+            } else if (keyCode == InputUtil.GLFW_KEY_RIGHT) {
+                this.option.setValue(MathHelper.clamp(this.option.getValue() + interval, min, max));
+                return true;
+            }
+
+            return false;
         }
 
         @Override
