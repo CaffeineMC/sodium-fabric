@@ -6,6 +6,8 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
+import net.minecraft.client.gui.navigation.GuiNavigation;
+import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.screen.narration.NarrationPart;
 import net.minecraft.client.render.*;
@@ -14,6 +16,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
@@ -103,6 +106,11 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
         }
     }
 
+    @Nullable
+    public GuiNavigationPath getNavigationPath(GuiNavigation navigation) {
+        return !this.isFocused() ? GuiNavigationPath.of(this) : null;
+    }
+
     @Override
     public void setFocused(boolean focused) {
         this.focused = focused;
@@ -111,5 +119,12 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
     @Override
     public boolean isFocused() {
         return focused;
+    }
+
+    protected void drawBorder(int x1, int y1, int x2, int y2) {
+        this.drawRect(x1, y1, x2, y1 + 1, -1);
+        this.drawRect(x1, y2 - 1, x2, y2, -1);
+        this.drawRect(x1, y1, x1 + 1, y2, -1);
+        this.drawRect(x2 - 1, y1, x2, y2, -1);
     }
 }
