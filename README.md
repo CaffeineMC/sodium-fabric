@@ -121,3 +121,5 @@ Loom instead of these outputs.
 
 Sodium is licensed under GNU LGPLv3, a free and open-source license. For more information, please see the
 [license file](https://github.com/CaffeineMC/sodium-fabric/blob/1.16.x/dev/LICENSE.txt).
+
+The "Better Fast Leaves" pack included in Sodium is by [Vanilla Tweaks](https://vanillatweaks.net/), licensed for Sodium under the GNU LGPLv3.
