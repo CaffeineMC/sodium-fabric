@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.core;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gui.screen.ConfigCorruptedScreen;
+import me.jellysquid.mods.sodium.client.gui.screen.MissingIndiumScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.RunArgs;
 import org.lwjgl.opengl.GL32C;
@@ -17,9 +18,12 @@ public class MixinMinecraftClient {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void postInit(RunArgs args, CallbackInfo ci) {
+        var parent = MinecraftClient.getInstance().currentScreen;
+
         if (SodiumClientMod.options().isReadOnly()) {
-            var parent = MinecraftClient.getInstance().currentScreen;
             MinecraftClient.getInstance().setScreen(new ConfigCorruptedScreen(() -> parent));
+        } else if (MissingIndiumScreen.shouldShow()) {
+            MinecraftClient.getInstance().setScreen(new MissingIndiumScreen(() -> parent));
         }
     }
 
