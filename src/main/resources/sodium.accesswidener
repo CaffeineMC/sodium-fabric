@@ -10,6 +10,7 @@ accessible class net/minecraft/world/chunk/PalettedContainer$Data
 accessible class net/minecraft/world/chunk/PalettedContainer$DataProvider
 accessible class net/minecraft/client/render/BackgroundRenderer$FogData
 accessible class net/minecraft/client/render/BackgroundRenderer$StatusEffectFogModifier
+accessible class net/minecraft/client/texture/TextureStitcher$Holder
 
 accessible method net/minecraft/client/render/Frustum isVisible (DDDDDD)Z
 accessible method net/minecraft/client/texture/SpriteContents upload (IIII[Lnet/minecraft/client/texture/NativeImage;)V
