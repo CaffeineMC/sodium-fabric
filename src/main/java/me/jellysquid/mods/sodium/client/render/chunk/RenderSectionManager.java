@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
@@ -269,6 +270,11 @@ public class RenderSectionManager {
 
     private boolean unloadSection(int x, int y, int z) {
         RenderSection chunk = this.sections.remove(ChunkSectionPos.asLong(x, y, z));
+
+        RenderRegion region = this.regions.getRegion(RenderRegion.getRegionKeyForChunk(x, y, z));
+        if (region != null) {
+            region.deleteSection(chunk);
+        }
 
         if (chunk == null) {
             throw new IllegalStateException("Chunk is not loaded: " + ChunkSectionPos.from(x, y, z));
