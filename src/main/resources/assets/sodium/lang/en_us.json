@@ -18,7 +18,7 @@
   "sodium.options.attack_indicator.tooltip": "Controls where the Attack Indicator is displayed on screen.",
   "sodium.options.autosave_indicator.tooltip": "If enabled, an indicator will be shown when the game is saving the world to disk.",
   "sodium.options.graphics_quality.tooltip": "The default graphics quality controls some legacy options and is necessary for mod compatibility. If the options below are left to \"Default\", they will use this setting.",
-  "sodium.options.clouds_quality.tooltip": "Controls the quality of rendered clouds in the sky.",
+  "sodium.options.clouds_quality.tooltip": "Controls the presence of rendered clouds in the sky.",
   "sodium.options.weather_quality.tooltip": "Controls the quality of rain and snow effects.",
   "sodium.options.leaves_quality.name": "Leaves Quality",
   "sodium.options.leaves_quality.tooltip": "Controls the quality of leaves.",
