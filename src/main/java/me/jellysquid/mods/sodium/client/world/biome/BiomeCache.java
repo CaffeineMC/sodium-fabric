@@ -12,7 +12,7 @@ public class BiomeCache {
     // Arrays are in ZYX order
     private final Biome[] biomes = new Biome[(SIZE - 2) * (SIZE - 2) * (SIZE - 2)];
     //Uniform looks at the own biome block and its 7 positive neighbors.
-    //Index using the x and y coordinate. The z coordinate is used to access a single bit of each short.
+    //Index using the y and z coordinate. The x coordinate is used to access a single bit of each short.
     private final short[] uniform = new short[(SIZE - 3) * (SIZE - 3)];
     private final BiasMap bias = new BiasMap();
 
@@ -64,13 +64,13 @@ public class BiomeCache {
     }
 
     private void calculateUniform() {
-        for (int x = 1; x < (SIZE - 2); x++) {
-            for (int y = 1; y < (SIZE - 2); y++) {
+        for (int y = 1; y < (SIZE - 2); y++) {
+            for (int z = 1; z < (SIZE - 2); z++) {
                 int uniform = 0;
-                for (int z = 1; z < (SIZE - 2); z++) {
-                    uniform |= (this.hasUniformNeighbors(x, y, z) ? 1 : 0) << z;
+                for (int x = 1; x < (SIZE - 2); x++) {
+                    uniform |= (this.hasUniformNeighbors(x, y, z) ? 1 : 0) << x;
                 }
-                this.uniform[uniformArrayIndex(x, y)] = (short) uniform;
+                this.uniform[uniformArrayIndex(y, z)] = (short) uniform;
             }
         }
     }
@@ -121,9 +121,9 @@ public class BiomeCache {
         int maxY = y + 1;
         int maxZ = z + 1;
 
-        for (int adjX = x; adjX <= maxX; adjX++) {
-            for (int adjY = y; adjY <= maxY; adjY++) {
-                for (int adjZ = z; adjZ <= maxZ; adjZ++) {
+        for (int adjY = y; adjY <= maxY; adjY++) {
+            for (int adjZ = z; adjZ <= maxZ; adjZ++) {
+                for (int adjX = x; adjX <= maxX; adjX++) {
                     if (this.biomes[biomeArrayIndex(adjX, adjY, adjZ)] != biome) {
                         return false;
                     }
@@ -139,7 +139,7 @@ public class BiomeCache {
         int biomeY = BiomeCoords.fromBlock(y - 2);
         int biomeZ = BiomeCoords.fromBlock(z - 2);
 
-        if ((this.uniform[uniformArrayIndex(biomeX, biomeY)] & (1 << biomeZ)) != 0) {
+        if ((this.uniform[uniformArrayIndex(biomeY, biomeZ)] & (1 << biomeX)) != 0) {
             return this.biomes[biomeArrayIndex(biomeX, biomeY, biomeZ)];
         }
 
@@ -207,8 +207,8 @@ public class BiomeCache {
         return (y * (SIZE * SIZE)) + z * SIZE + x;
     }
 
-    private static int uniformArrayIndex(int x, int y) {
-        return ((x - 1) * (SIZE - 3)) + y - 1;
+    private static int uniformArrayIndex(int y, int z) {
+        return ((y - 1) * (SIZE - 3)) + z - 1;
     }
 
     // Computes a vector position using the given bias. This normalizes the bias
