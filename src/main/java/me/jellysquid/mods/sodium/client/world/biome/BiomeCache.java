@@ -50,21 +50,14 @@ public class BiomeCache {
     }
 
     private void copySectionBiomeData(WorldSlice slice, int sectionX, int sectionY, int sectionZ) {
-        var section = slice.getSection(sectionX, sectionY, sectionZ);
-
-        for (int y = 0; y < 4; y++) {
-            int biomeY = (sectionY * 4) + y;
-            if (!isBiomeCoordInBounds(biomeY))
-                continue;
-            for (int z = 0; z < 4; z++) {
-                int biomeZ = (sectionZ * 4) + z;
-                if (!isBiomeCoordInBounds(biomeZ))
-                    continue;
-                for (int x = 0; x < 4; x++) {
-                    int biomeX = (sectionX * 4) + x;
-                    if (!isBiomeCoordInBounds(biomeX))
-                        continue;
-                    this.biomes[biomeArrayIndex(biomeX, biomeY, biomeZ)] = section.getBiome(x, y, z).value();
+        var section = slice.getSection(sectionX, sectionY, sectionZ );
+        int maxX = Math.min(SIZE - 1, 4 * sectionX + 4);
+        int maxY = Math.min(SIZE - 1, 4 * sectionY + 4);
+        int maxZ = Math.min(SIZE - 1, 4 * sectionZ + 4);
+        for (int biomeY = Math.max(1, 4 * sectionY); biomeY < maxY; biomeY++) {
+            for (int biomeZ = Math.max(1, 4 * sectionZ); biomeZ < maxZ; biomeZ++) {
+                for (int biomeX = Math.max(1, 4 * sectionX); biomeX < maxX ; biomeX++) {
+                    this.biomes[biomeArrayIndex(biomeX, biomeY, biomeZ)] = section.getBiome(biomeX & 0x3, biomeY & 0x3, biomeZ & 0x3).value();
                 }
             }
         }
@@ -211,7 +204,7 @@ public class BiomeCache {
     }
 
     private static int biasArrayIndex(int x, int y, int z) {
-        return (y * SIZE * SIZE) + (z * SIZE) + x;
+        return (y * (SIZE * SIZE)) + z * SIZE + x;
     }
 
     private static int uniformArrayIndex(int x, int y) {

@@ -60,11 +60,13 @@ public class BiomeColorCache {
         ColorBuffer mapFoliage = buffers[ColorResolverType.FOLIAGE.ordinal()];
         ColorBuffer mapWater = buffers[ColorResolverType.WATER.ordinal()];
 
-        for (int x = 0; x < this.size; x++) {
-            for (int z = 0; z < this.size; z++) {
+        for (int z = 0; z < this.size; z++) {
+            int zTimesSize = z * this.size;
+            for (int x = 0; x < this.size; x++) {
+
                 Biome biome = this.slice.getBiome(this.inset + x, this.inset + y, this.inset + z);
 
-                var index = (z * this.size) + x;
+                var index = zTimesSize + x;
 
                 mapGrass.setARGB(index, biome.getGrassColorAt(this.worldX + x, this.worldZ + z));
                 mapFoliage.setARGB(index, biome.getFoliageColor());
