@@ -20,3 +20,6 @@ accessible field net/minecraft/client/texture/NativeImage pointer J
 
 accessible field net/minecraft/client/render/VertexFormat offsets Lit/unimi/dsi/fastutil/ints/IntList;
 accessible method net/minecraft/client/util/math/MatrixStack$Entry <init> (Lorg/joml/Matrix4f;Lorg/joml/Matrix3f;)V
+
+accessible field net/minecraft/client/color/world/GrassColors colorMap [I
+accessible field net/minecraft/client/color/world/FoliageColors colorMap [I
