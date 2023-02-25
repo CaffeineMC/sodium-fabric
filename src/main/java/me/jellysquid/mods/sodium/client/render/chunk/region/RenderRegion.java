@@ -126,6 +126,16 @@ public class RenderRegion {
         return storage;
     }
 
+    public void deleteSection(RenderSection chunk) {
+        this.storage.forEach((pass, regionStorage) -> {
+            ChunkGraphicsState state = regionStorage.graphicsStates[chunk.getChunkId()];
+            if (state != null) {
+                state.delete();
+                regionStorage.graphicsStates[chunk.getChunkId()] = null;
+            }
+        });
+    }
+
     public static class RenderRegionStorage {
         private final ChunkGraphicsState[] graphicsStates = new ChunkGraphicsState[RenderRegion.REGION_SIZE];
 
