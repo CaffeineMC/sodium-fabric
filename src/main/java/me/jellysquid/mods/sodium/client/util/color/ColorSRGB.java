@@ -83,7 +83,7 @@ public class ColorSRGB {
      * @param a The alpha-component in linear RGB space (0 to 255)
      */
     public static int linearToSrgb(float r, float g, float b, int a) {
-        return ColorHelper.Abgr.getAbgr(a, linearToSrgb(b), linearToSrgb(g), linearToSrgb(r));
+        return ColorHelper.Argb.getArgb(a, linearToSrgb(r), linearToSrgb(g), linearToSrgb(b));
     }
 
     /**
