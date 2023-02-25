@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
+import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
@@ -9,7 +10,6 @@ import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuad;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
-import me.jellysquid.mods.sodium.client.model.quad.blender.ColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
@@ -53,7 +53,7 @@ public class FluidRenderer {
     private final ModelQuadViewMutable quad = new ModelQuad();
 
     private final LightPipelineProvider lighters;
-    private final ColorBlender colorBlender;
+    private final BiomeColorBlender biomeColorBlender;
 
     // Cached wrapper type that adapts FluidRenderHandler to support QuadColorProvider<FluidState>
     private final FabricFluidColorizerAdapter fabricColorProviderAdapter = new FabricFluidColorizerAdapter();
@@ -63,11 +63,11 @@ public class FluidRenderer {
 
     private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
 
-    public FluidRenderer(LightPipelineProvider lighters, ColorBlender colorBlender) {
+    public FluidRenderer(LightPipelineProvider lighters, BiomeColorBlender biomeColorBlender) {
         this.quad.setNormal(NormI8.pack(0.0f, 1.0f, 0.0f));
 
         this.lighters = lighters;
-        this.colorBlender = colorBlender;
+        this.biomeColorBlender = biomeColorBlender;
     }
 
     private boolean isFluidOccluded(BlockRenderView world, int x, int y, int z, Direction dir, Fluid fluid) {
@@ -387,7 +387,7 @@ public class FluidRenderer {
         QuadLightData light = this.quadLightData;
         lighter.calculate(quad, pos, light, null, dir, false);
 
-        int[] biomeColors = this.colorBlender.getColors(world, pos, quad, colorSampler, fluidState);
+        int[] biomeColors = this.biomeColorBlender.getColors(world, pos, quad, colorSampler, fluidState);
 
         for (int i = 0; i < 4; i++) {
             this.quadColors[i] = ColorABGR.withAlpha(biomeColors != null ? biomeColors[i] : 0xFFFFFFFF, light.br[i] * brightness);
