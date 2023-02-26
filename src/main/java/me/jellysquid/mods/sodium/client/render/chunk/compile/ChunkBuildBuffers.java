@@ -107,7 +107,7 @@ public class ChunkBuildBuffers {
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
             var indices = indexBuffers[facing.ordinal()];
 
-            if (indices == null) {
+            if (indices.isEmpty()) {
                 continue;
             }
 
