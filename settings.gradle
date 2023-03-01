@@ -7,5 +7,3 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-
-include ":components:api"
