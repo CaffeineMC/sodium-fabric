@@ -1,3 +1,5 @@
+import net.fabricmc.loom.task.RemapJarTask
+
 plugins {
     id 'fabric-loom' version '1.0-SNAPSHOT'
     id 'org.ajoberstar.grgit' version '4.1.0'
@@ -20,23 +22,43 @@ configurations {
 
     include.extendsFrom modIncludeImplementation
     modImplementation.extendsFrom modIncludeImplementation
-
-    includeApi
-
-    api.extendsFrom includeApi
-    include.extendsFrom includeApi
 }
+
+sourceSets {
+    api {
+        java {
+            compileClasspath += main.compileClasspath
+        }
+    }
+
+    main {
+        java {
+            compileClasspath += api.output
+            runtimeClasspath += api.output
+        }
+    }
+}
+
+tasks.register('apiJar', Jar) {
+    classifier "api-dev"
+
+    from sourceSets.api.output
+}
+
+tasks.register('remapApiJar', RemapJarTask) {
+    classifier "api"
+
+    input = apiJar.archiveFile.get().asFile
+    addNestedDependencies = false
+}
+
+build.dependsOn remapApiJar
 
 dependencies {
     //to change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    afterEvaluate {
-        api project(path: ":components:api", configuration: "namedElements")
-        include project(path: ":components:api", configuration: "namedElements")
-    }
 
     // Fabric API
     modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
