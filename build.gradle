@@ -52,6 +52,7 @@ tasks.register('remapApiJar', RemapJarTask) {
     addNestedDependencies = false
 }
 
+build.dependsOn apiJar
 build.dependsOn remapApiJar
 
 dependencies {
