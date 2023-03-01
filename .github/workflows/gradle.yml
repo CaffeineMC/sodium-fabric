@@ -27,7 +27,7 @@ jobs:
     - name: Extract current branch name
       shell: bash
       # bash pattern expansion to grab branch name without slashes
-      run: ref="${GITHUB_REF#refs/heads/}" && echo "::set-output name=branch::${ref////-}"
+      run: ref="${GITHUB_REF#refs/heads/}" && echo "branch=${ref////-}" >> $GITHUB_OUTPUT
       id: ref
     - name: Upload build artifacts
       uses: actions/upload-artifact@v2
