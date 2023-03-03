@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
-import me.jellysquid.mods.sodium.client.model.quad.BakedQuadOcclusionAccessor;
 import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
@@ -70,15 +69,18 @@ public class BlockRenderer {
 
         for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
             List<BakedQuad> quads = this.getGeometry(ctx, face);
-            if (!quads.isEmpty()) {
-                rendered = this.renderQuadList(ctx, material, lighter, renderOffset, meshBuilder, quads, face, this.isFaceVisible(ctx, face));
+
+            if (!quads.isEmpty() && this.isFaceVisible(ctx, face)) {
+                this.renderQuadList(ctx, material, lighter, renderOffset, meshBuilder, quads, face);
+                rendered = true;
             }
         }
 
         List<BakedQuad> all = this.getGeometry(ctx, null);
 
         if (!all.isEmpty()) {
-            rendered = this.renderQuadList(ctx, material, lighter, renderOffset, meshBuilder, all, null, true);
+            this.renderQuadList(ctx, material, lighter, renderOffset, meshBuilder, all, null);
+            rendered = true;
         }
 
         return rendered;
@@ -95,8 +97,8 @@ public class BlockRenderer {
         return this.occlusionCache.shouldDrawSide(ctx.state(), ctx.world(), ctx.pos(), face);
     }
 
-    private boolean renderQuadList(BlockRenderContext ctx, Material material, LightPipeline lighter, Vec3d offset,
-                                ChunkModelBuilder builder, List<BakedQuad> quads, Direction cullFace, boolean faceVisible) {
+    private void renderQuadList(BlockRenderContext ctx, Material material, LightPipeline lighter, Vec3d offset,
+                                ChunkModelBuilder builder, List<BakedQuad> quads, Direction cullFace) {
         ModelQuadFacing facing = cullFace == null ? ModelQuadFacing.UNASSIGNED : ModelQuadFacing.fromDirection(cullFace);
         ColorSampler<BlockState> colorizer = null;
 
@@ -105,20 +107,13 @@ public class BlockRenderer {
 
         QuadLightData lightData = this.cachedQuadLightData;
 
-        boolean rendered = false;
-
         // This is a very hot allocation, iterate over it manually
         // noinspection ForLoopReplaceableByForEach
         for (int i = 0, quadsSize = quads.size(); i < quadsSize; i++) {
             BakedQuad quad = quads.get(i);
-            boolean hasNoOcclusion = ((BakedQuadOcclusionAccessor)quad).getNoOcclusion();
-            if (!(faceVisible || hasNoOcclusion)) {
-                continue;
-            }
-            rendered = true;
             ModelQuadView quadView = (ModelQuadView) quad;
 
-            lighter.calculate(quadView, ctx.pos(), lightData, hasNoOcclusion?null:cullFace, quad.getFace(), quad.hasShade());
+            lighter.calculate(quadView, ctx.pos(), lightData, cullFace, quad.getFace(), quad.hasShade());
 
             int[] colors = null;
 
@@ -138,7 +133,6 @@ public class BlockRenderer {
                 builder.addSprite(sprite);
             }
         }
-        return rendered;
     }
 
     private void writeGeometry(BlockRenderContext ctx,
