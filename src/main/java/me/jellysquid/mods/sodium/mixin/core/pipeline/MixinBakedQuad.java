@@ -1,7 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
-import me.jellysquid.mods.sodium.client.model.quad.BakedQuadOcclusionAccessor;
+import me.jellysquid.mods.sodium.client.model.quad.BakedQuadExtended;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import net.minecraft.client.render.model.BakedQuad;
@@ -17,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
 
 @Mixin(BakedQuad.class)
-public class MixinBakedQuad implements ModelQuadView, BakedQuadOcclusionAccessor {
+public class MixinBakedQuad implements ModelQuadView, BakedQuadExtended {
     @Shadow
     @Final
     protected int[] vertexData;
@@ -35,12 +36,12 @@ public class MixinBakedQuad implements ModelQuadView, BakedQuadOcclusionAccessor
     protected Direction face;
 
     private int cachedFlags;
-
-    private boolean hasNoOcclusion;
+    private ModelQuadFacing closestFacing;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
         this.cachedFlags = ModelQuadFlags.getQuadFlags((BakedQuad) (Object) this);
+        this.closestFacing = ModelQuadUtil.findClosestFacing(this);
     }
 
     @Override
@@ -94,12 +95,7 @@ public class MixinBakedQuad implements ModelQuadView, BakedQuadOcclusionAccessor
     }
 
     @Override
-    public void setNoOcclusion(boolean noOcclusion) {
-        this.hasNoOcclusion = noOcclusion;
-    }
-
-    @Override
-    public boolean getNoOcclusion() {
-        return hasNoOcclusion;
+    public ModelQuadFacing getClosestFacing() {
+        return closestFacing;
     }
 }
