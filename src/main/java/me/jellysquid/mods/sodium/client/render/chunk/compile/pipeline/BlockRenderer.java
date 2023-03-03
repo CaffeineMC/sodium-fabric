@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
+import me.jellysquid.mods.sodium.client.model.quad.BakedQuadExtended;
 import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
@@ -125,7 +126,16 @@ public class BlockRenderer {
                 colors = this.biomeColorBlender.getColors(ctx.world(), ctx.pos(), quadView, colorizer, ctx.state());
             }
 
-            this.writeGeometry(ctx, vertexBuffer, indexBuffer, offset, material, quadView, colors, lightData.br, lightData.lm);
+            if (cullFace == null) {
+                ModelQuadFacing closestFacing = ((BakedQuadExtended) quad).getClosestFacing();
+                if (closestFacing != facing) {
+                    this.writeGeometry(ctx, vertexBuffer, builder.getIndexBuffer(closestFacing), offset, material, quadView, colors, lightData.br, lightData.lm);
+                } else {
+                    this.writeGeometry(ctx, vertexBuffer, indexBuffer, offset, material, quadView, colors, lightData.br, lightData.lm);
+                }
+            } else {
+                this.writeGeometry(ctx, vertexBuffer, indexBuffer, offset, material, quadView, colors, lightData.br, lightData.lm);
+            }
 
             Sprite sprite = quad.getSprite();
 
