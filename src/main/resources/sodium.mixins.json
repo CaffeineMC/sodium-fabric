@@ -54,7 +54,6 @@
     "features.mipmaps.MixinSpriteContents",
     "features.model.MixinMultipartBakedModel",
     "features.model.MixinWeightedBakedModel",
-    "features.optimized_stitching.MixinTextureStitcher",
     "features.options.MixinInGameHud",
     "features.options.MixinOptionsScreen",
     "features.options.MixinWorldRenderer",
