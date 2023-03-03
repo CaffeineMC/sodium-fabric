@@ -55,6 +55,11 @@ tasks.register('remapApiJar', RemapJarTask) {
 build.dependsOn apiJar
 build.dependsOn remapApiJar
 
+jar {
+    from sourceSets.api.output.classesDirs
+    from sourceSets.api.output.resourcesDir
+}
+
 dependencies {
     //to change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
