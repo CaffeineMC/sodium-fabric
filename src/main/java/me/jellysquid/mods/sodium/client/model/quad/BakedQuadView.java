@@ -8,6 +8,5 @@ public interface BakedQuadView extends ModelQuadView {
 
     Direction getLightFace();
 
-    // NOTE: BakedQuad already defines this method, so we do not re-implement it in our mixin.
     boolean hasShade();
 }
