@@ -4,13 +4,13 @@ import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
-import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -31,18 +31,25 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     @Final
     protected int colorIndex;
 
-    private byte flags;
-    private byte lightFace, normalFace;
+    @Shadow
+    @Final
+    protected Direction face; // This is really the light face, but we can't rename it.
+
+    @Shadow
+    @Final
+    private boolean shade;
+
+    private int flags;
+
     private int normal;
+    private ModelQuadFacing normalFace;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
-        this.lightFace = (byte) face.ordinal();
-
         this.normal = ModelQuadUtil.calculateNormal(this);
-        this.normalFace = (byte) ModelQuadUtil.findNormalFace(this.normal).ordinal();
+        this.normalFace = ModelQuadUtil.findNormalFace(this.normal);
 
-        this.flags = (byte) ModelQuadFlags.getQuadFlags(this, face);
+        this.flags = ModelQuadFlags.getQuadFlags(this, face);
     }
 
     @Override
@@ -95,12 +102,19 @@ public abstract class MixinBakedQuad implements BakedQuadView {
         return this.colorIndex;
     }
 
+    @Override
     public ModelQuadFacing getNormalFace() {
-        return ModelQuadFacing.VALUES[this.normalFace];
+        return this.normalFace;
     }
 
     @Override
     public Direction getLightFace() {
-        return DirectionUtil.ALL_DIRECTIONS[this.lightFace];
+        return this.face;
+    }
+
+    @Override
+    @Unique(silent = true) // The target class has a function with the same name in a remapped environment
+    public boolean hasShade() {
+        return this.shade;
     }
 }
