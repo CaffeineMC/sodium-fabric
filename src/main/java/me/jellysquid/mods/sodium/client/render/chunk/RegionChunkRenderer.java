@@ -112,27 +112,27 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         if (this.isBlockFaceCullingEnabled) {
             ChunkRenderBounds bounds = section.getBounds();
 
-            if (camera.posY > bounds.y1) {
+            if (camera.posY > bounds.minY) {
                 addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.UP), indexOffset, baseVertex);
             }
 
-            if (camera.posY < bounds.y2) {
+            if (camera.posY < bounds.maxY) {
                 addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.DOWN), indexOffset, baseVertex);
             }
 
-            if (camera.posX > bounds.x1) {
+            if (camera.posX > bounds.minX) {
                 addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.EAST), indexOffset, baseVertex);
             }
 
-            if (camera.posX < bounds.x2) {
+            if (camera.posX < bounds.maxX) {
                 addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.WEST), indexOffset, baseVertex);
             }
 
-            if (camera.posZ > bounds.z1) {
+            if (camera.posZ > bounds.minZ) {
                 addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.SOUTH), indexOffset, baseVertex);
             }
 
-            if (camera.posZ < bounds.z2) {
+            if (camera.posZ < bounds.maxZ) {
                 addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.NORTH), indexOffset, baseVertex);
             }
         } else {

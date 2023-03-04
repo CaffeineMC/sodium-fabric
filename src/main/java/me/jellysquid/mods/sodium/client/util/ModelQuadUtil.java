@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.util;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
@@ -33,22 +32,6 @@ public class ModelQuadUtil {
     // Size of vertex format in 4-byte integers
     public static final int VERTEX_SIZE = 8;
 
-    // Cached array of normals for every facing to avoid expensive computation
-    static final int[] NORMALS = new int[DirectionUtil.ALL_DIRECTIONS.length];
-
-    static {
-        for (int i = 0; i < NORMALS.length; i++) {
-            NORMALS[i] = NormI8.pack(DirectionUtil.ALL_DIRECTIONS[i].getUnitVector());
-        }
-    }
-
-    /**
-     * Returns the normal vector for a model quad with the given {@param facing}.
-     */
-    public static int getFacingNormal(Direction facing) {
-        return NORMALS[facing.ordinal()];
-    }
-
     /**
      * @param vertexIndex The index of the vertex to access
      * @return The starting offset of the vertex's attributes
@@ -57,11 +40,8 @@ public class ModelQuadUtil {
         return vertexIndex * VERTEX_SIZE;
     }
 
-    public static ModelQuadFacing findClosestFacing(ModelQuadView quad) {
-        Vector3f pos0 = new Vector3f(quad.getX(0), quad.getY(0), quad.getZ(0));
-        Vector3f dist10 = new Vector3f(quad.getX(1), quad.getY(1), quad.getZ(1)).sub(pos0);
-        Vector3f dist30 = new Vector3f(quad.getX(3), quad.getY(3), quad.getZ(3)).sub(pos0);
-        Vector3f normal = dist10.cross(dist30).normalize();
+    public static ModelQuadFacing findNormalFace(float x, float y, float z) {
+        Vector3f normal = new Vector3f(x, y, z);
 
         if (!normal.isFinite()) {
             return ModelQuadFacing.UNASSIGNED;
@@ -69,18 +49,24 @@ public class ModelQuadUtil {
 
         float maxDot = 0;
         Direction closestFace = null;
+
         for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
             float dot = normal.dot(face.getUnitVector());
+
             if (dot > maxDot) {
                 maxDot = dot;
                 closestFace = face;
             }
         }
 
-        if (closestFace != null && MathHelper.approximatelyEquals(maxDot, 1)) {
+        if (closestFace != null && MathHelper.approximatelyEquals(maxDot, 1.0f)) {
             return ModelQuadFacing.fromDirection(closestFace);
         }
 
         return ModelQuadFacing.UNASSIGNED;
+    }
+
+    public static ModelQuadFacing findNormalFace(int normal) {
+        return findNormalFace(NormI8.unpackX(normal), NormI8.unpackY(normal), NormI8.unpackZ(normal));
     }
 }
