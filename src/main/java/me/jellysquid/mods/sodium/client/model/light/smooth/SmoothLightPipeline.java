@@ -65,12 +65,12 @@ public class SmoothLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction face, boolean shade) {
+    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade) {
         this.updateCachedData(pos.asLong());
 
         int flags = quad.getFlags();
 
-        final AoNeighborInfo neighborInfo = AoNeighborInfo.get(face);
+        final AoNeighborInfo neighborInfo = AoNeighborInfo.get(lightFace);
 
         // If the model quad is aligned to the block's face and covers it entirely, we can take a fast path and directly
         // map the corner values onto this quad's vertices. This covers most situations during rendering and provides
@@ -78,17 +78,17 @@ public class SmoothLightPipeline implements LightPipeline {
         // To match vanilla behavior, also treat the face as aligned if it is parallel and the block state is a full cube
         if ((flags & ModelQuadFlags.IS_ALIGNED) != 0 || ((flags & ModelQuadFlags.IS_PARALLEL) != 0 && LightDataAccess.unpackFC(this.lightCache.get(pos)))) {
             if ((flags & ModelQuadFlags.IS_PARTIAL) == 0) {
-                this.applyAlignedFullFace(neighborInfo, pos, face, out);
+                this.applyAlignedFullFace(neighborInfo, pos, lightFace, out);
             } else {
-                this.applyAlignedPartialFace(neighborInfo, quad, pos, face, out);
+                this.applyAlignedPartialFace(neighborInfo, quad, pos, lightFace, out);
             }
         } else if ((flags & ModelQuadFlags.IS_PARALLEL) != 0) {
-            this.applyParallelFace(neighborInfo, quad, pos, face, out);
+            this.applyParallelFace(neighborInfo, quad, pos, lightFace, out);
         } else {
-            this.applyNonParallelFace(neighborInfo, quad, pos, face, out);
+            this.applyNonParallelFace(neighborInfo, quad, pos, lightFace, out);
         }
 
-        this.applySidedBrightness(out, face, shade);
+        this.applySidedBrightness(out, lightFace, shade);
     }
 
     /**

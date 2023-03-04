@@ -101,7 +101,7 @@ public class BlockRenderer {
         for (int i = 0, quadsSize = quads.size(); i < quadsSize; i++) {
             BakedQuadView quad =  (BakedQuadView) quads.get(i);
 
-            lighter.calculate(quad, ctx.pos(), lightData, cullFace, quad.getCullFace(), quad.hasShade());
+            lighter.calculate(quad, ctx.pos(), lightData, cullFace, quad.getLightFace(), quad.hasShade());
 
             int[] colors = null;
 
@@ -136,7 +136,7 @@ public class BlockRenderer {
         ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(brightness);
         var vertices = this.vertices;
 
-        ModelQuadFacing facing = quad.getFaceNormal();
+        ModelQuadFacing normalFace = quad.getNormalFace();
 
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
@@ -153,11 +153,11 @@ public class BlockRenderer {
 
             out.light = lightmap[srcIndex];
 
-            bounds.add(out.x, out.y, out.z, facing);
+            bounds.add(out.x, out.y, out.z, normalFace);
         }
 
         var vertexBuffer = builder.getVertexBuffer();
-        var indexBuffer = builder.getIndexBuffer(facing);
+        var indexBuffer = builder.getIndexBuffer(normalFace);
 
         indexBuffer.add(vertexBuffer.push(vertices, material), ModelQuadWinding.CLOCKWISE);
     }

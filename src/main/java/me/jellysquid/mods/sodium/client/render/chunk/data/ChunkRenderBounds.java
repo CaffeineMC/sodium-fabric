@@ -21,7 +21,6 @@ public class ChunkRenderBounds {
     }
 
     public static class Builder {
-        // Bit-mask of the blocks set on each axis
         private float minX = Float.POSITIVE_INFINITY, minY = Float.POSITIVE_INFINITY, minZ = Float.POSITIVE_INFINITY;
         private float maxX = Float.NEGATIVE_INFINITY, maxY = Float.NEGATIVE_INFINITY, maxZ = Float.NEGATIVE_INFINITY;
 
