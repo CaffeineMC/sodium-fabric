@@ -32,10 +32,7 @@ public class ModelQuadFlags {
      * Calculates the properties of the given quad. This data is used later by the light pipeline in order to make
      * certain optimizations.
      */
-    public static int getQuadFlags(BakedQuad bakedQuad) {
-        ModelQuadView quad = (ModelQuadView) bakedQuad;
-        Direction face = bakedQuad.getFace();
-
+    public static int getQuadFlags(ModelQuadView quad, Direction face) {
         float minX = 32.0F;
         float minY = 32.0F;
         float minZ = 32.0F;
