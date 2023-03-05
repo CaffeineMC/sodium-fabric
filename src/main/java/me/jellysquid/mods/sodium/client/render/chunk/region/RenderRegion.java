@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.gl.arena.GlBufferArena;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
+import me.jellysquid.mods.sodium.client.render.chunk.SharedQuadIndexBuffer;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
@@ -13,6 +14,7 @@ import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
+import java.util.EnumMap;
 import java.util.Map;
 
 public class RenderRegion {
@@ -42,7 +44,6 @@ public class RenderRegion {
 
     public final GlBufferArena vertexBuffers;
 
-    public final GlBufferArena indexBuffers;
 
     public final Map<TerrainRenderPass, RenderRegionStorage> storage = new Reference2ReferenceOpenHashMap<>();
 
@@ -51,12 +52,8 @@ public class RenderRegion {
         this.y = y;
         this.z = z;
 
-        int expectedVertexCount = REGION_SIZE * 756;
-        int expectedIndexCount = (expectedVertexCount / 4) * 6;
-
         int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
-        this.vertexBuffers = new GlBufferArena(commandList, expectedVertexCount, stride, stagingBuffer);
-        this.indexBuffers = new GlBufferArena(commandList, expectedIndexCount, Integer.BYTES, stagingBuffer);
+        this.vertexBuffers = new GlBufferArena(commandList, REGION_SIZE * 756, stride, stagingBuffer);
     }
 
     public static RenderRegion createRegionForChunk(CommandList commandList, StagingBuffer stagingBuffer, int x, int y, int z) {
@@ -91,7 +88,6 @@ public class RenderRegion {
         this.storage.clear();
 
         this.vertexBuffers.delete(commandList);
-        this.indexBuffers.delete(commandList);
     }
 
     public void deleteTessellations(CommandList commandList) {
@@ -101,15 +97,15 @@ public class RenderRegion {
     }
 
     public boolean isEmpty() {
-        return this.vertexBuffers.isEmpty() && this.indexBuffers.isEmpty();
+        return this.vertexBuffers.isEmpty();
     }
 
     public long getDeviceUsedMemory() {
-        return this.vertexBuffers.getDeviceUsedMemory() + this.indexBuffers.getDeviceUsedMemory();
+        return this.vertexBuffers.getDeviceUsedMemory();
     }
 
     public long getDeviceAllocatedMemory() {
-        return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
+        return this.vertexBuffers.getDeviceAllocatedMemory();
     }
 
     public RenderRegionStorage getStorage(TerrainRenderPass pass) {
@@ -139,7 +135,7 @@ public class RenderRegion {
     public static class RenderRegionStorage {
         private final ChunkGraphicsState[] graphicsStates = new ChunkGraphicsState[RenderRegion.REGION_SIZE];
 
-        private GlTessellation tessellation;
+        private final EnumMap<SharedQuadIndexBuffer.IndexType, GlTessellation> tessellations = new EnumMap<>(SharedQuadIndexBuffer.IndexType.class);
 
         public ChunkGraphicsState setState(RenderSection section, ChunkGraphicsState state) {
             var id = section.getChunkId();
@@ -154,12 +150,16 @@ public class RenderRegion {
             return this.graphicsStates[section.getChunkId()];
         }
 
-        public void setTessellation(GlTessellation tessellation) {
-            this.tessellation = tessellation;
+        public void updateTessellation(CommandList commandList, SharedQuadIndexBuffer.IndexType indexType, GlTessellation tessellation) {
+            var prev = this.tessellations.put(indexType, tessellation);
+
+            if (prev != null) {
+                prev.delete(commandList);
+            }
         }
 
-        public GlTessellation getTessellation() {
-            return this.tessellation;
+        public GlTessellation getTessellation(SharedQuadIndexBuffer.IndexType indexType) {
+            return this.tessellations.get(indexType);
         }
 
         public void delete(CommandList commandList) {
@@ -177,10 +177,11 @@ public class RenderRegion {
         }
 
         public void deleteTessellation(CommandList commandList) {
-            if (this.tessellation != null) {
-                this.tessellation.delete(commandList);
-                this.tessellation = null;
+            for (var tessellation : this.tessellations.values()) {
+                tessellation.delete(commandList);
             }
+
+            this.tessellations.clear();
         }
 
         public void replaceState(RenderSection section, ChunkGraphicsState state) {

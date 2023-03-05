@@ -1,25 +1,25 @@
 package me.jellysquid.mods.sodium.client.render.chunk.data;
 
-import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
-import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
+import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 
 import java.util.Map;
 
 public class ChunkMeshData {
-    private final Map<ModelQuadFacing, ElementRange> parts;
-    private final IndexedVertexData vertexData;
+    private final Map<ModelQuadFacing, VertexRange> parts;
+    private final NativeBuffer buffer;
 
-    public ChunkMeshData(IndexedVertexData vertexData, Map<ModelQuadFacing, ElementRange> parts) {
+    public ChunkMeshData(NativeBuffer buffer, Map<ModelQuadFacing, VertexRange> parts) {
         this.parts = parts;
-        this.vertexData = vertexData;
+        this.buffer = buffer;
     }
 
-    public Map<ModelQuadFacing, ElementRange> getParts() {
+    public Map<ModelQuadFacing, VertexRange> getParts() {
         return this.parts;
     }
 
-    public IndexedVertexData getVertexData() {
-        return this.vertexData;
+    public NativeBuffer getVertexData() {
+        return this.buffer;
     }
 }

@@ -2,10 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
-import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
+import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
-import me.jellysquid.mods.sodium.client.model.IndexBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
@@ -18,8 +16,10 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexTy
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import org.lwjgl.system.MemoryUtil;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,14 +36,13 @@ public class ChunkBuildBuffers {
         this.vertexType = vertexType;
 
         for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
-            var vertexBuffer = new ChunkMeshBufferBuilder(this.vertexType, 2 * 1024 * 1024);
-            var indexBuffers = new IndexBufferBuilder[ModelQuadFacing.COUNT];
+            var vertexBuffers = new ChunkMeshBufferBuilder[ModelQuadFacing.COUNT];
 
             for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
-                indexBuffers[facing] = new IndexBufferBuilder(1024 * 8);
+                vertexBuffers[facing] = new ChunkMeshBufferBuilder(this.vertexType, 128 * 1024);
             }
 
-            this.builders.put(pass, new BakedChunkModelBuilder(vertexBuffer, indexBuffers));
+            this.builders.put(pass, new BakedChunkModelBuilder(vertexBuffers));
         }
     }
 
@@ -64,48 +63,39 @@ public class ChunkBuildBuffers {
      */
     public ChunkMeshData createMesh(TerrainRenderPass pass) {
         var builder = this.builders.get(pass);
-        var vertexBuffer = builder.getVertexBuffer().pop();
 
-        if (vertexBuffer == null) {
-            return null;
-        }
+        List<ByteBuffer> vertexBuffers = new ArrayList<>();
+        Map<ModelQuadFacing, VertexRange> vertexRanges = new EnumMap<>(ModelQuadFacing.class);
 
-        IntArrayList[] indexBuffers = Arrays.stream(builder.getIndexBuffers())
-                .map(IndexBufferBuilder::pop)
-                .toArray(IntArrayList[]::new);
-
-        NativeBuffer indexBuffer = new NativeBuffer(Arrays.stream(indexBuffers)
-                .mapToInt((array) -> array.size() * Integer.BYTES)
-                .sum());
-
-        int indexPointer = 0;
-
-        Map<ModelQuadFacing, ElementRange> ranges = new EnumMap<>(ModelQuadFacing.class);
+        int vertexCount = 0;
 
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
-            var indices = indexBuffers[facing.ordinal()];
+            var buffer = builder.getVertexBuffer(facing);
 
-            if (indices.isEmpty()) {
+            if (buffer.isEmpty()) {
                 continue;
             }
 
-            ranges.put(facing, new ElementRange(indexPointer, indices.size()));
+            vertexBuffers.add(buffer.slice());
+            vertexRanges.put(facing, new VertexRange(vertexCount, buffer.count()));
 
-            copyToIntBuffer(MemoryUtil.memAddress(indexBuffer.getDirectBuffer(), indexPointer), indices);
-            indexPointer += indices.size() * Integer.BYTES;
+            vertexCount += buffer.count();
         }
 
-        IndexedVertexData vertexData = new IndexedVertexData(this.vertexType.getVertexFormat(),
-                vertexBuffer, indexBuffer);
-
-        return new ChunkMeshData(vertexData, ranges);
-    }
-
-    private static void copyToIntBuffer(long ptr, IntArrayList list) {
-        for (int i : list) {
-            MemoryUtil.memPutInt(ptr, i);
-            ptr += 4;
+        if (vertexRanges.isEmpty()) {
+            return null;
         }
+
+        var mergedBuffer = new NativeBuffer(vertexCount * this.vertexType.getVertexFormat().getStride());
+        var mergedBufferBuilder = mergedBuffer.getDirectBuffer();
+
+        for (var buffer : vertexBuffers) {
+            mergedBufferBuilder.put(buffer);
+        }
+
+        mergedBufferBuilder.flip();
+
+        return new ChunkMeshData(mergedBuffer, vertexRanges);
     }
 
     public void destroy() {
