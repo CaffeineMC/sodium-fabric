@@ -156,10 +156,8 @@ public class BlockRenderer {
             bounds.add(out.x, out.y, out.z, normalFace);
         }
 
-        var vertexBuffer = builder.getVertexBuffer();
-        var indexBuffer = builder.getIndexBuffer(normalFace);
-
-        indexBuffer.add(vertexBuffer.push(vertices, material), ModelQuadWinding.CLOCKWISE);
+        var vertexBuffer = builder.getVertexBuffer(normalFace);
+        vertexBuffer.push(vertices, material);
     }
 
     private LightMode getLightingMode(BlockState state, BakedModel model) {

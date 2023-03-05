@@ -230,11 +230,11 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
 
             this.updateQuad(quad, world, pos, lighter, Direction.UP, 1.0F, colorizer, fluidState);
-            this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, ModelQuadWinding.CLOCKWISE);
+            this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, false);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
                 this.writeQuad(meshBuilder, bounds, material, offset, quad,
-                        ModelQuadFacing.DOWN, ModelQuadWinding.COUNTERCLOCKWISE);
+                        ModelQuadFacing.DOWN, true);
 
             }
 
@@ -255,7 +255,7 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.updateQuad(quad, world, pos, lighter, Direction.DOWN, 1.0F, colorizer, fluidState);
-            this.writeQuad(meshBuilder, bounds, material, offset, quad, ModelQuadFacing.DOWN, ModelQuadWinding.CLOCKWISE);
+            this.writeQuad(meshBuilder, bounds, material, offset, quad, ModelQuadFacing.DOWN, false);
 
         }
 
@@ -359,10 +359,10 @@ public class FluidRenderer {
                 ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
 
                 this.updateQuad(quad, world, pos, lighter, dir, br, colorizer, fluidState);
-                this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, ModelQuadWinding.CLOCKWISE);
+                this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, false);
 
                 if (!isOverlay) {
-                    this.writeQuad(meshBuilder, bounds, material, offset, quad, facing.getOpposite(), ModelQuadWinding.COUNTERCLOCKWISE);
+                    this.writeQuad(meshBuilder, bounds, material, offset, quad, facing.getOpposite(), true);
                 }
 
             }
@@ -389,12 +389,11 @@ public class FluidRenderer {
     }
 
     private void writeQuad(ChunkModelBuilder builder, ChunkRenderBounds.Builder bounds, Material material, BlockPos offset, ModelQuadView quad,
-                           ModelQuadFacing facing, ModelQuadWinding winding) {
-        var vertexBuffer = builder.getVertexBuffer();
+                           ModelQuadFacing facing, boolean flip) {
         var vertices = this.vertices;
 
         for (int i = 0; i < 4; i++) {
-            var out = vertices[i];
+            var out = vertices[flip ? 3 - i : i];
             out.x = offset.getX() + quad.getX(i);
             out.y = offset.getY() + quad.getY(i);
             out.z = offset.getZ() + quad.getZ(i);
@@ -413,8 +412,8 @@ public class FluidRenderer {
             builder.addSprite(sprite);
         }
 
-        builder.getIndexBuffer(facing)
-                .add(vertexBuffer.push(vertices, material), winding);
+        var vertexBuffer = builder.getVertexBuffer(facing);
+        vertexBuffer.push(vertices, material);
     }
 
     private static void setVertex(ModelQuadViewMutable quad, int i, float x, float y, float z, float u, float v) {
