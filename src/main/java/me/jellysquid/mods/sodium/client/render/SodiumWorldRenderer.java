@@ -100,7 +100,7 @@ public class SodiumWorldRenderer {
 
     private void loadWorld(ClientWorld world) {
         this.world = world;
-        this.chunkTracker = new ChunkTracker();
+        this.chunkTracker = ChunkTracker.from(world);
 
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.initRenderer(commandList);
@@ -185,7 +185,6 @@ public class SodiumWorldRenderer {
 
         profiler.swap("chunk_update");
 
-        this.chunkTracker.update();
         this.renderSectionManager.updateChunks();
 
         if (this.renderSectionManager.isGraphDirty()) {
@@ -235,8 +234,7 @@ public class SodiumWorldRenderer {
 
         this.renderDistance = this.client.options.getClampedViewDistance();
 
-        this.renderSectionManager = new RenderSectionManager(this, this.world, this.renderDistance, commandList);
-        this.renderSectionManager.reloadChunks(this.chunkTracker);
+        this.renderSectionManager = new RenderSectionManager(this, this.world, this.renderDistance, this.chunkTracker, commandList);
     }
 
     public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
@@ -287,22 +285,6 @@ public class SodiumWorldRenderer {
         }
     }
 
-    public void onChunkAdded(int x, int z) {
-        if (this.chunkTracker.loadChunk(x, z)) {
-            this.renderSectionManager.onChunkAdded(x, z);
-        }
-    }
-
-    public void onChunkLightAdded(int x, int z) {
-        this.chunkTracker.onLightDataAdded(x, z);
-    }
-
-    public void onChunkRemoved(int x, int z) {
-        if (this.chunkTracker.unloadChunk(x, z)) {
-            this.renderSectionManager.onChunkRemoved(x, z);
-        }
-    }
-
     public void onChunkRenderUpdated(int x, int y, int z, ChunkRenderData meshBefore, ChunkRenderData meshAfter) {
         ListUtil.updateList(this.globalBlockEntities, meshBefore.getGlobalBlockEntities(), meshAfter.getGlobalBlockEntities());
 
@@ -326,10 +308,6 @@ public class SodiumWorldRenderer {
         Box box = entity.getVisibilityBoundingBox();
 
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
-    }
-
-    public boolean doesChunkHaveFlag(int x, int z, int status) {
-        return this.chunkTracker.hasMergedFlags(x, z, status);
     }
 
     public boolean isBoxVisible(double x1, double y1, double z1, double x2, double y2, double z2) {
@@ -404,4 +382,10 @@ public class SodiumWorldRenderer {
     public ChunkTracker getChunkTracker() {
         return this.chunkTracker;
     }
+
+
+    public boolean isRenderingReady(int x, int y, int z) {
+        return this.renderSectionManager.isSectionReady(x, y, z);
+    }
+
 }

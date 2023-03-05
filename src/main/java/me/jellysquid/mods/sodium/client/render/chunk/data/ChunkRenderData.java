@@ -68,6 +68,10 @@ public class ChunkRenderData {
             flags |= RenderSectionFlags.HAS_BLOCK_ENTITIES;
         }
 
+        if (!this.animatedSprites.isEmpty()) {
+            flags |= RenderSectionFlags.HAS_ANIMATED_SPRITES;
+        }
+
         return flags;
     }
 

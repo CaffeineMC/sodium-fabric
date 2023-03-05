@@ -1,59 +1,53 @@
 package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import net.minecraft.util.math.Direction;
 
 import java.util.Arrays;
 
-public class ChunkGraphIterationQueue {
-    private RenderSection[] renders;
-    private Direction[] directions;
-
-    private int pos;
-    private int capacity;
+public class ChunkGraphIterationQueue extends AbstractWrappingQueue {
+    private RenderSection[] arraySection;
+    private byte[] arrayDirection;
+    private byte[] arrayCull;
 
     public ChunkGraphIterationQueue() {
-        this(4096);
+        super(128);
+
+        this.arraySection = new RenderSection[this.capacity()];
+        this.arrayDirection = new byte[this.capacity()];
+        this.arrayCull = new byte[this.capacity()];
     }
 
-    public ChunkGraphIterationQueue(int capacity) {
-        this.renders = new RenderSection[capacity];
-        this.directions = new Direction[capacity];
-
-        this.capacity = capacity;
+    public RenderSection getSection() {
+        return this.arraySection[this.currentElementIndex()];
     }
 
-    public void add(RenderSection render, Direction direction) {
-        int i = this.pos++;
-
-        if (i == this.capacity) {
-            this.resize();
-        }
-
-        this.renders[i] = render;
-        this.directions[i] = direction;
+    public int getDirection() {
+        return this.arrayDirection[this.currentElementIndex()];
     }
 
-    private void resize() {
-        this.capacity *= 2;
-
-        this.renders = Arrays.copyOf(this.renders, this.capacity);
-        this.directions = Arrays.copyOf(this.directions, this.capacity);
+    public int getCullState() {
+        return this.arrayCull[this.currentElementIndex()];
     }
 
-    public RenderSection getRender(int i) {
-        return this.renders[i];
+    public void add(RenderSection section, int dir, int cull) {
+        var index = this.reserveNext();
+
+        this.arraySection[index] = section;
+        this.arrayDirection[index] = (byte) dir;
+        this.arrayCull[index] = (byte) cull;
     }
 
-    public Direction getDirection(int i) {
-        return this.directions[i];
+    @Override
+    protected void erase(int index) {
+        this.arraySection[index] = null;
+        this.arrayDirection[index] = -1;
+        this.arrayCull[index] = -1;
     }
 
-    public void clear() {
-        this.pos = 0;
-    }
-
-    public int size() {
-        return this.pos;
+    @Override
+    protected void resize(int capacity) {
+        this.arraySection = Arrays.copyOf(this.arraySection, capacity);
+        this.arrayDirection = Arrays.copyOf(this.arrayDirection, capacity);
+        this.arrayCull = Arrays.copyOf(this.arrayCull, capacity);
     }
 }

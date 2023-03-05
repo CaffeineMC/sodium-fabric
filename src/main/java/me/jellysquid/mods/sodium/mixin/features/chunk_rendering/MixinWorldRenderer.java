@@ -179,7 +179,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
      */
     @Overwrite
     public boolean isRenderingReady(BlockPos pos) {
-        return this.renderer.doesChunkHaveFlag(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FLAG_ALL);
+        return this.renderer.isRenderingReady(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);
     }
 
     @Inject(method = "reload()V", at = @At("RETURN"))
