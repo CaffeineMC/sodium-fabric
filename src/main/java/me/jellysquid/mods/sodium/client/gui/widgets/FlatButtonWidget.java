@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.gui.widgets;
 
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.navigation.FocusedRect;
+import net.minecraft.client.gui.ScreenRect;
 import net.minecraft.client.gui.navigation.GuiNavigation;
 import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.util.InputUtil;
@@ -111,7 +111,7 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
     }
 
     @Override
-    public FocusedRect getNavigationFocus() {
-        return new FocusedRect(this.dim.x(), this.dim.y(), this.dim.width(), this.dim.height());
+    public ScreenRect getNavigationFocus() {
+        return new ScreenRect(this.dim.x(), this.dim.y(), this.dim.width(), this.dim.height());
     }
 }

@@ -127,7 +127,6 @@ public class CloudRenderer {
             RenderSystem.enableCull();
         }
 
-        RenderSystem.disableTexture();
         RenderSystem.setShaderColor((float) color.x, (float) color.y, (float) color.z, 0.8f);
 
         matrices.push();
@@ -158,6 +157,8 @@ public class CloudRenderer {
 
         RenderSystem.disableBlend();
         RenderSystem.depthFunc(GL30C.GL_LEQUAL);
+
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
         RenderSystem.enableCull();
 

@@ -59,7 +59,6 @@ public class MixinLevelLoadingScreen {
         Tessellator tessellator = Tessellator.getInstance();
 
         RenderSystem.enableBlend();
-        RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
         
         BufferBuilder bufferBuilder = tessellator.getBuffer();
@@ -113,7 +112,6 @@ public class MixinLevelLoadingScreen {
 
         tessellator.draw();
 
-        RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
 
