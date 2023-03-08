@@ -11,9 +11,9 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.gl.device.MultiDrawBatch;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.RegionRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
@@ -21,6 +21,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
 import me.jellysquid.mods.sodium.client.util.ReversibleArrayIterator;
+import me.jellysquid.mods.sodium.client.util.SectionIterator;
 
 import java.util.EnumMap;
 
@@ -42,7 +43,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     @Override
     public void render(ChunkRenderMatrices matrices, CommandList commandList,
-                       RenderRegionManager regions, ChunkRenderList list, TerrainRenderPass renderPass,
+                       ChunkRenderList list, TerrainRenderPass renderPass,
                        ChunkCameraContext camera) {
         super.begin(renderPass);
 
@@ -50,18 +51,20 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         shader.setProjectionMatrix(matrices.projection());
         shader.setModelViewMatrix(matrices.modelView());
 
-        ReversibleArrayIterator<ChunkRenderList.RegionBatch> regionIterator = list.batches(renderPass.isReverseOrder());
-        ChunkRenderList.RegionBatch regionBatch;
+        ReversibleArrayIterator<RegionRenderLists> regionIterator = list.sortedRegions(renderPass.isReverseOrder());
+        RegionRenderLists regionLists;
 
-        while ((regionBatch = regionIterator.next()) != null) {
-            var region = regions.getRegion(regionBatch.getRegionId());
-            var regionStorage = region.getStorage(renderPass);
+        while ((regionLists = regionIterator.next()) != null) {
+            var region = regionLists.getRegion();
 
-            if (regionStorage == null) {
+            var sections = region.getSectionStorage(renderPass);
+            var resources = region.getResources();
+
+            if (sections == null || resources == null) {
                 continue;
             }
 
-            var batch = this.prepareDrawBatch(regionStorage, regionBatch, renderPass, camera);
+            var batch = this.prepareDrawBatch(regionLists, renderPass, camera, sections);
 
             if (batch.isEmpty()) {
                 continue;
@@ -73,21 +76,21 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             indexBuffer.ensureCapacity(commandList, batch.getMaxVertexCount());
 
             this.setModelMatrixUniforms(shader, region, camera);
-            this.executeDrawBatch(commandList, batch, indexBuffer, this.createTessellationForRegion(commandList, region, renderPass, indexBuffer));
+            this.executeDrawBatch(commandList, batch, indexBuffer, this.createTessellationForRegion(commandList, region, indexBuffer));
         }
 
         super.end(renderPass);
     }
 
-    private MultiDrawBatch prepareDrawBatch(RenderRegion.RenderRegionStorage storage, ChunkRenderList.RegionBatch batch, TerrainRenderPass pass, ChunkCameraContext camera) {
+    private MultiDrawBatch prepareDrawBatch(RegionRenderLists batch, TerrainRenderPass pass, ChunkCameraContext camera, RenderRegion.SectionData sectionData) {
         var commandBuffer = this.commandBufferBuilder;
         commandBuffer.clear();
 
-        ReversibleArrayIterator<RenderSection> sectionIterator = batch.ordered(pass.isReverseOrder());
+        SectionIterator sectionIterator = batch.getSectionsWithGeometry(pass.isReverseOrder());
         RenderSection section;
 
         while ((section = sectionIterator.next()) != null) {
-            ChunkGraphicsState state = storage.getState(section);
+            ChunkGraphicsState state = sectionData.getState(section);
 
             if (state == null) {
                 continue;
@@ -140,14 +143,14 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
-    private GlTessellation createTessellationForRegion(CommandList commandList, RenderRegion region, TerrainRenderPass pass, SharedQuadIndexBuffer indexBuffer) {
+    private GlTessellation createTessellationForRegion(CommandList commandList, RenderRegion region, SharedQuadIndexBuffer indexBuffer) {
         var indexType = indexBuffer.getIndexType();
 
-        var storage = region.getStorage(pass);
-        var tessellation = storage.getTessellation(indexType);
+        var resources = region.getResources();
+        var tessellation = resources.getTessellation(indexType);
 
         if (tessellation == null) {
-            storage.updateTessellation(commandList, indexType, tessellation = this.createRegionTessellation(commandList, region, indexBuffer));
+            resources.updateTessellation(commandList, indexType, tessellation = this.createRegionTessellation(commandList, resources, indexBuffer));
         }
 
         return tessellation;
@@ -173,9 +176,9 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         }
     }
 
-    private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion region, SharedQuadIndexBuffer indexBuffer) {
+    private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.Resources resources, SharedQuadIndexBuffer indexBuffer) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(region.vertexBuffers.getBufferObject(), new GlVertexAttributeBinding[] {
+                TessellationBinding.forVertexBuffer(resources.getVertexBuffer(), new GlVertexAttributeBinding[] {
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID,
                                 this.vertexFormat.getAttribute(ChunkMeshAttribute.POSITION_MATERIAL_MESH)),
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,

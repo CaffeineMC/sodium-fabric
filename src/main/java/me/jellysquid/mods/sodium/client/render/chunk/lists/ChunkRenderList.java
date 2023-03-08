@@ -1,49 +1,45 @@
 package me.jellysquid.mods.sodium.client.render.chunk.lists;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import me.jellysquid.mods.sodium.client.render.chunk.IndexedMap;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.util.ReversibleArrayIterator;
 
-public class ChunkRenderList {
-    private final ObjectArrayList<RegionBatch> batches;
+import java.util.function.Consumer;
 
-    public ChunkRenderList(ObjectArrayList<RegionBatch> batches) {
+public class ChunkRenderList {
+    protected final ObjectArrayList<RegionRenderLists> batches;
+
+    public ChunkRenderList(ObjectArrayList<RegionRenderLists> batches) {
         this.batches = batches;
     }
 
-    public ReversibleArrayIterator<RegionBatch> batches(boolean reverse) {
+    public ReversibleArrayIterator<RegionRenderLists> sortedRegions(boolean reverse) {
         return new ReversibleArrayIterator<>(this.batches, reverse);
     }
 
-    public int getCount() {
-        int total = 0;
-
-        for (var batch : this.batches) {
-            total += batch.size();
+    public void forEachSectionWithSprites(Consumer<RenderSection> consumer) {
+        for (var regionList : this.batches) {
+            var it = regionList.getSectionsWithSprites(false);
+            it.forEach(consumer);
         }
-
-        return total;
     }
 
-    public static class RegionBatch {
-        private final long regionId;
-        private final ObjectArrayList<RenderSection> sections;
+    public void forEachSectionWithEntities(Consumer<RenderSection> consumer) {
+        for (var regionList : this.batches) {
+            var it = regionList.getSectionsWithBlockEntities(false);
+            it.forEach(consumer);
+        }
+    }
 
-        public RegionBatch(long regionId, ObjectArrayList<RenderSection> sections) {
-            this.regionId = regionId;
-            this.sections = sections;
+    public int size() {
+        int size = 0;
+
+        for (var regionList : this.batches) {
+            size += regionList.size();
         }
 
-        public long getRegionId() {
-            return this.regionId;
-        }
-
-        public ReversibleArrayIterator<RenderSection> ordered(boolean reverse) {
-            return new ReversibleArrayIterator<>(this.sections, reverse);
-        }
-
-        public int size() {
-            return this.sections.size();
-        }
+        return size;
     }
 }

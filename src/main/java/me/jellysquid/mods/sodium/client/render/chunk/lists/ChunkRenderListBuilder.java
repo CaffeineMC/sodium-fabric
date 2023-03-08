@@ -1,33 +1,64 @@
 package me.jellysquid.mods.sodium.client.render.chunk.lists;
 
-import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.chunk.IndexedMap;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 
 public class ChunkRenderListBuilder {
+    private final IndexedMap<RenderRegion> regions;
+    private final ObjectArrayList<RegionRenderLists> sorted = new ObjectArrayList<>();
 
-    private final Long2ReferenceLinkedOpenHashMap<ObjectArrayList<RenderSection>> entries = new Long2ReferenceLinkedOpenHashMap<>();
+    private final Cache cache;
 
-    public void add(RenderSection render) {
-        ObjectArrayList<RenderSection> sections = this.entries.get(render.getRegionId());
-
-        if (sections == null) {
-            this.entries.put(render.getRegionId(), sections = new ObjectArrayList<>(RenderRegion.REGION_SIZE));
-        }
-
-        sections.add(render);
+    public ChunkRenderListBuilder(IndexedMap<RenderRegion> regions, Cache cache) {
+        this.regions = regions;
+        this.batches = new RegionRenderLists[regions.getMaxId()];
+        this.cache = cache;
     }
 
+    private final RegionRenderLists[] batches;
+
+    public void add(int flags, int region, int section) {
+        RegionRenderLists list = this.batches[region];
+
+        if (list == null) {
+            list = this.createLists(region);
+        }
+
+        list.add(section, flags);
+    }
+
+    private RegionRenderLists createLists(int region) {
+        RegionRenderLists list = this.cache.createLists();
+        list.setRegion(this.regions.getById(region));
+
+        this.batches[region] = list;
+        this.sorted.add(list);
+
+        return list;
+    }
 
     public ChunkRenderList build() {
-        var batches = new ObjectArrayList<ChunkRenderList.RegionBatch>(this.entries.size());
-
-        for (var entry : this.entries.long2ReferenceEntrySet()) {
-            batches.add(new ChunkRenderList.RegionBatch(entry.getLongKey(), entry.getValue()));
-        }
-
-        return new ChunkRenderList(batches);
+        return new ChunkRenderList(this.sorted);
     }
 
+    public static class Cache {
+        private final ObjectArrayList<RegionRenderLists> pool = new ObjectArrayList<>();
+
+        public void add(ChunkRenderList list) {
+            for (var batch : list.batches) {
+                batch.reset();
+            }
+
+            this.pool.addAll(list.batches);
+        }
+
+        public RegionRenderLists createLists() {
+            if (!this.pool.isEmpty()) {
+                return this.pool.pop();
+            }
+
+            return new RegionRenderLists();
+        }
+    }
 }

@@ -40,7 +40,7 @@ public class FastCubicSampler {
         double deltaY = pos.getY() - (double)intY;
         double deltaZ = pos.getZ() - (double)intZ;
 
-        Vec3d sum = Vec3d.ZERO;
+        double r = 0.0D, g = 0.0D, b = 0.0D;
         double totalFactor = 0.0D;
 
         for(int x = 0; x < DIAMETER; ++x) {
@@ -56,11 +56,15 @@ public class FastCubicSampler {
                     totalFactor += factor;
 
                     Vec3d color = transformer.apply(Vec3d.unpackRgb(values[index(x, y, z)]));
-                    sum = sum.add(color.multiply(factor));
+
+                    r += color.x * factor;
+                    g += color.y * factor;
+                    b += color.z * factor;
                 }
             }
         }
 
+        var sum = new Vec3d(r, g, b);
         sum = sum.multiply(1.0D / totalFactor);
 
         return sum;

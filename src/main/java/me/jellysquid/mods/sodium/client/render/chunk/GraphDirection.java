@@ -11,6 +11,7 @@ public class GraphDirection {
     public static final int EAST = 5;
 
     public static final int[] DIRECTIONS = { DOWN, UP, NORTH, SOUTH, WEST, EAST };
+    public static final int COUNT = 6;
 
     public static int opposite(int dir) {
         return switch (dir) {
@@ -20,7 +21,7 @@ public class GraphDirection {
             case SOUTH -> NORTH;
             case WEST -> EAST;
             case EAST -> WEST;
-            default -> throw new IllegalStateException("Unexpected value: " + dir);
+            default -> NONE;
         };
     }
 

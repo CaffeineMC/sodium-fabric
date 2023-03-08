@@ -28,14 +28,17 @@ public abstract class AbstractWrappingQueue {
      * @return The reserved index at which elements which are about to be added should be stored at
      */
     protected final int reserveNext() {
-        final int next = this.tail;
-        this.tail = inc(this.tail, this.mask);
+        final int cur = this.tail;
 
-        if (this.head == this.tail) {
-            this.grow();
+        var next = inc(this.tail, this.mask);
+
+        if (next == this.head) {
+            throw new ArrayIndexOutOfBoundsException("Too many entries are in queue");
         }
 
-        return next;
+        this.tail = next;
+
+        return cur;
     }
 
     /**
@@ -67,47 +70,28 @@ public abstract class AbstractWrappingQueue {
      * Advances the queue forward one entry, and erases the previous entry.
      */
     public final void next() {
-        this.erase(this.head);
-
         if (!this.isEmpty()) {
             this.head = inc(this.head, this.mask);
         }
     }
 
-    /**
-     * Increases the size of the queue's storage so that it can store (at least) one more entry. More space than
-     * necessary may be allocated to avoid excessive resizing of the queue.
-     */
-    protected final void grow() {
-        this.capacity <<= 1;
-        this.mask = this.capacity - 1;
+    public int advanceIndex() {
+        var cur = this.head;
 
-        this.resize(this.capacity);
+        if (cur == this.tail) {
+            throw new NoSuchElementException();
+        }
+
+        this.head = inc(cur, this.mask);
+
+        return cur;
     }
-
-    /**
-     * Resizes the arrays used for storing elements in the queue. The implementation should ensure that the arrays are
-     * sized exactly to {@param capacity} and that elements in the old array are copied over.
-     */
-    protected abstract void resize(int capacity);
 
     /**
      * @return The current size of the element arrays.
      */
     protected final int capacity() {
         return this.capacity;
-    }
-
-    /**
-     * @return The index of the element at the head of the queue
-     * @throws NoSuchElementException If there are no elements remaining in the queue
-     */
-    protected final int currentElementIndex() {
-        if (this.isEmpty()) {
-            throw new NoSuchElementException();
-        }
-
-        return this.head;
     }
 
     /**
