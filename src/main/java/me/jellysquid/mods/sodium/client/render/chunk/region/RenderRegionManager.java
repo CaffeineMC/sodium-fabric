@@ -70,6 +70,11 @@ public class RenderRegionManager {
         List<PendingSectionUpload> sectionUploads = new ArrayList<>();
 
         for (ChunkBuildResult result : results) {
+            if (result.render.region == null) {
+                result.delete(); // the parent region was unloaded TODO: handle this better
+                continue;
+            }
+
             for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
                 var storage = region.getSectionStorage(pass);
 

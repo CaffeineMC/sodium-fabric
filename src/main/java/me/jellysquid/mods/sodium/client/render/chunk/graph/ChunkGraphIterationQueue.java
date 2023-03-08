@@ -4,7 +4,7 @@ public class ChunkGraphIterationQueue extends AbstractWrappingQueue {
     private final byte[] packed;
 
     public ChunkGraphIterationQueue() {
-        super(2048); // TODO: this need to be really large right now, because the queue becomes corrupted when it resizes
+        super(8192); // TODO: this need to be really large right now, because the queue becomes corrupted when it resizes
 
         this.packed = new byte[this.capacity() * 4];
     }

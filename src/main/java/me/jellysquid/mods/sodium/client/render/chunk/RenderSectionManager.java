@@ -163,16 +163,13 @@ public class RenderSectionManager {
         } else {
             section.markForUpdate(ChunkUpdateType.INITIAL_BUILD);
 
-            queue.enqueue(ChunkSectionPos.asLong(x, y, z));
+            // TODO: TERRIBLE HACK TO MAKE THINGS LOAD
+            this.queue.enqueue(ChunkSectionPos.asLong(x, y, z));
         }
     }
 
     private void unloadSection(int x, int y, int z) {
         RenderSection chunk = this.regions.unloadSection(x, y, z);
-        chunk.getRegion()
-                .removeChunk(chunk);
-        chunk.delete();
-
         this.graph.removeNode(x, y, z);
     }
 
