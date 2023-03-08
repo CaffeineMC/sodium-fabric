@@ -4,17 +4,18 @@ public class ChunkGraphIterationQueue extends AbstractWrappingQueue {
     private final byte[] packed;
 
     public ChunkGraphIterationQueue() {
-        super(4096);
+        super(2048); // TODO: this need to be really large right now, because the queue becomes corrupted when it resizes
 
-        this.packed = new byte[this.capacity() * 3];
+        this.packed = new byte[this.capacity() * 4];
     }
 
-    public void add(int x, int y, int z) {
+    public void add(int x, int y, int z, int dir) {
         var index = this.reserveNext();
 
-        this.packed[(index * 3) + 0] = (byte) x;
-        this.packed[(index * 3) + 1] = (byte) y;
-        this.packed[(index * 3) + 2] = (byte) z;
+        this.packed[(index * 4) + 0] = (byte) x;
+        this.packed[(index * 4) + 1] = (byte) y;
+        this.packed[(index * 4) + 2] = (byte) z;
+        this.packed[(index * 4) + 3] = (byte) dir;
     }
 
     @Override
@@ -23,14 +24,19 @@ public class ChunkGraphIterationQueue extends AbstractWrappingQueue {
     }
 
     public int getPositionX(int index) {
-        return this.packed[(index * 3) + 0];
+        return this.packed[(index * 4) + 0];
     }
 
     public int getPositionY(int index) {
-        return this.packed[(index * 3) + 1];
+        return this.packed[(index * 4) + 1];
     }
 
     public int getPositionZ(int index) {
-        return this.packed[(index * 3) + 2];
+        return this.packed[(index * 4) + 2];
     }
+
+    public int getDirection(int index) {
+        return this.packed[(index * 4) + 3];
+    }
+
 }

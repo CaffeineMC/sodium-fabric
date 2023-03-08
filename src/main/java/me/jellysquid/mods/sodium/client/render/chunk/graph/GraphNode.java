@@ -1,9 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
-public class GraphNode {
-    public static final int LOADED_BIT = 1 << 31;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionFlags;
 
-    private static final int REGION_MASK = (1 << 10) - 1, REGION_OFFSET = 20;
+public class GraphNode {
+    public static final int VISITED_BIT = 1 << 15;
+
+    private static final int REGION_MASK = (1 << 12) - 1, REGION_OFFSET = 20;
     private static final int FLAGS_MASK = (1 << 4) - 1, FLAGS_OFFSET = 16;
     private static final int CONNECTION_MASK = (1 << 16) - 1, CONNECTION_OFFSET = 0;
 
@@ -24,6 +26,6 @@ public class GraphNode {
     }
 
     public static boolean isLoaded(int node) {
-        return node != 0;
+        return (unpackFlags(node) & RenderSectionFlags.IS_LOADED) != 0;
     }
 }

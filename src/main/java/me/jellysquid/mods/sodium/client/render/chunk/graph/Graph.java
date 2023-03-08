@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionFlags;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
@@ -23,8 +22,6 @@ public class Graph {
     protected final World world;
     protected final int renderDistance;
 
-    private final int arraySize;
-
     public Graph(World world, int renderDistance) {
         this.world = world;
         this.renderDistance = renderDistance;
@@ -41,29 +38,26 @@ public class Graph {
         int arraySize = sizeXZ * sizeY * sizeXZ;
 
         this.nodes = new int[arraySize];
-        this.arraySize = arraySize;
+    }
+
+    public void updateNode(int x, int y, int z, RenderSection section, ChunkRenderData data) {
+        this.nodes[this.getIndex(x, y, z)] = GraphNode.pack(section.region.id(), data.getFlags(), calculateVisibilityData(data.getOcclusionData()));
+    }
+
+    public void addNode(int x, int y, int z, RenderSection section) {
+        this.nodes[this.getIndex(x, y, z)] = GraphNode.pack(section.region.id(), section.getFlags(), DEFAULT_OCCLUSION_DATA);
+    }
+
+    public void removeNode(int x, int y, int z) {
+        this.nodes[this.getIndex(x, y, z)] = 0;
     }
 
     public int getIndex(int x, int y, int z) {
         return ((x & this.maskXZ) << (this.offsetX)) | ((z & this.maskXZ) << this.offsetZ) | (y & this.maskY);
     }
 
-    @Deprecated
-    public void updateNode(int x, int y, int z, RenderSection section, ChunkRenderData data) {
-        this.nodes[this.getIndex(x, y, z)] = GraphNode.pack(section.region.id(), data.getFlags(), calculateVisibilityData(data.getOcclusionData())) | GraphNode.LOADED_BIT;
-    }
-
-    @Deprecated
-    public void addNode(int x, int y, int z, RenderSection section) {
-        this.nodes[this.getIndex(x, y, z)] = GraphNode.pack(section.region.id(), section.getFlags(), DEFAULT_OCCLUSION_DATA) | GraphNode.LOADED_BIT;
-    }
-
-    @Deprecated
-    public void removeNode(int x, int y, int z) {
-        this.nodes[this.getIndex(x, y, z)] = 0;
-    }
-
     public GraphSearch createSearch(Camera camera, Frustum frustum, boolean useOcclusionCulling) {
+        this.clearVisited();
         return new GraphSearch(this, camera, frustum, this.renderDistance, useOcclusionCulling);
     }
 
@@ -93,7 +87,18 @@ public class Graph {
         return (short) visibilityData;
     }
 
-    public int getSize() {
-        return this.arraySize;
+    private void clearVisited() {
+        for (int i = 0; i < this.nodes.length; i++) {
+            this.nodes[i] &= ~GraphNode.VISITED_BIT;
+        }
     }
+
+    public void markVisited(int index) {
+        this.nodes[index] |= GraphNode.VISITED_BIT;
+    }
+
+    public boolean isVisited(int index) {
+        return (this.nodes[index] & GraphNode.VISITED_BIT) != 0;
+    }
+
 }

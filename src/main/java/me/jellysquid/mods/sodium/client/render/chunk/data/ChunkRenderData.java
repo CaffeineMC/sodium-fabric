@@ -60,6 +60,11 @@ public class ChunkRenderData {
     public int getFlags() {
         int flags = 0;
 
+        // TODO: don't do this...
+        if (this != ABSENT) {
+            flags |= RenderSectionFlags.IS_LOADED;
+        }
+
         if (!this.blockRenderPasses.isEmpty()) {
             flags |= RenderSectionFlags.HAS_BLOCK_GEOMETRY;
         }
