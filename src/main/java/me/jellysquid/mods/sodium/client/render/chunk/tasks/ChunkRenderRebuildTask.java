@@ -2,16 +2,15 @@ package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.compile.ChunkBuildContext;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -47,12 +46,11 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
     @Override
     public ChunkBuildResult performBuild(ChunkBuildContext buildContext, CancellationSource cancellationSource) {
-        ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
+        BuiltSectionInfo.Builder renderData = new BuiltSectionInfo.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
-        ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
         ChunkBuildBuffers buffers = buildContext.buffers;
-        buffers.init(renderData, this.render.getChunkId());
+        buffers.init(renderData, this.render.getLocalSectionCoord());
 
         BlockRenderCache cache = buildContext.cache;
         cache.init(this.renderContext);
@@ -96,13 +94,13 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                         context.update(blockPos, modelOffset, blockState, model, seed);
                         cache.getBlockRenderer()
-                                .renderModel(context, buffers, bounds);
+                                .renderModel(context, buffers);
                     }
 
                     FluidState fluidState = blockState.getFluidState();
 
                     if (!fluidState.isEmpty()) {
-                        cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers, bounds);
+                        cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers);
                     }
 
                     if (blockState.hasBlockEntity()) {
@@ -124,10 +122,10 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        Map<TerrainRenderPass, ChunkMeshData> meshes = new Reference2ReferenceOpenHashMap<>();
+        Map<TerrainRenderPass, BuiltSectionMeshParts> meshes = new Reference2ReferenceOpenHashMap<>();
 
         for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
-            ChunkMeshData mesh = buffers.createMesh(pass);
+            BuiltSectionMeshParts mesh = buffers.createMesh(pass);
 
             if (mesh != null) {
                 meshes.put(pass, mesh);
@@ -136,7 +134,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         }
 
         renderData.setOcclusionData(occluder.build());
-        renderData.setBounds(bounds.build(this.render.getChunkPos()));
 
         return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
     }

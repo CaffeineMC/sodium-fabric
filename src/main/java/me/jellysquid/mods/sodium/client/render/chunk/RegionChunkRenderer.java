@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.DrawCommandList;
@@ -8,37 +7,33 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
-import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.gl.device.MultiDrawBatch;
+import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
+import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataUnsafe;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.LocalSectionIndex;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.RegionRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPoints;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
+import me.jellysquid.mods.sodium.client.util.BitwiseMath;
 import me.jellysquid.mods.sodium.client.util.ReversibleArrayIterator;
 import me.jellysquid.mods.sodium.client.util.SectionIterator;
 
-import java.util.EnumMap;
-
 public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final MultiDrawBatch commandBufferBuilder;
-    private final boolean isBlockFaceCullingEnabled = SodiumClientMod.options().performance.useBlockFaceCulling;
 
-    private final EnumMap<SharedQuadIndexBuffer.IndexType, SharedQuadIndexBuffer> sharedIndexBuffers = new EnumMap<>(SharedQuadIndexBuffer.IndexType.class);
+    private final SharedQuadIndexBuffer sharedIndexBuffer;
 
     public RegionChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         super(device, vertexType);
 
         this.commandBufferBuilder = new MultiDrawBatch(ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE);
-
-        for (var indexType : SharedQuadIndexBuffer.IndexType.values()) {
-            this.sharedIndexBuffers.put(indexType, new SharedQuadIndexBuffer(device.createCommandList(), indexType));
-        }
+        this.sharedIndexBuffer = new SharedQuadIndexBuffer(device.createCommandList());
     }
 
     @Override
@@ -52,10 +47,10 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         shader.setModelViewMatrix(matrices.modelView());
 
         ReversibleArrayIterator<RegionRenderLists> regionIterator = list.sortedRegions(renderPass.isReverseOrder());
-        RegionRenderLists regionLists;
 
-        while ((regionLists = regionIterator.next()) != null) {
-            var region = regionLists.getRegion();
+        while (regionIterator.hasNext()) {
+            RegionRenderLists regionLists = regionIterator.next();
+            RenderRegion region = regionLists.region;
 
             var sections = region.getSectionStorage(renderPass);
             var resources = region.getResources();
@@ -70,113 +65,153 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            var indexType = SharedQuadIndexBuffer.getSmallestIndexType(batch.getMaxVertexCount());
-
-            var indexBuffer = this.sharedIndexBuffers.get(indexType);
-            indexBuffer.ensureCapacity(commandList, batch.getMaxVertexCount());
+            this.sharedIndexBuffer.ensureCapacity(commandList, batch.getMaxVertexCount());
 
             this.setModelMatrixUniforms(shader, region, camera);
-            this.executeDrawBatch(commandList, batch, indexBuffer, this.createTessellationForRegion(commandList, region, indexBuffer));
+            this.executeDrawBatch(commandList, batch, this.createTessellationForRegion(commandList, region));
         }
 
         super.end(renderPass);
     }
 
-    private MultiDrawBatch prepareDrawBatch(RegionRenderLists batch, TerrainRenderPass pass, ChunkCameraContext camera, RenderRegion.SectionData sectionData) {
+    private MultiDrawBatch prepareDrawBatch(RegionRenderLists batch, TerrainRenderPass pass, ChunkCameraContext camera, SectionRenderDataStorage sectionStorage) {
         var commandBuffer = this.commandBufferBuilder;
         commandBuffer.clear();
 
         SectionIterator sectionIterator = batch.getSectionsWithGeometry(pass.isReverseOrder());
-        RenderSection section;
 
-        while ((section = sectionIterator.next()) != null) {
-            ChunkGraphicsState state = sectionData.getState(section);
+        int originX = batch.region.getChunkX();
+        int originY = batch.region.getChunkY();
+        int originZ = batch.region.getChunkZ();
 
-            if (state == null) {
+        while (sectionIterator.hasNext()) {
+            var localSectionIndex = sectionIterator.next();
+
+            var pSectionData = sectionStorage.getDataPointer(localSectionIndex);
+
+            if (SectionRenderDataUnsafe.isEmpty(pSectionData)) {
                 continue;
             }
 
-            int baseVertex = state.getVertexSegment()
-                    .getOffset();
+            // The position of the chunk section in world space
+            var x = originX + LocalSectionIndex.unpackX(localSectionIndex);
+            var y = originY + LocalSectionIndex.unpackY(localSectionIndex);
+            var z = originZ + LocalSectionIndex.unpackZ(localSectionIndex);
 
-            this.addDrawCalls(camera, section, state, baseVertex);
+            addDrawCalls(this.commandBufferBuilder, pSectionData,
+                    getForwardFacingPlanes(camera, x, y, z));
         }
 
         return commandBuffer;
     }
 
-    private void addDrawCalls(ChunkCameraContext camera, RenderSection section, ChunkGraphicsState state, int baseVertex) {
-        var commandBufferBuilder = this.commandBufferBuilder;
+    private static int getForwardFacingPlanes(ChunkCameraContext camera, int x, int y, int z) {
+        // This is carefully written so that we can keep everything branch-less.
+        //
+        // Normally, this would be a ridiculous way to handle the problem. But the Hotspot VM's
+        // heuristic for generating SETcc/CMOV instructions is broken, and it will always create a
+        // branch even when a trivial ternary is encountered.
+        //
+        // For example, the following will never be transformed into a SETcc:
+        //   (a > b) ? 1 : 0
+        //
+        // So we have to instead rely on sign-bit extension and masking (which generates a ton
+        // of unnecessary instructions) to get this to be branch-less.
+        //
+        // To do this, we can transform the previous expression into the following.
+        //   (b - a) >> 31
+        //
+        // This works because if (a > b) then (b - a) will always create a negative number. We then shift the sign bit
+        // into the least significant bit's position (which also discards any bits following the sign bit) to get the
+        // output we are looking for.
+        //
+        // If you look at the output which LLVM produces for a series of ternaries, you will instantly become distraught,
+        // because it manages to a) correctly evaluate the cost of instructions, and b) go so far
+        // as to actually produce vector code.  (https://godbolt.org/z/GaaEx39T9)
 
-        addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.UNASSIGNED), baseVertex);
+        int planes = 0;
 
-        if (this.isBlockFaceCullingEnabled) {
-            ChunkRenderBounds bounds = section.getBounds();
+        planes |= BitwiseMath.lessThan(x - 1, camera.chunkX) << ModelQuadFacing.POS_X;
+        planes |= BitwiseMath.lessThan(y - 1, camera.chunkY) << ModelQuadFacing.POS_Y;
+        planes |= BitwiseMath.lessThan(z - 1, camera.chunkZ) << ModelQuadFacing.POS_Z;
 
-            if (camera.posY > bounds.minY) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.UP), baseVertex);
-            }
+        planes |= BitwiseMath.greaterThan(x + 1, camera.chunkX) << ModelQuadFacing.NEG_X;
+        planes |= BitwiseMath.greaterThan(y + 1, camera.chunkY) << ModelQuadFacing.NEG_Y;
+        planes |= BitwiseMath.greaterThan(z + 1, camera.chunkZ) << ModelQuadFacing.NEG_Z;
 
-            if (camera.posY < bounds.maxY) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.DOWN), baseVertex);
-            }
+        // the "unassigned" plane is always front-facing, since we can't check it
+        planes |= (1 << ModelQuadFacing.UNASSIGNED);
 
-            if (camera.posX > bounds.minX) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.EAST), baseVertex);
-            }
+        return planes;
+    }
 
-            if (camera.posX < bounds.maxX) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.WEST), baseVertex);
-            }
+    private static void addDrawCalls(MultiDrawBatch commandBufferBuilder, long pSectionData, int visiblePlanes) {
+        int baseVertex = SectionRenderDataUnsafe.getBaseVertex(pSectionData);
 
-            if (camera.posZ > bounds.minZ) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.SOUTH), baseVertex);
-            }
+        // This is carefully written so that we can keep everything branch-less. Every iteration of the loop will
+        // always be performed (even if the plane is not visible), but the buffer's tail pointer will only be
+        // incremented when *both* the number of primitives is non-zero for a plane, and the bit index belonging to that
+        // plane is marked.
+        //
+        // Now, some people may say that even if these branches are produced, that it just doesn't matter,
+        // and that spending additional cycles is always worse than just taking the branch. There seems to be
+        // a lot of misconceptions about this in general, but the important thing is that we actually measured it,
+        // and observed significant improvements from moving to the branch-less implementation.
+        //
+        // This critical section previously consisted of ~900 instructions, of which ~45 of those were branches. The
+        // captured hardware performance counters suggested that nearly half of the branches were mis-predicted, and
+        // that the core was spending most of the time stalled as it tried to recover the pipeline.
+        //
+        // After switching to the branch-less implementation, the code was reduced to ~150 instructions and ~8 branches,
+        // the latter of which are always predicted correctly since they are only assertions to prevent accidental
+        // buffer overflows.
+        //
+        // At this point, we are mostly core bound due to the fact that we are spending so many instructions on inefficient
+        // arithmetic designed to get around the compiler's aversion to producing CMOVs, but it doesn't seem like there's
+        // any way to avoid that unless Hotspot gets improved.
+        for (int plane = 0; plane < 7; plane++) {
+            int primitiveCount = SectionRenderDataUnsafe.getBatchSize(pSectionData, plane);
+            commandBufferBuilder.addConditionally(getElementsPerPrimitive(primitiveCount), baseVertex,
+                    (visiblePlanes >> plane) & 1);
 
-            if (camera.posZ < bounds.maxZ) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.NORTH), baseVertex);
-            }
-        } else {
-            for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(facing), baseVertex);
-            }
+            baseVertex += getVerticesPerPrimitive(primitiveCount);
         }
     }
 
-    private GlTessellation createTessellationForRegion(CommandList commandList, RenderRegion region, SharedQuadIndexBuffer indexBuffer) {
-        var indexType = indexBuffer.getIndexType();
+    private static int getElementsPerPrimitive(int primitiveCount) {
+        return primitiveCount * 6;
+    }
 
+    private static int getVerticesPerPrimitive(int primitiveCount) {
+        return primitiveCount << 2;
+    }
+
+    private GlTessellation createTessellationForRegion(CommandList commandList, RenderRegion region) {
         var resources = region.getResources();
-        var tessellation = resources.getTessellation(indexType);
+        var tessellation = resources.getTessellation();
 
         if (tessellation == null) {
-            resources.updateTessellation(commandList, indexType, tessellation = this.createRegionTessellation(commandList, resources, indexBuffer));
+            resources.updateTessellation(commandList, tessellation = this.createRegionTessellation(commandList, resources));
         }
 
         return tessellation;
     }
 
-    private void executeDrawBatch(CommandList commandList, MultiDrawBatch batch, SharedQuadIndexBuffer indexBuffer, GlTessellation tessellation) {
+    private void executeDrawBatch(CommandList commandList, MultiDrawBatch batch, GlTessellation tessellation) {
         try (DrawCommandList drawCommandList = commandList.beginTessellating(tessellation)) {
-            drawCommandList.multiDrawElementsBaseVertex(batch, indexBuffer.getIndexFormat());
+            drawCommandList.multiDrawElementsBaseVertex(batch, SharedQuadIndexBuffer.INDEX_TYPE);
         }
     }
 
     private void setModelMatrixUniforms(ChunkShaderInterface shader, RenderRegion region, ChunkCameraContext camera) {
-        float x = getCameraTranslation(region.getOriginX(), camera.blockX, camera.deltaX);
-        float y = getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY);
-        float z = getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ);
+        float x = getCameraTranslation(region.getWorldX(), camera.blockX, camera.deltaX);
+        float y = getCameraTranslation(region.getWorldY(), camera.blockY, camera.deltaY);
+        float z = getCameraTranslation(region.getWorldZ(), camera.blockZ, camera.deltaZ);
 
         shader.setRegionOffset(x, y, z);
     }
 
-    private static void addDrawCall(MultiDrawBatch batch, VertexRange part, int baseVertex) {
-        if (part != null) {
-            batch.add(0L, (part.vertexCount() >> 2) * 6, baseVertex + part.vertexStart());
-        }
-    }
-
-    private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.Resources resources, SharedQuadIndexBuffer indexBuffer) {
+    private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.Resources resources) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
                 TessellationBinding.forVertexBuffer(resources.getVertexBuffer(), new GlVertexAttributeBinding[] {
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID,
@@ -188,7 +223,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                         new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE,
                                 this.vertexFormat.getAttribute(ChunkMeshAttribute.LIGHT_TEXTURE))
                 }),
-                TessellationBinding.forElementBuffer(indexBuffer.getBufferObject())
+                TessellationBinding.forElementBuffer(this.sharedIndexBuffer.getBufferObject())
         });
     }
 
@@ -197,10 +232,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         super.delete(commandList);
 
         this.commandBufferBuilder.delete();
-
-        for (var indexBuffer : this.sharedIndexBuffers.values()) {
-            indexBuffer.delete(commandList);
-        }
+        this.sharedIndexBuffer.delete(commandList);
     }
 
     private static float getCameraTranslation(int chunkBlockPos, int cameraBlockPos, float cameraPos) {

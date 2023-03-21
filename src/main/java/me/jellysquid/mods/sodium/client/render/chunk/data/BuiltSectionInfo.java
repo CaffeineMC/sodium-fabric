@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionFlags;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphNodeFlags;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteExtended;
 import net.minecraft.block.entity.BlockEntity;
@@ -16,23 +16,18 @@ import java.util.*;
  * The render data for a chunk render container containing all the information about which meshes are attached, the
  * block entities contained by it, and any data used for occlusion testing.
  */
-public class ChunkRenderData {
-    public static final ChunkRenderData ABSENT = new ChunkRenderData.Builder()
+public class BuiltSectionInfo {
+    public static final BuiltSectionInfo ABSENT = new BuiltSectionInfo.Builder()
             .build();
-    public static final ChunkRenderData EMPTY = createEmptyData();
+    public static final BuiltSectionInfo EMPTY = createEmptyData();
 
     private List<TerrainRenderPass> blockRenderPasses;
     private List<BlockEntity> globalBlockEntities;
     private List<BlockEntity> blockEntities;
 
     private ChunkOcclusionData occlusionData;
-    private ChunkRenderBounds bounds;
 
     private List<Sprite> animatedSprites;
-
-    public ChunkRenderBounds getBounds() {
-        return this.bounds;
-    }
 
     public ChunkOcclusionData getOcclusionData() {
         return this.occlusionData;
@@ -60,21 +55,16 @@ public class ChunkRenderData {
     public int getFlags() {
         int flags = 0;
 
-        // TODO: don't do this...
-        if (this != ABSENT) {
-            flags |= RenderSectionFlags.IS_LOADED;
-        }
-
         if (!this.blockRenderPasses.isEmpty()) {
-            flags |= RenderSectionFlags.HAS_BLOCK_GEOMETRY;
+            flags |= (1 << GraphNodeFlags.HAS_BLOCK_GEOMETRY);
         }
 
         if (!this.blockEntities.isEmpty() || !this.globalBlockEntities.isEmpty()) {
-            flags |= RenderSectionFlags.HAS_BLOCK_ENTITIES;
+            flags |= (1 << GraphNodeFlags.HAS_BLOCK_ENTITIES);
         }
 
         if (!this.animatedSprites.isEmpty()) {
-            flags |= RenderSectionFlags.HAS_ANIMATED_SPRITES;
+            flags |= (1 << GraphNodeFlags.HAS_ANIMATED_SPRITES);
         }
 
         return flags;
@@ -87,14 +77,9 @@ public class ChunkRenderData {
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
         private ChunkOcclusionData occlusionData;
-        private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
 
         public void addRenderPass(TerrainRenderPass pass) {
             this.renderPasses.add(pass);
-        }
-
-        public void setBounds(ChunkRenderBounds bounds) {
-            this.bounds = bounds;
         }
 
         public void setOcclusionData(ChunkOcclusionData data) {
@@ -121,12 +106,11 @@ public class ChunkRenderData {
             (cull ? this.blockEntities : this.globalBlockEntities).add(entity);
         }
 
-        public ChunkRenderData build() {
-            ChunkRenderData data = new ChunkRenderData();
+        public BuiltSectionInfo build() {
+            BuiltSectionInfo data = new BuiltSectionInfo();
             data.globalBlockEntities = this.globalBlockEntities;
             data.blockEntities = this.blockEntities;
             data.occlusionData = this.occlusionData;
-            data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
             data.blockRenderPasses = this.renderPasses;
 
@@ -134,11 +118,11 @@ public class ChunkRenderData {
         }
     }
 
-    private static ChunkRenderData createEmptyData() {
+    private static BuiltSectionInfo createEmptyData() {
         ChunkOcclusionData occlusionData = new ChunkOcclusionData();
         occlusionData.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
 
-        ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
+        BuiltSectionInfo.Builder meshInfo = new BuiltSectionInfo.Builder();
         meshInfo.setOcclusionData(occlusionData);
 
         return meshInfo.build();

@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk;
+package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
 public class GraphDirection {
     public static final int NONE = -1;
@@ -10,7 +10,6 @@ public class GraphDirection {
     public static final int WEST = 4;
     public static final int EAST = 5;
 
-    public static final int[] DIRECTIONS = { DOWN, UP, NORTH, SOUTH, WEST, EAST };
     public static final int COUNT = 6;
 
     public static int opposite(int dir) {
@@ -47,5 +46,9 @@ public class GraphDirection {
             case SOUTH -> 1;
             default -> 0;
         };
+    }
+
+    public static int bit(int field, int dir) {
+        return (field >> dir) & 1;
     }
 }

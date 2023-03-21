@@ -1,47 +1,34 @@
 package me.jellysquid.mods.sodium.client.util;
 
-import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
-
-import java.util.function.Consumer;
+import java.util.NoSuchElementException;
 
 public class SectionIterator {
-    private final RenderSection[] lookup;
+    private final byte[] sections;
 
-    private final int[] elements;
-    private final int direction;
+    private final int step;
 
-    private int currentIndex;
-    private int remaining;
+    private int cur;
+    private int rem;
 
-    public SectionIterator(RenderSection[] lookup, int[] elements, int start, int end, boolean reverse) {
-        this.lookup = lookup;
+    public SectionIterator(byte[] sections, int start, int end, boolean reverse) {
+        this.sections = sections;
 
-        this.elements = elements;
-        this.remaining = end - start;
+        this.rem = end - start;
 
-        this.direction = reverse ? -1 : 1;
-        this.currentIndex = reverse ? end - 1 : start;
+        this.step = reverse ? -1 : 1;
+        this.cur = reverse ? end - 1 : start;
     }
 
-    public RenderSection next() {
-        RenderSection result = null;
+    public boolean hasNext() {
+        return this.rem > 0;
+    }
 
-        if (this.remaining > 0) {
-            result = this.lookup[this.elements[this.currentIndex]];
+    public int next() {
+        int result = this.sections[this.cur] & 0xFF;
 
-            this.currentIndex += this.direction;
-            this.remaining--;
-        }
+        this.cur += this.step;
+        this.rem--;
 
         return result;
-    }
-
-    public void forEach(Consumer<RenderSection> consumer) {
-        RenderSection entry;
-
-        while ((entry = this.next()) != null) {
-            consumer.accept(entry);
-        }
     }
 }

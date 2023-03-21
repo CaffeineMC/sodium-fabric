@@ -4,6 +4,7 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.Pointer;
 
+import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.IntBuffer;
 
@@ -18,11 +19,10 @@ public final class MultiDrawBatch {
 
     private final int capacity;
 
-    private int maxVertexCount;
     private int count;
 
     public MultiDrawBatch(int capacity) {
-        this.pPointer = MemoryUtil.memAddress(MemoryUtil.memAllocPointer(capacity));
+        this.pPointer = MemoryUtil.memAddress(MemoryUtil.memCallocPointer(capacity));
         this.pCount = MemoryUtil.memAddress(MemoryUtil.memAllocInt(capacity));
         this.pBaseVertex = MemoryUtil.memAddress(MemoryUtil.memAllocInt(capacity));
 
@@ -42,29 +42,70 @@ public final class MultiDrawBatch {
     }
 
     public int getMaxVertexCount() {
-        return this.maxVertexCount;
+        int max = 0;
+
+        for (int i = 0; i < this.count; i++) {
+            max = Math.max(max, MemoryUtil.memGetInt(this.pCount + (i * 4L)));
+        }
+
+        return max;
     }
 
     int size() {
         return this.count;
     }
 
-    public void clear() {
-        this.count = 0;
-        this.maxVertexCount = 0;
-    }
-
-    public void add(long pointer, int count, int baseVertex) {
+    /**
+     * Adds a draw command to the buffer.
+     *
+     * @param elementCount The number of elements in the draw command
+     * @param vertexOffset The base vertex offset of the draw command
+     * @throws BufferUnderflowException If there is no more space in the command buffer
+     */
+    public void add(int elementCount, int vertexOffset) {
         if (this.count >= this.capacity) {
-            throw new BufferUnderflowException();
+            throw new BufferOverflowException();
         }
 
-        MemoryUtil.memPutAddress(this.pPointer + (this.count * Pointer.POINTER_SIZE), pointer);
-        MemoryUtil.memPutInt(this.pCount + (this.count * Integer.BYTES), count);
-        MemoryUtil.memPutInt(this.pBaseVertex + (this.count * Integer.BYTES), baseVertex);
+        MemoryUtil.memPutInt(this.pCount + (this.count * Integer.BYTES), elementCount);
+        MemoryUtil.memPutInt(this.pBaseVertex + (this.count * Integer.BYTES), vertexOffset);
 
-        this.count++;
-        this.maxVertexCount = Math.max(this.maxVertexCount, count);
+        this.count += 1;
+    }
+
+    /**
+     * Adds a draw command to the buffer conditionally if the {@param condition} value is set to 1. This exists to avoid
+     * unnecessary branching, when a draw command is only added if another condition holds true.
+     *
+     * @param elementCount The number of elements in the draw command
+     * @param vertexOffset The base vertex offset of the draw command
+     * @param condition A boolean represented as an integer (0 or 1) which conditionally specifies whether the draw
+     *                  command will be added to the buffer. If the integer is not one of these values, the behavior
+     *                  is undefined.
+     * @throws BufferUnderflowException If there is no more space in the command buffer
+     */
+    public void addConditionally(int elementCount, int vertexOffset, int condition) {
+        // Check to make sure we are not about to overflow the buffer, since there are no
+        // guard rails here. This will throw even if the condition is false, since we always
+        // write a draw command.
+        if (this.count >= this.capacity) {
+            throw new BufferOverflowException();
+        }
+
+        // We always write the draw command even if the condition is false. This is generally safe,
+        // since the tail pointer will not be advanced unless the condition is true. It just means
+        // that garbage draw commands could exist beyond the tail pointer, which is considered
+        // out of bounds, anyway.
+        MemoryUtil.memPutInt(this.pCount + (this.count * Integer.BYTES), elementCount);
+        MemoryUtil.memPutInt(this.pBaseVertex + (this.count * Integer.BYTES), vertexOffset);
+
+        // The second part of this expression (elementCount != 0 ? ...) is always transformed into
+        // a SETcc instruction on x86. This keeps the code branchless.
+        this.count += condition & (elementCount != 0 ? 1 : 0);
+    }
+
+    public void clear() {
+        this.count = 0;
     }
 
     public void delete() {
@@ -76,5 +117,4 @@ public final class MultiDrawBatch {
     public boolean isEmpty() {
         return this.count <= 0;
     }
-
 }

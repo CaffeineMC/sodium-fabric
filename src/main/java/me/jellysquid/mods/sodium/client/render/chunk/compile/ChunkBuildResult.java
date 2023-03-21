@@ -2,8 +2,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 
 import java.util.Map;
 
@@ -14,23 +14,23 @@ import java.util.Map;
  */
 public class ChunkBuildResult {
     public final RenderSection render;
-    public final ChunkRenderData data;
-    public final Map<TerrainRenderPass, ChunkMeshData> meshes;
+    public final BuiltSectionInfo data;
+    public final Map<TerrainRenderPass, BuiltSectionMeshParts> meshes;
     public final int buildTime;
 
-    public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<TerrainRenderPass, ChunkMeshData> meshes, int buildTime) {
+    public ChunkBuildResult(RenderSection render, BuiltSectionInfo data, Map<TerrainRenderPass, BuiltSectionMeshParts> meshes, int buildTime) {
         this.render = render;
         this.data = data;
         this.meshes = meshes;
         this.buildTime = buildTime;
     }
 
-    public ChunkMeshData getMesh(TerrainRenderPass pass) {
+    public BuiltSectionMeshParts getMesh(TerrainRenderPass pass) {
         return this.meshes.get(pass);
     }
 
     public void delete() {
-        for (ChunkMeshData data : this.meshes.values()) {
+        for (BuiltSectionMeshParts data : this.meshes.values()) {
             data.getVertexData()
                     .free();
         }

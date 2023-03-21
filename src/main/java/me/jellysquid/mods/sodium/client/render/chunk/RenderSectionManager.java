@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
@@ -9,11 +8,9 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
-import me.jellysquid.mods.sodium.client.render.chunk.graph.Graph;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphSearch;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
@@ -29,7 +26,9 @@ import me.jellysquid.mods.sodium.common.util.collections.WorkStealingFutureDrain
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import org.apache.commons.lang3.Validate;
@@ -63,11 +62,10 @@ public class RenderSectionManager {
 
     private boolean alwaysDeferChunkUpdates;
 
-    private ChunkRenderList renderList;
-    private final ChunkRenderListBuilder.Cache renderListCache = new ChunkRenderListBuilder.Cache();
-
-    private final Graph graph;
+    private ChunkRenderList renderList = ChunkRenderList.empty();
     private final SodiumWorldRenderer worldRenderer;
+
+    private final GraphSearch.GraphSearchPool graphSearchPool = new GraphSearch.GraphSearchPool();
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, ChunkTracker chunkTracker, CommandList commandList) {
         this.worldRenderer = worldRenderer;
@@ -85,15 +83,18 @@ public class RenderSectionManager {
         this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         this.chunkTracker = chunkTracker;
-        this.graph = new Graph(world, renderDistance);
     }
 
     public void update(Camera camera, Frustum frustum, int frame, boolean spectator) {
+        this.setup(camera);
+
         this.updateWatchedArea(camera);
         this.processChunkQueues();
 
-        this.resetLists();
-        this.setup(camera);
+        if (this.renderList != null) {
+            this.graphSearchPool.releaseRenderList(this.renderList);
+            this.renderList = null;
+        }
 
         var useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
 
@@ -102,13 +103,8 @@ public class RenderSectionManager {
             useOcclusionCulling = false;
         }
 
-        var renderListBuilder = new ChunkRenderListBuilder(this.regions.getStorage(), this.renderListCache);
-
-        var search = this.graph.createSearch(camera, frustum, useOcclusionCulling);
-        search.getVisible(renderListBuilder);
-
-        this.renderList = renderListBuilder.build();
-
+        this.renderList = new GraphSearch(this.graphSearchPool, this.regions, camera, frustum, this.renderDistance, useOcclusionCulling)
+                .getVisible();
         this.needsUpdate = false;
     }
 
@@ -141,25 +137,16 @@ public class RenderSectionManager {
         this.watchedArea = area;
     }
 
-    private void resetLists() {
-        if (this.renderList != null) {
-            this.renderListCache.add(this.renderList);
-            this.renderList = null;
-        }
-    }
-
     private LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
 
     private void loadSection(int x, int y, int z) {
         RenderSection section = this.regions.loadSection(this.worldRenderer, x, y, z);
 
-        this.graph.addNode(x, y, z, section);
-
         Chunk worldChunk = this.world.getChunk(x, z);
         ChunkSection worldSection = worldChunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
 
         if (worldSection.isEmpty()) {
-            section.setData(ChunkRenderData.EMPTY);
+            section.setData(BuiltSectionInfo.EMPTY);
         } else {
             section.markForUpdate(ChunkUpdateType.INITIAL_BUILD);
 
@@ -169,8 +156,7 @@ public class RenderSectionManager {
     }
 
     private void unloadSection(int x, int y, int z) {
-        RenderSection chunk = this.regions.unloadSection(x, y, z);
-        this.graph.removeNode(x, y, z);
+        this.regions.unloadSection(x, y, z);
     }
 
     public void renderLayer(ChunkRenderMatrices matrices, TerrainRenderPass pass, double x, double y, double z) {
@@ -324,7 +310,7 @@ public class RenderSectionManager {
     }
 
     public boolean isGraphDirty() {
-        return true;
+        return this.needsUpdate;
     }
 
     public ChunkBuilder getBuilder() {
@@ -332,7 +318,7 @@ public class RenderSectionManager {
     }
 
     public void destroy() {
-        this.resetLists();
+        this.renderList = null;
 
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.regions.delete(commandList);
@@ -347,7 +333,7 @@ public class RenderSectionManager {
     }
 
     public int getTotalSections() {
-        return this.graph.size();
+        return this.regions.sectionCount();
     }
 
     public int getVisibleChunkCount() {
@@ -374,32 +360,32 @@ public class RenderSectionManager {
         return render.getSquaredDistance(this.cameraX, this.cameraY, this.cameraZ) <= NEARBY_CHUNK_DISTANCE;
     }
 
-    public void onChunkRenderUpdates(int x, int y, int z, RenderSection section, ChunkRenderData data) {
-        this.graph.updateNode(x, y, z, section, data);
+    public void onChunkRenderUpdates(int x, int y, int z, RenderSection section, BuiltSectionInfo data) {
+        if (section.region != null) { // TODO: terrible hack, we shouldn't even get here if this was unloaded already
+            section.region.updateNode(section, data);
+        }
     }
 
     public Collection<String> getDebugStrings() {
-        List<String> list = new ArrayList<>();
-
         int count = 0;
 
         long deviceUsed = 0;
         long deviceAllocated = 0;
 
-        var it = this.regions.getLoadedRegions();
-
-        while (it.hasNext()) {
-            var region = it.next();
+        for (var region : this.regions.getLoadedRegions()) {
             var resources = region.getResources();
 
-            if (resources != null) {
-                deviceUsed += resources.getDeviceUsedMemory();
-                deviceAllocated += resources.getDeviceAllocatedMemory();
-
-                count++;
+            if (resources == null) {
+                continue;
             }
+
+            deviceUsed += resources.getDeviceUsedMemory();
+            deviceAllocated += resources.getDeviceAllocatedMemory();
+
+            count++;
         }
 
+        List<String> list = new ArrayList<>();
         list.add(String.format("Device buffer objects: %d", count));
         list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
 
@@ -438,7 +424,7 @@ public class RenderSectionManager {
         var section = this.regions.getSection(x, y, z);
 
         if (section != null) {
-            return section.getData() != ChunkRenderData.ABSENT;
+            return section.getData() != BuiltSectionInfo.ABSENT;
         }
 
         return false;

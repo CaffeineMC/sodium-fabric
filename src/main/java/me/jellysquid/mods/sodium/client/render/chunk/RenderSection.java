@@ -2,19 +2,14 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphNodeFlags;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.LocalSectionIndex;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
-import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Direction;
 
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -29,11 +24,13 @@ public class RenderSection {
     @Deprecated(forRemoval = true) // reason: render sections should not have references to their owner
     private final SodiumWorldRenderer worldRenderer;
 
-    private final int chunkId;
+    private final int chunkCoord;
+    private final int chunkIndex;
 
     public RenderRegion region;
 
-    private ChunkRenderData data = ChunkRenderData.ABSENT;
+    @Deprecated(forRemoval = true)
+    private BuiltSectionInfo data = BuiltSectionInfo.ABSENT;
     private CompletableFuture<?> rebuildTask = null;
 
     private int lastAcceptedBuildTime = -1;
@@ -49,7 +46,8 @@ public class RenderSection {
         int rY = this.getChunkY() & (RenderRegion.REGION_HEIGHT - 1);
         int rZ = this.getChunkZ() & (RenderRegion.REGION_LENGTH - 1);
 
-        this.chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
+        this.chunkCoord = (rX << 5 | rY << 3 | rZ << 0) & 0xFF;
+        this.chunkIndex = LocalSectionIndex.pack(rX, rY, rZ);
     }
 
     /**
@@ -63,7 +61,7 @@ public class RenderSection {
         }
     }
 
-    public ChunkRenderData getData() {
+    public BuiltSectionInfo getData() {
         return this.data;
     }
 
@@ -74,10 +72,10 @@ public class RenderSection {
      */
     public void delete() {
         this.cancelRebuildTask();
-        this.setData(ChunkRenderData.ABSENT);
+        this.setData(BuiltSectionInfo.ABSENT);
     }
 
-    public void setData(ChunkRenderData info) {
+    public void setData(BuiltSectionInfo info) {
         if (info == null) {
             throw new NullPointerException("Mesh information must not be null");
         }
@@ -95,7 +93,7 @@ public class RenderSection {
 
     /**
      * Ensures that all resources attached to the given chunk render are "ticked" forward. This should be called every
-     * time before this render is drawn if {@link RenderSection#getFlags()} contains {@link RenderSectionFlags#HAS_ANIMATED_SPRITES}.
+     * time before this render is drawn if {@link RenderSection#getFlags()} contains {@link GraphNodeFlags#HAS_ANIMATED_SPRITES}.
      */
     public void tickAnimatedSprites() {
         for (Sprite sprite : this.data.getAnimatedSprites()) {
@@ -168,10 +166,6 @@ public class RenderSection {
         return this.chunkZ;
     }
 
-    public ChunkRenderBounds getBounds() {
-        return this.data.getBounds();
-    }
-
     public ChunkUpdateType getPendingUpdate() {
         return this.pendingUpdate;
     }
@@ -193,11 +187,11 @@ public class RenderSection {
     }
 
     public boolean isBuilt() {
-        return this.data != ChunkRenderData.ABSENT;
+        return this.data != BuiltSectionInfo.ABSENT;
     }
 
     public boolean canAcceptBuildResults(ChunkBuildResult result) {
-        return result.buildTime > this.lastAcceptedBuildTime;
+        return this.region != null && result.buildTime > this.lastAcceptedBuildTime;
     }
 
     public void onBuildFinished(ChunkBuildResult result) {
@@ -205,8 +199,12 @@ public class RenderSection {
         this.lastAcceptedBuildTime = result.buildTime;
     }
 
-    public int getChunkId() {
-        return this.chunkId;
+    public int getLocalSectionCoord() {
+        return this.chunkCoord;
+    }
+
+    public int getLocalSectionIndex() {
+        return this.chunkIndex;
     }
 
     @Override
@@ -217,9 +215,5 @@ public class RenderSection {
 
     public RenderRegion getRegion() {
         return this.region;
-    }
-
-    public int getFlags() {
-        return this.data.getFlags();
     }
 }

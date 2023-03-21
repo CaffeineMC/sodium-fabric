@@ -1,9 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
-import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.model.light.LightMode;
 import me.jellysquid.mods.sodium.client.model.light.LightPipeline;
 import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
@@ -11,16 +7,18 @@ import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuad;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadViewMutable;
+import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
-import net.caffeinemc.mods.sodium.api.util.NormI8;
-import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.minecraft.block.BlockState;
@@ -105,7 +103,7 @@ public class FluidRenderer {
         return true;
     }
 
-    public void render(BlockRenderView world, FluidState fluidState, BlockPos pos, BlockPos offset, ChunkBuildBuffers buffers, ChunkRenderBounds.Builder bounds) {
+    public void render(BlockRenderView world, FluidState fluidState, BlockPos pos, BlockPos offset, ChunkBuildBuffers buffers) {
         var material = DefaultMaterials.forFluidState(fluidState);
         var meshBuilder = buffers.get(material);
 
@@ -176,13 +174,13 @@ public class FluidRenderer {
             Vec3d velocity = fluidState.getVelocity(world, pos);
 
             Sprite sprite;
-            ModelQuadFacing facing;
+            int facing;
             float u1, u2, u3, u4;
             float v1, v2, v3, v4;
 
             if (velocity.x == 0.0D && velocity.z == 0.0D) {
                 sprite = sprites[0];
-                facing = ModelQuadFacing.UP;
+                facing = ModelQuadFacing.POS_Y;
                 u1 = sprite.getFrameU(0.0D);
                 v1 = sprite.getFrameV(0.0D);
                 u2 = u1;
@@ -230,11 +228,11 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
 
             this.updateQuad(quad, world, pos, lighter, Direction.UP, 1.0F, colorizer, fluidState);
-            this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, false);
+            this.writeQuad(meshBuilder, material, offset, quad, facing, false);
 
             if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.writeQuad(meshBuilder, bounds, material, offset, quad,
-                        ModelQuadFacing.DOWN, true);
+                this.writeQuad(meshBuilder, material, offset, quad,
+                        ModelQuadFacing.NEG_Y, true);
 
             }
 
@@ -255,7 +253,7 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.updateQuad(quad, world, pos, lighter, Direction.DOWN, 1.0F, colorizer, fluidState);
-            this.writeQuad(meshBuilder, bounds, material, offset, quad, ModelQuadFacing.DOWN, false);
+            this.writeQuad(meshBuilder, material, offset, quad, ModelQuadFacing.NEG_Y, false);
 
         }
 
@@ -356,13 +354,13 @@ public class FluidRenderer {
 
                 float br = dir.getAxis() == Direction.Axis.Z ? 0.8F : 0.6F;
 
-                ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
+                int facing = ModelQuadFacing.fromDirection(dir);
 
                 this.updateQuad(quad, world, pos, lighter, dir, br, colorizer, fluidState);
-                this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, false);
+                this.writeQuad(meshBuilder, material, offset, quad, facing, false);
 
                 if (!isOverlay) {
-                    this.writeQuad(meshBuilder, bounds, material, offset, quad, facing.getOpposite(), true);
+                    this.writeQuad(meshBuilder, material, offset, quad, ModelQuadFacing.getOpposite(facing), true);
                 }
 
             }
@@ -388,8 +386,8 @@ public class FluidRenderer {
         }
     }
 
-    private void writeQuad(ChunkModelBuilder builder, ChunkRenderBounds.Builder bounds, Material material, BlockPos offset, ModelQuadView quad,
-                           ModelQuadFacing facing, boolean flip) {
+    private void writeQuad(ChunkModelBuilder builder, Material material, BlockPos offset, ModelQuadView quad,
+                           int facing, boolean flip) {
         var vertices = this.vertices;
 
         for (int i = 0; i < 4; i++) {
@@ -397,8 +395,6 @@ public class FluidRenderer {
             out.x = offset.getX() + quad.getX(i);
             out.y = offset.getY() + quad.getY(i);
             out.z = offset.getZ() + quad.getZ(i);
-
-            bounds.add(out.x, out.y, out.z, facing);
 
             out.color = this.quadColors[i];
             out.u = quad.getTexU(i);

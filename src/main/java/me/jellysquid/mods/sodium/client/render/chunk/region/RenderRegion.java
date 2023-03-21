@@ -6,20 +6,21 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import me.jellysquid.mods.sodium.client.render.chunk.IndexedMap;
-import me.jellysquid.mods.sodium.client.render.chunk.SharedQuadIndexBuffer;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphNodeStorage;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
-import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
-import java.util.EnumMap;
 import java.util.Map;
 
-public class RenderRegion implements IndexedMap.IdHolder {
+public class RenderRegion {
     public static final int REGION_WIDTH = 8;
     public static final int REGION_HEIGHT = 4;
     public static final int REGION_LENGTH = 8;
@@ -41,49 +42,47 @@ public class RenderRegion implements IndexedMap.IdHolder {
     }
 
     private final int x, y, z;
-    private final int id;
 
-    private final RenderSection[] sections = new RenderSection[RenderRegion.REGION_SIZE];
+    public final RenderSection[] sections = new RenderSection[RenderRegion.REGION_SIZE];
+    public final GraphNodeStorage graphData;
+
     private int sectionCount;
 
-    private final Map<TerrainRenderPass, SectionData> sectionStorage = new Reference2ReferenceOpenHashMap<>();
+    private final Map<TerrainRenderPass, SectionRenderDataStorage> sectionStorage = new Reference2ReferenceOpenHashMap<>();
     @Deprecated(forRemoval = true) // reason: arenas should not hold references to the staging buffer
     private final StagingBuffer stagingBuffer;
 
     private Resources resources;
 
-    public RenderRegion(int x, int y, int z, int id, StagingBuffer stagingBuffer) {
+    public RenderRegion(int x, int y, int z, StagingBuffer stagingBuffer) {
         this.x = x;
         this.y = y;
         this.z = z;
 
-        this.id = id;
         this.stagingBuffer = stagingBuffer;
 
         for (var pass : DefaultTerrainRenderPasses.ALL) {
-            this.sectionStorage.put(pass, new SectionData());
+            this.sectionStorage.put(pass, new SectionRenderDataStorage());
         }
+
+        this.graphData = new GraphNodeStorage();
     }
 
-    public int getOriginX() {
-        return (this.x * REGION_WIDTH) << 4;
+    public int getWorldX() {
+        return this.getChunkX() << 4;
     }
 
-    public int getOriginY() {
-        return (this.y * REGION_HEIGHT) << 4;
+    public int getWorldY() {
+        return this.getChunkY() << 4;
     }
 
-    public int getOriginZ() {
-        return (this.z * REGION_LENGTH) << 4;
-    }
-
-    public static int getChunkIndex(int x, int y, int z) {
-        return x << 5 | y << 3 | z;
+    public int getWorldZ() {
+        return this.getChunkZ() << 4;
     }
 
     public void delete(CommandList commandList) {
         for (var storage : this.sectionStorage.values()) {
-            storage.delete(commandList);
+            storage.delete();
         }
 
         this.sectionStorage.clear();
@@ -98,33 +97,47 @@ public class RenderRegion implements IndexedMap.IdHolder {
         return this.resources;
     }
 
-    public SectionData getSectionStorage(TerrainRenderPass pass) {
+    public SectionRenderDataStorage getSectionStorage(TerrainRenderPass pass) {
         return this.sectionStorage.get(pass);
     }
 
     public void addChunk(RenderSection section) {
-        int index = section.getChunkId();
+        int index = section.getLocalSectionIndex();
 
         if (this.sections[index] != null) {
             throw new RuntimeException("Tried to add a chunk section that is already present");
         }
 
         this.sections[index] = section;
+        this.graphData.setData(index, section.getData());
+
         this.sectionCount++;
     }
 
+    public void updateNode(RenderSection section, BuiltSectionInfo data) {
+        var index = section.getLocalSectionIndex();
+
+        if (this.sections[index] != section) {
+            throw new RuntimeException("Section does not belong to this region");
+        }
+
+        this.graphData.setData(index, data);
+    }
+
     public void removeChunk(RenderSection section) {
-        int index = section.getChunkId();
+        int index = section.getLocalSectionIndex();
 
         if (this.sections[index] == null) {
             throw new RuntimeException("Tried to remove a chunk section that isn't present");
         }
 
         this.sectionStorage.forEach((pass, storage) -> {
-            storage.replaceState(section, null);
+            storage.deleteData(section.getLocalSectionIndex());
         });
 
         this.sections[index] = null;
+        this.graphData.setData(index, null);
+
         this.sectionCount--;
     }
 
@@ -141,7 +154,7 @@ public class RenderRegion implements IndexedMap.IdHolder {
     }
 
     @Deprecated
-    public SectionData getStorage(TerrainRenderPass pass) {
+    public SectionRenderDataStorage getStorage(TerrainRenderPass pass) {
         return this.sectionStorage.get(pass);
     }
 
@@ -152,56 +165,56 @@ public class RenderRegion implements IndexedMap.IdHolder {
         }
     }
 
-    public int id() {
-        return this.id;
-    }
-
-    public RenderSection getChunk(int x, int y, int z) {
-        return this.sections[x << 5 | z << 2 | y];
-    }
-
     public RenderSection[] getChunks() {
         return this.sections;
     }
 
-    public RenderSection getChunk(int section) {
-        return this.sections[section];
+    public int getChunkX() {
+        return this.x << REGION_WIDTH_SH;
     }
 
-    public static class SectionData {
-        private final ChunkGraphicsState[] graphicsStates = new ChunkGraphicsState[RenderRegion.REGION_SIZE];
+    public int getChunkY() {
+        return this.y << REGION_HEIGHT_SH;
+    }
 
-        public ChunkGraphicsState getState(RenderSection section) {
-            return this.graphicsStates[section.getChunkId()];
+    public int getChunkZ() {
+        return this.z << REGION_LENGTH_SH;
+    }
+
+    public int getX() {
+        return this.x;
+    }
+
+    public int getY() {
+        return this.y;
+    }
+
+    public int getZ() {
+        return this.z;
+    }
+
+    public long key() {
+        return ChunkSectionPos.asLong(this.x, this.y, this.z);
+    }
+
+    public boolean testVisibility(Frustum frustum) {
+        return frustum.testBox(this.getWorldX(), this.getWorldY(), this.getWorldZ(),
+                this.getWorldX() + (RenderRegion.REGION_WIDTH << 4), this.getWorldY() + (RenderRegion.REGION_HEIGHT << 4), this.getWorldZ() + (RenderRegion.REGION_LENGTH << 4));
+    }
+
+    public void refreshPointers(CommandList commandList) {
+        if (this.resources != null) {
+            this.resources.deleteTessellation(commandList);
         }
 
-        public void replaceState(RenderSection section, ChunkGraphicsState state) {
-            var id = section.getChunkId();
-            var prev = this.graphicsStates[id];
-            this.graphicsStates[id] = state;
-
-            if (prev != null) {
-                prev.delete();
-            }
+        for (var storage : this.sectionStorage.values()) {
+            storage.refreshPointers();
         }
-
-        public void delete(CommandList commandList) {
-            for (int i = 0; i < this.graphicsStates.length; i++) {
-                ChunkGraphicsState state = this.graphicsStates[i];
-
-                if (state != null) {
-                    state.delete();
-
-                    this.graphicsStates[i] = null;
-                }
-            }
-        }
-
     }
 
     public static class Resources {
-        protected final GlBufferArena vertexBuffers;
-        private final EnumMap<SharedQuadIndexBuffer.IndexType, GlTessellation> tessellations = new EnumMap<>(SharedQuadIndexBuffer.IndexType.class);
+        private final GlBufferArena vertexBuffers;
+        private GlTessellation tessellation;
 
         public Resources(CommandList commandList, StagingBuffer stagingBuffer) {
             int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
@@ -209,24 +222,24 @@ public class RenderRegion implements IndexedMap.IdHolder {
             this.vertexBuffers = new GlBufferArena(commandList, REGION_SIZE * 756, stride, stagingBuffer);
         }
 
-        public void updateTessellation(CommandList commandList, SharedQuadIndexBuffer.IndexType indexType, GlTessellation tessellation) {
-            var prev = this.tessellations.put(indexType, tessellation);
-
-            if (prev != null) {
-                prev.delete(commandList);
-            }
-        }
-
-        public GlTessellation getTessellation(SharedQuadIndexBuffer.IndexType indexType) {
-            return this.tessellations.get(indexType);
-        }
-
-        public void deleteTessellations(CommandList commandList) {
-            for (var tessellation : this.tessellations.values()) {
-                tessellation.delete(commandList);
+        public void updateTessellation(CommandList commandList, GlTessellation tessellation) {
+            if (this.tessellation != null) {
+                this.tessellation.delete(commandList);
             }
 
-            this.tessellations.clear();
+            this.tessellation = tessellation;
+        }
+
+        public void deleteTessellation(CommandList commandList) {
+            if (this.tessellation != null) {
+                this.tessellation.delete(commandList);
+            }
+
+            this.tessellation = null;
+        }
+
+        public GlTessellation getTessellation() {
+            return this.tessellation;
         }
 
         public boolean isEmpty() {
@@ -242,13 +255,17 @@ public class RenderRegion implements IndexedMap.IdHolder {
         }
 
         public void delete(CommandList commandList) {
-            this.deleteTessellations(commandList);
+            this.deleteTessellation(commandList);
 
             this.vertexBuffers.delete(commandList);
         }
 
         public GlBuffer getVertexBuffer() {
             return this.vertexBuffers.getBufferObject();
+        }
+
+        public GlBufferArena getGeometryArena() {
+            return this.vertexBuffers;
         }
     }
 }

@@ -1,27 +1,41 @@
 package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import me.jellysquid.mods.sodium.client.render.chunk.GraphDirection;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListBuilder;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.RegionRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import me.jellysquid.mods.sodium.client.util.memory.HeapArena;
 import net.minecraft.client.render.Camera;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.MathHelper;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
+
+import java.util.ArrayDeque;
 
 public final class GraphSearch {
-    private final Graph graph;
+    private final GraphSearchPool pool;
     private final Frustum frustum;
 
     private final boolean useOcclusionCulling;
 
     private final int midX, midY, midZ; // the center of the graph search
-    private final int minX, minY, minZ;
-    private final int maxX, maxY, maxZ;
 
-    GraphSearch(Graph graph, Camera camera, Frustum frustum, int renderDistance, boolean useOcclusionCulling) {
-        this.graph = graph;
+    private final Long2LongOpenHashMap searchLists = new Long2LongOpenHashMap();
+    private final ArrayDeque<RenderRegion> searchQueue = new ArrayDeque<>();
+
+    private final RenderRegionManager regions;
+
+    private final int renderDistance;
+
+    public GraphSearch(GraphSearchPool pool, RenderRegionManager regions, Camera camera, Frustum frustum, int renderDistance, boolean useOcclusionCulling) {
+        this.pool = pool;
+        this.regions = regions;
 
         BlockPos cameraBlockPos = camera.getBlockPos();
 
@@ -32,175 +46,259 @@ public final class GraphSearch {
         this.frustum = frustum;
 
         this.useOcclusionCulling = useOcclusionCulling;
+        this.renderDistance = renderDistance;
 
-        // TODO: the search can wrap around into other loaded chunks if the server hasn't updated the player's position yet
-        this.minX = this.midX - renderDistance;
-        this.maxX = this.midX + renderDistance;
-
-        this.minZ = this.midZ - renderDistance;
-        this.maxZ = this.midZ + renderDistance;
-
-        this.minY = graph.world.getBottomSectionCoord();
-        this.maxY = graph.world.getTopSectionCoord();
+        this.searchLists.defaultReturnValue(MemoryUtil.NULL);
     }
 
-    private void initSearch(ChunkGraphIterationQueue queue) {
-        var originNode = this.graph.getIndex(this.midX, this.midY, this.midZ);
+    private static boolean isVisible(Frustum frustum, int chunkX, int chunkY, int chunkZ) {
+        double posX = chunkX << 4;
+        double posY = chunkY << 4;
+        double posZ = chunkZ << 4;
 
-        if (GraphNode.isLoaded(originNode)) {
-            this.addToQueue(queue, this.midX, this.midY, this.midZ, GraphDirection.NONE);
-        } else {
-            this.initQueueFallback(queue);
-        }
+        return frustum.testBox(posX, posY, posZ, posX + 16.0D, posY + 16.0D, posZ + 16.0D);
     }
 
-    // not optimized. this only gets executed if the camera is not within the graph.
-    private void initQueueFallback(ChunkGraphIterationQueue queue) {
-        int y = MathHelper.clamp(this.midY, this.graph.world.getBottomSectionCoord(), this.graph.world.getTopSectionCoord() - 1);
+    public ChunkRenderList getVisible() {
+        this.enqueueNodes(this.pool, LongArrayList.of(ChunkSectionPos.asLong(this.midX, this.midY, this.midZ)));
 
-        var sorted = new LongArrayList();
+        var nonEmptyRenderLists = new ObjectArrayList<RegionRenderLists>();
 
-        for (int relX = -this.graph.renderDistance; relX <= this.graph.renderDistance; relX++) {
-            for (int relZ = -this.graph.renderDistance; relZ <= this.graph.renderDistance; relZ++) {
-                int x = this.midX + relX;
-                int z = this.midZ + relZ;
+        RenderRegion region;
 
-                var nodeId = this.graph.getIndex(x, y, z);
-                var node = this.graph.getNode(nodeId);
-
-                if (!GraphNode.isLoaded(node) || !isVisible(this.frustum, x, y, z)) {
-                    continue;
-                }
-
-                sorted.add(ChunkSectionPos.asLong(x, y, z));
-            }
-        }
-
-        sorted.sort((a, b) -> {
-            int ax = this.midX - ChunkSectionPos.unpackX(a);
-            int az = this.midZ - ChunkSectionPos.unpackZ(a);
-
-            int bx = this.midX - ChunkSectionPos.unpackX(b);
-            int bz = this.midZ - ChunkSectionPos.unpackZ(b);
-
-            int ad = (ax * ax) + (az * az);
-            int bd = (bx * bx) + (bz * bz);
-
-            return Integer.compare(bd, ad);
-        });
-
-        var it = sorted.longIterator();
-
-        while (it.hasNext()) {
-            long pos = it.nextLong();
-            this.addToQueue(queue, ChunkSectionPos.unpackX(pos), ChunkSectionPos.unpackY(pos), ChunkSectionPos.unpackZ(pos), GraphDirection.NONE);
-        }
-    }
-
-    public void getVisible(ChunkRenderListBuilder renderList) {
-        ChunkGraphIterationQueue queue = new ChunkGraphIterationQueue();
-        this.initSearch(queue);
-
-        while (!queue.isEmpty()) {
-            var index = queue.advanceIndex();
-
-            // create absolute coordinates from the queue
-            var x = queue.getPositionX(index) + this.midX;
-            var y = queue.getPositionY(index) + this.midY;
-            var z = queue.getPositionZ(index) + this.midZ;
-
-            var incomingDirection = GraphDirection.opposite(queue.getDirection(index));
-
-            if (!isVisible(this.frustum, x, y, z)) {
+        while ((region = this.searchQueue.poll()) != null) {
+            if (!region.testVisibility(this.frustum)) {
                 continue;
             }
 
-            var id = this.graph.getIndex(x, y, z);
-            var node = this.graph.getNode(id);
+            long pSearchList = this.searchLists.get(region.key());
+            RegionRenderLists renderLists;
+
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                long pAdjacentSearchLists = SearchQueueAccessUnsafe.allocateStack(stack);
+
+                for (int direction = 0; direction < GraphDirection.COUNT; direction++) {
+                    SearchQueueAccessUnsafe.setAdjacent(pAdjacentSearchLists, direction,
+                            this.getNeighborSearchList(this.pool, region, direction));
+                }
+
+                SearchQueueAccessUnsafe.setSelf(pAdjacentSearchLists, pSearchList);
+
+                renderLists = this.processQueue(region, pSearchList, pAdjacentSearchLists);
+            }
+
+            if (!renderLists.isEmpty()) {
+                nonEmptyRenderLists.add(renderLists);
+            } else {
+                this.pool.releaseRenderList(renderLists);
+            }
+        }
+
+        this.pool.releaseSearchLists();
+
+        this.searchLists.clear();
+        this.searchQueue.clear();
+
+        return new ChunkRenderList(nonEmptyRenderLists);
+    }
+
+    public long getNeighborSearchList(GraphSearchPool pool, RenderRegion region, int direction) {
+        long pos = ChunkSectionPos.asLong(
+                region.getX() + GraphDirection.x(direction),
+                region.getY() + GraphDirection.y(direction),
+                region.getZ() + GraphDirection.z(direction)
+        );
+
+        long searchList = this.searchLists.get(pos);
+
+        if (searchList == MemoryUtil.NULL) {
+            searchList = this.createSearchList(pool, pos);
+        }
+
+        return searchList;
+    }
+
+    private long createSearchList(GraphSearchPool pool, long pos) {
+        var list = pool.createSearchList();
+
+        this.searchLists.put(pos, list);
+
+        var region = this.regions.getByKey(pos);
+
+        if (region != null) {
+            this.searchQueue.add(region);
+        }
+
+        return list;
+    }
+
+    public void enqueueNodes(GraphSearchPool pool, LongArrayList nodes) {
+        LongIterator it = nodes.longIterator();
+
+        while (it.hasNext()) {
+            long pos = it.nextLong();
+
+            int x = ChunkSectionPos.unpackX(pos);
+            int y = ChunkSectionPos.unpackY(pos);
+            int z = ChunkSectionPos.unpackZ(pos);
+
+            var section = this.regions.getSection(x, y, z);
+
+            if (section == null) {
+                continue;
+            }
+
+            var region = section.getRegion();
+
+            var pList = pool.createSearchList();
+            SearchQueueUnsafe.enqueue(pList, x, y, z);
+
+            this.searchLists.put(region.key(), pList);
+            this.searchQueue.add(region);
+        }
+    }
+
+    private RegionRenderLists processQueue(RenderRegion region, long pSelf, long pAdjacent) {
+        var renderLists = this.pool.createRenderLists();
+        renderLists.region = region;
+
+        GraphNodeStorage nodes = region.graphData;
+
+        int baseChunkX = region.getChunkX();
+        int baseChunkY = region.getChunkY();
+        int baseChunkZ = region.getChunkZ();
+
+        for (int queueIndex = 0; queueIndex < SearchQueueUnsafe.getQueueSize(pSelf); queueIndex++) {
+            var sectionIndex = SearchQueueUnsafe.getQueueEntry(pSelf, queueIndex);
+            var incomingDirections = SearchQueueUnsafe.getIncomingDirections(pSelf, sectionIndex);
+
+            var x = baseChunkX + LocalSectionIndex.unpackX(sectionIndex);
+            var y = baseChunkY + LocalSectionIndex.unpackY(sectionIndex);
+            var z = baseChunkZ + LocalSectionIndex.unpackZ(sectionIndex);
+
+            if (!this.isWithinRenderDistance(x, y, z) || !isVisible(this.frustum, x, y, z)) {
+                continue;
+            }
+
+            var node = nodes.getNode(sectionIndex);
 
             if (!GraphNode.isLoaded(node)) {
                 continue;
             }
 
-            var visibilityData = this.useOcclusionCulling ? GraphNode.unpackConnections(node) : -1;
+            renderLists.add(GraphNode.unpackFlags(node), (byte) sectionIndex);
 
-            if (y > this.minY) {
-                // y - 1
-                if ((y <= this.midY) && canTraverse(visibilityData, incomingDirection, GraphDirection.DOWN)) {
-                    this.tryEnqueueNeighbor(queue, GraphDirection.DOWN, x, y - 1, z);
-                }
+            var nodeConnections = this.useOcclusionCulling ? GraphNode.unpackConnections(node) : -1;
+
+            var outgoingDirections = VisibilityEncoding.getOutgoingDirections(nodeConnections, incomingDirections);
+            outgoingDirections &= this.getValidDirections(x, y, z);
+
+            if (outgoingDirections != 0) {
+                this.searchNeighborNodes(pAdjacent, sectionIndex, outgoingDirections);
             }
+        }
 
-            if (y < this.maxY) {
-                // y + 1
-                if ((y >= this.midY) && canTraverse(visibilityData, incomingDirection, GraphDirection.UP)) {
-                    this.tryEnqueueNeighbor(queue, GraphDirection.UP, x, y + 1, z);
-                }
-            }
+        return renderLists;
+    }
 
-            if (z > this.minZ) {
-                // z - 1
-                if ((z <= this.midZ) && canTraverse(visibilityData, incomingDirection, GraphDirection.NORTH)) {
-                    this.tryEnqueueNeighbor(queue, GraphDirection.NORTH, x, y, z - 1);
-                }
-            }
+    private boolean isWithinRenderDistance(int x, int y, int z) {
+        int xDist = Math.abs(x - this.midX);
+        int yDist = Math.abs(y - this.midY);
+        int zDist = Math.abs(z - this.midZ);
 
-            if (z < this.maxZ) {
-                // z + 1
-                if ((z >= this.midZ) && canTraverse(visibilityData, incomingDirection, GraphDirection.SOUTH)) {
-                    this.tryEnqueueNeighbor(queue, GraphDirection.SOUTH, x, y, z + 1);
-                }
-            }
+        return Math.max(xDist, Math.max(yDist, zDist)) < this.renderDistance;
+    }
 
-            if (x > this.minX) {
-                // x - 1
-                if ((x <= this.midX) && canTraverse(visibilityData, incomingDirection, GraphDirection.EAST)) {
-                    this.tryEnqueueNeighbor(queue, GraphDirection.EAST, x - 1, y, z);
-                }
-            }
+    // Attempts to traverse into each neighbor of the node, if the outgoing directions of that node allows it.
+    private void searchNeighborNodes(long pAdjacent, int sectionIndex, int connections) {
+        {
+            var adjacentSectionIndex = LocalSectionIndex.decX(sectionIndex);
+            SearchQueueUnsafe.enqueueConditionally(SearchQueueAccessUnsafe.west(pAdjacent, adjacentSectionIndex > sectionIndex),
+                    adjacentSectionIndex, GraphDirection.EAST, GraphDirection.bit(connections, GraphDirection.WEST));
+        }
 
-            if (x < this.maxX) {
-                // x + 1
-                if ((x >= this.midX) && canTraverse(visibilityData, incomingDirection, GraphDirection.WEST)) {
-                    this.tryEnqueueNeighbor(queue, GraphDirection.WEST, x + 1, y, z);
-                }
-            }
+        {
+            var adjacentSectionIndex = LocalSectionIndex.incX(sectionIndex);
+            SearchQueueUnsafe.enqueueConditionally(SearchQueueAccessUnsafe.east(pAdjacent, adjacentSectionIndex < sectionIndex),
+                    adjacentSectionIndex, GraphDirection.WEST, GraphDirection.bit(connections, GraphDirection.EAST));
+        }
 
-            renderList.add(GraphNode.unpackFlags(node), GraphNode.unpackRegion(node), getLocalChunkIndex(x, y, z));
+        {
+            var adjacentSectionIndex = LocalSectionIndex.decY(sectionIndex);
+            SearchQueueUnsafe.enqueueConditionally(SearchQueueAccessUnsafe.down(pAdjacent, adjacentSectionIndex > sectionIndex),
+                    adjacentSectionIndex, GraphDirection.UP, GraphDirection.bit(connections, GraphDirection.DOWN));
+        }
+
+        {
+            var adjacentSectionIndex = LocalSectionIndex.incY(sectionIndex);
+            SearchQueueUnsafe.enqueueConditionally(SearchQueueAccessUnsafe.up(pAdjacent, adjacentSectionIndex < sectionIndex),
+                    adjacentSectionIndex, GraphDirection.DOWN, GraphDirection.bit(connections, GraphDirection.UP));
+        }
+
+        {
+            var adjacentSectionIndex = LocalSectionIndex.decZ(sectionIndex);
+            SearchQueueUnsafe.enqueueConditionally(SearchQueueAccessUnsafe.north(pAdjacent, adjacentSectionIndex > sectionIndex),
+                    adjacentSectionIndex, GraphDirection.SOUTH, GraphDirection.bit(connections, GraphDirection.NORTH));
+        }
+
+        {
+            var adjacentSectionIndex = LocalSectionIndex.incZ(sectionIndex);
+            SearchQueueUnsafe.enqueueConditionally(SearchQueueAccessUnsafe.south(pAdjacent, adjacentSectionIndex < sectionIndex),
+                    adjacentSectionIndex, GraphDirection.NORTH, GraphDirection.bit(connections, GraphDirection.SOUTH));
         }
     }
 
-    private static boolean canTraverse(int visibilityData, int incomingDirection, int outgoingDirection) {
-        return incomingDirection == GraphDirection.NONE || isVisibleThrough(visibilityData, incomingDirection, outgoingDirection);
+    // Returns a bit-field of the traversal directions which would move *away* from the search origin.
+    private int getValidDirections(int x, int y, int z) {
+        int planes = 0;
+
+        planes |= x <= this.midX ? 1 << GraphDirection.WEST : 0;
+        planes |= x >= this.midX ? 1 << GraphDirection.EAST : 0;
+
+        planes |= y <= this.midY ? 1 << GraphDirection.DOWN : 0;
+        planes |= y >= this.midY ? 1 << GraphDirection.UP : 0;
+
+        planes |= z <= this.midZ ? 1 << GraphDirection.NORTH : 0;
+        planes |= z >= this.midZ ? 1 << GraphDirection.SOUTH : 0;
+
+        return planes;
     }
 
-    private static boolean isVisibleThrough(int visibilityData, int incomingDirection, int outgoingDirection) {
-        return VisibilityEncoding.isConnected(visibilityData, incomingDirection, outgoingDirection);
-    }
+    @Deprecated
+    public static class GraphSearchPool {
+        private final HeapArena searchLists = new HeapArena(256 * 1024);
+        private final ObjectArrayList<RegionRenderLists> renderLists = new ObjectArrayList<>();
 
-    private void tryEnqueueNeighbor(ChunkGraphIterationQueue queue, int direction, int x, int y, int z) {
-        if (!this.graph.isVisited(this.graph.getIndex(x, y, z))) {
-            this.addToQueue(queue, x, y, z, direction);
+        public void releaseSearchLists() {
+            this.searchLists.reset();
         }
-    }
 
-    private void addToQueue(ChunkGraphIterationQueue queue, int x, int y, int z, int dir) {
-        // pass center-relative coordinates in the queue
-        queue.add(x - this.midX, y - this.midY, z - this.midZ, dir);
+        public long createSearchList() {
+            return SearchQueueUnsafe.allocate(this.searchLists);
+        }
 
-        // mark as visited so that the node is not enqueued multiple times
-        this.graph.markVisited(this.graph.getIndex(x, y, z));
-    }
+        public void releaseRenderList(ChunkRenderList list) {
+            for (RegionRenderLists lists : list.batches) {
+                this.releaseRenderList(lists);
+            }
+        }
 
-    private static boolean isVisible(Frustum frustum, int chunkX, int chunkY, int chunkZ) {
-        float posX = (chunkX << 4);
-        float posY = (chunkY << 4);
-        float posZ = (chunkZ << 4);
+        private void releaseRenderList(RegionRenderLists lists) {
+            this.renderLists.push(lists);
+        }
 
-        return frustum.isBoxVisible(posX, posY, posZ, posX + 16.0f, posY + 16.0f, posZ + 16.0f);
-    }
+        public RegionRenderLists createRenderLists() {
+            RegionRenderLists lists;
 
-    private static int getLocalChunkIndex(int x, int y, int z) {
-        return RenderRegion.getChunkIndex(x & 7, y & 3, z & 7); // TODO: eliminate these constants
+            if (!this.renderLists.isEmpty()) {
+                lists = this.renderLists.pop();
+            } else {
+                lists = new RegionRenderLists();
+            }
+
+            lists.reset();
+
+            return lists;
+        }
     }
 }

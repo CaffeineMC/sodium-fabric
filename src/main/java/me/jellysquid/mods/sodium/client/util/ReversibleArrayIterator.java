@@ -24,24 +24,16 @@ public class ReversibleArrayIterator<T> {
         this.currentIndex = reverse ? end - 1 : start;
     }
 
-    public T next() {
-        T result = null;
-
-        if (this.remaining > 0) {
-            result = this.array[this.currentIndex];
-
-            this.currentIndex += this.direction;
-            this.remaining--;
-        }
-
-        return result;
+    public boolean hasNext() {
+        return this.remaining > 0;
     }
 
-    public void forEach(Consumer<T> consumer) {
-        T entry;
+    public T next() {
+        T result = this.array[this.currentIndex];
 
-        while ((entry = this.next()) != null) {
-            consumer.accept(entry);
-        }
+        this.currentIndex += this.direction;
+        this.remaining--;
+
+        return result;
     }
 }

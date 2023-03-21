@@ -41,7 +41,7 @@ public class ModelQuadUtil {
         return vertexIndex * VERTEX_SIZE;
     }
 
-    public static ModelQuadFacing findNormalFace(float x, float y, float z) {
+    public static int findNormalFace(float x, float y, float z) {
         Vector3f normal = new Vector3f(x, y, z);
 
         if (!normal.isFinite()) {
@@ -67,7 +67,7 @@ public class ModelQuadUtil {
         return ModelQuadFacing.UNASSIGNED;
     }
 
-    public static ModelQuadFacing findNormalFace(int normal) {
+    public static int findNormalFace(int normal) {
         return findNormalFace(NormI8.unpackX(normal), NormI8.unpackY(normal), NormI8.unpackZ(normal));
     }
 

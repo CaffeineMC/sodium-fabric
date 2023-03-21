@@ -7,12 +7,9 @@ import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.blender.BiomeColorBlender;
 import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadWinding;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
@@ -57,7 +54,7 @@ public class BlockRenderer {
         this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
     }
 
-    public void renderModel(BlockRenderContext ctx, ChunkBuildBuffers buffers, ChunkRenderBounds.Builder bounds) {
+    public void renderModel(BlockRenderContext ctx, ChunkBuildBuffers buffers) {
         var material = DefaultMaterials.forBlockState(ctx.state());
         var meshBuilder = buffers.get(material);
 
@@ -68,14 +65,14 @@ public class BlockRenderer {
             List<BakedQuad> quads = this.getGeometry(ctx, face);
 
             if (!quads.isEmpty() && this.isFaceVisible(ctx, face)) {
-                this.renderQuadList(ctx, material, lighter, renderOffset, meshBuilder, quads, face, bounds);
+                this.renderQuadList(ctx, material, lighter, renderOffset, meshBuilder, quads, face);
             }
         }
 
         List<BakedQuad> all = this.getGeometry(ctx, null);
 
         if (!all.isEmpty()) {
-            this.renderQuadList(ctx, material, lighter, renderOffset, meshBuilder, all, null, bounds);
+            this.renderQuadList(ctx, material, lighter, renderOffset, meshBuilder, all, null);
         }
     }
 
@@ -91,7 +88,7 @@ public class BlockRenderer {
     }
 
     private void renderQuadList(BlockRenderContext ctx, Material material, LightPipeline lighter, Vec3d offset,
-                                ChunkModelBuilder builder, List<BakedQuad> quads, Direction cullFace, ChunkRenderBounds.Builder bounds) {
+                                ChunkModelBuilder builder, List<BakedQuad> quads, Direction cullFace) {
         ColorSampler<BlockState> colorizer = null;
 
         QuadLightData lightData = this.cachedQuadLightData;
@@ -113,7 +110,7 @@ public class BlockRenderer {
                 colors = this.biomeColorBlender.getColors(ctx.world(), ctx.pos(), quad, colorizer, ctx.state());
             }
 
-            this.writeGeometry(ctx, builder, offset, material, quad, colors, lightData.br, lightData.lm, bounds);
+            this.writeGeometry(ctx, builder, offset, material, quad, colors, lightData.br, lightData.lm);
 
             Sprite sprite = quad.getSprite();
 
@@ -130,13 +127,12 @@ public class BlockRenderer {
                                BakedQuadView quad,
                                int[] colors,
                                float[] brightness,
-                               int[] lightmap,
-                               ChunkRenderBounds.Builder bounds)
+                               int[] lightmap)
     {
         ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(brightness);
         var vertices = this.vertices;
 
-        ModelQuadFacing normalFace = quad.getNormalFace();
+        int normalFace = quad.getNormalFace();
 
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
@@ -152,8 +148,6 @@ public class BlockRenderer {
             out.v = quad.getTexV(srcIndex);
 
             out.light = lightmap[srcIndex];
-
-            bounds.add(out.x, out.y, out.z, normalFace);
         }
 
         var vertexBuffer = builder.getVertexBuffer(normalFace);

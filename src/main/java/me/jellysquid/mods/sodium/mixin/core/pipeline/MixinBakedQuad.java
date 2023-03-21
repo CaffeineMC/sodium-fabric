@@ -42,7 +42,7 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     private int flags;
 
     private int normal;
-    private ModelQuadFacing normalFace;
+    private int normalFace;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
@@ -103,7 +103,7 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     }
 
     @Override
-    public ModelQuadFacing getNormalFace() {
+    public int getNormalFace() {
         return this.normalFace;
     }
 
