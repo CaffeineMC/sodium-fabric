@@ -37,8 +37,6 @@
   "sodium.options.use_fog_occlusion.tooltip": "If enabled, chunks which are determined to be fully hidden by fog effects will not be rendered, helping to improve performance. The improvement can be more dramatic when fog effects are heavier (such as while underwater), but it may cause undesirable visual artifacts between the sky and fog in some scenarios.",
   "sodium.options.use_entity_culling.name": "Use Entity Culling",
   "sodium.options.use_entity_culling.tooltip": "If enabled, entities determined not to be in any visible chunks will be skipped during rendering. This can help improve performance by avoiding the rendering of entities located underground or behind walls.",
-  "sodium.options.use_particle_culling.name": "Use Particle Culling",
-  "sodium.options.use_particle_culling.tooltip": "If enabled, only particles which are determined to be visible will be rendered. This can provide a significant improvement to frame rates when many particles are nearby.",
   "sodium.options.animate_only_visible_textures.name": "Animate Only Visible Textures",
   "sodium.options.animate_only_visible_textures.tooltip": "If enabled, only animated textures determined to be visible will be updated. This can provide a significant boost to frame rates on some hardware, especially with heavier resource packs. If you experience issues with some textures not being animated, try disabling this option.",
   "sodium.options.cpu_render_ahead_limit.name": "CPU Render-Ahead Limit",
