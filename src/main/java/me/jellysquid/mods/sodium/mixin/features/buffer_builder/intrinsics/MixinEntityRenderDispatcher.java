@@ -16,6 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.chunk.Chunk;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,7 +31,7 @@ public class MixinEntityRenderDispatcher {
      * @reason Reduce vertex assembly overhead for shadow rendering
      */
     @Overwrite
-    private static void renderShadowPart(MatrixStack.Entry entry, VertexConsumer vertices, WorldView world, BlockPos pos, double x, double y, double z, float radius, float opacity) {
+    private static void renderShadowPart(MatrixStack.Entry entry, VertexConsumer vertices, Chunk chunk, WorldView world, BlockPos pos, double x, double y, double z, float radius, float opacity) {
         BlockPos blockPos = pos.down();
         BlockState blockState = world.getBlockState(blockPos);
 
