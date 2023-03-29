@@ -1,25 +1,23 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.fast_sort;
 
-import com.google.common.primitives.Floats;
-import it.unimi.dsi.fastutil.ints.IntArrays;
+import com.mojang.blaze3d.systems.VertexSorter;
 import me.jellysquid.mods.sodium.client.util.GeometrySort;
-import net.minecraft.class_8251;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
-@Mixin(class_8251.class)
-public interface MixinVertexSorting {
+@Mixin(VertexSorter.class)
+public interface MixinVertexSorter {
     /**
-     * @author
-     * @reason
+     * @author IMS
+     * @reason Optimize vertex sorting
      */
     @Overwrite
-    public static class_8251 method_49907(class_8251.class_8252 pVertexSorting$DistanceFunction0) {
+    public static VertexSorter of(VertexSorter.SortKeyMapper sortKeyMapper) {
         return pVector3fArray1 -> {
             float[] lvFloatArray2 = new float[pVector3fArray1.length];
             int[] lvIntArray3 = new int[pVector3fArray1.length];
             for (int lvInt4 = 0; lvInt4 < pVector3fArray1.length; ++lvInt4) {
-                lvFloatArray2[lvInt4] = pVertexSorting$DistanceFunction0.apply(pVector3fArray1[lvInt4]);
+                lvFloatArray2[lvInt4] = sortKeyMapper.apply(pVector3fArray1[lvInt4]);
                 lvIntArray3[lvInt4] = lvInt4;
             }
 
