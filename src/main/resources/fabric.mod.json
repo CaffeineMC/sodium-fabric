@@ -30,6 +30,9 @@
   "mixins": [
     "sodium.mixins.json"
   ],
+  "provides": [
+      "sodium-api"
+  ],
   "depends": {
     "fabricloader": ">=0.12.0",
     "fabric-rendering-data-attachment-v1": ">=0.1",

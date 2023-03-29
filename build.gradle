@@ -41,13 +41,19 @@ tasks.register('apiJar', Jar) {
     dependsOn(remapJar)
     classifier "api"
 
+    from(sourceSets.api.output.resourcesDir)
+
     from(zipTree(remapJar.getOutputs().getFiles().first())) {
         include("LICENSE.txt")
         include("net/caffeinemc/mods/sodium/api/**")
     }
+}
 
-    manifest {
-        attributes("Fabric-Loom-Remap": "true")
+processApiResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
     }
 }
 
@@ -55,7 +61,6 @@ build.dependsOn apiJar
 
 jar {
     from sourceSets.api.output.classesDirs
-    from sourceSets.api.output.resourcesDir
 }
 
 dependencies {
