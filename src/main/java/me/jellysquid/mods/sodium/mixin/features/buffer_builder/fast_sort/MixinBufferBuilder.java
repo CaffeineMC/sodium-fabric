@@ -1,8 +1,8 @@
 
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.fast_sort;
 
+import com.mojang.blaze3d.systems.VertexSorter;
 import me.jellysquid.mods.sodium.client.util.GeometrySort;
-import net.minecraft.class_8251;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexFormat;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +40,7 @@ public abstract class MixinBufferBuilder {
 
     @Shadow
     @Nullable
-    private class_8251 field_43358;
+    private VertexSorter sorter;
 
     /**
      * @author JellySquid
@@ -77,8 +77,8 @@ public abstract class MixinBufferBuilder {
      */
     @Overwrite
     private void writeSortedIndices(VertexFormat.IndexType indexType) {
-        if (field_43358 != null) {
-            int[] indices = this.field_43358.sort(this.sortingPrimitiveCenters);
+        if (sorter != null) {
+            int[] indices = this.sorter.sort(this.sortingPrimitiveCenters);
             this.writePrimitiveIndices(indexType, indices);
         }
     }
