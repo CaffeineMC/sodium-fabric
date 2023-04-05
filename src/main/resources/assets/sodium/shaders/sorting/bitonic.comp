@@ -1,0 +1,8 @@
+#version 460 core
+
+#define QUADS_PER_WORKGROUP_BITS 8
+#define QUADS_PER_WORKGROUP (1<<QUADS_PER_WORKGROUP_BITS)
+#define QUADS_PER_WORKGROUP_MSK ((1<<QUADS_PER_WORKGROUP_BITS)-1)
+
+
+layout(local_size_x = (QUADS_PER_WORKGROUP/2), local_size_y = 1 , local_size_z = 1) in;

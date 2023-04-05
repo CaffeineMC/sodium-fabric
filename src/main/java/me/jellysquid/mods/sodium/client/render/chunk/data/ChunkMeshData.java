@@ -9,10 +9,12 @@ import java.util.Map;
 public class ChunkMeshData {
     private final Map<ModelQuadFacing, VertexRange> parts;
     private final NativeBuffer buffer;
+    public final int totalIndices;
 
-    public ChunkMeshData(NativeBuffer buffer, Map<ModelQuadFacing, VertexRange> parts) {
+    public ChunkMeshData(NativeBuffer buffer, Map<ModelQuadFacing, VertexRange> parts, int totalIndices) {
         this.parts = parts;
         this.buffer = buffer;
+        this.totalIndices = totalIndices;
     }
 
     public Map<ModelQuadFacing, VertexRange> getParts() {

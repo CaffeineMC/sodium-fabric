@@ -14,8 +14,11 @@ import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 public class RenderRegion {
     public static final int REGION_WIDTH = 8;
@@ -43,6 +46,7 @@ public class RenderRegion {
     private final int x, y, z;
 
     public final GlBufferArena vertexBuffers;
+    public final GlBufferArena indexBuffers;
 
 
     public final Map<TerrainRenderPass, RenderRegionStorage> storage = new Reference2ReferenceOpenHashMap<>();
@@ -54,6 +58,7 @@ public class RenderRegion {
 
         int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
         this.vertexBuffers = new GlBufferArena(commandList, REGION_SIZE * 756, stride, stagingBuffer);
+        this.indexBuffers = new GlBufferArena(commandList, REGION_SIZE * 6 * 2, 6 * 2, stagingBuffer);
     }
 
     public static RenderRegion createRegionForChunk(CommandList commandList, StagingBuffer stagingBuffer, int x, int y, int z) {
@@ -88,6 +93,7 @@ public class RenderRegion {
         this.storage.clear();
 
         this.vertexBuffers.delete(commandList);
+        this.indexBuffers.delete(commandList);
     }
 
     public void deleteTessellations(CommandList commandList) {
@@ -101,11 +107,11 @@ public class RenderRegion {
     }
 
     public long getDeviceUsedMemory() {
-        return this.vertexBuffers.getDeviceUsedMemory();
+        return this.vertexBuffers.getDeviceUsedMemory() + this.indexBuffers.getDeviceUsedMemory();
     }
 
     public long getDeviceAllocatedMemory() {
-        return this.vertexBuffers.getDeviceAllocatedMemory();
+        return this.vertexBuffers.getDeviceAllocatedMemory() + this.indexBuffers.getDeviceAllocatedMemory();
     }
 
     public RenderRegionStorage getStorage(TerrainRenderPass pass) {
@@ -148,6 +154,10 @@ public class RenderRegion {
 
         public ChunkGraphicsState getState(RenderSection section) {
             return this.graphicsStates[section.getChunkId()];
+        }
+
+        public Stream<ChunkGraphicsState> getStates() {
+            return Arrays.stream(graphicsStates).filter(Objects::nonNull);
         }
 
         public void updateTessellation(CommandList commandList, SharedQuadIndexBuffer.IndexType indexType, GlTessellation tessellation) {

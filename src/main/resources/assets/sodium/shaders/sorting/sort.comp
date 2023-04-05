@@ -1,0 +1,74 @@
+#version 460 core
+
+#define QUADS_PER_WORKGROUP_BITS 8
+#define QUADS_PER_WORKGROUP (1<<QUADS_PER_WORKGROUP_BITS)
+#define QUADS_PER_WORKGROUP_MSK ((1<<QUADS_PER_WORKGROUP_BITS)-1)
+
+
+layout(local_size_x = (QUADS_PER_WORKGROUP/2), local_size_y = 1 , local_size_z = 1) in;
+
+#import <sodium:sorting/format.glsl>
+
+//TODO: can also make it a float with the lower 8 bits of the mantissa being the id
+//TODO: make it not do this
+shared float threadBufferDepth[QUADS_PER_WORKGROUP+1];
+shared uint threadBufferIndex[QUADS_PER_WORKGROUP+1];
+int baseId = int(gl_LocalInvocationID.x<<1);
+void localSort() {
+    //Local sort 1
+    if (threadBufferDepth[baseId+1] > threadBufferDepth[baseId]) {
+        float tmp = threadBufferDepth[baseId];
+        threadBufferDepth[baseId] = threadBufferDepth[baseId+1];
+        threadBufferDepth[baseId+1] = tmp;
+
+        uint tmp2 = threadBufferIndex[baseId];
+        threadBufferIndex[baseId] = threadBufferIndex[baseId+1];
+        threadBufferIndex[baseId+1] = tmp2;
+    }
+    barrier();
+    memoryBarrier();
+    //Local sort 2, offset of 1
+    if (threadBufferDepth[baseId+2] > threadBufferDepth[baseId+1]) {
+        float tmp = threadBufferDepth[baseId+1];
+        threadBufferDepth[baseId+1] = threadBufferDepth[baseId+2];
+        threadBufferDepth[baseId+2] = tmp;
+        uint tmp2 = threadBufferIndex[baseId+1];
+        threadBufferIndex[baseId+1] = threadBufferIndex[baseId+2];
+        threadBufferIndex[baseId+2] = tmp2;
+    }
+    barrier();
+    memoryBarrier();
+}
+
+void populateLocalBuffer() {
+    threadBufferDepth[baseId|0] = getDistance(gl_GlobalInvocationID.x<<1);
+    threadBufferDepth[baseId|1] = getDistance((gl_GlobalInvocationID.x<<1)|1);
+    threadBufferIndex[baseId|0] = gl_GlobalInvocationID.x<<1;
+    threadBufferIndex[baseId|1] = (gl_GlobalInvocationID.x<<1)|1;
+}
+
+void updateExtern() {
+    QuadIndicies A = indicies[threadBufferIndex[baseId|0]+baseIndexOffset];
+    QuadIndicies B = indicies[threadBufferIndex[baseId|1]+baseIndexOffset];
+    barrier();
+    indicies[(gl_GlobalInvocationID.x<<1)+baseIndexOffset] = A;
+    indicies[((gl_GlobalInvocationID.x<<1)|1)+baseIndexOffset] = B;
+}
+
+void main() {
+    if (((gl_GlobalInvocationID.x<<1)|1) >= getQuadCount()) {
+        threadBufferDepth[baseId|0] = 0.0f;
+        threadBufferDepth[baseId|1] = 0.0f;
+        return;//TODO: FIXME! im pretty sure this breaks barrier() and memoryBarrierShared()
+    }
+    if (gl_LocalInvocationID.x == 0) threadBufferDepth[QUADS_PER_WORKGROUP] = 0.0f;
+    populateLocalBuffer();
+    barrier();
+    memoryBarrier();
+    localSort();
+    localSort();
+    localSort();
+    //threadBuffer[baseId|0] = baseId|1;
+    //threadBuffer[baseId|1] = baseId|0;
+    updateExtern();
+}

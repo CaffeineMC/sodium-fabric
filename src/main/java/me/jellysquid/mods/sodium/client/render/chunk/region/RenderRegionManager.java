@@ -7,9 +7,9 @@ import me.jellysquid.mods.sodium.client.gl.arena.PendingUpload;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.FallbackStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
-import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.render.chunk.SharedQuadIndexBufferGenerator;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
@@ -17,6 +17,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
+import org.lwjgl.system.MemoryUtil;
 
 import java.util.*;
 
@@ -83,7 +84,17 @@ public class RenderRegionManager {
                 ChunkMeshData meshData = result.getMesh(pass);
 
                 if (meshData != null) {
-                    sectionUploads.add(new PendingSectionUpload(result.render, meshData, pass, new PendingUpload(meshData.getVertexData())));
+                    PendingUpload indexUpload = null;
+                    if (pass.isReverseOrder() && meshData.totalIndices != 0) {
+                        NativeBuffer buffer = new NativeBuffer(meshData.totalIndices*2);
+                        var db = MemoryUtil.memAddress(buffer.getDirectBuffer());
+                        for (var range : meshData.getParts().values()) {
+                            if (range.vertexCount() == 0) continue;
+                            SharedQuadIndexBufferGenerator.fillBuffer(db + (range.indexStart() * 2L), range.vertexCount());
+                        }
+                        indexUpload = new PendingUpload(buffer);
+                    }
+                    sectionUploads.add(new PendingSectionUpload(result.render, meshData, pass, new PendingUpload(meshData.getVertexData()), indexUpload));
                 }
             }
         }
@@ -94,6 +105,7 @@ public class RenderRegionManager {
         }
 
         boolean bufferChanged = region.vertexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.vertexUpload));
+        bufferChanged |= region.indexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.indicesUpload).filter(Objects::nonNull));
 
         // If any of the buffers changed, the tessellation will need to be updated
         // Once invalidated the tessellation will be re-created on the next attempted use
@@ -104,7 +116,11 @@ public class RenderRegionManager {
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
             region.createStorage(upload.pass)
-                    .replaceState(upload.section, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.meshData));
+                    .replaceState(upload.section, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.indicesUpload!=null?upload.indicesUpload.getResult():null, upload.meshData));
+            if (upload.indicesUpload != null) {
+                //Delete the uploading index buffer
+                upload.indicesUpload.getDataBuffer().free();
+            }
         }
     }
 
@@ -170,6 +186,6 @@ public class RenderRegionManager {
         return this.regions.get(longKey);
     }
 
-    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
+    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, TerrainRenderPass pass, PendingUpload vertexUpload, PendingUpload indicesUpload) {
     }
 }

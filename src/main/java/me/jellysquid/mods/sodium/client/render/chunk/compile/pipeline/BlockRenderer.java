@@ -156,7 +156,7 @@ public class BlockRenderer {
             bounds.add(out.x, out.y, out.z, normalFace);
         }
 
-        var vertexBuffer = builder.getVertexBuffer(normalFace);
+        var vertexBuffer = builder.getVertexBuffer(material.pass.isReverseOrder()?ModelQuadFacing.UNASSIGNED:normalFace);
         vertexBuffer.push(vertices, material);
     }
 

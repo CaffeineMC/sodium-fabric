@@ -13,6 +13,7 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
@@ -40,9 +41,11 @@ import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import org.apache.commons.lang3.Validate;
+import org.joml.Vector3f;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class RenderSectionManager {
     /**
@@ -79,6 +82,7 @@ public class RenderSectionManager {
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
     private final RegionChunkRenderer chunkRenderer;
+    private final TranslucentSorting translucentSorter;
 
     private final SodiumWorldRenderer worldRenderer;
     private final ClientWorld world;
@@ -106,6 +110,7 @@ public class RenderSectionManager {
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
+        this.translucentSorter = new TranslucentSorting(RenderDevice.INSTANCE);
 
         this.worldRenderer = worldRenderer;
         this.world = world;
@@ -298,9 +303,30 @@ public class RenderSectionManager {
         commandList.flush();
     }
 
+    private static final Random random = new Random();
     public void tickVisibleRenders() {
         for (RenderSection render : this.tickableChunks) {
             render.tick();
+        }
+        if (true) {
+            var translucentSections = sections.values().stream()
+                    .filter(section -> {
+                        var region = regions.getRegion(section.getRegionId());
+                        if (region == null)
+                            return false;
+                        var store = region.storage.get(DefaultTerrainRenderPasses.TRANSLUCENT);
+                        if (store == null)
+                            return false;
+                        var state = store.getState(section);
+                        if (state == null)
+                            return false;
+                        return state.hasIndexSegment();
+                    })
+                    .toList();
+            if (!translucentSections.isEmpty()) {
+                var section = translucentSections.get(random.nextInt(translucentSections.size()));
+                translucentSorter.partiallySort(new Vector3f(cameraX, cameraY, cameraZ), regions, section);
+            }
         }
     }
 
@@ -453,6 +479,7 @@ public class RenderSectionManager {
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.regions.delete(commandList);
             this.chunkRenderer.delete(commandList);
+            this.translucentSorter.delete(commandList);
         }
 
         this.builder.stopWorkers();

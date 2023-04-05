@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.gl.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import me.jellysquid.mods.sodium.client.gl.GlObject;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlStorageBlock;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniform;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformBlock;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ShaderBindingContext;
@@ -72,6 +73,11 @@ public class GlProgram<T> extends GlObject implements ShaderBindingContext {
         GL32C.glUniformBlockBinding(this.handle(), index, bindingPoint);
 
         return new GlUniformBlock(bindingPoint);
+    }
+
+    @Override
+    public GlStorageBlock bindStorageBlock(int bindingPoint) {
+        return new GlStorageBlock(bindingPoint);
     }
 
     public static class Builder {
