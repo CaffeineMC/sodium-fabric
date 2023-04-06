@@ -5,4 +5,141 @@
 #define QUADS_PER_WORKGROUP_MSK ((1<<QUADS_PER_WORKGROUP_BITS)-1)
 
 
+uniform uint baseIndexOffset;
+uniform uint quadCount;
+
+struct QuadIndicies {
+    int a;
+    int b;
+    int c;
+};
+
+layout(std430, binding = 0) buffer QuadIndiciesBuffer {
+    QuadIndicies indicies[];
+};
+
+#import <sodium:sorting/format2.glsl>
+
+
 layout(local_size_x = (QUADS_PER_WORKGROUP/2), local_size_y = 1 , local_size_z = 1) in;
+shared float threadBufferFloat[QUADS_PER_WORKGROUP];
+shared uint threadBufferIndex[QUADS_PER_WORKGROUP];
+
+uint baseId = gl_LocalInvocationID.x<<1;
+uint globalBaseId = gl_GlobalInvocationID.x<<1;
+
+void populate() {
+    if (((gl_GlobalInvocationID.x<<1)|1) >= quadCount) {
+        threadBufferFloat[baseId|0] = 0.0f;
+        threadBufferFloat[baseId|1] = 0.0f;
+    } else {
+        threadBufferFloat[baseId|0] = getDistance(gl_GlobalInvocationID.x<<1);
+        threadBufferFloat[baseId|1] = getDistance((gl_GlobalInvocationID.x<<1)|1);
+        threadBufferIndex[baseId|0] = gl_GlobalInvocationID.x<<1;
+        threadBufferIndex[baseId|1] = (gl_GlobalInvocationID.x<<1)|1;
+    }
+    barrier();
+    memoryBarrierShared();
+}
+
+void update() {
+    QuadIndicies A = indicies[threadBufferIndex[baseId|0]+baseIndexOffset];
+    QuadIndicies B = indicies[threadBufferIndex[baseId|1]+baseIndexOffset];
+    barrier();
+    if (globalBaseId < quadCount) {
+        indicies[(gl_GlobalInvocationID.x<<1)+baseIndexOffset] = A;
+    }
+    if ((globalBaseId|1) < quadCount) {
+        indicies[((gl_GlobalInvocationID.x<<1)|1)+baseIndexOffset] = B;
+    }
+}
+
+
+void localSortA(const uint scaleBits) {
+    uint base = (gl_LocalInvocationID.x>>scaleBits)*(1<<(scaleBits+1));
+    uint offsetA = (gl_LocalInvocationID.x&((1<<scaleBits)-1));
+    uint offsetB = (1<<(scaleBits+1))-1-offsetA;
+    float a = threadBufferFloat[base + offsetA];
+    float b = threadBufferFloat[base + offsetB];
+    if (a < b) {
+        threadBufferFloat[base + offsetA] = b;
+        threadBufferFloat[base + offsetB] = a;
+
+        uint tmp = threadBufferIndex[base + offsetA];
+        threadBufferIndex[base + offsetA] = threadBufferIndex[base + offsetB];
+        threadBufferIndex[base + offsetB] = tmp;
+    }
+
+    barrier();
+    memoryBarrierShared();
+}
+
+void localSortB(const uint scaleBits) {
+    uint base = (gl_LocalInvocationID.x>>scaleBits)*(1<<(scaleBits+1));
+    base += (gl_LocalInvocationID.x&((1<<scaleBits)-1));
+    uint offset = 1<<scaleBits;
+    float a = threadBufferFloat[base];
+    float b = threadBufferFloat[base + offset];
+    if (a < b) {
+        threadBufferFloat[base] = b;
+        threadBufferFloat[base + offset] = a;
+
+        uint tmp = threadBufferIndex[base];
+        threadBufferIndex[base] = threadBufferIndex[base + offset];
+        threadBufferIndex[base + offset] = tmp;
+    }
+
+    barrier();
+    memoryBarrierShared();
+}
+
+void main() {
+    populate();
+
+    //Net 0
+    localSortA(0);
+    //Net 1
+    localSortA(1);
+    localSortB(0);
+    //Net 2
+    localSortA(2);
+    localSortB(1);
+    localSortB(0);
+    //Net 3
+    localSortA(3);
+    localSortB(2);
+    localSortB(1);
+    localSortB(0);
+    //Net 4
+    localSortA(4);
+    localSortB(3);
+    localSortB(2);
+    localSortB(1);
+    localSortB(0);
+    //Net 5
+    localSortA(5);
+    localSortB(4);
+    localSortB(3);
+    localSortB(2);
+    localSortB(1);
+    localSortB(0);
+    //Net 6
+    localSortA(6);
+    localSortB(5);
+    localSortB(4);
+    localSortB(3);
+    localSortB(2);
+    localSortB(1);
+    localSortB(0);
+    //Net 7
+    localSortA(7);
+    localSortB(6);
+    localSortB(5);
+    localSortB(4);
+    localSortB(3);
+    localSortB(2);
+    localSortB(1);
+    localSortB(0);
+
+    update();
+}

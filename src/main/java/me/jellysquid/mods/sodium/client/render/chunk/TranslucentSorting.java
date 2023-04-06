@@ -20,7 +20,7 @@ public class TranslucentSorting {
     public TranslucentSorting(RenderDevice device) {
         this.device = device;
         GlShader sortingShader = ShaderLoader.loadShader(ShaderType.COMPUTE,
-                new Identifier("sodium",  "sorting/sort.comp"),
+                new Identifier("sodium",  "sorting/bitonic.comp"),
                 ShaderConstants.builder()
                         .build());
         try {
