@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.DrawCommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.gl.tessellation.GlIndexType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
@@ -68,13 +69,18 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            var indexType = SharedQuadIndexBuffer.getSmallestIndexType(batch.getMaxVertexCount());
-
-            var indexBuffer = this.sharedIndexBuffers.get(indexType);
-            indexBuffer.ensureCapacity(commandList, batch.getMaxVertexCount());
 
             this.setModelMatrixUniforms(shader, region, camera);
-            this.executeDrawBatch(commandList, batch, indexBuffer, renderPass.isReverseOrder()?this.createTessellationForRegionTranslucent(commandList, region, renderPass, region.indexBuffers.getBufferObject()):this.createTessellationForRegion(commandList, region, renderPass, indexBuffer));
+            if (renderPass.isReverseOrder()) {
+                this.executeDrawBatch(commandList, batch, GlIndexType.UNSIGNED_INT, this.createTessellationForRegionTranslucent(commandList, region, renderPass, region.indexBuffers.getBufferObject()));
+            } else {
+                var indexType = SharedQuadIndexBuffer.getSmallestIndexType(batch.getMaxVertexCount());
+
+                var indexBuffer = this.sharedIndexBuffers.get(indexType);
+                indexBuffer.ensureCapacity(commandList, batch.getMaxVertexCount());
+
+                this.executeDrawBatch(commandList, batch, indexType.getFormat(), this.createTessellationForRegion(commandList, region, renderPass, indexBuffer));
+            }
         }
 
         super.end(renderPass);
@@ -97,57 +103,65 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
             int baseVertex = state.getVertexSegment()
                     .getOffset();
             //state.getIndexSegment() is null on non translucent passes
-            int baseIndex = pass.isReverseOrder()?state.getIndexStart():0;
-
-            this.addDrawCalls(camera, section, state, baseVertex, baseIndex);
+            //NOTE: translucent layers are _only_ unassigned
+            if (pass.isReverseOrder()) {
+                var range = state.getModelPart(ModelQuadFacing.UNASSIGNED);
+                if (range != null) {
+                    addDrawCall(commandBufferBuilder, range, baseVertex, state.getIndexStartOffset());
+                } else {
+                    throw new IllegalStateException();
+                }
+            } else {
+                this.addDrawCalls(camera, section, state, baseVertex);
+            }
         }
 
         return commandBuffer;
     }
 
-    private void addDrawCalls(ChunkCameraContext camera, RenderSection section, ChunkGraphicsState state, int baseVertex, int baseIndex) {
+    private void addDrawCalls(ChunkCameraContext camera, RenderSection section, ChunkGraphicsState state, int baseVertex) {
         var commandBufferBuilder = this.commandBufferBuilder;
 
-        addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.UNASSIGNED), baseVertex, baseIndex);
+        addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.UNASSIGNED), baseVertex, 0);
 
         if (this.isBlockFaceCullingEnabled) {
             ChunkRenderBounds bounds = section.getBounds();
 
             if (camera.posY > bounds.minY) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.UP), baseVertex, baseIndex);
+                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.UP), baseVertex, 0);
             }
 
             if (camera.posY < bounds.maxY) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.DOWN), baseVertex, baseIndex);
+                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.DOWN), baseVertex, 0);
             }
 
             if (camera.posX > bounds.minX) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.EAST), baseVertex, baseIndex);
+                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.EAST), baseVertex, 0);
             }
 
             if (camera.posX < bounds.maxX) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.WEST), baseVertex, baseIndex);
+                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.WEST), baseVertex, 0);
             }
 
             if (camera.posZ > bounds.minZ) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.SOUTH), baseVertex, baseIndex);
+                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.SOUTH), baseVertex, 0);
             }
 
             if (camera.posZ < bounds.maxZ) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.NORTH), baseVertex, baseIndex);
+                addDrawCall(commandBufferBuilder, state.getModelPart(ModelQuadFacing.NORTH), baseVertex, 0);
             }
         } else {
             for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
-                addDrawCall(commandBufferBuilder, state.getModelPart(facing), baseVertex, baseIndex);
+                addDrawCall(commandBufferBuilder, state.getModelPart(facing), baseVertex, 0);
             }
         }
     }
 
     private GlTessellation createTessellationForRegionTranslucent(CommandList commandList, RenderRegion region, TerrainRenderPass pass, GlBuffer indexBuffer) {
         var storage = region.getStorage(pass);
-        var tessellation = storage.getTessellation(SharedQuadIndexBuffer.IndexType.SHORT);
+        var tessellation = storage.getTessellation(SharedQuadIndexBuffer.IndexType.INTEGER);
         if (tessellation == null) {
-            storage.updateTessellation(commandList, SharedQuadIndexBuffer.IndexType.SHORT, tessellation = this.createRegionTessellation(commandList, region, indexBuffer));
+            storage.updateTessellation(commandList, SharedQuadIndexBuffer.IndexType.INTEGER, tessellation = this.createRegionTessellation(commandList, region, indexBuffer));
         }
         return tessellation;
     }
@@ -164,9 +178,9 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         return tessellation;
     }
 
-    private void executeDrawBatch(CommandList commandList, MultiDrawBatch batch, SharedQuadIndexBuffer indexBuffer, GlTessellation tessellation) {
+    private void executeDrawBatch(CommandList commandList, MultiDrawBatch batch, GlIndexType indexType, GlTessellation tessellation) {
         try (DrawCommandList drawCommandList = commandList.beginTessellating(tessellation)) {
-            drawCommandList.multiDrawElementsBaseVertex(batch, indexBuffer.getIndexFormat());
+            drawCommandList.multiDrawElementsBaseVertex(batch, indexType);
         }
     }
 
@@ -180,7 +194,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     private static void addDrawCall(MultiDrawBatch batch, VertexRange part, int baseVertex, int baseIndex) {
         if (part != null) {
-            batch.add((baseIndex + part.indexStart())*2L, (part.vertexCount() >> 2) * 6, baseVertex + part.vertexStart());
+            batch.add(baseIndex, (part.vertexCount() >> 2) * 6, baseVertex + part.vertexStart());
         }
     }
 

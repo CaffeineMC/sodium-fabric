@@ -13,6 +13,7 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.chunk.sorting.TranslucentSorting;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
@@ -45,7 +46,6 @@ import org.joml.Vector3f;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class RenderSectionManager {
     /**
@@ -110,7 +110,6 @@ public class RenderSectionManager {
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
-        this.translucentSorter = new TranslucentSorting(RenderDevice.INSTANCE);
 
         this.worldRenderer = worldRenderer;
         this.world = world;
@@ -129,6 +128,8 @@ public class RenderSectionManager {
         }
 
         this.tracker = this.worldRenderer.getChunkTracker();
+
+        this.translucentSorter = new TranslucentSorting(RenderDevice.INSTANCE, this.regions);
     }
 
     public void reloadChunks(ChunkTracker tracker) {
@@ -325,7 +326,7 @@ public class RenderSectionManager {
                     .toList();
             if (!translucentSections.isEmpty()) {
                 var section = translucentSections.get(random.nextInt(translucentSections.size()));
-                translucentSorter.partiallySort(new Vector3f(cameraX, cameraY, cameraZ), regions, section);
+                translucentSorter.partiallySort(new Vector3f(cameraX, cameraY, cameraZ), section);
             }
         }
     }

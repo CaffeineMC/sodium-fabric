@@ -1,24 +1,75 @@
 #version 460 core
 
+#define MAX_BATCHES 256
 #define QUADS_PER_WORKGROUP_BITS 8
 #define QUADS_PER_WORKGROUP (1<<QUADS_PER_WORKGROUP_BITS)
 #define QUADS_PER_WORKGROUP_MSK ((1<<QUADS_PER_WORKGROUP_BITS)-1)
 
+uniform vec3 regionCamera;
 
-uniform uint baseIndexOffset;
-uniform uint quadCount;
+uint baseIndexOffset;
+uint quadCount;
+uint baseVertexOffset;
+vec3 camera;
 
+struct SortBatch {
+    uint baseIndexOffset;
+    uint quadCount;
+    uint baseVertexOffset;
+    uint sectionId;
+};
+
+layout(binding = 0) uniform SortingBatchs {
+    SortBatch batchs[MAX_BATCHES];
+};
+
+/*
 struct QuadIndicies {
     int a;
     int b;
     int c;
 };
 
-layout(std430, binding = 0) buffer QuadIndiciesBuffer {
+uint getIndexBase(QuadIndicies indicies) {
+    //Zeros out the lower bits
+    return indicies.a&0xFFFC;
+}
+*/
+
+struct Vertex {
+    int a;
+    int b;
+    int c;
+    int d;
+    int e;
+};
+
+layout(std430, binding = 1) buffer QuadIndiciesBuffer {
     QuadIndicies indicies[];
 };
 
-#import <sodium:sorting/format2.glsl>
+layout(std430, binding = 2) buffer VertexBuffer {
+    Vertex verticies[];
+};
+
+float unpackVertexPos(uint s) {
+    return (float(s) * (32f/65536f))  - 8.0f;
+}
+
+float getDistance(uint quadId) {
+    QuadIndicies i = indicies[quadId+baseIndexOffset];
+    uint idA = getIndexBase(i)+baseVertexOffset;
+    uint idB = getIndexBase(i)+2+baseVertexOffset;
+    Vertex va = verticies[idA];
+    Vertex vb = verticies[idB];
+    vec3 pos = vec3(unpackVertexPos((va.a)&0xFFFF),unpackVertexPos((va.a>>16)&0xFFFF),unpackVertexPos((va.b)&0xFFFF));
+    pos += vec3(unpackVertexPos((vb.a)&0xFFFF),unpackVertexPos((vb.a>>16)&0xFFFF),unpackVertexPos((vb.b)&0xFFFF));
+    pos /= 2;
+
+    vec3 delta = abs(pos+camera);
+    return delta.x+delta.y+delta.z;
+}
+
 
 
 layout(local_size_x = (QUADS_PER_WORKGROUP/2), local_size_y = 1 , local_size_z = 1) in;
@@ -26,18 +77,17 @@ shared float threadBufferFloat[QUADS_PER_WORKGROUP];
 shared uint threadBufferIndex[QUADS_PER_WORKGROUP];
 
 uint baseId = gl_LocalInvocationID.x<<1;
-uint globalBaseId = gl_GlobalInvocationID.x<<1;
 
 void populate() {
     threadBufferFloat[baseId|0] = 0.0f;
     threadBufferFloat[baseId|1] = 0.0f;
-    threadBufferIndex[baseId|0] = globalBaseId;
-    threadBufferIndex[baseId|1] = globalBaseId|1;
-    if (globalBaseId < quadCount) {
-        threadBufferFloat[baseId|0] = getDistance(gl_GlobalInvocationID.x<<1);
+    threadBufferIndex[baseId|0] = baseId|0;
+    threadBufferIndex[baseId|1] = baseId|1;
+    if (baseId < quadCount) {
+        threadBufferFloat[baseId|0] = getDistance(baseId);
     }
-    if ((globalBaseId|1) < quadCount) {
-        threadBufferFloat[baseId|1] = getDistance((gl_GlobalInvocationID.x<<1)|1);
+    if ((baseId|1) < quadCount) {
+        threadBufferFloat[baseId|1] = getDistance(baseId|1);
     }
     barrier();
     memoryBarrierShared();
@@ -47,11 +97,11 @@ void update() {
     QuadIndicies A = indicies[threadBufferIndex[baseId|0]+baseIndexOffset];
     QuadIndicies B = indicies[threadBufferIndex[baseId|1]+baseIndexOffset];
     barrier();
-    if (globalBaseId < quadCount) {
-        indicies[(gl_GlobalInvocationID.x<<1)+baseIndexOffset] = A;
+    if (baseId < quadCount) {
+        indicies[baseId+baseIndexOffset] = A;
     }
-    if ((globalBaseId|1) < quadCount) {
-        indicies[((gl_GlobalInvocationID.x<<1)|1)+baseIndexOffset] = B;
+    if ((baseId|1) < quadCount) {
+        indicies[(baseId|1)+baseIndexOffset] = B;
     }
 }
 
@@ -95,6 +145,12 @@ void localSortB(const uint scaleBits) {
 }
 
 void main() {
+    SortBatch batch = batchs[gl_WorkGroupID.x];
+    baseIndexOffset = batch.baseIndexOffset;
+    quadCount = batch.quadCount;
+    baseVertexOffset = batch.baseVertexOffset;
+    camera = vec3(((uvec3(batch.sectionId)>>uvec3(5, 3, 0))&uvec3(7,3,7))<<4)+regionCamera;
+
     populate();
 
     //Net 0

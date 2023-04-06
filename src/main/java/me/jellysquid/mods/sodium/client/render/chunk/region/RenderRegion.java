@@ -58,7 +58,7 @@ public class RenderRegion {
 
         int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
         this.vertexBuffers = new GlBufferArena(commandList, REGION_SIZE * 756, stride, stagingBuffer);
-        this.indexBuffers = new GlBufferArena(commandList, REGION_SIZE * 6 * 2, 6 * 2, stagingBuffer);
+        this.indexBuffers = new GlBufferArena(commandList, REGION_SIZE * 6, 1, stagingBuffer);
     }
 
     public static RenderRegion createRegionForChunk(CommandList commandList, StagingBuffer stagingBuffer, int x, int y, int z) {

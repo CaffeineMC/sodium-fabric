@@ -16,6 +16,7 @@ public class SodiumPreLaunch implements PreLaunchEntrypoint {
 
     @Override
     public void onPreLaunch() {
+        System.load("C:\\Program Files\\RenderDoc\\renderdoc.dll");
         checkJemalloc();
     }
 

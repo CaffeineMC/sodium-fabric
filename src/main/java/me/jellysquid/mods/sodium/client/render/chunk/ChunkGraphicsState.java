@@ -52,8 +52,12 @@ public class ChunkGraphicsState {
         return indexSegment != null;
     }
 
-    public int getIndexStart() {
-        return this.indexSegment.getOffset()*6;
+    public int getIndexStartOffset() {
+        return this.indexSegment.getOffset();
+    }
+
+    public int getIndexStartIndex() {
+        return this.indexSegment.getOffset()/24;
     }
 
     public int getLargestPrimitiveBatchSize() {

@@ -68,7 +68,6 @@ public class ChunkBuildBuffers {
         Map<ModelQuadFacing, VertexRange> vertexRanges = new EnumMap<>(ModelQuadFacing.class);
 
         int vertexCount = 0;
-        int indiceCount = 0;
 
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
             var buffer = builder.getVertexBuffer(facing);
@@ -77,11 +76,14 @@ public class ChunkBuildBuffers {
                 continue;
             }
 
+            if (pass.isReverseOrder() && facing != ModelQuadFacing.UNASSIGNED) {
+                throw new IllegalStateException("Translucent passes must have all models unassigned");
+            }
+
             vertexBuffers.add(buffer.slice());
-            vertexRanges.put(facing, new VertexRange(vertexCount, buffer.count(), indiceCount));
+            vertexRanges.put(facing, new VertexRange(vertexCount, buffer.count()));
 
             vertexCount += buffer.count();
-            indiceCount += pass.isReverseOrder()?(buffer.count()>>2)*6:0;//Reverse order == translucent
         }
 
         if (vertexRanges.isEmpty()) {
@@ -97,7 +99,7 @@ public class ChunkBuildBuffers {
 
         mergedBufferBuilder.flip();
 
-        return new ChunkMeshData(mergedBuffer, vertexRanges, indiceCount);
+        return new ChunkMeshData(mergedBuffer, vertexRanges, vertexCount >> 2);
     }
 
     public void destroy() {

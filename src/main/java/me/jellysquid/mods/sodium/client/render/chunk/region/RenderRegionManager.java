@@ -9,7 +9,8 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.chunk.SharedQuadIndexBufferGenerator;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.chunk.SharedQuadIndexBuffer;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
@@ -85,13 +86,11 @@ public class RenderRegionManager {
 
                 if (meshData != null) {
                     PendingUpload indexUpload = null;
-                    if (pass.isReverseOrder() && meshData.totalIndices != 0) {
-                        NativeBuffer buffer = new NativeBuffer(meshData.totalIndices*2);
+                    if (pass.isReverseOrder() && meshData.quadCount != 0) {
+                        //We want to keep it aligned to 24 bytes aligned so we can sort mixed index types
+                        NativeBuffer buffer = new NativeBuffer(meshData.quadCount * 24);
                         var db = MemoryUtil.memAddress(buffer.getDirectBuffer());
-                        for (var range : meshData.getParts().values()) {
-                            if (range.vertexCount() == 0) continue;
-                            SharedQuadIndexBufferGenerator.fillBuffer(db + (range.indexStart() * 2L), range.vertexCount());
-                        }
+                        SharedQuadIndexBuffer.IndexType.INTEGER.createIndexBuffer(db, meshData.quadCount);
                         indexUpload = new PendingUpload(buffer);
                     }
                     sectionUploads.add(new PendingSectionUpload(result.render, meshData, pass, new PendingUpload(meshData.getVertexData()), indexUpload));

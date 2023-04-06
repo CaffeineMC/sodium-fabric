@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlIndexType;
 import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -26,7 +27,7 @@ public class SharedQuadIndexBuffer {
         this.indexType = indexType;
     }
 
-    static IndexType getSmallestIndexType(int vertexCount) {
+    public static IndexType getSmallestIndexType(int vertexCount) {
         for (var type : IndexType.VALUES) {
             if (vertexCount <= type.getMaxVertexCount()) {
                 return type;
@@ -85,6 +86,21 @@ public class SharedQuadIndexBuffer {
     public enum IndexType {
         SHORT(GlIndexType.UNSIGNED_SHORT, 64 * 1024) {
             @Override
+            public void createIndexBuffer(long buffer, int primitiveCount) {
+                for (int primitiveIndex = 0; primitiveIndex < primitiveCount; primitiveIndex++) {
+                    int vertexOffset = primitiveIndex * VERTICES_PER_PRIMITIVE;
+                    MemoryUtil.memPutShort(buffer, (short) (vertexOffset + 0));
+                    MemoryUtil.memPutShort(buffer + 2, (short) (vertexOffset + 1));
+                    MemoryUtil.memPutShort(buffer + 4, (short) (vertexOffset + 2));
+
+                    MemoryUtil.memPutShort(buffer + 6, (short) (vertexOffset + 2));
+                    MemoryUtil.memPutShort(buffer + 8, (short) (vertexOffset + 3));
+                    MemoryUtil.memPutShort(buffer + 10, (short) (vertexOffset + 0));
+                    buffer += 12;
+                }
+            }
+
+            @Override
             public void createIndexBuffer(ByteBuffer byteBuffer, int primitiveCount) {
                 ShortBuffer shortBuffer = byteBuffer.asShortBuffer();
 
@@ -103,6 +119,21 @@ public class SharedQuadIndexBuffer {
             }
         },
         INTEGER(GlIndexType.UNSIGNED_INT, Integer.MAX_VALUE) {
+            @Override
+            public void createIndexBuffer(long buffer, int primitiveCount) {
+                for (int primitiveIndex = 0; primitiveIndex < primitiveCount; primitiveIndex++) {
+                    int vertexOffset = primitiveIndex * VERTICES_PER_PRIMITIVE;
+                    MemoryUtil.memPutInt(buffer, vertexOffset + 0);
+                    MemoryUtil.memPutInt(buffer + 4, vertexOffset + 1);
+                    MemoryUtil.memPutInt(buffer + 8, vertexOffset + 2);
+
+                    MemoryUtil.memPutInt(buffer + 12, vertexOffset + 2);
+                    MemoryUtil.memPutInt(buffer + 16, vertexOffset + 3);
+                    MemoryUtil.memPutInt(buffer + 20, vertexOffset + 0);
+                    buffer += 24;
+                }
+            }
+
             @Override
             public void createIndexBuffer(ByteBuffer byteBuffer, int primitiveCount) {
                 IntBuffer intBuffer = byteBuffer.asIntBuffer();
@@ -133,6 +164,8 @@ public class SharedQuadIndexBuffer {
         }
 
         public abstract void createIndexBuffer(ByteBuffer buffer, int primitiveCount);
+
+        public abstract void createIndexBuffer(long buffer, int primitiveCount);
 
         public int getBytesPerElement() {
             return this.format.getStride();

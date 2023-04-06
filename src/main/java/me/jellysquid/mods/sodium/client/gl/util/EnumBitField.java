@@ -9,7 +9,7 @@ public class EnumBitField<T extends Enum<T> & EnumBit> {
     private final EnumSet<T> set;
     private final int bitfield;
 
-    private EnumBitField(EnumSet<T> set) {
+    public EnumBitField(EnumSet<T> set) {
         this.set = set;
         this.bitfield = computeBitField(set);
     }

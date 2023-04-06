@@ -21,6 +21,7 @@ public class ShaderConstants {
         private static final String EMPTY_VALUE = "";
 
         private final HashMap<String, String> constants = new HashMap<>();
+        private final List<String> addIns = new LinkedList<>();
 
         private Builder() {
 
@@ -40,6 +41,10 @@ public class ShaderConstants {
             this.constants.put(name, value);
         }
 
+        public void addIn(String value) {
+            this.addIns.add(value);
+        }
+
         public ShaderConstants build() {
             List<String> defines = new ArrayList<>(this.constants.size());
 
@@ -53,6 +58,8 @@ public class ShaderConstants {
                     defines.add("#define " + key + " " + value);
                 }
             }
+
+            defines.addAll(this.addIns);
 
             return new ShaderConstants(Collections.unmodifiableList(defines));
         }
