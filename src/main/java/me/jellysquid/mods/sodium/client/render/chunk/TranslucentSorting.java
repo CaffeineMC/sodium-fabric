@@ -1,5 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
+import it.unimi.dsi.fastutil.PriorityQueue;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.shader.*;
@@ -31,6 +34,11 @@ public class TranslucentSorting {
             sortingShader.delete();
         }
     }
+
+    private record TranslucentRegion() {
+
+    }
+    private final PriorityQueue<TranslucentRegion> translucentRegions = new ObjectHeapPriorityQueue<>();
 
     public void partiallySort(Vector3f sortOrigin, RenderRegionManager manager, RenderSection section) {
         sorter.bind();

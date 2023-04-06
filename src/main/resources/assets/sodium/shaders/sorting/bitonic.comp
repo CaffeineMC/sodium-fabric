@@ -29,14 +29,15 @@ uint baseId = gl_LocalInvocationID.x<<1;
 uint globalBaseId = gl_GlobalInvocationID.x<<1;
 
 void populate() {
-    if (((gl_GlobalInvocationID.x<<1)|1) >= quadCount) {
-        threadBufferFloat[baseId|0] = 0.0f;
-        threadBufferFloat[baseId|1] = 0.0f;
-    } else {
+    threadBufferFloat[baseId|0] = 0.0f;
+    threadBufferFloat[baseId|1] = 0.0f;
+    threadBufferIndex[baseId|0] = globalBaseId;
+    threadBufferIndex[baseId|1] = globalBaseId|1;
+    if (globalBaseId < quadCount) {
         threadBufferFloat[baseId|0] = getDistance(gl_GlobalInvocationID.x<<1);
+    }
+    if ((globalBaseId|1) < quadCount) {
         threadBufferFloat[baseId|1] = getDistance((gl_GlobalInvocationID.x<<1)|1);
-        threadBufferIndex[baseId|0] = gl_GlobalInvocationID.x<<1;
-        threadBufferIndex[baseId|1] = (gl_GlobalInvocationID.x<<1)|1;
     }
     barrier();
     memoryBarrierShared();

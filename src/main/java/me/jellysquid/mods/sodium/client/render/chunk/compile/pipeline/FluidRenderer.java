@@ -412,7 +412,7 @@ public class FluidRenderer {
             builder.addSprite(sprite);
         }
 
-        var vertexBuffer = builder.getVertexBuffer(facing);
+        var vertexBuffer = builder.getVertexBuffer(material.pass.isReverseOrder()?ModelQuadFacing.UNASSIGNED:facing);
         vertexBuffer.push(vertices, material);
     }
 
