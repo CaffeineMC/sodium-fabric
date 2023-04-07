@@ -53,7 +53,7 @@ layout(std430, binding = 2) buffer VertexBuffer {
 };
 
 float unpackVertexPos(uint s) {
-    return (float(s) * (32f/65536f))  - 8.0f;
+    return (float(s) * (32.0f/65536.0f))  - 8.0f;
 }
 
 float getDistance(uint quadId) {
