@@ -142,7 +142,7 @@ public class FluidRenderer {
 
         boolean rendered = false;
 
-        float fluidHeight = this.fluidHeight(world, fluid, pos);
+        float fluidHeight = this.fluidHeight(world, fluid, pos, Direction.UP);
         float h1, h2, h3, h4;
         if (fluidHeight >= 1.0f) {
             h1 = 1.0f;
@@ -150,10 +150,10 @@ public class FluidRenderer {
             h3 = 1.0f;
             h4 = 1.0f;
         } else {
-            float north1 = this.fluidHeight(world, fluid, pos.north());
-            float south1 = this.fluidHeight(world, fluid, pos.south());
-            float east1 = this.fluidHeight(world, fluid, pos.east());
-            float west1 = this.fluidHeight(world, fluid, pos.west());
+            float north1 = this.fluidHeight(world, fluid, pos.north(), Direction.NORTH);
+            float south1 = this.fluidHeight(world, fluid, pos.south(), Direction.SOUTH);
+            float east1 = this.fluidHeight(world, fluid, pos.east(), Direction.EAST);
+            float west1 = this.fluidHeight(world, fluid, pos.west(), Direction.WEST);
             h1 = this.fluidCornerHeight(world, fluid, fluidHeight, north1, west1, pos.offset(Direction.NORTH).offset(Direction.WEST));
             h2 = this.fluidCornerHeight(world, fluid, fluidHeight, south1, west1, pos.offset(Direction.SOUTH).offset(Direction.WEST));
             h3 = this.fluidCornerHeight(world, fluid, fluidHeight, south1, east1, pos.offset(Direction.SOUTH).offset(Direction.EAST));
@@ -434,7 +434,7 @@ public class FluidRenderer {
         }
 
         if (fluidHeightY > 0.0f || fluidHeightX > 0.0f) {
-            float height = this.fluidHeight(world, fluid, blockPos);
+            float height = this.fluidHeight(world, fluid, blockPos, Direction.UP);
 
             if (height >= 1.0f) {
                 return 1.0f;
@@ -464,7 +464,7 @@ public class FluidRenderer {
         }
     }
 
-    private float fluidHeight(BlockRenderView world, Fluid fluid, BlockPos blockPos) {
+    private float fluidHeight(BlockRenderView world, Fluid fluid, BlockPos blockPos, Direction direction) {
         BlockState blockState = world.getBlockState(blockPos);
         FluidState fluidState = blockState.getFluidState();
 
@@ -477,7 +477,7 @@ public class FluidRenderer {
                 return fluidState.getHeight();
             }
         }
-        if (!blockState.getMaterial().isSolid()) {
+        if (!blockState.isOpaque()) {
             return 0.0f;
         }
         return -1.0f;
