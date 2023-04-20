@@ -1,10 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.render_layer.leaves;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.LeavesBlock;
-import net.minecraft.block.Material;
+import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.Direction;
 import org.spongepowered.asm.mixin.Mixin;
@@ -12,7 +9,7 @@ import org.spongepowered.asm.mixin.Mixin;
 @Mixin(LeavesBlock.class)
 public class MixinLeavesBlock extends Block {
     public MixinLeavesBlock() {
-        super(Settings.of(Material.AIR));
+        super(Settings.copy(Blocks.AIR));
         throw new AssertionError("Mixin constructor called!");
     }
 

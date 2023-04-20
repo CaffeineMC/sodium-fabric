@@ -8,6 +8,7 @@ import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
+import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.WorldGenerationProgressTracker;
 import net.minecraft.client.gui.screen.LevelLoadingScreen;
 import net.minecraft.client.render.*;
@@ -44,7 +45,7 @@ public class MixinLevelLoadingScreen {
      * @author JellySquid
      */
     @Overwrite
-    public static void drawChunkMap(MatrixStack matrixStack, WorldGenerationProgressTracker tracker, int mapX, int mapY, int mapScale, int mapPadding) {
+    public static void drawChunkMap(DrawableHelper drawableHelper, WorldGenerationProgressTracker tracker, int mapX, int mapY, int mapScale, int mapPadding) {
         if (STATUS_TO_COLOR_FAST == null) {
             STATUS_TO_COLOR_FAST = new Reference2IntOpenHashMap<>(STATUS_TO_COLOR.size());
             STATUS_TO_COLOR_FAST.put(null, NULL_STATUS_COLOR);
@@ -54,7 +55,7 @@ public class MixinLevelLoadingScreen {
 
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
-        Matrix4f matrix = matrixStack.peek().getPositionMatrix();
+        Matrix4f matrix = drawableHelper.method_51448().peek().getPositionMatrix();
 
         Tessellator tessellator = Tessellator.getInstance();
 
