@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.gl.buffer;
 
 import me.jellysquid.mods.sodium.client.gl.util.EnumBit;
 import org.lwjgl.opengl.GL30C;
+import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.GL44C;
 
 public enum GlBufferMapFlags implements EnumBit {
@@ -11,7 +12,8 @@ public enum GlBufferMapFlags implements EnumBit {
     INVALIDATE_BUFFER(GL30C.GL_MAP_INVALIDATE_BUFFER_BIT),
     INVALIDATE_RANGE(GL30C.GL_MAP_INVALIDATE_RANGE_BIT),
     EXPLICIT_FLUSH(GL30C.GL_MAP_FLUSH_EXPLICIT_BIT),
-    COHERENT(GL44C.GL_MAP_COHERENT_BIT);
+    COHERENT(GL44C.GL_MAP_COHERENT_BIT),
+    UNSYNCHRONIZED(GL33C.GL_MAP_UNSYNCHRONIZED_BIT);
 
     private final int bit;
 
