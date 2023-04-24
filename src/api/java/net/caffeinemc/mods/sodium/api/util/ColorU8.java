@@ -36,6 +36,15 @@ public interface ColorU8 {
      * @return The floating point value of the integer component in the range of 0.0..1.0
      */
     static float byteToNormalizedFloat(byte value) {
+        return (float) Byte.toUnsignedInt(value) * COMPONENT_RANGE_INVERSE;
+    }
+
+    /**
+     * Converts an integer component to a normalized floating point value.
+     * @param value The integer component in 0..255 range
+     * @return The floating point value of the integer component in the range of 0.0..1.0
+     */
+    static float byteToNormalizedFloat(int value) {
         return (float) value * COMPONENT_RANGE_INVERSE;
     }
 }
