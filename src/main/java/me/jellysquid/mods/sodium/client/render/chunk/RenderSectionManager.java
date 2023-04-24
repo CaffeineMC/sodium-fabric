@@ -452,9 +452,9 @@ public class RenderSectionManager {
 
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.regions.delete(commandList);
+            this.chunkRenderer.delete(commandList);
         }
 
-        this.chunkRenderer.delete();
         this.builder.stopWorkers();
     }
 

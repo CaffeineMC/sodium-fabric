@@ -28,7 +28,7 @@ public class FlatLightPipeline implements LightPipeline {
     }
 
     @Override
-    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction face, boolean shade) {
+    public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade) {
         int lightmap;
 
         // To match vanilla behavior, use the cull face if it exists/is available
@@ -39,14 +39,14 @@ public class FlatLightPipeline implements LightPipeline {
             // If the face is aligned, use the light data above it
             // To match vanilla behavior, also treat the face as aligned if it is parallel and the block state is a full cube
             if ((flags & ModelQuadFlags.IS_ALIGNED) != 0 || ((flags & ModelQuadFlags.IS_PARALLEL) != 0 && LightDataAccess.unpackFC(this.lightCache.get(pos)))) {
-                lightmap = getOffsetLightmap(pos, face);
+                lightmap = getOffsetLightmap(pos, lightFace);
             } else {
                 lightmap = LightDataAccess.unpackLM(this.lightCache.get(pos));
             }
         }
 
         Arrays.fill(out.lm, lightmap);
-        Arrays.fill(out.br, this.lightCache.getWorld().getBrightness(face, shade));
+        Arrays.fill(out.br, this.lightCache.getWorld().getBrightness(lightFace, shade));
     }
 
     /**

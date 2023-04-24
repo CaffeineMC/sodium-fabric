@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.gl.device;
 
-import me.jellysquid.mods.sodium.client.gl.util.MemoryUtilHelper;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.Pointer;
@@ -19,6 +18,7 @@ public final class MultiDrawBatch {
 
     private final int capacity;
 
+    private int maxVertexCount;
     private int count;
 
     public MultiDrawBatch(int capacity) {
@@ -41,12 +41,17 @@ public final class MultiDrawBatch {
         return this.pBaseVertex;
     }
 
+    public int getMaxVertexCount() {
+        return this.maxVertexCount;
+    }
+
     int size() {
         return this.count;
     }
 
     public void clear() {
         this.count = 0;
+        this.maxVertexCount = 0;
     }
 
     public void add(long pointer, int count, int baseVertex) {
@@ -59,6 +64,7 @@ public final class MultiDrawBatch {
         MemoryUtil.memPutInt(this.pBaseVertex + (this.count * Integer.BYTES), baseVertex);
 
         this.count++;
+        this.maxVertexCount = Math.max(this.maxVertexCount, count);
     }
 
     public void delete() {

@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.gl.arena.GlBufferSegment;
-import me.jellysquid.mods.sodium.client.gl.util.ElementRange;
+import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import org.apache.commons.lang3.Validate;
@@ -10,30 +10,33 @@ import java.util.Map;
 
 public class ChunkGraphicsState {
     private final GlBufferSegment vertexSegment;
-    private final GlBufferSegment indexSegment;
 
-    private final ElementRange[] parts;
+    private final VertexRange[] parts;
 
-    public ChunkGraphicsState(GlBufferSegment vertexSegment, GlBufferSegment indexSegment, ChunkMeshData data) {
+    private final int largestPrimitiveBatchSize;
+
+    public ChunkGraphicsState(GlBufferSegment vertexSegment, ChunkMeshData data) {
         Validate.notNull(vertexSegment);
-        Validate.notNull(indexSegment);
 
         this.vertexSegment = vertexSegment;
-        this.indexSegment = indexSegment;
 
-        this.parts = new ElementRange[ModelQuadFacing.COUNT];
+        this.parts = new VertexRange[ModelQuadFacing.COUNT];
 
-        for (Map.Entry<ModelQuadFacing, ElementRange> entry : data.getParts().entrySet()) {
+        int largestPrimitiveBatchSize = 0;
+
+        for (Map.Entry<ModelQuadFacing, VertexRange> entry : data.getParts().entrySet()) {
             this.parts[entry.getKey().ordinal()] = entry.getValue();
+            largestPrimitiveBatchSize = Math.max(largestPrimitiveBatchSize, vertexSegment.getLength() / 4);
         }
+
+        this.largestPrimitiveBatchSize = largestPrimitiveBatchSize;
     }
 
     public void delete() {
         this.vertexSegment.delete();
-        this.indexSegment.delete();
     }
 
-    public ElementRange getModelPart(ModelQuadFacing facing) {
+    public VertexRange getModelPart(ModelQuadFacing facing) {
         return this.parts[facing.ordinal()];
     }
 
@@ -41,7 +44,7 @@ public class ChunkGraphicsState {
         return this.vertexSegment;
     }
 
-    public GlBufferSegment getIndexSegment() {
-        return this.indexSegment;
+    public int getLargestPrimitiveBatchSize() {
+        return this.largestPrimitiveBatchSize;
     }
 }
