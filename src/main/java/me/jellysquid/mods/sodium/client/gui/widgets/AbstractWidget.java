@@ -4,7 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Drawable;
-import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.navigation.GuiNavigation;
@@ -30,12 +30,12 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
         this.font = MinecraftClient.getInstance().textRenderer;
     }
 
-    protected void drawString(DrawableHelper drawableHelper, String str, int x, int y, int color) {
-        drawableHelper.drawTextWithShadow(font, str, x, y, color);
+    protected void drawString(DrawContext drawContext, String str, int x, int y, int color) {
+        drawContext.drawTextWithShadow(font, str, x, y, color);
     }
 
-    protected void drawString(DrawableHelper drawableHelper, Text text, int x, int y, int color) {
-        drawableHelper.drawTextWithShadow(font, text, x, y, color);
+    protected void drawString(DrawContext drawContext, Text text, int x, int y, int color) {
+        drawContext.drawTextWithShadow(font, text, x, y, color);
     }
 
     public boolean isHovered() {

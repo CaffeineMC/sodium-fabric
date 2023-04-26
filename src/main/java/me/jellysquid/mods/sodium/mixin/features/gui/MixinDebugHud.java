@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
@@ -42,28 +42,28 @@ public abstract class MixinDebugHud {
     }
 
     @Inject(method = "renderLeftText", at = @At("RETURN"))
-    public void renderLeftText(DrawableHelper drawableHelper, CallbackInfo ci) {
-        this.renderCapturedText(drawableHelper, false);
+    public void renderLeftText(DrawContext drawContext, CallbackInfo ci) {
+        this.renderCapturedText(drawContext, false);
     }
 
     @Inject(method = "renderRightText", at = @At("RETURN"))
-    public void renderRightText(DrawableHelper drawableHelper, CallbackInfo ci) {
-        this.renderCapturedText(drawableHelper, true);
+    public void renderRightText(DrawContext drawContext, CallbackInfo ci) {
+        this.renderCapturedText(drawContext, true);
     }
 
-    private void renderCapturedText(DrawableHelper drawableHelper, boolean right) {
+    private void renderCapturedText(DrawContext drawContext, boolean right) {
         Validate.notNull(this.capturedList, "Failed to capture string list");
 
-        this.renderBackdrop(drawableHelper, this.capturedList, right);
-        this.renderStrings(drawableHelper, this.capturedList, right);
+        this.renderBackdrop(drawContext, this.capturedList, right);
+        this.renderStrings(drawContext, this.capturedList, right);
 
         this.capturedList = null;
     }
 
-    private void renderStrings(DrawableHelper drawableHelper, List<String> list, boolean right) {
+    private void renderStrings(DrawContext drawContext, List<String> list, boolean right) {
         VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
 
-        Matrix4f positionMatrix = drawableHelper.method_51448().peek()
+        Matrix4f positionMatrix = drawContext.getMatrices().peek()
                 .getPositionMatrix();
 
         for (int i = 0; i < list.size(); ++i) {
@@ -84,7 +84,7 @@ public abstract class MixinDebugHud {
         immediate.draw();
     }
 
-    private void renderBackdrop(DrawableHelper drawableHelper, List<String> list, boolean right) {
+    private void renderBackdrop(DrawContext drawContext, List<String> list, boolean right) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
@@ -100,7 +100,7 @@ public abstract class MixinDebugHud {
 
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
-        Matrix4f matrix = drawableHelper.method_51448().peek()
+        Matrix4f matrix = drawContext.getMatrices().peek()
                 .getPositionMatrix();
 
         for (int i = 0; i < list.size(); ++i) {

@@ -89,10 +89,6 @@ public class ChunkTracker {
         var key = ChunkPos.toLong(x, z);
         var existingFlags = this.single.get(key);
 
-        if ((existingFlags & ChunkStatus.FLAG_HAS_BLOCK_DATA) == 0) {
-            SodiumClientMod.logger().warn("Tried to mark light data as ready for chunk [%s, %s] but it hasn't been loaded yet".formatted(x, z));
-        }
-
         this.single.put(key, existingFlags | ChunkStatus.FLAG_HAS_LIGHT_DATA);
         this.dirty.add(key);
     }
