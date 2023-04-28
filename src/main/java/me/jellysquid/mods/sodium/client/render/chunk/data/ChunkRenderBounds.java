@@ -7,10 +7,10 @@ public class ChunkRenderBounds {
     public static final ChunkRenderBounds ALWAYS_FALSE = new ChunkRenderBounds(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY,
             Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
 
-    public final float minX, minY, minZ;
-    public final float maxX, maxY, maxZ;
+    public final double minX, minY, minZ;
+    public final double maxX, maxY, maxZ;
 
-    public ChunkRenderBounds(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+    public ChunkRenderBounds(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         this.minX = minX;
         this.minY = minY;
         this.minZ = minZ;
@@ -51,14 +51,14 @@ public class ChunkRenderBounds {
         }
 
         public ChunkRenderBounds build(ChunkSectionPos origin) {
-            float minX = origin.getMinX() + this.minX;
-            float maxX = origin.getMinX() + this.maxX;
+            double minX = origin.getMinX() + (double) this.minX;
+            double maxX = origin.getMinX() + (double) this.maxX;
 
-            float minY = origin.getMinY() + this.minY;
-            float maxY = origin.getMinY() + this.maxY;
+            double minY = origin.getMinY() + (double) this.minY;
+            double maxY = origin.getMinY() + (double) this.maxY;
 
-            float minZ = origin.getMinZ() + this.minZ;
-            float maxZ = origin.getMinZ() + this.maxZ;
+            double minZ = origin.getMinZ() + (double) this.minZ;
+            double maxZ = origin.getMinZ() + (double) this.maxZ;
 
             return new ChunkRenderBounds(minX, minY, minZ, maxX, maxY, maxZ);
         }
