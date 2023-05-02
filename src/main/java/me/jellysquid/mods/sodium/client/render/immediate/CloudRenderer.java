@@ -361,7 +361,9 @@ public class CloudRenderer {
             throw new RuntimeException("Failed to load texture data", ex);
         }
 
-        return new CloudEdges(nativeImage);
+        CloudEdges cloudEdges = new CloudEdges(nativeImage);
+        nativeImage.close();
+        return cloudEdges;
     }
 
     private static class CloudEdges {
