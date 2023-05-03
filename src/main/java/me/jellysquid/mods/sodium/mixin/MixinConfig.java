@@ -26,7 +26,7 @@ public class MixinConfig {
     private MixinConfig() {
         // Defines the default rules which can be configured by the user or other mods.
         // You must manually add a rule for any new mixins not covered by an existing package rule.
-        this.addMixinRule("core", true); // TODO: Don't actually allow the user to disable this
+        this.addMixinRule("core", true, false);
 
         this.addMixinRule("features", true);
         this.addMixinRule("features.gui", true);
@@ -91,9 +91,20 @@ public class MixinConfig {
      * @param enabled True if the rule will be enabled by default, otherwise false
      */
     private void addMixinRule(String mixin, boolean enabled) {
+        this.addMixinRule(mixin, enabled, true);
+    }
+
+    /**
+     * Defines a Mixin rule which can be configured by users and other mods.
+     * @throws IllegalStateException If a rule with that name already exists
+     * @param mixin The name of the mixin package which will be controlled by this rule
+     * @param enabled True if the rule will be enabled by default, otherwise false
+     * @param overrideable True if the rule will be override-able by users/mods, otherwise false
+     */
+    private void addMixinRule(String mixin, boolean enabled, boolean overrideable) {
         String name = getMixinRuleName(mixin);
 
-        if (this.options.putIfAbsent(name, new MixinOption(name, enabled, false)) != null) {
+        if (this.options.putIfAbsent(name, new MixinOption(name, enabled, false, overrideable)) != null) {
             throw new IllegalStateException("Mixin rule already defined: " + mixin);
         }
     }
@@ -107,6 +118,11 @@ public class MixinConfig {
 
             if (option == null) {
                 LOGGER.warn("No configuration key exists with name '{}', ignoring", key);
+                continue;
+            }
+
+            if (!option.isOverrideable()) {
+                LOGGER.warn("User attempted to override option '{}' that is not overrideable, ignoring", key);
                 continue;
             }
 
@@ -152,6 +168,11 @@ public class MixinConfig {
             return;
         }
 
+        if (!option.isOverrideable()) {
+            LOGGER.warn("Mod '{}' attempted to override option '{}', which is not overrideable, ignoring", meta.getId(), name);
+            return;
+        }
+
         if (value.getType() != CustomValue.CvType.BOOLEAN) {
             LOGGER.warn("Mod '{}' attempted to override option '{}' with an invalid value, ignoring", meta.getId(), name);
             return;
@@ -166,6 +187,41 @@ public class MixinConfig {
 
         if (!enabled || option.isEnabled() || option.getDefiningMods().isEmpty()) {
             option.addModOverride(enabled, meta.getId());
+        }
+    }
+    
+    private void applyOverrideableChecks() {
+        for (MixinOption parentOption : this.options.values()) {
+            for (MixinOption childOption : this.options.values()) {
+                if (childOption.getName().startsWith(parentOption.getName() + '.') && childOption != parentOption) {
+                    if (!parentOption.isOverrideable() && childOption.isOverrideable()) {
+                        LOGGER.warn("Mixin option '{}' cannot be set as overrideable because its parent option '{}' is not overrideable. The mixin option will be treated as not overrideable.", childOption.getName(), parentOption.getName());
+                        childOption.setOverrideable(false);
+                    }
+                }
+            }
+        }
+    }
+
+    private void applyOverrideStates() {
+        for (MixinOption parentOption : this.options.values()) {
+            for (MixinOption childOption : this.options.values()) {
+                if (childOption.getName().startsWith(parentOption.getName() + '.') && childOption != parentOption) {
+                    // Marks every child to parent state
+                    if (childOption.isOverrideable() && (parentOption.isUserDefined() || parentOption.isModDefined())) {
+                        childOption.setEnabled(parentOption.isEnabled(), parentOption.isUserDefined());
+                        if (parentOption.isModDefined()) {
+                            parentOption.getDefiningMods().forEach(mod -> childOption.addModOverride(parentOption.isEnabled(), mod));
+                        }
+                    } else {
+                        if (parentOption.isUserDefined()) {
+                            LOGGER.warn("User attempted to override option '{}' that is not overrideable by overriding '{}', ignoring", childOption.getName(), parentOption.getName());
+                        } else if (parentOption.isModDefined()) {
+                            LOGGER.warn("Mod '{}' attempted to override option '{}' that is not overrideable by overriding '{}', ignoring", parentOption.getDefiningMods(), childOption.getName(), parentOption.getName());
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -215,7 +271,9 @@ public class MixinConfig {
             }
 
             MixinConfig config = new MixinConfig();
+            config.applyOverrideableChecks();
             config.applyModOverrides();
+            config.applyOverrideStates();
 
             return config;
         }
@@ -229,8 +287,10 @@ public class MixinConfig {
         }
 
         MixinConfig config = new MixinConfig();
+        config.applyOverrideableChecks();
         config.readProperties(props);
         config.applyModOverrides();
+        config.applyOverrideStates();
 
         return config;
     }
