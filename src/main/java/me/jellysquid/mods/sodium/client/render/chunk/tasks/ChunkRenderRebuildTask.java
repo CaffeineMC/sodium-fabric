@@ -88,8 +88,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     blockPos.set(x, y, z);
                     modelOffset.set(x & 15, y & 15, z & 15);
 
-                    var rendered = false;
-
                     if (blockState.getRenderType() == BlockRenderType.MODEL) {
                         BakedModel model = cache.getBlockModels()
                                 .getModel(blockState);
@@ -97,18 +95,14 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                         long seed = blockState.getRenderingSeed(blockPos);
 
                         context.update(blockPos, modelOffset, blockState, model, seed);
-
-                        if (cache.getBlockRenderer().renderModel(context, buffers)) {
-                            rendered = true;
-                        }
+                        cache.getBlockRenderer()
+                                .renderModel(context, buffers, bounds);
                     }
 
                     FluidState fluidState = blockState.getFluidState();
 
                     if (!fluidState.isEmpty()) {
-                        if (cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers)) {
-                            rendered = true;
-                        }
+                        cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers, bounds);
                     }
 
                     if (blockState.hasBlockEntity()) {
@@ -125,10 +119,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                     if (blockState.isOpaqueFullCube(slice, blockPos)) {
                         occluder.markClosed(blockPos);
-                    }
-
-                    if (rendered) {
-                        bounds.addBlock(x & 15, y & 15, z & 15);
                     }
                 }
             }

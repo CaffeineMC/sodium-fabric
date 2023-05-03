@@ -16,6 +16,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 
 import java.util.*;
 
@@ -82,11 +83,7 @@ public class RenderRegionManager {
                 ChunkMeshData meshData = result.getMesh(pass);
 
                 if (meshData != null) {
-                    IndexedVertexData vertexData = meshData.getVertexData();
-
-                    sectionUploads.add(new PendingSectionUpload(result.render, meshData, pass,
-                            new PendingUpload(vertexData.vertexBuffer()),
-                            new PendingUpload(vertexData.indexBuffer())));
+                    sectionUploads.add(new PendingSectionUpload(result.render, meshData, pass, new PendingUpload(meshData.getVertexData())));
                 }
             }
         }
@@ -97,7 +94,6 @@ public class RenderRegionManager {
         }
 
         boolean bufferChanged = region.vertexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.vertexUpload));
-        bufferChanged |= region.indexBuffers.upload(commandList, sectionUploads.stream().map(i -> i.indicesUpload));
 
         // If any of the buffers changed, the tessellation will need to be updated
         // Once invalidated the tessellation will be re-created on the next attempted use
@@ -108,7 +104,7 @@ public class RenderRegionManager {
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
             region.createStorage(upload.pass)
-                    .replaceState(upload.section, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.indicesUpload.getResult(), upload.meshData));
+                    .replaceState(upload.section, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.meshData));
         }
     }
 
@@ -174,7 +170,6 @@ public class RenderRegionManager {
         return this.regions.get(longKey);
     }
 
-    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, TerrainRenderPass pass,
-                                        PendingUpload vertexUpload, PendingUpload indicesUpload) {
+    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
     }
 }
