@@ -13,6 +13,7 @@ import org.apache.commons.lang3.Validate;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -33,34 +34,16 @@ public abstract class MixinDebugHud {
 
     private List<String> capturedList = null;
 
-    @Redirect(method = { "renderLeftText", "renderRightText" }, at = @At(value = "INVOKE", target = "Ljava/util/List;size()I"))
-    private int preRenderText(List<String> list) {
+    /**
+     * @author IMS
+     * @reason Overwrite text rendering
+     */
+    @Overwrite
+    private void method_51745(DrawContext drawContext, List<String> list, boolean left) {
         // Capture the list to be rendered later
         this.capturedList = list;
 
-        return 0; // Prevent the rendering of any text
-    }
-
-    @Inject(method = "renderLeftText", at = @At("RETURN"))
-    public void renderLeftText(DrawContext drawContext, CallbackInfo ci) {
-        this.renderCapturedText(drawContext, false);
-    }
-
-    @Inject(method = "renderRightText", at = @At("RETURN"))
-    public void renderRightText(DrawContext drawContext, CallbackInfo ci) {
-        this.renderCapturedText(drawContext, true);
-    }
-
-    private void renderCapturedText(DrawContext drawContext, boolean right) {
-        Validate.notNull(this.capturedList, "Failed to capture string list");
-
-        this.renderBackdrop(drawContext, this.capturedList, right);
-        this.renderStrings(drawContext, this.capturedList, right);
-
-        this.capturedList = null;
-    }
-
-    private void renderStrings(DrawContext drawContext, List<String> list, boolean right) {
+        this.renderBackdrop(drawContext, list, left);
         VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
 
         Matrix4f positionMatrix = drawContext.getMatrices().peek()
@@ -73,7 +56,7 @@ public abstract class MixinDebugHud {
                 int height = 9;
                 int width = this.textRenderer.getWidth(string);
 
-                float x1 = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
+                float x1 = left ? 2 : this.client.getWindow().getScaledWidth() - 2 - width;
                 float y1 = 2 + (height * i);
 
                 this.textRenderer.draw(string, x1, y1, 0xe0e0e0, false, positionMatrix, immediate,
@@ -84,7 +67,7 @@ public abstract class MixinDebugHud {
         immediate.draw();
     }
 
-    private void renderBackdrop(DrawContext drawContext, List<String> list, boolean right) {
+    private void renderBackdrop(DrawContext drawContext, List<String> list, boolean left) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
@@ -113,7 +96,7 @@ public abstract class MixinDebugHud {
             int height = 9;
             int width = this.textRenderer.getWidth(string);
 
-            int x = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
+            int x = left ? 2 : this.client.getWindow().getScaledWidth() - 2 - width;
             int y = 2 + height * i;
 
             float x1 = x - 1;
