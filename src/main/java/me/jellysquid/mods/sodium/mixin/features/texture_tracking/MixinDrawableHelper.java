@@ -15,6 +15,7 @@ public class MixinDrawableHelper {
             "drawSprite(IIIIILnet/minecraft/client/texture/Sprite;)V",
             "drawSprite(IIIIILnet/minecraft/client/texture/Sprite;FFFF)V"
     }, at = @At("HEAD"))
+    // IDEA thinks this is an error, it's not. Don't change it.
     private void onHeadDrawSprite(int x, int y, int z, int width, int height, Sprite sprite, CallbackInfo ci) {
         SpriteUtil.markSpriteActive(sprite);
     }
