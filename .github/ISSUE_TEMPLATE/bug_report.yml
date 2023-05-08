@@ -90,6 +90,13 @@ body:
     validations:
       required: true
   - type: input
+    id: os
+    attributes:
+      label: Operating system version
+      placeholder: 'Example: Windows 11'
+    validations:
+      required: true
+  - type: input
     id: cpu
     attributes:
       label: CPU
@@ -101,6 +108,13 @@ body:
     attributes:
       label: GPU
       placeholder: 'Example: Intel HD Graphics 620'
+    validations:
+      required: true
+  - type: input
+    id: gpu-driver
+    attributes:
+      label: Graphic driver version
+      placeholder: 'Example: Intel HD Graphics 620 31.0.101.2121'
     validations:
       required: true
   - type: textarea
