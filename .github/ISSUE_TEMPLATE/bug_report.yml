@@ -33,8 +33,8 @@ body:
     id: version
     attributes:
       label: Version information
-      description: >-
-        Please provide the exact version of the mod you are using. Every part of
+      description: >
+        #### Please provide the exact version of the mod you are using. Every part of
         the version is important! If you do not know what version you are using,
         look at the file name in your `mods` folder.
       placeholder: 'Example: mc1.16.4-0.1.1+rev.4b3964a'
@@ -60,9 +60,9 @@ body:
     id: repro-steps
     attributes:
       label: Reproduction Steps
-      description: >-
-        Provide information on how to reproduce this bug. You can either
-        fill this section in like the example below or do something else just
+      description: >
+        #### Provide information on how to reproduce this bug. You can either
+        fill this section in like the example below or do something else, just
         make sure your instructions are minimal and clear, as other people will
         need to be able to replicate your issue.
       placeholder: |
@@ -107,8 +107,8 @@ body:
     id: additional
     attributes:
       label: Additional information
-      description: >-
-        Provide a list of any other mods you are using, along with their
+      description: >
+        #### Provide a list of any other mods you are using, along with their
         respective versions. If you have any screenshots, videos, or other
         information that you feel is necessary to explain the issue, feel free
         to attach them here.
