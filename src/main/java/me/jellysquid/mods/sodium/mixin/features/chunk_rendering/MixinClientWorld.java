@@ -9,9 +9,4 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientWorld.class)
 public class MixinClientWorld {
-    @Inject(method = "markChunkRenderability", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/WorldChunk;setShouldRenderOnUpdate(Z)V", shift = At.Shift.AFTER))
-    private void postLightUpdate(int chunkX, int chunkZ, CallbackInfo ci) {
-        SodiumWorldRenderer.instance()
-                .onChunkLightAdded(chunkX, chunkZ);
-    }
 }

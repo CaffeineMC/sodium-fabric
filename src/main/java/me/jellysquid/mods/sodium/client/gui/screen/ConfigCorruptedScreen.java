@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.gui.screen;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.util.math.MatrixStack;
@@ -55,20 +56,20 @@ public class ConfigCorruptedScreen extends Screen {
     }
 
     @Override
-    public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-        this.renderBackground(matrices);
+    public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+        this.renderBackground(drawContext);
 
-        super.render(matrices, mouseX, mouseY, delta);
+        super.render(drawContext, mouseX, mouseY, delta);
 
-        drawTextWithShadow(matrices, this.textRenderer, Text.literal("Sodium Renderer"), 32, 32, 0xffffff);
-        drawTextWithShadow(matrices, this.textRenderer, Text.literal("Could not load configuration file"), 32, 48, 0xff0000);
+        drawContext.drawText(this.textRenderer, Text.literal("Sodium Renderer"), 32, 32, 0xffffff, true);
+        drawContext.drawText(this.textRenderer, Text.literal("Could not load configuration file"), 32, 48, 0xff0000, true);
 
         for (int i = 0; i < TEXT_BODY.size(); i++) {
             if (TEXT_BODY.get(i).getString().isEmpty()) {
                 continue;
             }
 
-            drawTextWithShadow(matrices, this.textRenderer, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff);
+            drawContext.drawText(this.textRenderer, TEXT_BODY.get(i), 32, 68 + (i * 12), 0xffffff, true);
         }
     }
 }

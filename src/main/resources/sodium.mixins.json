@@ -25,6 +25,7 @@
     "features.block.MixinBlockModelRenderer",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
     "features.buffer_builder.fast_sort.MixinBufferBuilder",
+    "features.buffer_builder.fast_sort.MixinVertexSorter",
     "features.buffer_builder.intrinsics.MixinBufferBuilder",
     "features.buffer_builder.intrinsics.MixinEntityRenderDispatcher",
     "features.buffer_builder.intrinsics.MixinWorldRenderer",

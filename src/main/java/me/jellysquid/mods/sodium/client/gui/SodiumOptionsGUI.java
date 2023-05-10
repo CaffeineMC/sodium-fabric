@@ -8,6 +8,7 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
 import net.minecraft.client.util.math.MatrixStack;
@@ -156,15 +157,15 @@ public class SodiumOptionsGUI extends Screen {
     }
 
     @Override
-    public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
-        super.renderBackground(matrixStack);
+    public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+        super.renderBackground(drawContext);
 
         this.updateControls();
 
-        super.render(matrixStack, mouseX, mouseY, delta);
+        super.render(drawContext, mouseX, mouseY, delta);
 
         if (this.hoveredElement != null) {
-            this.renderOptionTooltip(matrixStack, this.hoveredElement);
+            this.renderOptionTooltip(drawContext, this.hoveredElement);
         }
     }
 
@@ -205,7 +206,7 @@ public class SodiumOptionsGUI extends Screen {
         return this.controls.stream();
     }
 
-    private void renderOptionTooltip(MatrixStack matrixStack, ControlElement<?> element) {
+    private void renderOptionTooltip(DrawContext drawContext, ControlElement<?> element) {
         Dim2i dim = element.getDimensions();
 
         int textPadding = 3;
@@ -234,10 +235,10 @@ public class SodiumOptionsGUI extends Screen {
             boxY -= boxYLimit - boxYCutoff;
         }
 
-        this.fillGradient(matrixStack, boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xE0000000, 0xE0000000);
+        drawContext.fillGradient(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xE0000000, 0xE0000000);
 
         for (int i = 0; i < tooltip.size(); i++) {
-            this.textRenderer.draw(matrixStack, tooltip.get(i), boxX + textPadding, boxY + textPadding + (i * 12), 0xFFFFFFFF);
+            drawContext.drawText(textRenderer, tooltip.get(i), boxX + textPadding, boxY + textPadding + (i * 12), 0xFFFFFFFF, true);
         }
     }
 

@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gui.widgets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
@@ -29,12 +30,12 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
         this.font = MinecraftClient.getInstance().textRenderer;
     }
 
-    protected void drawString(MatrixStack matrixStack, String str, int x, int y, int color) {
-        this.font.draw(matrixStack, str, x, y, color);
+    protected void drawString(DrawContext drawContext, String str, int x, int y, int color) {
+        drawContext.drawText(this.font, str, x, y, color, true);
     }
 
-    protected void drawString(MatrixStack matrixStack, Text text, int x, int y, int color) {
-        this.font.draw(matrixStack, text, x, y, color);
+    protected void drawString(DrawContext drawContext, Text text, int x, int y, int color) {
+        drawContext.drawText(this.font, text, x, y, color, true);
     }
 
     public boolean isHovered() {

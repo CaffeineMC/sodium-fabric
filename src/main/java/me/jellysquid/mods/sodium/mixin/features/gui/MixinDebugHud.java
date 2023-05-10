@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
@@ -12,6 +13,7 @@ import org.apache.commons.lang3.Validate;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -30,39 +32,16 @@ public abstract class MixinDebugHud {
     @Final
     private TextRenderer textRenderer;
 
-    private List<String> capturedList = null;
-
-    @Redirect(method = { "renderLeftText", "renderRightText" }, at = @At(value = "INVOKE", target = "Ljava/util/List;size()I"))
-    private int preRenderText(List<String> list) {
-        // Capture the list to be rendered later
-        this.capturedList = list;
-
-        return 0; // Prevent the rendering of any text
-    }
-
-    @Inject(method = "renderLeftText", at = @At("RETURN"))
-    public void renderLeftText(MatrixStack matrixStack, CallbackInfo ci) {
-        this.renderCapturedText(matrixStack, false);
-    }
-
-    @Inject(method = "renderRightText", at = @At("RETURN"))
-    public void renderRightText(MatrixStack matrixStack, CallbackInfo ci) {
-        this.renderCapturedText(matrixStack, true);
-    }
-
-    private void renderCapturedText(MatrixStack matrixStack, boolean right) {
-        Validate.notNull(this.capturedList, "Failed to capture string list");
-
-        this.renderBackdrop(matrixStack, this.capturedList, right);
-        this.renderStrings(matrixStack, this.capturedList, right);
-
-        this.capturedList = null;
-    }
-
-    private void renderStrings(MatrixStack matrixStack, List<String> list, boolean right) {
+    /**
+     * @author IMS
+     * @reason Overwrite text rendering
+     */
+    @Overwrite
+    private void drawText(DrawContext drawContext, List<String> list, boolean left) {
+        this.renderBackdrop(drawContext, list, left);
         VertexConsumerProvider.Immediate immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
 
-        Matrix4f positionMatrix = matrixStack.peek()
+        Matrix4f positionMatrix = drawContext.getMatrices().peek()
                 .getPositionMatrix();
 
         for (int i = 0; i < list.size(); ++i) {
@@ -72,7 +51,7 @@ public abstract class MixinDebugHud {
                 int height = 9;
                 int width = this.textRenderer.getWidth(string);
 
-                float x1 = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
+                float x1 = left ? 2 : this.client.getWindow().getScaledWidth() - 2 - width;
                 float y1 = 2 + (height * i);
 
                 this.textRenderer.draw(string, x1, y1, 0xe0e0e0, false, positionMatrix, immediate,
@@ -83,7 +62,7 @@ public abstract class MixinDebugHud {
         immediate.draw();
     }
 
-    private void renderBackdrop(MatrixStack matrixStack, List<String> list, boolean right) {
+    private void renderBackdrop(DrawContext drawContext, List<String> list, boolean left) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
@@ -99,7 +78,7 @@ public abstract class MixinDebugHud {
 
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 
-        Matrix4f matrix = matrixStack.peek()
+        Matrix4f matrix = drawContext.getMatrices().peek()
                 .getPositionMatrix();
 
         for (int i = 0; i < list.size(); ++i) {
@@ -112,7 +91,7 @@ public abstract class MixinDebugHud {
             int height = 9;
             int width = this.textRenderer.getWidth(string);
 
-            int x = right ? this.client.getWindow().getScaledWidth() - 2 - width : 2;
+            int x = left ? 2 : this.client.getWindow().getScaledWidth() - 2 - width;
             int y = 2 + height * i;
 
             float x1 = x - 1;
