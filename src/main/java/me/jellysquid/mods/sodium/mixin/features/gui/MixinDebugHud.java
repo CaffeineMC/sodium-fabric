@@ -39,7 +39,7 @@ public abstract class MixinDebugHud {
      * @reason Overwrite text rendering
      */
     @Overwrite
-    private void method_51745(DrawContext drawContext, List<String> list, boolean left) {
+    private void drawText(DrawContext drawContext, List<String> list, boolean left) {
         // Capture the list to be rendered later
         this.capturedList = list;
 

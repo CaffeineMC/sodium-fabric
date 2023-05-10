@@ -88,7 +88,7 @@ public class CloudRenderer {
             this.rebuildGeometry(bufferBuilder, cloudDistance, centerCellX, centerCellZ);
 
             if (this.vertexBuffer == null) {
-                this.vertexBuffer = new VertexBuffer(VertexBuffer.class_8555.DYNAMIC);
+                this.vertexBuffer = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
             }
 
             this.vertexBuffer.bind();

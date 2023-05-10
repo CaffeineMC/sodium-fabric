@@ -293,10 +293,6 @@ public class SodiumWorldRenderer {
         }
     }
 
-    public void onChunkLightAdded(int x, int z) {
-        this.chunkTracker.onLightDataAdded(x, z);
-    }
-
     public void onChunkRemoved(int x, int z) {
         if (this.chunkTracker.unloadChunk(x, z)) {
             this.renderSectionManager.onChunkRemoved(x, z);
@@ -328,8 +324,8 @@ public class SodiumWorldRenderer {
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
     }
 
-    public boolean doesChunkHaveFlag(int x, int z, int status) {
-        return this.chunkTracker.hasMergedFlags(x, z, status);
+    public boolean doesChunkHaveData(int x, int z) {
+        return this.chunkTracker.hasData(x, z);
     }
 
     public boolean isBoxVisible(double x1, double y1, double z1, double x2, double y2, double z2) {
