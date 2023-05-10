@@ -127,7 +127,7 @@ public class RenderSectionManager {
     }
 
     public void reloadChunks(ChunkTracker tracker) {
-        tracker.getChunks(ChunkStatus.FLAG_HAS_BLOCK_DATA)
+        tracker.getChunks()
                 .forEach(pos -> this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
     }
 
@@ -192,7 +192,7 @@ public class RenderSectionManager {
     }
 
     private void schedulePendingUpdates(RenderSection section) {
-        if (section.getPendingUpdate() == null || !this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
+        if (section.getPendingUpdate() == null || !this.tracker.hasData(section.getChunkX(), section.getChunkZ())) {
             return;
         }
 
@@ -271,13 +271,13 @@ public class RenderSectionManager {
     private boolean unloadSection(int x, int y, int z) {
         RenderSection chunk = this.sections.remove(ChunkSectionPos.asLong(x, y, z));
 
+        if (chunk == null) {
+            throw new IllegalStateException("Chunk is not loaded: " + ChunkSectionPos.from(x, y, z));
+        }
+
         RenderRegion region = this.regions.getRegion(RenderRegion.getRegionKeyForChunk(x, y, z));
         if (region != null) {
             region.deleteSection(chunk);
-        }
-
-        if (chunk == null) {
-            throw new IllegalStateException("Chunk is not loaded: " + ChunkSectionPos.from(x, y, z));
         }
 
         chunk.delete();
