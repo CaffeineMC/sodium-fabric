@@ -33,6 +33,7 @@
     "features.chunk_rendering.MixinClientChunkMap",
     "features.chunk_rendering.MixinClientPlayNetworkHandler",
     "features.chunk_rendering.MixinClientWorld",
+    "features.chunk_rendering.MixinLightingProvider",
     "features.chunk_rendering.MixinPackedIntegerArray",
     "features.chunk_rendering.MixinPalettedContainer",
     "features.chunk_rendering.MixinWorldRenderer",

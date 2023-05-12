@@ -124,7 +124,7 @@ public class RenderSectionManager {
     }
 
     public void reloadChunks(ChunkTracker tracker) {
-        tracker.getChunks()
+        tracker.getChunks(ChunkStatus.FLAG_HAS_BLOCK_DATA)
                 .forEach(pos -> this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
     }
 
@@ -188,7 +188,7 @@ public class RenderSectionManager {
     }
 
     private void schedulePendingUpdates(RenderSection section) {
-        if (section.getPendingUpdate() == null || !this.tracker.hasData(section.getChunkX(), section.getChunkZ())) {
+        if (section.getPendingUpdate() == null || !this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
             return;
         }
 
