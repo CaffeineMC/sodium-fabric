@@ -37,7 +37,7 @@ body:
         Please provide the exact version of the mod you are using. Every part of
         the version is important! If you do not know what version you are using,
         look at the file name in your `mods` folder.
-      placeholder: 'Example: mc1.16.4-0.1.1+rev.4b3964a'
+      placeholder: 'Example: mc1.19.4-0.4.10'
     validations:
       required: true
   - type: textarea
@@ -81,19 +81,19 @@ body:
         You can obtain this information from the right-side of the in-game debug
         screen (F3) or through using
         [DxDiag](https://support.microsoft.com/en-us/help/4028644/windows-open-and-run-dxdiagexe)
-        on Windows. 
+        on Windows. If you are unsure as to how to fill it in, please screenshot dxdiag or the in-game debug screen (F3) and attach to 'Additional Information'.
   - type: input
     id: java
     attributes:
       label: Java version
-      placeholder: 'Example: Java 16'
+      placeholder: 'Example: OpenJDK Java 17'
     validations:
       required: true
   - type: input
     id: os
     attributes:
       label: Operating system version
-      placeholder: 'Example: Windows 11'
+      placeholder: 'Example: Windows 11 22H2 | Ubuntu 22.04 | MacOS 13'
     validations:
       required: true
   - type: input
@@ -113,7 +113,7 @@ body:
   - type: input
     id: gpu-driver
     attributes:
-      label: Graphic driver version
+      label: Graphics driver version
       placeholder: 'Example: Intel HD Graphics 620 31.0.101.2121'
     validations:
       required: true
