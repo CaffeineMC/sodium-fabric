@@ -99,8 +99,8 @@ body:
     attributes:
       label: Crash Report file
       description: >-
-        Upload your crash report file as an attachment to this issue (drag-and-drop) or to a service such as GitHub
-        Gist (paste a link) and replace this section. This information is critical in resolving your issue!
+        Upload your crash report file as an attachment to this issue (drag-and-drop) or to a service such as [mglo.gs](https://mclo.gs/)
+        (paste a link) and replace this section. This information is critical in resolving your issue!
         
         Messages like "Exit code 0" from your launcher are not what you're looking for. If your launcher does not
         provide a button to view the most recent crash report, check your game's `crash-reports` folder for the most recent
