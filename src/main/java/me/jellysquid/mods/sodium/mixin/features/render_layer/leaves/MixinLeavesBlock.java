@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 @Mixin(LeavesBlock.class)
 public class MixinLeavesBlock extends Block {
     public MixinLeavesBlock() {
-        super(Settings.of());
+        super(Settings.create());
         throw new AssertionError("Mixin constructor called!");
     }
 
