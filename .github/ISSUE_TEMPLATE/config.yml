@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact-links:
+  - name: Join our Discord community.
+    about: Get installation help and technical support with all of our mods. # Copied from https://github.com/CaffeineMC/sodium-fabric#community
+    url: https://jellysquid.me/discord
