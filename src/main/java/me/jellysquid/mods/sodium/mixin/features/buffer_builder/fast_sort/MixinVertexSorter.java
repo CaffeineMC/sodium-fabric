@@ -12,17 +12,17 @@ public interface MixinVertexSorter {
      * @reason Optimize vertex sorting
      */
     @Overwrite
-    public static VertexSorter of(VertexSorter.SortKeyMapper sortKeyMapper) {
-        return pVector3fArray1 -> {
-            float[] lvFloatArray2 = new float[pVector3fArray1.length];
-            int[] lvIntArray3 = new int[pVector3fArray1.length];
-            for (int lvInt4 = 0; lvInt4 < pVector3fArray1.length; ++lvInt4) {
-                lvFloatArray2[lvInt4] = sortKeyMapper.apply(pVector3fArray1[lvInt4]);
-                lvIntArray3[lvInt4] = lvInt4;
+    static VertexSorter of(VertexSorter.SortKeyMapper sortKeyMapper) {
+        return locations -> {
+            float[] newLocations = new float[locations.length];
+            int[] indexes = new int[locations.length];
+            for (int lvInt4 = 0; lvInt4 < locations.length; ++lvInt4) {
+                newLocations[lvInt4] = sortKeyMapper.apply(locations[lvInt4]);
+                indexes[lvInt4] = lvInt4;
             }
 
-            GeometrySort.mergeSort(lvIntArray3, lvFloatArray2);
-            return lvIntArray3;
+            GeometrySort.mergeSort(indexes, newLocations);
+            return indexes;
         };
     }
 }
