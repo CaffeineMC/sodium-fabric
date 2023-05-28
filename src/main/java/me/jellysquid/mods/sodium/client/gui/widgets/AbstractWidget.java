@@ -13,10 +13,10 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
-
 import java.util.function.Consumer;
 
 public abstract class AbstractWidget implements Drawable, Element, Selectable {
+
     protected final TextRenderer font;
 
     protected AbstractWidget() {
@@ -36,24 +36,18 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
         float r = (float) (color >> 16 & 255) / 255.0F;
         float g = (float) (color >> 8 & 255) / 255.0F;
         float b = (float) (color & 255) / 255.0F;
-
         this.drawQuads(vertices -> addQuad(vertices, x1, y1, x2, y2, a, r, g, b));
     }
 
     protected void drawQuads(Consumer<VertexConsumer> consumer) {
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
-
         BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
         bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-
         consumer.accept(bufferBuilder);
-
         BufferBuilder.BuiltBuffer output = bufferBuilder.end();
-
         BufferRenderer.drawWithGlobalProgram(output);
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
@@ -67,8 +61,7 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
     }
 
     protected void playClickSound() {
-        MinecraftClient.getInstance().getSoundManager()
-                .play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
+        MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
     }
 
     protected int getStringWidth(String text) {

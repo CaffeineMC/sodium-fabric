@@ -7,9 +7,10 @@ import net.minecraft.util.math.Direction;
 
 /**
  * Light pipelines allow model quads for any location in the world to be lit using various backends, including fluids
- * and block entities. 
+ * and block entities.
  */
 public interface LightPipeline {
+
     /**
      * Calculates the light data for a given block model quad, storing the result in {@param out}.
      * @param quad The block model quad

@@ -7,7 +7,6 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryUtil;
-
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -16,11 +15,12 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class NativeBuffer {
+
     private static final Logger LOGGER = LogManager.getLogger(NativeBuffer.class);
 
     private static final ReferenceQueue<NativeBuffer> RECLAIM_QUEUE = new ReferenceQueue<>();
-    private static final Reference2ReferenceMap<Reference<NativeBuffer>, BufferReference> ACTIVE_BUFFERS =
-            Reference2ReferenceMaps.synchronize(new Reference2ReferenceOpenHashMap<>());
+
+    private static final Reference2ReferenceMap<Reference<NativeBuffer>, BufferReference> ACTIVE_BUFFERS = Reference2ReferenceMaps.synchronize(new Reference2ReferenceOpenHashMap<>());
 
     private static long ALLOCATED = 0L;
 
@@ -28,7 +28,6 @@ public class NativeBuffer {
 
     public NativeBuffer(int capacity) {
         this.ref = allocate(capacity);
-
         ACTIVE_BUFFERS.put(new PhantomReference<>(this, RECLAIM_QUEUE), this.ref);
     }
 
@@ -40,7 +39,6 @@ public class NativeBuffer {
 
     public ByteBuffer getDirectBuffer() {
         this.ref.checkFreed();
-
         return MemoryUtil.memByteBuffer(this.ref.address, this.ref.length);
     }
 
@@ -56,27 +54,17 @@ public class NativeBuffer {
         if (forceGc) {
             System.gc();
         }
-
         Reference<? extends NativeBuffer> ref;
-
         while ((ref = RECLAIM_QUEUE.poll()) != null) {
             BufferReference buf = ACTIVE_BUFFERS.remove(ref);
-
             if (buf.freed) {
                 continue;
             }
-
             deallocate(buf);
-
             if (buf.allocationSite != null) {
-                LOGGER.warn("Reclaimed {} bytes at address {} that were leaked from allocation site:\n{}",
-                        buf.length, buf.address,
-                        Arrays.stream(buf.allocationSite)
-                                .map(StackTraceElement::toString)
-                                .collect(Collectors.joining("\n")));
+                LOGGER.warn("Reclaimed {} bytes at address {} that were leaked from allocation site:\n{}", buf.length, buf.address, Arrays.stream(buf.allocationSite).map(StackTraceElement::toString).collect(Collectors.joining("\n")));
             } else {
-                LOGGER.warn("Reclaimed {} bytes at address {} that were leaked from an unknown location (logging is disabled)",
-                        buf.length, buf.address);
+                LOGGER.warn("Reclaimed {} bytes at address {} that were leaked from an unknown location (logging is disabled)", buf.length, buf.address);
             }
         }
     }
@@ -86,8 +74,7 @@ public class NativeBuffer {
     }
 
     private static StackTraceElement[] getStackTrace() {
-        return SodiumClientMod.options().advanced.enableMemoryTracing ? Thread.currentThread()
-                .getStackTrace() : null;
+        return SodiumClientMod.options().advanced.enableMemoryTracing ? Thread.currentThread().getStackTrace() : null;
     }
 
     private static final int MAX_ALLOCATION_ATTEMPTS = 3;
@@ -95,44 +82,36 @@ public class NativeBuffer {
     private static BufferReference allocate(int bytes) {
         long address = 0;
         int attempts = 0;
-
         while (++attempts <= MAX_ALLOCATION_ATTEMPTS) {
             address = MemoryUtil.nmemAlloc(bytes);
-
             if (address != MemoryUtil.NULL) {
                 break;
             }
-
             LOGGER.error("EMERGENCY: Tried to allocate {} bytes but the allocator reports failure", bytes);
             LOGGER.error("EMERGENCY: ... Attempting to force a garbage collection cycle (attempt {}/{})", attempts, MAX_ALLOCATION_ATTEMPTS);
-
             // If memory allocation fails, force a garbage collection
             reclaim(true);
         }
-
         if (address == MemoryUtil.NULL) {
             throw new OutOfMemoryError("Couldn't allocate %s bytes after %s attempts".formatted(bytes, attempts));
         }
-
         StackTraceElement[] stackTrace = getStackTrace();
-
         BufferReference ref = new BufferReference(address, bytes, stackTrace);
         ALLOCATED += ref.length;
-
         return ref;
     }
 
     private static void deallocate(BufferReference ref) {
         ref.checkFreed();
         ref.freed = true;
-
         MemoryUtil.nmemFree(ref.address);
-
         ALLOCATED -= ref.length;
     }
 
     private static class BufferReference {
+
         public final long address;
+
         public final int length;
 
         public final StackTraceElement[] allocationSite;

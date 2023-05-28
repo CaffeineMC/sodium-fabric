@@ -11,13 +11,13 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChunkBuilder {
+
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
     private final Deque<WrappedTask> buildQueue = new ConcurrentLinkedDeque<>();
@@ -25,17 +25,22 @@ public class ChunkBuilder {
     private final Object jobNotifier = new Object();
 
     private final AtomicBoolean running = new AtomicBoolean(false);
+
     private final List<Thread> threads = new ArrayList<>();
+
     /**
      * Amount of threads which are currently blocked waiting on {@link #jobNotifier}. Synchronized via the same object.
      */
     private int idleThreads;
 
     private World world;
+
     private final int limitThreads;
+
     private final ChunkVertexType vertexType;
 
     private final Queue<ChunkBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
+
     private final ThreadLocal<ChunkBuildContext> localContexts = new ThreadLocal<>();
 
     public ChunkBuilder(ChunkVertexType vertexType) {
@@ -59,22 +64,17 @@ public class ChunkBuilder {
         if (this.running.getAndSet(true)) {
             return;
         }
-
         if (!this.threads.isEmpty()) {
             throw new IllegalStateException("Threads are still alive while in the STOPPED state");
         }
-
         for (int i = 0; i < this.limitThreads; i++) {
             ChunkBuildContext context = new ChunkBuildContext(this.world, this.vertexType);
             WorkerRunnable worker = new WorkerRunnable(context);
-
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
             thread.setPriority(Math.max(0, Thread.NORM_PRIORITY - 2));
             thread.start();
-
             this.threads.add(thread);
         }
-
         LOGGER.info("Started {} worker threads", this.threads.size());
     }
 
@@ -88,18 +88,14 @@ public class ChunkBuilder {
         if (!this.running.getAndSet(false)) {
             return;
         }
-
         if (this.threads.isEmpty()) {
             throw new IllegalStateException("No threads are alive but the executor is in the RUNNING state");
         }
-
         LOGGER.info("Stopping worker threads");
-
         // Notify all worker threads to wake up, where they will then terminate
         synchronized (this.jobNotifier) {
             this.jobNotifier.notifyAll();
         }
-
         // Wait for every remaining thread to terminate
         for (Thread thread : this.threads) {
             try {
@@ -107,25 +103,18 @@ public class ChunkBuilder {
             } catch (InterruptedException ignored) {
             }
         }
-
         this.threads.clear();
-
         // Delete any queued tasks and resources attached to them
         for (WrappedTask job : this.buildQueue) {
             job.future.cancel(true);
             job.task.releaseResources();
         }
-
         // Delete any results in the deferred queue
         while (!this.deferredResultQueue.isEmpty()) {
-            this.deferredResultQueue.remove()
-                    .delete();
+            this.deferredResultQueue.remove().delete();
         }
-
         this.buildQueue.clear();
-
         this.world = null;
-
         this.doneStealingTasks();
     }
 
@@ -142,15 +131,11 @@ public class ChunkBuilder {
         if (!this.running.get()) {
             throw new IllegalStateException("Executor is stopped");
         }
-
         WrappedTask job = new WrappedTask(task);
-
         this.buildQueue.add(job);
-
         synchronized (this.jobNotifier) {
             this.jobNotifier.notify();
         }
-
         return job.future;
     }
 
@@ -183,11 +168,8 @@ public class ChunkBuilder {
         if (world == null) {
             throw new NullPointerException("World is null");
         }
-
         this.stopWorkers();
-
         this.world = world;
-
         this.startWorkers();
     }
 
@@ -209,8 +191,7 @@ public class ChunkBuilder {
     }
 
     public CompletableFuture<Void> scheduleDeferred(ChunkRenderBuildTask task) {
-        return this.schedule(task)
-                .thenAccept(this.deferredResultQueue::add);
+        return this.schedule(task).thenAccept(this.deferredResultQueue::add);
     }
 
     public Iterator<ChunkBuildResult> createDeferredBuildResultDrain() {
@@ -226,23 +207,18 @@ public class ChunkBuilder {
      */
     public boolean stealTask() {
         WrappedTask task = this.getNextJob(false);
-
         if (task == null) {
             return false;
         }
-
         ChunkBuildContext context = this.localContexts.get();
-
         if (context == null) {
             this.localContexts.set(context = new ChunkBuildContext(this.world, this.vertexType));
         }
-
         try {
             processJob(task, context);
         } finally {
             context.release();
         }
-
         return true;
     }
 
@@ -253,7 +229,6 @@ public class ChunkBuilder {
      */
     private WrappedTask getNextJob(boolean block) {
         WrappedTask job = ChunkBuilder.this.buildQueue.poll();
-
         if (job == null && block) {
             synchronized (ChunkBuilder.this.jobNotifier) {
                 ChunkBuilder.this.idleThreads++;
@@ -265,7 +240,6 @@ public class ChunkBuilder {
                 }
             }
         }
-
         return job;
     }
 
@@ -273,9 +247,7 @@ public class ChunkBuilder {
         if (job.isCancelled()) {
             return;
         }
-
         ChunkBuildResult result;
-
         try {
             // Perform the build task with this worker's local resources and obtain the result
             result = job.task.performBuild(context, job);
@@ -287,7 +259,6 @@ public class ChunkBuilder {
         } finally {
             job.task.releaseResources();
         }
-
         // The result can be null if the task is cancelled
         if (result != null) {
             // Notify the future that the result is now available
@@ -299,6 +270,7 @@ public class ChunkBuilder {
     }
 
     private class WorkerRunnable implements Runnable {
+
         private final AtomicBoolean running = ChunkBuilder.this.running;
 
         // Making this thread-local provides a small boost to performance by avoiding the overhead in synchronizing
@@ -314,11 +286,9 @@ public class ChunkBuilder {
             // Run until the chunk builder shuts down
             while (this.running.get()) {
                 WrappedTask job = ChunkBuilder.this.getNextJob(true);
-
                 if (job == null) {
                     continue;
                 }
-
                 try {
                     processJob(job, this.context);
                 } finally {
@@ -329,7 +299,9 @@ public class ChunkBuilder {
     }
 
     private static class WrappedTask implements CancellationSource {
+
         private final ChunkRenderBuildTask task;
+
         private final CompletableFuture<ChunkBuildResult> future;
 
         private WrappedTask(ChunkRenderBuildTask task) {

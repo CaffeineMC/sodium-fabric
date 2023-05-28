@@ -3,7 +3,9 @@ package me.jellysquid.mods.sodium.client.gl.arena;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 
 public class PendingUpload {
+
     private final NativeBuffer data;
+
     private GlBufferSegment result;
 
     public PendingUpload(NativeBuffer data) {
@@ -18,7 +20,6 @@ public class PendingUpload {
         if (this.result != null) {
             throw new IllegalStateException("Result already provided");
         }
-
         this.result = result;
     }
 
@@ -26,7 +27,6 @@ public class PendingUpload {
         if (this.result == null) {
             throw new IllegalStateException("Result not computed");
         }
-
         return this.result;
     }
 

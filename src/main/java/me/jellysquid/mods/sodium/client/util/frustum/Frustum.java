@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.util.frustum;
 
 public interface Frustum {
+
     /**
      * @return The visibility of an axis-aligned box within the frustum
      */
@@ -14,16 +15,15 @@ public interface Frustum {
     }
 
     enum Visibility {
+
         /**
          * The object is fully outside the frustum and is not visible.
          */
         OUTSIDE,
-
         /**
          * The object intersects with a plane of the frustum and is visible.
          */
         INTERSECT,
-
         /**
          * The object is fully contained within the frustum and is visible.
          */

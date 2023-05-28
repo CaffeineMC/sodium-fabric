@@ -4,6 +4,7 @@ package me.jellysquid.mods.sodium.client.model.light.smooth;
  * Bit flags to indicate which light properties have been computed for a given face.
  */
 class AoCompletionFlags {
+
     /**
      * The light data has been retrieved from the cache.
      */

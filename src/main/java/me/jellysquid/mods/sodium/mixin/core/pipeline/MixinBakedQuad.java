@@ -14,11 +14,11 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
 
 @Mixin(BakedQuad.class)
 public abstract class MixinBakedQuad implements BakedQuadView {
+
     @Shadow
     @Final
     protected int[] vertexData;
@@ -33,7 +33,8 @@ public abstract class MixinBakedQuad implements BakedQuadView {
 
     @Shadow
     @Final
-    protected Direction face; // This is really the light face, but we can't rename it.
+    protected Direction // This is really the light face, but we can't rename it.
+    face;
 
     @Shadow
     @Final
@@ -42,13 +43,13 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     private int flags;
 
     private int normal;
+
     private ModelQuadFacing normalFace;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
         this.normal = ModelQuadUtil.calculateNormal(this);
         this.normalFace = ModelQuadUtil.findNormalFace(this.normal);
-
         this.flags = ModelQuadFlags.getQuadFlags(this, face);
     }
 
@@ -113,7 +114,8 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     }
 
     @Override
-    @Unique(silent = true) // The target class has a function with the same name in a remapped environment
+    // The target class has a function with the same name in a remapped environment
+    @Unique(silent = true)
     public boolean hasShade() {
         return this.shade;
     }

@@ -4,8 +4,8 @@ import net.caffeinemc.mods.sodium.api.internal.DependencyInjection;
 import net.minecraft.client.render.VertexFormat;
 
 public interface VertexFormatRegistry {
-    VertexFormatRegistry INSTANCE = DependencyInjection.load(VertexFormatRegistry.class,
-            "me.jellysquid.mods.sodium.client.render.vertex.VertexFormatRegistryImpl");
+
+    VertexFormatRegistry INSTANCE = DependencyInjection.load(VertexFormatRegistry.class, "me.jellysquid.mods.sodium.client.render.vertex.VertexFormatRegistryImpl");
 
     static VertexFormatRegistry instance() {
         return INSTANCE;

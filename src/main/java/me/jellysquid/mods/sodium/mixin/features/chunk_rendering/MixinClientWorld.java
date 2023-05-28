@@ -13,11 +13,11 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import java.util.function.Supplier;
 
 @Mixin(ClientWorld.class)
 public class MixinClientWorld implements BiomeSeedProvider {
+
     @Unique
     private long biomeSeed;
 
@@ -28,8 +28,7 @@ public class MixinClientWorld implements BiomeSeedProvider {
 
     @Inject(method = "markChunkRenderability", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/WorldChunk;setShouldRenderOnUpdate(Z)V", shift = At.Shift.AFTER))
     private void postLightUpdate(int chunkX, int chunkZ, CallbackInfo ci) {
-        SodiumWorldRenderer.instance()
-                .onChunkLightAdded(chunkX, chunkZ);
+        SodiumWorldRenderer.instance().onChunkLightAdded(chunkX, chunkZ);
     }
 
     @Override

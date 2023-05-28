@@ -6,6 +6,7 @@ import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.GL44C;
 
 public enum GlBufferMapFlags implements EnumBit {
+
     READ(GL30C.GL_MAP_READ_BIT),
     WRITE(GL30C.GL_MAP_WRITE_BIT),
     PERSISTENT(GL44C.GL_MAP_PERSISTENT_BIT),

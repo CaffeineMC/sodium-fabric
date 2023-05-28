@@ -5,6 +5,7 @@ package me.jellysquid.mods.sodium.client.model.light.data;
  * quad's vertex order.
  */
 public class QuadLightData {
+
     /**
      * The brightness of each vertex in the quad as normalized floats.
      */

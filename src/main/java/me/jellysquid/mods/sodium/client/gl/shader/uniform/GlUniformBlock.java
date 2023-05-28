@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import org.lwjgl.opengl.GL32C;
 
 public class GlUniformBlock {
+
     private final int binding;
 
     public GlUniformBlock(int uniformBlockBinding) {

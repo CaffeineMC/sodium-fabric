@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-
 import java.util.Map;
 
 /**
@@ -13,9 +12,13 @@ import java.util.Map;
  * will instead be discarded.
  */
 public class ChunkBuildResult {
+
     public final RenderSection render;
+
     public final ChunkRenderData data;
+
     public final Map<TerrainRenderPass, ChunkMeshData> meshes;
+
     public final int buildTime;
 
     public ChunkBuildResult(RenderSection render, ChunkRenderData data, Map<TerrainRenderPass, ChunkMeshData> meshes, int buildTime) {
@@ -31,8 +34,7 @@ public class ChunkBuildResult {
 
     public void delete() {
         for (ChunkMeshData data : this.meshes.values()) {
-            data.getVertexData()
-                    .free();
+            data.getVertexData().free();
         }
     }
 }

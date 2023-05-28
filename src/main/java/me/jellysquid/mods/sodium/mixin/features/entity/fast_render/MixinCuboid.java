@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ModelPart.Cuboid.class)
 public class MixinCuboid implements ModelCuboidAccessor {
+
     private ModelCuboid sodium$cuboid;
 
     // Inject at the start of the function, so we don't capture modified locals

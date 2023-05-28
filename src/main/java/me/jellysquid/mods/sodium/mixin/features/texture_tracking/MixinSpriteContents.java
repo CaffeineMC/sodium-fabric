@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(SpriteContents.class)
 public abstract class MixinSpriteContents implements SpriteContentsExtended {
+
     @Shadow
     @Final
     @Nullable

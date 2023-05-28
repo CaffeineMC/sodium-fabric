@@ -5,7 +5,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
-
 import java.util.Collections;
 
 /**
@@ -15,7 +14,9 @@ import java.util.Collections;
  * synchronously update the render's data to an empty state to speed things along.
  */
 public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
+
     private final RenderSection render;
+
     private final int frame;
 
     public ChunkRenderEmptyBuildTask(RenderSection render, int frame) {
@@ -30,6 +31,5 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
 
     @Override
     public void releaseResources() {
-
     }
 }

@@ -7,12 +7,12 @@ package me.jellysquid.mods.sodium.client.gl;
  * relied on too heavily.
  */
 public abstract class GlObject {
+
     private static final int INVALID_HANDLE = Integer.MIN_VALUE;
 
     private int handle = INVALID_HANDLE;
 
     protected GlObject() {
-
     }
 
     protected final void setHandle(int handle) {
@@ -21,7 +21,6 @@ public abstract class GlObject {
 
     public final int handle() {
         this.checkHandle();
-
         return this.handle;
     }
 

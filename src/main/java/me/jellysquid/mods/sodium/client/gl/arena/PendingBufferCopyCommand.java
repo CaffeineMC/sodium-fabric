@@ -1,7 +1,9 @@
 package me.jellysquid.mods.sodium.client.gl.arena;
 
 class PendingBufferCopyCommand {
+
     public final int readOffset;
+
     public final int writeOffset;
 
     public int length;

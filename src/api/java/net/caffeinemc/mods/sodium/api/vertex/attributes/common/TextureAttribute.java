@@ -4,6 +4,7 @@ import org.joml.Vector2f;
 import org.lwjgl.system.MemoryUtil;
 
 public class TextureAttribute {
+
     public static void put(long ptr, Vector2f vec) {
         put(ptr, vec.x(), vec.y());
     }

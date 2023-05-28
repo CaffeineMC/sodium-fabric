@@ -6,7 +6,6 @@ import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +16,7 @@ import java.util.Properties;
  */
 @SuppressWarnings("CanBeFinal")
 public class SodiumConfig {
+
     private static final Logger LOGGER = LogManager.getLogger("SodiumConfig");
 
     private static final String JSON_KEY_SODIUM_OPTIONS = "sodium:options";
@@ -26,8 +26,8 @@ public class SodiumConfig {
     private SodiumConfig() {
         // Defines the default rules which can be configured by the user or other mods.
         // You must manually add a rule for any new mixins not covered by an existing package rule.
-        this.addMixinRule("core", true); // TODO: Don't actually allow the user to disable this
-
+        // TODO: Don't actually allow the user to disable this
+        this.addMixinRule("core", true);
         this.addMixinRule("features.block", true);
         this.addMixinRule("features.biome", true);
         this.addMixinRule("features.buffer_builder", true);
@@ -60,7 +60,6 @@ public class SodiumConfig {
         this.addMixinRule("features.fast_biome_colors", true);
         this.addMixinRule("features.shader", true);
         this.addMixinRule("features.clouds", true);
-
         this.addMixinRule("workarounds", true);
         this.addMixinRule("workarounds.issue1486", true);
     }
@@ -73,7 +72,6 @@ public class SodiumConfig {
      */
     private void addMixinRule(String mixin, boolean enabled) {
         String name = getMixinRuleName(mixin);
-
         if (this.options.putIfAbsent(name, new Option(name, enabled, false)) != null) {
             throw new IllegalStateException("Mixin rule already defined: " + mixin);
         }
@@ -83,16 +81,12 @@ public class SodiumConfig {
         for (Map.Entry<Object, Object> entry : props.entrySet()) {
             String key = (String) entry.getKey();
             String value = (String) entry.getValue();
-
             Option option = this.options.get(key);
-
             if (option == null) {
                 LOGGER.warn("No configuration key exists with name '{}', ignoring", key);
                 continue;
             }
-
             boolean enabled;
-
             if (value.equalsIgnoreCase("true")) {
                 enabled = true;
             } else if (value.equalsIgnoreCase("false")) {
@@ -101,7 +95,6 @@ public class SodiumConfig {
                 LOGGER.warn("Invalid value '{}' encountered for configuration key '{}', ignoring", value, key);
                 continue;
             }
-
             option.setEnabled(enabled, true);
         }
     }
@@ -109,15 +102,12 @@ public class SodiumConfig {
     private void applyModOverrides() {
         for (ModContainer container : FabricLoader.getInstance().getAllMods()) {
             ModMetadata meta = container.getMetadata();
-
             if (meta.containsCustomValue(JSON_KEY_SODIUM_OPTIONS)) {
                 CustomValue overrides = meta.getCustomValue(JSON_KEY_SODIUM_OPTIONS);
-
                 if (overrides.getType() != CustomValue.CvType.OBJECT) {
                     LOGGER.warn("Mod '{}' contains invalid Sodium option overrides, ignoring", meta.getId());
                     continue;
                 }
-
                 for (Map.Entry<String, CustomValue> entry : overrides.getAsObject()) {
                     this.applyModOverride(meta, entry.getKey(), entry.getValue());
                 }
@@ -127,24 +117,19 @@ public class SodiumConfig {
 
     private void applyModOverride(ModMetadata meta, String name, CustomValue value) {
         Option option = this.options.get(name);
-
         if (option == null) {
             LOGGER.warn("Mod '{}' attempted to override option '{}', which doesn't exist, ignoring", meta.getId(), name);
             return;
         }
-
         if (value.getType() != CustomValue.CvType.BOOLEAN) {
             LOGGER.warn("Mod '{}' attempted to override option '{}' with an invalid value, ignoring", meta.getId(), name);
             return;
         }
-
         boolean enabled = value.getAsBoolean();
-
         // disabling the option takes precedence over enabling
         if (!enabled && option.isEnabled()) {
             option.clearModsDefiningValue();
         }
-
         if (!enabled || option.isEnabled() || option.getDefiningMods().isEmpty()) {
             option.addModOverride(enabled, meta.getId());
         }
@@ -161,25 +146,18 @@ public class SodiumConfig {
     public Option getEffectiveOptionForMixin(String mixinClassName) {
         int lastSplit = 0;
         int nextSplit;
-
         Option rule = null;
-
         while ((nextSplit = mixinClassName.indexOf('.', lastSplit)) != -1) {
             String key = getMixinRuleName(mixinClassName.substring(0, nextSplit));
-
             Option candidate = this.options.get(key);
-
             if (candidate != null) {
                 rule = candidate;
-
                 if (!rule.isEnabled()) {
                     return rule;
                 }
             }
-
             lastSplit = nextSplit + 1;
         }
-
         return rule;
     }
 
@@ -194,31 +172,24 @@ public class SodiumConfig {
             } catch (IOException e) {
                 LOGGER.warn("Could not write default configuration file", e);
             }
-
             SodiumConfig config = new SodiumConfig();
             config.applyModOverrides();
-
             return config;
         }
-
         Properties props = new Properties();
-
-        try (FileInputStream fin = new FileInputStream(file)){
+        try (FileInputStream fin = new FileInputStream(file)) {
             props.load(fin);
         } catch (IOException e) {
             throw new RuntimeException("Could not load config file", e);
         }
-
         SodiumConfig config = new SodiumConfig();
         config.readProperties(props);
         config.applyModOverrides();
-
         return config;
     }
 
     private static void writeDefaultConfig(File file) throws IOException {
         File dir = file.getParentFile();
-
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
                 throw new IOException("Could not create parent directories");
@@ -226,7 +197,6 @@ public class SodiumConfig {
         } else if (!dir.isDirectory()) {
             throw new IOException("The parent file is not a directory");
         }
-
         try (Writer writer = new FileWriter(file)) {
             writer.write("# This is the configuration file for Sodium.\n");
             writer.write("#\n");
@@ -246,9 +216,6 @@ public class SodiumConfig {
     }
 
     public int getOptionOverrideCount() {
-        return (int) this.options.values()
-                .stream()
-                .filter(Option::isOverridden)
-                .count();
+        return (int) this.options.values().stream().filter(Option::isOverridden).count();
     }
 }

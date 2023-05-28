@@ -8,7 +8,6 @@ import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializer;
 import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -17,13 +16,13 @@ import java.nio.file.Path;
 import java.util.concurrent.locks.StampedLock;
 
 public class VertexSerializerRegistryImpl implements VertexSerializerRegistry {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(VertexSerializerRegistryImpl.class);
 
     private static final Path CLASS_DUMP_PATH;
 
     static {
         var classDumpPath = System.getProperty("sodium.codegen.dump", null);
-
         if (classDumpPath != null) {
             CLASS_DUMP_PATH = Path.of(classDumpPath);
         } else {
@@ -32,36 +31,32 @@ public class VertexSerializerRegistryImpl implements VertexSerializerRegistry {
     }
 
     private final Long2ReferenceMap<VertexSerializer> cache = new Long2ReferenceOpenHashMap<>();
+
     private final StampedLock lock = new StampedLock();
 
     @Override
     public VertexSerializer get(VertexFormatDescription srcFormat, VertexFormatDescription dstFormat) {
         var identifier = createKey(srcFormat, dstFormat);
         var serializer = this.find(identifier);
-
         if (serializer == null) {
             serializer = this.create(identifier, srcFormat, dstFormat);
         }
-
         return serializer;
     }
 
     private VertexSerializer create(long identifier, VertexFormatDescription srcFormat, VertexFormatDescription dstFormat) {
         var serializer = createSerializer(srcFormat, dstFormat);
         var stamp = this.lock.writeLock();
-
         try {
             this.cache.put(identifier, serializer);
         } finally {
             this.lock.unlockWrite(stamp);
         }
-
         return serializer;
     }
 
     private VertexSerializer find(long identifier) {
         var stamp = this.lock.readLock();
-
         try {
             return this.cache.get(identifier);
         } finally {
@@ -71,44 +66,34 @@ public class VertexSerializerRegistryImpl implements VertexSerializerRegistry {
 
     private static VertexSerializer createSerializer(VertexFormatDescription srcVertexFormat, VertexFormatDescription dstVertexFormat) {
         var identifier = String.format("%04X$%04X", srcVertexFormat.id(), dstVertexFormat.id());
-
         var bytecode = VertexSerializerFactory.generate(srcVertexFormat, dstVertexFormat, identifier);
-
         if (CLASS_DUMP_PATH != null) {
             dumpClass(identifier, bytecode);
         }
-
         Class<?> clazz = VertexSerializerFactory.define(bytecode);
         Constructor<?> constructor;
-
         try {
             constructor = clazz.getConstructor();
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("Failed to find constructor of generated class", e);
         }
-
         Object instance;
-
         try {
             instance = constructor.newInstance();
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException("Failed to instantiate generated class", e);
         }
-
         VertexSerializer serializer;
-
         try {
             serializer = (VertexSerializer) instance;
         } catch (ClassCastException e) {
             throw new RuntimeException("Failed to cast generated class to interface type", e);
         }
-
         return serializer;
     }
 
     private static void dumpClass(String id, VertexSerializerFactory.Bytecode bytecode) {
         var path = CLASS_DUMP_PATH.resolve("VertexSerializer$Impl$%s.class".formatted(id));
-
         try {
             Files.write(path, bytecode.copy());
         } catch (IOException e) {

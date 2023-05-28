@@ -5,6 +5,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 
 public class MinecraftOptionsStorage implements OptionStorage<GameOptions> {
+
     private final MinecraftClient client;
 
     public MinecraftOptionsStorage() {
@@ -19,7 +20,6 @@ public class MinecraftOptionsStorage implements OptionStorage<GameOptions> {
     @Override
     public void save() {
         this.getData().write();
-
         SodiumClientMod.logger().info("Flushed changes to Minecraft configuration");
     }
 }

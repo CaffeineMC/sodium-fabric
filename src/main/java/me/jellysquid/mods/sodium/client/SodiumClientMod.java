@@ -8,28 +8,22 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 
 public class SodiumClientMod implements ClientModInitializer {
+
     private static SodiumGameOptions CONFIG;
+
     private static Logger LOGGER;
 
     private static String MOD_VERSION;
 
     @Override
     public void onInitializeClient() {
-        ModContainer mod = FabricLoader.getInstance()
-                .getModContainer("sodium")
-                .orElseThrow(NullPointerException::new);
-
-        MOD_VERSION = mod.getMetadata()
-                .getVersion()
-                .getFriendlyString();
-
+        ModContainer mod = FabricLoader.getInstance().getModContainer("sodium").orElseThrow(NullPointerException::new);
+        MOD_VERSION = mod.getMetadata().getVersion().getFriendlyString();
         LOGGER = LoggerFactory.getLogger("Sodium");
         CONFIG = loadConfig();
-
         FlawlessFrames.onClientInitialization();
     }
 
@@ -37,7 +31,6 @@ public class SodiumClientMod implements ClientModInitializer {
         if (CONFIG == null) {
             throw new IllegalStateException("Config not yet available");
         }
-
         return CONFIG;
     }
 
@@ -45,7 +38,6 @@ public class SodiumClientMod implements ClientModInitializer {
         if (LOGGER == null) {
             throw new IllegalStateException("Logger not yet available");
         }
-
         return LOGGER;
     }
 
@@ -55,17 +47,14 @@ public class SodiumClientMod implements ClientModInitializer {
         } catch (Exception e) {
             LOGGER.error("Failed to load configuration file", e);
             LOGGER.error("Using default configuration file in read-only mode");
-
             var config = new SodiumGameOptions();
             config.setReadOnly();
-
             return config;
         }
     }
 
     public static void restoreDefaultOptions() {
         CONFIG = SodiumGameOptions.defaults();
-
         try {
             CONFIG.writeChanges();
         } catch (IOException e) {
@@ -77,7 +66,6 @@ public class SodiumClientMod implements ClientModInitializer {
         if (MOD_VERSION == null) {
             throw new NullPointerException("Mod version hasn't been populated yet");
         }
-
         return MOD_VERSION;
     }
 }

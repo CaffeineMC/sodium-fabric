@@ -10,24 +10,24 @@ import net.minecraft.client.render.block.BlockModels;
 import net.minecraft.world.World;
 
 public class BlockRenderCache {
+
     private final ArrayLightDataCache lightDataCache;
 
     private final BlockRenderer blockRenderer;
+
     private final FluidRenderer fluidRenderer;
 
     private final BlockModels blockModels;
+
     private final WorldSlice worldSlice;
 
     public BlockRenderCache(MinecraftClient client, World world) {
         this.worldSlice = new WorldSlice(world);
         this.lightDataCache = new ArrayLightDataCache(this.worldSlice);
-
         LightPipelineProvider lightPipelineProvider = new LightPipelineProvider(this.lightDataCache);
         BiomeColorBlender biomeColorBlender = createBiomeColorBlender();
-
         this.blockRenderer = new BlockRenderer(client, lightPipelineProvider, biomeColorBlender);
         this.fluidRenderer = new FluidRenderer(lightPipelineProvider, biomeColorBlender);
-
         this.blockModels = client.getBakedModelManager().getBlockModels();
     }
 

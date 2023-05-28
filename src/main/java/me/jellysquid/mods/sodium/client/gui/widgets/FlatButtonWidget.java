@@ -6,11 +6,15 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 
 public class FlatButtonWidget extends AbstractWidget implements Drawable {
+
     private final Dim2i dim;
+
     private final Runnable action;
 
     private boolean selected;
+
     private boolean enabled = true;
+
     private boolean visible = true;
 
     private Text label;
@@ -26,17 +30,12 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
         if (!this.visible) {
             return;
         }
-
         boolean hovered = this.dim.containsCursor(mouseX, mouseY);
-
         int backgroundColor = this.enabled ? (hovered ? 0xE0000000 : 0x90000000) : 0x60000000;
         int textColor = this.enabled ? 0xFFFFFFFF : 0x90FFFFFF;
-
         int strWidth = this.font.getWidth(this.label);
-
         this.drawRect(this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), backgroundColor);
         this.drawString(matrixStack, this.label, this.dim.getCenterX() - (strWidth / 2), this.dim.getCenterY() - 4, textColor);
-
         if (this.enabled && this.selected) {
             this.drawRect(this.dim.x(), this.dim.getLimitY() - 1, this.dim.getLimitX(), this.dim.getLimitY(), 0xFF94E4D3);
         }
@@ -51,14 +50,11 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
         if (!this.enabled || !this.visible) {
             return false;
         }
-
         if (button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
             this.action.run();
             this.playClickSound();
-
             return true;
         }
-
         return false;
     }
 

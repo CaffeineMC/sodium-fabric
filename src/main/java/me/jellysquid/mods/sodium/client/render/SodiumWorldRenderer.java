@@ -26,7 +26,6 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.*;
 import net.minecraft.util.profiler.Profiler;
-
 import java.util.Collection;
 import java.util.Set;
 import java.util.SortedSet;
@@ -35,13 +34,17 @@ import java.util.SortedSet;
  * Provides an extension to vanilla's {@link WorldRenderer}.
  */
 public class SodiumWorldRenderer {
+
     private final MinecraftClient client;
 
     private ClientWorld world;
+
     private int renderDistance;
 
     private double lastCameraX, lastCameraY, lastCameraZ;
+
     private double lastCameraPitch, lastCameraYaw;
+
     private float lastFogDistance;
 
     private boolean useEntityCulling;
@@ -49,6 +52,7 @@ public class SodiumWorldRenderer {
     private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
     private RenderSectionManager renderSectionManager;
+
     private ChunkTracker chunkTracker;
 
     /**
@@ -56,11 +60,9 @@ public class SodiumWorldRenderer {
      */
     public static SodiumWorldRenderer instance() {
         var instance = instanceNullable();
-
         if (instance == null) {
             throw new IllegalStateException("No renderer attached to active world");
         }
-
         return instance;
     }
 
@@ -69,11 +71,9 @@ public class SodiumWorldRenderer {
      */
     public static SodiumWorldRenderer instanceNullable() {
         var world = MinecraftClient.getInstance().worldRenderer;
-
         if (world instanceof WorldRendererExtended) {
             return ((WorldRendererExtended) world).getSodiumWorldRenderer();
         }
-
         return null;
     }
 
@@ -86,12 +86,10 @@ public class SodiumWorldRenderer {
         if (this.world == world) {
             return;
         }
-
         // If we have a world is already loaded, unload the renderer
         if (this.world != null) {
             this.unloadWorld();
         }
-
         // If we're loading a new world, load the renderer
         if (world != null) {
             this.loadWorld(world);
@@ -101,7 +99,6 @@ public class SodiumWorldRenderer {
     private void loadWorld(ClientWorld world) {
         this.world = world;
         this.chunkTracker = new ChunkTracker();
-
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.initRenderer(commandList);
         }
@@ -112,9 +109,7 @@ public class SodiumWorldRenderer {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
         }
-
         this.globalBlockEntities.clear();
-
         this.chunkTracker = null;
         this.world = null;
     }
@@ -148,58 +143,40 @@ public class SodiumWorldRenderer {
      */
     public void updateChunks(Camera camera, Frustum frustum, @Deprecated(forRemoval = true) int frame, boolean spectator) {
         NativeBuffer.reclaim(false);
-
         this.useEntityCulling = SodiumClientMod.options().performance.useEntityCulling;
-
         if (this.client.options.getClampedViewDistance() != this.renderDistance) {
             this.reload();
         }
-
         Profiler profiler = this.client.getProfiler();
         profiler.push("camera_setup");
-
         ClientPlayerEntity player = this.client.player;
-
         if (player == null) {
             throw new IllegalStateException("Client instance has no active player entity");
         }
-
         Vec3d pos = camera.getPos();
         float pitch = camera.getPitch();
         float yaw = camera.getYaw();
         float fogDistance = RenderSystem.getShaderFogEnd();
-
-        boolean dirty = pos.x != this.lastCameraX || pos.y != this.lastCameraY || pos.z != this.lastCameraZ ||
-                pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
-
+        boolean dirty = pos.x != this.lastCameraX || pos.y != this.lastCameraY || pos.z != this.lastCameraZ || pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
         if (dirty) {
             this.renderSectionManager.markGraphDirty();
         }
-
         this.lastCameraX = pos.x;
         this.lastCameraY = pos.y;
         this.lastCameraZ = pos.z;
         this.lastCameraPitch = pitch;
         this.lastCameraYaw = yaw;
         this.lastFogDistance = fogDistance;
-
         profiler.swap("chunk_update");
-
         this.chunkTracker.update();
         this.renderSectionManager.updateChunks();
-
         if (this.renderSectionManager.isGraphDirty()) {
             profiler.swap("chunk_graph_rebuild");
-
             this.renderSectionManager.update(camera, frustum, frame, spectator);
         }
-
         profiler.swap("visible_chunk_tick");
-
         this.renderSectionManager.tickVisibleRenders();
-
         profiler.pop();
-
         Entity.setRenderDistanceMultiplier(MathHelper.clamp((double) this.client.options.getClampedViewDistance() / 8.0D, 1.0D, 2.5D) * this.client.options.getEntityDistanceScaling().getValue());
     }
 
@@ -208,7 +185,6 @@ public class SodiumWorldRenderer {
      */
     public void drawChunkLayer(RenderLayer renderLayer, MatrixStack matrixStack, double x, double y, double z) {
         ChunkRenderMatrices matrices = ChunkRenderMatrices.from(matrixStack);
-
         if (renderLayer == RenderLayer.getSolid()) {
             this.renderSectionManager.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, x, y, z);
             this.renderSectionManager.renderLayer(matrices, DefaultTerrainRenderPasses.CUTOUT, x, y, z);
@@ -221,7 +197,6 @@ public class SodiumWorldRenderer {
         if (this.world == null) {
             return;
         }
-
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.initRenderer(commandList);
         }
@@ -232,57 +207,40 @@ public class SodiumWorldRenderer {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
         }
-
         this.renderDistance = this.client.options.getClampedViewDistance();
-
         this.renderSectionManager = new RenderSectionManager(this, this.world, this.renderDistance, commandList);
         this.renderSectionManager.reloadChunks(this.chunkTracker);
     }
 
-    public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
-                                   Camera camera, float tickDelta) {
+    public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions, Camera camera, float tickDelta) {
         VertexConsumerProvider.Immediate immediate = bufferBuilders.getEntityVertexConsumers();
-
         Vec3d cameraPos = camera.getPos();
         double x = cameraPos.getX();
         double y = cameraPos.getY();
         double z = cameraPos.getZ();
-
         BlockEntityRenderDispatcher blockEntityRenderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
-
         for (BlockEntity blockEntity : this.renderSectionManager.getVisibleBlockEntities()) {
             BlockPos pos = blockEntity.getPos();
-
             matrices.push();
             matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
-
             VertexConsumerProvider consumer = immediate;
             SortedSet<BlockBreakingInfo> breakingInfos = blockBreakingProgressions.get(pos.asLong());
-
             if (breakingInfos != null && !breakingInfos.isEmpty()) {
                 int stage = breakingInfos.last().getStage();
-
                 if (stage >= 0) {
                     MatrixStack.Entry entry = matrices.peek();
                     VertexConsumer transformer = new OverlayVertexConsumer(bufferBuilders.getEffectVertexConsumers().getBuffer(ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.get(stage)), entry.getPositionMatrix(), entry.getNormalMatrix(), 1.0f);
                     consumer = (layer) -> layer.hasCrumbling() ? VertexConsumers.union(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
                 }
             }
-
-
             blockEntityRenderer.render(blockEntity, tickDelta, matrices, consumer);
-
             matrices.pop();
         }
-
         for (BlockEntity blockEntity : this.globalBlockEntities) {
             BlockPos pos = blockEntity.getPos();
-
             matrices.push();
             matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
-
             blockEntityRenderer.render(blockEntity, tickDelta, matrices, immediate);
-
             matrices.pop();
         }
     }
@@ -305,7 +263,6 @@ public class SodiumWorldRenderer {
 
     public void onChunkRenderUpdated(int x, int y, int z, ChunkRenderData meshBefore, ChunkRenderData meshAfter) {
         ListUtil.updateList(this.globalBlockEntities, meshBefore.getGlobalBlockEntities(), meshAfter.getGlobalBlockEntities());
-
         this.renderSectionManager.onChunkRenderUpdates(x, y, z, meshAfter);
     }
 
@@ -317,14 +274,11 @@ public class SodiumWorldRenderer {
         if (!this.useEntityCulling) {
             return true;
         }
-
         // Ensure entities with outlines or nametags are always visible
         if (this.client.hasOutline(entity) || entity.shouldRenderName()) {
             return true;
         }
-
         Box box = entity.getVisibilityBoundingBox();
-
         return this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
     }
 
@@ -338,15 +292,12 @@ public class SodiumWorldRenderer {
         if (y2 < this.world.getBottomY() + 0.5D || y1 > this.world.getTopY() - 0.5D) {
             return true;
         }
-
         int minX = ChunkSectionPos.getSectionCoord(x1 - 0.5D);
         int minY = ChunkSectionPos.getSectionCoord(y1 - 0.5D);
         int minZ = ChunkSectionPos.getSectionCoord(z1 - 0.5D);
-
         int maxX = ChunkSectionPos.getSectionCoord(x2 + 0.5D);
         int maxY = ChunkSectionPos.getSectionCoord(y2 + 0.5D);
         int maxZ = ChunkSectionPos.getSectionCoord(z2 + 0.5D);
-
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
                 for (int y = minY; y <= maxY; y++) {
@@ -356,7 +307,6 @@ public class SodiumWorldRenderer {
                 }
             }
         }
-
         return false;
     }
 

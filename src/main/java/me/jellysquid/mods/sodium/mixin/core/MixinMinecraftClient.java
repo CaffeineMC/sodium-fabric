@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MinecraftClient.class)
 public class MixinMinecraftClient {
+
     private final LongArrayFIFOQueue fences = new LongArrayFIFOQueue();
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -35,11 +36,9 @@ public class MixinMinecraftClient {
     @Inject(method = "render", at = @At("RETURN"))
     private void postRender(boolean tick, CallbackInfo ci) {
         var fence = GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-
         if (fence == 0) {
             throw new RuntimeException("Failed to create fence object");
         }
-
         this.fences.enqueue(fence);
     }
 }

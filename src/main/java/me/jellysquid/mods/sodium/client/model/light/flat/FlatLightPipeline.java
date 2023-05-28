@@ -10,7 +10,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.block.BlockState;
 import net.minecraft.world.BlockRenderView;
-
 import java.util.Arrays;
 
 /**
@@ -18,6 +17,7 @@ import java.util.Arrays;
  * block to a face.
  */
 public class FlatLightPipeline implements LightPipeline {
+
     /**
      * The cache which light data will be accessed from.
      */
@@ -30,7 +30,6 @@ public class FlatLightPipeline implements LightPipeline {
     @Override
     public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade) {
         int lightmap;
-
         // To match vanilla behavior, use the cull face if it exists/is available
         if (cullFace != null) {
             lightmap = getOffsetLightmap(pos, cullFace);
@@ -44,7 +43,6 @@ public class FlatLightPipeline implements LightPipeline {
                 lightmap = LightDataAccess.unpackLM(this.lightCache.get(pos));
             }
         }
-
         Arrays.fill(out.lm, lightmap);
         Arrays.fill(out.br, this.lightCache.getWorld().getBrightness(lightFace, shade));
     }

@@ -8,6 +8,7 @@ import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 public class BlockRenderContext {
+
     private final BlockRenderView world;
 
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
@@ -15,6 +16,7 @@ public class BlockRenderContext {
     private final Vector3f origin = new Vector3f();
 
     private BlockState state;
+
     private BakedModel model;
 
     private long seed;
@@ -26,10 +28,8 @@ public class BlockRenderContext {
     public void update(BlockPos pos, BlockPos origin, BlockState state, BakedModel model, long seed) {
         this.pos.set(pos);
         this.origin.set(origin.getX(), origin.getY(), origin.getZ());
-
         this.state = state;
         this.model = model;
-
         this.seed = seed;
     }
 

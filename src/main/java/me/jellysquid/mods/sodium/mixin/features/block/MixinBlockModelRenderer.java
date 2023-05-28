@@ -19,11 +19,11 @@ import net.minecraft.util.math.random.Random;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
-
 import java.util.List;
 
 @Mixin(BlockModelRenderer.class)
 public class MixinBlockModelRenderer {
+
     private final Random random = new LocalRandom(42L);
 
     /**
@@ -33,28 +33,21 @@ public class MixinBlockModelRenderer {
     @Overwrite
     public void render(MatrixStack.Entry entry, VertexConsumer vertexConsumer, BlockState blockState, BakedModel bakedModel, float red, float green, float blue, int light, int overlay) {
         var writer = VertexBufferWriter.of(vertexConsumer);
-
         Random random = this.random;
-
         // Clamp color ranges
         red = MathHelper.clamp(red, 0.0F, 1.0F);
         green = MathHelper.clamp(green, 0.0F, 1.0F);
         blue = MathHelper.clamp(blue, 0.0F, 1.0F);
-
         int defaultColor = ColorABGR.pack(red, green, blue, 1.0F);
-
         for (Direction direction : DirectionUtil.ALL_DIRECTIONS) {
             random.setSeed(42L);
             List<BakedQuad> quads = bakedModel.getQuads(blockState, direction, random);
-
             if (!quads.isEmpty()) {
                 renderQuads(entry, writer, defaultColor, quads, light, overlay);
             }
         }
-
         random.setSeed(42L);
         List<BakedQuad> quads = bakedModel.getQuads(blockState, null, random);
-
         if (!quads.isEmpty()) {
             renderQuads(entry, writer, defaultColor, quads, light, overlay);
         }
@@ -66,11 +59,8 @@ public class MixinBlockModelRenderer {
         for (int i = 0; i < quads.size(); i++) {
             BakedQuad bakedQuad = quads.get(i);
             BakedQuadView quad = (BakedQuadView) bakedQuad;
-
             int color = quad.hasColor() ? defaultColor : 0xFFFFFFFF;
-
             BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);
-
             SpriteUtil.markSpriteActive(quad.getSprite());
         }
     }

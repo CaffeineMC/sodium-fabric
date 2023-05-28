@@ -30,30 +30,43 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL30C;
 import org.lwjgl.system.MemoryStack;
-
 import java.io.IOException;
 import java.io.InputStream;
 
 public class CloudRenderer {
+
     private static final Identifier CLOUDS_TEXTURE_ID = new Identifier("textures/environment/clouds.png");
 
     private static final int CLOUD_COLOR_NEG_Y = ColorABGR.pack(0.7F, 0.7F, 0.7F, 1.0f);
+
     private static final int CLOUD_COLOR_POS_Y = ColorABGR.pack(1.0f, 1.0f, 1.0f, 1.0f);
+
     private static final int CLOUD_COLOR_NEG_X = ColorABGR.pack(0.9F, 0.9F, 0.9F, 1.0f);
+
     private static final int CLOUD_COLOR_POS_X = ColorABGR.pack(0.9F, 0.9F, 0.9F, 1.0f);
+
     private static final int CLOUD_COLOR_NEG_Z = ColorABGR.pack(0.8F, 0.8F, 0.8F, 1.0f);
+
     private static final int CLOUD_COLOR_POS_Z = ColorABGR.pack(0.8F, 0.8F, 0.8F, 1.0f);
 
     private static final int DIR_NEG_Y = 1 << 0;
+
     private static final int DIR_POS_Y = 1 << 1;
+
     private static final int DIR_NEG_X = 1 << 2;
+
     private static final int DIR_POS_X = 1 << 3;
+
     private static final int DIR_NEG_Z = 1 << 4;
+
     private static final int DIR_POS_Z = 1 << 5;
 
     private VertexBuffer vertexBuffer;
+
     private CloudEdges edges;
+
     private ShaderProgram clouds;
+
     private final BackgroundRenderer.FogData fogData = new BackgroundRenderer.FogData(BackgroundRenderer.FogType.FOG_TERRAIN);
 
     private int prevCenterCellX, prevCenterCellY, cachedRenderDistance;
@@ -66,82 +79,56 @@ public class CloudRenderer {
         if (world == null) {
             return;
         }
-
         Vec3d color = world.getCloudsColor(tickDelta);
-
         float cloudHeight = world.getDimensionEffects().getCloudsHeight();
-
         double cloudTime = (ticks + tickDelta) * 0.03F;
         double cloudCenterX = (cameraX + cloudTime);
         double cloudCenterZ = (cameraZ) + 0.33D;
-
         int renderDistance = MinecraftClient.getInstance().options.getClampedViewDistance();
         int cloudDistance = Math.max(32, (renderDistance * 2) + 9);
-
         int centerCellX = (int) (Math.floor(cloudCenterX / 12));
         int centerCellZ = (int) (Math.floor(cloudCenterZ / 12));
-
         if (this.vertexBuffer == null || this.prevCenterCellX != centerCellX || this.prevCenterCellY != centerCellZ || this.cachedRenderDistance != renderDistance) {
             BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
             bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-
             this.rebuildGeometry(bufferBuilder, cloudDistance, centerCellX, centerCellZ);
-
             if (this.vertexBuffer == null) {
                 this.vertexBuffer = new VertexBuffer();
             }
-
             this.vertexBuffer.bind();
             this.vertexBuffer.upload(bufferBuilder.end());
-
             VertexBuffer.unbind();
-
             this.prevCenterCellX = centerCellX;
             this.prevCenterCellY = centerCellZ;
             this.cachedRenderDistance = renderDistance;
         }
-
         float previousEnd = RenderSystem.getShaderFogEnd();
         float previousStart = RenderSystem.getShaderFogStart();
         this.fogData.fogEnd = cloudDistance * 8;
         this.fogData.fogStart = (cloudDistance * 8) - 16;
-
         applyFogModifiers(world, this.fogData, player, cloudDistance * 8, tickDelta);
-
-
         RenderSystem.setShaderFogEnd(this.fogData.fogEnd);
         RenderSystem.setShaderFogStart(this.fogData.fogStart);
-
         float translateX = (float) (cloudCenterX - (centerCellX * 12));
         float translateZ = (float) (cloudCenterZ - (centerCellZ * 12));
-
         RenderSystem.enableDepthTest();
-
         this.vertexBuffer.bind();
-
         boolean insideClouds = cameraY < cloudHeight + 4.5f && cameraY > cloudHeight - 0.5f;
-
         if (insideClouds) {
             RenderSystem.disableCull();
         } else {
             RenderSystem.enableCull();
         }
-
         RenderSystem.disableTexture();
         RenderSystem.setShaderColor((float) color.x, (float) color.y, (float) color.z, 0.8f);
-
         matrices.push();
-
         Matrix4f modelViewMatrix = matrices.peek().getPositionMatrix();
         modelViewMatrix.translate(-translateX, cloudHeight - (float) cameraY + 0.33F, -translateZ);
-
         // PASS 1: Set up depth buffer
         RenderSystem.disableBlend();
         RenderSystem.depthMask(true);
         RenderSystem.colorMask(false, false, false, false);
-
         this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.clouds);
-
         // PASS 2: Render geometry
         RenderSystem.enableBlend();
         RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
@@ -149,18 +136,12 @@ public class CloudRenderer {
         RenderSystem.enableDepthTest();
         RenderSystem.depthFunc(GL30C.GL_EQUAL);
         RenderSystem.colorMask(true, true, true, true);
-
         this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.clouds);
-
         matrices.pop();
-
         VertexBuffer.unbind();
-
         RenderSystem.disableBlend();
         RenderSystem.depthFunc(GL30C.GL_LEQUAL);
-
         RenderSystem.enableCull();
-
         RenderSystem.setShaderFogEnd(previousEnd);
         RenderSystem.setShaderFogStart(previousStart);
     }
@@ -169,7 +150,6 @@ public class CloudRenderer {
         if (MinecraftClient.getInstance().gameRenderer == null || MinecraftClient.getInstance().gameRenderer.getCamera() == null) {
             return;
         }
-
         Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
         CameraSubmersionType cameraSubmersionType = camera.getSubmersionType();
         if (cameraSubmersionType == CameraSubmersionType.LAVA) {
@@ -203,7 +183,6 @@ public class CloudRenderer {
             fogData.fogStart = (cloudDistance) * 0.05f;
             fogData.fogEnd = Math.min((cloudDistance), 192.0f) * 0.5f;
         }
-
         BackgroundRenderer.StatusEffectFogModifier fogModifier = BackgroundRenderer.getFogModifier(player, tickDelta);
         if (fogModifier != null) {
             StatusEffectInstance statusEffectInstance = player.getStatusEffect(fogModifier.getStatusEffect());
@@ -215,98 +194,73 @@ public class CloudRenderer {
 
     private void rebuildGeometry(BufferBuilder bufferBuilder, int cloudDistance, int centerCellX, int centerCellZ) {
         var writer = VertexBufferWriter.of(bufferBuilder);
-
         for (int offsetX = -cloudDistance; offsetX < cloudDistance; offsetX++) {
             for (int offsetZ = -cloudDistance; offsetZ < cloudDistance; offsetZ++) {
                 int connectedEdges = this.edges.getEdges(centerCellX + offsetX, centerCellZ + offsetZ);
-
                 if (connectedEdges == 0) {
                     continue;
                 }
-
                 int texel = this.edges.getColor(centerCellX + offsetX, centerCellZ + offsetZ);
-
                 float x = offsetX * 12;
                 float z = offsetZ * 12;
-
                 try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
                     final long buffer = stack.nmalloc(6 * 4 * ColorVertex.STRIDE);
-
                     long ptr = buffer;
                     int count = 0;
-
                     // -Y
                     if ((connectedEdges & DIR_NEG_Y) != 0) {
                         int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Y);
-
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
-
                         count += 4;
                     }
-
                     // +Y
                     if ((connectedEdges & DIR_POS_Y) != 0) {
                         int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Y);
-
                         ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
-
                         count += 4;
                     }
-
                     // -X
                     if ((connectedEdges & DIR_NEG_X) != 0) {
                         int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_X);
-
                         ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
-
                         count += 4;
                     }
-
                     // +X
                     if ((connectedEdges & DIR_POS_X) != 0) {
                         int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_X);
-
                         ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
-
                         count += 4;
                     }
-
                     // -Z
                     if ((connectedEdges & DIR_NEG_Z) != 0) {
                         int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_NEG_Z);
-
                         ptr = writeVertex(ptr, x + 12, 4.0f, z + 0.0f, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 0.0f, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 0.0f, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 0.0f, mixedColor);
-
                         count += 4;
                     }
-
                     // +Z
                     if ((connectedEdges & DIR_POS_Z) != 0) {
                         int mixedColor = ColorMixer.mul(texel, CLOUD_COLOR_POS_Z);
-
                         ptr = writeVertex(ptr, x + 12, 0.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 12, 4.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 4.0f, z + 12, mixedColor);
                         ptr = writeVertex(ptr, x + 0.0f, 0.0f, z + 12, mixedColor);
-
                         count += 4;
                     }
-
                     if (count > 0) {
                         writer.push(stack, buffer, count, ColorVertex.FORMAT);
                     }
@@ -322,17 +276,14 @@ public class CloudRenderer {
 
     public void reloadTextures(ResourceFactory factory) {
         this.edges = createCloudEdges();
-
         if (this.clouds != null) {
             this.clouds.close();
         }
-
         try {
             this.clouds = new ShaderProgram(factory, "clouds", VertexFormats.POSITION_COLOR);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
         if (this.vertexBuffer != null) {
             this.vertexBuffer.close();
             this.vertexBuffer = null;
@@ -341,7 +292,6 @@ public class CloudRenderer {
 
     public void destroy() {
         this.clouds.close();
-
         if (this.vertexBuffer != null) {
             this.vertexBuffer.close();
             this.vertexBuffer = null;
@@ -350,77 +300,60 @@ public class CloudRenderer {
 
     private static CloudEdges createCloudEdges() {
         NativeImage nativeImage;
-
         ResourceManager resourceManager = MinecraftClient.getInstance().getResourceManager();
-        Resource resource = resourceManager.getResource(CLOUDS_TEXTURE_ID)
-                .orElseThrow();
-
-        try (InputStream inputStream = resource.getInputStream()){
+        Resource resource = resourceManager.getResource(CLOUDS_TEXTURE_ID).orElseThrow();
+        try (InputStream inputStream = resource.getInputStream()) {
             nativeImage = NativeImage.read(inputStream);
         } catch (IOException ex) {
             throw new RuntimeException("Failed to load texture data", ex);
         }
-
         CloudEdges cloudEdges = new CloudEdges(nativeImage);
         nativeImage.close();
         return cloudEdges;
     }
 
     private static class CloudEdges {
+
         private final byte[] edges;
+
         private final int[] colors;
+
         private final int width, height;
 
         public CloudEdges(NativeImage texture) {
             int width = texture.getWidth();
             int height = texture.getHeight();
-
             Validate.isTrue(MathUtil.isPowerOfTwo(width), "Texture width must be power-of-two");
             Validate.isTrue(MathUtil.isPowerOfTwo(height), "Texture height must be power-of-two");
-
             this.edges = new byte[width * height];
             this.colors = new int[width * height];
-
             this.width = width;
             this.height = height;
-
             for (int x = 0; x < width; x++) {
                 for (int z = 0; z < height; z++) {
                     int index = index(x, z, width, height);
                     int cell = texture.getColor(x, z);
-
                     this.colors[index] = cell;
-
                     int edges = 0;
-
                     if (isOpaqueCell(cell)) {
                         edges |= DIR_NEG_Y | DIR_POS_Y;
-
                         int negX = texture.getColor(wrap(x - 1, width), wrap(z, height));
-
                         if (cell != negX) {
                             edges |= DIR_NEG_X;
                         }
-
                         int posX = texture.getColor(wrap(x + 1, width), wrap(z, height));
-
                         if (!isOpaqueCell(posX) && cell != posX) {
                             edges |= DIR_POS_X;
                         }
-
                         int negZ = texture.getColor(wrap(x, width), wrap(z - 1, height));
-
                         if (cell != negZ) {
                             edges |= DIR_NEG_Z;
                         }
-
                         int posZ = texture.getColor(wrap(x, width), wrap(z + 1, height));
-
                         if (!isOpaqueCell(posZ) && cell != posZ) {
                             edges |= DIR_POS_Z;
                         }
                     }
-
                     this.edges[index] = (byte) edges;
                 }
             }

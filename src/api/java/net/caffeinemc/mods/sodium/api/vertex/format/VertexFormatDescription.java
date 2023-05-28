@@ -1,10 +1,10 @@
 package net.caffeinemc.mods.sodium.api.vertex.format;
 
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
-
 import java.util.NoSuchElementException;
 
 public interface VertexFormatDescription {
+
     /**
      * @param element The type of the element to query
      * @return True if the vertex format contains the generic element, otherwise false

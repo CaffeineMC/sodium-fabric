@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import net.minecraft.client.texture.Sprite;
 
 public class BakedChunkModelBuilder implements ChunkModelBuilder {
+
     private final ChunkMeshBufferBuilder[] vertexBuffers;
 
     private ChunkRenderData.Builder renderData;
@@ -32,7 +33,6 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
 
     public void begin(ChunkRenderData.Builder renderData, int chunkId) {
         this.renderData = renderData;
-
         for (var vertexBuffer : this.vertexBuffers) {
             vertexBuffer.start(chunkId);
         }

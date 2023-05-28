@@ -4,11 +4,11 @@ import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 
 public class GlVertexArrayTessellation extends GlAbstractTessellation {
+
     private final GlVertexArray array;
 
     public GlVertexArrayTessellation(GlVertexArray array, GlPrimitiveType primitiveType, TessellationBinding[] bindings) {
         super(primitiveType, bindings);
-
         this.array = array;
     }
 

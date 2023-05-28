@@ -6,10 +6,13 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class Option {
+
     private final String name;
 
     private Set<String> modDefined = null;
+
     private boolean enabled;
+
     private boolean userDefined;
 
     public Option(String name, boolean enabled, boolean userDefined) {
@@ -25,11 +28,9 @@ public class Option {
 
     public void addModOverride(boolean enabled, String modId) {
         this.enabled = enabled;
-
         if (this.modDefined == null) {
             this.modDefined = new LinkedHashSet<>();
         }
-
         this.modDefined.add(modId);
     }
 

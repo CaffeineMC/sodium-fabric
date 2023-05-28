@@ -15,6 +15,7 @@ import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
  * on the main thread.
  */
 public abstract class ChunkRenderBuildTask {
+
     /**
      * Executes the given build task asynchronously from the calling thread. The implementation should be careful not
      * to access or modify global mutable state.

@@ -7,6 +7,7 @@ import net.minecraft.client.texture.Sprite;
  * Provides a mutable view to a model quad.
  */
 public interface ModelQuadViewMutable extends ModelQuadView {
+
     /**
      * Sets the x-position of the vertex at index {@param idx} to the value {@param x}
      */

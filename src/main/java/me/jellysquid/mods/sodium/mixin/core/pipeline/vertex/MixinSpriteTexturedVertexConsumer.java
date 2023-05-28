@@ -17,29 +17,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(SpriteTexturedVertexConsumer.class)
 public class MixinSpriteTexturedVertexConsumer implements VertexBufferWriter {
+
     @Shadow
     @Final
     private VertexConsumer delegate;
 
     private float minU, minV;
+
     private float maxU, maxV;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(VertexConsumer delegate, Sprite sprite, CallbackInfo ci) {
         this.minU = sprite.getMinU();
         this.minV = sprite.getMinV();
-
         this.maxU = sprite.getMaxU();
         this.maxV = sprite.getMaxV();
     }
 
     @Override
     public void push(MemoryStack stack, final long ptr, int count, VertexFormatDescription format) {
-        transform(ptr, count, format,
-                this.minU, this.minV, this.maxU, this.maxV);
-
-        VertexBufferWriter.of(this.delegate)
-                .push(stack, ptr, count, format);
+        transform(ptr, count, format, this.minU, this.minV, this.maxU, this.maxV);
+        VertexBufferWriter.of(this.delegate).push(stack, ptr, count, format);
     }
 
     /**
@@ -54,26 +52,20 @@ public class MixinSpriteTexturedVertexConsumer implements VertexBufferWriter {
      * @param maxU   The maximum X-coordinate of the sprite bounds
      * @param maxV   The maximum Y-coordinate of the sprite bounds
      */
-    private static void transform(long ptr, int count, VertexFormatDescription format,
-                                 float minU, float minV, float maxU, float maxV) {
+    private static void transform(long ptr, int count, VertexFormatDescription format, float minU, float minV, float maxU, float maxV) {
         long stride = format.stride();
         long offsetUV = format.getElementOffset(CommonVertexAttribute.TEXTURE);
-
         // The width/height of the sprite
         float w = maxU - minU;
         float h = maxV - minV;
-
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
             // The texture coordinates relative to the sprite bounds
             float u = TextureAttribute.getU(ptr + offsetUV);
             float v = TextureAttribute.getV(ptr + offsetUV);
-
             // The texture coordinates in absolute space on the sprite sheet
             float ut = minU + (w * u);
             float vt = minV + (h * v);
-
             TextureAttribute.put(ptr + offsetUV, ut, vt);
-
             ptr += stride;
         }
     }

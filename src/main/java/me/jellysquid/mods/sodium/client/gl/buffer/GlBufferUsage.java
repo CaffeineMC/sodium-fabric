@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gl.buffer;
 import org.lwjgl.opengl.GL20C;
 
 public enum GlBufferUsage {
+
     STREAM_DRAW(GL20C.GL_STREAM_DRAW),
     STREAM_READ(GL20C.GL_STREAM_READ),
     STREAM_COPY(GL20C.GL_STREAM_COPY),

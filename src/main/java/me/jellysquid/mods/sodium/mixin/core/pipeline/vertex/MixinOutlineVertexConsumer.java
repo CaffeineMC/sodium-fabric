@@ -14,17 +14,15 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(targets = "net/minecraft/client/render/OutlineVertexConsumerProvider$OutlineVertexConsumer")
 public abstract class MixinOutlineVertexConsumer extends FixedColorVertexConsumer implements VertexBufferWriter {
+
     @Shadow
     @Final
     private VertexConsumer delegate;
 
     @Override
     public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
-        transform(ptr, count, format,
-                ColorABGR.pack(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha));
-
-        VertexBufferWriter.of(this.delegate)
-                .push(stack, ptr, count, format);
+        transform(ptr, count, format, ColorABGR.pack(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha));
+        VertexBufferWriter.of(this.delegate).push(stack, ptr, count, format);
     }
 
     /**
@@ -35,15 +33,12 @@ public abstract class MixinOutlineVertexConsumer extends FixedColorVertexConsume
      * @param format The format of the vertices
      * @param color  The packed color to use for transforming the vertices
      */
-    private static void transform(long ptr, int count, VertexFormatDescription format,
-                                  int color) {
+    private static void transform(long ptr, int count, VertexFormatDescription format, int color) {
         long stride = format.stride();
         long offsetColor = format.getElementOffset(CommonVertexAttribute.COLOR);
-
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
             ColorAttribute.set(ptr + offsetColor, color);
             ptr += stride;
         }
     }
-
 }

@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.api.vertex.attributes.common;
 import org.lwjgl.system.MemoryUtil;
 
 public class NormalAttribute {
+
     public static void set(long ptr, int normal) {
         MemoryUtil.memPutInt(ptr + 0, normal);
     }

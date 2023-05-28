@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemColors.class)
 public class MixinItemColors implements ItemColorsExtended {
+
     private Reference2ReferenceMap<ItemConvertible, ItemColorProvider> itemsToColor;
 
     @Inject(method = "<init>", at = @At("RETURN"))

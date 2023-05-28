@@ -24,7 +24,6 @@ import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.util.math.BlockPos;
-
 import java.util.Map;
 
 /**
@@ -35,8 +34,11 @@ import java.util.Map;
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
+
     private final RenderSection render;
+
     private final ChunkRenderContext renderContext;
+
     private final int frame;
 
     public ChunkRenderRebuildTask(RenderSection render, ChunkRenderContext renderContext, int frame) {
@@ -50,94 +52,67 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
         ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
-
         ChunkBuildBuffers buffers = buildContext.buffers;
         buffers.init(renderData, this.render.getChunkId());
-
         BlockRenderCache cache = buildContext.cache;
         cache.init(this.renderContext);
-
         WorldSlice slice = cache.getWorldSlice();
-
         int minX = this.render.getOriginX();
         int minY = this.render.getOriginY();
         int minZ = this.render.getOriginZ();
-
         int maxX = minX + 16;
         int maxY = minY + 16;
         int maxZ = minZ + 16;
-
         BlockPos.Mutable blockPos = new BlockPos.Mutable();
         BlockPos.Mutable modelOffset = new BlockPos.Mutable();
-
         BlockRenderContext context = new BlockRenderContext(slice);
-
         for (int y = minY; y < maxY; y++) {
             if (cancellationSource.isCancelled()) {
                 return null;
             }
-
             for (int z = minZ; z < maxZ; z++) {
                 for (int x = minX; x < maxX; x++) {
                     BlockState blockState = slice.getBlockState(x, y, z);
-
                     if (blockState.isAir()) {
                         continue;
                     }
-
                     blockPos.set(x, y, z);
                     modelOffset.set(x & 15, y & 15, z & 15);
-
                     if (blockState.getRenderType() == BlockRenderType.MODEL) {
-                        BakedModel model = cache.getBlockModels()
-                                .getModel(blockState);
-
+                        BakedModel model = cache.getBlockModels().getModel(blockState);
                         long seed = blockState.getRenderingSeed(blockPos);
-
                         context.update(blockPos, modelOffset, blockState, model, seed);
-                        cache.getBlockRenderer()
-                                .renderModel(context, buffers, bounds);
+                        cache.getBlockRenderer().renderModel(context, buffers, bounds);
                     }
-
                     FluidState fluidState = blockState.getFluidState();
-
                     if (!fluidState.isEmpty()) {
                         cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers, bounds);
                     }
-
                     if (blockState.hasBlockEntity()) {
                         BlockEntity entity = slice.getBlockEntity(blockPos);
-
                         if (entity != null) {
                             BlockEntityRenderer<BlockEntity> renderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher().get(entity);
-
                             if (renderer != null) {
                                 renderData.addBlockEntity(entity, !renderer.rendersOutsideBoundingBox(entity));
                             }
                         }
                     }
-
                     if (blockState.isOpaqueFullCube(slice, blockPos)) {
                         occluder.markClosed(blockPos);
                     }
                 }
             }
         }
-
         Map<TerrainRenderPass, ChunkMeshData> meshes = new Reference2ReferenceOpenHashMap<>();
-
         for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
             ChunkMeshData mesh = buffers.createMesh(pass);
-
             if (mesh != null) {
                 meshes.put(pass, mesh);
                 renderData.addRenderPass(pass);
             }
         }
-
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
-
         return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
     }
 

@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(PalettedContainer.class)
 public class MixinPalettedContainer<T> implements PalettedContainerAccessor<T> {
+
     @Shadow
     private PalettedContainer.Data<T> data;
 

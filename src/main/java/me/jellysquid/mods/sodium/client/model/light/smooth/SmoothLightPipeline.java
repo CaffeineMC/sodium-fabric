@@ -36,6 +36,7 @@ import net.minecraft.util.math.MathHelper;
  *   unnecessary computation
  */
 public class SmoothLightPipeline implements LightPipeline {
+
     /**
      * The cache which light data will be accessed from.
      */
@@ -58,7 +59,6 @@ public class SmoothLightPipeline implements LightPipeline {
 
     public SmoothLightPipeline(LightDataAccess cache) {
         this.lightCache = cache;
-
         for (int i = 0; i < this.cachedFaceData.length; i++) {
             this.cachedFaceData[i] = new AoFaceData();
         }
@@ -67,11 +67,8 @@ public class SmoothLightPipeline implements LightPipeline {
     @Override
     public void calculate(ModelQuadView quad, BlockPos pos, QuadLightData out, Direction cullFace, Direction lightFace, boolean shade) {
         this.updateCachedData(pos.asLong());
-
         int flags = quad.getFlags();
-
         final AoNeighborInfo neighborInfo = AoNeighborInfo.get(lightFace);
-
         // If the model quad is aligned to the block's face and covers it entirely, we can take a fast path and directly
         // map the corner values onto this quad's vertices. This covers most situations during rendering and provides
         // a modest speed-up.
@@ -87,7 +84,6 @@ public class SmoothLightPipeline implements LightPipeline {
         } else {
             this.applyNonParallelFace(neighborInfo, quad, pos, lightFace, out);
         }
-
         this.applySidedBrightness(out, lightFace, shade);
     }
 
@@ -112,7 +108,6 @@ public class SmoothLightPipeline implements LightPipeline {
             float cx = clamp(quad.getX(i));
             float cy = clamp(quad.getY(i));
             float cz = clamp(quad.getZ(i));
-
             float[] weights = this.weights;
             neighborInfo.calculateCornerWeights(cx, cy, cz, weights);
             this.applyAlignedPartialFaceVertex(pos, dir, weights, i, out, true);
@@ -132,12 +127,9 @@ public class SmoothLightPipeline implements LightPipeline {
             float cx = clamp(quad.getX(i));
             float cy = clamp(quad.getY(i));
             float cz = clamp(quad.getZ(i));
-
             float[] weights = this.weights;
             neighborInfo.calculateCornerWeights(cx, cy, cz, weights);
-
             float depth = neighborInfo.getDepth(cx, cy, cz);
-
             // If the quad is approximately grid-aligned (not inset) to the other side of the block, avoid unnecessary
             // computation by treating it is as aligned
             if (MathHelper.approximatelyEquals(depth, 1.0F)) {
@@ -159,12 +151,9 @@ public class SmoothLightPipeline implements LightPipeline {
             float cx = clamp(quad.getX(i));
             float cy = clamp(quad.getY(i));
             float cz = clamp(quad.getZ(i));
-
             float[] weights = this.weights;
             neighborInfo.calculateCornerWeights(cx, cy, cz, weights);
-
             float depth = neighborInfo.getDepth(cx, cy, cz);
-
             // If the quad is approximately grid-aligned (not inset), avoid unnecessary computation by treating it is as aligned
             if (MathHelper.approximatelyEquals(depth, 0.0F)) {
                 this.applyAlignedPartialFaceVertex(pos, dir, weights, i, out, true);
@@ -180,37 +169,29 @@ public class SmoothLightPipeline implements LightPipeline {
 
     private void applyAlignedPartialFaceVertex(BlockPos pos, Direction dir, float[] w, int i, QuadLightData out, boolean offset) {
         AoFaceData faceData = this.getCachedFaceData(pos, dir, offset);
-
         if (!faceData.hasUnpackedLightData()) {
             faceData.unpackLightData();
         }
-
         float sl = faceData.getBlendedSkyLight(w);
         float bl = faceData.getBlendedBlockLight(w);
         float ao = faceData.getBlendedShade(w);
-
         out.br[i] = ao;
         out.lm[i] = getLightMapCoord(sl, bl);
     }
 
     private void applyInsetPartialFaceVertex(BlockPos pos, Direction dir, float n1d, float n2d, float[] w, int i, QuadLightData out) {
         AoFaceData n1 = this.getCachedFaceData(pos, dir, false);
-
         if (!n1.hasUnpackedLightData()) {
             n1.unpackLightData();
         }
-
         AoFaceData n2 = this.getCachedFaceData(pos, dir, true);
-
         if (!n2.hasUnpackedLightData()) {
             n2.unpackLightData();
         }
-
         // Blend between the direct neighbors and above based on the passed weights
         float ao = (n1.getBlendedShade(w) * n1d) + (n2.getBlendedShade(w) * n2d);
         float sl = (n1.getBlendedSkyLight(w) * n1d) + (n2.getBlendedSkyLight(w) * n2d);
         float bl = (n1.getBlendedBlockLight(w) * n1d) + (n2.getBlendedBlockLight(w) * n2d);
-
         out.br[i] = ao;
         out.lm[i] = getLightMapCoord(sl, bl);
     }
@@ -218,7 +199,6 @@ public class SmoothLightPipeline implements LightPipeline {
     private void applySidedBrightness(QuadLightData out, Direction face, boolean shade) {
         float brightness = this.lightCache.getWorld().getBrightness(face, shade);
         float[] br = out.br;
-
         for (int i = 0; i < br.length; i++) {
             br[i] *= brightness;
         }
@@ -229,11 +209,9 @@ public class SmoothLightPipeline implements LightPipeline {
      */
     private AoFaceData getCachedFaceData(BlockPos pos, Direction face, boolean offset) {
         AoFaceData data = this.cachedFaceData[offset ? face.ordinal() : face.ordinal() + 6];
-
         if (!data.hasLightData()) {
             data.initLightData(this.lightCache, pos, face, offset);
         }
-
         return data;
     }
 
@@ -242,7 +220,6 @@ public class SmoothLightPipeline implements LightPipeline {
             for (AoFaceData data : this.cachedFaceData) {
                 data.reset();
             }
-
             this.cachedPos = key;
         }
     }
@@ -256,7 +233,6 @@ public class SmoothLightPipeline implements LightPipeline {
         } else if (v > 1.0f) {
             return 1.0f;
         }
-
         return v;
     }
 
@@ -266,5 +242,4 @@ public class SmoothLightPipeline implements LightPipeline {
     private static int getLightMapCoord(float sl, float bl) {
         return (((int) sl & 0xFF) << 16) | ((int) bl & 0xFF);
     }
-
 }

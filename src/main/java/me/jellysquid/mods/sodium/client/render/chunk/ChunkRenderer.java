@@ -10,6 +10,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
  * the handling of uploading their data to the graphics card and rendering responsibilities.
  */
 public interface ChunkRenderer {
+
     /**
      * Renders the given chunk render list to the active framebuffer.
      *

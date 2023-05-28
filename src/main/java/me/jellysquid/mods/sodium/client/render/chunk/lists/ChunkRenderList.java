@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.util.ReversibleArrayIterator;
 
 public class ChunkRenderList {
+
     private final ObjectArrayList<RegionBatch> batches;
 
     public ChunkRenderList(ObjectArrayList<RegionBatch> batches) {
@@ -17,16 +18,16 @@ public class ChunkRenderList {
 
     public int getCount() {
         int total = 0;
-
         for (var batch : this.batches) {
             total += batch.size();
         }
-
         return total;
     }
 
     public static class RegionBatch {
+
         private final long regionId;
+
         private final ObjectArrayList<RenderSection> sections;
 
         public RegionBatch(long regionId, ObjectArrayList<RenderSection> sections) {

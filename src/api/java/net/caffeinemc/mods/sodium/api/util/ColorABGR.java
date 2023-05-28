@@ -9,9 +9,13 @@ package net.caffeinemc.mods.sodium.api.util;
  * | Alpha     | Blue      | Green     | Red        |
  */
 public class ColorABGR implements ColorU8 {
+
     private static final int RED_COMPONENT_OFFSET = 0;
+
     private static final int GREEN_COMPONENT_OFFSET = 8;
+
     private static final int BLUE_COMPONENT_OFFSET = 16;
+
     private static final int ALPHA_COMPONENT_OFFSET = 24;
 
     /**
@@ -32,10 +36,7 @@ public class ColorABGR implements ColorU8 {
      * @param a The alpha component of the color
      */
     public static int pack(int r, int g, int b, int a) {
-        return ((a & COMPONENT_MASK) << ALPHA_COMPONENT_OFFSET) |
-                ((b & COMPONENT_MASK) << BLUE_COMPONENT_OFFSET) |
-                ((g & COMPONENT_MASK) << GREEN_COMPONENT_OFFSET) |
-                ((r & COMPONENT_MASK) << RED_COMPONENT_OFFSET);
+        return ((a & COMPONENT_MASK) << ALPHA_COMPONENT_OFFSET) | ((b & COMPONENT_MASK) << BLUE_COMPONENT_OFFSET) | ((g & COMPONENT_MASK) << GREEN_COMPONENT_OFFSET) | ((r & COMPONENT_MASK) << RED_COMPONENT_OFFSET);
     }
 
     /**
@@ -61,10 +62,7 @@ public class ColorABGR implements ColorU8 {
      * @see ColorABGR#pack(int, int, int, int)
      */
     public static int pack(float r, float g, float b, float a) {
-        return pack(ColorU8.normalizedFloatToByte(r),
-                ColorU8.normalizedFloatToByte(g),
-                ColorU8.normalizedFloatToByte(b),
-                ColorU8.normalizedFloatToByte(a));
+        return pack(ColorU8.normalizedFloatToByte(r), ColorU8.normalizedFloatToByte(g), ColorU8.normalizedFloatToByte(b), ColorU8.normalizedFloatToByte(a));
     }
 
     /**

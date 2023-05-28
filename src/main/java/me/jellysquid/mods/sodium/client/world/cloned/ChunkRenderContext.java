@@ -4,8 +4,11 @@ import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public class ChunkRenderContext {
+
     private final ChunkSectionPos origin;
+
     private final ClonedChunkSection[] sections;
+
     private final BlockBox volume;
 
     public ChunkRenderContext(ChunkSectionPos origin, ClonedChunkSection[] sections, BlockBox volume) {
@@ -29,8 +32,7 @@ public class ChunkRenderContext {
     public void releaseResources() {
         for (ClonedChunkSection section : this.sections) {
             if (section != null) {
-                section.getBackingCache()
-                        .release(section);
+                section.getBackingCache().release(section);
             }
         }
     }

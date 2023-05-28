@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.util;
 
 import net.fabricmc.loader.api.FabricLoader;
-
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +17,7 @@ import java.util.function.Function;
  * See https://github.com/grondag/frex/pull/9
  */
 public class FlawlessFrames {
+
     private static final Set<Object> ACTIVE = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     @SuppressWarnings("unchecked")
@@ -32,9 +32,7 @@ public class FlawlessFrames {
                 }
             };
         };
-        FabricLoader.getInstance()
-                .getEntrypoints("frex_flawless_frames", Consumer.class)
-                .forEach(api -> api.accept(provider));
+        FabricLoader.getInstance().getEntrypoints("frex_flawless_frames", Consumer.class).forEach(api -> api.accept(provider));
     }
 
     public static boolean isActive() {

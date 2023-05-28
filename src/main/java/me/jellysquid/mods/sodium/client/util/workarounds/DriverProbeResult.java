@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.util.workarounds;
 import java.util.Map;
 
 public class DriverProbeResult {
+
     public final String vendor, renderer, version;
 
     public DriverProbeResult(Map<String, String> fields) {

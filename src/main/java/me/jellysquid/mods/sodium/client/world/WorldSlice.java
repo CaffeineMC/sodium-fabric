@@ -35,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * Object pooling should be used to avoid huge allocations as this class contains many large arrays.
  */
 public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
+
     // The number of blocks in a section.
     private static final int SECTION_BLOCK_COUNT = 16 * 16 * 16;
 
@@ -84,47 +85,33 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     public static ChunkRenderContext prepare(World world, ChunkSectionPos origin, ClonedChunkSectionCache sectionCache) {
         WorldChunk chunk = world.getChunk(origin.getX(), origin.getZ());
         ChunkSection section = chunk.getSectionArray()[world.sectionCoordToIndex(origin.getY())];
-
         // If the chunk section is absent or empty, simply terminate now. There will never be anything in this chunk
         // section to render, so we need to signal that a chunk render task shouldn't created. This saves a considerable
         // amount of time in queueing instant build tasks and greatly accelerates how quickly the world can be loaded.
         if (section == null || section.isEmpty()) {
             return null;
         }
-
-        BlockBox volume = new BlockBox(origin.getMinX() - NEIGHBOR_BLOCK_RADIUS,
-                origin.getMinY() - NEIGHBOR_BLOCK_RADIUS,
-                origin.getMinZ() - NEIGHBOR_BLOCK_RADIUS,
-                origin.getMaxX() + NEIGHBOR_BLOCK_RADIUS,
-                origin.getMaxY() + NEIGHBOR_BLOCK_RADIUS,
-                origin.getMaxZ() + NEIGHBOR_BLOCK_RADIUS);
-
+        BlockBox volume = new BlockBox(origin.getMinX() - NEIGHBOR_BLOCK_RADIUS, origin.getMinY() - NEIGHBOR_BLOCK_RADIUS, origin.getMinZ() - NEIGHBOR_BLOCK_RADIUS, origin.getMaxX() + NEIGHBOR_BLOCK_RADIUS, origin.getMaxY() + NEIGHBOR_BLOCK_RADIUS, origin.getMaxZ() + NEIGHBOR_BLOCK_RADIUS);
         // The min/max bounds of the chunks copied by this slice
         final int minChunkX = origin.getX() - NEIGHBOR_CHUNK_RADIUS;
         final int minChunkY = origin.getY() - NEIGHBOR_CHUNK_RADIUS;
         final int minChunkZ = origin.getZ() - NEIGHBOR_CHUNK_RADIUS;
-
         final int maxChunkX = origin.getX() + NEIGHBOR_CHUNK_RADIUS;
         final int maxChunkY = origin.getY() + NEIGHBOR_CHUNK_RADIUS;
         final int maxChunkZ = origin.getZ() + NEIGHBOR_CHUNK_RADIUS;
-
         ClonedChunkSection[] sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
-
         for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
                 for (int chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
-                    sections[getLocalSectionIndex(chunkX - minChunkX, chunkY - minChunkY, chunkZ - minChunkZ)] =
-                            sectionCache.acquire(chunkX, chunkY, chunkZ);
+                    sections[getLocalSectionIndex(chunkX - minChunkX, chunkY - minChunkY, chunkZ - minChunkZ)] = sectionCache.acquire(chunkX, chunkY, chunkZ);
                 }
             }
         }
-
         return new ChunkRenderContext(origin, sections, volume);
     }
 
     public WorldSlice(World world) {
         this.world = world;
-
         this.sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
         this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][SECTION_BLOCK_COUNT];
         this.biomeCache = new BiomeCache();
@@ -133,11 +120,9 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     public void copyData(ChunkRenderContext context) {
         this.origin = context.getOrigin();
         this.sections = context.getSections();
-
         this.baseX = (this.origin.getX() - NEIGHBOR_CHUNK_RADIUS) << 4;
         this.baseY = (this.origin.getY() - NEIGHBOR_CHUNK_RADIUS) << 4;
         this.baseZ = (this.origin.getZ() - NEIGHBOR_CHUNK_RADIUS) << 4;
-
         for (int x = 0; x < SECTION_LENGTH; x++) {
             for (int y = 0; y < SECTION_LENGTH; y++) {
                 for (int z = 0; z < SECTION_LENGTH; z++) {
@@ -146,13 +131,12 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
                 }
             }
         }
-
         this.biomeColors = new BiomeColorCache(this, MinecraftClient.getInstance().options.getBiomeBlendRadius().getValue());
         this.biomeCache.update(this);
     }
 
     private void unpackBlockData(BlockState[] states, ClonedChunkSection section, BlockBox box) {
-        if (this.origin.equals(section.getPosition()))  {
+        if (this.origin.equals(section.getPosition())) {
             this.unpackBlockData(states, section);
         } else {
             this.unpackBlockDataSlow(states, section, box);
@@ -162,24 +146,18 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     private void unpackBlockDataSlow(BlockState[] states, ClonedChunkSection section, BlockBox box) {
         PackedIntegerArray intArray = section.getBlockData();
         ClonedPalette<BlockState> palette = section.getBlockPalette();
-
         ChunkSectionPos pos = section.getPosition();
-
         int minBlockX = Math.max(box.getMinX(), pos.getMinX());
         int maxBlockX = Math.min(box.getMaxX(), pos.getMaxX());
-
         int minBlockY = Math.max(box.getMinY(), pos.getMinY());
         int maxBlockY = Math.min(box.getMaxY(), pos.getMaxY());
-
         int minBlockZ = Math.max(box.getMinZ(), pos.getMinZ());
         int maxBlockZ = Math.min(box.getMaxZ(), pos.getMaxZ());
-
         for (int y = minBlockY; y <= maxBlockY; y++) {
             for (int z = minBlockZ; z <= maxBlockZ; z++) {
                 for (int x = minBlockX; x <= maxBlockX; x++) {
                     int blockIdx = getLocalBlockIndex(x & 15, y & 15, z & 15);
                     int value = intArray.get(blockIdx);
-
                     states[blockIdx] = palette.get(value);
                 }
             }
@@ -187,10 +165,8 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     }
 
     private void unpackBlockData(BlockState[] states, ClonedChunkSection section) {
-        ((PackedIntegerArrayExtended) section.getBlockData())
-                .copyUsingPalette(states, section.getBlockPalette());
+        ((PackedIntegerArrayExtended) section.getBlockData()).copyUsingPalette(states, section.getBlockPalette());
     }
-
 
     @Override
     public BlockState getBlockState(BlockPos pos) {
@@ -201,15 +177,12 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
         int relX = x - this.baseX;
         int relY = y - this.baseY;
         int relZ = z - this.baseZ;
-
-        return this.blockStatesArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                [getLocalBlockIndex(relX & 15, relY & 15, relZ & 15)];
+        return this.blockStatesArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)][getLocalBlockIndex(relX & 15, relY & 15, relZ & 15)];
     }
 
     @Override
     public FluidState getFluidState(BlockPos pos) {
-        return this.getBlockState(pos)
-                .getFluidState();
+        return this.getBlockState(pos).getFluidState();
     }
 
     @Override
@@ -231,9 +204,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
         int relX = x - this.baseX;
         int relY = y - this.baseY;
         int relZ = z - this.baseZ;
-
-        return this.sections[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                .getBlockEntity(relX & 15, relY & 15, relZ & 15);
+        return this.sections[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)].getBlockEntity(relX & 15, relY & 15, relZ & 15);
     }
 
     @Override
@@ -250,9 +221,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
         int relX = pos.getX() - this.baseX;
         int relY = pos.getY() - this.baseY;
         int relZ = pos.getZ() - this.baseZ;
-
-        return this.sections[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                .getLightLevel(type, relX & 15, relY & 15, relZ & 15);
+        return this.sections[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)].getLightLevel(type, relX & 15, relY & 15, relZ & 15);
     }
 
     public ChunkSectionPos getOrigin() {
@@ -270,13 +239,12 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     }
 
     @Override
-    public @Nullable Object getBlockEntityRenderAttachment(BlockPos pos) {
+    @Nullable
+    public Object getBlockEntityRenderAttachment(BlockPos pos) {
         int relX = pos.getX() - this.baseX;
         int relY = pos.getY() - this.baseY;
         int relZ = pos.getZ() - this.baseZ;
-
-        return this.sections[WorldSlice.getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                .getBlockEntityRenderAttachment(relX & 15, relY & 15, relZ & 15);
+        return this.sections[WorldSlice.getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)].getBlockEntityRenderAttachment(relX & 15, relY & 15, relZ & 15);
     }
 
     public ClonedChunkSection getSection(int x, int y, int z) {

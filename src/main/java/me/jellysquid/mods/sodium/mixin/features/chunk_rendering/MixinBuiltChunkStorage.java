@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BuiltChunkStorage.class)
 public class MixinBuiltChunkStorage {
+
     @Shadow
     public ChunkBuilder.BuiltChunk[] chunks;
 

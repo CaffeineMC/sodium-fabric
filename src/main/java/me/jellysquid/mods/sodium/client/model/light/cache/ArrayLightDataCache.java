@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.BlockRenderView;
-
 import java.util.Arrays;
 
 /**
@@ -13,7 +12,9 @@ import java.util.Arrays;
  * can be re-used by {@link WorldSlice} to avoid allocations.
  */
 public class ArrayLightDataCache extends LightDataAccess {
+
     private static final int NEIGHBOR_BLOCK_RADIUS = 2;
+
     private static final int BLOCK_LENGTH = 16 + (NEIGHBOR_BLOCK_RADIUS * 2);
 
     private final long[] light;
@@ -29,7 +30,6 @@ public class ArrayLightDataCache extends LightDataAccess {
         this.xOffset = origin.getMinX() - NEIGHBOR_BLOCK_RADIUS;
         this.yOffset = origin.getMinY() - NEIGHBOR_BLOCK_RADIUS;
         this.zOffset = origin.getMinZ() - NEIGHBOR_BLOCK_RADIUS;
-
         Arrays.fill(this.light, 0L);
     }
 
@@ -37,21 +37,16 @@ public class ArrayLightDataCache extends LightDataAccess {
         int x2 = x - this.xOffset;
         int y2 = y - this.yOffset;
         int z2 = z - this.zOffset;
-
         return (z2 * BLOCK_LENGTH * BLOCK_LENGTH) + (y2 * BLOCK_LENGTH) + x2;
     }
 
     @Override
     public long get(int x, int y, int z) {
         int l = this.index(x, y, z);
-
         long word = this.light[l];
-
         if (word != 0) {
             return word;
         }
-
         return this.light[l] = this.compute(x, y, z);
     }
-
 }

@@ -6,21 +6,25 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-
 import java.util.List;
 
 @Mixin(TextureStitcher.class)
 public class MixinTextureStitcher<T extends TextureStitcher.Stitchable> {
+
     @Shadow
     @Final
     private List<TextureStitcher.Slot<T>> slots;
+
     @Shadow
     private int width;
+
     @Shadow
     private int height;
+
     @Shadow
     @Final
     private int maxWidth;
+
     @Shadow
     @Final
     private int maxHeight;
@@ -37,11 +41,9 @@ public class MixinTextureStitcher<T extends TextureStitcher.Stitchable> {
         int newEffectiveHeight = MathHelper.smallestEncompassingPowerOfTwo(height + holder.height());
         boolean canFitWidth = newEffectiveWidth <= maxWidth;
         boolean canFitHeight = newEffectiveHeight <= maxHeight;
-
         if (!canFitWidth && !canFitHeight) {
             return false;
         }
-
         // Sodium start
         boolean growWidth;
         /*
@@ -57,7 +59,6 @@ public class MixinTextureStitcher<T extends TextureStitcher.Stitchable> {
             int effectiveHeight = MathHelper.smallestEncompassingPowerOfTwo(height);
             boolean wouldGrowEffectiveWidth = effectiveWidth != newEffectiveWidth;
             boolean wouldGrowEffectiveHeight = effectiveHeight != newEffectiveHeight;
-
             if (wouldGrowEffectiveWidth) {
                 /*
                  * The logic here differs from vanilla slightly as it combines the
@@ -137,20 +138,17 @@ public class MixinTextureStitcher<T extends TextureStitcher.Stitchable> {
             growWidth = canFitWidth;
         }
         // Sodium end
-
         TextureStitcher.Slot<T> slot;
         if (growWidth) {
             if (height == 0) {
                 height = holder.height();
             }
-
             slot = new TextureStitcher.Slot<>(width, 0, holder.width(), height);
             width += holder.width();
         } else {
             slot = new TextureStitcher.Slot<>(0, height, width, holder.height());
             height += holder.height();
         }
-
         slot.fit(holder);
         slots.add(slot);
         return true;

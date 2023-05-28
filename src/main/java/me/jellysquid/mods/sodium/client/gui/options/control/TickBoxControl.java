@@ -6,6 +6,7 @@ import net.minecraft.client.util.math.Rect2i;
 import net.minecraft.client.util.math.MatrixStack;
 
 public class TickBoxControl implements Control<Boolean> {
+
     private final Option<Boolean> option;
 
     public TickBoxControl(Option<Boolean> option) {
@@ -28,38 +29,32 @@ public class TickBoxControl implements Control<Boolean> {
     }
 
     private static class TickBoxControlElement extends ControlElement<Boolean> {
+
         private final Rect2i button;
 
         public TickBoxControlElement(Option<Boolean> option, Dim2i dim) {
             super(option, dim);
-
             this.button = new Rect2i(dim.getLimitX() - 16, dim.getCenterY() - 5, 10, 10);
         }
 
         @Override
         public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
             super.render(matrixStack, mouseX, mouseY, delta);
-
             final int x = this.button.getX();
             final int y = this.button.getY();
             final int w = x + this.button.getWidth();
             final int h = y + this.button.getHeight();
-
             final boolean enabled = this.option.isAvailable();
             final boolean ticked = enabled && this.option.getValue();
-
             final int color;
-
             if (enabled) {
                 color = ticked ? 0xFF94E4D3 : 0xFFFFFFFF;
             } else {
                 color = 0xFFAAAAAA;
             }
-
             if (ticked) {
                 this.drawRect(x + 2, y + 2, w - 2, h - 2, color);
             }
-
             this.drawRectOutline(x, y, w, h, color);
         }
 
@@ -68,10 +63,8 @@ public class TickBoxControl implements Control<Boolean> {
             if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
                 this.option.setValue(!this.option.getValue());
                 this.playClickSound();
-
                 return true;
             }
-
             return false;
         }
 
@@ -80,7 +73,6 @@ public class TickBoxControl implements Control<Boolean> {
             final float r = (float) (color >> 16 & 255) / 255.0F;
             final float g = (float) (color >> 8 & 255) / 255.0F;
             final float b = (float) (color & 255) / 255.0F;
-
             this.drawQuads(vertices -> {
                 addQuad(vertices, x, y, w, y + 1, a, r, g, b);
                 addQuad(vertices, x, h - 1, w, h, a, r, g, b);
@@ -89,6 +81,4 @@ public class TickBoxControl implements Control<Boolean> {
             });
         }
     }
-
-
 }

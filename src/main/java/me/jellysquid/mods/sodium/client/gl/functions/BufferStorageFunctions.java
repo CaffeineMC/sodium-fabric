@@ -9,28 +9,32 @@ import org.lwjgl.opengl.GL44C;
 import org.lwjgl.opengl.GLCapabilities;
 
 public enum BufferStorageFunctions {
+
     NONE {
+
         @Override
         public void createBufferStorage(GlBufferTarget target, long length, EnumBitField<GlBufferStorageFlags> flags) {
             throw new UnsupportedOperationException();
         }
-    },
-    CORE {
+    }
+    , CORE {
+
         @Override
         public void createBufferStorage(GlBufferTarget target, long length, EnumBitField<GlBufferStorageFlags> flags) {
             GL44C.glBufferStorage(target.getTargetParameter(), length, flags.getBitField());
         }
-    },
-    ARB {
+    }
+    , ARB {
+
         @Override
         public void createBufferStorage(GlBufferTarget target, long length, EnumBitField<GlBufferStorageFlags> flags) {
             ARBBufferStorage.glBufferStorage(target.getTargetParameter(), length, flags.getBitField());
         }
-    };
+    }
+    ;
 
     public static BufferStorageFunctions pickBest(RenderDevice device) {
         GLCapabilities capabilities = device.getCapabilities();
-
         if (capabilities.OpenGL44) {
             return CORE;
         } else if (capabilities.GL_ARB_buffer_storage) {
@@ -39,7 +43,6 @@ public enum BufferStorageFunctions {
             return NONE;
         }
     }
-
 
     public abstract void createBufferStorage(GlBufferTarget target, long length, EnumBitField<GlBufferStorageFlags> flags);
 }

@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.Queue;
 
 public class QueueDrainingIterator<T> implements Iterator<T> {
+
     private final Queue<T> queue;
 
     public QueueDrainingIterator(Queue<T> queue) {

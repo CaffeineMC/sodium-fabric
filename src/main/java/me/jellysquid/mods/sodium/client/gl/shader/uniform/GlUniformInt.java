@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gl.shader.uniform;
 import org.lwjgl.opengl.GL30C;
 
 public class GlUniformInt extends GlUniform<Integer> {
+
     public GlUniformInt(int index) {
         super(index);
     }

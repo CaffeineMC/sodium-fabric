@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 import net.minecraft.text.Text;
 
 public interface ControlValueFormatter {
+
     static ControlValueFormatter guiScale() {
         return (v) -> (v == 0) ? Text.translatable("options.guiScale.auto").getString() : v + "x";
     }

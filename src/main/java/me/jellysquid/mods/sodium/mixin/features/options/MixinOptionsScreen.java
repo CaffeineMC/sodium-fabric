@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(OptionsScreen.class)
 public class MixinOptionsScreen extends Screen {
+
     protected MixinOptionsScreen(Text title) {
         super(title);
     }

@@ -1,14 +1,17 @@
 package me.jellysquid.mods.sodium.client.gl.arena;
 
 public class GlBufferSegment {
+
     private final GlBufferArena arena;
 
     private boolean free = false;
 
     private int offset;
+
     private int length;
 
     private GlBufferSegment next;
+
     private GlBufferSegment prev;
 
     public GlBufferSegment(GlBufferArena arena, int offset, int length) {
@@ -33,7 +36,6 @@ public class GlBufferSegment {
         if (len <= 0) {
             throw new IllegalArgumentException("len <= 0");
         }
-
         this.length = len;
     }
 
@@ -45,7 +47,6 @@ public class GlBufferSegment {
         if (offset < 0) {
             throw new IllegalArgumentException("start < 0");
         }
-
         this.offset = offset;
     }
 
@@ -76,10 +77,8 @@ public class GlBufferSegment {
     protected void mergeInto(GlBufferSegment entry) {
         this.setLength(this.getLength() + entry.getLength());
         this.setNext(entry.getNext());
-
         if (this.getNext() != null) {
-            this.getNext()
-                    .setPrev(this);
+            this.getNext().setPrev(this);
         }
     }
 }

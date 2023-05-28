@@ -9,7 +9,6 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
-
 import java.util.*;
 
 /**
@@ -17,15 +16,19 @@ import java.util.*;
  * block entities contained by it, and any data used for occlusion testing.
  */
 public class ChunkRenderData {
-    public static final ChunkRenderData ABSENT = new ChunkRenderData.Builder()
-            .build();
+
+    public static final ChunkRenderData ABSENT = new ChunkRenderData.Builder().build();
+
     public static final ChunkRenderData EMPTY = createEmptyData();
 
     private List<TerrainRenderPass> blockRenderPasses;
+
     private List<BlockEntity> globalBlockEntities;
+
     private List<BlockEntity> blockEntities;
 
     private ChunkOcclusionData occlusionData;
+
     private ChunkRenderBounds bounds;
 
     private List<Sprite> animatedSprites;
@@ -59,25 +62,27 @@ public class ChunkRenderData {
 
     public int getFlags() {
         int flags = 0;
-
         if (!this.blockRenderPasses.isEmpty()) {
             flags |= RenderSectionFlags.HAS_BLOCK_GEOMETRY;
         }
-
         if (!this.blockEntities.isEmpty() || !this.globalBlockEntities.isEmpty()) {
             flags |= RenderSectionFlags.HAS_BLOCK_ENTITIES;
         }
-
         return flags;
     }
 
     public static class Builder {
+
         private final List<TerrainRenderPass> renderPasses = new ArrayList<>();
+
         private final List<BlockEntity> globalBlockEntities = new ArrayList<>();
+
         private final List<BlockEntity> blockEntities = new ArrayList<>();
+
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
         private ChunkOcclusionData occlusionData;
+
         private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
 
         public void addRenderPass(TerrainRenderPass pass) {
@@ -120,7 +125,6 @@ public class ChunkRenderData {
             data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
             data.blockRenderPasses = this.renderPasses;
-
             return data;
         }
     }
@@ -128,10 +132,8 @@ public class ChunkRenderData {
     private static ChunkRenderData createEmptyData() {
         ChunkOcclusionData occlusionData = new ChunkOcclusionData();
         occlusionData.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
-
         ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
         meshInfo.setOcclusionData(occlusionData);
-
         return meshInfo.build();
     }
 }

@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Set;
 
 public class EnumBitField<T extends Enum<T> & EnumBit> {
+
     private final EnumSet<T> set;
+
     private final int bitfield;
 
     private EnumBitField(EnumSet<T> set) {
@@ -16,11 +18,9 @@ public class EnumBitField<T extends Enum<T> & EnumBit> {
 
     private static <T extends Enum<T> & EnumBit> int computeBitField(Set<T> set) {
         int field = 0;
-
         for (T e : set) {
             field |= e.getBits();
         }
-
         return field;
     }
 
@@ -28,7 +28,6 @@ public class EnumBitField<T extends Enum<T> & EnumBit> {
     public static <T extends Enum<T> & EnumBit> EnumBitField<T> of(T... values) {
         List<T> list = Arrays.asList(values);
         EnumSet<T> set = EnumSet.copyOf(list);
-
         return new EnumBitField<>(set);
     }
 

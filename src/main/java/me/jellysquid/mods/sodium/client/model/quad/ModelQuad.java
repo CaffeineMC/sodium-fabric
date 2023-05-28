@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.model.quad;
 
 import net.minecraft.client.texture.Sprite;
-
 import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
 
 /**
@@ -9,11 +8,15 @@ import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
  * for storing quad vertex data.
  */
 public class ModelQuad implements ModelQuadViewMutable {
+
     private final int[] data = new int[VERTEX_SIZE * 4];
+
     private int flags;
 
     private Sprite sprite;
+
     private int colorIdx;
+
     private int normal;
 
     @Override

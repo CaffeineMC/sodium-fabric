@@ -18,8 +18,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(WorldRenderer.class)
 public class MixinWorldRenderer {
+
     @Shadow
-    private @Nullable ClientWorld world;
+    @Nullable
+    private ClientWorld world;
+
     @Shadow
     private int ticks;
 
@@ -38,7 +41,6 @@ public class MixinWorldRenderer {
         if (this.cloudRenderer == null) {
             this.cloudRenderer = new CloudRenderer(client.getResourceManager());
         }
-
         this.cloudRenderer.render(this.world, this.client.player, matrices, projectionMatrix, this.ticks, tickDelta, x, y, z);
     }
 

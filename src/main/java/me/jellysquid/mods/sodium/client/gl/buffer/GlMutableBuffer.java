@@ -5,6 +5,7 @@ package me.jellysquid.mods.sodium.client.gl.buffer;
  * without needing to re-create the buffer itself.
  */
 public class GlMutableBuffer extends GlBuffer {
+
     private long size = 0L;
 
     public GlMutableBuffer() {

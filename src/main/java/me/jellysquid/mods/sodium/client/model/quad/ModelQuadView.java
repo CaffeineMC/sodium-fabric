@@ -7,6 +7,7 @@ import net.minecraft.client.texture.Sprite;
  * Provides a read-only view of a model quad. For mutable access to a model quad, see {@link ModelQuadViewMutable}.
  */
 public interface ModelQuadView {
+
     /**
      * @return The x-position of the vertex at index {@param idx}
      */

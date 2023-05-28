@@ -7,7 +7,9 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.world.World;
 
 public class ChunkBuildContext {
+
     public final ChunkBuildBuffers buffers;
+
     public final BlockRenderCache cache;
 
     public ChunkBuildContext(World world, ChunkVertexType vertexType) {

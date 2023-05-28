@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.api.vertex.attributes.common;
 import org.lwjgl.system.MemoryUtil;
 
 public class PositionAttribute {
+
     public static void put(long ptr, float x, float y, float z) {
         MemoryUtil.memPutFloat(ptr + 0, x);
         MemoryUtil.memPutFloat(ptr + 4, y);

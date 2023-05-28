@@ -4,10 +4,10 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-
 import java.nio.ByteBuffer;
 
 public class FallbackStagingBuffer implements StagingBuffer {
+
     private final GlMutableBuffer fallbackBufferObject;
 
     public FallbackStagingBuffer(CommandList commandList) {
@@ -32,7 +32,6 @@ public class FallbackStagingBuffer implements StagingBuffer {
 
     @Override
     public void flip() {
-
     }
 
     @Override

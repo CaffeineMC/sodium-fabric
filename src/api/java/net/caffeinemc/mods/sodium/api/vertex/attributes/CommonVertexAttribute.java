@@ -4,6 +4,7 @@ import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.client.render.VertexFormats;
 
 public enum CommonVertexAttribute {
+
     POSITION(VertexFormats.POSITION_ELEMENT),
     COLOR(VertexFormats.COLOR_ELEMENT),
     TEXTURE(VertexFormats.TEXTURE_ELEMENT),
@@ -25,7 +26,6 @@ public enum CommonVertexAttribute {
                 return type;
             }
         }
-
         return null;
     }
 

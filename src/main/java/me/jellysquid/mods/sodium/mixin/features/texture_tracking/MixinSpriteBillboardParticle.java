@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(SpriteBillboardParticle.class)
 public abstract class MixinSpriteBillboardParticle extends BillboardParticle {
+
     @Shadow
     protected Sprite sprite;
 
@@ -35,7 +36,6 @@ public abstract class MixinSpriteBillboardParticle extends BillboardParticle {
         if (this.shouldTickSprite) {
             SpriteUtil.markSpriteActive(this.sprite);
         }
-
         super.buildGeometry(vertexConsumer, camera, tickDelta);
     }
 }

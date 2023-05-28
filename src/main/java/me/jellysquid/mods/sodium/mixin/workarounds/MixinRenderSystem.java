@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(RenderSystem.class)
 public class MixinRenderSystem {
+
     @Inject(method = "initRenderThread", at = @At("RETURN"), remap = false)
     private static void postInitRenderThread(CallbackInfo ci) {
         DriverWorkarounds.init();

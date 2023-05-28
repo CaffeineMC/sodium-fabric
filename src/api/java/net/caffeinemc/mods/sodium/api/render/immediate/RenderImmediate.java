@@ -7,6 +7,7 @@ import org.lwjgl.system.MemoryStack;
  * WARNING: This class should never be accessed by any thread other than the main render thread.
  */
 public class RenderImmediate {
+
     /**
      * A memory stack which can be used for vertex assembly and copying.
      */

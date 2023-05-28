@@ -28,6 +28,7 @@ import org.spongepowered.asm.mixin.Unique;
  */
 @Mixin(MipmapHelper.class)
 public class MixinMipmapHelper {
+
     /**
      * @author coderbot
      * @reason replace the vanilla blending function with our improved function
@@ -44,46 +45,36 @@ public class MixinMipmapHelper {
     private static int weightedAverageColor(int one, int two) {
         int alphaOne = NativeImage.getAlpha(one);
         int alphaTwo = NativeImage.getAlpha(two);
-
         // In the case where the alpha values of the same, we can get by with an unweighted average.
         if (alphaOne == alphaTwo) {
             return averageRgb(one, two, alphaOne);
         }
-
         // If one of our pixels is fully transparent, ignore it.
         // We just take the value of the other pixel as-is. To compensate for not changing the color value, we
         // divide the alpha value by 4 instead of 2.
         if (alphaOne == 0) {
             return (two & 0x00FFFFFF) | ((alphaTwo >> 2) << 24);
         }
-
         if (alphaTwo == 0) {
             return (one & 0x00FFFFFF) | ((alphaOne >> 2) << 24);
         }
-
         // Use the alpha values to compute relative weights of each color.
         float scale = 1.0f / (alphaOne + alphaTwo);
-
         float relativeWeightOne = alphaOne * scale;
         float relativeWeightTwo = alphaTwo * scale;
-
         // Convert the color components into linear space, then multiply the corresponding weight.
         float oneR = ColorSRGB.srgbToLinear(NativeImage.getRed(one)) * relativeWeightOne;
         float oneG = ColorSRGB.srgbToLinear(NativeImage.getGreen(one)) * relativeWeightOne;
         float oneB = ColorSRGB.srgbToLinear(NativeImage.getBlue(one)) * relativeWeightOne;
-
         float twoR = ColorSRGB.srgbToLinear(NativeImage.getRed(two)) * relativeWeightTwo;
         float twoG = ColorSRGB.srgbToLinear(NativeImage.getGreen(two)) * relativeWeightTwo;
         float twoB = ColorSRGB.srgbToLinear(NativeImage.getBlue(two)) * relativeWeightTwo;
-
         // Combine the color components of each color
         float linearR = oneR + twoR;
         float linearG = oneG + twoG;
         float linearB = oneB + twoB;
-
         // Take the average alpha of both alpha values
         int averageAlpha = (alphaOne + alphaTwo) >> 1;
-
         // Convert to sRGB and pack the colors back into an integer.
         return ColorSRGB.linearToSrgb(linearR, linearG, linearB, averageAlpha);
     }
@@ -94,11 +85,9 @@ public class MixinMipmapHelper {
         float ar = ColorSRGB.srgbToLinear(NativeImage.getRed(a));
         float ag = ColorSRGB.srgbToLinear(NativeImage.getGreen(a));
         float ab = ColorSRGB.srgbToLinear(NativeImage.getBlue(a));
-
         float br = ColorSRGB.srgbToLinear(NativeImage.getRed(b));
         float bg = ColorSRGB.srgbToLinear(NativeImage.getGreen(b));
         float bb = ColorSRGB.srgbToLinear(NativeImage.getBlue(b));
-
         return ColorSRGB.linearToSrgb((ar + br) * 0.5f, (ag + bg) * 0.5f, (ab + bb) * 0.5f, alpha);
     }
 }

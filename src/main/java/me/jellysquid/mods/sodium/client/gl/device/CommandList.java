@@ -7,10 +7,10 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
 import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
-
 import java.nio.ByteBuffer;
 
 public interface CommandList extends AutoCloseable {
+
     GlMutableBuffer createMutableBuffer();
 
     GlImmutableBuffer createImmutableBuffer(long bufferSize, EnumBitField<GlBufferStorageFlags> flags);

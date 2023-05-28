@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 
 @Mixin(Direction.class)
 public class MixinDirection {
+
     /**
      * Benchmarking looking at a ton of glinted/lodestone compasses: time spent in {@link MixinOverlayVertexConsumer#writeVerticesSlow}
      * <ul>
@@ -34,35 +35,39 @@ public class MixinDirection {
         var yM = Math.abs(y);
         var zM = Math.abs(z);
         var xM = Math.abs(x);
-
         if (yM >= zM) {
             if (yM >= xM) {
                 // Y biggest
                 if (y <= 0) {
                     return Direction.DOWN;
-                } else /* y > 0 */ {
+                } else /* y > 0 */
+                {
                     return Direction.UP;
                 }
-            } else /* zM <= yM < xM */ {
+            } else /* zM <= yM < xM */
+            {
                 // X biggest, fall through
             }
-        } else /* yM < zM */ {
+        } else /* yM < zM */
+        {
             if (zM >= xM) {
                 // Z biggest
                 if (z <= 0) {
                     return Direction.NORTH;
-                } else /* z > 0 */ {
+                } else /* z > 0 */
+                {
                     return Direction.SOUTH;
                 }
-            } else /* yM < zM < xM */ {
+            } else /* yM < zM < xM */
+            {
                 // X biggest, fall through
             }
         }
-
         // X biggest
         if (x <= 0) {
             return Direction.WEST;
-        } else /* x > 0 */ {
+        } else /* x > 0 */
+        {
             return Direction.EAST;
         }
     }

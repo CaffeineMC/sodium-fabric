@@ -22,6 +22,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(OverlayVertexConsumer.class)
 public class MixinOverlayVertexConsumer implements VertexBufferWriter {
+
     @Shadow
     @Final
     private VertexConsumer delegate;
@@ -40,11 +41,8 @@ public class MixinOverlayVertexConsumer implements VertexBufferWriter {
 
     @Override
     public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
-        transform(ptr, count, format,
-                this.inverseNormalMatrix, this.inverseTextureMatrix, this.textureScale);
-
-        VertexBufferWriter.of(this.delegate)
-                .push(stack, ptr, count, format);
+        transform(ptr, count, format, this.inverseNormalMatrix, this.inverseTextureMatrix, this.textureScale);
+        VertexBufferWriter.of(this.delegate).push(stack, ptr, count, format);
     }
 
     /**
@@ -57,45 +55,34 @@ public class MixinOverlayVertexConsumer implements VertexBufferWriter {
      * @param inverseTextureMatrix The inverted texture matrix
      * @param textureScale The amount which the overlay texture should be adjusted
      */
-    private static void transform(long ptr, int count, VertexFormatDescription format,
-                                  Matrix3f inverseNormalMatrix, Matrix4f inverseTextureMatrix, float textureScale) {
+    private static void transform(long ptr, int count, VertexFormatDescription format, Matrix3f inverseNormalMatrix, Matrix4f inverseTextureMatrix, float textureScale) {
         long stride = format.stride();
-
         var offsetPosition = format.getElementOffset(CommonVertexAttribute.POSITION);
         var offsetColor = format.getElementOffset(CommonVertexAttribute.COLOR);
         var offsetNormal = format.getElementOffset(CommonVertexAttribute.NORMAL);
         var offsetTexture = format.getElementOffset(CommonVertexAttribute.TEXTURE);
-
         int color = ColorABGR.pack(1.0f, 1.0f, 1.0f, 1.0f);
-
         var normal = new Vector3f(Float.NaN);
         var position = new Vector4f(Float.NaN);
-
         for (int vertexIndex = 0; vertexIndex < count; vertexIndex++) {
             position.x = MemoryUtil.memGetFloat(ptr + offsetPosition + 0);
             position.y = MemoryUtil.memGetFloat(ptr + offsetPosition + 4);
             position.z = MemoryUtil.memGetFloat(ptr + offsetPosition + 8);
             position.w = 1.0f;
-
             int packedNormal = MemoryUtil.memGetInt(ptr + offsetNormal);
             normal.x = NormI8.unpackX(packedNormal);
             normal.y = NormI8.unpackY(packedNormal);
             normal.z = NormI8.unpackZ(packedNormal);
-
             Vector3f transformedNormal = inverseNormalMatrix.transform(normal);
             Direction direction = Direction.getFacing(transformedNormal.x(), transformedNormal.y(), transformedNormal.z());
-
             Vector4f transformedTexture = inverseTextureMatrix.transform(position);
             transformedTexture.rotateY(3.1415927F);
             transformedTexture.rotateX(-1.5707964F);
             transformedTexture.rotate(direction.getRotationQuaternion());
-
             float textureU = -transformedTexture.x() * textureScale;
             float textureV = -transformedTexture.y() * textureScale;
-
             ColorAttribute.set(ptr + offsetColor, color);
             TextureAttribute.put(ptr + offsetTexture, textureU, textureV);
-
             ptr += stride;
         }
     }

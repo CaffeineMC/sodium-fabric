@@ -16,11 +16,11 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 import java.util.Map;
 
 @Mixin(RenderLayers.class)
 public class MixinRenderLayers {
+
     @Mutable
     @Shadow
     @Final
@@ -36,6 +36,7 @@ public class MixinRenderLayers {
         BLOCKS = new Reference2ReferenceOpenHashMap<>(BLOCKS);
         FLUIDS = new Reference2ReferenceOpenHashMap<>(FLUIDS);
     }
+
     @Inject(method = "getBlockLayer(Lnet/minecraft/block/BlockState;)Lnet/minecraft/client/render/RenderLayer;", at = @At(value = "RETURN"), cancellable = true)
     private static void redirectLeavesGraphics(BlockState state, CallbackInfoReturnable<RenderLayer> cir) {
         if (state.getBlock() instanceof LeavesBlock) {

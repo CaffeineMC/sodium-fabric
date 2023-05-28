@@ -12,8 +12,11 @@ import org.joml.Vector3f;
  * | Padding   | X         | Y         | Z          |
  */
 public class NormI8 {
+
     private static final int X_COMPONENT_OFFSET = 0;
+
     private static final int Y_COMPONENT_OFFSET = 8;
+
     private static final int Z_COMPONENT_OFFSET = 16;
 
     /**
@@ -42,7 +45,6 @@ public class NormI8 {
         int normX = encode(x);
         int normY = encode(y);
         int normZ = encode(z);
-
         return (normZ << Z_COMPONENT_OFFSET) | (normY << Y_COMPONENT_OFFSET) | (normX << X_COMPONENT_OFFSET);
     }
 

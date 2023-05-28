@@ -12,7 +12,6 @@ import net.minecraft.client.gui.WorldGenerationProgressTracker;
 import net.minecraft.client.gui.screen.LevelLoadingScreen;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
-
 import net.minecraft.world.chunk.ChunkStatus;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
@@ -24,6 +23,7 @@ import org.spongepowered.asm.mixin.*;
  */
 @Mixin(LevelLoadingScreen.class)
 public class MixinLevelLoadingScreen {
+
     @Mutable
     @Shadow
     @Final
@@ -32,6 +32,7 @@ public class MixinLevelLoadingScreen {
     private static Reference2IntOpenHashMap<ChunkStatus> STATUS_TO_COLOR_FAST;
 
     private static final int NULL_STATUS_COLOR = ColorABGR.pack(0, 0, 0, 0xFF);
+
     private static final int DEFAULT_STATUS_COLOR = ColorARGB.pack(0, 0x11, 0xFF, 0xFF);
 
     /**
@@ -48,71 +49,50 @@ public class MixinLevelLoadingScreen {
         if (STATUS_TO_COLOR_FAST == null) {
             STATUS_TO_COLOR_FAST = new Reference2IntOpenHashMap<>(STATUS_TO_COLOR.size());
             STATUS_TO_COLOR_FAST.put(null, NULL_STATUS_COLOR);
-            STATUS_TO_COLOR.object2IntEntrySet()
-                    .forEach(entry -> STATUS_TO_COLOR_FAST.put(entry.getKey(), ColorARGB.toABGR(entry.getIntValue(), 0xFF)));
+            STATUS_TO_COLOR.object2IntEntrySet().forEach(entry -> STATUS_TO_COLOR_FAST.put(entry.getKey(), ColorARGB.toABGR(entry.getIntValue(), 0xFF)));
         }
-
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-
         Matrix4f matrix = matrixStack.peek().getPositionMatrix();
-
         Tessellator tessellator = Tessellator.getInstance();
-
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
-        
         BufferBuilder bufferBuilder = tessellator.getBuffer();
         bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-
         var writer = VertexBufferWriter.of(bufferBuilder);
-
         int centerSize = tracker.getCenterSize();
         int size = tracker.getSize();
-
         int tileSize = mapScale + mapPadding;
-
         if (mapPadding != 0) {
             int mapRenderCenterSize = centerSize * tileSize - mapPadding;
             int radius = mapRenderCenterSize / 2 + 1;
-
             addRect(writer, matrix, mapX - radius, mapY - radius, mapX - radius + 1, mapY + radius, DEFAULT_STATUS_COLOR);
             addRect(writer, matrix, mapX + radius - 1, mapY - radius, mapX + radius, mapY + radius, DEFAULT_STATUS_COLOR);
             addRect(writer, matrix, mapX - radius, mapY - radius, mapX + radius, mapY - radius + 1, DEFAULT_STATUS_COLOR);
             addRect(writer, matrix, mapX - radius, mapY + radius - 1, mapX + radius, mapY + radius, DEFAULT_STATUS_COLOR);
         }
-
         int mapRenderSize = size * tileSize - mapPadding;
         int mapStartX = mapX - mapRenderSize / 2;
         int mapStartY = mapY - mapRenderSize / 2;
-
         ChunkStatus prevStatus = null;
         int prevColor = NULL_STATUS_COLOR;
-
         for (int x = 0; x < size; ++x) {
             int tileX = mapStartX + x * tileSize;
-
             for (int z = 0; z < size; ++z) {
                 int tileY = mapStartY + z * tileSize;
-
                 ChunkStatus status = tracker.getChunkStatus(x, z);
                 int color;
-
                 if (prevStatus == status) {
                     color = prevColor;
                 } else {
                     color = STATUS_TO_COLOR_FAST.getInt(status);
-
                     prevStatus = status;
                     prevColor = color;
                 }
-
                 addRect(writer, matrix, tileX, tileY, tileX + mapScale, tileY + mapScale, color);
             }
         }
-
         tessellator.draw();
-
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
@@ -121,19 +101,14 @@ public class MixinLevelLoadingScreen {
         try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
             long buffer = stack.nmalloc(4 * ColorVertex.STRIDE);
             long ptr = buffer;
-
             ColorVertex.put(ptr, matrix, x1, y2, 0, color);
             ptr += ColorVertex.STRIDE;
-
             ColorVertex.put(ptr, matrix, x2, y2, 0, color);
             ptr += ColorVertex.STRIDE;
-
             ColorVertex.put(ptr, matrix, x2, y1, 0, color);
             ptr += ColorVertex.STRIDE;
-
             ColorVertex.put(ptr, matrix, x1, y1, 0, color);
             ptr += ColorVertex.STRIDE;
-
             writer.push(stack, buffer, 4, ColorVertex.FORMAT);
         }
     }

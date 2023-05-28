@@ -11,23 +11,17 @@ public class ChunkRenderListBuilder {
 
     public void add(RenderSection render) {
         ObjectArrayList<RenderSection> sections = this.entries.get(render.getRegionId());
-
         if (sections == null) {
             this.entries.put(render.getRegionId(), sections = new ObjectArrayList<>(RenderRegion.REGION_SIZE));
         }
-
         sections.add(render);
     }
 
-
     public ChunkRenderList build() {
         var batches = new ObjectArrayList<ChunkRenderList.RegionBatch>(this.entries.size());
-
         for (var entry : this.entries.long2ReferenceEntrySet()) {
             batches.add(new ChunkRenderList.RegionBatch(entry.getLongKey(), entry.getValue()));
         }
-
         return new ChunkRenderList(batches);
     }
-
 }

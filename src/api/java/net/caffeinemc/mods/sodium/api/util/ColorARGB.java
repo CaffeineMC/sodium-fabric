@@ -10,9 +10,13 @@ package net.caffeinemc.mods.sodium.api.util;
  * | Alpha     | Red       | Green     | Blue       |
  */
 public class ColorARGB implements ColorU8 {
+
     private static final int ALPHA_COMPONENT_OFFSET = 24;
+
     private static final int RED_COMPONENT_OFFSET = 16;
+
     private static final int GREEN_COMPONENT_OFFSET = 8;
+
     private static final int BLUE_COMPONENT_OFFSET = 0;
 
     /**
@@ -23,10 +27,7 @@ public class ColorARGB implements ColorU8 {
      * @param a The alpha component of the color
      */
     public static int pack(int r, int g, int b, int a) {
-        return (a & COMPONENT_MASK) << ALPHA_COMPONENT_OFFSET |
-                (r & COMPONENT_MASK) << RED_COMPONENT_OFFSET |
-                (g & COMPONENT_MASK) << GREEN_COMPONENT_OFFSET |
-                (b & COMPONENT_MASK) << BLUE_COMPONENT_OFFSET;
+        return (a & COMPONENT_MASK) << ALPHA_COMPONENT_OFFSET | (r & COMPONENT_MASK) << RED_COMPONENT_OFFSET | (g & COMPONENT_MASK) << GREEN_COMPONENT_OFFSET | (b & COMPONENT_MASK) << BLUE_COMPONENT_OFFSET;
     }
 
     /**

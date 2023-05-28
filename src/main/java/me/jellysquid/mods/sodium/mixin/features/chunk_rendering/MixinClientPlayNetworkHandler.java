@@ -11,15 +11,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientPlayNetworkHandler.class)
 public class MixinClientPlayNetworkHandler {
+
     @Inject(method = "onChunkData", at = @At("RETURN"))
     private void postLoadChunk(ChunkDataS2CPacket packet, CallbackInfo ci) {
-        SodiumWorldRenderer.instance()
-                .onChunkAdded(packet.getX(), packet.getZ());
+        SodiumWorldRenderer.instance().onChunkAdded(packet.getX(), packet.getZ());
     }
 
     @Inject(method = "onUnloadChunk", at = @At("RETURN"))
     private void postUnloadChunk(UnloadChunkS2CPacket packet, CallbackInfo ci) {
-        SodiumWorldRenderer.instance()
-                .onChunkRemoved(packet.getX(), packet.getZ());
+        SodiumWorldRenderer.instance().onChunkRemoved(packet.getX(), packet.getZ());
     }
 }

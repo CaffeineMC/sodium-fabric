@@ -1,11 +1,12 @@
 package me.jellysquid.mods.sodium.client.gl.buffer;
 
 import org.lwjgl.system.MemoryUtil;
-
 import java.nio.ByteBuffer;
 
 public class GlBufferMapping {
+
     private final GlBuffer buffer;
+
     private final ByteBuffer map;
 
     protected boolean disposed;

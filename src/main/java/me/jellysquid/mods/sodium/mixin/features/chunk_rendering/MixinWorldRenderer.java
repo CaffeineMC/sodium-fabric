@@ -15,18 +15,17 @@ import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
-
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import java.util.SortedSet;
 
 @Mixin(WorldRenderer.class)
 public abstract class MixinWorldRenderer implements WorldRendererExtended {
+
     @Shadow
     @Final
     private BufferBuilderStorage bufferBuilders;
@@ -56,7 +55,6 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
     @Inject(method = "setWorld", at = @At("RETURN"))
     private void onWorldChanged(ClientWorld world, CallbackInfo ci) {
         RenderDevice.enterManagedCode();
-
         try {
             this.renderer.setWorld(world);
         } finally {
@@ -94,7 +92,6 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
     @Overwrite
     private void renderLayer(RenderLayer renderLayer, MatrixStack matrices, double x, double y, double z, Matrix4f matrix) {
         RenderDevice.enterManagedCode();
-
         try {
             this.renderer.drawChunkLayer(renderLayer, matrices, x, y, z);
         } finally {
@@ -109,20 +106,16 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, boolean spectator) {
         RenderDevice.enterManagedCode();
-
         try {
             this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), this.frame++, spectator);
-
             if (FlawlessFrames.isActive()) {
                 // Block until all chunk updates have been processed
                 this.renderer.getRenderSectionManager().updateAllChunksNow();
-
                 // If that caused new chunks to become visible, repeat until we got them all
                 while (this.renderer.getRenderSectionManager().isGraphDirty()) {
                     this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), this.frame++, spectator);
                     this.renderer.getRenderSectionManager().updateAllChunksNow();
                 }
-
                 // We set this because third-party mods may use it (to loop themselves), even if Vanilla does not.
                 this.shouldUpdate = false;
             }
@@ -179,7 +172,6 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
     @Inject(method = "reload()V", at = @At("RETURN"))
     private void onReload(CallbackInfo ci) {
         RenderDevice.enterManagedCode();
-
         try {
             this.renderer.reload();
         } finally {

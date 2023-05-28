@@ -7,6 +7,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Formatting;
 
 public class ControlElement<T> extends AbstractWidget {
+
     protected final Option<T> option;
 
     protected final Dim2i dim;
@@ -26,11 +27,9 @@ public class ControlElement<T> extends AbstractWidget {
     public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
         String name = this.option.getName().getString();
         String label;
-
         if (this.hovered && this.font.getWidth(name) > (this.dim.width() - this.option.getControl().getMaxWidth())) {
             name = name.substring(0, Math.min(name.length(), 10)) + "...";
         }
-
         if (this.option.isAvailable()) {
             if (this.option.hasChanged()) {
                 label = Formatting.ITALIC + name + " *";
@@ -40,9 +39,7 @@ public class ControlElement<T> extends AbstractWidget {
         } else {
             label = String.valueOf(Formatting.GRAY) + Formatting.STRIKETHROUGH + name;
         }
-
         this.hovered = this.dim.containsCursor(mouseX, mouseY);
-
         this.drawRect(this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), this.hovered ? 0xE0000000 : 0x90000000);
         this.drawString(matrixStack, label, this.dim.x() + 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
     }

@@ -20,6 +20,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  */
 @Mixin(SpriteContents.class)
 public class MixinSpriteContents {
+
     @Mutable
     @Shadow
     @Final
@@ -37,7 +38,6 @@ public class MixinSpriteContents {
     private void sodium$beforeGenerateMipLevels(SpriteContents instance, NativeImage nativeImage, Identifier identifier) {
         // We're injecting after the "info" field has been set, so this is safe even though we're in a constructor.
         sodium$fillInTransparentPixelColors(nativeImage);
-
         this.image = nativeImage;
     }
 
@@ -53,53 +53,40 @@ public class MixinSpriteContents {
     private static void sodium$fillInTransparentPixelColors(NativeImage nativeImage) {
         final long ppPixel = NativeImageHelper.getPointerRGBA(nativeImage);
         final int pixelCount = nativeImage.getHeight() * nativeImage.getWidth();
-
         // Calculate an average color from all pixels that are not completely transparent.
         // This average is weighted based on the (non-zero) alpha value of the pixel.
         float r = 0.0f;
         float g = 0.0f;
         float b = 0.0f;
-
         float totalWeight = 0.0f;
-
         for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
             long pPixel = ppPixel + (pixelIndex * 4);
-
             int color = MemoryUtil.memGetInt(pPixel);
             int alpha = NativeImage.getAlpha(color);
-
             // Ignore all fully-transparent pixels for the purposes of computing an average color.
             if (alpha != 0) {
                 float weight = (float) alpha;
-
                 // Make sure to convert to linear space so that we don't lose brightness.
                 r += ColorSRGB.srgbToLinear(NativeImage.getRed(color)) * weight;
                 g += ColorSRGB.srgbToLinear(NativeImage.getGreen(color)) * weight;
                 b += ColorSRGB.srgbToLinear(NativeImage.getBlue(color)) * weight;
-
                 totalWeight += weight;
             }
         }
-
         // Bail if none of the pixels are semi-transparent.
         if (totalWeight == 0.0f) {
             return;
         }
-
         r /= totalWeight;
         g /= totalWeight;
         b /= totalWeight;
-
         // Convert that color in linear space back to sRGB.
         // Use an alpha value of zero - this works since we only replace pixels with an alpha value of 0.
         int averageColor = ColorSRGB.linearToSrgb(r, g, b, 0);
-
         for (int pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
             long pPixel = ppPixel + (pixelIndex * 4);
-
             int color = MemoryUtil.memGetInt(pPixel);
             int alpha = NativeImage.getAlpha(color);
-
             // Replace the color values of pixels which are fully transparent, since they have no color data.
             if (alpha == 0) {
                 MemoryUtil.memPutInt(pPixel, averageColor);

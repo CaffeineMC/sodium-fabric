@@ -13,7 +13,6 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
-
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -21,22 +20,27 @@ import java.util.concurrent.CompletableFuture;
  * data about the render in the chunk visibility graph.
  */
 public class RenderSection {
+
     private final SodiumWorldRenderer worldRenderer;
+
     private final int chunkX, chunkY, chunkZ;
 
     private final ChunkGraphInfo graphInfo;
-    private final int chunkId;
-    private final long regionId;
 
+    private final int chunkId;
+
+    private final long regionId;
 
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
+
     private CompletableFuture<?> rebuildTask = null;
 
     private ChunkUpdateType pendingUpdate;
 
     private boolean tickable;
+
     private boolean disposed;
 
     private int lastAcceptedBuildTime = -1;
@@ -45,21 +49,16 @@ public class RenderSection {
 
     public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
         this.worldRenderer = worldRenderer;
-
         this.chunkX = chunkX;
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
-
         this.graphInfo = new ChunkGraphInfo(this);
-
         int rX = this.getChunkX() & (RenderRegion.REGION_WIDTH - 1);
         int rY = this.getChunkY() & (RenderRegion.REGION_HEIGHT - 1);
         int rZ = this.getChunkZ() & (RenderRegion.REGION_LENGTH - 1);
-
         this.chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
         this.regionId = RenderRegion.getRegionKeyForChunk(this.chunkX, this.chunkY, this.chunkZ);
     }
-
 
     public RenderSection getAdjacent(Direction dir) {
         return this.adjacent[dir.ordinal()];
@@ -92,7 +91,6 @@ public class RenderSection {
     public void delete() {
         this.cancelRebuildTask();
         this.setData(ChunkRenderData.ABSENT);
-
         this.disposed = true;
     }
 
@@ -100,10 +98,8 @@ public class RenderSection {
         if (info == null) {
             throw new NullPointerException("Mesh information must not be null");
         }
-
         this.worldRenderer.onChunkRenderUpdated(this.chunkX, this.chunkY, this.chunkZ, this.data, info);
         this.data = info;
-
         this.tickable = !info.getAnimatedSprites().isEmpty();
         this.flags = info.getFlags();
     }
@@ -165,7 +161,6 @@ public class RenderSection {
         double xDist = x - this.getCenterX();
         double yDist = y - this.getCenterY();
         double zDist = z - this.getCenterZ();
-
         return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
 
@@ -196,7 +191,6 @@ public class RenderSection {
     public double getSquaredDistanceXZ(double x, double z) {
         double xDist = x - this.getCenterX();
         double zDist = z - this.getCenterZ();
-
         return (xDist * xDist) + (zDist * zDist);
     }
 
@@ -226,8 +220,7 @@ public class RenderSection {
 
     @Override
     public String toString() {
-        return String.format("RenderChunk{chunkX=%d, chunkY=%d, chunkZ=%d}",
-                this.chunkX, this.chunkY, this.chunkZ);
+        return String.format("RenderChunk{chunkX=%d, chunkY=%d, chunkZ=%d}", this.chunkX, this.chunkY, this.chunkZ);
     }
 
     public ChunkGraphInfo getGraphInfo() {
@@ -253,7 +246,6 @@ public class RenderSection {
             this.rebuildTask.cancel(false);
             this.rebuildTask = null;
         }
-
         this.rebuildTask = task;
         this.pendingUpdate = null;
     }

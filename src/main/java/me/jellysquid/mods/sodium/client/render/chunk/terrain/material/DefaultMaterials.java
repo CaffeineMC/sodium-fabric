@@ -8,9 +8,13 @@ import net.minecraft.client.render.RenderLayers;
 import net.minecraft.fluid.FluidState;
 
 public class DefaultMaterials {
+
     public static final Material SOLID = new Material(DefaultTerrainRenderPasses.SOLID, AlphaCutoffParameter.ZERO, true);
+
     public static final Material CUTOUT = new Material(DefaultTerrainRenderPasses.CUTOUT, AlphaCutoffParameter.ONE_TENTH, false);
+
     public static final Material CUTOUT_MIPPED = new Material(DefaultTerrainRenderPasses.CUTOUT, AlphaCutoffParameter.ONE_TENTH, true);
+
     public static final Material TRANSLUCENT = new Material(DefaultTerrainRenderPasses.TRANSLUCENT, AlphaCutoffParameter.ZERO, true);
 
     public static Material forBlockState(BlockState state) {
@@ -31,7 +35,6 @@ public class DefaultMaterials {
         } else if (layer == RenderLayer.getTranslucent()) {
             return TRANSLUCENT;
         }
-
         throw new IllegalArgumentException("No material mapping exists for " + layer);
     }
 }

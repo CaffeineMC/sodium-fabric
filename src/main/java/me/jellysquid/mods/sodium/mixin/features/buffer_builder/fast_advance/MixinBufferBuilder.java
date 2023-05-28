@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(BufferBuilder.class)
 public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implements BufferVertexConsumer {
+
     @Shadow
     private VertexFormat format;
 
@@ -28,18 +29,14 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
     @Overwrite
     public void nextElement() {
         ImmutableList<VertexFormatElement> elements = this.format.getElements();
-
         do {
             this.elementOffset += this.currentElement.getByteLength();
-
             // Wrap around the element pointer without using modulo
             if (++this.currentElementId >= elements.size()) {
                 this.currentElementId -= elements.size();
             }
-
             this.currentElement = elements.get(this.currentElementId);
         } while (this.currentElement.getType() == VertexFormatElement.Type.PADDING);
-
         if (this.colorFixed && this.currentElement.getType() == VertexFormatElement.Type.COLOR) {
             BufferVertexConsumer.super.color(this.fixedRed, this.fixedGreen, this.fixedBlue, this.fixedAlpha);
         }

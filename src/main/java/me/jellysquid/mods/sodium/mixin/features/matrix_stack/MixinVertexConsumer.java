@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.mixin.features.matrix_stack;
 
 import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.minecraft.client.render.VertexConsumer;
-
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,6 +10,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(VertexConsumer.class)
 public interface MixinVertexConsumer {
+
     @Shadow
     VertexConsumer normal(float x, float y, float z);
 
@@ -26,7 +26,6 @@ public interface MixinVertexConsumer {
         float xt = MatrixHelper.transformPositionX(matrix, x, y, z);
         float yt = MatrixHelper.transformPositionY(matrix, x, y, z);
         float zt = MatrixHelper.transformPositionZ(matrix, x, y, z);
-
         return this.vertex(xt, yt, zt);
     }
 
@@ -39,7 +38,6 @@ public interface MixinVertexConsumer {
         float xt = MatrixHelper.transformNormalX(matrix, x, y, z);
         float yt = MatrixHelper.transformNormalY(matrix, x, y, z);
         float zt = MatrixHelper.transformNormalZ(matrix, x, y, z);
-
         return this.normal(xt, yt, zt);
     }
 }

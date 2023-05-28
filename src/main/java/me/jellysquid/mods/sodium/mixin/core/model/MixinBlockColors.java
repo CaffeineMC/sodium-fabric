@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BlockColors.class)
 public class MixinBlockColors implements BlockColorsExtended {
+
     private Reference2ReferenceMap<Block, ColorSampler<BlockState>> blocksToColor;
 
     private static final ColorSampler<?> DEFAULT_PROVIDER = (state, view, pos, tint) -> -1;

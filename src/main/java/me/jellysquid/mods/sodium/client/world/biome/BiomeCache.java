@@ -7,11 +7,15 @@ import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.biome.source.SeedMixer;
 
 public class BiomeCache {
-    private static final int SIZE = 3 * 4; // 3 chunks * 4 biomes per chunk
+
+    // 3 chunks * 4 biomes per chunk
+    private static final int SIZE = 3 * 4;
 
     // Arrays are in ZYX order
     private final Biome[] biomes = new Biome[SIZE * SIZE * SIZE];
+
     private final boolean[] uniform = new boolean[SIZE * SIZE * SIZE];
+
     private final BiasMap bias = new BiasMap();
 
     private long biomeSeed;
@@ -20,15 +24,11 @@ public class BiomeCache {
 
     public void update(WorldSlice slice) {
         var pos = slice.getOrigin();
-
         this.worldX = pos.getMinX() - 16;
         this.worldY = pos.getMinY() - 16;
         this.worldZ = pos.getMinZ() - 16;
-
         this.biomeSeed = slice.getBiomeSeed();
-
         this.copyBiomeData(slice);
-
         this.calculateBias();
         this.calculateUniform();
     }
@@ -45,14 +45,12 @@ public class BiomeCache {
 
     private void copySectionBiomeData(WorldSlice slice, int sectionX, int sectionY, int sectionZ) {
         var section = slice.getSection(sectionX, sectionY, sectionZ);
-
         for (int x = 0; x < 4; x++) {
             for (int y = 0; y < 4; y++) {
                 for (int z = 0; z < 4; z++) {
                     int biomeX = (sectionX * 4) + x;
                     int biomeY = (sectionY * 4) + y;
                     int biomeZ = (sectionZ * 4) + z;
-
                     this.biomes[dataArrayIndex(biomeX, biomeY, biomeZ)] = section.getBiome(x, y, z).value();
                 }
             }
@@ -73,48 +71,39 @@ public class BiomeCache {
         int offsetX = this.worldX >> 2;
         int offsetY = this.worldY >> 2;
         int offsetZ = this.worldZ >> 2;
-
         long seed = this.biomeSeed;
-
         for (int cellX = 1; cellX < 11; cellX++) {
             int worldCellX = offsetX + cellX;
             long seedX = SeedMixer.mixSeed(seed, worldCellX);
-
             for (int cellY = 1; cellY < 11; cellY++) {
                 int worldCellY = offsetY + cellY;
                 long seedXY = SeedMixer.mixSeed(seedX, worldCellY);
-
                 for (int cellZ = 1; cellZ < 11; cellZ++) {
                     int worldCellZ = offsetZ + cellZ;
                     long seedXYZ = SeedMixer.mixSeed(seedXY, worldCellZ);
-
-                    this.calculateBias(dataArrayIndex(cellX, cellY, cellZ),
-                            worldCellX, worldCellY, worldCellZ, seedXYZ);
+                    this.calculateBias(dataArrayIndex(cellX, cellY, cellZ), worldCellX, worldCellY, worldCellZ, seedXYZ);
                 }
             }
         }
-
     }
 
     private void calculateBias(int index, int x, int y, int z, long seed) {
         seed = SeedMixer.mixSeed(seed, x);
         seed = SeedMixer.mixSeed(seed, y);
         seed = SeedMixer.mixSeed(seed, z);
-
-        var gradX = getBias(seed); seed = SeedMixer.mixSeed(seed, this.biomeSeed);
-        var gradY = getBias(seed); seed = SeedMixer.mixSeed(seed, this.biomeSeed);
+        var gradX = getBias(seed);
+        seed = SeedMixer.mixSeed(seed, this.biomeSeed);
+        var gradY = getBias(seed);
+        seed = SeedMixer.mixSeed(seed, this.biomeSeed);
         var gradZ = getBias(seed);
-
         this.bias.set(index, gradX, gradY, gradZ);
     }
 
     private boolean hasUniformNeighbors(int x, int y, int z) {
         Biome biome = this.biomes[dataArrayIndex(x, y, z)];
-        
         int minX = x - 1, maxX = x + 1;
         int minY = y - 1, maxY = y + 1;
         int minZ = z - 1, maxZ = z + 1;
-
         for (int adjX = minX; adjX <= maxX; adjX++) {
             for (int adjY = minY; adjY <= maxY; adjY++) {
                 for (int adjZ = minZ; adjZ <= maxZ; adjZ++) {
@@ -124,20 +113,14 @@ public class BiomeCache {
                 }
             }
         }
-
         return true;
     }
 
     public Biome getBiome(int x, int y, int z) {
-        int centerIndex = dataArrayIndex(
-                BiomeCoords.fromBlock(x - 2),
-                BiomeCoords.fromBlock(y - 2),
-                BiomeCoords.fromBlock(z - 2));
-
+        int centerIndex = dataArrayIndex(BiomeCoords.fromBlock(x - 2), BiomeCoords.fromBlock(y - 2), BiomeCoords.fromBlock(z - 2));
         if (this.uniform[centerIndex]) {
             return this.biomes[centerIndex];
         }
-
         return this.getBiomeUsingVoronoi(x, y, z);
     }
 
@@ -145,18 +128,14 @@ public class BiomeCache {
         int x = worldX - 2;
         int y = worldY - 2;
         int z = worldZ - 2;
-
         int intX = BiomeCoords.fromBlock(x);
         int intY = BiomeCoords.fromBlock(y);
         int intZ = BiomeCoords.fromBlock(z);
-
         float fracX = BiomeCoords.method_39920(x) * 0.25f;
         float fracY = BiomeCoords.method_39920(y) * 0.25f;
         float fracZ = BiomeCoords.method_39920(z) * 0.25f;
-
         float closestDistance = Float.POSITIVE_INFINITY;
         int closestArrayIndex = 0;
-
         // Find the closest Voronoi cell to the given world coordinate
         // The distance is calculated between center positions, which are offset by the bias parameter
         // The bias is pre-computed and stored for each cell
@@ -164,33 +143,25 @@ public class BiomeCache {
             boolean dirX = (index & 4) != 0;
             boolean dirY = (index & 2) != 0;
             boolean dirZ = (index & 1) != 0;
-
             int adjIntX = intX + (dirX ? 1 : 0);
             int adjIntY = intY + (dirY ? 1 : 0);
             int adjIntZ = intZ + (dirZ ? 1 : 0);
-
             float adjFracX = fracX - (dirX ? 1.0f : 0.0f);
             float adjFracY = fracY - (dirY ? 1.0f : 0.0f);
             float adjFracZ = fracZ - (dirZ ? 1.0f : 0.0f);
-
             int biasIndex = dataArrayIndex(adjIntX, adjIntY, adjIntZ);
-
             float biasX = biasToVector(this.bias.getX(biasIndex));
             float biasY = biasToVector(this.bias.getY(biasIndex));
             float biasZ = biasToVector(this.bias.getZ(biasIndex));
-
             float distanceX = MathHelper.square(adjFracX + biasX);
             float distanceY = MathHelper.square(adjFracY + biasY);
             float distanceZ = MathHelper.square(adjFracZ + biasZ);
-
             float distance = distanceX + distanceY + distanceZ;
-
             if (closestDistance > distance) {
                 closestArrayIndex = biasIndex;
                 closestDistance = distance;
             }
         }
-
         return this.biomes[closestArrayIndex];
     }
 
@@ -211,6 +182,7 @@ public class BiomeCache {
     }
 
     public static class BiasMap {
+
         // Pack the bias values for each axis into one array to keep things in cache.
         private final short[] data = new short[SIZE * SIZE * SIZE * 3];
 

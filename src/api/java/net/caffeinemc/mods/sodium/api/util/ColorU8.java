@@ -1,6 +1,7 @@
 package net.caffeinemc.mods.sodium.api.util;
 
 public interface ColorU8 {
+
     /**
      * The number of bits used for each color component.
      */

@@ -25,19 +25,17 @@ import net.minecraft.world.BlockRenderView;
  * You can use the various static pack/unpack methods to extract these values in a usable format.
  */
 public abstract class LightDataAccess {
+
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
+
     protected BlockRenderView world;
 
     public long get(int x, int y, int z, Direction d1, Direction d2) {
-        return this.get(x + d1.getOffsetX() + d2.getOffsetX(),
-                y + d1.getOffsetY() + d2.getOffsetY(),
-                z + d1.getOffsetZ() + d2.getOffsetZ());
+        return this.get(x + d1.getOffsetX() + d2.getOffsetX(), y + d1.getOffsetY() + d2.getOffsetY(), z + d1.getOffsetZ() + d2.getOffsetZ());
     }
 
     public long get(int x, int y, int z, Direction dir) {
-        return this.get(x + dir.getOffsetX(),
-                y + dir.getOffsetY(),
-                z + dir.getOffsetZ());
+        return this.get(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
     }
 
     public long get(BlockPos pos, Direction dir) {
@@ -57,12 +55,9 @@ public abstract class LightDataAccess {
     protected long compute(int x, int y, int z) {
         BlockPos pos = this.pos.set(x, y, z);
         BlockRenderView world = this.world;
-
         BlockState state = world.getBlockState(pos);
-
         float ao;
         boolean em;
-
         if (state.getLuminance() == 0) {
             ao = state.getAmbientOcclusionLightLevel(world, pos);
             em = state.hasEmissiveLighting(world, pos);
@@ -70,17 +65,14 @@ public abstract class LightDataAccess {
             ao = 1.0f;
             em = true;
         }
-
         // FIX: Fluids are always non-translucent despite blocking light, so we need a special check here in order to
         // solve lighting issues underwater.
         boolean op = !state.shouldBlockVision(world, pos) || state.getOpacity(world, pos) == 0;
         boolean fo = state.isOpaqueFullCube(world, pos);
         boolean fc = state.isFullCube(world, pos);
-
         // OPTIMIZE: Do not calculate lightmap data if the block is full and opaque.
         // FIX: Calculate lightmap data for light-emitting or emissive blocks, even though they are full and opaque.
         int lm = (fo && !em) ? 0 : WorldRenderer.getLightmapCoordinates(world, state, pos);
-
         return packAO(ao) | packLM(lm) | packOP(op) | packFO(fo) | packFC(fc) | (1L << 60);
     }
 

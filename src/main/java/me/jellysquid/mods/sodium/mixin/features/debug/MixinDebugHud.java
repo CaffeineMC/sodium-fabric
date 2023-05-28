@@ -10,12 +10,12 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
-
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 
 @Mixin(DebugHud.class)
 public abstract class MixinDebugHud {
+
     @Shadow
     private static long toMiB(long bytes) {
         throw new UnsupportedOperationException();
@@ -27,30 +27,23 @@ public abstract class MixinDebugHud {
         strings.add("");
         strings.add("Sodium Renderer");
         strings.add(Formatting.UNDERLINE + getFormattedVersionText());
-
         var renderer = SodiumWorldRenderer.instanceNullable();
-
         if (renderer != null) {
             strings.addAll(renderer.getMemoryDebugStrings());
         }
-
         for (int i = 0; i < strings.size(); i++) {
             String str = strings.get(i);
-
             if (str.startsWith("Allocated:")) {
                 strings.add(i + 1, getNativeMemoryString());
-
                 break;
             }
         }
-
         return strings;
     }
 
     private static String getFormattedVersionText() {
         String version = SodiumClientMod.getVersion();
         Formatting color;
-
         if (version.endsWith("-dirty")) {
             color = Formatting.RED;
         } else if (version.contains("+rev.")) {
@@ -58,7 +51,6 @@ public abstract class MixinDebugHud {
         } else {
             color = Formatting.GREEN;
         }
-
         return color + version;
     }
 

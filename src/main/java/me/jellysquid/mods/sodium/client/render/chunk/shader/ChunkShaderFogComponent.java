@@ -16,24 +16,27 @@ import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformInt;
  * not depend on any vendor-specific extensions and is written using very simple GLSL code.
  */
 public abstract class ChunkShaderFogComponent {
+
     public abstract void setup();
 
     public static class None extends ChunkShaderFogComponent {
-        public None(ShaderBindingContext context) {
 
+        public None(ShaderBindingContext context) {
         }
 
         @Override
         public void setup() {
-
         }
     }
 
     public static class Smooth extends ChunkShaderFogComponent {
+
         private final GlUniformFloat4v uFogColor;
 
         private final GlUniformInt uFogShape;
+
         private final GlUniformFloat uFogStart;
+
         private final GlUniformFloat uFogEnd;
 
         public Smooth(ShaderBindingContext context) {
@@ -47,10 +50,8 @@ public abstract class ChunkShaderFogComponent {
         public void setup() {
             this.uFogColor.set(RenderSystem.getShaderFogColor());
             this.uFogShape.set(RenderSystem.getShaderFogShape().getId());
-
             this.uFogStart.setFloat(RenderSystem.getShaderFogStart());
             this.uFogEnd.setFloat(RenderSystem.getShaderFogEnd());
         }
     }
-
 }

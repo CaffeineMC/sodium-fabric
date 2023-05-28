@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.gl.util;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryUtil;
-
 import java.nio.Buffer;
 
 /**
@@ -14,6 +13,7 @@ import java.nio.Buffer;
  * https://github.com/LWJGL/lwjgl3/releases/tag/3.2.3
  */
 public class MemoryUtilHelper {
+
     // memFree for custom / pointer buffers *was* changed.
     public static void memFree(@Nullable PointerBuffer ptr) {
         if (ptr != null) {

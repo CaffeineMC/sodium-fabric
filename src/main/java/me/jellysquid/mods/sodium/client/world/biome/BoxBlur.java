@@ -10,56 +10,46 @@ public class BoxBlur {
         if (buffer.isHomogenous()) {
             return;
         }
-
         var tmp = new ColorBuffer(buffer.width, buffer.height);
-        blur(buffer, tmp, radius); // X-axis
-        blur(tmp, buffer, radius); // Y-axis
+        // X-axis
+        blur(buffer, tmp, radius);
+        // Y-axis
+        blur(tmp, buffer, radius);
     }
 
     private static void blur(ColorBuffer src, ColorBuffer dst, int radius) {
         Validate.isTrue(src.width == dst.width);
         Validate.isTrue(src.height == dst.height);
-
         int multiplier = getAveragingMultiplier((radius * 2) + 1);
-
         int width = src.width;
         int height = src.height;
-
         for (int y = 0; y < height; y++) {
             int srcRowOffset = src.getIndex(0, y);
-
             int red = src.getRed(srcRowOffset);
             int green = src.getGreen(srcRowOffset);
             int blue = src.getBlue(srcRowOffset);
-
             // Extend the window backwards by repeating the colors at the edge N times
             red += red * radius;
             green += green * radius;
             blue += blue * radius;
-
             // Extend the window forwards by sampling ahead N times
             for (int x = 1; x <= radius; x++) {
                 red += src.getRed(srcRowOffset + x);
                 green += src.getGreen(srcRowOffset + x);
                 blue += src.getBlue(srcRowOffset + x);
             }
-
             for (int x = 0; x < width; x++) {
                 // The x and y coordinates are transposed to flip the output image
                 dst.setARGB(dst.getIndex(y, x), averageRGB(red, green, blue, multiplier));
-
                 {
                     int prevX = Math.max(0, x - radius);
-
                     // Remove the color values that are behind the window
                     red -= src.getRed(srcRowOffset + prevX);
                     green -= src.getGreen(srcRowOffset + prevX);
                     blue -= src.getBlue(srcRowOffset + prevX);
                 }
-
                 {
                     int nextX = Math.min(width - 1, x + radius + 1);
-
                     // Add the color values that are ahead of the window
                     red += src.getRed(srcRowOffset + nextX);
                     green += src.getGreen(srcRowOffset + nextX);
@@ -86,15 +76,16 @@ public class BoxBlur {
      * @author 2No2Name
      */
     public static int averageRGB(int red, int green, int blue, int multiplier) {
-        int value = 0xFF << 24; // Alpha is constant (fully opaque)
+        // Alpha is constant (fully opaque)
+        int value = 0xFF << 24;
         value |= ((blue * multiplier) >>> 24) << 0;
         value |= ((green * multiplier) >>> 24) << 8;
         value |= ((red * multiplier) >>> 24) << 16;
-
         return value;
     }
 
     public static class ColorBuffer {
+
         private final int[] data;
 
         private final int width, height;
@@ -109,8 +100,7 @@ public class BoxBlur {
             return (y * this.width) + x;
         }
 
-        public void setARGB(int index, int packed)
-        {
+        public void setARGB(int index, int packed) {
             this.data[index] = packed;
         }
 
@@ -133,13 +123,11 @@ public class BoxBlur {
         public boolean isHomogenous() {
             int[] data = this.data;
             int first = data[0];
-
             for (int i = 1; i < data.length; i++) {
                 if (data[i] != first) {
                     return false;
                 }
             }
-
             return true;
         }
     }

@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(GlyphRenderer.class)
 public class MixinGlyphRenderer {
+
     @Shadow
     @Final
     private float minX;
@@ -62,38 +63,27 @@ public class MixinGlyphRenderer {
         float h2 = y + y2;
         float w1 = italic ? 1.0F - 0.25F * y1 : 0.0F;
         float w2 = italic ? 1.0F - 0.25F * y2 : 0.0F;
-
         int color = ColorABGR.pack(red, green, blue, alpha);
-
         var writer = VertexBufferWriter.of(vertexConsumer);
-
         try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
             long buffer = stack.nmalloc(4 * GlyphVertex.STRIDE);
             long ptr = buffer;
-
             write(ptr, matrix, x1 + w1, h1, 0.0F, color, this.minU, this.minV, light);
             ptr += GlyphVertex.STRIDE;
-
             write(ptr, matrix, x1 + w2, h2, 0.0F, color, this.minU, this.maxV, light);
             ptr += GlyphVertex.STRIDE;
-
             write(ptr, matrix, x2 + w2, h2, 0.0F, color, this.maxU, this.maxV, light);
             ptr += GlyphVertex.STRIDE;
-
             write(ptr, matrix, x2 + w1, h1, 0.0F, color, this.maxU, this.minV, light);
             ptr += GlyphVertex.STRIDE;
-
             writer.push(stack, buffer, 4, GlyphVertex.FORMAT);
         }
     }
 
-    private static void write(long buffer,
-                              Matrix4f matrix, float x, float y, float z, int color, float u, float v, int light) {
+    private static void write(long buffer, Matrix4f matrix, float x, float y, float z, int color, float u, float v, int light) {
         float x2 = MatrixHelper.transformPositionX(matrix, x, y, z);
         float y2 = MatrixHelper.transformPositionY(matrix, x, y, z);
         float z2 = MatrixHelper.transformPositionZ(matrix, x, y, z);
-
         GlyphVertex.put(buffer, x2, y2, z2, color, u, v, light);
     }
-
 }

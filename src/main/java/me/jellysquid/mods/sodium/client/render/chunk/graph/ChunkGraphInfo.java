@@ -8,6 +8,7 @@ import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.Direction;
 
 public class ChunkGraphInfo {
+
     private static final long DEFAULT_VISIBILITY_DATA = calculateVisibilityData(ChunkRenderData.EMPTY.getOcclusionData());
 
     private final RenderSection parent;
@@ -15,6 +16,7 @@ public class ChunkGraphInfo {
     private int lastVisibleFrame = -1;
 
     private long visibilityData;
+
     private byte cullingState;
 
     public ChunkGraphInfo(RenderSection parent) {
@@ -36,7 +38,6 @@ public class ChunkGraphInfo {
 
     private static long calculateVisibilityData(ChunkOcclusionData occlusionData) {
         long visibilityData = 0;
-
         for (Direction from : DirectionUtil.ALL_DIRECTIONS) {
             for (Direction to : DirectionUtil.ALL_DIRECTIONS) {
                 if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
@@ -44,7 +45,6 @@ public class ChunkGraphInfo {
                 }
             }
         }
-
         return visibilityData;
     }
 
@@ -72,7 +72,6 @@ public class ChunkGraphInfo {
         float x = this.getOriginX();
         float y = this.getOriginY();
         float z = this.getOriginZ();
-
         return !frustum.isBoxVisible(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
     }
 

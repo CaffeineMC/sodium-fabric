@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(MinecraftClient.class)
 public class MixinMinecraftClient {
+
     @Redirect(method = "getWindowTitle", at = @At(value = "INVOKE", target = "Lnet/minecraft/GameVersion;getName()Ljava/lang/String;"))
     private String overrideWindowTitle(GameVersion instance) {
         if (DriverWorkarounds.isWorkaroundEnabled(DriverWorkarounds.Reference.ISSUE_1486)) {
