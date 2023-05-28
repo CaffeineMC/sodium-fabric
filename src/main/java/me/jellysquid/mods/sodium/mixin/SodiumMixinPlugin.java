@@ -32,7 +32,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public String getRefMapperConfig() {
-        return null;
+        return getNullValue();
     }
 
     @Override
@@ -69,7 +69,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public List<String> getMixins() {
-        return null;
+        return getNullValue();
     }
 
     @Override
@@ -78,5 +78,9 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+    }
+
+    private String getNullValue() {
+        return null;
     }
 }

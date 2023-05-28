@@ -23,14 +23,7 @@ enum AoNeighborInfo {
 
         @Override
         public void mapCorners(int[] lm0, float[] ao0, int[] lm1, float[] ao1) {
-            lm1[0] = lm0[0];
-            lm1[1] = lm0[1];
-            lm1[2] = lm0[2];
-            lm1[3] = lm0[3];
-            ao1[0] = ao0[0];
-            ao1[1] = ao0[1];
-            ao1[2] = ao0[2];
-            ao1[3] = ao0[3];
+            copyArraysToNewArrays(lm0, ao0, lm1, ao1);
         }
 
         @Override
@@ -83,14 +76,7 @@ enum AoNeighborInfo {
 
         @Override
         public void mapCorners(int[] lm0, float[] ao0, int[] lm1, float[] ao1) {
-            lm1[3] = lm0[0];
-            lm1[0] = lm0[1];
-            lm1[1] = lm0[2];
-            lm1[2] = lm0[3];
-            ao1[3] = ao0[0];
-            ao1[0] = ao0[1];
-            ao1[1] = ao0[2];
-            ao1[2] = ao0[3];
+            updateArraysToNextLevel(lm0, ao0, lm1, ao1);
         }
 
         @Override
@@ -113,14 +99,7 @@ enum AoNeighborInfo {
 
         @Override
         public void mapCorners(int[] lm0, float[] ao0, int[] lm1, float[] ao1) {
-            lm1[0] = lm0[0];
-            lm1[1] = lm0[1];
-            lm1[2] = lm0[2];
-            lm1[3] = lm0[3];
-            ao1[0] = ao0[0];
-            ao1[1] = ao0[1];
-            ao1[2] = ao0[2];
-            ao1[3] = ao0[3];
+            copyArraysToNewArrays(lm0, ao0, lm1, ao1);
         }
 
         @Override
@@ -143,14 +122,7 @@ enum AoNeighborInfo {
 
         @Override
         public void mapCorners(int[] lm0, float[] ao0, int[] lm1, float[] ao1) {
-            lm1[3] = lm0[0];
-            lm1[0] = lm0[1];
-            lm1[1] = lm0[2];
-            lm1[2] = lm0[3];
-            ao1[3] = ao0[0];
-            ao1[0] = ao0[1];
-            ao1[1] = ao0[2];
-            ao1[2] = ao0[3];
+            updateArraysToNextLevel(lm0, ao0, lm1, ao1);
         }
 
         @Override
@@ -247,5 +219,27 @@ enum AoNeighborInfo {
      */
     public static AoNeighborInfo get(Direction direction) {
         return VALUES[direction.getId()];
+    }
+
+    private void copyArraysToNewArrays(int[] lm0, float[] ao0, int[] lm1, float[] ao1) {
+        lm1[0] = lm0[0];
+        lm1[1] = lm0[1];
+        lm1[2] = lm0[2];
+        lm1[3] = lm0[3];
+        ao1[0] = ao0[0];
+        ao1[1] = ao0[1];
+        ao1[2] = ao0[2];
+        ao1[3] = ao0[3];
+    }
+
+    private void updateArraysToNextLevel(int[] lm0, float[] ao0, int[] lm1, float[] ao1) {
+        lm1[3] = lm0[0];
+        lm1[0] = lm0[1];
+        lm1[1] = lm0[2];
+        lm1[2] = lm0[3];
+        ao1[3] = ao0[0];
+        ao1[0] = ao0[1];
+        ao1[1] = ao0[2];
+        ao1[2] = ao0[3];
     }
 }

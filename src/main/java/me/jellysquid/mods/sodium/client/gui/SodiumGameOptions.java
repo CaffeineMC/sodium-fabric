@@ -88,7 +88,7 @@ public class SodiumGameOptions {
 
         @Override
         public Text getLocalizedName() {
-            return this.name;
+            return getName();
         }
     }
 
@@ -104,7 +104,7 @@ public class SodiumGameOptions {
 
         @Override
         public Text getLocalizedName() {
-            return this.name;
+            return getName();
         }
 
         public boolean isFancy(GraphicsMode graphicsMode) {
@@ -171,5 +171,9 @@ public class SodiumGameOptions {
 
     public String getFileName() {
         return this.configPath.getFileName().toString();
+    }
+
+    private Text getName() {
+        return this.name;
     }
 }
