@@ -162,10 +162,8 @@ public class GlBufferArena {
             if (entry.isFree()) {
                 if (entry.getLength() == size) {
                     return entry;
-                } else if (entry.getLength() >= size) {
-                    if (best == null || best.getLength() > entry.getLength()) {
-                        best = entry;
-                    }
+                } else if (entry.getLength() >= size && best == null || best.getLength() > entry.getLength()) {
+                    best = entry;
                 }
             }
             entry = entry.getNext();
@@ -280,10 +278,8 @@ public class GlBufferArena {
                 } else if (next.getOffset() > seg.getEnd()) {
                     throw new IllegalStateException("segment.next.start > segment.end: not truly connected (sparsity error)");
                 }
-                if (next.isFree() && next.getNext() != null) {
-                    if (next.getNext().isFree()) {
-                        throw new IllegalStateException("segment.free && segment.next.free: not merged consecutive segments");
-                    }
+                if (next.isFree() && next.getNext() != null && next.getNext().isFree()) {
+                    throw new IllegalStateException("segment.free && segment.next.free: not merged consecutive segments");
                 }
             }
             GlBufferSegment prev = seg.getPrev();
@@ -293,10 +289,8 @@ public class GlBufferArena {
                 } else if (prev.getEnd() < seg.getOffset()) {
                     throw new IllegalStateException("segment.prev.end < segment.start: not truly connected (sparsity error)");
                 }
-                if (prev.isFree() && prev.getPrev() != null) {
-                    if (prev.getPrev().isFree()) {
-                        throw new IllegalStateException("segment.free && segment.prev.free: not merged consecutive segments");
-                    }
+                if (prev.isFree() && prev.getPrev() != null && prev.getPrev().isFree()) {
+                    throw new IllegalStateException("segment.free && segment.prev.free: not merged consecutive segments");
                 }
             }
             seg = next;
