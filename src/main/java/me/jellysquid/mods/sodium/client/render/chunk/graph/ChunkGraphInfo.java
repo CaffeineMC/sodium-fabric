@@ -15,7 +15,7 @@ public class ChunkGraphInfo {
     private int lastVisibleFrame = -1;
 
     private long visibilityData;
-    private byte cullingState;
+    private short cullingState;
 
     public ChunkGraphInfo(RenderSection parent) {
         this.parent = parent;
@@ -52,20 +52,25 @@ public class ChunkGraphInfo {
         return ((this.visibilityData & (1L << ((from.ordinal() << 3) + to.ordinal()))) != 0L);
     }
 
-    public void setCullingState(byte parent, Direction dir) {
-        this.cullingState = (byte) (parent | (1 << dir.ordinal()));
+    public short computeQueuePop() {
+        short retVal = (short) (cullingState & (((cullingState >> 8) & 0xFF) | 0xFF00));
+        cullingState = 0;
+        return retVal;
     }
 
-    public boolean canCull(Direction dir) {
-        return (this.cullingState & 1 << dir.ordinal()) != 0;
+    //The way this works now is
+    public void updateCullingState(Direction flow) {
+        int inbound = flow.ordinal();
+        this.cullingState |= (visibilityData >> (6 * inbound)) & 0x3F;
+        this.cullingState &= ~(1 << (inbound + 8));
     }
 
-    public byte getCullingState() {
-        return this.cullingState;
+    public void setCullingState(short parent) {
+        this.cullingState = (short) (parent & 0xFF00);
     }
 
     public void resetCullingState() {
-        this.cullingState = 0;
+        this.cullingState = -1;
     }
 
     public boolean isCulledByFrustum(Frustum frustum) {

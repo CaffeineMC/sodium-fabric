@@ -169,19 +169,18 @@ public class RenderSectionManager {
 
         for (int i = 0; i < queue.size(); i++) {
             RenderSection section = queue.getRender(i);
-            Direction flow = queue.getDirection(i);
-
             this.schedulePendingUpdates(section);
+            short cullData = section.getGraphInfo().computeQueuePop();
 
             for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
-                if (this.isCulled(section.getGraphInfo(), flow, dir)) {
+                if (useOcclusionCulling && (cullData & (1 << dir.ordinal())) == 0) {
                     continue;
                 }
 
                 RenderSection adj = section.getAdjacent(dir);
 
                 if (adj != null && this.isWithinRenderDistance(adj)) {
-                    this.bfsEnqueue(section, adj, DirectionUtil.getOpposite(dir));
+                    this.bfsEnqueue(section, adj, DirectionUtil.getOpposite(dir), cullData);
                 }
             }
         }
@@ -500,14 +499,6 @@ public class RenderSectionManager {
         return x <= this.renderDistance && z <= this.renderDistance;
     }
 
-    private boolean isCulled(ChunkGraphInfo node, Direction from, Direction to) {
-        if (node.canCull(to)) {
-            return true;
-        }
-
-        return this.useOcclusionCulling && from != null && !node.isVisibleThrough(from, to);
-    }
-
     private void initSearch(Camera camera, Frustum frustum, int frame, boolean spectator) {
         this.currentFrame = frame;
         this.frustum = frustum;
@@ -535,7 +526,7 @@ public class RenderSectionManager {
                 this.useOcclusionCulling = false;
             }
 
-            this.addVisible(rootRender, null);
+            this.addVisible(rootRender);
         } else {
             chunkY = MathHelper.clamp(origin.getY() >> 4, this.world.getBottomSectionCoord(), this.world.getTopSectionCoord() - 1);
 
@@ -565,15 +556,16 @@ public class RenderSectionManager {
             sorted.sort(Comparator.comparingDouble(node -> node.getSquaredDistance(origin)));
 
             for (RenderSection render : sorted) {
-                this.addVisible(render, null);
+                this.addVisible(render);
             }
         }
     }
 
 
-    private void bfsEnqueue(RenderSection parent, RenderSection render, Direction flow) {
+    private void bfsEnqueue(RenderSection parent, RenderSection render, Direction flow, short parentalData) {
         ChunkGraphInfo info = render.getGraphInfo();
 
+        info.updateCullingState(flow);
         if (info.getLastVisibleFrame() == this.currentFrame) {
             return;
         }
@@ -587,13 +579,14 @@ public class RenderSectionManager {
         }
 
         info.setLastVisibleFrame(this.currentFrame);
-        info.setCullingState(parent.getGraphInfo().getCullingState(), flow);
+        info.setCullingState(parentalData);
+        info.updateCullingState(flow);
 
-        this.addVisible(render, flow);
+        this.addVisible(render);
     }
 
-    private void addVisible(RenderSection render, Direction flow) {
-        this.iterationQueue.add(render, flow);
+    private void addVisible(RenderSection render) {
+        this.iterationQueue.add(render);
 
         if (this.useFogCulling && render.getSquaredDistanceXZ(this.cameraX, this.cameraZ) >= this.fogRenderCutoff) {
             return;
