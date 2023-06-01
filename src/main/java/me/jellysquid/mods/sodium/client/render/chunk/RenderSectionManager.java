@@ -565,10 +565,11 @@ public class RenderSectionManager {
     private void bfsEnqueue(RenderSection parent, RenderSection render, Direction flow, short parentalData) {
         ChunkGraphInfo info = render.getGraphInfo();
 
-        info.updateCullingState(flow);
         if (info.getLastVisibleFrame() == this.currentFrame) {
+            info.updateCullingState(flow, parentalData);
             return;
         }
+        info.setLastVisibleFrame(this.currentFrame);
 
         Frustum.Visibility parentVisibility = parent.getRegion().getVisibility();
 
@@ -578,9 +579,8 @@ public class RenderSectionManager {
             return;
         }
 
-        info.setLastVisibleFrame(this.currentFrame);
         info.setCullingState(parentalData);
-        info.updateCullingState(flow);
+        info.updateCullingState(flow, parentalData);
 
         this.addVisible(render);
     }

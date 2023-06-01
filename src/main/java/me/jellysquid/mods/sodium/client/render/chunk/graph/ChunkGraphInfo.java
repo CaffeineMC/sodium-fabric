@@ -48,9 +48,15 @@ public class ChunkGraphInfo {
         return visibilityData;
     }
 
-    public boolean isVisibleThrough(Direction from, Direction to) {
-        return ((this.visibilityData & (1L << ((from.ordinal() << 3) + to.ordinal()))) != 0L);
-    }
+
+    //The way this works now is that the culling state contains 2 inner states
+    // visited directions mask, and visitable direction mask
+    //On graph start, the root node(s) have the visit and visitable masks set to all visible
+    // when a chunk section is popped off the queue, the visited direction mask is anded with the
+    // visitable direction mask to return a bitfield containing what directions the graph can flow too
+    //When a chunk is visited in the graph the inbound direction is masked off from the visited direction mask
+    // and the visitable direction mask is updated (ored) with the visibilityData of the inbound direction
+    //When a chunk hasnt been visited before, it uses the parents data as the initial visited direction mask
 
     public short computeQueuePop() {
         short retVal = (short) (cullingState & (((cullingState >> 8) & 0xFF) | 0xFF00));
@@ -58,11 +64,13 @@ public class ChunkGraphInfo {
         return retVal;
     }
 
-    //The way this works now is
-    public void updateCullingState(Direction flow) {
+    public void updateCullingState(Direction flow, short parent) {
         int inbound = flow.ordinal();
-        this.cullingState |= (visibilityData >> (6 * inbound)) & 0x3F;
+        this.cullingState |= (visibilityData >> (inbound<<3)) & 0xFF;
         this.cullingState &= ~(1 << (inbound + 8));
+        //NOTE: this isnt strictly needed, due to the properties provided from the bfs search (never backtracking),
+        // but just incase/better readability/understandability
+        this.cullingState &= parent|0x00FF;
     }
 
     public void setCullingState(short parent) {
