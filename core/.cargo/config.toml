@@ -1,0 +1,2 @@
+[unstable]
+build-std = ["std", "panic_abort"]

@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
 public class LocalSectionIndex {
+    public static final int SIZEOF = 1;
+
     private static final int X_BITS = 0b111, X_OFFSET = 5, X_MASK = X_BITS << X_OFFSET;
     private static final int Y_BITS = 0b11, Y_OFFSET = 0, Y_MASK = Y_BITS << Y_OFFSET;
     private static final int Z_BITS = 0b111, Z_OFFSET = 2, Z_MASK = Z_BITS << Z_OFFSET;
@@ -49,5 +51,9 @@ public class LocalSectionIndex {
 
     public static int unpackZ(int idx) {
         return (idx >> Z_OFFSET) & Z_BITS;
+    }
+
+    public static int fromByte(byte idx) {
+        return Byte.toUnsignedInt(idx);
     }
 }

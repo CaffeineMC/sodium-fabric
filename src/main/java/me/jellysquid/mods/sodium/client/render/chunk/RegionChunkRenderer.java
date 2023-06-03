@@ -12,7 +12,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStora
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataUnsafe;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.LocalSectionIndex;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.RegionRenderLists;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
@@ -23,6 +23,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
 import me.jellysquid.mods.sodium.client.util.ReversibleArrayIterator;
 import me.jellysquid.mods.sodium.client.util.SectionIterator;
+import me.jellysquid.mods.sodium.core.types.CRegionDrawBatch;
 
 public class RegionChunkRenderer extends ShaderChunkRenderer {
     private final MultiDrawBatch commandBufferBuilder;
@@ -39,18 +40,18 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     @Override
     public void render(ChunkRenderMatrices matrices, CommandList commandList,
                        ChunkRenderList list, TerrainRenderPass renderPass,
-                       ChunkCameraContext camera) {
+                       ChunkCameraContext camera, RenderRegionManager renderRegions) {
         super.begin(renderPass);
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();
         shader.setProjectionMatrix(matrices.projection());
         shader.setModelViewMatrix(matrices.modelView());
 
-        ReversibleArrayIterator<RegionRenderLists> regionIterator = list.sortedRegions(renderPass.isReverseOrder());
+        ReversibleArrayIterator<CRegionDrawBatch> regionIterator = list.sortedRegions(renderPass.isReverseOrder());
 
         while (regionIterator.hasNext()) {
-            RegionRenderLists regionLists = regionIterator.next();
-            RenderRegion region = regionLists.region;
+            CRegionDrawBatch regionLists = regionIterator.next();
+            RenderRegion region = renderRegions.getRegionByIndex(regionLists.regionX(), regionLists.regionY(), regionLists.regionZ());
 
             var sections = region.getSectionStorage(renderPass);
             var resources = region.getResources();
@@ -59,7 +60,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            var batch = this.prepareDrawBatch(regionLists, renderPass, camera, sections);
+            var batch = this.prepareDrawBatch(regionLists, region, renderPass, camera, sections);
 
             if (batch.isEmpty()) {
                 continue;
@@ -74,15 +75,15 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         super.end(renderPass);
     }
 
-    private MultiDrawBatch prepareDrawBatch(RegionRenderLists batch, TerrainRenderPass pass, ChunkCameraContext camera, SectionRenderDataStorage sectionStorage) {
+    private MultiDrawBatch prepareDrawBatch(CRegionDrawBatch batch, RenderRegion region, TerrainRenderPass pass, ChunkCameraContext camera, SectionRenderDataStorage sectionStorage) {
         var commandBuffer = this.commandBufferBuilder;
         commandBuffer.clear();
 
-        SectionIterator sectionIterator = batch.getSectionsWithGeometry(pass.isReverseOrder());
+        SectionIterator sectionIterator = new SectionIterator(batch.sectionList(), pass.isReverseOrder());
 
-        int originX = batch.region.getChunkX();
-        int originY = batch.region.getChunkY();
-        int originZ = batch.region.getChunkZ();
+        int originX = region.getChunkX();
+        int originY = region.getChunkY();
+        int originZ = region.getChunkZ();
 
         while (sectionIterator.hasNext()) {
             var localSectionIndex = sectionIterator.next();

@@ -2,15 +2,15 @@ const int FOG_SHAPE_SPHERICAL = 0;
 const int FOG_SHAPE_CYLINDRICAL = 1;
 
 vec4 _linearFog(vec4 fragColor, float fragDistance, vec4 fogColor, float fogStart, float fogEnd) {
-    #ifdef USE_FOG
+#ifdef USE_FOG
     vec4 result = mix(fogColor, fragColor,
     smoothstep(fogEnd, fogStart, fragDistance));
     result.a = fragColor.a;
 
     return result;
-    #else
+#else
     return fragColor;
-    #endif
+#endif
 }
 
 float getFragDistance(int fogShape, vec3 position) {

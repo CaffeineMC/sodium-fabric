@@ -56,6 +56,6 @@ public class SectionRenderDataUnsafe {
     }
 
     public static boolean isEmpty(long pointer) {
-        return MemoryUtil.memGetInt(pointer + OFFSET_BASE_VERTEX) < 0;
+        return MemoryUtil.memGetInt(pointer + OFFSET_BASE_VERTEX) == -1;
     }
 }

@@ -1,17 +1,17 @@
 package me.jellysquid.mods.sodium.client.util;
 
-import java.util.NoSuchElementException;
+import me.jellysquid.mods.sodium.core.types.CLocalSectionList;
 
 public class SectionIterator {
-    private final byte[] sections;
+    private final CLocalSectionList sectionList;
 
     private final int step;
 
     private int cur;
     private int rem;
 
-    public SectionIterator(byte[] sections, int start, int end, boolean reverse) {
-        this.sections = sections;
+    public SectionIterator(CLocalSectionList sections, int start, int end, boolean reverse) {
+        this.sectionList = sections;
 
         this.rem = end - start;
 
@@ -19,12 +19,16 @@ public class SectionIterator {
         this.cur = reverse ? end - 1 : start;
     }
 
+    public SectionIterator(CLocalSectionList sections, boolean reverse) {
+        this(sections, 0, sections.size(), reverse);
+    }
+
     public boolean hasNext() {
         return this.rem > 0;
     }
 
     public int next() {
-        int result = this.sections[this.cur] & 0xFF;
+        int result = this.sectionList.listElement(this.cur);
 
         this.cur += this.step;
         this.rem--;

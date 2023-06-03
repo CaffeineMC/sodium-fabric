@@ -9,7 +9,7 @@ import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
-import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphSearch;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
@@ -18,11 +18,13 @@ import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTas
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import me.jellysquid.mods.sodium.client.util.frustum.FrustumAccessor;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.collections.WorkStealingFutureDrain;
+import me.jellysquid.mods.sodium.core.CoreLib;
+import me.jellysquid.mods.sodium.core.GraphNode;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;
@@ -31,7 +33,7 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
-import org.apache.commons.lang3.Validate;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -62,10 +64,11 @@ public class RenderSectionManager {
 
     private boolean alwaysDeferChunkUpdates;
 
-    private ChunkRenderList renderList = ChunkRenderList.empty();
-    private final SodiumWorldRenderer worldRenderer;
+    // TODO: do not allow this to be null
+    private @Nullable ChunkRenderList renderList = null;
 
-    private final GraphSearch.GraphSearchPool graphSearchPool = new GraphSearch.GraphSearchPool();
+    private final SodiumWorldRenderer worldRenderer;
+    private final CoreLib.Graph pGraph;
 
     public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, ChunkTracker chunkTracker, CommandList commandList) {
         this.worldRenderer = worldRenderer;
@@ -83,18 +86,16 @@ public class RenderSectionManager {
         this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         this.chunkTracker = chunkTracker;
+        this.pGraph = CoreLib.createGraph();
     }
 
-    public void update(Camera camera, Frustum frustum, int frame, boolean spectator) {
+    public void update(Camera camera, FrustumAccessor frustum, int frame, boolean spectator) {
         this.setup(camera);
 
         this.updateWatchedArea(camera);
         this.processChunkQueues();
 
-        if (this.renderList != null) {
-            this.graphSearchPool.releaseRenderList(this.renderList);
-            this.renderList = null;
-        }
+        this.renderList = null;
 
         var useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
 
@@ -103,9 +104,17 @@ public class RenderSectionManager {
             useOcclusionCulling = false;
         }
 
-        this.renderList = new GraphSearch(this.graphSearchPool, this.regions, camera, frustum, this.renderDistance, useOcclusionCulling)
-                .getVisible();
+        this.createRenderLists(frustum);
+
         this.needsUpdate = false;
+    }
+
+    private void createRenderLists(FrustumAccessor frustum) {
+        var pFrustum = CoreLib.createFrustum(frustum.getFrustumIntersection(), frustum.getTranslation());
+
+        this.renderList = CoreLib.graphSearch(this.pGraph, pFrustum, this.renderDistance);
+
+        CoreLib.deleteFrustum(pFrustum);
     }
 
     private void setup(Camera camera) {
@@ -141,6 +150,7 @@ public class RenderSectionManager {
 
     private void loadSection(int x, int y, int z) {
         RenderSection section = this.regions.loadSection(this.worldRenderer, x, y, z);
+        CoreLib.graphAddChunk(this.pGraph, x, y, z);
 
         Chunk worldChunk = this.world.getChunk(x, z);
         ChunkSection worldSection = worldChunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
@@ -157,21 +167,29 @@ public class RenderSectionManager {
 
     private void unloadSection(int x, int y, int z) {
         this.regions.unloadSection(x, y, z);
+
+        CoreLib.graphRemoveChunk(this.pGraph, x, y, z);
     }
 
     public void renderLayer(ChunkRenderMatrices matrices, TerrainRenderPass pass, double x, double y, double z) {
-        Validate.notNull(this.renderList, "Render list is null");
+        if (this.renderList == null) {
+            return;
+        }
 
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRenderer.render(matrices, commandList, this.renderList, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRenderer.render(matrices, commandList, this.renderList, pass, new ChunkCameraContext(x, y, z), this.regions);
 
         commandList.flush();
     }
 
     public void tickVisibleRenders() {
-        this.renderList.forEachSectionWithSprites(RenderSection::tickAnimatedSprites);
+        if (this.renderList == null) {
+            return;
+        }
+
+//        this.renderList.forEachSectionWithSprites(RenderSection::tickAnimatedSprites);
     }
 
     public boolean isSectionVisible(int x, int y, int z) {
@@ -310,7 +328,7 @@ public class RenderSectionManager {
     }
 
     public boolean isGraphDirty() {
-        return this.needsUpdate;
+        return true;
     }
 
     public ChunkBuilder getBuilder() {
@@ -337,6 +355,10 @@ public class RenderSectionManager {
     }
 
     public int getVisibleChunkCount() {
+        if (this.renderList == null) {
+            return 0;
+        }
+
         return this.renderList.size();
     }
 
@@ -363,6 +385,9 @@ public class RenderSectionManager {
     public void onChunkRenderUpdates(int x, int y, int z, RenderSection section, BuiltSectionInfo data) {
         if (section.region != null) { // TODO: terrible hack, we shouldn't even get here if this was unloaded already
             section.region.updateNode(section, data);
+
+            CoreLib.graphUpdateChunk(this.pGraph, x, y, z,
+                    new GraphNode(VisibilityEncoding.encode(data.getOcclusionData()), data.getFlags()));
         }
     }
 

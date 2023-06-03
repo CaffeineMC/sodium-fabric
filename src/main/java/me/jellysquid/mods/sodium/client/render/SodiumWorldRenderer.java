@@ -13,7 +13,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import me.jellysquid.mods.sodium.client.util.frustum.FrustumAccessor;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import me.jellysquid.mods.sodium.common.util.ListUtil;
 import net.minecraft.block.entity.BlockEntity;
@@ -147,7 +147,7 @@ public class SodiumWorldRenderer {
     /**
      * Called prior to any chunk rendering in order to update necessary state.
      */
-    public void updateChunks(Camera camera, Frustum frustum, @Deprecated(forRemoval = true) int frame, boolean spectator) {
+    public void updateChunks(Camera camera, FrustumAccessor frustum, @Deprecated(forRemoval = true) int frame, boolean spectator) {
         NativeBuffer.reclaim(false);
 
         this.useEntityCulling = SodiumClientMod.options().performance.useEntityCulling;
@@ -249,14 +249,17 @@ public class SodiumWorldRenderer {
 
         BlockEntityRenderDispatcher blockEntityRenderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
 
-        this.renderSectionManager.getRenderList()
-                .forEachSectionWithEntities((section -> {
-                    var data = section.getData();
-
-                    for (var blockEntity : data.getBlockEntities()) {
-                        renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer, blockEntity);
-                    }
-                }));
+//        var renderList = this.renderSectionManager.getRenderList();
+//
+//        if (renderList != null) {
+//            renderList.forEachSectionWithEntities((section -> {
+//                var data = section.getData();
+//
+//                for (var blockEntity : data.getBlockEntities()) {
+//                    renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer, blockEntity);
+//                }
+//            }));
+//        }
 
         for (BlockEntity blockEntity : this.globalBlockEntities) {
             BlockPos pos = blockEntity.getPos();

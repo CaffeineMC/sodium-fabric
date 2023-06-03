@@ -12,6 +12,10 @@ public class ReversibleArrayIterator<T> {
     private int currentIndex;
     private int remaining;
 
+    public ReversibleArrayIterator(T[] array, boolean reverse) {
+        this(array, 0, array.length, reverse);
+    }
+
     public ReversibleArrayIterator(ObjectArrayList<T> list, boolean reverse) {
         this(list.elements(), 0, list.size(), reverse);
     }

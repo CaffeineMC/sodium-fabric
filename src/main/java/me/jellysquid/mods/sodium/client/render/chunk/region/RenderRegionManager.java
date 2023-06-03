@@ -210,6 +210,10 @@ public class RenderRegionManager {
         return this.regions.get(pos);
     }
 
+    public RenderRegion getRegionByIndex(int x, int y, int z) {
+        return this.getByKey(ChunkSectionPos.asLong(x, y, z));
+    }
+
     private record PendingSectionUpload(RenderSection section, BuiltSectionInfo renderData, BuiltSectionMeshParts meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
     }
 }

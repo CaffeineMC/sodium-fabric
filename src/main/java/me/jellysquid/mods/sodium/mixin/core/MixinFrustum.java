@@ -1,22 +1,35 @@
 package me.jellysquid.mods.sodium.mixin.core;
 
-import me.jellysquid.mods.sodium.client.util.frustum.FrustumAdapter;
+import me.jellysquid.mods.sodium.client.util.frustum.FrustumAccessor;
 import net.minecraft.client.render.Frustum;
+import org.joml.FrustumIntersection;
+import org.joml.Vector3f;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(Frustum.class)
-public abstract class MixinFrustum implements FrustumAdapter, me.jellysquid.mods.sodium.client.util.frustum.Frustum {
+public abstract class MixinFrustum implements FrustumAccessor {
     @Shadow
-    public abstract boolean isVisible(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
+    @Final
+    private FrustumIntersection frustumIntersection;
+
+    @Shadow
+    private double x;
+
+    @Shadow
+    private double y;
+
+    @Shadow
+    private double z;
 
     @Override
-    public me.jellysquid.mods.sodium.client.util.frustum.Frustum sodium$createFrustum() {
-        return this;
+    public Vector3f getTranslation() {
+        return new Vector3f((float) this.x, (float) this.y, (float) this.z);
     }
 
     @Override
-    public boolean testBox(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        return this.isVisible(minX, minY, minZ, maxX, maxY, maxZ);
+    public FrustumIntersection getFrustumIntersection() {
+        return this.frustumIntersection;
     }
 }

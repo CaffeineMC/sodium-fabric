@@ -1,0 +1,20 @@
+[package]
+name = "sodium-core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
+[profile.production]
+inherits = "release"
+lto = true
+
+[dependencies]
+fxhash = "0.2.1"

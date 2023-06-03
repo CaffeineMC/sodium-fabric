@@ -4,8 +4,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkStatus;
-import me.jellysquid.mods.sodium.client.util.frustum.FrustumAdapter;
+import me.jellysquid.mods.sodium.client.util.frustum.FrustumAccessor;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
@@ -117,7 +116,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
         RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), this.frame++, spectator);
+            this.renderer.updateChunks(camera, FrustumAccessor.of(frustum), this.frame++, spectator);
 
             if (FlawlessFrames.isActive()) {
                 // Block until all chunk updates have been processed
@@ -125,7 +124,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
 
                 // If that caused new chunks to become visible, repeat until we got them all
                 while (this.renderer.getRenderSectionManager().isGraphDirty()) {
-                    this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), this.frame++, spectator);
+                    this.renderer.updateChunks(camera, FrustumAccessor.of(frustum), this.frame++, spectator);
                     this.renderer.getRenderSectionManager().updateAllChunksNow();
                 }
 

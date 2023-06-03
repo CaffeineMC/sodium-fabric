@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client;
 
+import me.jellysquid.mods.sodium.core.CoreLib;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
@@ -17,6 +18,12 @@ public class SodiumPreLaunch implements PreLaunchEntrypoint {
     @Override
     public void onPreLaunch() {
         checkJemalloc();
+
+        CoreLib.init();
+
+        var graph = CoreLib.createGraph();
+        CoreLib.graphAddChunk(graph, 5, 5, 5);
+        CoreLib.deleteGraph(graph);
     }
 
     private static void checkJemalloc() {

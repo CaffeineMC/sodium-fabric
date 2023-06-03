@@ -7,14 +7,12 @@ import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
-import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphNodeStorage;
+import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
@@ -44,7 +42,6 @@ public class RenderRegion {
     private final int x, y, z;
 
     public final RenderSection[] sections = new RenderSection[RenderRegion.REGION_SIZE];
-    public final GraphNodeStorage graphData;
 
     private int sectionCount;
 
@@ -64,8 +61,6 @@ public class RenderRegion {
         for (var pass : DefaultTerrainRenderPasses.ALL) {
             this.sectionStorage.put(pass, new SectionRenderDataStorage());
         }
-
-        this.graphData = new GraphNodeStorage();
     }
 
     public int getWorldX() {
@@ -109,8 +104,6 @@ public class RenderRegion {
         }
 
         this.sections[index] = section;
-        this.graphData.setData(index, section.getData());
-
         this.sectionCount++;
     }
 
@@ -120,8 +113,6 @@ public class RenderRegion {
         if (this.sections[index] != section) {
             throw new RuntimeException("Section does not belong to this region");
         }
-
-        this.graphData.setData(index, data);
     }
 
     public void removeChunk(RenderSection section) {
@@ -136,8 +127,6 @@ public class RenderRegion {
         });
 
         this.sections[index] = null;
-        this.graphData.setData(index, null);
-
         this.sectionCount--;
     }
 
@@ -195,11 +184,6 @@ public class RenderRegion {
 
     public long key() {
         return ChunkSectionPos.asLong(this.x, this.y, this.z);
-    }
-
-    public boolean testVisibility(Frustum frustum) {
-        return frustum.testBox(this.getWorldX(), this.getWorldY(), this.getWorldZ(),
-                this.getWorldX() + (RenderRegion.REGION_WIDTH << 4), this.getWorldY() + (RenderRegion.REGION_HEIGHT << 4), this.getWorldZ() + (RenderRegion.REGION_LENGTH << 4));
     }
 
     public void refreshPointers(CommandList commandList) {
