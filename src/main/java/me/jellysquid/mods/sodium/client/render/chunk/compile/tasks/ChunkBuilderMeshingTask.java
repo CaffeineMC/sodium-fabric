@@ -22,6 +22,9 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.util.crash.CrashException;
+import net.minecraft.util.crash.CrashReport;
+import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Map;
@@ -66,61 +69,70 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         int maxY = minY + 16;
         int maxZ = minZ + 16;
 
-        BlockPos.Mutable blockPos = new BlockPos.Mutable();
+        // Initialise with minX/minY/minZ so initial getBlockState crash context is correct
+        BlockPos.Mutable blockPos = new BlockPos.Mutable(minX, minY, minZ);
         BlockPos.Mutable modelOffset = new BlockPos.Mutable();
 
         BlockRenderContext context = new BlockRenderContext(slice);
 
-        for (int y = minY; y < maxY; y++) {
-            if (cancellationToken.isCancelled()) {
-                return null;
-            }
+        try {
+            for (int y = minY; y < maxY; y++) {
+                if (cancellationToken.isCancelled()) {
+                    return null;
+                }
 
-            for (int z = minZ; z < maxZ; z++) {
-                for (int x = minX; x < maxX; x++) {
-                    BlockState blockState = slice.getBlockState(x, y, z);
+                for (int z = minZ; z < maxZ; z++) {
+                    for (int x = minX; x < maxX; x++) {
+                        BlockState blockState = slice.getBlockState(x, y, z);
 
-                    if (blockState.isAir()) {
-                        continue;
-                    }
+                        if (blockState.isAir()) {
+                            continue;
+                        }
 
-                    blockPos.set(x, y, z);
-                    modelOffset.set(x & 15, y & 15, z & 15);
+                        blockPos.set(x, y, z);
+                        modelOffset.set(x & 15, y & 15, z & 15);
 
-                    if (blockState.getRenderType() == BlockRenderType.MODEL) {
-                        BakedModel model = cache.getBlockModels()
+                        if (blockState.getRenderType() == BlockRenderType.MODEL) {
+                            BakedModel model = cache.getBlockModels()
                                 .getModel(blockState);
 
-                        long seed = blockState.getRenderingSeed(blockPos);
+                            long seed = blockState.getRenderingSeed(blockPos);
 
-                        context.update(blockPos, modelOffset, blockState, model, seed);
-                        cache.getBlockRenderer()
+                            context.update(blockPos, modelOffset, blockState, model, seed);
+                            cache.getBlockRenderer()
                                 .renderModel(context, buffers);
-                    }
+                        }
 
-                    FluidState fluidState = blockState.getFluidState();
+                        FluidState fluidState = blockState.getFluidState();
 
-                    if (!fluidState.isEmpty()) {
-                        cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers);
-                    }
+                        if (!fluidState.isEmpty()) {
+                            cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers);
+                        }
 
-                    if (blockState.hasBlockEntity()) {
-                        BlockEntity entity = slice.getBlockEntity(blockPos);
+                        if (blockState.hasBlockEntity()) {
+                            BlockEntity entity = slice.getBlockEntity(blockPos);
 
-                        if (entity != null) {
-                            BlockEntityRenderer<BlockEntity> renderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher().get(entity);
+                            if (entity != null) {
+                                BlockEntityRenderer<BlockEntity> renderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher().get(entity);
 
-                            if (renderer != null) {
-                                renderData.addBlockEntity(entity, !renderer.rendersOutsideBoundingBox(entity));
+                                if (renderer != null) {
+                                    renderData.addBlockEntity(entity, !renderer.rendersOutsideBoundingBox(entity));
+                                }
                             }
                         }
-                    }
 
-                    if (blockState.isOpaqueFullCube(slice, blockPos)) {
-                        occluder.markClosed(blockPos);
+                        if (blockState.isOpaqueFullCube(slice, blockPos)) {
+                            occluder.markClosed(blockPos);
+                        }
                     }
                 }
             }
+        } catch (CrashException ex) {
+            // Propagate existing crashes (add context)
+            throw fillCrashInfo(ex.getReport(), slice, blockPos);
+        } catch (Exception ex) {
+            // Create a new crash report for other exceptions (e.g. thrown in getQuads)
+            throw fillCrashInfo(CrashReport.create(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
 
         Map<TerrainRenderPass, BuiltSectionMeshParts> meshes = new Reference2ReferenceOpenHashMap<>();
@@ -137,6 +149,23 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         renderData.setOcclusionData(occluder.build());
 
         return new ChunkBuildOutput(this.render, renderData.build(), meshes, this.buildTime);
+    }
+
+    private CrashException fillCrashInfo(CrashReport report, WorldSlice slice, BlockPos pos) {
+        CrashReportSection crashReportSection = report.addElement("Block being rendered", 1);
+
+        BlockState state = null;
+        try {
+            state = slice.getBlockState(pos);
+        } catch (Exception ignored) {}
+        CrashReportSection.addBlockInfo(crashReportSection, slice, pos, state);
+
+        crashReportSection.add("Chunk section", render);
+        if (renderContext != null) {
+            crashReportSection.add("Render context volume", renderContext.getVolume());
+        }
+
+        return new CrashException(report);
     }
 
     @Override

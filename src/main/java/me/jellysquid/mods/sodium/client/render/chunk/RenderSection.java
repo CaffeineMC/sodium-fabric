@@ -206,8 +206,10 @@ public class RenderSection {
 
     @Override
     public String toString() {
-        return String.format("RenderChunk{chunkX=%d, chunkY=%d, chunkZ=%d}",
-                this.chunkX, this.chunkY, this.chunkZ);
+        return String.format("RenderSection at chunk (%d, %d, %d) from (%d, %d, %d) to (%d, %d, %d)",
+                this.chunkX, this.chunkY, this.chunkZ,
+                this.getOriginX(), this.getOriginY(), this.getOriginZ(),
+                this.getOriginX() + 16, this.getOriginY() + 16, this.getOriginZ() + 16);
     }
 
     public boolean isBuilt() {
