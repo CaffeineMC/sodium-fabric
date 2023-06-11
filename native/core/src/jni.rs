@@ -47,14 +47,15 @@ pub mod types {
     impl<T: Sized> JPtrMut<T> {
         /// SAFETY: The pointer must be of type T
         /// SAFETY: The backing memory of the pointer must allow mutating
-        pub unsafe fn as_mut_ref(&self) -> &mut T {
-            let ptr = self.as_mut_ptr();
-            ptr.as_mut().expect("ptr must not be null")
+        /// SAFETY: This consumes the JPtrMut instance to uphold borrow checker rules
+        pub unsafe fn into_mut_ref<'a>(self) -> &'a mut T {
+            self.into_mut_ptr().as_mut().expect("ptr must not be null")
         }
 
         /// SAFETY: The pointer must be of type T
         /// SAFETY: The backing memory of the pointer must allow mutating
-        pub unsafe fn as_mut_ptr(&self) -> *mut T {
+        /// SAFETY: This consumes the JPtrMut instance to uphold borrow checker rules
+        pub unsafe fn into_mut_ptr(self) -> *mut T {
             self.addr as *mut T
         }
     }

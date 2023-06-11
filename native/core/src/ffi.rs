@@ -112,12 +112,12 @@ mod java {
     pub unsafe fn graphCreate(out_graph: JPtrMut<*const Graph>) {
         let graph = Box::new(Graph::new());
 
-        let out_graph = out_graph.as_mut_ref();
+        let out_graph = out_graph.into_mut_ref();
         *out_graph = Box::into_raw(graph);
     }
 
     pub unsafe fn graphAddChunk(graph: JPtrMut<Graph>, x: Jint, y: Jint, z: Jint) {
-        let graph = graph.as_mut_ref();
+        let graph = graph.into_mut_ref();
         graph.add_chunk(IVec3::new(x, y, z));
     }
 
@@ -130,7 +130,7 @@ mod java {
     ) {
         let node = node.as_ref();
 
-        let graph = graph.as_mut_ref();
+        let graph = graph.into_mut_ref();
         graph.update_chunk(
             IVec3::new(x, y, z),
             Node::new(VisibilityData::from_u64(node.connections), node.flags as u8),
@@ -138,7 +138,7 @@ mod java {
     }
 
     pub unsafe fn graphRemoveChunk(graph: JPtrMut<Graph>, x: Jint, y: Jint, z: Jint) {
-        let graph = graph.as_mut_ref();
+        let graph = graph.into_mut_ref();
         graph.remove_chunk(IVec3::new(x, y, z));
     }
 
@@ -148,14 +148,14 @@ mod java {
         view_distance: Jint,
         out_results: JPtrMut<CVec<RegionDrawBatch>>,
     ) {
-        let graph = graph.as_mut_ref();
+        let graph = graph.into_mut_ref();
         let frustum = frustum.as_ref();
 
-        *out_results.as_mut_ref() = graph.search(frustum, view_distance);
+        *out_results.into_mut_ref() = graph.search(frustum, view_distance);
     }
 
     pub unsafe fn graphDelete(graph: JPtrMut<Graph>) {
-        let graph = Box::from_raw(graph.as_mut_ref());
+        let graph = Box::from_raw(graph.into_mut_ref());
         std::mem::drop(graph);
     }
 
@@ -170,11 +170,11 @@ mod java {
 
         let frustum = Box::new(Frustum::new(planes, offset));
 
-        let out_frustum = out_frustum.as_mut_ref();
+        let out_frustum = out_frustum.into_mut_ref();
         *out_frustum = Box::into_raw(frustum);
     }
 
     pub unsafe fn frustumDelete(frustum: JPtrMut<Frustum>) {
-        std::mem::drop(Box::from_raw(frustum.as_mut_ref()));
+        std::mem::drop(Box::from_raw(frustum.into_mut_ref()));
     }
 }
