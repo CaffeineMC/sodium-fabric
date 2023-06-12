@@ -3,6 +3,7 @@ use rustc_hash::FxHashMap as HashMap;
 use std::cell::{RefCell, RefMut};
 use std::collections::VecDeque;
 use std::fmt::Debug;
+use std::hash::Hash;
 use std::mem::MaybeUninit;
 use std::ops::*;
 use std::vec::Vec;
@@ -280,6 +281,28 @@ impl VisibilityData {
     }
 }
 
+#[derive(Debug)]
+pub struct DuplicateKeys;
+
+pub trait Funsafe<K, V> {
+    fn get_several_mut<const N: usize>(&mut self, ks: [&K; N]) -> Result<[Option<&'_ mut V>; N], DuplicateKeys>;
+}
+
+impl<K, V> Funsafe<K, V> for HashMap<K, V>
+where
+    K: Eq + PartialEq + Hash
+{
+    fn get_several_mut<const N: usize>(&mut self, ks: [&K; N]) -> Result<[Option<&'_ mut V>; N], DuplicateKeys> {
+        for (i, &k) in ks.iter().enumerate() {
+            if ks[i..].iter().any(|&prev| k == prev) {
+                return Err(DuplicateKeys);
+            }
+        }
+        
+        Ok(ks.map(|k| self.get_mut(k).map(|v| unsafe { &mut *(v as *mut V) })))
+    }
+}
+
 #[repr(C)]
 pub struct RegionDrawBatch {
     region_coord: (i32, i32, i32),
@@ -382,7 +405,7 @@ impl Region {
 }
 
 pub struct Graph {
-    regions: HashMap<IVec3, RefCell<Region>>,
+    regions: HashMap<IVec3, Region>,
 }
 
 impl Graph {
@@ -400,7 +423,7 @@ impl Graph {
         if let Some(node) = self.get_node(origin_node_coord) {
             let region_coord = chunk_coord_to_region_coord(origin_node_coord);
 
-            let mut region = self.regions.get(&region_coord).unwrap().borrow_mut();
+            let mut region = self.regions.get_mut(&region_coord).unwrap();
             region.search_state.enqueue(
                 LocalNodeIndex::from_global(origin_node_coord),
                 GraphDirectionSet::all(),
@@ -479,10 +502,12 @@ impl Graph {
                     GraphDirection::East => origin.inc_x(),
                 };
 
-                if let Some(neighbor_region) = context.adjacent(*direction, wrapped) {
-                    neighbor_region
-                        .search_state
-                        .enqueue(neighbor, GraphDirectionSet::single(direction.opposite()));
+                if wrapped {
+                    if let Some(neighbor_region) = &mut context.adjacent[*direction as usize] {
+                        neighbor_region
+                            .search_state
+                            .enqueue(neighbor, GraphDirectionSet::single(direction.opposite()));
+                    }
                 }
             }
         }
@@ -492,60 +517,58 @@ impl Graph {
         let mut region = self
             .regions
             .entry(chunk_coord_to_region_coord(chunk_coord))
-            .or_insert_with(|| RefCell::new(Region::new()))
-            .borrow_mut();
+            .or_insert_with(|| Region::new());
 
         region.set_chunk(chunk_coord, Node::default());
     }
 
     pub fn update_chunk(&mut self, chunk_coord: IVec3, node: Node) {
-        if let Some(region) = self.regions.get(&chunk_coord_to_region_coord(chunk_coord)) {
-            region.borrow_mut().set_chunk(chunk_coord, node);
+        if let Some(region) = self.regions.get_mut(&chunk_coord_to_region_coord(chunk_coord)) {
+            region.set_chunk(chunk_coord, node);
         }
     }
 
     pub fn remove_chunk(&mut self, chunk_coord: IVec3) {
-        if let Some(region) = self.regions.get(&chunk_coord_to_region_coord(chunk_coord)) {
-            region.borrow_mut().remove_chunk(chunk_coord);
+        if let Some(region) = self.regions.get_mut(&chunk_coord_to_region_coord(chunk_coord)) {
+            region.remove_chunk(chunk_coord);
         }
     }
 
     fn get_node(&self, chunk_coord: IVec3) -> Option<Node> {
         self.regions
             .get(&chunk_coord_to_region_coord(chunk_coord))
-            .map(|region| *region.borrow().get_chunk(chunk_coord))
+            .map(|region| region.get_chunk(chunk_coord).clone())
     }
 }
 
 struct SearchContext<'a> {
-    adjacent: [Option<RefMut<'a, Region>>; 6],
-    origin: RefMut<'a, Region>,
+    adjacent: [Option<&'a mut Region>; 6],
+    origin: &'a mut Region,
 }
 
 impl<'a> SearchContext<'a> {
-    pub fn adjacent(
-        &mut self,
-        direction: GraphDirection,
-        wrapped: bool,
-    ) -> Option<&mut RefMut<'a, Region>> {
-        if wrapped {
-            self.adjacent[direction as usize].as_mut()
-        } else {
-            Some(&mut self.origin)
-        }
-    }
-
     pub fn create(
-        regions: &'a mut HashMap<IVec3, RefCell<Region>>,
+        regions: &'a mut HashMap<IVec3, Region>,
         origin: IVec3,
     ) -> SearchContext<'a> {
+        let pos = GraphDirection::ordered().map(|direction| origin + direction.as_vector());
+        
+        let many = regions.get_several_mut([
+            &origin, 
+            &pos[0], 
+            &pos[1], 
+            &pos[2], 
+            &pos[3], 
+            &pos[4], 
+            &pos[5]
+        ]).unwrap();
+
+        let [origin, adjacent@..] = many;
+        let origin = origin.unwrap();
+
         SearchContext {
-            origin: regions.get(&origin).map(|cell| cell.borrow_mut()).unwrap(),
-            adjacent: GraphDirection::ordered().map(|direction| {
-                regions
-                    .get(&(origin + direction.as_vector()))
-                    .map(|cell| cell.borrow_mut())
-            }),
+            origin,
+            adjacent,
         }
     }
 }
