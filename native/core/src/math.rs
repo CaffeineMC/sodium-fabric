@@ -194,6 +194,7 @@ impl Hash for IVec3 {
 }
 
 impl Default for IVec3 {
+    #[inline(always)]
     fn default() -> Self {
         IVec3::splat(0)
     }
@@ -238,14 +239,15 @@ impl ops::Shl for IVec3 {
 impl ops::BitAnd for IVec3 {
     type Output = IVec3;
 
+    #[inline(always)]
     fn bitand(self, rhs: Self) -> Self::Output {
         IVec3(self.0 & rhs.0)
     }
 }
 
-impl Into<(i32, i32, i32)> for IVec3 {
+impl From<IVec3> for (i32, i32, i32) {
     #[inline(always)]
-    fn into(self) -> (i32, i32, i32) {
-        (self.x(), self.y(), self.z())
+    fn from(value: IVec3) -> Self {
+        (value.x(), value.y(), value.z())
     }
 }

@@ -38,7 +38,7 @@ impl LocalNodeIndex {
         let packed = ((position.x() as u8 & Self::X_BITS) << Self::X_OFFSET)
             | ((position.y() as u8 & Self::Y_BITS) << Self::Y_OFFSET)
             | ((position.z() as u8 & Self::Z_BITS) << Self::Z_OFFSET);
-        LocalNodeIndex(packed as u8)
+        LocalNodeIndex(packed)
     }
 
     pub fn inc_x(self) -> (LocalNodeIndex, bool) {
@@ -87,7 +87,7 @@ impl LocalNodeIndex {
         self.0 as usize
     }
 
-    fn to_global_coord(&self, region_coord: IVec3) -> IVec3 {
+    fn as_global_coord(&self, region_coord: IVec3) -> IVec3 {
         region_coord
             .shl(IVec3::new(3, 2, 3))
             .add(IVec3::new(self.x(), self.y(), self.z()))
@@ -266,7 +266,7 @@ impl VisibilityData {
         let mut data = [0u8; 6];
 
         unsafe {
-            data.copy_from_slice(&std::mem::transmute::<_, [u8; 8]>(packed)[0..6]);
+            data.copy_from_slice(&packed.to_ne_bytes()[0..6]);
         }
 
         data
@@ -276,7 +276,7 @@ impl VisibilityData {
         let mut packed = [0u8; 8];
         packed[0..6].copy_from_slice(data);
 
-        unsafe { std::mem::transmute::<_, u64>(packed) }
+        unsafe { u64::from_ne_bytes(packed) }
     }
 }
 
@@ -417,7 +417,7 @@ impl Graph {
             let mut batch: RegionDrawBatch = RegionDrawBatch::new(region_coord);
 
             while let Some(node_idx) = search_ctx.origin.search_state.queue.pop() {
-                let node_coord = node_idx.to_global_coord(region_coord);
+                let node_coord = node_idx.as_global_coord(region_coord);
 
                 let node = search_ctx.origin.nodes[node_idx.as_array_offset()];
                 let node_incoming =
@@ -513,7 +513,7 @@ impl Graph {
     fn get_node(&self, chunk_coord: IVec3) -> Option<Node> {
         self.regions
             .get(&chunk_coord_to_region_coord(chunk_coord))
-            .map(|region| region.borrow().get_chunk(chunk_coord).clone())
+            .map(|region| *region.borrow().get_chunk(chunk_coord))
     }
 }
 

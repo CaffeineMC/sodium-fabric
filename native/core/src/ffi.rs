@@ -164,7 +164,7 @@ mod java {
         planes: JPtr<[[f32; 4]; 6]>,
         offset: JPtr<[f32; 3]>,
     ) {
-        let planes = planes.as_ref().map(|vec| Vec4::from_array(vec));
+        let planes = planes.as_ref().map(Vec4::from_array);
 
         let offset = Vec3::from_array(*offset.as_ref());
 
