@@ -1,17 +1,19 @@
 package me.jellysquid.mods.sodium.client.util;
 
+import me.jellysquid.mods.sodium.client.render.chunk.graph.LocalSectionIndex;
 import me.jellysquid.mods.sodium.core.types.CLocalSectionList;
+import org.lwjgl.system.MemoryUtil;
 
-public class SectionIterator {
-    private final CLocalSectionList sectionList;
+public class CLocalSectionListIterator {
+    private final long ptr;
 
     private final int step;
 
     private int cur;
     private int rem;
 
-    public SectionIterator(CLocalSectionList sections, int start, int end, boolean reverse) {
-        this.sectionList = sections;
+    public CLocalSectionListIterator(CLocalSectionList sections, int start, int end, boolean reverse) {
+        this.ptr = sections.arrayBase();
 
         this.rem = end - start;
 
@@ -19,7 +21,7 @@ public class SectionIterator {
         this.cur = reverse ? end - 1 : start;
     }
 
-    public SectionIterator(CLocalSectionList sections, boolean reverse) {
+    public CLocalSectionListIterator(CLocalSectionList sections, boolean reverse) {
         this(sections, 0, sections.size(), reverse);
     }
 
@@ -28,7 +30,7 @@ public class SectionIterator {
     }
 
     public int next() {
-        int result = this.sectionList.listElement(this.cur);
+        int result = LocalSectionIndex.fromByte(MemoryUtil.memGetByte(this.ptr + this.cur));
 
         this.cur += this.step;
         this.rem--;

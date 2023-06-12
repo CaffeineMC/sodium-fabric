@@ -53,7 +53,7 @@ public class BuiltSectionInfo {
     }
 
     public int getFlags() {
-        int flags = 0;
+        int flags = (1 << GraphNodeFlags.IS_LOADED);
 
         if (!this.blockRenderPasses.isEmpty()) {
             flags |= (1 << GraphNodeFlags.HAS_BLOCK_GEOMETRY);

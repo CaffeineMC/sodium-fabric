@@ -40,6 +40,10 @@ public class CLocalSectionList extends Struct {
         return MemoryUtil.memGetInt(this.address + OFFSET_ARRAY_SIZE);
     }
 
+    public long arrayBase() {
+        return this.address + OFFSET_ARRAY_BASE;
+    }
+
     public int listElement(int index) {
         return LocalSectionIndex.fromByte(
                 MemoryUtil.memGetByte(this.address + OFFSET_ARRAY_BASE + index));

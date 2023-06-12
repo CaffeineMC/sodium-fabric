@@ -22,7 +22,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPo
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
 import me.jellysquid.mods.sodium.client.util.ReversibleArrayIterator;
-import me.jellysquid.mods.sodium.client.util.SectionIterator;
+import me.jellysquid.mods.sodium.client.util.CLocalSectionListIterator;
 import me.jellysquid.mods.sodium.core.types.CRegionDrawBatch;
 
 public class RegionChunkRenderer extends ShaderChunkRenderer {
@@ -79,7 +79,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         var commandBuffer = this.commandBufferBuilder;
         commandBuffer.clear();
 
-        SectionIterator sectionIterator = new SectionIterator(batch.sectionList(), pass.isReverseOrder());
+        CLocalSectionListIterator sectionIterator = new CLocalSectionListIterator(batch.sectionList(), pass.isReverseOrder());
 
         int originX = region.getChunkX();
         int originY = region.getChunkY();

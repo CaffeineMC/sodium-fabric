@@ -20,7 +20,7 @@ pub struct CVec<T> {
 }
 
 impl<T> CVec<T> {
-    pub unsafe fn from_boxed_slice(data: Box<[T]>) -> Self {
+    pub fn from_boxed_slice(data: Box<[T]>) -> Self {
         CVec {
             count: data.len().try_into().expect("len is not a valid u32"),
             data: if data.len() == 0 {
@@ -66,6 +66,10 @@ impl<T, const LEN: usize> CInlineVec<T, LEN> {
 
     pub fn slice(&self) -> &[T] {
         unsafe { MaybeUninit::slice_assume_init_ref(&self.data[0..(self.count as usize)]) }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.count == 0
     }
 }
 
@@ -137,7 +141,7 @@ pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphUpd
     let graph = graph.as_mut_ref();
     graph.update_chunk(
         IVec3::new(x, y, z),
-        GraphNode::new(VisibilityData::from_u64(node.connections), node.flags),
+        Node::new(VisibilityData::from_u64(node.connections), node.flags as u8),
     );
 }
 
@@ -187,8 +191,9 @@ pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_frustumC
     planes: JPtr<[[f32; 4]; 6]>,
     offset: JPtr<[f32; 3]>,
 ) {
-    let planes = planes.as_ref();
-    let offset = offset.as_ref();
+    let planes = planes.as_ref().map(|vec| Vec4::from_array(vec));
+
+    let offset = Vec3::from_array(*offset.as_ref());
 
     let frustum = Box::new(Frustum::new(planes, offset));
 

@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.lists;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.util.ReversibleArrayIterator;
-import me.jellysquid.mods.sodium.client.util.SectionIterator;
+import me.jellysquid.mods.sodium.client.util.CLocalSectionListIterator;
 import me.jellysquid.mods.sodium.core.types.CRegionDrawBatch;
 import me.jellysquid.mods.sodium.core.types.CVec;
 
@@ -40,7 +40,7 @@ public class ChunkRenderList {
 //        }
 //    }
 
-    private static void forEachSection(RenderRegion region, SectionIterator iterator, Consumer<RenderSection> consumer) {
+    private static void forEachSection(RenderRegion region, CLocalSectionListIterator iterator, Consumer<RenderSection> consumer) {
         RenderSection[] sections = region.getChunks();
 
         while (iterator.hasNext()) {
