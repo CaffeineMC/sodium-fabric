@@ -508,6 +508,10 @@ impl Graph {
                             .search_state
                             .enqueue(neighbor, GraphDirectionSet::single(direction.opposite()));
                     }
+                } else {
+                    context.origin
+                        .search_state
+                        .enqueue(neighbor, GraphDirectionSet::single(direction.opposite()));
                 }
             }
         }
