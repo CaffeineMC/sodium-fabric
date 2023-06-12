@@ -1,6 +1,5 @@
 use std::mem::MaybeUninit;
 
-#[derive(Clone)]
 pub struct ArrayDeque<T: Copy, const CAPACITY: usize> {
     head: usize,
     tail: usize,
@@ -13,13 +12,19 @@ impl<T: Copy, const CAPACITY: usize> ArrayDeque<T, CAPACITY> {
         self.tail += 1;
     }
 
+    pub unsafe fn push_conditionally_unchecked(&mut self, value: T, cond: bool) {
+        let holder = self.elements.get_unchecked_mut(self.tail);
+        *holder = MaybeUninit::new(value);
+
+        self.tail += if cond { 1 } else { 0 };
+    }
+
     pub fn pop(&mut self) -> Option<T> {
         if self.head == self.tail {
             return None;
         }
 
         let value = unsafe { MaybeUninit::assume_init(self.elements[self.head]) };
-
         self.head += 1;
 
         Some(value)
@@ -40,7 +45,10 @@ impl<T: Copy, const CAPACITY: usize> Default for ArrayDeque<T, CAPACITY> {
         Self {
             head: 0,
             tail: 0,
-            elements: MaybeUninit::uninit_array(),
+
+            // MaybeUninit::uninit_array::<CAPACITY>()
+            // https://github.com/rust-lang/rust/issues/96097
+            elements: [MaybeUninit::uninit(); CAPACITY],
         }
     }
 }

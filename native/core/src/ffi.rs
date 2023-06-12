@@ -66,10 +66,6 @@ impl<T, const LEN: usize> CInlineVec<T, LEN> {
         self.count = 0;
     }
 
-    pub fn slice(&self) -> &[T] {
-        unsafe { MaybeUninit::slice_assume_init_ref(&self.data[0..(self.count as usize)]) }
-    }
-
     pub fn is_empty(&self) -> bool {
         self.count == 0
     }

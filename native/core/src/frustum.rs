@@ -10,16 +10,16 @@ impl Frustum {
         Frustum { planes, position }
     }
 
-    pub fn test_bounding_box(self: &Frustum, min: Vec3, max: Vec3) -> bool {
-        let min = min - self.position;
-        let max = max - self.position;
+    pub fn test_bounding_box(self: &Frustum, bb: &BoundingBox) -> bool {
+        let center = bb.center - self.position;
+        let size = bb.size;
 
         let mut result = true;
 
         for p in &self.planes {
-            let x = if p.x() < 0.0 { min.x() } else { max.x() };
-            let y = if p.y() < 0.0 { min.y() } else { max.y() };
-            let z = if p.z() < 0.0 { min.z() } else { max.z() };
+            let x = center.x() + size.x().copysign(p.x());
+            let y = center.y() + size.y().copysign(p.y());
+            let z = center.z() + size.z().copysign(p.z());
 
             result &= p.x() * x + p.y() * y + p.z() * z >= -p.w();
         }
@@ -29,5 +29,16 @@ impl Frustum {
 
     pub fn position(&self) -> &Vec3 {
         &self.position
+    }
+}
+
+pub struct BoundingBox {
+    center: Vec3,
+    size: Vec3
+}
+
+impl BoundingBox {
+    pub fn new(center: Vec3, size: Vec3) -> Self {
+        BoundingBox { center, size }
     }
 }

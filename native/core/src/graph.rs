@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::mem::MaybeUninit;
 use std::ops::*;
+use std::simd::{i32x4, SimdPartialOrd, ToBitMask};
 use std::vec::Vec;
 
 use std::ops;
@@ -12,7 +13,7 @@ use std::ops;
 use crate::collections::ArrayDeque;
 use crate::ffi::CInlineVec;
 use crate::ffi::CVec;
-use crate::frustum::Frustum;
+use crate::frustum::{Frustum, BoundingBox};
 use crate::math::*;
 
 const SECTIONS_IN_REGION: usize = 8 * 4 * 8;
@@ -137,50 +138,48 @@ impl PackedChunkCoord {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum GraphDirection {
-    Down = 0,  // -y
-    Up = 1,    // +y
-    North = 2, // -z
-    South = 3, // +z
-    West = 4,  // -x
-    East = 5,  // +x
+    NegX,
+    NegY,
+    NegZ,
+    PosX,
+    PosY,
+    PosZ,
 }
 
 impl GraphDirection {
     pub const fn as_vector(&self) -> IVec3 {
-        const VECTORS: [IVec3; 6] = [
-            IVec3::new(0, -1, 0),
-            IVec3::new(0, 1, 0),
-            IVec3::new(0, 0, -1),
-            IVec3::new(0, 0, 1),
-            IVec3::new(-1, 0, 0),
-            IVec3::new(1, 0, 0),
-        ];
-
-        VECTORS[*self as usize]
+        match *self {
+            GraphDirection::NegX => IVec3::new(-1,  0,  0),
+            GraphDirection::NegY => IVec3::new( 0, -1,  0),
+            GraphDirection::NegZ => IVec3::new( 0,  0, -1),
+            GraphDirection::PosX => IVec3::new( 1,  0,  0),
+            GraphDirection::PosY => IVec3::new( 0,  1,  0),
+            GraphDirection::PosZ => IVec3::new( 0,  0,  1),
+        }
     }
 
     pub const fn ordered() -> &'static [GraphDirection; 6] {
         const ORDERED: [GraphDirection; 6] = [
-            GraphDirection::Down,
-            GraphDirection::Up,
-            GraphDirection::North,
-            GraphDirection::South,
-            GraphDirection::West,
-            GraphDirection::East,
+            GraphDirection::NegX,
+            GraphDirection::NegY,
+            GraphDirection::NegZ,
+            GraphDirection::PosX,
+            GraphDirection::PosY,
+            GraphDirection::PosZ,
         ];
         &ORDERED
     }
 
     pub const fn opposite(&self) -> GraphDirection {
         match *self {
-            GraphDirection::Up => GraphDirection::Down,
-            GraphDirection::Down => GraphDirection::Up,
-            GraphDirection::North => GraphDirection::South,
-            GraphDirection::South => GraphDirection::North,
-            GraphDirection::West => GraphDirection::East,
-            GraphDirection::East => GraphDirection::West,
+            GraphDirection::NegX => GraphDirection::PosX,
+            GraphDirection::NegY => GraphDirection::PosY,
+            GraphDirection::NegZ => GraphDirection::PosZ,
+            GraphDirection::PosX => GraphDirection::NegX,
+            GraphDirection::PosY => GraphDirection::NegY,
+            GraphDirection::PosZ => GraphDirection::NegZ,
         }
     }
 }
@@ -198,7 +197,13 @@ impl GraphDirectionSet {
     }
 
     pub fn all() -> GraphDirectionSet {
-        GraphDirectionSet(!0)
+        let mut set = GraphDirectionSet::none();
+
+        for dir in GraphDirection::ordered() {
+            set.add(*dir);
+        }
+
+        set
     }
 
     pub fn single(direction: GraphDirection) -> GraphDirectionSet {
@@ -253,7 +258,7 @@ impl VisibilityData {
     fn get_outgoing_directions(&self, incoming: GraphDirectionSet) -> GraphDirectionSet {
         let packed = VisibilityData::pack(&self.data);
 
-        let mut outgoing = (((0x810204081_u64 * incoming.0 as u64) & 0x010101010101_u64) * 0xFF) // turn bitmask into lane wise mask
+        let mut outgoing = (((0b_0000001_0000001_0000001_0000001_0000001_0000001u64 * incoming.0 as u64) & 0x010101010101_u64) * 0xFF) // turn bitmask into lane wise mask
             & packed; // apply visibility to incoming
         outgoing |= outgoing >> 32; // fold top 32 bits onto bottom 32 bits
         outgoing |= outgoing >> 16; // fold top 16 bits onto bottom 16 bits
@@ -311,10 +316,9 @@ impl Node {
     }
 }
 
-#[derive(Clone)]
 struct RegionSearchState {
-    queue: ArrayDeque<LocalNodeIndex, SECTIONS_IN_REGION>,
     incoming: [GraphDirectionSet; SECTIONS_IN_REGION],
+    queue: ArrayDeque<LocalNodeIndex, { SECTIONS_IN_REGION + 1 }>,
 
     enqueued: bool,
 }
@@ -322,12 +326,14 @@ struct RegionSearchState {
 impl RegionSearchState {
     pub fn enqueue(&mut self, index: LocalNodeIndex, directions: GraphDirectionSet) {
         let incoming = &mut self.incoming[index.as_array_offset()];
-
-        if incoming.is_empty() {
-            self.queue.push(index);
-        }
+        let should_enqueue = incoming.is_empty();
 
         incoming.add_all(directions);
+
+        unsafe {
+            self.queue
+                .push_conditionally_unchecked(index, should_enqueue);
+        }
     }
 
     fn reset(&mut self) {
@@ -447,7 +453,7 @@ impl Graph {
             for direction in GraphDirection::ordered() {
                 let adjacent_region_coord: IVec3 = region_coord + direction.as_vector();
 
-                if let Some(region) = &mut search_ctx.adjacent[*direction as usize] {
+                if let Some(region) = &mut search_ctx.adjacent(*direction, true) {
                     if region.search_state.queue.is_empty() || region.search_state.enqueued {
                         continue;
                     }
@@ -471,12 +477,12 @@ impl Graph {
         for direction in GraphDirection::ordered() {
             if directions.contains(*direction) {
                 let (neighbor, wrapped) = match direction {
-                    GraphDirection::Down => origin.dec_y(),
-                    GraphDirection::Up => origin.inc_y(),
-                    GraphDirection::North => origin.dec_z(),
-                    GraphDirection::South => origin.inc_z(),
-                    GraphDirection::West => origin.dec_x(),
-                    GraphDirection::East => origin.inc_x(),
+                    GraphDirection::NegX => origin.dec_x(),
+                    GraphDirection::NegY => origin.dec_y(),
+                    GraphDirection::NegZ => origin.dec_z(),
+                    GraphDirection::PosX => origin.inc_x(),
+                    GraphDirection::PosY => origin.inc_y(),
+                    GraphDirection::PosZ => origin.inc_z(),
                 };
 
                 if let Some(neighbor_region) = context.adjacent(*direction, wrapped) {
@@ -528,56 +534,57 @@ impl<'a> SearchContext<'a> {
         direction: GraphDirection,
         wrapped: bool,
     ) -> Option<&mut RefMut<'a, Region>> {
+        let origin = Some(&mut self.origin);
+        let adjacent = self.adjacent[direction as usize].as_mut();
+
         if wrapped {
-            self.adjacent[direction as usize].as_mut()
+            adjacent
         } else {
-            Some(&mut self.origin)
+            origin
         }
     }
 
     pub fn create(
-        regions: &'a mut HashMap<IVec3, RefCell<Region>>,
+        lookup: &'a mut HashMap<IVec3, RefCell<Region>>,
         origin: IVec3,
     ) -> SearchContext<'a> {
         SearchContext {
-            origin: regions.get(&origin).map(|cell| cell.borrow_mut()).unwrap(),
             adjacent: GraphDirection::ordered().map(|direction| {
-                regions
+                lookup
                     .get(&(origin + direction.as_vector()))
                     .map(|cell| cell.borrow_mut())
             }),
+            origin: lookup.get(&origin).map(|cell| cell.borrow_mut()).unwrap(),
         }
     }
 }
 
 fn chunk_inside_view_distance(position: IVec3, center: IVec3, view_distance: i32) -> bool {
-    let distance = (position - center).abs();
-    distance.max_element() < view_distance
+    let distance: IVec3 = (position - center).abs();
+    distance.less_than(IVec3::splat(view_distance))
 }
 
 fn get_valid_directions(center: IVec3, position: IVec3) -> GraphDirectionSet {
-    let mut directions = 0;
-    directions |= if position.x() <= center.x() { 1 } else { 0 } << GraphDirection::West as usize;
-    directions |= if position.x() >= center.x() { 1 } else { 0 } << GraphDirection::East as usize;
+    let position: i32x4 = position.into();
+    let center: i32x4 = center.into();
 
-    directions |= if position.y() <= center.y() { 1 } else { 0 } << GraphDirection::Down as usize;
-    directions |= if position.y() >= center.y() { 1 } else { 0 } << GraphDirection::Up as usize;
+    let negative = position.simd_le(center);
+    let positive = position.simd_ge(center);
 
-    directions |= if position.z() <= center.z() { 1 } else { 0 } << GraphDirection::North as usize;
-    directions |= if position.z() >= center.z() { 1 } else { 0 } << GraphDirection::South as usize;
-
-    GraphDirectionSet::from(directions)
+    GraphDirectionSet::from((negative.to_bitmask() & 0b111) | ((positive.to_bitmask() & 0b111) << 3))
 }
 
 fn chunk_inside_frustum(position: IVec3, frustum: &Frustum) -> bool {
-    let (min_bounds, max_bounds) = get_chunk_bounding_box(position);
-    frustum.test_bounding_box(min_bounds, max_bounds)
+    frustum.test_bounding_box(&get_chunk_bounding_box(position))
 }
 
-fn get_chunk_bounding_box(chunk_coord: IVec3) -> (Vec3, Vec3) {
-    let world_origin = chunk_coord.shl(IVec3::splat(4)).as_float();
+fn get_chunk_bounding_box(chunk_coord: IVec3) -> BoundingBox {
+    let origin = chunk_coord
+        .shl(IVec3::splat(4))
+        .add(IVec3::splat(8))
+        .as_float();
 
-    (world_origin, world_origin + Vec3::splat(16.0))
+    BoundingBox::new(origin, Vec3::splat(8.0))
 }
 
 fn chunk_coord_to_region_coord(node_position: IVec3) -> IVec3 {

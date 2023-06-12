@@ -15,7 +15,7 @@ public class VisibilityEncoding {
                 }
 
                 if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
-                    visibilityData |= 1L << bit(from.ordinal(), to.ordinal());
+                    visibilityData |= 1L << bit(GraphDirection.from(from), GraphDirection.from(to));
                 }
             }
         }
@@ -23,8 +23,8 @@ public class VisibilityEncoding {
         return visibilityData;
     }
 
-    private static int bit(int from, int to) {
-        return (from * 8) + to;
+    private static int bit(GraphDirection from, GraphDirection to) {
+        return (from.ordinal() * 8) + to.ordinal();
     }
 
     // Returns a merged bit-field of the outgoing directions for each incoming direction

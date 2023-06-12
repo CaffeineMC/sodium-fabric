@@ -173,6 +173,32 @@ impl IVec3 {
     pub fn as_float(&self) -> Vec3 {
         Vec3(self.0.cast())
     }
+
+    pub fn less_than(&self, other: Self) -> bool {
+        Self::check_comparison_mask(self.0.simd_lt(other.0))
+    }
+
+    pub fn less_than_equal(&self, other: Self) -> bool {
+        Self::check_comparison_mask(self.0.simd_le(other.0))
+    }
+
+    pub fn greater_than(&self, other: Self) -> bool {
+        Self::check_comparison_mask(self.0.simd_gt(other.0))
+    }
+
+    pub fn greater_than_equal(&self, other: Self) -> bool {
+        Self::check_comparison_mask(self.0.simd_ge(other.0))
+    }
+
+    fn check_comparison_mask(mask: mask32x4) -> bool {
+        (mask.to_bitmask() & 0b111) == 0b111
+    }
+}
+
+impl Into<i32x4> for IVec3 {
+    fn into(self) -> i32x4 {
+        self.0 & i32x4::from_array([!0, !0, !0, 0])
+    }
 }
 
 impl Eq for IVec3 {}
