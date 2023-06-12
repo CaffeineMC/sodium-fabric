@@ -5,7 +5,7 @@ static mut GLOBAL_ALLOC: GlobalLibcAllocator = GlobalLibcAllocator::uninit();
 
 pub fn set_allocator(vtable: &LibcAllocVtable) {
     unsafe {
-        GLOBAL_ALLOC = GlobalLibcAllocator::new(vtable.clone());
+        GLOBAL_ALLOC = GlobalLibcAllocator::new(*vtable);
     }
 }
 
