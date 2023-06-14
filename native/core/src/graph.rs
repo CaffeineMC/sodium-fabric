@@ -5,17 +5,17 @@ use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
-use std::{ops::*, ptr};
 use std::ptr::NonNull;
 use std::simd::{i32x4, SimdPartialOrd, ToBitMask};
 use std::vec::Vec;
+use std::{ops::*, ptr};
 
 use std::ops;
 
 use crate::collections::ArrayDeque;
 use crate::ffi::CInlineVec;
 use crate::ffi::CVec;
-use crate::frustum::{Frustum, BoundingBox};
+use crate::frustum::{BoundingBox, Frustum};
 use crate::math::*;
 
 const SECTIONS_IN_REGION: usize = 8 * 4 * 8;
@@ -153,12 +153,12 @@ pub enum GraphDirection {
 impl GraphDirection {
     pub const fn as_vector(&self) -> IVec3 {
         match *self {
-            GraphDirection::NegX => IVec3::new(-1,  0,  0),
-            GraphDirection::NegY => IVec3::new( 0, -1,  0),
-            GraphDirection::NegZ => IVec3::new( 0,  0, -1),
-            GraphDirection::PosX => IVec3::new( 1,  0,  0),
-            GraphDirection::PosY => IVec3::new( 0,  1,  0),
-            GraphDirection::PosZ => IVec3::new( 0,  0,  1),
+            GraphDirection::NegX => IVec3::new(-1, 0, 0),
+            GraphDirection::NegY => IVec3::new(0, -1, 0),
+            GraphDirection::NegZ => IVec3::new(0, 0, -1),
+            GraphDirection::PosX => IVec3::new(1, 0, 0),
+            GraphDirection::PosY => IVec3::new(0, 1, 0),
+            GraphDirection::PosZ => IVec3::new(0, 0, 1),
         }
     }
 
@@ -408,8 +408,7 @@ impl Graph {
         if let Some(node) = self.get_node(origin_node_coord) {
             let region_coord = chunk_coord_to_region_coord(origin_node_coord);
 
-            let mut region = self.regions.get_mut(&region_coord)
-                .unwrap();
+            let mut region = self.regions.get_mut(&region_coord).unwrap();
             region.search_state.enqueue(
                 LocalNodeIndex::from_global(origin_node_coord),
                 GraphDirectionSet::all(),
@@ -507,13 +506,19 @@ impl Graph {
     }
 
     pub fn update_chunk(&mut self, chunk_coord: IVec3, node: Node) {
-        if let Some(region) = self.regions.get_mut(&chunk_coord_to_region_coord(chunk_coord)) {
+        if let Some(region) = self
+            .regions
+            .get_mut(&chunk_coord_to_region_coord(chunk_coord))
+        {
             region.set_chunk(chunk_coord, node);
         }
     }
 
     pub fn remove_chunk(&mut self, chunk_coord: IVec3) {
-        if let Some(region) = self.regions.get_mut(&chunk_coord_to_region_coord(chunk_coord)) {
+        if let Some(region) = self
+            .regions
+            .get_mut(&chunk_coord_to_region_coord(chunk_coord))
+        {
             region.remove_chunk(chunk_coord);
         }
     }
@@ -530,24 +535,18 @@ pub struct SearchContext<'a> {
     adjacent: [*mut Region; 6],
     origin: NonNull<Region>,
 
-    reference: PhantomData<&'a mut HashMap<IVec3, Region>>
+    reference: PhantomData<&'a mut HashMap<IVec3, Region>>,
 }
 
 impl<'a> SearchContext<'a> {
-    fn adjacent(
-        &mut self,
-        direction: GraphDirection,
-        wrapped: bool,
-    ) -> Option<&'a mut Region> {
+    fn adjacent(&mut self, direction: GraphDirection, wrapped: bool) -> Option<&'a mut Region> {
         unsafe {
-            // SAFETY: The C layout ensures the field SearchContext.origin will always be the N+6 element  
+            // SAFETY: The C layout ensures the field SearchContext.origin will always be the N+6 element
             let offset = if wrapped { direction as usize } else { 6 };
-            let ptr = self.adjacent.as_ptr()
-                .add(offset);
+            let ptr = self.adjacent.as_ptr().add(offset);
 
             // SAFETY: Pointer is always valid, if non-null
-            NonNull::new(*ptr)
-                .map(|mut ptr| ptr.as_mut())
+            NonNull::new(*ptr).map(|mut ptr| ptr.as_mut())
         }
     }
 
@@ -558,26 +557,22 @@ impl<'a> SearchContext<'a> {
         }
     }
 
-    fn create(
-        regions: &'a mut HashMap<IVec3, Region>,
-        origin_coord: IVec3,
-    ) -> SearchContext<'a> {
+    fn create(regions: &'a mut HashMap<IVec3, Region>, origin_coord: IVec3) -> SearchContext<'a> {
         SearchContext {
             adjacent: GraphDirection::ordered()
                 .map(|direction| origin_coord + direction.as_vector())
-                .map(|position| {
-                    Self::get_ptr(regions, &position)
-                }),
+                .map(|position| Self::get_ptr(regions, &position)),
 
             origin: NonNull::new(Self::get_ptr(regions, &origin_coord))
                 .expect("Origin region does not exist"),
 
-            reference: PhantomData
+            reference: PhantomData,
         }
     }
 
     fn get_ptr(regions: &mut HashMap<IVec3, Region>, position: &IVec3) -> *mut Region {
-        regions.get_mut(position)
+        regions
+            .get_mut(position)
             .map_or(ptr::null_mut(), |cell| cell as *mut Region)
     }
 }
@@ -594,7 +589,9 @@ fn get_valid_directions(center: IVec3, position: IVec3) -> GraphDirectionSet {
     let negative = position.simd_le(center);
     let positive = position.simd_ge(center);
 
-    GraphDirectionSet::from((negative.to_bitmask() & 0b111) | ((positive.to_bitmask() & 0b111) << 3))
+    GraphDirectionSet::from(
+        (negative.to_bitmask() & 0b111) | ((positive.to_bitmask() & 0b111) << 3),
+    )
 }
 
 fn chunk_inside_frustum(position: IVec3, frustum: &Frustum) -> bool {
@@ -602,12 +599,10 @@ fn chunk_inside_frustum(position: IVec3, frustum: &Frustum) -> bool {
 }
 
 fn get_chunk_bounding_box(chunk_coord: IVec3) -> BoundingBox {
-    let origin = chunk_coord
-        .shl(IVec3::splat(4))
-        .add(IVec3::splat(8))
-        .as_float();
+    let min = (chunk_coord << IVec3::splat(4)).as_float();
+    let max = min + Vec3::splat(16.0);
 
-    BoundingBox::new(origin, Vec3::splat(8.0))
+    BoundingBox::new(min, max)
 }
 
 fn chunk_coord_to_region_coord(node_position: IVec3) -> IVec3 {

@@ -4,6 +4,7 @@ use std::ops::{self, *};
 use std::simd::*;
 
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct Vec3(f32x4);
 
 impl Vec3 {
@@ -42,8 +43,14 @@ impl Vec3 {
         self.0[2]
     }
 
+    #[inline(always)]
     pub fn as_int(&self) -> IVec3 {
         IVec3(self.0.cast())
+    }
+
+    #[inline(always)]
+    pub unsafe fn as_int_unchecked(&self) -> IVec3 {
+        IVec3(self.0.to_int_unchecked())
     }
 }
 
@@ -66,6 +73,7 @@ impl ops::Sub for Vec3 {
 }
 
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct Vec4(f32x4);
 
 impl Vec4 {
@@ -129,6 +137,7 @@ impl ops::Sub for Vec4 {
 }
 
 #[derive(Copy, Clone, Debug)]
+#[repr(transparent)]
 pub struct IVec3(i32x4);
 
 impl IVec3 {
@@ -275,5 +284,37 @@ impl From<IVec3> for (i32, i32, i32) {
     #[inline(always)]
     fn from(value: IVec3) -> Self {
         (value.x(), value.y(), value.z())
+    }
+}
+
+pub trait FastFma {
+    fn fast_fma(self, a: Self, b: Self) -> Self;
+}
+
+impl<const LANES: usize> FastFma for Simd<f32, LANES>
+where
+    LaneCount<LANES>: SupportedLaneCount,
+{
+    #[inline(always)]
+    fn fast_fma(self, a: Self, b: Self) -> Self {
+        if cfg!(target_feature = "fma") {
+            self.mul_add(a, b)
+        } else {
+            self * a + b
+        }
+    }
+}
+
+impl<const LANES: usize> FastFma for Simd<f64, LANES>
+where
+    LaneCount<LANES>: SupportedLaneCount,
+{
+    #[inline(always)]
+    fn fast_fma(self, a: Self, b: Self) -> Self {
+        if cfg!(target_feature = "fma") {
+            self.mul_add(a, b)
+        } else {
+            self * a + b
+        }
     }
 }
