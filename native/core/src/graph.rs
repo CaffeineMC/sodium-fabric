@@ -3,8 +3,10 @@ use rustc_hash::FxHashMap as HashMap;
 use std::cell::{RefCell, RefMut};
 use std::collections::VecDeque;
 use std::fmt::Debug;
+use std::marker::PhantomData;
 use std::mem::MaybeUninit;
-use std::ops::*;
+use std::{ops::*, ptr};
+use std::ptr::NonNull;
 use std::simd::{i32x4, SimdPartialOrd, ToBitMask};
 use std::vec::Vec;
 
@@ -388,7 +390,7 @@ impl Region {
 }
 
 pub struct Graph {
-    regions: HashMap<IVec3, RefCell<Region>>,
+    regions: HashMap<IVec3, Region>,
 }
 
 impl Graph {
@@ -406,7 +408,8 @@ impl Graph {
         if let Some(node) = self.get_node(origin_node_coord) {
             let region_coord = chunk_coord_to_region_coord(origin_node_coord);
 
-            let mut region = self.regions.get(&region_coord).unwrap().borrow_mut();
+            let mut region = self.regions.get_mut(&region_coord)
+                .unwrap();
             region.search_state.enqueue(
                 LocalNodeIndex::from_global(origin_node_coord),
                 GraphDirectionSet::all(),
@@ -422,12 +425,12 @@ impl Graph {
             let mut search_ctx = SearchContext::create(&mut self.regions, region_coord);
             let mut batch: RegionDrawBatch = RegionDrawBatch::new(region_coord);
 
-            while let Some(node_idx) = search_ctx.origin.search_state.queue.pop() {
+            while let Some(node_idx) = search_ctx.origin().search_state.queue.pop() {
                 let node_coord = node_idx.as_global_coord(region_coord);
 
-                let node = search_ctx.origin.nodes[node_idx.as_array_offset()];
+                let node = search_ctx.origin().nodes[node_idx.as_array_offset()];
                 let node_incoming =
-                    search_ctx.origin.search_state.incoming[node_idx.as_array_offset()];
+                    search_ctx.origin().search_state.incoming[node_idx.as_array_offset()];
 
                 if !chunk_inside_view_distance(node_coord, origin_node_coord, view_distance)
                     || !chunk_inside_frustum(node_coord, frustum)
@@ -463,7 +466,7 @@ impl Graph {
                 }
             }
 
-            search_ctx.origin.search_state.reset();
+            search_ctx.origin().search_state.reset();
         }
 
         CVec::from_boxed_slice(sorted_batches.into_boxed_slice())
@@ -498,64 +501,84 @@ impl Graph {
         let mut region = self
             .regions
             .entry(chunk_coord_to_region_coord(chunk_coord))
-            .or_insert_with(|| RefCell::new(Region::new()))
-            .borrow_mut();
+            .or_insert_with(|| Region::new());
 
         region.set_chunk(chunk_coord, Node::default());
     }
 
     pub fn update_chunk(&mut self, chunk_coord: IVec3, node: Node) {
-        if let Some(region) = self.regions.get(&chunk_coord_to_region_coord(chunk_coord)) {
-            region.borrow_mut().set_chunk(chunk_coord, node);
+        if let Some(region) = self.regions.get_mut(&chunk_coord_to_region_coord(chunk_coord)) {
+            region.set_chunk(chunk_coord, node);
         }
     }
 
     pub fn remove_chunk(&mut self, chunk_coord: IVec3) {
-        if let Some(region) = self.regions.get(&chunk_coord_to_region_coord(chunk_coord)) {
-            region.borrow_mut().remove_chunk(chunk_coord);
+        if let Some(region) = self.regions.get_mut(&chunk_coord_to_region_coord(chunk_coord)) {
+            region.remove_chunk(chunk_coord);
         }
     }
 
     fn get_node(&self, chunk_coord: IVec3) -> Option<Node> {
         self.regions
             .get(&chunk_coord_to_region_coord(chunk_coord))
-            .map(|region| *region.borrow().get_chunk(chunk_coord))
+            .map(|region| *region.get_chunk(chunk_coord))
     }
 }
 
-struct SearchContext<'a> {
-    adjacent: [Option<RefMut<'a, Region>>; 6],
-    origin: RefMut<'a, Region>,
+#[repr(C)] // SAFETY: This ensures the layout of our struct will not change
+pub struct SearchContext<'a> {
+    adjacent: [*mut Region; 6],
+    origin: NonNull<Region>,
+
+    reference: PhantomData<&'a mut HashMap<IVec3, Region>>
 }
 
 impl<'a> SearchContext<'a> {
-    pub fn adjacent(
+    fn adjacent(
         &mut self,
         direction: GraphDirection,
         wrapped: bool,
-    ) -> Option<&mut RefMut<'a, Region>> {
-        let origin = Some(&mut self.origin);
-        let adjacent = self.adjacent[direction as usize].as_mut();
+    ) -> Option<&'a mut Region> {
+        unsafe {
+            // SAFETY: The C layout ensures the field SearchContext.origin will always be the N+6 element  
+            let offset = if wrapped { direction as usize } else { 6 };
+            let ptr = self.adjacent.as_ptr()
+                .add(offset);
 
-        if wrapped {
-            adjacent
-        } else {
-            origin
+            // SAFETY: Pointer is always valid, if non-null
+            NonNull::new(*ptr)
+                .map(|mut ptr| ptr.as_mut())
         }
     }
 
-    pub fn create(
-        lookup: &'a mut HashMap<IVec3, RefCell<Region>>,
-        origin: IVec3,
+    fn origin(&mut self) -> &'a mut Region {
+        unsafe {
+            // SAFETY: Not possible to take more than one reference at a time
+            self.origin.as_mut()
+        }
+    }
+
+    fn create(
+        regions: &'a mut HashMap<IVec3, Region>,
+        origin_coord: IVec3,
     ) -> SearchContext<'a> {
         SearchContext {
-            adjacent: GraphDirection::ordered().map(|direction| {
-                lookup
-                    .get(&(origin + direction.as_vector()))
-                    .map(|cell| cell.borrow_mut())
-            }),
-            origin: lookup.get(&origin).map(|cell| cell.borrow_mut()).unwrap(),
+            adjacent: GraphDirection::ordered()
+                .map(|direction| origin_coord + direction.as_vector())
+                .map(|position| {
+                    Self::get_ptr(regions, &position)
+                }),
+
+            origin: NonNull::new(Self::get_ptr(regions, &origin_coord))
+                .expect("Origin region does not exist"),
+
+            reference: PhantomData
         }
+    }
+
+    fn get_ptr(regions: &mut HashMap<IVec3, Region>, position: &IVec3) -> *mut Region {
+        regions.get_mut(position)
+            .map_or(ptr::null_mut(), |cell| cell as *mut Region)
     }
 }
 
