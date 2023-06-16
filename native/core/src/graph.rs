@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
-use std::simd::{i32x4, SimdPartialOrd, ToBitMask};
+use std::simd::*;
 use std::vec::Vec;
 use std::{ops::*, ptr};
 
@@ -21,83 +21,151 @@ use crate::math::*;
 const SECTIONS_IN_REGION: usize = 8 * 4 * 8;
 
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct LocalNodeIndex(u8);
 
 impl LocalNodeIndex {
-    const X_BITS: u8 = 0b111;
-    const Y_BITS: u8 = 0b11;
-    const Z_BITS: u8 = 0b111;
+    const X_MASK_SINGLE: u8 = 0b00000111;
+    const Y_MASK_SINGLE: u8 = 0b00000011;
+    const Z_MASK_SINGLE: u8 = 0b00000111;
 
-    const X_OFFSET: usize = 5;
-    const Y_OFFSET: usize = 0;
-    const Z_OFFSET: usize = 2;
+    const X_MASK_LINEAR_SHIFT: usize = 0;
+    const Y_MASK_LINEAR_SHIFT: usize = 3;
+    const Z_MASK_LINEAR_SHIFT: usize = 5;
+    const X_MASK_LINEAR: u8 = 0b00000111;
+    const Y_MASK_LINEAR: u8 = 0b00011000;
+    const Z_MASK_LINEAR: u8 = 0b11100000;
 
-    const X_MASK: u8 = Self::X_BITS << Self::X_OFFSET;
-    const Y_MASK: u8 = Self::Y_BITS << Self::Y_OFFSET;
-    const Z_MASK: u8 = Self::Z_BITS << Self::Z_OFFSET;
+    // XYZXYZXZ
+    const X_MASK_MORTON: u8 = 0b10010010;
+    const Y_MASK_MORTON: u8 = 0b01001000;
+    const Z_MASK_MORTON: u8 = 0b00100101;
 
     #[inline(always)]
-    fn from_global(position: IVec3) -> LocalNodeIndex {
-        let packed = ((position.x() as u8 & Self::X_BITS) << Self::X_OFFSET)
-            | ((position.y() as u8 & Self::Y_BITS) << Self::Y_OFFSET)
-            | ((position.z() as u8 & Self::Z_BITS) << Self::Z_OFFSET);
-        LocalNodeIndex(packed)
+    pub fn from_global(position: IVec3) -> Self {
+        // shrink each element into byte, trim bits
+        let pos_trimmed = i32x4::from(position).cast::<u8>()
+            & u8x4::from_array([
+                Self::X_MASK_SINGLE,
+                Self::Y_MASK_SINGLE,
+                Self::Z_MASK_SINGLE,
+                0,
+            ]);
+
+        // allocate one byte per bit for each element.
+        // each element is still has its individual bits in standard ordering, but the bytes in the
+        // vector are in morten ordering.
+        let expanded_linear_bits = simd_swizzle!(pos_trimmed, [2, 0, 2, 1, 0, 2, 1, 0]);
+
+        // shifting each bit into the sign bit for morten ordering
+        let expanded_morton_bits =
+            expanded_linear_bits << u8x8::from_array([7, 7, 6, 7, 6, 5, 6, 5]);
+
+        // arithmetic shift to set each whole lane to its sign bit, then shrinking all lanes to bitmask
+        let morton_packed = unsafe {
+            Mask::from_int_unchecked(expanded_morton_bits.cast::<i8>() >> i8x8::splat(7))
+        }
+        .to_bitmask();
+
+        Self(morton_packed)
     }
 
-    pub fn inc_x(self) -> (LocalNodeIndex, bool) {
-        let result = (self.0 & !Self::X_MASK) | ((self.0 + (1 << Self::X_OFFSET)) & Self::X_MASK);
-        (LocalNodeIndex(result), result < self.0)
+    #[inline(always)]
+    pub fn inc_x(self) -> (Self, bool) {
+        self.inc::<{ Self::X_MASK_MORTON }>()
     }
 
-    pub fn dec_x(self) -> (LocalNodeIndex, bool) {
-        let result = (self.0 & !Self::X_MASK) | ((self.0 - (1 << Self::X_OFFSET)) & Self::X_MASK);
-        (LocalNodeIndex(result), result > self.0)
+    #[inline(always)]
+    pub fn inc_y(self) -> (Self, bool) {
+        self.inc::<{ Self::Y_MASK_MORTON }>()
     }
 
-    pub fn inc_y(self) -> (LocalNodeIndex, bool) {
-        let result = (self.0 & !Self::Y_MASK) | ((self.0 + (1 << Self::Y_OFFSET)) & Self::Y_MASK);
-        (LocalNodeIndex(result), result < self.0)
+    #[inline(always)]
+    pub fn inc_z(self) -> (Self, bool) {
+        self.inc::<{ Self::Z_MASK_MORTON }>()
     }
 
-    pub fn dec_y(self) -> (LocalNodeIndex, bool) {
-        let result = (self.0 & !Self::Y_MASK) | ((self.0 - (1 << Self::Y_OFFSET)) & Self::Y_MASK);
-        (LocalNodeIndex(result), result > self.0)
+    #[inline(always)]
+    pub fn dec_x(self) -> (Self, bool) {
+        self.dec::<{ Self::X_MASK_MORTON }>()
     }
 
-    pub fn inc_z(self) -> (LocalNodeIndex, bool) {
-        let result = (self.0 & !Self::Z_MASK) | ((self.0 + (1 << Self::Z_OFFSET)) & Self::Z_MASK);
-        (LocalNodeIndex(result), result < self.0)
+    #[inline(always)]
+    pub fn dec_y(self) -> (Self, bool) {
+        self.dec::<{ Self::Y_MASK_MORTON }>()
     }
 
-    pub fn dec_z(self) -> (LocalNodeIndex, bool) {
-        let result = (self.0 & !Self::Z_MASK) | ((self.0 - (1 << Self::Z_OFFSET)) & Self::Z_MASK);
-        (LocalNodeIndex(result), result > self.0)
+    #[inline(always)]
+    pub fn dec_z(self) -> (Self, bool) {
+        self.dec::<{ Self::Z_MASK_MORTON }>()
     }
 
-    pub fn x(&self) -> i32 {
-        ((self.0 >> Self::X_OFFSET) & Self::X_BITS) as i32
+    #[inline(always)]
+    pub fn inc<const MASK: u8>(self) -> (Self, bool) {
+        // make the other bits in the number 1
+        let mut masked = self.0 | !MASK;
+        let overflow = masked == u8::MAX;
+
+        // increment
+        masked = masked.wrapping_add(1);
+
+        // modify only the masked bits in the original number
+        (Self((self.0 & !MASK) | (masked & MASK)), overflow)
     }
 
-    pub fn y(&self) -> i32 {
-        ((self.0 >> Self::Y_OFFSET) & Self::Y_BITS) as i32
+    #[inline(always)]
+    pub fn dec<const MASK: u8>(self) -> (Self, bool) {
+        // make the other bits in the number 0
+        let mut masked = self.0 & MASK;
+        let underflow = masked == 0;
+
+        // decrement
+        masked = masked.wrapping_sub(1);
+
+        // modify only the masked bits in the original number
+        (Self((self.0 & !MASK) | (masked & MASK)), underflow)
     }
 
-    pub fn z(&self) -> i32 {
-        ((self.0 >> Self::Z_OFFSET) & Self::Z_BITS) as i32
-    }
-
-    fn as_array_offset(&self) -> usize {
+    #[inline(always)]
+    pub fn as_array_offset(&self) -> usize {
         self.0 as usize
     }
 
-    fn as_global_coord(&self, region_coord: IVec3) -> IVec3 {
-        region_coord
-            .shl(IVec3::new(3, 2, 3))
-            .add(IVec3::new(self.x(), self.y(), self.z()))
+    #[inline(always)]
+    pub fn as_global_coord(&self, region_coord: IVec3) -> IVec3 {
+        // allocate one byte per bit for each element
+        let morton_bytes = u8x8::splat(self.0);
+
+        // shifting each bit into the sign bit for linear ordering
+        let expanded_linear_bits = morton_bytes << u8x8::from_array([6, 3, 0, 4, 1, 7, 5, 2]);
+
+        // arithmetic shift to set each whole lane to its sign bit, then shrinking all lanes to bitmask
+        let linear_packed = unsafe {
+            Mask::from_int_unchecked(expanded_linear_bits.cast::<i8>() >> i8x8::splat(7))
+        }
+        .to_bitmask();
+
+        // unpacking linear pack to individual axis
+        let mut pos_split_axis = IVec3::splat(linear_packed as i32);
+
+        pos_split_axis &= IVec3::new(
+            Self::X_MASK_LINEAR as i32,
+            Self::Y_MASK_LINEAR as i32,
+            Self::Z_MASK_LINEAR as i32,
+        );
+
+        pos_split_axis >>= IVec3::new(
+            Self::X_MASK_LINEAR_SHIFT as i32,
+            Self::Y_MASK_LINEAR_SHIFT as i32,
+            Self::Z_MASK_LINEAR_SHIFT as i32,
+        );
+
+        (region_coord << IVec3::new(3, 2, 3)) + pos_split_axis
     }
 }
 
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct PackedChunkCoord(u64);
 
 impl PackedChunkCoord {

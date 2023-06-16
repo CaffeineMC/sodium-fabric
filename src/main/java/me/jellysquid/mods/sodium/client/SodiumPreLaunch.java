@@ -21,6 +21,7 @@ public class SodiumPreLaunch implements PreLaunchEntrypoint {
 
         CoreLib.init();
 
+        // TODO: why
         var graph = CoreLib.createGraph();
         CoreLib.graphAddChunk(graph, 5, 5, 5);
         CoreLib.deleteGraph(graph);
