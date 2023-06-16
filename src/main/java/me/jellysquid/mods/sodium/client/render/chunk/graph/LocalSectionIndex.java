@@ -1,56 +1,39 @@
 package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
+// Bits are formatted as XYZXYZXZ
 public class LocalSectionIndex {
     public static final int SIZEOF = 1;
 
-    private static final int X_BITS = 0b111, X_OFFSET = 5, X_MASK = X_BITS << X_OFFSET;
-    private static final int Y_BITS = 0b11, Y_OFFSET = 0, Y_MASK = Y_BITS << Y_OFFSET;
-    private static final int Z_BITS = 0b111, Z_OFFSET = 2, Z_MASK = Z_BITS << Z_OFFSET;
-
     public static int pack(int x, int y, int z) {
-        return ((x & X_BITS) << X_OFFSET) | ((y & Y_BITS) << Y_OFFSET) | ((z & Z_BITS) << Z_OFFSET);
-    }
-
-    // x + 1
-    public static int incX(int idx) {
-        return (idx & ~X_MASK) | ((idx + (1 << X_OFFSET)) & X_MASK);
-    }
-
-    // x - 1
-    public static int decX(int idx) {
-        return (idx & ~X_MASK) | ((idx - (1 << X_OFFSET)) & X_MASK);
-    }
-
-    // y + 1
-    public static int incY(int idx) {
-        return (idx & ~Y_MASK) | ((idx + (1 << Y_OFFSET)) & Y_MASK);
-    }
-
-    // y - 1
-    public static int decY(int idx) {
-        return (idx & ~Y_MASK) | ((idx - (1 << Y_OFFSET)) & Y_MASK);
-    }
-
-    // z + 1
-    public static int incZ(int idx) {
-        return (idx & ~Z_MASK) | ((idx + (1 << Z_OFFSET)) & Z_MASK);
-    }
-
-    // z - 1
-    public static int decZ(int idx) {
-        return (idx & ~Z_MASK) | ((idx - (1 << Z_OFFSET)) & Z_MASK);
+        int packed = z & 0b00000001;
+        packed |= (x & 0b00000001) << 1;
+        packed |= (z & 0b00000010) << 1;
+        packed |= (y & 0b00000001) << 3;
+        packed |= (x & 0b00000010) << 3;
+        packed |= (z & 0b00000100) << 3;
+        packed |= (y & 0b00000010) << 5;
+        packed |= (x & 0b00000100) << 5;
+        return packed;
     }
 
     public static int unpackX(int idx) {
-        return (idx >> X_OFFSET) & X_BITS;
+        int x = (idx & 0b00000010) >> 1;
+        x |= (idx & 0b00010000) >> 3;
+        x |= (idx & 0b10000000) >> 5;
+        return x;
     }
 
     public static int unpackY(int idx) {
-        return (idx >> Y_OFFSET) & Y_BITS;
+        int y = (idx & 0b00001000) >> 3;
+        y |= (idx & 0b01000000) >> 5;
+        return y;
     }
 
     public static int unpackZ(int idx) {
-        return (idx >> Z_OFFSET) & Z_BITS;
+        int z = idx & 0b00000001;
+        z |= (idx & 0b00000100) >> 1;
+        z |= (idx & 0b00100000) >> 3;
+        return z;
     }
 
     public static int fromByte(byte idx) {
