@@ -13,8 +13,6 @@ use crate::jni::types::*;
 use crate::mem::LibcAllocVtable;
 use crate::panic::PanicHandlerFn;
 
-use sodium_macros::jni_export;
-
 #[repr(C)]
 pub struct CVec<T> {
     count: u32,
@@ -77,7 +75,7 @@ pub struct CGraphNode {
     flags: u32,
 }
 
-#[jni_export(me.jellysquid.mods.sodium.core.CoreLibFFI)]
+#[allow(non_snake_case)]
 mod java {
     use std::mem::MaybeUninit;
 
@@ -93,31 +91,57 @@ mod java {
     use crate::mem::LibcAllocVtable;
     use crate::panic::PanicHandlerFn;
 
-    pub unsafe fn setAllocator(vtable: JPtr<LibcAllocVtable>) {
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_setAllocator(
+        _: *mut JEnv,
+        _: *mut JClass,
+        vtable: JPtr<LibcAllocVtable>,
+    ) {
         let vtable = vtable.as_ref();
 
         crate::mem::set_allocator(vtable);
     }
 
-    pub unsafe fn setPanicHandler(pfn: JPtr<PanicHandlerFn>) {
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_setPanicHandler(
+        _: *mut JEnv,
+        _: *mut JClass,
+        pfn: JPtr<PanicHandlerFn>,
+    ) {
         let pfn = *pfn.as_ref();
 
         crate::panic::set_panic_handler(pfn);
     }
 
-    pub unsafe fn graphCreate(out_graph: JPtrMut<*const Graph>) {
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphCreate(
+        _: *mut JEnv,
+        _: *mut JClass,
+        out_graph: JPtrMut<*const Graph>,
+    ) {
         let graph = Box::new(Graph::new());
 
         let out_graph = out_graph.into_mut_ref();
         *out_graph = Box::into_raw(graph);
     }
 
-    pub unsafe fn graphAddChunk(graph: JPtrMut<Graph>, x: Jint, y: Jint, z: Jint) {
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphAddChunk(
+        _: *mut JEnv,
+        _: *mut JClass,
+        graph: JPtrMut<Graph>,
+        x: Jint,
+        y: Jint,
+        z: Jint,
+    ) {
         let graph = graph.into_mut_ref();
         graph.add_chunk(IVec3::new(x, y, z));
     }
 
-    pub unsafe fn graphUpdateChunk(
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphUpdateChunk(
+        _: *mut JEnv,
+        _: *mut JClass,
         graph: JPtrMut<Graph>,
         x: Jint,
         y: Jint,
@@ -133,12 +157,23 @@ mod java {
         );
     }
 
-    pub unsafe fn graphRemoveChunk(graph: JPtrMut<Graph>, x: Jint, y: Jint, z: Jint) {
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphRemoveChunk(
+        _: *mut JEnv,
+        _: *mut JClass,
+        graph: JPtrMut<Graph>,
+        x: Jint,
+        y: Jint,
+        z: Jint,
+    ) {
         let graph = graph.into_mut_ref();
         graph.remove_chunk(IVec3::new(x, y, z));
     }
 
-    pub unsafe fn graphSearch(
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphSearch(
+        _: *mut JEnv,
+        _: *mut JClass,
         graph: JPtrMut<Graph>,
         frustum: JPtr<Frustum>,
         view_distance: Jint,
@@ -150,12 +185,20 @@ mod java {
         *out_results.into_mut_ref() = graph.search(frustum, view_distance);
     }
 
-    pub unsafe fn graphDelete(graph: JPtrMut<Graph>) {
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphDelete(
+        _: *mut JEnv,
+        _: *mut JClass,
+        graph: JPtrMut<Graph>,
+    ) {
         let graph = Box::from_raw(graph.into_mut_ref());
         std::mem::drop(graph);
     }
 
-    pub unsafe fn frustumCreate(
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_frustumCreate(
+        _: *mut JEnv,
+        _: *mut JClass,
         out_frustum: JPtrMut<*const Frustum>,
         planes: JPtr<[[f32; 4]; 6]>,
         offset: JPtr<[f32; 3]>,
@@ -170,7 +213,12 @@ mod java {
         *out_frustum = Box::into_raw(frustum);
     }
 
-    pub unsafe fn frustumDelete(frustum: JPtrMut<Frustum>) {
+    #[no_mangle]
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_frustumDelete(
+        _: *mut JEnv,
+        _: *mut JClass,
+        frustum: JPtrMut<Frustum>,
+    ) {
         std::mem::drop(Box::from_raw(frustum.into_mut_ref()));
     }
 }

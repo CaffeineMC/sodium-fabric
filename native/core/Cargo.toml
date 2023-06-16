@@ -18,4 +18,3 @@ lto = true
 
 [dependencies]
 rustc-hash = "1.1.0"
-sodium-macros = { path = "../macros" }

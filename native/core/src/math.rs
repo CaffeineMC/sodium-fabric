@@ -1,6 +1,6 @@
 use std::cmp::Eq;
 use std::hash::Hash;
-use std::ops::{self, *};
+use std::ops::*;
 use std::simd::*;
 
 #[derive(Clone, Copy)]
@@ -54,7 +54,7 @@ impl Vec3 {
     }
 }
 
-impl ops::Add for Vec3 {
+impl Add for Vec3 {
     type Output = Vec3;
 
     #[inline(always)]
@@ -63,7 +63,7 @@ impl ops::Add for Vec3 {
     }
 }
 
-impl ops::Sub for Vec3 {
+impl Sub for Vec3 {
     type Output = Vec3;
 
     #[inline(always)]
@@ -118,7 +118,7 @@ impl Vec4 {
     }
 }
 
-impl ops::Add for Vec4 {
+impl Add for Vec4 {
     type Output = Vec4;
 
     #[inline(always)]
@@ -127,7 +127,7 @@ impl ops::Add for Vec4 {
     }
 }
 
-impl ops::Sub for Vec4 {
+impl Sub for Vec4 {
     type Output = Vec4;
 
     #[inline(always)]
@@ -183,30 +183,29 @@ impl IVec3 {
         Vec3(self.0.cast())
     }
 
+    #[inline(always)]
     pub fn less_than(&self, other: Self) -> bool {
         Self::check_comparison_mask(self.0.simd_lt(other.0))
     }
 
+    #[inline(always)]
     pub fn less_than_equal(&self, other: Self) -> bool {
         Self::check_comparison_mask(self.0.simd_le(other.0))
     }
 
+    #[inline(always)]
     pub fn greater_than(&self, other: Self) -> bool {
         Self::check_comparison_mask(self.0.simd_gt(other.0))
     }
 
+    #[inline(always)]
     pub fn greater_than_equal(&self, other: Self) -> bool {
         Self::check_comparison_mask(self.0.simd_ge(other.0))
     }
 
+    #[inline(always)]
     fn check_comparison_mask(mask: mask32x4) -> bool {
         (mask.to_bitmask() & 0b111) == 0b111
-    }
-}
-
-impl Into<i32x4> for IVec3 {
-    fn into(self) -> i32x4 {
-        self.0 & i32x4::from_array([!0, !0, !0, 0])
     }
 }
 
@@ -235,7 +234,7 @@ impl Default for IVec3 {
     }
 }
 
-impl ops::Add for IVec3 {
+impl Add for IVec3 {
     type Output = IVec3;
 
     #[inline(always)]
@@ -244,7 +243,7 @@ impl ops::Add for IVec3 {
     }
 }
 
-impl ops::Sub for IVec3 {
+impl Sub for IVec3 {
     type Output = IVec3;
 
     #[inline(always)]
@@ -253,7 +252,7 @@ impl ops::Sub for IVec3 {
     }
 }
 
-impl ops::Shr for IVec3 {
+impl Shr for IVec3 {
     type Output = IVec3;
 
     #[inline(always)]
@@ -262,7 +261,14 @@ impl ops::Shr for IVec3 {
     }
 }
 
-impl ops::Shl for IVec3 {
+impl ShrAssign<IVec3> for IVec3 {
+    #[inline(always)]
+    fn shr_assign(&mut self, other: IVec3) {
+        *self = *self >> other;
+    }
+}
+
+impl Shl for IVec3 {
     type Output = IVec3;
 
     #[inline(always)]
@@ -271,7 +277,7 @@ impl ops::Shl for IVec3 {
     }
 }
 
-impl ops::BitAnd for IVec3 {
+impl BitAnd for IVec3 {
     type Output = IVec3;
 
     #[inline(always)]
@@ -280,10 +286,24 @@ impl ops::BitAnd for IVec3 {
     }
 }
 
+impl BitAndAssign<IVec3> for IVec3 {
+    #[inline(always)]
+    fn bitand_assign(&mut self, other: IVec3) {
+        *self = *self & other;
+    }
+}
+
 impl From<IVec3> for (i32, i32, i32) {
     #[inline(always)]
     fn from(value: IVec3) -> Self {
         (value.x(), value.y(), value.z())
+    }
+}
+
+impl From<IVec3> for i32x4 {
+    #[inline(always)]
+    fn from(value: IVec3) -> Self {
+        value.0 & i32x4::from_array([!0, !0, !0, 0])
     }
 }
 
