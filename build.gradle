@@ -39,6 +39,13 @@ sourceSets {
     }
 }
 
+tasks.register('buildNatives') {
+    exec {
+        workingDir '.\\native\\core\\'
+        commandLine 'cargo', 'build', '--profile', 'production'
+    }
+}
+
 tasks.register('apiJar', Jar) {
     classifier "api-dev"
 
@@ -46,6 +53,7 @@ tasks.register('apiJar', Jar) {
 }
 
 tasks.register('remapApiJar', RemapJarTask) {
+    dependsOn apiJar
     classifier "api"
 
     input = apiJar.archiveFile.get().asFile
@@ -54,6 +62,7 @@ tasks.register('remapApiJar', RemapJarTask) {
 
 build.dependsOn apiJar
 build.dependsOn remapApiJar
+build.dependsOn buildNatives
 
 jar {
     from sourceSets.api.output.classesDirs

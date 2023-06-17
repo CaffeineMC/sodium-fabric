@@ -23,7 +23,10 @@ public class SectionRenderDataUnsafe {
     private static final long STRIDE = 4L + (4L * ModelQuadFacing.COUNT);
 
     public static long allocateHeap(int count) {
-        return MemoryUtil.nmemAlloc(STRIDE * count);
+        long sizeBytes = STRIDE * count;
+        long ptr = MemoryUtil.nmemAlloc(sizeBytes);
+        MemoryUtil.memSet(ptr, -1, sizeBytes);
+        return ptr;
     }
 
     public static void freeHeap(long pointer) {
@@ -31,8 +34,7 @@ public class SectionRenderDataUnsafe {
     }
 
     public static void clear(long pointer) {
-        MemoryUtil.memPutInt(pointer + OFFSET_BASE_VERTEX, -1);
-        MemoryUtil.memSet(pointer + OFFSET_MODEL_PARTS, 0x0, ModelQuadFacing.COUNT * Integer.BYTES);
+        MemoryUtil.memSet(pointer, -1, STRIDE);
     }
 
     public static long heapPointer(long pArrayBase, int index) {
