@@ -27,7 +27,9 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
     private int currentElementId;
 
     @Unique
-    private VertexFormatElement[] formatElements;
+    private VertexFormatElement[] formatElements = new VertexFormatElement[16];
+    @Unique
+    private int formatElementCount = 0;
 
     @Inject(method = "setFormat",
         at = @At(
@@ -37,7 +39,8 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
         )
     )
     private void onFormatChanged(VertexFormat format, CallbackInfo ci) {
-        this.formatElements = format.getElements().toArray(new VertexFormatElement[0]);
+        this.formatElements = format.getElements().toArray(this.formatElements);
+        this.formatElementCount = format.getElements().size();
     }
 
     /**
@@ -51,8 +54,8 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
             this.elementOffset += this.currentElement.getByteLength();
 
             // Wrap around the element pointer without using modulo
-            if (++this.currentElementId >= this.formatElements.length) {
-                this.currentElementId -= this.formatElements.length;
+            if (++this.currentElementId >= this.formatElementCount) {
+                this.currentElementId -= this.formatElementCount;
             }
 
             this.currentElement = this.formatElements[this.currentElementId];
