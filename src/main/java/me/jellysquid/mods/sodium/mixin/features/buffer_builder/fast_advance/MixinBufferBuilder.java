@@ -27,7 +27,7 @@ public abstract class MixinBufferBuilder extends FixedColorVertexConsumer implem
     private int currentElementId;
 
     @Unique
-    private VertexFormatElement[] formatElements = new VertexFormatElement[16];
+    private VertexFormatElement[] formatElements = new VertexFormatElement[32];
     @Unique
     private int formatElementCount = 0;
 
