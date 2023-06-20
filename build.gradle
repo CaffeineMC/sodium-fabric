@@ -1,7 +1,8 @@
 import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
-    id 'fabric-loom' version '1.1-SNAPSHOT'
+    id 'fabric-loom' version '1.2-SNAPSHOT'
+    id 'io.github.juuxel.loom-quiltflower' version '1.10.0'
     id 'org.ajoberstar.grgit' version '4.1.0'
 }
 
@@ -40,13 +41,14 @@ sourceSets {
 }
 
 tasks.register('apiJar', Jar) {
-    classifier "api-dev"
+    archiveClassifier.set "api-dev"
 
     from sourceSets.api.output
 }
 
 tasks.register('remapApiJar', RemapJarTask) {
-    classifier "api"
+    dependsOn apiJar
+    archiveClassifier.set "api"
 
     input = apiJar.archiveFile.get().asFile
     addNestedDependencies = false
@@ -59,9 +61,6 @@ jar {
     from sourceSets.api.output.classesDirs
     from sourceSets.api.output.resourcesDir
 }
-
-build.dependsOn apiJar
-build.dependsOn remapApiJar
 
 dependencies {
     //to change the versions see the gradle.properties file

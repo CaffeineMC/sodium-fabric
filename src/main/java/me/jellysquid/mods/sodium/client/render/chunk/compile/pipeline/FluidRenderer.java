@@ -232,7 +232,7 @@ public class FluidRenderer {
             this.updateQuad(quad, world, pos, lighter, Direction.UP, 1.0F, colorizer, fluidState);
             this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, false);
 
-            if (fluidState.method_15756(world, this.scratchPos.set(posX, posY + 1, posZ))) {
+            if (fluidState.canFlowTo(world, this.scratchPos.set(posX, posY + 1, posZ))) {
                 this.writeQuad(meshBuilder, bounds, material, offset, quad,
                         ModelQuadFacing.DOWN, true);
 
