@@ -1,6 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 public class ChunkCameraContext {
+    // 32-bit floats have a 23-bit mantissa. We want to reduce that to 14 bits to avoid seams along chunk/region
+    // boundaries. To do this, we have to add and subtract a number with (23 - 14) bits to effectively shift
+    // the bits out of the number.
+    private static final float PRECISION_MODIFIER = 0x1p9f; // 512.0f
+
     public final int blockX, blockY, blockZ;
     public final float deltaX, deltaY, deltaZ;
     public final double posX, posY, posZ;
@@ -10,10 +15,9 @@ public class ChunkCameraContext {
         this.blockY = (int) y;
         this.blockZ = (int) z;
 
-        // Reduce camera delta precision to 14 bits to avoid seams along chunk/region boundaries
-        this.deltaX = (float) Math.round((x - this.blockX) * 0x1p14f) * 0x1p-14f;
-        this.deltaY = (float) Math.round((y - this.blockY) * 0x1p14f) * 0x1p-14f;
-        this.deltaZ = (float) Math.round((z - this.blockZ) * 0x1p14f) * 0x1p-14f;
+        this.deltaX = ((float) (x - this.blockX) + PRECISION_MODIFIER) - PRECISION_MODIFIER;
+        this.deltaY = ((float) (y - this.blockY) + PRECISION_MODIFIER) - PRECISION_MODIFIER;
+        this.deltaZ = ((float) (z - this.blockZ) + PRECISION_MODIFIER) - PRECISION_MODIFIER;
 
         this.posX = x;
         this.posY = y;
