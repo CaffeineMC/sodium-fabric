@@ -2,6 +2,8 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.Rect2i;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.MathHelper;
@@ -49,6 +51,7 @@ public class SliderControl implements Control<Integer> {
         private final ControlValueFormatter formatter;
 
         private final int min;
+        private final int max;
         private final int range;
         private final int interval;
 
@@ -58,6 +61,7 @@ public class SliderControl implements Control<Integer> {
             super(option, dim);
 
             this.min = min;
+            this.max = max;
             this.range = max - min;
             this.interval = interval;
             this.thumbPosition = this.getThumbPositionForValue(option.getValue());
@@ -67,17 +71,17 @@ public class SliderControl implements Control<Integer> {
         }
 
         @Override
-        public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta) {
-            super.render(matrixStack, mouseX, mouseY, delta);
+        public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+            super.render(drawContext, mouseX, mouseY, delta);
 
-            if (this.option.isAvailable() && this.hovered) {
-                this.renderSlider(matrixStack);
+            if (this.option.isAvailable() && (this.hovered || this.isFocused())) {
+                this.renderSlider(drawContext);
             } else {
-                this.renderStandaloneValue(matrixStack);
+                this.renderStandaloneValue(drawContext);
             }
         }
 
-        private void renderStandaloneValue(MatrixStack matrixStack) {
+        private void renderStandaloneValue(DrawContext drawContext) {
             int sliderX = this.sliderBounds.getX();
             int sliderY = this.sliderBounds.getY();
             int sliderWidth = this.sliderBounds.getWidth();
@@ -86,10 +90,10 @@ public class SliderControl implements Control<Integer> {
             String label = this.formatter.format(this.option.getValue());
             int labelWidth = this.font.getWidth(label);
 
-            this.drawString(matrixStack, label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
+            this.drawString(drawContext, label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
         }
 
-        private void renderSlider(MatrixStack matrixStack) {
+        private void renderSlider(DrawContext drawContext) {
             int sliderX = this.sliderBounds.getX();
             int sliderY = this.sliderBounds.getY();
             int sliderWidth = this.sliderBounds.getWidth();
@@ -100,7 +104,7 @@ public class SliderControl implements Control<Integer> {
             double thumbOffset = MathHelper.clamp((double) (this.getIntValue() - this.min) / this.range * sliderWidth, 0, sliderWidth);
 
             double thumbX = sliderX + thumbOffset - THUMB_WIDTH;
-            double trackY = sliderY + (sliderHeight / 2) - ((double) TRACK_HEIGHT / 2);
+            double trackY = sliderY + (sliderHeight / 2f) - ((double) TRACK_HEIGHT / 2);
 
             this.drawRect(thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
             this.drawRect(sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
@@ -109,7 +113,7 @@ public class SliderControl implements Control<Integer> {
 
             int labelWidth = this.font.getWidth(label);
 
-            this.drawString(matrixStack, label, sliderX - labelWidth - 6, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
+            this.drawString(drawContext, label, sliderX - labelWidth - 6, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
         }
 
         public int getIntValue() {
@@ -126,8 +130,13 @@ public class SliderControl implements Control<Integer> {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (this.option.isAvailable() && button == 0 && this.sliderBounds.contains((int) mouseX, (int) mouseY)) {
-                this.setValueFromMouse(mouseX);
+            // What is this?
+            // It's a ridiculous solution to the slider element not getting "focused" when it is clicked unless it is in the slider bounds. This breaks what every other element does,
+            // so we need this stupid hack.
+            if (this.option.isAvailable() && button == 0 && mouseY >= this.sliderBounds.getY() && mouseY <= this.sliderBounds.getY() + this.sliderBounds.getHeight()) {
+                if (this.sliderBounds.contains((int) mouseX, (int) mouseY)) {
+                    this.setValueFromMouse(mouseX);
+                }
 
                 return true;
             }
@@ -139,7 +148,7 @@ public class SliderControl implements Control<Integer> {
             this.setValue((d - (double) this.sliderBounds.getX()) / (double) this.sliderBounds.getWidth());
         }
 
-        private void setValue(double d) {
+        public void setValue(double d) {
             this.thumbPosition = MathHelper.clamp(d, 0.0D, 1.0D);
 
             int value = this.getIntValue();
@@ -147,6 +156,21 @@ public class SliderControl implements Control<Integer> {
             if (this.option.getValue() != value) {
                 this.option.setValue(value);
             }
+        }
+
+        @Override
+        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+            if (!isFocused()) return false;
+
+            if (keyCode == InputUtil.GLFW_KEY_LEFT) {
+                this.option.setValue(MathHelper.clamp(this.option.getValue() - interval, min, max));
+                return true;
+            } else if (keyCode == InputUtil.GLFW_KEY_RIGHT) {
+                this.option.setValue(MathHelper.clamp(this.option.getValue() + interval, min, max));
+                return true;
+            }
+
+            return false;
         }
 
         @Override

@@ -269,7 +269,7 @@ public class SodiumGameOptionPages {
                         .setControl(TickBoxControl::new)
                         .setImpact(OptionImpact.MEDIUM)
                         .setBinding((opts, value) -> opts.performance.useBlockFaceCulling = value, opts -> opts.performance.useBlockFaceCulling)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build()
                 )
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)

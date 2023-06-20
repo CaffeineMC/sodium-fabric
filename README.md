@@ -46,14 +46,6 @@ incomplete features, bugs, crashes, and all other kinds of weird issues. You **s
 unless you know what you are doing and are comfortable with software debugging. If you report issues using these builds,
 we will expect that this is the case. Caveat emptor.
 
-### CurseForge
-
-[![CurseForge downloads](http://cf.way2muchnoise.eu/full_394468_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/sodium)
-
-If you are using the CurseForge client, you can continue to find downloads through our
-[CurseForge page](https://www.curseforge.com/minecraft/mc-mods/sodium). Unless you are using the CurseForge
-client, you should prefer the downloads linked on our Modrinth or GitHub release pages above.
-
 ---
 
 ### Reporting Issues

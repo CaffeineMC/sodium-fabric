@@ -3,7 +3,7 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 public class ChunkCameraContext {
     public final int blockX, blockY, blockZ;
     public final float deltaX, deltaY, deltaZ;
-    public final float posX, posY, posZ;
+    public final double posX, posY, posZ;
     public final int chunkX, chunkY, chunkZ;
 
     public ChunkCameraContext(double x, double y, double z) {
@@ -20,8 +20,8 @@ public class ChunkCameraContext {
         this.deltaY = (float) Math.round((y - this.blockY) * 0x1p14f) * 0x1p-14f;
         this.deltaZ = (float) Math.round((z - this.blockZ) * 0x1p14f) * 0x1p-14f;
 
-        this.posX = (float) x;
-        this.posY = (float) y;
-        this.posZ = (float) z;
+        this.posX = x;
+        this.posY = y;
+        this.posZ = z;
     }
 }

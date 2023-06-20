@@ -2,14 +2,12 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.ChunkPos;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Map;
-import java.util.stream.LongStream;
 
 public class ChunkTracker {
     private final Long2IntOpenHashMap status = new Long2IntOpenHashMap();

@@ -19,8 +19,8 @@ public abstract class MixinBiome {
     public abstract float getTemperature();
 
     @Shadow
-    public abstract float getDownfall();
-
+    @Final
+    private Biome.Weather weather;
     @Unique
     private boolean hasCustomGrassColor;
 
@@ -89,7 +89,7 @@ public abstract class MixinBiome {
 
     private int getDefaultColorIndex() {
         double temperature = MathHelper.clamp(this.getTemperature(), 0.0F, 1.0F);
-        double humidity = MathHelper.clamp(this.getDownfall(), 0.0F, 1.0F);
+        double humidity = MathHelper.clamp(this.weather.downfall, 0.0F, 1.0F);
 
         return BiomeColorMaps.getIndex(temperature, humidity);
     }
