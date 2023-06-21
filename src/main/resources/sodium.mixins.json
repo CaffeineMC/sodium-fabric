@@ -13,6 +13,7 @@
     "core.MixinDirection",
     "core.MixinFrustum",
     "core.MixinMinecraftClient",
+    "core.MixinRenderSystem",
     "core.MixinWindow",
     "core.model.MixinBlockColors",
     "core.model.MixinItemColors",

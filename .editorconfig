@@ -262,7 +262,7 @@ ij_editorconfig_space_before_colon = false
 ij_editorconfig_space_before_comma = false
 ij_editorconfig_spaces_around_assignment_operators = true
 
-[{*.bash, *.zsh, *.sh}]
+[{*.bash,*.zsh,*.sh}]
 indent_size = 2
 tab_width = 2
 ij_shell_binary_ops_start_line = false
@@ -271,7 +271,7 @@ ij_shell_minify_program = false
 ij_shell_redirect_followed_by_space = false
 ij_shell_switch_cases_indented = false
 
-[{*.gant, *.groovy, *.gradle, *.gdsl, *.gy}]
+[{*.gant,*.groovy,*.gradle,*.gdsl,*.gy}]
 ij_groovy_align_group_field_declarations = false
 ij_groovy_align_multiline_array_initializer_expression = false
 ij_groovy_align_multiline_assignment = false
@@ -428,7 +428,7 @@ ij_groovy_while_brace_force = never
 ij_groovy_while_on_new_line = false
 ij_groovy_wrap_long_lines = false
 
-[{*.html, *.shtm, *.sht, *.shtml, *.htm}]
+[{*.html,*.shtm,*.sht,*.shtml,*.htm}]
 ij_html_add_new_line_before_tags = body, div, p, form, h1, h2, h3
 ij_html_align_attributes = true
 ij_html_align_text = false
@@ -455,12 +455,12 @@ ij_html_space_around_equality_in_attribute = false
 ij_html_space_inside_empty_tag = false
 ij_html_text_wrap = normal
 
-[{*.jhm, *.xslt, *.xul, *.tagx, *.rng, *.xsl, *.xsd, *.jspx, *.ant, *.xml, *.tld, *.fxml, *.jrxml, *.jnlp, *.wsdl, *.pom}]
+[{*.jhm,*.xslt,*.xul,*.tagx,*.rng,*.xsl,*.xsd,*.jspx,*.ant,*.xml,*.tld,*.fxml,*.jrxml,*.jnlp,*.wsdl,*.pom}]
 ij_xml_block_comment_at_first_column = true
 ij_xml_keep_indents_on_empty_lines = false
 ij_xml_line_comment_at_first_column = true
 
-[{*.kt, *.kts}]
+[{*.kt,*.kts}]
 ij_kotlin_align_in_columns_case_branch = false
 ij_kotlin_align_multiline_binary_operation = false
 ij_kotlin_align_multiline_extends_list = false
@@ -536,12 +536,12 @@ ij_kotlin_wrap_elvis_expressions = 1
 ij_kotlin_wrap_expression_body_functions = 0
 ij_kotlin_wrap_first_method_in_call_chain = false
 
-[{*.yml, *.yaml}]
+[{*.yml,*.yaml}]
 indent_size = 2
 ij_yaml_keep_indents_on_empty_lines = false
 ij_yaml_keep_line_breaks = true
 
-[{mcmod.info, *.json}]
+[{mcmod.info,*.json}]
 indent_size = 2
 ij_json_keep_blank_lines_in_code = 0
 ij_json_keep_indents_on_empty_lines = false
