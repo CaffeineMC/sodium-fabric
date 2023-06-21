@@ -1,18 +1,19 @@
 {
-  "package": "me.jellysquid.mods.sodium.mixin",
-  "required": true,
-  "compatibilityLevel": "JAVA_17",
-  "plugin": "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
-  "injectors": {
-    "defaultRequire": 1
+  "package" : "me.jellysquid.mods.sodium.mixin",
+  "required" : true,
+  "compatibilityLevel" : "JAVA_17",
+  "plugin" : "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
+  "injectors" : {
+    "defaultRequire" : 1
   },
-  "overwrites": {
-    "conformVisibility": true
+  "overwrites" : {
+    "conformVisibility" : true
   },
-  "client": [
+  "client" : [
     "core.MixinDirection",
     "core.MixinFrustum",
     "core.MixinMinecraftClient",
+    "core.MixinRenderSystem",
     "core.MixinWindow",
     "core.model.MixinBlockColors",
     "core.model.MixinItemColors",
@@ -23,8 +24,8 @@
     "core.pipeline.vertex.MixinSpriteTexturedVertexConsumer",
     "core.pipeline.vertex.MixinVertexConsumers$MixinDual",
     "core.pipeline.vertex.MixinVertexConsumers$MixinUnion",
-    "features.block.MixinBlockModelRenderer",
     "features.biome.MixinBiome",
+    "features.block.MixinBlockModelRenderer",
     "features.buffer_builder.fast_advance.MixinBufferBuilder",
     "features.buffer_builder.fast_sort.MixinBufferBuilder",
     "features.buffer_builder.fast_sort.MixinVertexSorter",
