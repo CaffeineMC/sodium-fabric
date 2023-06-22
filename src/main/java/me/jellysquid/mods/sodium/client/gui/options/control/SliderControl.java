@@ -132,8 +132,8 @@ public class SliderControl implements Control<Integer> {
             // What is this?
             // It's a ridiculous solution to the slider element not getting "focused" when it is clicked unless it is in the slider bounds. This breaks what every other element does,
             // so we need this stupid hack.
-            if (this.option.isAvailable() && button == 0 && mouseY >= this.sliderBounds.getY() && mouseY <= this.sliderBounds.getY() + this.sliderBounds.getHeight()) {
-                if (this.sliderBounds.contains((int) mouseX, (int) mouseY)) {
+            if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
+                if (this.sliderBounds.contains((int) mouseX, (int) mouseY)){
                     this.setValueFromMouse(mouseX);
                 }
 
