@@ -22,6 +22,21 @@ public interface VertexBufferWriter {
         throw createUnsupportedVertexConsumerThrowable(consumer);
     }
 
+    /**
+     * Converts a {@link VertexConsumer} into a {@link VertexBufferWriter} if possible.
+     *
+     * @param consumer The vertex consumer to create a writer for
+     * @return An implementation of {@link VertexBufferWriter} which will write vertices into {@param consumer}, or null
+     * if the vertex consumer does not implement the necessary interface
+     */
+    static VertexBufferWriter tryOf(VertexConsumer consumer) {
+        if (consumer instanceof VertexBufferWriter writer) {
+            return writer;
+        }
+
+        return null;
+    }
+
     private static RuntimeException createUnsupportedVertexConsumerThrowable(VertexConsumer consumer) {
         var clazz = consumer.getClass();
         var name = clazz.getName();

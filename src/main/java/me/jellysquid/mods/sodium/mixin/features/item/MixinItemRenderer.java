@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.features.item;
 import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.render.immediate.model.BakedModelEncoder;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import me.jellysquid.mods.sodium.client.world.biome.ItemColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
@@ -19,6 +20,9 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.LocalRandom;
 import net.minecraft.util.math.random.Random;
 import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 
@@ -34,9 +38,14 @@ public class MixinItemRenderer {
      * @reason Avoid allocations
      * @author JellySquid
      */
-    @Overwrite
-    private void renderBakedItemModel(BakedModel model, ItemStack itemStack, int light, int overlay, MatrixStack matrixStack, VertexConsumer vertexConsumer) {
-        var writer = VertexBufferWriter.of(vertexConsumer);
+    @Inject(method = "renderBakedItemModel", at = @At("HEAD"), cancellable = true)
+    private void renderModelFast(BakedModel model, ItemStack itemStack, int light, int overlay, MatrixStack matrixStack, VertexConsumer vertexConsumer, CallbackInfo ci) {
+        var writer = VertexConsumerUtils.convertOrLog(vertexConsumer);
+        if(writer == null) {
+            return;
+        }
+
+        ci.cancel();
 
         Random random = this.random;
         MatrixStack.Entry matrices = matrixStack.peek();
