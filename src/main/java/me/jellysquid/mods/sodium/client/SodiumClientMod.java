@@ -1,8 +1,10 @@
 package me.jellysquid.mods.sodium.client;
 
+import me.jellysquid.mods.sodium.client.frapi.SodiumRenderer;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import org.slf4j.Logger;
@@ -30,6 +32,8 @@ public class SodiumClientMod implements ClientModInitializer {
         CONFIG = loadConfig();
 
         FlawlessFrames.onClientInitialization();
+
+        RendererAccess.INSTANCE.registerRenderer(SodiumRenderer.INSTANCE);
     }
 
     public static SodiumGameOptions options() {

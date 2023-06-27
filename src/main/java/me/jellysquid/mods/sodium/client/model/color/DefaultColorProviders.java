@@ -71,7 +71,7 @@ public class DefaultColorProviders {
 
         @Override
         public void getColors(WorldSlice view, BlockPos pos, BlockState state, ModelQuadView quad, int[] output) {
-            Arrays.fill(output, ColorARGB.toABGR(this.provider.getColor(state, view, pos, quad.getColorIndex())));
+            Arrays.fill(output, this.provider.getColor(state, view, pos, quad.getColorIndex()));
         }
     }
 

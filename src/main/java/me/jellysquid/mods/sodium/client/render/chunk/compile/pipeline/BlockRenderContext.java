@@ -4,11 +4,12 @@ import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockRenderView;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 public class BlockRenderContext {
-    private final WorldSlice world;
+    private BlockRenderView world;
 
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
 
@@ -20,7 +21,7 @@ public class BlockRenderContext {
     private long seed;
 
 
-    public BlockRenderContext(WorldSlice world) {
+    public BlockRenderContext(BlockRenderView world) {
         this.world = world;
     }
 
@@ -34,6 +35,10 @@ public class BlockRenderContext {
         this.seed = seed;
     }
 
+    public void updateWorld(BlockRenderView world) {
+        this.world = world;
+    }
+
     /**
      * @return The position (in world space) of the block being rendered
      */
@@ -44,7 +49,7 @@ public class BlockRenderContext {
     /**
      * @return The world which the block is being rendered from
      */
-    public WorldSlice world() {
+    public BlockRenderView world() {
         return this.world;
     }
 
