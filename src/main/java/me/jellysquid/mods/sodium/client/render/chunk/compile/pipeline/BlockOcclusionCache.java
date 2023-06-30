@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.occlusion;
+package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
 import it.unimi.dsi.fastutil.objects.Object2ByteLinkedOpenHashMap;
 import net.minecraft.block.BlockState;

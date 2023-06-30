@@ -26,7 +26,7 @@ public enum ModelQuadOrientation {
      */
     public static ModelQuadOrientation orientByBrightness(float[] brightnesses) {
         // If one side of the quad is brighter, flip the sides
-        if (brightnesses[0] + brightnesses[2] > brightnesses[1] + brightnesses[3]) {
+        if (brightnesses[0] + brightnesses[2] >= brightnesses[1] + brightnesses[3]) {
             return NORMAL;
         } else {
             return FLIP;

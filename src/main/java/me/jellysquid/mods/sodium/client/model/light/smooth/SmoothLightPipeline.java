@@ -13,12 +13,11 @@ import net.minecraft.util.math.MathHelper;
  * A light pipeline which produces smooth interpolated lighting and ambient occlusion for model quads. This
  * implementation makes a number of improvements over vanilla's own "smooth lighting" option. In no particular order:
  *
- * - Ambient occlusion of block slopes underwater no longer produces broken results (fixes MC-149211)
- * - Smooth lighting now works when underwater (fixes MC-68129)
  * - Corner blocks are now selected from the correct set of neighbors above block faces (fixes MC-148689 and MC-12558)
- * - Shading issues caused by anisotropy are fixed by re-orientating quads to a consistent ordering (fixes MC-136302)
+ * - Shading issues caused by anisotropy are fixed by re-orientating quads to a consistent ordering (fixes MC-138211)
  * - Inset block faces are correctly shaded by their neighbors, fixing a number of problems with non-full blocks such as
  *   grass paths (fixes MC-11783 and MC-108621)
+ * - Blocks next to emissive blocks are too bright (MC-260989)
  * - Synchronization issues between the main render thread's light engine and chunk build worker threads are corrected
  *   by copying light data alongside block states, fixing a number of inconsistencies in baked chunks (no open issue)
  *
