@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.api.vertex.buffer;
 import net.caffeinemc.mods.sodium.api.memory.MemoryIntrinsics;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.minecraft.client.render.VertexConsumer;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
 import org.slf4j.Logger;
 
@@ -29,6 +30,7 @@ public interface VertexBufferWriter {
      * @return An implementation of {@link VertexBufferWriter} which will write vertices into {@param consumer}, or null
      * if the vertex consumer does not implement the necessary interface
      */
+    @Nullable
     static VertexBufferWriter tryOf(VertexConsumer consumer) {
         if (consumer instanceof VertexBufferWriter writer) {
             return writer;
