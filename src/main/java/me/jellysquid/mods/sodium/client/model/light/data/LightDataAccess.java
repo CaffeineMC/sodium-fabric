@@ -1,12 +1,11 @@
 package me.jellysquid.mods.sodium.client.model.light.data;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.Fluids;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockRenderView;
+import net.minecraft.world.LightType;
 
 /**
  * The light data cache is used to make accessing the light data and occlusion properties of blocks cheaper. The data
@@ -16,11 +15,12 @@ import net.minecraft.world.BlockRenderView;
  * good cache locality.
  *
  * Each long integer contains the following fields:
- * - OP: Block opacity test, true if opaque
- * - FO: Full block opaque test, true if opaque
- * - FC: Full block test, true if full cube
+ * - LM: Light map texture coordinates, two packed UV shorts in an integer; excludes fullbright lightmaps from emissive blocks
  * - AO: Ambient occlusion, floating point value in the range of 0.0..1.0 encoded as a 12-bit unsigned integer
- * - LM: Light map texture coordinates, two packed UV shorts in an integer
+ * - EM: Emissive test, true if block uses emissive lighting
+ * - OP: Block opacity test, true if opaque
+ * - FO: Full cube opacity test, true if opaque full cube
+ * - FC: Full cube test, true if full cube
  *
  * You can use the various static pack/unpack methods to extract these values in a usable format.
  */
@@ -60,52 +60,34 @@ public abstract class LightDataAccess {
 
         BlockState state = world.getBlockState(pos);
 
-        float ao;
-        boolean em;
-
-        if (state.getLuminance() == 0) {
-            ao = state.getAmbientOcclusionLightLevel(world, pos);
-            em = state.hasEmissiveLighting(world, pos);
-        } else {
-            ao = 1.0f;
-            em = true;
-        }
-
-        // FIX: Fluids are always non-translucent despite blocking light, so we need a special check here in order to
-        // solve lighting issues underwater.
-        boolean op = !state.shouldBlockVision(world, pos) || state.getOpacity(world, pos) == 0;
+        boolean em = state.hasEmissiveLighting(world, pos);
+        boolean op = state.shouldBlockVision(world, pos) && state.getOpacity(world, pos) != 0;
         boolean fo = state.isOpaqueFullCube(world, pos);
         boolean fc = state.isFullCube(world, pos);
 
-        // OPTIMIZE: Do not calculate lightmap data if the block is full and opaque.
-        // FIX: Calculate lightmap data for light-emitting or emissive blocks, even though they are full and opaque.
-        int lm = (fo && !em) ? 0 : WorldRenderer.getLightmapCoordinates(world, state, pos);
+        int lu = state.getLuminance();
 
-        return packAO(ao) | packLM(lm) | packOP(op) | packFO(fo) | packFC(fc) | (1L << 60);
-    }
+        // OPTIMIZE: Do not calculate lightmap data if the block is full and opaque and does not emit light.
+        int lm;
+        if (fo && lu == 0) {
+            lm = 0;
+        } else {
+            // Same as WorldRenderer#getLightmapCoordinates but without the emissive check
+            // This lightmap value is necessary in some calculations even if the block is emissive
+            int sky = world.getLightLevel(LightType.SKY, pos);
+            int block = world.getLightLevel(LightType.BLOCK, pos);
+            lm = LightmapTextureManager.pack(Math.max(block, lu), sky);
+        }
 
-    public static long packOP(boolean opaque) {
-        return (opaque ? 1L : 0L) << 56;
-    }
+        // FIX: Do not apply AO from blocks that emit light
+        float ao;
+        if (lu == 0) {
+            ao = state.getAmbientOcclusionLightLevel(world, pos);
+        } else {
+            ao = 1.0f;
+        }
 
-    public static boolean unpackOP(long word) {
-        return ((word >>> 56) & 0b1) != 0;
-    }
-
-    public static long packFO(boolean opaque) {
-        return (opaque ? 1L : 0L) << 57;
-    }
-
-    public static boolean unpackFO(long word) {
-        return ((word >>> 57) & 0b1) != 0;
-    }
-
-    public static long packFC(boolean fullCube) {
-        return (fullCube ? 1L : 0L) << 58;
-    }
-
-    public static boolean unpackFC(long word) {
-        return ((word >>> 58) & 0b1) != 0;
+        return packFC(fc) | packFO(fo) | packOP(op) | packEM(em) | packAO(ao) | packLM(lm);
     }
 
     public static long packLM(int lm) {
@@ -116,6 +98,18 @@ public abstract class LightDataAccess {
         return (int) (word & 0xFFFFFFFFL);
     }
 
+    /**
+     * Like {@link #unpackLM(long)}, but checks {@link #unpackEM(long)} first and returns
+     * the {@link LightmapTextureManager#MAX_LIGHT_COORDINATE fullbright lightmap} if emissive.
+     */
+    public static int unpackFinalLM(long word) {
+        if (unpackEM(word)) {
+            return LightmapTextureManager.MAX_LIGHT_COORDINATE;
+        } else {
+            return unpackLM(word);
+        }
+    }
+
     public static long packAO(float ao) {
         int aoi = (int) (ao * 4096.0f);
         return ((long) aoi & 0xFFFFL) << 32;
@@ -124,6 +118,38 @@ public abstract class LightDataAccess {
     public static float unpackAO(long word) {
         int aoi = (int) (word >>> 32 & 0xFFFFL);
         return aoi * (1.0f / 4096.0f);
+    }
+
+    public static long packEM(boolean emissive) {
+        return (emissive ? 1L : 0L) << 56;
+    }
+
+    public static boolean unpackEM(long word) {
+        return ((word >>> 56) & 0b1) != 0;
+    }
+
+    public static long packOP(boolean opaque) {
+        return (opaque ? 1L : 0L) << 57;
+    }
+
+    public static boolean unpackOP(long word) {
+        return ((word >>> 57) & 0b1) != 0;
+    }
+
+    public static long packFO(boolean opaque) {
+        return (opaque ? 1L : 0L) << 58;
+    }
+
+    public static boolean unpackFO(long word) {
+        return ((word >>> 58) & 0b1) != 0;
+    }
+
+    public static long packFC(boolean fullCube) {
+        return (fullCube ? 1L : 0L) << 59;
+    }
+
+    public static boolean unpackFC(long word) {
+        return ((word >>> 59) & 0b1) != 0;
     }
 
     public BlockRenderView getWorld() {
