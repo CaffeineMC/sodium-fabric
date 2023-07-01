@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
@@ -29,7 +30,7 @@ public class RenderSection {
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
     private BuiltSectionInfo data = BuiltSectionInfo.ABSENT;
-    private CompletableFuture<?> rebuildTask = null;
+    private ChunkRenderBuildTask rebuildTask = null;
 
     private ChunkUpdateType pendingUpdate;
 
@@ -79,7 +80,9 @@ public class RenderSection {
      */
     public void cancelRebuildTask() {
         if (this.rebuildTask != null) {
-            this.rebuildTask.cancel(false);
+            //This could also be where the memory leak is, if the task is canceled but has already been complete
+            // then the result might not get freed
+            this.rebuildTask.cancel();
             this.rebuildTask = null;
         }
     }
@@ -224,11 +227,8 @@ public class RenderSection {
         }
     }
 
-    public void onBuildSubmitted(CompletableFuture<?> task) {
-        if (this.rebuildTask != null) {
-            this.rebuildTask.cancel(false);
-            this.rebuildTask = null;
-        }
+    public void onBuildSubmitted(ChunkRenderBuildTask task) {
+        cancelRebuildTask();
 
         this.rebuildTask = task;
         this.pendingUpdate = null;

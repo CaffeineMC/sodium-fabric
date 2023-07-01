@@ -10,9 +10,18 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphDirection;
@@ -35,6 +44,8 @@ import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
+import me.jellysquid.mods.sodium.common.util.DirectionUtil;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;
@@ -44,7 +55,6 @@ import net.minecraft.world.chunk.ChunkSection;
 import org.apache.commons.lang3.Validate;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 public class RenderSectionManager {
     /**
@@ -377,24 +387,38 @@ public class RenderSectionManager {
     }
 
     private void updateChunks(boolean allImmediately) {
-        var blockingFutures = new LinkedList<CompletableFuture<ChunkBuildResult>>();
+        var blockingTasks = new LinkedList<ChunkRenderBuildTask>();
 
-        this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD, blockingFutures);
-        this.submitRebuildTasks(ChunkUpdateType.INITIAL_BUILD, allImmediately ? blockingFutures : null);
-        this.submitRebuildTasks(ChunkUpdateType.REBUILD, allImmediately ? blockingFutures : null);
+        this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD, blockingTasks);
+        this.submitRebuildTasks(ChunkUpdateType.INITIAL_BUILD, allImmediately ? blockingTasks : null);
+        this.submitRebuildTasks(ChunkUpdateType.REBUILD, allImmediately ? blockingTasks : null);
 
         // Try to complete some other work on the main thread while we wait for rebuilds to complete
         this.needsUpdate |= this.performPendingUploads();
 
-        if (!blockingFutures.isEmpty()) {
+        if (!blockingTasks.isEmpty()) {
             this.needsUpdate = true;
-            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), new WorkStealingFutureDrain<>(blockingFutures, this.builder::stealTask));
+            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), Integer.MAX_VALUE, new Iterator<ChunkBuildResult>() {
+                @Override
+                public boolean hasNext() {
+                    return !blockingTasks.isEmpty();
+                }
+
+                @Override
+                public ChunkBuildResult next() {
+                    //TODO: FIXME!!! make this not spinlock and instead loop over the queue see if any is avalible, if not, grab one, execute it and return
+                    ChunkRenderBuildTask task = blockingTasks.poll();
+                    while (!task.isComplete()) Thread.onSpinWait();
+                    return task.getResult();
+                }
+            });
         }
 
         this.regions.update();
     }
 
-    private void submitRebuildTasks(ChunkUpdateType filterType, LinkedList<CompletableFuture<ChunkBuildResult>> immediateFutures) {
+    //TODO: make it not iterate over the work 3 times
+    private void submitRebuildTasks(ChunkUpdateType filterType, LinkedList<ChunkRenderBuildTask> immediateFutures) {
         int budget = immediateFutures != null ? Integer.MAX_VALUE : this.builder.getSchedulingBudget();
 
         PriorityQueue<RenderSection> queue = this.rebuildQueues.get(filterType);
@@ -403,7 +427,7 @@ public class RenderSectionManager {
             RenderSection section = queue.dequeue();
 
             if (section.isDisposed()) {
-                continue;
+                continue;// (this might be why the memory is leaking? the chunk gets disposed of even if there is a job possibly?)
             }
 
             // Sections can move between update queues, but they won't be removed from the queue they were
@@ -412,32 +436,28 @@ public class RenderSectionManager {
                 continue;
             }
 
-            ChunkRenderBuildTask task = this.createRebuildTask(section);
-            CompletableFuture<?> future;
+            ChunkRenderBuildTask task = this.createRebuildTask(section);;
 
             if (immediateFutures != null) {
-                CompletableFuture<ChunkBuildResult> immediateFuture = this.builder.schedule(task);
-                immediateFutures.add(immediateFuture);
-
-                future = immediateFuture;
-            } else {
-                future = this.builder.scheduleDeferred(task);
+                immediateFutures.add(task);
             }
 
-            section.onBuildSubmitted(future);
+            this.builder.enqueue(task, immediateFutures != null);
+
+            section.onBuildSubmitted(task);
 
             budget--;
         }
     }
 
     private boolean performPendingUploads() {
-        Iterator<ChunkBuildResult> it = this.builder.createDeferredBuildResultDrain();
+        Iterator<ChunkBuildResult> it = this.builder.getResultDrain();
 
         if (!it.hasNext()) {
             return false;
         }
 
-        this.regions.upload(RenderDevice.INSTANCE.createCommandList(), it);
+        this.regions.upload(RenderDevice.INSTANCE.createCommandList(), Integer.MAX_VALUE, it);
 
         return true;
     }
@@ -491,10 +511,6 @@ public class RenderSectionManager {
 
     public boolean isGraphDirty() {
         return true;
-    }
-
-    public ChunkBuilder getBuilder() {
-        return this.builder;
     }
 
     public void destroy() {
@@ -713,6 +729,10 @@ public class RenderSectionManager {
         list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
         list.add(String.format("Staging buffer: %s", this.regions.getStagingBuffer().toString()));
         return list;
+    }
+
+    public ChunkBuilder getBuilder() {
+        return this.builder;
     }
 
     public SortedRenderLists getRenderLists() {

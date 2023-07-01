@@ -47,8 +47,8 @@ public class RenderRegionManager {
         }
     }
 
-    public void upload(CommandList commandList, Iterator<ChunkBuildResult> queue) {
-        for (Map.Entry<RenderRegion, List<ChunkBuildResult>> entry : this.setupUploadBatches(queue).entrySet()) {
+    public void upload(CommandList commandList, int budget, Iterator<ChunkBuildResult> queue) {
+        for (Map.Entry<RenderRegion, List<ChunkBuildResult>> entry : this.setupUploadBatches(commandList, budget, queue).entrySet()) {
             RenderRegion region = entry.getKey();
             List<ChunkBuildResult> uploadQueue = entry.getValue();
 
@@ -108,10 +108,13 @@ public class RenderRegionManager {
         }
     }
 
-    private Map<RenderRegion, List<ChunkBuildResult>> setupUploadBatches(Iterator<ChunkBuildResult> renders) {
+    private Map<RenderRegion, List<ChunkBuildResult>> setupUploadBatches(CommandList commandList, Iterator<ChunkBuildResult> renders) {
         Map<RenderRegion, List<ChunkBuildResult>> map = new Reference2ObjectLinkedOpenHashMap<>();
 
         while (renders.hasNext()) {
+            if (--budget<0) {
+                break;
+            }
             ChunkBuildResult result = renders.next();
             RenderSection render = result.render;
 

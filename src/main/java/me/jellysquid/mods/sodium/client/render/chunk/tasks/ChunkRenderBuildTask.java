@@ -4,6 +4,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Build tasks are immutable jobs (with optional prioritization) which contain all the necessary state to perform
  * chunk mesh updates or quad sorting off the main thread.
@@ -27,4 +29,42 @@ public abstract class ChunkRenderBuildTask {
     public abstract ChunkBuildResult performBuild(ChunkBuildContext context, CancellationSource cancellationSource);
 
     public abstract void releaseResources();
+
+    private final AtomicBoolean canceled = new AtomicBoolean();
+    private final AtomicBoolean executing = new AtomicBoolean();
+    private volatile ChunkBuildResult result;
+
+    /**
+     * Atomicly gets if the task was canceled
+     * @return if the task was canceled
+     */
+    public boolean isCancelled() {
+        return canceled.get();
+    }
+
+    public boolean cancel() {
+        return canceled.getAndSet(true);
+    }
+
+    /**
+     * Atomically gets and sets if the task is executing or has been executed, if false the task wasnt being executed but now is
+     * @return if the task is currently executing or has been executed
+     */
+    public boolean execute() {
+        return executing.getAndSet(true);
+    }
+
+    public void complete(ChunkBuildResult result) {
+        this.result = result;
+    }
+
+    public boolean isComplete() {
+        return result != null;
+    }
+
+    public ChunkBuildResult getResult() {
+        return result;
+    }
+
+    public boolean important;
 }

@@ -21,6 +21,8 @@ public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
     public ChunkRenderEmptyBuildTask(RenderSection render, int frame) {
         this.render = render;
         this.frame = frame;
+        this.execute();
+        this.complete(performBuild(null, null));
     }
 
     @Override
