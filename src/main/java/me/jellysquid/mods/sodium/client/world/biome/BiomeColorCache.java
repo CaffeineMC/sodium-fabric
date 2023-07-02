@@ -1,96 +1,84 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
-import me.jellysquid.mods.sodium.client.render.chunk.ColorResolverType;
+import me.jellysquid.mods.sodium.client.util.color.BoxBlur;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
-import me.jellysquid.mods.sodium.client.world.biome.BoxBlur.ColorBuffer;
+import me.jellysquid.mods.sodium.client.util.color.BoxBlur.ColorBuffer;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.ColorResolver;
 
 public class BiomeColorCache {
     private final WorldSlice slice;
+    private final int originX, originZ;
+    private final int minCoord, maxCoord;
+    private final ColorBuffer[][] cache;
+    private final int blendDistance;
+    private final int length;
 
-    private final CachedColorBuffers[] cachedColorBuffers;
-    private final int worldX, worldZ;
-
-    public final int radius;
-    public final int inset;
-    public final int size;
-
-    public BiomeColorCache(WorldSlice slice, int radius) {
+    public BiomeColorCache(WorldSlice slice, int blendDistance) {
         this.slice = slice;
 
-        this.radius = radius;
+        this.blendDistance = blendDistance;
 
-        int margin = MathHelper.clamp(this.radius, 3, 15);
+        int margin = MathHelper.clamp(this.blendDistance, 3, 15);
 
-        this.size = 16 + (margin * 2);
-        this.inset = 16 - margin;
+        this.length = 16 + (margin * 2);
 
-        this.cachedColorBuffers = new CachedColorBuffers[this.size];
+        this.minCoord = 16 - margin;
+        this.maxCoord = this.length - 1;
+
+        this.cache = new ColorBuffer[this.length][];
 
         var origin = slice.getOrigin();
 
-        this.worldX = origin.getMinX() - margin;
-        this.worldZ = origin.getMinZ() - margin;
+        this.originX = origin.getMinX() - margin;
+        this.originZ = origin.getMinZ() - margin;
     }
 
-    public int getColor(ColorResolver resolver, int blockX, int blockY, int blockZ) {
-        var x = MathHelper.clamp(blockX - this.inset, 0, this.size - 1);
-        var y = MathHelper.clamp(blockY - this.inset, 0, this.size - 1);
-        var z = MathHelper.clamp(blockZ - this.inset, 0, this.size - 1);
+    public int getColor(BiomeColorSource source, int blockX, int blockY, int blockZ) {
+        var relX = MathHelper.clamp(blockX - this.minCoord, 0, this.maxCoord);
+        var relY = MathHelper.clamp(blockY - this.minCoord, 0, this.maxCoord);
+        var relZ = MathHelper.clamp(blockZ - this.minCoord, 0, this.maxCoord);
 
-        var buffers = this.cachedColorBuffers[y];
+        var buffers = this.cache[relY];
 
         if (buffers == null) {
-            this.cachedColorBuffers[y] = (buffers = this.createColorBuffers(y));
+            this.cache[relY] = (buffers = this.createColorBuffers(relY));
         }
 
-        return buffers.get(ColorResolverType.get(resolver), x, z);
+        return buffers[source.ordinal()]
+                .getARGB(relX, relZ);
     }
 
-    private CachedColorBuffers createColorBuffers(int y) {
-        ColorBuffer[] buffers = new ColorBuffer[ColorResolverType.COUNT];
+    private ColorBuffer[] createColorBuffers(int y) {
+        ColorBuffer[] buffers = new ColorBuffer[BiomeColorSource.COUNT];
 
-        for (int i = 0; i < ColorResolverType.COUNT; i++) {
-            buffers[i] = new ColorBuffer(this.size, this.size);
+        for (int i = 0; i < BiomeColorSource.COUNT; i++) {
+            buffers[i] = new ColorBuffer(this.length, this.length);
         }
 
-        ColorBuffer mapGrass = buffers[ColorResolverType.GRASS.ordinal()];
-        ColorBuffer mapFoliage = buffers[ColorResolverType.FOLIAGE.ordinal()];
-        ColorBuffer mapWater = buffers[ColorResolverType.WATER.ordinal()];
+        ColorBuffer bufGrass = buffers[BiomeColorSource.GRASS.ordinal()];
+        ColorBuffer bufFoliage = buffers[BiomeColorSource.FOLIAGE.ordinal()];
+        ColorBuffer bufWater = buffers[BiomeColorSource.WATER.ordinal()];
 
-        for (int x = 0; x < this.size; x++) {
-            for (int z = 0; z < this.size; z++) {
-                Biome biome = this.slice.getBiome(this.inset + x, this.inset + y, this.inset + z);
+        for (int z = 0; z < this.length; z++) {
+            for (int x = 0; x < this.length; x++) {
+                Biome biome = this.slice.getBiome(this.minCoord + x, this.minCoord + y, this.minCoord + z);
 
-                var index = (z * this.size) + x;
+                int index = (z * this.length) + x;
 
-                mapGrass.setARGB(index, biome.getGrassColorAt(this.worldX + x, this.worldZ + z));
-                mapFoliage.setARGB(index, biome.getFoliageColor());
-                mapWater.setARGB(index, biome.getWaterColor());
+                bufGrass.setARGB(index, biome.getGrassColorAt(this.originX + x, this.originZ + z));
+                bufFoliage.setARGB(index, biome.getFoliageColor());
+                bufWater.setARGB(index, biome.getWaterColor());
             }
         }
 
-        if (this.radius > 0) {
+
+        if (this.blendDistance > 0) {
             for (ColorBuffer buffer : buffers) {
-                BoxBlur.blur(buffer, this.radius);
+                BoxBlur.blur(buffer, this.blendDistance);
             }
         }
 
-        return new CachedColorBuffers(buffers);
-    }
-
-    private static class CachedColorBuffers {
-        private final ColorBuffer[] buffers;
-
-        private CachedColorBuffers(ColorBuffer[] buffers) {
-            this.buffers = buffers;
-        }
-
-        public int get(ColorResolverType type, int x, int z) {
-            var buffer = this.buffers[type.ordinal()];
-            return buffer.getARGB(buffer.getIndex(x, z));
-        }
+        return buffers;
     }
 }

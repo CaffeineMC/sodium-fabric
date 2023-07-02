@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.mixin.core.model;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceMaps;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.model.quad.blender.ColorSampler;
-import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
+import me.jellysquid.mods.sodium.client.model.color.interop.BlockColorsExtended;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
+import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.color.block.BlockColors;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,26 +14,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(BlockColors.class)
 public class MixinBlockColors implements BlockColorsExtended {
-    private Reference2ReferenceMap<Block, ColorSampler<BlockState>> blocksToColor;
+    // We're keeping a copy as we need to be able to iterate over the entry pairs, rather than just the values.
+    private Reference2ReferenceMap<Block, BlockColorProvider> blocksToColor;
 
-    private static final ColorSampler<?> DEFAULT_PROVIDER = (state, view, pos, tint) -> -1;
-
-    @SuppressWarnings("unchecked")
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(CallbackInfo ci) {
         this.blocksToColor = new Reference2ReferenceOpenHashMap<>();
-        this.blocksToColor.defaultReturnValue((ColorSampler<BlockState>) DEFAULT_PROVIDER);
     }
 
     @Inject(method = "registerColorProvider", at = @At("HEAD"))
-    private void preRegisterColor(net.minecraft.client.color.block.BlockColorProvider provider, Block[] blocks, CallbackInfo ci) {
+    private void preRegisterColorProvider(BlockColorProvider provider, Block[] blocks, CallbackInfo ci) {
         for (Block block : blocks) {
-            this.blocksToColor.put(block, provider::getColor);
+            this.blocksToColor.put(block, provider);
         }
     }
 
     @Override
-    public ColorSampler<BlockState> getColorProvider(BlockState state) {
-        return this.blocksToColor.get(state.getBlock());
+    public Iterable<Reference2ReferenceMap.Entry<Block, BlockColorProvider>> getProviders() {
+        return Reference2ReferenceMaps.unmodifiable(this.blocksToColor)
+                .reference2ReferenceEntrySet();
     }
 }
