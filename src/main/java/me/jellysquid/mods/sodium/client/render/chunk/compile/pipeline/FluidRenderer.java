@@ -249,7 +249,7 @@ public class FluidRenderer {
 
         }
 
-        quad.setFlags(ModelQuadFlags.IS_ALIGNED);
+        quad.setFlags(ModelQuadFlags.IS_PARALLEL | ModelQuadFlags.IS_ALIGNED);
 
         for (Direction dir : DirectionUtil.HORIZONTAL_DIRECTIONS) {
             float c1;
