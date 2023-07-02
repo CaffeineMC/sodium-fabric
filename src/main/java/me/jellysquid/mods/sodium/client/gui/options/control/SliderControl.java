@@ -4,8 +4,8 @@ import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.math.Rect2i;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Rect2i;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.Validate;
 
@@ -57,6 +57,8 @@ public class SliderControl implements Control<Integer> {
 
         private double thumbPosition;
 
+        private boolean sliderHeld;
+
         public Button(Option<Integer> option, Dim2i dim, int min, int max, int interval, ControlValueFormatter formatter) {
             super(option, dim);
 
@@ -68,6 +70,7 @@ public class SliderControl implements Control<Integer> {
             this.formatter = formatter;
 
             this.sliderBounds = new Rect2i(dim.getLimitX() - 96, dim.getCenterY() - 5, 90, 10);
+            this.sliderHeld = false;
         }
 
         @Override
@@ -130,12 +133,12 @@ public class SliderControl implements Control<Integer> {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            // What is this?
-            // It's a ridiculous solution to the slider element not getting "focused" when it is clicked unless it is in the slider bounds. This breaks what every other element does,
-            // so we need this stupid hack.
-            if (this.option.isAvailable() && button == 0 && mouseY >= this.sliderBounds.getY() && mouseY <= this.sliderBounds.getY() + this.sliderBounds.getHeight()) {
+            this.sliderHeld = false;
+
+            if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
                 if (this.sliderBounds.contains((int) mouseX, (int) mouseY)) {
                     this.setValueFromMouse(mouseX);
+                    this.sliderHeld = true;
                 }
 
                 return true;
@@ -176,7 +179,9 @@ public class SliderControl implements Control<Integer> {
         @Override
         public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
             if (this.option.isAvailable() && button == 0) {
-                this.setValueFromMouse(mouseX);
+                if (this.sliderHeld) {
+                    this.setValueFromMouse(mouseX);
+                }
 
                 return true;
             }
