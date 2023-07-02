@@ -138,7 +138,7 @@ public class BlockRenderer {
                                QuadLightData light,
                                ChunkRenderBounds.Builder bounds)
     {
-        ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(light.br);
+        ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(light.br, light.lm);
         var vertices = this.vertices;
 
         ModelQuadFacing normalFace = quad.getNormalFace();
