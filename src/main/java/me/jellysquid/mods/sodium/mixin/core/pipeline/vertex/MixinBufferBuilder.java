@@ -9,6 +9,7 @@ import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexFormat;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -34,7 +35,13 @@ public abstract class MixinBufferBuilder implements VertexBufferWriter {
     private VertexFormatDescription format;
     private int stride;
 
-    @Inject(method = "setFormat", at = @At("RETURN"))
+    @Inject(method = "setFormat",
+        at = @At(
+            value = "FIELD",
+            target = "Lnet/minecraft/client/render/BufferBuilder;format:Lnet/minecraft/client/render/VertexFormat;",
+            opcode = Opcodes.PUTFIELD
+        )
+    )
     private void onFormatChanged(VertexFormat format, CallbackInfo ci) {
         this.format = VertexFormatRegistry.instance()
                 .get(format);
