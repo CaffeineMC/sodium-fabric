@@ -27,79 +27,61 @@
  *   suitability of this software for any purpose. It is provided "as is"
  *   without expressed or implied warranty.
  */
-package me.jellysquid.mods.sodium.client.util;
-
-import com.google.common.primitives.Floats;
+package me.jellysquid.mods.sodium.client.util.sorting;
 
 /**
  * Based upon {@link it.unimi.dsi.fastutil.ints.IntArrays} implementation.
  */
-public class GeometrySort {
-    private static final int MERGESORT_NO_REC = 16;
+public class MergeSort extends AbstractSort {
+    private static final int INSERTION_SORT_THRESHOLD = 16;
 
-    public static void mergeSort(final int[] indices, final float[] distance) {
-        mergeSort(indices, 0, indices.length, distance);
+    public static int[] mergeSort(float[] keys) {
+        var indices = createIndexBuffer(keys.length);
+        mergeSort(indices, keys);
+
+        return indices;
     }
 
-    public static void mergeSort(final int[] indices, final int from, final int to, final float[] distance) {
-        mergeSort(indices, from, to, distance, indices.clone());
+    private static void mergeSort(final int[] indices, final float[] keys) {
+        mergeSort(indices, keys, 0, indices.length, null);
     }
 
-    public static void mergeSort(final int[] indices, final int from, final int to, final float[] distance, final int[] supp) {
-        int len = to - from;
+    private static void mergeSort(final int[] indices, final float[] keys, final int fromIndex, final int toIndex, int[] supp) {
+        int len = toIndex - fromIndex;
 
         // Insertion sort on smallest arrays
-        if (len < MERGESORT_NO_REC) {
-            insertionSort(indices, from, to, distance);
+        if (len < INSERTION_SORT_THRESHOLD) {
+            InsertionSort.insertionSort(indices, fromIndex, toIndex, keys);
             return;
         }
 
+        if (supp == null) {
+            supp = indices.clone();
+        }
+
         // Recursively sort halves of a into supp
-        final int mid = (from + to) >>> 1;
-        mergeSort(supp, from, mid, distance, indices);
-        mergeSort(supp, mid, to, distance, indices);
+        final int mid = (fromIndex + toIndex) >>> 1;
+        mergeSort(supp, keys, fromIndex, mid, indices);
+        mergeSort(supp, keys, mid, toIndex, indices);
 
         // If list is already sorted, just copy from supp to indices. This is an
         // optimization that results in faster sorts for nearly ordered lists.
-        if (Floats.compare(distance[supp[mid]], distance[supp[mid - 1]]) <= 0) {
-            System.arraycopy(supp, from, indices, from, len);
+        if (keys[supp[mid]] <= keys[supp[mid - 1]]) {
+            System.arraycopy(supp, fromIndex, indices, fromIndex, len);
             return;
         }
 
         // Merge sorted halves (now in supp) into indices
-        int i = from, p = from, q = mid;
+        int i = fromIndex, p = fromIndex, q = mid;
 
-        while (i < to) {
-            if (q >= to || p < mid && Floats.compare(distance[supp[q]], distance[supp[p]]) <= 0) {
+        while (i < toIndex) {
+            if (q >= toIndex || p < mid && keys[supp[q]] <= keys[supp[p]]) {
                 indices[i] = supp[p++];
             } else {
                 indices[i] = supp[q++];
             }
 
             i++;
-        }
-    }
-    private static void insertionSort(final int[] a, final int from, final int to, final float[] distance) {
-        int i = from;
-
-        while (++i < to) {
-            int t = a[i];
-            int j = i;
-
-            int u = a[j - 1];
-
-            while (Floats.compare(distance[u], distance[t]) < 0) {
-                a[j] = u;
-
-                if (from == j - 1) {
-                    --j;
-                    break;
-                }
-
-                u = a[--j - 1];
-            }
-
-            a[j] = t;
         }
     }
 }
