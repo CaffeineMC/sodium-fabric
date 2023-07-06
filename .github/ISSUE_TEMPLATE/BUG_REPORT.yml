@@ -1,5 +1,5 @@
 name: Bug report
-description: "Use this template if you're running into bugs or other issues"
+description: "Use this template if you're running into bugs or other issues."
 labels:
   - T-bug
   - S-needs-triage
