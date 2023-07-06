@@ -448,7 +448,6 @@ public class RenderSectionManager {
         this.regions.update();
     }
 
-    //TODO: make it not iterate over the work 3 times
     private void submitRebuildTasks(ChunkUpdateType filterType, LinkedList<ChunkRenderBuildTask> immediateFutures) {
         int budget = immediateFutures != null ? Integer.MAX_VALUE : this.builder.getSchedulingBudget();
 
@@ -458,7 +457,7 @@ public class RenderSectionManager {
             RenderSection section = queue.dequeue();
 
             if (section.isDisposed()) {
-                continue;// (this might be why the memory is leaking? the chunk gets disposed of even if there is a job possibly?)
+                continue;
             }
 
             // Sections can move between update queues, but they won't be removed from the queue they were
@@ -471,9 +470,10 @@ public class RenderSectionManager {
 
             if (immediateFutures != null) {
                 immediateFutures.add(task);
+                task.setImportant();
             }
 
-            this.builder.enqueue(task, immediateFutures != null);
+            this.builder.enqueue(task);
 
             section.onBuildSubmitted(task);
 

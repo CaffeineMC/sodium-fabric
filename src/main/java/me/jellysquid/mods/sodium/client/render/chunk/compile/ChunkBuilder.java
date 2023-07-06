@@ -125,14 +125,13 @@ public class ChunkBuilder {
     }
 
 
-    public void enqueue(ChunkRenderBuildTask task, boolean important) {
+    public void enqueue(ChunkRenderBuildTask task) {
         if (task.isComplete()) {
             return;
         }
 
         //If the build is important, make sure it gets done first
-        if (important) {
-            task.important = true;
+        if (task.isImportant()) {
             buildQueue.addFirst(task);
         } else {
             buildQueue.add(task);
@@ -211,7 +210,7 @@ public class ChunkBuilder {
             job.complete(result);
 
             //If the job wasnt important (i.e. in the immediate blocking queue) then enqueue it to be drained
-            if (!job.important) {
+            if (!job.isImportant()) {
                 resultQueue.add(result);
             }
         } else if (!job.isCancelled()) {

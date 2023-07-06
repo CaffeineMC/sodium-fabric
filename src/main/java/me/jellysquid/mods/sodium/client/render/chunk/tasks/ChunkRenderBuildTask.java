@@ -34,6 +34,8 @@ public abstract class ChunkRenderBuildTask {
     private final AtomicBoolean executing = new AtomicBoolean();
     private volatile ChunkBuildResult result;
 
+    private boolean important;//Unsure if this needs to be volatile
+
     /**
      * Atomicly gets if the task was canceled
      * @return if the task was canceled
@@ -70,5 +72,12 @@ public abstract class ChunkRenderBuildTask {
         return result;
     }
 
-    public boolean important;
+    //If a build is important, its result is not added to the deferred results queue
+    public void setImportant() {
+        important = true;
+    }
+
+    public boolean isImportant() {
+        return important;
+    }
 }
