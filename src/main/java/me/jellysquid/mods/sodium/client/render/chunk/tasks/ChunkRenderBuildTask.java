@@ -48,10 +48,14 @@ public abstract class ChunkRenderBuildTask {
 
     /**
      * Atomically gets and sets if the task is executing or has been executed, if false the task wasnt being executed but now is
-     * @return if the task is currently executing or has been executed
+     * @return if the task is currently executing or has been executed, returns false if it wasnt previously executing
      */
     public boolean execute() {
         return executing.getAndSet(true);
+    }
+
+    public boolean isExecuting() {
+        return executing.get();
     }
 
     public void complete(ChunkBuildResult result) {

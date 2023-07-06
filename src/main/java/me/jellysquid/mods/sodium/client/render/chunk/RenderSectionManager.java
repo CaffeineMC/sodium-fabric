@@ -406,10 +406,41 @@ public class RenderSectionManager {
 
                 @Override
                 public ChunkBuildResult next() {
-                    //TODO: FIXME!!! make this not spinlock and instead loop over the queue see if any is avalible, if not, grab one, execute it and return
-                    ChunkRenderBuildTask task = blockingTasks.poll();
-                    while (!task.isComplete()) Thread.onSpinWait();
-                    return task.getResult();
+                    while (true) {
+                        boolean hasUnexecutedTask = false;
+                        {
+                            //Check for completed tasks
+                            Iterator<ChunkRenderBuildTask> taskIterator = blockingTasks.iterator();
+                            while (taskIterator.hasNext()) {
+                                var task = taskIterator.next();
+                                //If the task is complete, return it
+                                if (task.isComplete()) {
+                                    taskIterator.remove();
+                                    return task.getResult();
+                                }
+                                hasUnexecutedTask |= !task.isExecuting();
+                            }
+                        }
+
+                        if (hasUnexecutedTask) {
+                            //There is uncompleted tasks, try to acquire one to execute, if successful, execute it
+                            Iterator<ChunkRenderBuildTask> taskIterator = blockingTasks.iterator();
+                            while (taskIterator.hasNext()) {
+                                var task = taskIterator.next();
+                                //If the task is complete, return it
+                                if (task.isComplete()) {
+                                    taskIterator.remove();
+                                    return task.getResult();
+                                }
+                                //Try to grab the task for execution, if it fails (could be a worker thread grabbed it), continue
+                                if (!task.execute()) {
+                                    taskIterator.remove();
+                                    builder.processNow(task);
+                                    return task.getResult();
+                                }
+                            }
+                        }
+                    }
                 }
             });
         }

@@ -16,6 +16,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * The chunk builder is a multithreaded worker dispatch system which processes chunk build jobs
+ */
 public class ChunkBuilder {
     private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
@@ -30,6 +33,9 @@ public class ChunkBuilder {
     private final Semaphore jobCount = new Semaphore(0);
     private final Deque<ChunkRenderBuildTask> buildQueue = new ConcurrentLinkedDeque<>();
     private final Queue<ChunkBuildResult> deferredResultQueue = new ConcurrentLinkedDeque<>();
+
+    //Context used for immediate task processing, not thread safe
+    private ChunkBuildContext immediateContext;
 
     public ChunkBuilder(ChunkVertexType vertexType) {
         this.vertexType = vertexType;
@@ -151,11 +157,17 @@ public class ChunkBuilder {
             throw new NullPointerException("World is null");
         }
 
+        if (immediateContext != null) {
+            immediateContext.release();
+        }
+
         this.stopWorkers();
 
         this.world = world;
 
         this.startWorkers();
+
+        immediateContext = new ChunkBuildContext(ChunkBuilder.this.world, ChunkBuilder.this.vertexType);
     }
 
     /**
@@ -210,6 +222,26 @@ public class ChunkBuilder {
 
     public boolean isBuildQueueEmpty() {
         return jobCount.availablePermits() == 0;
+    }
+
+    //NOTE: Not thread safe, should only be called with important priority tasks
+    public void processNow(ChunkRenderBuildTask task) {
+        ChunkBuildResult result;
+
+        try {
+            // Perform the build task with this worker's local resources and obtain the result
+            result = task.performBuild(immediateContext, task::isCancelled);
+        } finally {
+            task.releaseResources();
+        }
+
+        // The result can be null if the task is cancelled
+        if (result != null) {
+            task.complete(result);
+        } else if (!task.isCancelled()) {
+            // If the job wasn't cancelled and no result was produced, we've hit a bug
+            throw new RuntimeException("No result was produced by the task");
+        }
     }
 
     private class ChunkWorker implements Runnable {
