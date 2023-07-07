@@ -479,7 +479,7 @@ public class FluidRenderer {
                 return fluidState.getHeight();
             }
         }
-        if (!blockState.isOpaque()) {
+        if (!blockState.isSolid()) {
             return 0.0f;
         }
         return -1.0f;
