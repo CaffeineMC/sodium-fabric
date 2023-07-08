@@ -3,6 +3,11 @@
 version = 3
 
 [[package]]
+name = "core_simd"
+version = "0.1.0"
+source = "git+https://github.com/rust-lang/portable-simd.git#7c7dbe0c505ccbc02ff30c1e37381ab1d47bf46f"
+
+[[package]]
 name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12,5 +17,15 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 name = "sodium-core"
 version = "0.1.0"
 dependencies = [
+ "core_simd",
  "rustc-hash",
+ "std_float",
+]
+
+[[package]]
+name = "std_float"
+version = "0.1.0"
+source = "git+https://github.com/rust-lang/portable-simd.git#7c7dbe0c505ccbc02ff30c1e37381ab1d47bf46f"
+dependencies = [
+ "core_simd",
 ]

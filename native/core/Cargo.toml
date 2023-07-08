@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [profile.dev]
 panic = "abort"
+debug = true
 
 [profile.release]
 panic = "abort"
@@ -18,3 +19,6 @@ lto = true
 
 [dependencies]
 rustc-hash = "1.1.0"
+# Using these dependencies directly gives us access to setting features.
+core_simd = { git = "https://github.com/rust-lang/portable-simd.git", features = ["all_lane_counts"] }
+std_float = { git = "https://github.com/rust-lang/portable-simd.git" }

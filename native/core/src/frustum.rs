@@ -1,17 +1,18 @@
+use core_simd::simd::*;
+
 use crate::math::*;
-use std::simd::*;
 
 pub struct Frustum {
-    planes: [Vec4; 6],
+    planes: [f32x4; 6],
     plane_xs: f32x8,
     plane_ys: f32x8,
     plane_zs: f32x8,
     plane_ws: f32x8,
-    position: Vec3,
+    position: f32x3,
 }
 
 impl Frustum {
-    pub fn new(planes: [Vec4; 6], position: Vec3) -> Self {
+    pub fn new(planes: [f32x4; 6], position: f32x3) -> Self {
         let mut plane_xs = Simd::splat(f32::NAN);
         let mut plane_ys = Simd::splat(f32::NAN);
         let mut plane_zs = Simd::splat(f32::NAN);
@@ -65,18 +66,18 @@ impl Frustum {
         f32x8::from_bits(value.to_bits() & u32x8::from_array([!0, !0, !0, !0, !0, !0, 0, 0]))
     }
 
-    pub fn position(&self) -> &Vec3 {
+    pub fn position(&self) -> &f32x3 {
         &self.position
     }
 }
 
 pub struct BoundingBox {
-    min: Vec3,
-    max: Vec3,
+    min: f32x3,
+    max: f32x3,
 }
 
 impl BoundingBox {
-    pub fn new(min: Vec3, max: Vec3) -> Self {
+    pub fn new(min: f32x3, max: f32x3) -> Self {
         BoundingBox { min, max }
     }
 }

@@ -1,309 +1,113 @@
+#![allow(non_camel_case_types)]
+
 use std::cmp::Eq;
 use std::hash::Hash;
 use std::ops::*;
-use std::simd::*;
 
-#[derive(Clone, Copy)]
-#[repr(transparent)]
-pub struct Vec3(f32x4);
+use core_simd::simd::*;
+use std_float::StdFloat;
 
-impl Vec3 {
+pub type i8x3 = Simd<i8, 3>;
+pub type i16x3 = Simd<i16, 3>;
+pub type i32x3 = Simd<i32, 3>;
+pub type i64x3 = Simd<i64, 3>;
+
+pub type u8x3 = Simd<u8, 3>;
+pub type u16x3 = Simd<u16, 3>;
+pub type u32x3 = Simd<u32, 3>;
+pub type u64x3 = Simd<u64, 3>;
+
+pub type f32x3 = Simd<f32, 3>;
+pub type f64x3 = Simd<f64, 3>;
+
+// additional declarations outside of traits for const usage
+pub const fn from_xyz<T: SimdElement>(x: T, y: T, z: T) -> Simd<T, 3> {
+    Simd::from_array([x, y, z])
+}
+
+pub const fn from_xyzw<T: SimdElement>(x: T, y: T, z: T, w: T) -> Simd<T, 4> {
+    Simd::from_array([x, y, z, w])
+}
+
+pub trait Coords3<T> {
+    fn from_xyz(x: T, y: T, z: T) -> Self;
+    fn into_tuple(self) -> (T, T, T);
+    fn x(&self) -> T;
+    fn y(&self) -> T;
+    fn z(&self) -> T;
+}
+
+impl<T> Coords3<T> for Simd<T, 3>
+where
+    T: SimdElement,
+{
     #[inline(always)]
-    pub fn splat(value: f32) -> Self {
-        Vec3(f32x4::from_array([value, value, value, 0.0]))
+    fn from_xyz(x: T, y: T, z: T) -> Self {
+        Simd::from_array([x, y, z])
     }
 
     #[inline(always)]
-    pub fn new(x: f32, y: f32, z: f32) -> Self {
-        Vec3::from_array([x, y, z])
+    fn into_tuple(self) -> (T, T, T) {
+        (self.x(), self.y(), self.z())
     }
 
     #[inline(always)]
-    pub fn from_array(array: [f32; 3]) -> Self {
-        Vec3(f32x4::from_array([array[0], array[1], array[2], 0.0]))
+    fn x(&self) -> T {
+        self[0]
     }
 
     #[inline(always)]
-    pub fn floor(&self) -> Self {
-        Vec3(self.0.floor())
+    fn y(&self) -> T {
+        self[1]
     }
 
     #[inline(always)]
-    pub fn x(&self) -> f32 {
-        self.0[0]
-    }
-
-    #[inline(always)]
-    pub fn y(&self) -> f32 {
-        self.0[1]
-    }
-
-    #[inline(always)]
-    pub fn z(&self) -> f32 {
-        self.0[2]
-    }
-
-    #[inline(always)]
-    pub fn as_int(&self) -> IVec3 {
-        IVec3(self.0.cast())
-    }
-
-    #[inline(always)]
-    pub unsafe fn as_int_unchecked(&self) -> IVec3 {
-        IVec3(self.0.to_int_unchecked())
+    fn z(&self) -> T {
+        self[2]
     }
 }
 
-impl Add for Vec3 {
-    type Output = Vec3;
-
-    #[inline(always)]
-    fn add(self, rhs: Self) -> Self::Output {
-        Vec3(self.0 + rhs.0)
-    }
+pub trait Coords4<T> {
+    fn from_xyzw(x: T, y: T, z: T, w: T) -> Self;
+    fn into_tuple(self) -> (T, T, T, T);
+    fn x(&self) -> T;
+    fn y(&self) -> T;
+    fn z(&self) -> T;
+    fn w(&self) -> T;
 }
 
-impl Sub for Vec3 {
-    type Output = Vec3;
-
+impl<T> Coords4<T> for Simd<T, 4>
+where
+    T: SimdElement,
+{
     #[inline(always)]
-    fn sub(self, rhs: Self) -> Self::Output {
-        Vec3(self.0 - rhs.0)
-    }
-}
-
-#[derive(Clone, Copy)]
-#[repr(transparent)]
-pub struct Vec4(f32x4);
-
-impl Vec4 {
-    #[inline(always)]
-    pub fn splat(value: f32) -> Self {
-        Vec4(f32x4::splat(value))
+    fn from_xyzw(x: T, y: T, z: T, w: T) -> Self {
+        Simd::from_array([x, y, z, w])
     }
 
     #[inline(always)]
-    pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
-        Vec4::from_array([x, y, z, w])
+    fn into_tuple(self) -> (T, T, T, T) {
+        (self.x(), self.y(), self.z(), self.w())
     }
 
     #[inline(always)]
-    pub fn from_array(array: [f32; 4]) -> Self {
-        Vec4(f32x4::from_array(array))
+    fn x(&self) -> T {
+        self[0]
     }
 
     #[inline(always)]
-    pub fn floor(&self) -> Self {
-        Vec4(self.0.floor())
+    fn y(&self) -> T {
+        self[1]
     }
 
     #[inline(always)]
-    pub fn x(&self) -> f32 {
-        self.0[0]
+    fn z(&self) -> T {
+        self[2]
     }
 
     #[inline(always)]
-    pub fn y(&self) -> f32 {
-        self.0[1]
-    }
-
-    #[inline(always)]
-    pub fn z(&self) -> f32 {
-        self.0[2]
-    }
-
-    #[inline(always)]
-    pub fn w(&self) -> f32 {
-        self.0[3]
-    }
-}
-
-impl Add for Vec4 {
-    type Output = Vec4;
-
-    #[inline(always)]
-    fn add(self, rhs: Self) -> Self::Output {
-        Vec4(self.0 + rhs.0)
-    }
-}
-
-impl Sub for Vec4 {
-    type Output = Vec4;
-
-    #[inline(always)]
-    fn sub(self, rhs: Self) -> Self::Output {
-        Vec4(self.0 - rhs.0)
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-#[repr(transparent)]
-pub struct IVec3(i32x4);
-
-impl IVec3 {
-    const LANE_MASK: i32x4 = i32x4::from_array([!0, !0, !0, 0]);
-
-    #[inline(always)]
-    pub const fn splat(value: i32) -> Self {
-        IVec3(i32x4::from_array([value, value, value, 0]))
-    }
-
-    #[inline(always)]
-    pub const fn new(x: i32, y: i32, z: i32) -> Self {
-        IVec3(i32x4::from_array([x, y, z, 0]))
-    }
-
-    #[inline(always)]
-    pub fn x(&self) -> i32 {
-        self.0[0]
-    }
-
-    #[inline(always)]
-    pub fn y(&self) -> i32 {
-        self.0[1]
-    }
-
-    #[inline(always)]
-    pub fn z(&self) -> i32 {
-        self.0[2]
-    }
-
-    #[inline(always)]
-    pub fn abs(&self) -> Self {
-        IVec3(self.0.abs())
-    }
-
-    #[inline(always)]
-    pub fn max_element(&self) -> i32 {
-        (self.0 & Self::LANE_MASK).reduce_max()
-    }
-
-    #[inline(always)]
-    pub fn as_float(&self) -> Vec3 {
-        Vec3(self.0.cast())
-    }
-
-    #[inline(always)]
-    pub fn less_than(&self, other: Self) -> bool {
-        Self::check_comparison_mask(self.0.simd_lt(other.0))
-    }
-
-    #[inline(always)]
-    pub fn less_than_equal(&self, other: Self) -> bool {
-        Self::check_comparison_mask(self.0.simd_le(other.0))
-    }
-
-    #[inline(always)]
-    pub fn greater_than(&self, other: Self) -> bool {
-        Self::check_comparison_mask(self.0.simd_gt(other.0))
-    }
-
-    #[inline(always)]
-    pub fn greater_than_equal(&self, other: Self) -> bool {
-        Self::check_comparison_mask(self.0.simd_ge(other.0))
-    }
-
-    #[inline(always)]
-    fn check_comparison_mask(mask: mask32x4) -> bool {
-        (mask.to_bitmask() & 0b111) == 0b111
-    }
-}
-
-impl Eq for IVec3 {}
-
-impl PartialEq for IVec3 {
-    #[inline(always)]
-    fn eq(&self, other: &Self) -> bool {
-        self.x() == other.x() && self.y() == other.y() && self.z() == other.z()
-    }
-}
-
-impl Hash for IVec3 {
-    #[inline(always)]
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.x().hash(state);
-        self.y().hash(state);
-        self.z().hash(state);
-    }
-}
-
-impl Default for IVec3 {
-    #[inline(always)]
-    fn default() -> Self {
-        IVec3::splat(0)
-    }
-}
-
-impl Add for IVec3 {
-    type Output = IVec3;
-
-    #[inline(always)]
-    fn add(self, rhs: Self) -> Self::Output {
-        IVec3(self.0 + rhs.0)
-    }
-}
-
-impl Sub for IVec3 {
-    type Output = IVec3;
-
-    #[inline(always)]
-    fn sub(self, rhs: Self) -> Self::Output {
-        IVec3(self.0 - rhs.0)
-    }
-}
-
-impl Shr for IVec3 {
-    type Output = IVec3;
-
-    #[inline(always)]
-    fn shr(self, rhs: Self) -> Self::Output {
-        IVec3(self.0 >> rhs.0)
-    }
-}
-
-impl ShrAssign<IVec3> for IVec3 {
-    #[inline(always)]
-    fn shr_assign(&mut self, other: IVec3) {
-        *self = *self >> other;
-    }
-}
-
-impl Shl for IVec3 {
-    type Output = IVec3;
-
-    #[inline(always)]
-    fn shl(self, rhs: Self) -> Self::Output {
-        IVec3(self.0 << rhs.0)
-    }
-}
-
-impl BitAnd for IVec3 {
-    type Output = IVec3;
-
-    #[inline(always)]
-    fn bitand(self, rhs: Self) -> Self::Output {
-        IVec3(self.0 & rhs.0)
-    }
-}
-
-impl BitAndAssign<IVec3> for IVec3 {
-    #[inline(always)]
-    fn bitand_assign(&mut self, other: IVec3) {
-        *self = *self & other;
-    }
-}
-
-impl From<IVec3> for (i32, i32, i32) {
-    #[inline(always)]
-    fn from(value: IVec3) -> Self {
-        (value.x(), value.y(), value.z())
-    }
-}
-
-impl From<IVec3> for i32x4 {
-    #[inline(always)]
-    fn from(value: IVec3) -> Self {
-        value.0 & i32x4::from_array([!0, !0, !0, 0])
+    fn w(&self) -> T {
+        self[3]
     }
 }
 
@@ -336,5 +140,36 @@ where
         } else {
             self * a + b
         }
+    }
+}
+
+pub trait ToBitMaskExtended {
+    type BitMask;
+
+    fn to_bitmask(self) -> Self::BitMask;
+    fn from_bitmask(bitmask: Self::BitMask) -> Self;
+}
+
+// if we need more impls, we can create a macro to generate them
+impl<T> ToBitMaskExtended for Mask<T, 3>
+where
+    T: MaskElement,
+{
+    type BitMask = u8;
+
+    fn to_bitmask(self) -> Self::BitMask {
+        // This is safe because the alignment should match the next PO2 type, and we are masking off
+        // the last value once converted.
+        let larger_mask = unsafe { (&self as *const _ as *const Mask<T, 4>).read() };
+
+        larger_mask.to_bitmask() & 0b111
+    }
+
+    fn from_bitmask(bitmask: Self::BitMask) -> Self {
+        let larger_mask = Mask::<T, 4>::from_bitmask(bitmask);
+
+        // This is safe because the alignment should be correct for the next PO2 type, and we are
+        // ignoring the last value.
+        unsafe { (&larger_mask as *const _ as *const Mask<T, 3>).read() }
     }
 }

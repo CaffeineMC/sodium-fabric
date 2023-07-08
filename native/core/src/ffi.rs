@@ -1,15 +1,13 @@
 #![allow(non_snake_case)]
 
-use std::mem::MaybeUninit;
-
 use std::boxed::Box;
+use std::mem::MaybeUninit;
 use std::ptr;
 
 use crate::frustum::Frustum;
 use crate::graph::*;
-use crate::math::*;
-
 use crate::jni::types::*;
+use crate::math::*;
 use crate::mem::LibcAllocVtable;
 use crate::panic::PanicHandlerFn;
 
@@ -77,17 +75,17 @@ pub struct CGraphNode {
 
 #[allow(non_snake_case)]
 mod java {
-    use std::mem::MaybeUninit;
-
     use std::boxed::Box;
+    use std::mem::MaybeUninit;
     use std::ptr;
 
-    use crate::frustum::Frustum;
-    use crate::graph::*;
-    use crate::math::*;
+    use core_simd::simd::f32x4;
 
     use crate::ffi::*;
+    use crate::frustum::Frustum;
+    use crate::graph::*;
     use crate::jni::types::*;
+    use crate::math::*;
     use crate::mem::LibcAllocVtable;
     use crate::panic::PanicHandlerFn;
 
@@ -135,7 +133,7 @@ mod java {
         z: Jint,
     ) {
         let graph = graph.into_mut_ref();
-        graph.add_chunk(IVec3::new(x, y, z));
+        graph.add_chunk(i32x3::from_xyz(x, y, z));
     }
 
     #[no_mangle]
@@ -152,7 +150,7 @@ mod java {
 
         let graph = graph.into_mut_ref();
         graph.update_chunk(
-            IVec3::new(x, y, z),
+            i32x3::from_xyz(x, y, z),
             Node::new(VisibilityData::from_u64(node.connections), node.flags as u8),
         );
     }
@@ -167,7 +165,7 @@ mod java {
         z: Jint,
     ) {
         let graph = graph.into_mut_ref();
-        graph.remove_chunk(IVec3::new(x, y, z));
+        graph.remove_chunk(i32x3::from_xyz(x, y, z));
     }
 
     #[no_mangle]
@@ -203,9 +201,9 @@ mod java {
         planes: JPtr<[[f32; 4]; 6]>,
         offset: JPtr<[f32; 3]>,
     ) {
-        let planes = planes.as_ref().map(Vec4::from_array);
+        let planes = planes.as_ref().map(f32x4::from_array);
 
-        let offset = Vec3::from_array(*offset.as_ref());
+        let offset = f32x3::from_array(*offset.as_ref());
 
         let frustum = Box::new(Frustum::new(planes, offset));
 

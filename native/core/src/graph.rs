@@ -1,20 +1,19 @@
-use rustc_hash::FxHashMap as HashMap;
-
 use std::cell::{RefCell, RefMut};
 use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
+use std::ops::*;
 use std::ptr::NonNull;
-use std::simd::*;
 use std::vec::Vec;
-use std::{ops::*, ptr};
+use std::{ops, ptr};
 
-use std::ops;
+use core_simd::simd::*;
+use rustc_hash::FxHashMap as HashMap;
+use std_float::StdFloat;
 
 use crate::collections::ArrayDeque;
-use crate::ffi::CInlineVec;
-use crate::ffi::CVec;
+use crate::ffi::{CInlineVec, CVec};
 use crate::frustum::{BoundingBox, Frustum};
 use crate::math::*;
 
@@ -42,14 +41,13 @@ impl LocalNodeIndex {
     const Z_MASK_MORTON: u8 = 0b00100101;
 
     #[inline(always)]
-    pub fn from_global(position: IVec3) -> Self {
+    pub fn from_global(position: i32x3) -> Self {
         // shrink each element into byte, trim bits
-        let pos_trimmed = i32x4::from(position).cast::<u8>()
-            & u8x4::from_array([
+        let pos_trimmed = position.cast::<u8>()
+            & u8x3::from_array([
                 Self::X_MASK_SINGLE,
                 Self::Y_MASK_SINGLE,
                 Self::Z_MASK_SINGLE,
-                0,
             ]);
 
         // allocate one byte per bit for each element.
@@ -132,7 +130,7 @@ impl LocalNodeIndex {
     }
 
     #[inline(always)]
-    pub fn as_global_coord(&self, region_coord: IVec3) -> IVec3 {
+    pub fn as_global_coord(&self, region_coord: i32x3) -> i32x3 {
         // allocate one byte per bit for each element
         let morton_bytes = u8x8::splat(self.0);
 
@@ -146,21 +144,21 @@ impl LocalNodeIndex {
         .to_bitmask();
 
         // unpacking linear pack to individual axis
-        let mut pos_split_axis = IVec3::splat(linear_packed as i32);
+        let mut pos_split_axis = i32x3::splat(linear_packed as i32);
 
-        pos_split_axis &= IVec3::new(
+        pos_split_axis &= i32x3::from_xyz(
             Self::X_MASK_LINEAR as i32,
             Self::Y_MASK_LINEAR as i32,
             Self::Z_MASK_LINEAR as i32,
         );
 
-        pos_split_axis >>= IVec3::new(
+        pos_split_axis >>= i32x3::from_xyz(
             Self::X_MASK_LINEAR_SHIFT as i32,
             Self::Y_MASK_LINEAR_SHIFT as i32,
             Self::Z_MASK_LINEAR_SHIFT as i32,
         );
 
-        (region_coord << IVec3::new(3, 2, 3)) + pos_split_axis
+        (region_coord << i32x3::from_xyz(3, 2, 3)) + pos_split_axis
     }
 }
 
@@ -183,7 +181,7 @@ impl PackedChunkCoord {
     const Y_OFFSET: usize = 0;
     const Z_OFFSET: usize = 20;
 
-    pub fn from(coord: IVec3) -> Self {
+    pub fn from(coord: i32x3) -> Self {
         let mut packed: u64 = 0;
         packed |= (coord.x() as u64 & Self::X_MASK) << Self::X_OFFSET;
         packed |= (coord.y() as u64 & Self::Y_MASK) << Self::Y_OFFSET;
@@ -219,14 +217,14 @@ pub enum GraphDirection {
 }
 
 impl GraphDirection {
-    pub const fn as_vector(&self) -> IVec3 {
+    pub const fn as_vector(&self) -> i32x3 {
         match *self {
-            GraphDirection::NegX => IVec3::new(-1, 0, 0),
-            GraphDirection::NegY => IVec3::new(0, -1, 0),
-            GraphDirection::NegZ => IVec3::new(0, 0, -1),
-            GraphDirection::PosX => IVec3::new(1, 0, 0),
-            GraphDirection::PosY => IVec3::new(0, 1, 0),
-            GraphDirection::PosZ => IVec3::new(0, 0, 1),
+            GraphDirection::NegX => from_xyz(-1, 0, 0),
+            GraphDirection::NegY => from_xyz(0, -1, 0),
+            GraphDirection::NegZ => from_xyz(0, 0, -1),
+            GraphDirection::PosX => from_xyz(1, 0, 0),
+            GraphDirection::PosY => from_xyz(0, 1, 0),
+            GraphDirection::PosZ => from_xyz(0, 0, 1),
         }
     }
 
@@ -362,9 +360,9 @@ pub struct RegionDrawBatch {
 }
 
 impl RegionDrawBatch {
-    pub fn new(region_coord: IVec3) -> Self {
+    pub fn new(region_coord: i32x3) -> Self {
         RegionDrawBatch {
-            region_coord: region_coord.into(),
+            region_coord: region_coord.into_tuple(),
             sections: CInlineVec::new(),
         }
     }
@@ -441,24 +439,24 @@ impl Region {
         }
     }
 
-    fn set_chunk(&mut self, coord: IVec3, node: Node) {
+    fn set_chunk(&mut self, coord: i32x3, node: Node) {
         let local_index = LocalNodeIndex::from_global(coord);
         self.nodes[local_index.as_array_offset()] = node;
     }
 
-    fn remove_chunk(&mut self, coord: IVec3) {
+    fn remove_chunk(&mut self, coord: i32x3) {
         let local_index = LocalNodeIndex::from_global(coord);
         self.nodes[local_index.as_array_offset()] = Node::default();
     }
 
-    fn get_chunk(&self, coord: IVec3) -> &Node {
+    fn get_chunk(&self, coord: i32x3) -> &Node {
         let local_index = LocalNodeIndex::from_global(coord);
         &self.nodes[local_index.as_array_offset()]
     }
 }
 
 pub struct Graph {
-    regions: HashMap<IVec3, Region>,
+    regions: HashMap<i32x3, Region>,
 }
 
 impl Graph {
@@ -469,7 +467,7 @@ impl Graph {
     }
 
     pub fn search(&mut self, frustum: &Frustum, view_distance: i32) -> CVec<RegionDrawBatch> {
-        let mut region_iteration_queue: VecDeque<IVec3> = VecDeque::new();
+        let mut region_iteration_queue: VecDeque<i32x3> = VecDeque::new();
 
         let origin_node_coord = position_to_chunk_coord(*frustum.position());
 
@@ -521,7 +519,7 @@ impl Graph {
             }
 
             for direction in GraphDirection::ordered() {
-                let adjacent_region_coord: IVec3 = region_coord + direction.as_vector();
+                let adjacent_region_coord: i32x3 = region_coord + direction.as_vector();
 
                 if let Some(region) = &mut search_ctx.adjacent(*direction, true) {
                     if region.search_state.queue.is_empty() || region.search_state.enqueued {
@@ -564,7 +562,7 @@ impl Graph {
         }
     }
 
-    pub fn add_chunk(&mut self, chunk_coord: IVec3) {
+    pub fn add_chunk(&mut self, chunk_coord: i32x3) {
         let mut region = self
             .regions
             .entry(chunk_coord_to_region_coord(chunk_coord))
@@ -573,7 +571,7 @@ impl Graph {
         region.set_chunk(chunk_coord, Node::default());
     }
 
-    pub fn update_chunk(&mut self, chunk_coord: IVec3, node: Node) {
+    pub fn update_chunk(&mut self, chunk_coord: i32x3, node: Node) {
         if let Some(region) = self
             .regions
             .get_mut(&chunk_coord_to_region_coord(chunk_coord))
@@ -582,7 +580,7 @@ impl Graph {
         }
     }
 
-    pub fn remove_chunk(&mut self, chunk_coord: IVec3) {
+    pub fn remove_chunk(&mut self, chunk_coord: i32x3) {
         if let Some(region) = self
             .regions
             .get_mut(&chunk_coord_to_region_coord(chunk_coord))
@@ -591,7 +589,7 @@ impl Graph {
         }
     }
 
-    fn get_node(&self, chunk_coord: IVec3) -> Option<Node> {
+    fn get_node(&self, chunk_coord: i32x3) -> Option<Node> {
         self.regions
             .get(&chunk_coord_to_region_coord(chunk_coord))
             .map(|region| *region.get_chunk(chunk_coord))
@@ -603,7 +601,7 @@ pub struct SearchContext<'a> {
     adjacent: [*mut Region; 6],
     origin: NonNull<Region>,
 
-    reference: PhantomData<&'a mut HashMap<IVec3, Region>>,
+    reference: PhantomData<&'a mut HashMap<i32x3, Region>>,
 }
 
 impl<'a> SearchContext<'a> {
@@ -625,7 +623,7 @@ impl<'a> SearchContext<'a> {
         }
     }
 
-    fn create(regions: &'a mut HashMap<IVec3, Region>, origin_coord: IVec3) -> SearchContext<'a> {
+    fn create(regions: &'a mut HashMap<i32x3, Region>, origin_coord: i32x3) -> SearchContext<'a> {
         SearchContext {
             adjacent: GraphDirection::ordered()
                 .map(|direction| origin_coord + direction.as_vector())
@@ -638,45 +636,40 @@ impl<'a> SearchContext<'a> {
         }
     }
 
-    fn get_ptr(regions: &mut HashMap<IVec3, Region>, position: &IVec3) -> *mut Region {
+    fn get_ptr(regions: &mut HashMap<i32x3, Region>, position: &i32x3) -> *mut Region {
         regions
             .get_mut(position)
             .map_or(ptr::null_mut(), |cell| cell as *mut Region)
     }
 }
 
-fn chunk_inside_view_distance(position: IVec3, center: IVec3, view_distance: i32) -> bool {
-    let distance: IVec3 = (position - center).abs();
-    distance.less_than(IVec3::splat(view_distance))
+fn chunk_inside_view_distance(position: i32x3, center: i32x3, view_distance: i32) -> bool {
+    let distance: i32x3 = (position - center).abs();
+    distance.simd_lt(i32x3::splat(view_distance)).all()
 }
 
-fn get_valid_directions(center: IVec3, position: IVec3) -> GraphDirectionSet {
-    let position: i32x4 = position.into();
-    let center: i32x4 = center.into();
-
+fn get_valid_directions(center: i32x3, position: i32x3) -> GraphDirectionSet {
     let negative = position.simd_le(center);
     let positive = position.simd_ge(center);
 
-    GraphDirectionSet::from(
-        (negative.to_bitmask() & 0b111) | ((positive.to_bitmask() & 0b111) << 3),
-    )
+    GraphDirectionSet::from(negative.to_bitmask() | (positive.to_bitmask() << 3))
 }
 
-fn chunk_inside_frustum(position: IVec3, frustum: &Frustum) -> bool {
+fn chunk_inside_frustum(position: i32x3, frustum: &Frustum) -> bool {
     frustum.test_bounding_box(&get_chunk_bounding_box(position))
 }
 
-fn get_chunk_bounding_box(chunk_coord: IVec3) -> BoundingBox {
-    let min = (chunk_coord << IVec3::splat(4)).as_float();
-    let max = min + Vec3::splat(16.0);
+fn get_chunk_bounding_box(chunk_coord: i32x3) -> BoundingBox {
+    let min = (chunk_coord << i32x3::splat(4)).cast::<f32>();
+    let max = min + f32x3::splat(16.0);
 
     BoundingBox::new(min, max)
 }
 
-fn chunk_coord_to_region_coord(node_position: IVec3) -> IVec3 {
-    node_position >> IVec3::new(3, 2, 3)
+fn chunk_coord_to_region_coord(node_position: i32x3) -> i32x3 {
+    node_position >> i32x3::from_xyz(3, 2, 3)
 }
 
-fn position_to_chunk_coord(position: Vec3) -> IVec3 {
-    position.floor().as_int().shr(IVec3::splat(4))
+fn position_to_chunk_coord(position: f32x3) -> i32x3 {
+    position.floor().cast::<i32>().shr(i32x3::splat(4))
 }
