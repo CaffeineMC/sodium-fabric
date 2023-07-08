@@ -124,9 +124,11 @@ public class CoreLib {
 
     private static void initAllocator(MemoryUtil.MemoryAllocator allocator) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            PointerBuffer pfn = stack.mallocPointer(2);
+            PointerBuffer pfn = stack.mallocPointer(4);
             pfn.put(0 /* aligned_alloc */, allocator.getAlignedAlloc());
             pfn.put(1 /* aligned_free */, allocator.getAlignedFree());
+            pfn.put(2 /* realloc */, allocator.getRealloc());
+            pfn.put(3 /* calloc */, allocator.getCalloc());
 
             CoreLibFFI.setAllocator(pfn.address());
         }
