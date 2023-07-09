@@ -209,7 +209,7 @@ public class RenderSection {
         return String.format("RenderSection at chunk (%d, %d, %d) from (%d, %d, %d) to (%d, %d, %d)",
                 this.chunkX, this.chunkY, this.chunkZ,
                 this.getOriginX(), this.getOriginY(), this.getOriginZ(),
-                this.getOriginX() + 16, this.getOriginY() + 16, this.getOriginZ() + 16);
+                this.getOriginX() + 15, this.getOriginY() + 15, this.getOriginZ() + 15);
     }
 
     public boolean isBuilt() {
