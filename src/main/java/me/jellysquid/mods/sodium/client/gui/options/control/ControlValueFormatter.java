@@ -38,7 +38,7 @@ public interface ControlValueFormatter {
     }
 
     static ControlValueFormatter multiplier() {
-        return (v) -> Text.literal(v + "%");
+        return (v) -> Text.literal(v + "x");
     }
 
     static ControlValueFormatter quantityOrDisabled(String name, String disableText) {
