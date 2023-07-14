@@ -2,15 +2,14 @@ const int FOG_SHAPE_SPHERICAL = 0;
 const int FOG_SHAPE_CYLINDRICAL = 1;
 
 vec4 _linearFog(vec4 fragColor, float fragDistance, vec4 fogColor, float fogStart, float fogEnd) {
-    #ifdef USE_FOG
-    vec4 result = mix(fogColor, fragColor,
-    smoothstep(fogEnd, fogStart, fragDistance));
-    result.a = fragColor.a;
+#ifdef USE_FOG
+    float factor = smoothstep(fogStart, fogEnd, fragDistance * fogColor.a); // alpha value of fog is used as a weight
+    vec3 blended = mix(fragColor.rgb, fogColor.rgb, factor);
 
-    return result;
-    #else
+    return vec4(blended, fragColor.a); // alpha value of fragment cannot be modified
+#else
     return fragColor;
-    #endif
+#endif
 }
 
 float getFragDistance(int fogShape, vec3 position) {
