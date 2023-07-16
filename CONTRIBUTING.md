@@ -1,53 +1,54 @@
-## Issues
-
-When opening issues, please be sure to include the following information as applicable.
-
-- The exact version of the mod you are running, such as `0.1.0-fabric`, and the version of Fabric/Forge you are using.
-- If your issue is a crash, attach the latest client or server log and the complete crash report as a file. You can
-attach these as a file (preferred) or host them on a service such as [GitHub Gist](https://gist.github.com/) or [Hastebin](https://hastebin.com/).
-- If your issue is a bug or otherwise unexpected behavior, explain what you expected to happen.
-- If your issue only occurs with other mods installed, be sure to specify the names and versions of those mods.
-
-## Pull Requests
-
-It's super awesome to hear you're wishing to contribute to the project! Before you open a pull request, you'll need to
-give a quick read to the following guidelines.
-
-### Contributor License Agreement (CLA)
-
-By submitting changes to this repository, you are hereby agreeing that:
-
-- Your contributions will be licensed irrecoverably under the [GNU LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.html).
-- Your contributions are of your own work and free of legal restrictions (such as patents and copyrights) or other
-issues which would pose issues for inclusion or distribution under the above license.
-
-If you do not agree to these terms, please do not submit contributions to this repository. If you have any questions
-about these terms, feel free to get in contact with me through the [public Discord server](https://jellysquid.me/discord) or
-through opening an issue.
+## Contribution Guidelines
 
 ### Code Style
 
-When contributing source code changes to the project, ensure that you make consistent use of the code style guidelines
-used throughout the codebase (which follow pretty closely after the standard Java code style guidelines). These guidelines
-have also been packaged as EditorConfig and IDEA inspection profiles which can be found in the repository root and `idea`
-directory respectively.
+When contributing source code to the project, ensure that you make consistent use of our code style guidelines. These
+guidelines are based on the [Google code style guidelines for Java](https://google.github.io/styleguide/javaguide.html),
+with some minor changes, as described below.
 
 - Use 4 spaces for indentation, not tabs. Avoid lines which exceed 120 characters.
-- Use `this` to qualify member and field access.
-- Always use braces when writing if-statements and loops.
-- Annotate overriding methods with `@Override` so that breaking changes when updating will create hard compile errors.
-- Comment code which needs to mimic vanilla behavior with `[VanillaCopy]` so it can be inspected when updating.
+- Avoid deeply nested conditional logic, and prefer breaking out to separate functions when possible.
+    - If you are using more than three levels of indentation, you should likely consider restructuring your code.
+    - Branches which are only exceptionally or very rarely taken should remain concise. When this is not possible,
+      prefer breaking out to a new method (where it makes sense) as this helps the compiler better optimize the code.
+- Use `this` to qualify member and field access, as it avoids some ambiguity in certain contexts.
 
-### Making a Pull Request
+We also provide these code styles as [EditorConfig](https://editorconfig.org/) files, which most Java IDEs will
+automatically detect and make use of.
+
+#### Unsafe code
+
+There are some additional guidelines for using unsafe code in Java, which are aimed at improving code readability and
+debugging. Most developers will not need to read this section unless they are working with bindings to native libraries.
+
+- The use of unsafe operations in general should be avoided unless strictly necessary, or where there is otherwise a
+  clear performance advantage.
+    - Unsafe code is often _slower_ than safe code, since the Hotspot compiler only contains basic intrinsics and is
+      very pessimistic about optimizing such code.
+    - Array bounds checks are almost never the bottleneck of your code. But memory layout often is, and unsafe code
+      gives you explicit control over it.
+- The invariants of public methods which expose unsafe operations MUST be documented.
+    - An example of a safety invariant would be if passing a null pointer value or invalid array index to a method which
+      uses unsafe operations would cause an invalid memory access.
+    - The caller of your method should know exactly what is needed to avoid undefined or invalid behavior. 
+- The invariants of unsafe methods SHOULD be checked where possible. The use of runtime checking SHOULD be configurable
+  at application launch.
+    - The typical way to implement these checks is to keep a `private static final boolean CHECKS = /* ... */;` field in
+      the class which controls the use of runtime checking.
+    - These checks can then be wrapped within an if-statement which allows them to be skipped if runtime error checking
+      is disabled. This also allows the compiler to easily optimize them away.
+- When plain integer types are used to store pointers to memory addresses, their variables MUST be prefixed, and a 
+  comment MUST be added to indicate their underlying type.
+    - For example, the declaration `int* value;` in C code would be represented as `long pValue; // int*` in Java code.
+    - For chains of pointers, multiple prefixes should be used. For example, `char** strings;` in C code would become
+      `long ppStrings; // char**` in Java code.
+
+### Pull Requests
 
 Your pull request should include a brief description of the changes it makes and link to any open issues which it
-resolves. You should also ensure that your code is well documented where non-trivial and that it follows the
-outlined code style guidelines above.
+resolves. You should also ensure that your code is well documented where it is non-trivial, and that it follows our code
+style guidelines.
 
 If you're adding new Mixin patches to the project, please ensure that you have created appropriate entries to disable
-them in the config file. Mixins should always be self-contained and grouped into "patch sets" which are easy to isolate.
-
-Additionally, if you're making changes for the sake of improving performance in either the vanilla game or the project
-itself, try to provide a detailed test-case and benchmark for them. It's understandable that micro-benchmarking is
-difficult in the context of Minecraft, but even naive figures taken from a profiler, timings graph, or a simple counter
-will be greatly appreciated and help track incremental improvements. 
+them in the config file. Mixins should always be self-contained and grouped into "patch sets" which are easy to isolate,
+and where that is not possible, they should be placed into the "core" package.
