@@ -1,117 +1,89 @@
 <img src="src/main/resources/assets/sodium/icon.png" width="128">
 
 # Sodium (for Fabric)
+
 ![GitHub license](https://img.shields.io/github/license/CaffeineMC/sodium-fabric.svg)
 ![GitHub issues](https://img.shields.io/github/issues/CaffeineMC/sodium-fabric.svg)
 ![GitHub tag](https://img.shields.io/github/tag/CaffeineMC/sodium-fabric.svg)
 
-Sodium is a free and open-source optimization mod for the Minecraft client that improves frame rates, reduces
-micro-stutter, and fixes graphical issues in Minecraft. 
+Sodium is a free and open-source optimization mod for the Minecraft client which improves frame rates and reduces
+micro-stutter  while fixing many graphical issues in Minecraft.
 
-:warning: Sodium has had a lot of time to shape up lately, but the mod is still alpha software. You may run into minor
-graphical issues or crashes while using it. Additionally, the
-[Fabric Rendering API](https://fabricmc.net/wiki/documentation:rendering) is not yet supported, which may cause crashes
-and other issues with some mods.
+### 📥 Installation
 
----
+The latest releases of Sodium are published to our official [Modrinth](https://modrinth.com/mod/sodium) and
+[GitHub release](https://github.com/CaffeineMC/sodium-fabric/releases) pages. These releases are considered by our
+team to be suitable for general use, but they are not guaranteed to be free of bugs and other issues.
 
-## Installation
+For more information about downloading and installing the mod, you can read our installation guide on
+[Modrinth](https://modrinth.com/mod/sodium#installation).
+It also contains information about any currently known compatibility issues, which are often useful to read.
 
-### Manual installation (recommended)
-
-You will need Fabric Loader 0.10.x or newer installed in your game in order to load Sodium. If you haven't installed
-Fabric mods before, you can find a variety of community guides for doing so [here](https://fabricmc.net/wiki/install).
-
-#### Stable releases
-
-![GitHub release](https://img.shields.io/github/release/CaffeineMC/sodium-fabric.svg)
-
-The latest releases of Sodium are published to our [Modrinth](https://modrinth.com/mod/sodium) and
-[GitHub release](https://github.com/CaffeineMC/sodium-fabric/releases) pages. Releases are considered by our team to be
-**suitable for general use**, but they are not guaranteed to be free of bugs and other issues.
-
-Usually, releases will be made available on GitHub slightly sooner than other locations.
-
-#### Bleeding-edge builds (unstable)
-
-[![GitHub build status](https://img.shields.io/github/actions/workflow/status/CaffeineMC/sodium-fabric/gradle.yml)](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml)
-
-If you are a player who is looking to get your hands on the latest **bleeding-edge changes for testing**, consider
-taking a look at the automated builds produced through our [GitHub Actions workflow](https://github.com/CaffeineMC/sodium-fabric/actions/workflows/gradle.yml?query=event%3Apush).
-This workflow automatically runs every time a change is pushed to the repository, and as such, the builds it produces
-will generally reflect the latest snapshot of development.
-
-Bleeding edge builds will often include unfinished code that hasn't been extensively tested. That code may introduce
-incomplete features, bugs, crashes, and all other kinds of weird issues. You **should not use these bleeding edge builds**
-unless you know what you are doing and are comfortable with software debugging. If you report issues using these builds,
-we will expect that this is the case. Caveat emptor.
-
----
-
-### Reporting Issues
+### 🐛 Reporting Issues
 
 You can report bugs and crashes by opening an issue on our [issue tracker](https://github.com/CaffeineMC/sodium-fabric/issues).
 Before opening a new issue, use the search tool to make sure that your issue has not already been reported and ensure
 that you have completely filled out the issue template. Issues that are duplicates or do not contain the necessary
-information to triage and debug may be closed. 
+information to triage and debug may be closed.
 
 Please note that while the issue tracker is open to feature requests, development is primarily focused on
 improving hardware compatibility, performance, and finishing any unimplemented features necessary for parity with
 the vanilla renderer.
 
-### Community
-[![Discord chat](https://img.shields.io/badge/chat%20on-discord-7289DA?logo=discord&logoColor=white)](https://jellysquid.me/discord)
+### 💬 Join the Community
 
-We have an [official Discord community](https://jellysquid.me/discord) for all of our projects. By joining, you can:
-- Get installation help and technical support with all of our mods 
-- Be notified of the latest developments as they happen
-- Get involved and collaborate with the rest of our team
+We have an [official Discord community](https://caffeinemc.net/discord) for all of our projects. By joining, you can:
+- Get installation help and technical support for all of our mods
+- Get the latest updates about development and community events
+- Talk with and collaborate with the rest of our team
 - ... and just hang out with the rest of our community.
 
----
+## ✅ Hardware Compatibility
+
+We only provide support for graphics cards which have up-to-date drivers for OpenGL 4.6. Most graphics cards which have
+been released since year 2010 are supported, such as the...
+
+- AMD Radeon HD 7000 Series (GCN 1) or newer
+- NVIDIA GeForce 400 Series (Fermi) or newer
+- Intel HD Graphics 500 Series (Skylake) or newer
+
+In some cases, older graphics cards may also work (so long as they have up-to-date drivers which have support for
+OpenGL 3.3), but they are not officially supported, and may not be compatible with future versions of Sodium.
+
+#### OpenGL Compatibility Layers
+
+Devices which need to use OpenGL translation layers (such as GL4ES, ANGLE, etc) are not supported and will very likely
+not work with Sodium. These translation layers do not implement required functionality and they suffer from underlying
+driver bugs which cannot be worked around.
+
+## 🛠️ Developer Guide
 
 ### Building from sources
 
-Support is not provided for setting up build environments or compiling the mod. We ask that
-users who are looking to get their hands dirty with the code have a basic understanding of compiling Java/Gradle
-projects. The basic overview is provided here for those familiar.
+Sodium uses a typical Gradle project structure and can be compiled by simply running the default `build` task. The build
+artifacts (typical mod binaries, and their sources) can be found in the `build/libs` directory.
 
 #### Requirements
 
-- JRE 8 or newer (for running Gradle)
-- JDK 8 (optional)
-  - If you neither have JDK 8 available on your shell's path or installed through a supported package manager (such as
-[SDKMAN](https://sdkman.io)), Gradle will automatically download a suitable toolchain from the [AdoptOpenJDK project](https://adoptopenjdk.net/)
-and use it to compile the project. For more information on what package managers are supported and how you can
-customize this behavior on a system-wide level, please see [Gradle's Toolchain user guide](https://docs.gradle.org/current/userguide/toolchains.html).
-- Gradle 6.7 or newer (optional)
-  - The [Gradle wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html#sec:using_wrapper) is provided in
-    this repository can be used instead of installing a suitable version of Gradle yourself. However, if you are building
-    many projects, you may prefer to install it yourself through a suitable package manager as to save disk space and to
-    avoid many different Gradle daemons sitting around in memory.
+We recommend using a package manager (such as [SDKMAN](https://sdkman.io/)) to manage toolchain dependencies and keep
+them up to date. For many Linux distributions, these dependencies will be standard packages in your software
+repositories.
 
-#### Building with Gradle
+- OpenJDK 17
+    - We recommend using the [Eclipse Termurin](https://adoptium.net/) distribution, as it's known to be high quality 
+      and to work without issues.
+- Gradle 8.2.1 (optional)
+    - The [Gradle wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html#sec:using_wrapper) is provided
+      in this repository can be used instead of installing a suitable version of Gradle yourself. However, if you are
+      building many projects, you may prefer to install it yourself through a suitable package manager as to save disk
+      space and to avoid many different Gradle daemons sitting around in memory.
+    - Typically, newer versions of Gradle will work without issues, but the build script is only tested against the
+      version specified by the wrapper script.
 
-Sodium uses a typical Gradle project structure and can be built by simply running the default `build` task. After Gradle
-finishes building the project, you can find the build artifacts (typical mod binaries, and their sources) in
-`build/libs`.
+## 📜 License
 
-**Tip:** If this is a one-off build, and you would prefer the Gradle daemon does not stick around in memory afterwards,
-try adding the [`--no-daemon` flag](https://docs.gradle.org/current/userguide/gradle_daemon.html#sec:disabling_the_daemon)
-to ensure that the daemon is torn down after the build is complete. However, subsequent builds of the project will
-[start more slowly](https://docs.gradle.org/current/userguide/gradle_daemon.html#sec:why_the_daemon) if the Gradle
-daemon is not available to be re-used.
+Except where otherwise stated, this source code is provided under the terms of the GNU LGPLv3, a free and open-source
+license. For more information, please see the [license file](LICENSE.txt).
 
-
-Build artifacts ending in `dev` are outputs containing the sources and compiled classes
-before they are remapped into stable intermediary names. If you are working in a developer environment and would
-like to add the mod to your game, you should prefer to use the `modRuntime` or `modCompile` configurations provided by
-Loom instead of these outputs.
-
----
-### License
-
-Sodium is licensed under GNU LGPLv3, a free and open-source license. For more information, please see the
-[license file](https://github.com/CaffeineMC/sodium-fabric/blob/1.16.x/dev/LICENSE.txt).
-
-The "Nicer Fast Leaves" pack included in Sodium is by [Vanilla Tweaks](https://vanillatweaks.net/), licensed for Sodium under the GNU LGPLv3.
+When submitting pull requests to this repository, it is assumed that you are licensing your contribution under the
+GNU LGPLv3, unless you state otherwise.
