@@ -4,6 +4,7 @@ pluginManagement {
             name = 'Fabric'
             url = 'https://maven.fabricmc.net/'
         }
+        mavenCentral() // backup mirror for JCenter's Bintray, which is ordinarily used to resolve Eclipse's JGit
         gradlePluginPortal()
     }
 }
