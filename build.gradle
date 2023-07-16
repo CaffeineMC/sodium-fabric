@@ -22,7 +22,7 @@ apply from: "${rootProject.projectDir}/gradle/fabric.gradle"
 apply from: "${rootProject.projectDir}/gradle/java.gradle"
 
 archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}"
-version = "${project.mod_version}+${getVersionMetadata()}"
+version = "${project.mod_version}${getVersionMetadata()}"
 group = project.maven_group
 
 loom {
@@ -88,11 +88,15 @@ dependencies {
 }
 
 def getVersionMetadata() {
-    def build_id = System.getenv("GITHUB_RUN_NUMBER")
-
     // CI builds only
-    if (build_id != null) {
-        return "build.${build_id}"
+    if (project.hasProperty("build.release")) {
+        return "" // no tag whatsoever
+    } else if (project.hasProperty("build.snapshot")) {
+        def build_id = System.getenv("GITHUB_RUN_NUMBER")
+
+        if (build_id != null) {
+            return "+snapshot.${build_id}"
+        }
     }
 
     if (grgit != null) {
@@ -104,9 +108,9 @@ def getVersionMetadata() {
             id += "-dirty"
         }
 
-        return "rev.${id}"
+        return "+local.${id}"
     }
 
     // No tracking information could be found about the build
-    return "unknown"
+    return "+untagged"
 }
