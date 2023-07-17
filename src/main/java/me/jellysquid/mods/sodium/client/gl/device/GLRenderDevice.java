@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.gl.state.GlStateTracker;
 import me.jellysquid.mods.sodium.client.gl.sync.GlFence;
 import me.jellysquid.mods.sodium.client.gl.tessellation.*;
 import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
+import net.minecraft.client.render.BufferRenderer;
 import org.lwjgl.opengl.*;
 
 import java.nio.ByteBuffer;
@@ -34,7 +35,9 @@ public class GLRenderDevice implements RenderDevice {
             return;
         }
 
-        this.stateTracker.reset();
+        BufferRenderer.reset();
+
+        this.stateTracker.clear();
         this.isActive = true;
     }
 
@@ -44,7 +47,7 @@ public class GLRenderDevice implements RenderDevice {
             return;
         }
 
-        this.stateTracker.reset();
+        this.stateTracker.clear();
         this.isActive = false;
     }
 
