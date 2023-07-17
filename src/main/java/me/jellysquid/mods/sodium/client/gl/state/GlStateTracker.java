@@ -3,9 +3,6 @@ package me.jellysquid.mods.sodium.client.gl.state;
 import me.jellysquid.mods.sodium.client.gl.array.GlVertexArray;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTarget;
-import org.lwjgl.opengl.GL11C;
-import org.lwjgl.opengl.GL20C;
-import org.lwjgl.opengl.GL30C;
 
 import java.util.Arrays;
 
@@ -56,7 +53,7 @@ public class GlStateTracker {
         return changed;
     }
 
-    public void reset() {
+    public void clear() {
         Arrays.fill(this.bufferState, -1);
         this.vertexArrayState = -1;
     }
