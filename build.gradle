@@ -91,12 +91,6 @@ def getVersionMetadata() {
     // CI builds only
     if (project.hasProperty("build.release")) {
         return "" // no tag whatsoever
-    } else if (project.hasProperty("build.snapshot")) {
-        def build_id = System.getenv("GITHUB_RUN_NUMBER")
-
-        if (build_id != null) {
-            return "+snapshot.${build_id}"
-        }
     }
 
     if (grgit != null) {
@@ -108,9 +102,9 @@ def getVersionMetadata() {
             id += "-dirty"
         }
 
-        return "+local.${id}"
+        return "+git.${id}"
     }
 
     // No tracking information could be found about the build
-    return "+untagged"
+    return "+unknown"
 }

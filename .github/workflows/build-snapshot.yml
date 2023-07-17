@@ -32,7 +32,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-snapshot-
       - name: Build artifacts
-        run: ./gradlew build -Pbuild.snapshot=true
+        run: ./gradlew build
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
