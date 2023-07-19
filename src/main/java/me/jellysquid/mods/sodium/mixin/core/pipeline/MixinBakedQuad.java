@@ -1,15 +1,16 @@
 package me.jellysquid.mods.sodium.mixin.core.pipeline;
 
-import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
-import me.jellysquid.mods.sodium.client.util.Norm3b;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -17,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import static me.jellysquid.mods.sodium.client.util.ModelQuadUtil.*;
 
 @Mixin(BakedQuad.class)
-public class MixinBakedQuad implements ModelQuadView {
+public abstract class MixinBakedQuad implements BakedQuadView {
     @Shadow
     @Final
     protected int[] vertexData;
@@ -32,13 +33,23 @@ public class MixinBakedQuad implements ModelQuadView {
 
     @Shadow
     @Final
-    protected Direction face;
+    protected Direction face; // This is really the light face, but we can't rename it.
 
-    private int cachedFlags;
+    @Shadow
+    @Final
+    private boolean shade;
+
+    private int flags;
+
+    private int normal;
+    private ModelQuadFacing normalFace;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
-        this.cachedFlags = ModelQuadFlags.getQuadFlags((BakedQuad) (Object) this);
+        this.normal = ModelQuadUtil.calculateNormal(this);
+        this.normalFace = ModelQuadUtil.findNormalFace(this.normal);
+
+        this.flags = ModelQuadFlags.getQuadFlags(this, face);
     }
 
     @Override
@@ -68,7 +79,7 @@ public class MixinBakedQuad implements ModelQuadView {
 
     @Override
     public int getNormal() {
-        return ModelQuadUtil.getFacingNormal(this.face);
+        return this.normal;
     }
 
     @Override
@@ -83,11 +94,27 @@ public class MixinBakedQuad implements ModelQuadView {
 
     @Override
     public int getFlags() {
-        return this.cachedFlags;
+        return this.flags;
     }
 
     @Override
     public int getColorIndex() {
         return this.colorIndex;
+    }
+
+    @Override
+    public ModelQuadFacing getNormalFace() {
+        return this.normalFace;
+    }
+
+    @Override
+    public Direction getLightFace() {
+        return this.face;
+    }
+
+    @Override
+    @Unique(silent = true) // The target class has a function with the same name in a remapped environment
+    public boolean hasShade() {
+        return this.shade;
     }
 }
