@@ -19,6 +19,7 @@ import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
@@ -82,6 +83,7 @@ public class RenderSectionManager {
 
     private final SodiumWorldRenderer worldRenderer;
     private final ClientWorld world;
+    private final GFNI gfni;
 
     private final int renderDistance;
 
@@ -104,11 +106,12 @@ public class RenderSectionManager {
 
     private ChunkRenderList chunkRenderList;
 
-    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, CommandList commandList) {
+    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, GFNI gfni, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
         this.worldRenderer = worldRenderer;
         this.world = world;
+        this.gfni = gfni;
 
         this.builder = new ChunkBuilder(ChunkMeshFormats.COMPACT);
         this.builder.init(world);
@@ -432,7 +435,7 @@ public class RenderSectionManager {
             return new ChunkRenderEmptyBuildTask(render, frame);
         }
 
-        return new ChunkRenderRebuildTask(render, context, frame);
+        return new ChunkRenderRebuildTask(render, context, this.gfni, frame);
     }
 
     public void markGraphDirty() {

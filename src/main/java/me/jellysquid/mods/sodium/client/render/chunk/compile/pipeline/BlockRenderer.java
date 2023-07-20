@@ -143,6 +143,9 @@ public class BlockRenderer {
 
         ModelQuadFacing normalFace = quad.getNormalFace();
 
+        // if translucent, add this face to the GFNI group builder
+        boolean isTranslucent = material == DefaultMaterials.TRANSLUCENT;
+
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
 
@@ -150,6 +153,16 @@ public class BlockRenderer {
             out.x = ctx.origin().x() + quad.getX(srcIndex) + (float) offset.getX();
             out.y = ctx.origin().y() + quad.getY(srcIndex) + (float) offset.getY();
             out.z = ctx.origin().z() + quad.getZ(srcIndex) + (float) offset.getZ();
+
+            if (isTranslucent && dstIndex == 0) {
+                if (normalFace == ModelQuadFacing.UNASSIGNED) {
+                    ctx.groupBuilder.addUnalignedFace(
+                            quad.getNormX(), quad.getNormY(), quad.getNormZ(),
+                            out.x, out.y, out.z);
+                } else {
+                    ctx.groupBuilder.addAlignedFace(normalFace, out.x, out.y, out.z);
+                }
+            }
 
             out.color = ColorABGR.withAlpha(colors != null ? colors[srcIndex] : 0xFFFFFFFF, light.br[srcIndex]);
 

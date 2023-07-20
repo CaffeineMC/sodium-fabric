@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.GroupBuilder;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.BakedModel;
@@ -9,6 +10,7 @@ import org.joml.Vector3fc;
 
 public class BlockRenderContext {
     private final WorldSlice world;
+    public final GroupBuilder groupBuilder;
 
     private final BlockPos.Mutable pos = new BlockPos.Mutable();
 
@@ -20,8 +22,9 @@ public class BlockRenderContext {
     private long seed;
 
 
-    public BlockRenderContext(WorldSlice world) {
+    public BlockRenderContext(WorldSlice world, GroupBuilder groupBuilder) {
         this.world = world;
+        this.groupBuilder = groupBuilder;
     }
 
     public void update(BlockPos pos, BlockPos origin, BlockState state, BakedModel model, long seed) {

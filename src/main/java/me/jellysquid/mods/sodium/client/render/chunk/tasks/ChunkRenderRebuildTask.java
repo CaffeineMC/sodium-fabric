@@ -12,6 +12,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRende
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.*;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -37,11 +38,13 @@ import java.util.Map;
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
     private final RenderSection render;
     private final ChunkRenderContext renderContext;
+    private final GFNI gfni;
     private final int frame;
 
-    public ChunkRenderRebuildTask(RenderSection render, ChunkRenderContext renderContext, int frame) {
+    public ChunkRenderRebuildTask(RenderSection render, ChunkRenderContext renderContext, GFNI gfni, int frame) {
         this.render = render;
         this.renderContext = renderContext;
+        this.gfni = gfni;
         this.frame = frame;
     }
 
@@ -70,7 +73,8 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         BlockPos.Mutable blockPos = new BlockPos.Mutable();
         BlockPos.Mutable modelOffset = new BlockPos.Mutable();
 
-        BlockRenderContext context = new BlockRenderContext(slice);
+        GroupBuilder groupBuilder = new GroupBuilder(render.getChunkPos());
+        BlockRenderContext context = new BlockRenderContext(slice, groupBuilder);
 
         for (int y = minY; y < maxY; y++) {
             if (cancellationSource.isCancelled()) {
@@ -102,7 +106,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                     FluidState fluidState = blockState.getFluidState();
 
                     if (!fluidState.isEmpty()) {
-                        cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers, bounds);
+                        cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, groupBuilder, buffers, bounds);
                     }
 
                     if (blockState.hasBlockEntity()) {
@@ -137,6 +141,8 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
         renderData.setOcclusionData(occluder.build());
         renderData.setBounds(bounds.build(this.render.getChunkPos()));
+
+        this.gfni.integrateGroupBuilder(context.groupBuilder);
 
         return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
     }

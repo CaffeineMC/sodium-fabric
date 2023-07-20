@@ -4,6 +4,7 @@ import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.Direction;
@@ -42,11 +43,15 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     private int flags;
 
     private int normal;
+    private float normX;
+    private float normY;
+    private float normZ;
     private ModelQuadFacing normalFace;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
-        this.normal = ModelQuadUtil.calculateNormal(this);
+        this.calculateAccurateNormal();
+        this.normal = NormI8.pack(this.normX, this.normY, this.normZ);
         this.normalFace = ModelQuadUtil.findNormalFace(this.normal);
 
         this.flags = ModelQuadFlags.getQuadFlags(this, face);
@@ -80,6 +85,28 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     @Override
     public int getNormal() {
         return this.normal;
+    }
+
+    @Override
+    public float getNormX() {
+        return this.normX;
+    }
+
+    @Override
+    public float getNormY() {
+        return this.normY;
+    }
+
+    @Override
+    public float getNormZ() {
+        return this.normZ;
+    }
+
+    @Override
+    public void setAccurateNormal(float x, float y, float z) {
+        this.normX = x;
+        this.normY = y;
+        this.normZ = z;
     }
 
     @Override

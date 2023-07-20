@@ -38,4 +38,16 @@ public enum ModelQuadFacing {
             default -> UNASSIGNED;
         };
     }
+
+    public Direction toDirection() {
+        return switch (this) {
+            case UP -> Direction.UP;
+            case DOWN -> Direction.DOWN;
+            case EAST -> Direction.EAST;
+            case WEST -> Direction.WEST;
+            case SOUTH -> Direction.SOUTH;
+            case NORTH -> Direction.NORTH;
+            default -> Direction.UP;
+        };
+    }
 }

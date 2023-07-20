@@ -15,6 +15,7 @@ import me.jellysquid.mods.sodium.client.model.color.DefaultColorProviders;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.GroupBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
@@ -102,7 +103,7 @@ public class FluidRenderer {
         return true;
     }
 
-    public void render(WorldSlice world, FluidState fluidState, BlockPos pos, BlockPos offset, ChunkBuildBuffers buffers, ChunkRenderBounds.Builder bounds) {
+    public void render(WorldSlice world, FluidState fluidState, BlockPos pos, BlockPos offset, GroupBuilder groupBuilder, ChunkBuildBuffers buffers, ChunkRenderBounds.Builder bounds) {
         var material = DefaultMaterials.forFluidState(fluidState);
         var meshBuilder = buffers.get(material);
 
@@ -220,10 +221,10 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
 
             this.updateQuad(quad, world, pos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
-            this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, false);
+            this.writeQuad(meshBuilder, groupBuilder, bounds, material, offset, quad, facing, false);
 
             if (fluidState.canFlowTo(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.writeQuad(meshBuilder, bounds, material, offset, quad,
+                this.writeQuad(meshBuilder, groupBuilder, bounds, material, offset, quad,
                         ModelQuadFacing.DOWN, true);
 
             }
@@ -245,7 +246,7 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.updateQuad(quad, world, pos, lighter, Direction.DOWN, 1.0F, colorProvider, fluidState);
-            this.writeQuad(meshBuilder, bounds, material, offset, quad, ModelQuadFacing.DOWN, false);
+            this.writeQuad(meshBuilder, groupBuilder, bounds, material, offset, quad, ModelQuadFacing.DOWN, false);
 
         }
 
@@ -349,10 +350,10 @@ public class FluidRenderer {
                 ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
 
                 this.updateQuad(quad, world, pos, lighter, dir, br, colorProvider, fluidState);
-                this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, false);
+                this.writeQuad(meshBuilder, groupBuilder, bounds, material, offset, quad, facing, false);
 
                 if (!isOverlay) {
-                    this.writeQuad(meshBuilder, bounds, material, offset, quad, facing.getOpposite(), true);
+                    this.writeQuad(meshBuilder, groupBuilder, bounds, material, offset, quad, facing.getOpposite(), true);
                 }
 
             }
@@ -394,15 +395,29 @@ public class FluidRenderer {
         }
     }
 
-    private void writeQuad(ChunkModelBuilder builder, ChunkRenderBounds.Builder bounds, Material material, BlockPos offset, ModelQuadView quad,
+    private void writeQuad(ChunkModelBuilder builder, GroupBuilder groupBuilder, ChunkRenderBounds.Builder bounds, Material material, BlockPos offset, ModelQuadView quad,
                            ModelQuadFacing facing, boolean flip) {
         var vertices = this.vertices;
+
+        // if translucent, add this face to the GFNI group builder
+        boolean isTranslucent = material == DefaultMaterials.TRANSLUCENT;
 
         for (int i = 0; i < 4; i++) {
             var out = vertices[flip ? 3 - i : i];
             out.x = offset.getX() + quad.getX(i);
             out.y = offset.getY() + quad.getY(i);
             out.z = offset.getZ() + quad.getZ(i);
+
+            if (isTranslucent && i == 0) {
+                if (facing == ModelQuadFacing.UNASSIGNED) {
+                    quad.calculateAccurateNormal();
+                    groupBuilder.addUnalignedFace(
+                            quad.getNormX(), quad.getNormY(), quad.getNormZ(),
+                            out.x, out.y, out.z);
+                } else {
+                    groupBuilder.addAlignedFace(facing, out.x, out.y, out.z);
+                }
+            }
 
             bounds.add(out.x, out.y, out.z, facing);
 
