@@ -260,56 +260,53 @@ public class FluidRenderer {
             float z2;
 
             switch (dir) {
-                case NORTH:
+                case NORTH -> {
                     if (sfNorth) {
                         continue;
                     }
-
                     c1 = h1;
                     c2 = h4;
                     x1 = 0.0f;
                     x2 = 1.0F;
                     z1 = EPSILON;
                     z2 = z1;
-                    break;
-                case SOUTH:
+                }
+                case SOUTH -> {
                     if (sfSouth) {
                         continue;
                     }
-
                     c1 = h3;
                     c2 = h2;
                     x1 = 1.0F;
                     x2 = 0.0f;
                     z1 = 1.0f - EPSILON;
                     z2 = z1;
-                    break;
-                case WEST:
+                }
+                case WEST -> {
                     if (sfWest) {
                         continue;
                     }
-
                     c1 = h2;
                     c2 = h1;
                     x1 = EPSILON;
                     x2 = x1;
                     z1 = 1.0F;
                     z2 = 0.0f;
-                    break;
-                case EAST:
+                }
+                case EAST -> {
                     if (sfEast) {
                         continue;
                     }
-
                     c1 = h4;
                     c2 = h3;
                     x1 = 1.0f - EPSILON;
                     x2 = x1;
                     z1 = 0.0f;
                     z2 = 1.0F;
-                    break;
-                default:
+                }
+                default -> {
                     continue;
+                }
             }
 
             if (this.isSideExposed(world, posX, posY, posZ, dir, Math.max(c1, c2))) {
@@ -442,16 +439,16 @@ public class FluidRenderer {
                 return 1.0f;
             }
 
-            modifyHeight(scratchHeight, scratchSamples, height);
+            modifyHeight(this.scratchHeight, this.scratchSamples, height);
         }
 
-        modifyHeight(scratchHeight, scratchSamples, fluidHeight);
-        modifyHeight(scratchHeight, scratchSamples, fluidHeightY);
-        modifyHeight(scratchHeight, scratchSamples, fluidHeightX);
+        modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeight);
+        modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeightY);
+        modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeightX);
 
-        float result = scratchHeight.floatValue() / scratchSamples.intValue();
-        scratchHeight.setValue(0);
-        scratchSamples.setValue(0);
+        float result = this.scratchHeight.floatValue() / this.scratchSamples.intValue();
+        this.scratchHeight.setValue(0);
+        this.scratchSamples.setValue(0);
 
         return result;
     }

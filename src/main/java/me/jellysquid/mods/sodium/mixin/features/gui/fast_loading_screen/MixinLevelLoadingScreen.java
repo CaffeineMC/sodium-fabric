@@ -12,7 +12,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.WorldGenerationProgressTracker;
 import net.minecraft.client.gui.screen.LevelLoadingScreen;
 import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
 
 import net.minecraft.world.chunk.ChunkStatus;
 import org.joml.Matrix4f;

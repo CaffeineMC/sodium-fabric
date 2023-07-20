@@ -45,7 +45,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
 
     @Override
     public SodiumWorldRenderer getSodiumWorldRenderer() {
-        return renderer;
+        return this.renderer;
     }
 
     @Redirect(method = "reload()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/GameOptions;getClampedViewDistance()I", ordinal = 1))

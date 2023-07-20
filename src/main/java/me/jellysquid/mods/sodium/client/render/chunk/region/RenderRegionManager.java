@@ -7,7 +7,6 @@ import me.jellysquid.mods.sodium.client.gl.arena.PendingUpload;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.FallbackStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
-import me.jellysquid.mods.sodium.client.gl.buffer.IndexedVertexData;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
@@ -16,7 +15,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 
 import java.util.*;
 

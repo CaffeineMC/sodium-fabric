@@ -1,7 +1,6 @@
 
 package me.jellysquid.mods.sodium.client.util.color;
 
-import net.minecraft.client.texture.NativeImage;
 import net.minecraft.util.math.ColorHelper;
 
 /**

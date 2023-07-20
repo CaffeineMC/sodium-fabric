@@ -76,7 +76,7 @@ public abstract class MixinBufferBuilder {
      */
     @Overwrite
     private void writeSortedIndices(VertexFormat.IndexType indexType) {
-        if (sorter != null) {
+        if (this.sorter != null) {
             int[] indices = this.sorter.sort(this.sortingPrimitiveCenters);
             this.writePrimitiveIndices(indexType, indices);
         }

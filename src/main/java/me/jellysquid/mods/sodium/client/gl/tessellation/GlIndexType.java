@@ -22,6 +22,4 @@ public enum GlIndexType {
     public int getStride() {
         return this.stride;
     }
-
-    public static final GlIndexType[] VALUES = GlIndexType.values();
 }

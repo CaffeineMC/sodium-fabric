@@ -52,11 +52,6 @@ public class GLRenderDevice implements RenderDevice {
     }
 
     @Override
-    public boolean isActive() {
-        return this.isActive;
-    }
-
-    @Override
     public GLCapabilities getCapabilities() {
         return GL.getCapabilities();
     }
