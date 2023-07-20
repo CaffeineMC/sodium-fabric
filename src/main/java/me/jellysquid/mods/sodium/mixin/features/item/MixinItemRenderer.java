@@ -1,12 +1,12 @@
 package me.jellysquid.mods.sodium.mixin.features.item;
 
-import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
-import me.jellysquid.mods.sodium.client.render.immediate.model.BakedModelEncoder;
+import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
+import me.jellysquid.mods.sodium.client.render.vertex.formats.ModelVertex;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.client.world.biome.ItemColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
-import net.caffeinemc.mods.sodium.api.util.ColorARGB;
-import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.minecraft.client.color.item.ItemColorProvider;
 import net.minecraft.client.color.item.ItemColors;
 import net.minecraft.client.render.VertexConsumer;
@@ -18,7 +18,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.LocalRandom;
 import net.minecraft.util.math.random.Random;
-import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.List;
 
@@ -35,11 +38,11 @@ public class MixinItemRenderer {
      * @author JellySquid
      */
     @Overwrite
-    private void renderBakedItemModel(BakedModel model, ItemStack itemStack, int light, int overlay, MatrixStack matrixStack, VertexConsumer vertexConsumer) {
+    private void renderBakedItemModel(BakedModel model, ItemStack itemStack, int light, int overlay, MatrixStack matricStack, VertexConsumer vertexConsumer) {
         var writer = VertexBufferWriter.of(vertexConsumer);
 
         Random random = this.random;
-        MatrixStack.Entry matrices = matrixStack.peek();
+        MatrixStack.Entry matrices = matricStack.peek();
 
         ItemColorProvider colorProvider = null;
 
@@ -52,7 +55,7 @@ public class MixinItemRenderer {
             List<BakedQuad> quads = model.getQuads(null, direction, random);
 
             if (!quads.isEmpty()) {
-                this.renderBakedItemQuads(matrices, writer, quads, itemStack, colorProvider, light, overlay);
+                this.sodium$renderBakedItemQuads(matrices, writer, quads, itemStack, colorProvider, light, overlay);
             }
         }
 
@@ -60,24 +63,29 @@ public class MixinItemRenderer {
         List<BakedQuad> quads = model.getQuads(null, null, random);
 
         if (!quads.isEmpty()) {
-            this.renderBakedItemQuads(matrices, writer, quads, itemStack, colorProvider, light, overlay);
+            this.sodium$renderBakedItemQuads(matrices, writer, quads, itemStack, colorProvider, light, overlay);
         }
     }
 
-    @Unique
+    /**
+     * @reason Use vertex building intrinsics
+     * @author JellySquid
+     */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void renderBakedItemQuads(MatrixStack.Entry matrices, VertexBufferWriter writer, List<BakedQuad> quads, ItemStack itemStack, ItemColorProvider colorProvider, int light, int overlay) {
-        for (int i = 0; i < quads.size(); i++) {
-            BakedQuad bakedQuad = quads.get(i);
-            BakedQuadView quad = (BakedQuadView) bakedQuad;
+    private void sodium$renderBakedItemQuads(MatrixStack.Entry matrices, VertexBufferWriter writer, List<BakedQuad> quads, ItemStack itemStack, ItemColorProvider colorProvider, int light, int overlay) {
+
+        for (int j = 0; j < quads.size(); j++) {
+            BakedQuad bakedQuad = quads.get(j);
 
             int color = 0xFFFFFFFF;
 
-            if (colorProvider != null && quad.hasColor()) {
-                color = ColorARGB.toABGR((colorProvider.getColor(itemStack, quad.getColorIndex())), 255);
+            if (colorProvider != null && bakedQuad.hasColor()) {
+                color = ColorARGB.toABGR((colorProvider.getColor(itemStack, bakedQuad.getColorIndex())), 255);
             }
 
-            BakedModelEncoder.writeQuadVertices(writer, matrices, quad, color, light, overlay);
+            ModelQuadView quad = ((ModelQuadView) bakedQuad);
+
+            ModelVertex.writeQuadVertices(writer, matrices, quad, light, overlay, color);
 
             SpriteUtil.markSpriteActive(quad.getSprite());
         }
