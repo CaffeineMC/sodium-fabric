@@ -36,6 +36,19 @@ public class Workarounds {
             workarounds.add(Reference.NVIDIA_BAD_DRIVER_SETTINGS);
         }
 
+        if (operatingSystem == Util.OperatingSystem.LINUX) {
+            var session = System.getenv("XDG_SESSION_TYPE");
+
+            if (session == null) {
+                LOGGER.warn("Unable to determine desktop session type because the environment variable XDG_SESSION_TYPE is not set!");
+            }
+
+            if (Objects.equals(session, "wayland")) {
+                // This will also apply under Xwayland, even though the problem does not happen there
+                workarounds.add(Reference.NO_ERROR_CONTEXT_UNSUPPORTED);
+            }
+        }
+
         return Collections.unmodifiableSet(workarounds);
     }
 
@@ -45,6 +58,17 @@ public class Workarounds {
     }
 
     public enum Reference {
-        NVIDIA_BAD_DRIVER_SETTINGS
+        /**
+         * The NVIDIA driver applies "Threaded Optimizations" when Minecraft is detected, causing severe
+         * performance issues and crashes.
+         * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/1816">GitHub Issue</a>
+         */
+        NVIDIA_BAD_DRIVER_SETTINGS,
+
+        /**
+         * Requesting a No Error Context causes a crash at startup when using a Wayland session.
+         * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/1624">GitHub Issue</a>
+         */
+        NO_ERROR_CONTEXT_UNSUPPORTED
     }
 }
