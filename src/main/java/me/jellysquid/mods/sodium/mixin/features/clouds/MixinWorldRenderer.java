@@ -36,7 +36,7 @@ public class MixinWorldRenderer {
     @Overwrite
     public void renderClouds(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double x, double y, double z) {
         if (this.cloudRenderer == null) {
-            this.cloudRenderer = new CloudRenderer(client.getResourceManager());
+            this.cloudRenderer = new CloudRenderer(this.client.getResourceManager());
         }
 
         this.cloudRenderer.render(this.world, this.client.player, matrices, projectionMatrix, this.ticks, tickDelta, x, y, z);

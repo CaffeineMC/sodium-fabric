@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(Window.class)
 public class MixinWindow {
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwCreateWindow(IILjava/lang/CharSequence;JJ)J"))
-    private long wrapGlfwCreateWindow(int width, int height, CharSequence title, long monitor, long share) throws Exception {
+    private long wrapGlfwCreateWindow(int width, int height, CharSequence title, long monitor, long share) {
         DriverWorkarounds.beforeContextCreation();
 
         try {

@@ -34,7 +34,7 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
 
         this.hovered = this.dim.containsCursor(mouseX, mouseY);
 
-        int backgroundColor = this.enabled ? (hovered ? 0xE0000000 : 0x90000000) : 0x60000000;
+        int backgroundColor = this.enabled ? (this.hovered ? 0xE0000000 : 0x90000000) : 0x60000000;
         int textColor = this.enabled ? 0xFFFFFFFF : 0x90FFFFFF;
 
         int strWidth = this.font.getWidth(this.label);
@@ -105,7 +105,7 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
 
     @Override
     public @Nullable GuiNavigationPath getNavigationPath(GuiNavigation navigation) {
-        if (!enabled || !visible)
+        if (!this.enabled || !this.visible)
             return null;
         return super.getNavigationPath(navigation);
     }

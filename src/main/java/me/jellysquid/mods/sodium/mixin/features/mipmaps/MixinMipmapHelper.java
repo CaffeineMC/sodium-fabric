@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.mixin.features.mipmaps;
 
 import me.jellysquid.mods.sodium.client.util.color.ColorSRGB;
 import net.minecraft.client.texture.MipmapHelper;
-import net.minecraft.client.texture.NativeImage;
 import net.minecraft.util.math.ColorHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;

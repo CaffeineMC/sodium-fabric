@@ -13,19 +13,9 @@ import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.CameraSubmersionType;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.util.math.MathHelper;
-
-import net.minecraft.util.math.Vec3d;
 
 @Mixin(WorldRenderer.class)
 public class MixinWorldRenderer {
-    @Shadow
-    @Final
-    private MinecraftClient client;
-
     /**
      * <p>Prevents the sky layer from rendering when the fog distance is reduced
      * from the default. This helps prevent situations where the sky can be seen

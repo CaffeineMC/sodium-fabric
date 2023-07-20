@@ -36,18 +36,13 @@ class ShaderWorkarounds {
 	 * <p>Hat tip to fewizz for the find and the fix.
 	 */
 	static void safeShaderSource(int glId, CharSequence source) {
-		final MemoryStack stack = MemoryStack.stackGet();
-		final int stackPointer = stack.getPointer();
-
-		try {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
 			final ByteBuffer sourceBuffer = MemoryUtil.memUTF8(source, true);
 			final PointerBuffer pointers = stack.mallocPointer(1);
 			pointers.put(sourceBuffer);
 
 			GL20C.nglShaderSource(glId, 1, pointers.address0(), 0);
 			org.lwjgl.system.APIUtil.apiArrayFree(pointers.address0(), 1);
-		} finally {
-			stack.setPointer(stackPointer);
 		}
 	}
 }

@@ -52,7 +52,7 @@ public class GlVertexAttribute {
     }
 
     public boolean isIntType() {
-        return intType;
+        return this.intType;
     }
 
     public int getStride() {
