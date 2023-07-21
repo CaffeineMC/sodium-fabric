@@ -4,6 +4,7 @@
 
 uniform mat4 ProjMat;
 uniform vec4 ColorModulator;
+uniform vec4 FogColor;
 uniform float FogStart;
 uniform float FogEnd;
 
@@ -22,7 +23,6 @@ void main() {
 
     float width = FogEnd - FogStart;
     float newWidth = width * 4.0;
-    float fade = linear_fog_fade(vertexDistance, FogStart, FogStart + newWidth);
-    fragColor = vec4(color.rgb, color.a * fade);
+    float fade = linear_fog_fade(vertexDistance, FogStart, FogStart + newWidth) * FogColor.a;
+    fragColor = vec4(mix(FogColor.rgb, color.rgb, 0.7), clamp(color.a * fade, 0.0, 1.0));
 }
-
