@@ -125,22 +125,22 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
-    public int getNormX() {
+    public int getGFNINormX() {
         return this.normX;
     }
 
     @Override
-    public int getNormY() {
+    public int getGFNINormY() {
         return this.normY;
     }
 
     @Override
-    public int getNormZ() {
+    public int getGFNINormZ() {
         return this.normZ;
     }
 
     @Override
-    public void setAccurateNormal(int x, int y, int z) {
+    public void setGFNINormal(int x, int y, int z) {
         this.normX = x;
         this.normY = y;
         this.normZ = z;

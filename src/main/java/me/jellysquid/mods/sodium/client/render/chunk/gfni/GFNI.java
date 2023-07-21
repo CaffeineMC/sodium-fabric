@@ -15,8 +15,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * 
  * Distances are stored as doubles and normals are stored as float vectors.
  * 
- * TODO: make Group and Bucket relative to use floats instead of doubles?
- * 
  * TODO: synchronization is used for integrating group builders submitted from
  * chunk build threads. It is assumed that integrating a group builder is fast
  * and thus synchronization is not a big problem. However, if it is, it might be
@@ -31,7 +29,17 @@ import net.minecraft.util.math.ChunkSectionPos;
  * Maximum add/update and remove durations are 0.4ms and 0.06ms respectively in
  * a 32rd world with around 230 normal lists.
  * 
- * TODO: destory functionality similar to RenderSectionManger's destroy method?
+ * TODO:
+ * - update GFNI document about how this implementation works with the
+ * interval tree and update the diagram.
+ * - do some benchmarking with spark to figure out if there are bottlenecks
+ * - filter the triggered sections by visibility in the frame (using the graph
+ * search result)
+ * - sort the triggered sections by camera distance and possibly also use number
+ * of translucent faces as a heuristic for importance
+ * - fix the quantization to actually convert to polar form and back? just
+ * quanitzing the normal components generates more different normals than
+ * necessary
  */
 public class GFNI {
     /**

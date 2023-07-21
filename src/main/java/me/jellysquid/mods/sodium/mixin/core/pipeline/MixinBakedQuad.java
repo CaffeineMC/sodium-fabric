@@ -50,7 +50,7 @@ public abstract class MixinBakedQuad implements BakedQuadView {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
-        this.calculateAccurateNormal();
+        this.calculateGFNINormal();
         this.normal = NormI8.pack(this.normX, this.normY, this.normZ);
         this.normalFace = ModelQuadUtil.findNormalFace(this.normal);
 
@@ -88,22 +88,22 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     }
 
     @Override
-    public int getNormX() {
+    public int getGFNINormX() {
         return this.normX;
     }
 
     @Override
-    public int getNormY() {
+    public int getGFNINormY() {
         return this.normY;
     }
 
     @Override
-    public int getNormZ() {
+    public int getGFNINormZ() {
         return this.normZ;
     }
 
     @Override
-    public void setAccurateNormal(int x, int y, int z) {
+    public void setGFNINormal(int x, int y, int z) {
         this.normX = x;
         this.normY = y;
         this.normZ = z;

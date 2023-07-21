@@ -407,9 +407,9 @@ public class FluidRenderer {
 
             if (isTranslucent && i == 0) {
                 if (facing == ModelQuadFacing.UNASSIGNED) {
-                    quad.calculateAccurateNormal();
+                    quad.calculateGFNINormal();
                     groupBuilder.addUnalignedFace(
-                            quad.getNormX(), quad.getNormY(), quad.getNormZ(),
+                            quad.getGFNINormX(), quad.getGFNINormY(), quad.getGFNINormZ(),
                             out.x, out.y, out.z);
                 } else {
                     groupBuilder.addAlignedFace(facing, out.x, out.y, out.z);

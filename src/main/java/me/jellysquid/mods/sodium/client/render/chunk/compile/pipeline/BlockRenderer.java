@@ -157,7 +157,7 @@ public class BlockRenderer {
             if (isTranslucent && dstIndex == 0) {
                 if (normalFace == ModelQuadFacing.UNASSIGNED) {
                     ctx.groupBuilder.addUnalignedFace(
-                            quad.getNormX(), quad.getNormY(), quad.getNormZ(),
+                            quad.getGFNINormX(), quad.getGFNINormY(), quad.getGFNINormZ(),
                             out.x, out.y, out.z);
                 } else {
                     ctx.groupBuilder.addAlignedFace(normalFace, out.x, out.y, out.z);
