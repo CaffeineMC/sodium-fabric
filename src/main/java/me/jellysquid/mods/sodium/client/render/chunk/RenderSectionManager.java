@@ -106,12 +106,12 @@ public class RenderSectionManager {
 
     private ChunkRenderList chunkRenderList;
 
-    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, GFNI gfni, int renderDistance, CommandList commandList) {
+    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
         this.worldRenderer = worldRenderer;
         this.world = world;
-        this.gfni = gfni;
+        this.gfni = new GFNI();
 
         this.builder = new ChunkBuilder(ChunkMeshFormats.COMPACT);
         this.builder.init(world);
@@ -439,6 +439,12 @@ public class RenderSectionManager {
         }
 
         return new ChunkRenderRebuildTask(render, context, this.gfni, frame);
+    }
+
+    public void processGFNIMovement(
+        double lastCameraX, double lastCameraY, double lastCameraZ,
+        double cameraX, double cameraY, double cameraZ) {
+        this.gfni.processMovement(lastCameraX, lastCameraY, lastCameraZ, cameraX, cameraY, cameraZ);
     }
 
     public void markGraphDirty() {

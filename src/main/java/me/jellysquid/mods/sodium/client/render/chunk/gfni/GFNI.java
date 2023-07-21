@@ -28,9 +28,10 @@ import net.minecraft.util.math.ChunkSectionPos;
  * lists are created (and possibly deleted) on demand, this would require a more
  * complex synchronization scheme.
  * 
- * TODO: destory functionality similar to RenderSectionManger's destroy method?
+ * Maximum add/update and remove durations are 0.4ms and 0.06ms respectively in
+ * a 32rd world with around 230 normal lists.
  * 
- * TODO: does teleporting and switching dimensions work?
+ * TODO: destory functionality similar to RenderSectionManger's destroy method?
  */
 public class GFNI {
     /**
@@ -81,7 +82,6 @@ public class GFNI {
     }
 
     public void removeSection(long chunkSectionLongPos) {
-        var startTime = Instant.now();
         int normalListCount = this.normalLists.size();
 
         for (var normalList : this.normalLists.values()) {
@@ -92,9 +92,6 @@ public class GFNI {
         if (normalListCount != this.normalLists.size()) {
             System.out.println(normalLists.size() + " normal lists");
         }
-        var duration = Duration.between(startTime, Instant.now());
-        System.out.println("Processed section removal in " + (float) duration.toNanos() / 1_000_000 + " ms");
-
     }
 
     private void addSectionInNewNormalLists(AccumulationGroup accGroup) {
@@ -116,8 +113,6 @@ public class GFNI {
             removeSection(chunkSectionLongPos);
             return;
         }
-
-        var startTime = Instant.now();
 
         int normalListCount = this.normalLists.size();
 
@@ -158,7 +153,5 @@ public class GFNI {
         if (normalListCount != this.normalLists.size()) {
             System.out.println(normalLists.size() + " normal lists");
         }
-        var duration = Duration.between(startTime, Instant.now());
-        System.out.println("Processed section add/update in " + (float) duration.toNanos() / 1_000_000 + " ms");
     }
 }

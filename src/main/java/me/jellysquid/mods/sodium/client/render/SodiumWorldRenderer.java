@@ -11,7 +11,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
@@ -51,7 +50,6 @@ public class SodiumWorldRenderer {
 
     private RenderSectionManager renderSectionManager;
     private ChunkTracker chunkTracker;
-    private GFNI gfni;
 
     /**
      * @return The SodiumWorldRenderer based on the current dimension
@@ -176,7 +174,7 @@ public class SodiumWorldRenderer {
                 pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
 
         if (cameraLocationChanged) {
-            gfni.processMovement(lastCameraX, lastCameraY, lastCameraZ, pos.x, pos.y, pos.z);
+            this.renderSectionManager.processGFNIMovement(lastCameraX, lastCameraY, lastCameraZ, pos.x, pos.y, pos.z);
         }
         if (dirty) {
             this.renderSectionManager.markGraphDirty();
@@ -241,8 +239,7 @@ public class SodiumWorldRenderer {
 
         this.renderDistance = this.client.options.getClampedViewDistance();
 
-        this.gfni = new GFNI();
-        this.renderSectionManager = new RenderSectionManager(this, this.world, this.gfni, this.renderDistance, commandList);
+        this.renderSectionManager = new RenderSectionManager(this, this.world, this.renderDistance, commandList);
         this.renderSectionManager.reloadChunks(this.chunkTracker);
     }
 
