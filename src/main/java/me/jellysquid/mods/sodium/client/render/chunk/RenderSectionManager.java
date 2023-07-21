@@ -272,7 +272,8 @@ public class RenderSectionManager {
     }
 
     private boolean unloadSection(int x, int y, int z) {
-        RenderSection chunk = this.sections.remove(ChunkSectionPos.asLong(x, y, z));
+        long chunkSectionLongPos = ChunkSectionPos.asLong(x, y, z);
+        RenderSection chunk = this.sections.remove(chunkSectionLongPos);
 
         if (chunk == null) {
             throw new IllegalStateException("Chunk is not loaded: " + ChunkSectionPos.from(x, y, z));
@@ -286,6 +287,8 @@ public class RenderSectionManager {
         chunk.delete();
 
         this.disconnectNeighborNodes(chunk);
+
+        this.gfni.removeSection(chunkSectionLongPos);
 
         return true;
     }

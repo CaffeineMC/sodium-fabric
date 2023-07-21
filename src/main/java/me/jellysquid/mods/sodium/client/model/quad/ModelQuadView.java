@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.model.quad;
 
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.util.math.MathHelper;
 
 /**
  * Provides a read-only view of a model quad. For mutable access to a model quad, see {@link ModelQuadViewMutable}.
@@ -60,17 +61,17 @@ public interface ModelQuadView {
     /**
      * @return The x coordinate of the unit normal vector
      */
-    float getNormX();
+    int getNormX();
 
     /**
      * @return The y coordinate of the unit normal vector
      */
-    float getNormY();
+    int getNormY();
 
     /**
      * @return The z coordinate of the unit normal vector
      */
-    float getNormZ();
+    int getNormZ();
 
     /**
      * Sets an accurate normal vector for this quad. This is used for GFNI.
@@ -79,7 +80,7 @@ public interface ModelQuadView {
      * @param y The normal's y component
      * @param z The normal's z component
      */
-    void setAccurateNormal(float x, float y, float z);
+    void setAccurateNormal(int x, int y, int z);
 
     /**
      * Calculates the normal vector for this quad using the cross product of the
@@ -116,13 +117,16 @@ public interface ModelQuadView {
 
         float l = (float) Math.sqrt(normX * normX + normY * normY + normZ * normZ);
 
-        if (l != 0) {
+        if (l != 0 && l != 1) {
             normX /= l;
             normY /= l;
             normZ /= l;
         }
 
-        this.setAccurateNormal(normX, normY, normZ);
+        this.setAccurateNormal(
+            (int) (normX * 32),
+            (int) (normY * 32),
+            (int) (normZ * 32));
     }
 
     default boolean hasColor() {

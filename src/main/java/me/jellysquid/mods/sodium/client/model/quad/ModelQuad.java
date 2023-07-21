@@ -15,9 +15,9 @@ public class ModelQuad implements ModelQuadViewMutable {
     private Sprite sprite;
     private int colorIdx;
     private int normal;
-    private float normX;
-    private float normY;
-    private float normZ;
+    private int normX;
+    private int normY;
+    private int normZ;
 
     @Override
     public void setX(int idx, float x) {
@@ -125,22 +125,22 @@ public class ModelQuad implements ModelQuadViewMutable {
     }
 
     @Override
-    public float getNormX() {
+    public int getNormX() {
         return this.normX;
     }
 
     @Override
-    public float getNormY() {
+    public int getNormY() {
         return this.normY;
     }
 
     @Override
-    public float getNormZ() {
+    public int getNormZ() {
         return this.normZ;
     }
 
     @Override
-    public void setAccurateNormal(float x, float y, float z) {
+    public void setAccurateNormal(int x, int y, int z) {
         this.normX = x;
         this.normY = y;
         this.normZ = z;

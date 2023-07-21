@@ -43,9 +43,9 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     private int flags;
 
     private int normal;
-    private float normX;
-    private float normY;
-    private float normZ;
+    private int normX;
+    private int normY;
+    private int normZ;
     private ModelQuadFacing normalFace;
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -88,22 +88,22 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     }
 
     @Override
-    public float getNormX() {
+    public int getNormX() {
         return this.normX;
     }
 
     @Override
-    public float getNormY() {
+    public int getNormY() {
         return this.normY;
     }
 
     @Override
-    public float getNormZ() {
+    public int getNormZ() {
         return this.normZ;
     }
 
     @Override
-    public void setAccurateNormal(float x, float y, float z) {
+    public void setAccurateNormal(int x, int y, int z) {
         this.normX = x;
         this.normY = y;
         this.normZ = z;

@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
+import com.lodborg.intervaltree.DoubleInterval;
+
 import it.unimi.dsi.fastutil.doubles.DoubleAVLTreeSet;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -27,22 +29,17 @@ public class Group {
     long relDistanceHash = 0;
 
     /**
-     * The minimum and maximum distances of all the faces planes in this
-     * group.
+     * The closed (inclusive of both boundaries) minimum and maximum distances.
      */
-    double minDistance;
-    double maxDistance;
+    DoubleInterval distances;
 
-    Group(AccumulationGroup accGroup, double accGroupMinDistance, double accGroupMaxDistance, double baseDistance) {
-        replaceWith(accGroup, accGroupMinDistance, accGroupMaxDistance, baseDistance);
+    Group(AccumulationGroup accGroup, DoubleInterval accGroupDistances, double baseDistance) {
+        replaceWith(accGroup, accGroupDistances, baseDistance);
     }
 
-    void replaceWith(AccumulationGroup accGroup,
-            double accGroupMinDistance, double accGroupMaxDistance,
-            double baseDistance) {
+    void replaceWith(AccumulationGroup accGroup, DoubleInterval accGroupDistances, double baseDistance) {
         this.sectionPos = accGroup.sectionPos;
-        this.minDistance = accGroupMinDistance;
-        this.maxDistance = accGroupMaxDistance;
+        this.distances = accGroupDistances;
         this.relDistanceHash = accGroup.relDistanceHash;
 
         // clear the existing tree and add all the face plane distances but add the base
@@ -55,7 +52,7 @@ public class Group {
 
     void triggerRange(GFNI gfni, double start, double end) {
         // trigger self on the section if the query range overlaps with the group
-        if (start < this.maxDistance && end > this.minDistance
+        if (start < this.distances.getEnd() && end > this.distances.getStart()
                 && !this.facePlaneDistances.subSet(start, end).isEmpty()) {
             gfni.triggerSection(this.sectionPos);
         }
