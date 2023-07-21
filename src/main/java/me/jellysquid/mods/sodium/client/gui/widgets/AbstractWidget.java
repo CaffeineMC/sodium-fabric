@@ -26,11 +26,11 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
     }
 
     protected void drawString(DrawContext drawContext, String str, int x, int y, int color) {
-        drawContext.drawTextWithShadow(font, str, x, y, color);
+        drawContext.drawTextWithShadow(this.font, str, x, y, color);
     }
 
     protected void drawString(DrawContext drawContext, Text text, int x, int y, int color) {
-        drawContext.drawTextWithShadow(font, text, x, y, color);
+        drawContext.drawTextWithShadow(this.font, text, x, y, color);
     }
 
     public boolean isHovered() {
@@ -44,10 +44,6 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
     protected void playClickSound() {
         MinecraftClient.getInstance().getSoundManager()
                 .play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
-    }
-
-    protected int getStringWidth(String text) {
-        return this.font.getWidth(text);
     }
 
     protected int getStringWidth(StringVisitable text) {
@@ -66,9 +62,9 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
 
     @Override
     public void appendNarrations(NarrationMessageBuilder builder) {
-        if (focused) {
+        if (this.focused) {
             builder.put(NarrationPart.USAGE, Text.translatable("narration.button.usage.focused"));
-        } else if (hovered) {
+        } else if (this.hovered) {
             builder.put(NarrationPart.USAGE, Text.translatable("narration.button.usage.hovered"));
         }
     }
@@ -80,7 +76,7 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
 
     @Override
     public boolean isFocused() {
-        return focused;
+        return this.focused;
     }
 
     @Override

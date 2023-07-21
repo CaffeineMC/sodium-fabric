@@ -63,22 +63,6 @@ public class SodiumGameOptions {
         public boolean hideDonationButton = false;
     }
 
-    public enum ArenaMemoryAllocator implements TextProvider {
-        ASYNC("sodium.options.chunk_memory_allocator.async"),
-        SWAP("sodium.options.chunk_memory_allocator.swap");
-
-        private final Text name;
-
-        ArenaMemoryAllocator(String name) {
-            this.name = Text.translatable(name);
-        }
-
-        @Override
-        public Text getLocalizedName() {
-            return this.name;
-        }
-    }
-
     public enum GraphicsQuality implements TextProvider {
         DEFAULT("options.gamma.default"),
         FANCY("options.clouds.fancy"),

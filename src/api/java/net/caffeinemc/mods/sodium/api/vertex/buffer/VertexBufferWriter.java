@@ -4,7 +4,6 @@ import net.caffeinemc.mods.sodium.api.memory.MemoryIntrinsics;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.minecraft.client.render.VertexConsumer;
 import org.lwjgl.system.MemoryStack;
-import org.slf4j.Logger;
 
 public interface VertexBufferWriter {
     /**

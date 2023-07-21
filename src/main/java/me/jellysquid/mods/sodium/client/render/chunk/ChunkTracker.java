@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import it.unimi.dsi.fastutil.longs.*;
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import net.minecraft.util.math.ChunkPos;
 
 import java.util.stream.LongStream;

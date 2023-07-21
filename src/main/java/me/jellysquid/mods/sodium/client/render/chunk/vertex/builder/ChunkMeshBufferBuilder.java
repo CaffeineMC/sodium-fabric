@@ -28,7 +28,7 @@ public class ChunkMeshBufferBuilder {
         this.initialCapacity = initialCapacity;
     }
 
-    public int push(ChunkVertexEncoder.Vertex[] vertices, Material material) {
+    public void push(ChunkVertexEncoder.Vertex[] vertices, Material material) {
         var vertexStart = this.count;
         var vertexCount = vertices.length;
 
@@ -43,8 +43,6 @@ public class ChunkMeshBufferBuilder {
         }
 
         this.count += vertexCount;
-
-        return vertexStart;
     }
 
     private void grow(int len) {

@@ -4,7 +4,6 @@ import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.util.math.Rect2i;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
@@ -103,7 +102,7 @@ public class SliderControl implements Control<Integer> {
             int sliderWidth = this.sliderBounds.getWidth();
             int sliderHeight = this.sliderBounds.getHeight();
 
-            this.thumbPosition = this.getThumbPositionForValue(option.getValue());
+            this.thumbPosition = this.getThumbPositionForValue(this.option.getValue());
 
             double thumbOffset = MathHelper.clamp((double) (this.getIntValue() - this.min) / this.range * sliderWidth, 0, sliderWidth);
 
@@ -167,10 +166,10 @@ public class SliderControl implements Control<Integer> {
             if (!isFocused()) return false;
 
             if (keyCode == InputUtil.GLFW_KEY_LEFT) {
-                this.option.setValue(MathHelper.clamp(this.option.getValue() - interval, min, max));
+                this.option.setValue(MathHelper.clamp(this.option.getValue() - this.interval, this.min, this.max));
                 return true;
             } else if (keyCode == InputUtil.GLFW_KEY_RIGHT) {
-                this.option.setValue(MathHelper.clamp(this.option.getValue() + interval, min, max));
+                this.option.setValue(MathHelper.clamp(this.option.getValue() + this.interval, this.min, this.max));
                 return true;
             }
 

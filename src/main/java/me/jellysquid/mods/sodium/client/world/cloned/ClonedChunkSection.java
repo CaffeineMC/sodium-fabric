@@ -11,15 +11,12 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.registry.BuiltinRegistries;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.registry.Registry;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
@@ -32,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClonedChunkSection {
     private static final LightType[] LIGHT_TYPES = LightType.values();
-    private static final PalettedContainer<BlockState> EMPTY_CONTAINER = new PalettedContainer(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
+    private static final PalettedContainer<BlockState> EMPTY_CONTAINER = new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
     private ChunkSection EMPTY_SECTION;
 
     private final AtomicInteger referenceCount = new AtomicInteger(0);
@@ -58,7 +55,7 @@ public class ClonedChunkSection {
     }
 
     public void init(World world, ChunkSectionPos pos) {
-        EMPTY_SECTION =  new ChunkSection(EMPTY_CONTAINER, new PalettedContainer<RegistryEntry<Biome>>(world.getRegistryManager().get(RegistryKeys.BIOME).getIndexedEntries(), world.getRegistryManager().get(RegistryKeys.BIOME).entryOf(BiomeKeys.PLAINS), PalettedContainer.PaletteProvider.BIOME));
+        this.EMPTY_SECTION =  new ChunkSection(EMPTY_CONTAINER, new PalettedContainer<>(world.getRegistryManager().get(RegistryKeys.BIOME).getIndexedEntries(), world.getRegistryManager().get(RegistryKeys.BIOME).entryOf(BiomeKeys.PLAINS), PalettedContainer.PaletteProvider.BIOME));
 
         WorldChunk chunk = world.getChunk(pos.getX(), pos.getZ());
 
@@ -69,7 +66,7 @@ public class ClonedChunkSection {
         ChunkSection section = getChunkSection(world, chunk, pos);
 
         if (section == null) {
-            section = EMPTY_SECTION;
+            section = this.EMPTY_SECTION;
         }
 
         this.reset(pos);

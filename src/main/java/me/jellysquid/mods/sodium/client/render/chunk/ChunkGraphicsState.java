@@ -13,8 +13,6 @@ public class ChunkGraphicsState {
 
     private final VertexRange[] parts;
 
-    private final int largestPrimitiveBatchSize;
-
     public ChunkGraphicsState(GlBufferSegment vertexSegment, ChunkMeshData data) {
         Validate.notNull(vertexSegment);
 
@@ -22,14 +20,9 @@ public class ChunkGraphicsState {
 
         this.parts = new VertexRange[ModelQuadFacing.COUNT];
 
-        int largestPrimitiveBatchSize = 0;
-
         for (Map.Entry<ModelQuadFacing, VertexRange> entry : data.getParts().entrySet()) {
             this.parts[entry.getKey().ordinal()] = entry.getValue();
-            largestPrimitiveBatchSize = Math.max(largestPrimitiveBatchSize, vertexSegment.getLength() / 4);
         }
-
-        this.largestPrimitiveBatchSize = largestPrimitiveBatchSize;
     }
 
     public void delete() {
@@ -42,9 +35,5 @@ public class ChunkGraphicsState {
 
     public GlBufferSegment getVertexSegment() {
         return this.vertexSegment;
-    }
-
-    public int getLargestPrimitiveBatchSize() {
-        return this.largestPrimitiveBatchSize;
     }
 }

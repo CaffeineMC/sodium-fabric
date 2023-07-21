@@ -32,8 +32,6 @@ public class RenderRegion {
 
     public static final int REGION_SIZE = REGION_WIDTH * REGION_HEIGHT * REGION_LENGTH;
 
-    private static final int REGION_EXCESS = 8;
-
     static {
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_WIDTH));
         Validate.isTrue(MathUtil.isPowerOfTwo(REGION_HEIGHT));
@@ -178,7 +176,7 @@ public class RenderRegion {
 
         public void deleteTessellation(CommandList commandList) {
             for (var tessellation : this.tessellations.values()) {
-                tessellation.delete(commandList);
+                commandList.deleteTessellation(tessellation);
             }
 
             this.tessellations.clear();

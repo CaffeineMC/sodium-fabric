@@ -79,7 +79,7 @@ public class RenderSectionManager {
     private final ObjectList<RenderSection> tickableChunks = new ObjectArrayList<>();
     private final ObjectList<BlockEntity> visibleBlockEntities = new ObjectArrayList<>();
 
-    private final RegionChunkRenderer chunkRenderer;
+    private final ChunkRenderer chunkRenderer;
 
     private final SodiumWorldRenderer worldRenderer;
     private final ClientWorld world;
