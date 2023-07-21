@@ -1,97 +1,118 @@
 package me.jellysquid.mods.sodium.client.gui.widgets;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.Drawable;
+import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.Selectable;
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.ScreenRect;
 import net.minecraft.client.gui.navigation.GuiNavigation;
 import net.minecraft.client.gui.navigation.GuiNavigationPath;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.screen.narration.NarrationPart;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.StringVisitable;
+import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class AbstractWidget implements Drawable, Element, Selectable {
-    protected final TextRenderer font;
-    protected boolean focused;
-    protected boolean hovered;
+public class FlatButtonWidget extends AbstractWidget implements Drawable {
+    private final Dim2i dim;
+    private final Runnable action;
 
-    protected AbstractWidget() {
-        this.font = MinecraftClient.getInstance().textRenderer;
-    }
+    private boolean selected;
+    private boolean enabled = true;
+    private boolean visible = true;
 
-    protected void drawString(DrawContext drawContext, String str, int x, int y, int color) {
-        drawContext.drawTextWithShadow(font, str, x, y, color);
-    }
+    private Text label;
 
-    protected void drawString(DrawContext drawContext, Text text, int x, int y, int color) {
-        drawContext.drawTextWithShadow(font, text, x, y, color);
-    }
-
-    public boolean isHovered() {
-        return this.hovered;
-    }
-
-    protected void drawRect(DrawContext drawContext, int x1, int y1, int x2, int y2, int color) {
-        drawContext.fill(x1, y1, x2, y2, color);
-    }
-
-    protected void playClickSound() {
-        MinecraftClient.getInstance().getSoundManager()
-                .play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
-    }
-
-    protected int getStringWidth(String text) {
-        return this.font.getWidth(text);
-    }
-
-    protected int getStringWidth(StringVisitable text) {
-        return this.font.getWidth(text);
-    }
-
-    public Selectable.SelectionType getType() {
-        if (this.focused) {
-            return Selectable.SelectionType.FOCUSED;
-        }
-        if (this.hovered) {
-            return Selectable.SelectionType.HOVERED;
-        }
-        return Selectable.SelectionType.NONE;
+    public FlatButtonWidget(Dim2i dim, Text label, Runnable action) {
+        this.dim = dim;
+        this.label = label;
+        this.action = action;
     }
 
     @Override
-    public void appendNarrations(NarrationMessageBuilder builder) {
-        if (focused) {
-            builder.put(NarrationPart.USAGE, Text.translatable("narration.button.usage.focused"));
-        } else if (hovered) {
-            builder.put(NarrationPart.USAGE, Text.translatable("narration.button.usage.hovered"));
+    public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
+        if (!this.visible) {
+            return;
+        }
+
+        this.hovered = this.dim.containsCursor(mouseX, mouseY);
+
+        int backgroundColor = this.enabled ? (hovered ? 0xE0000000 : 0x90000000) : 0x60000000;
+        int textColor = this.enabled ? 0xFFFFFFFF : 0x90FFFFFF;
+
+        int strWidth = this.font.getWidth(this.label);
+
+        this.drawRect(this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), backgroundColor);
+        this.drawString(drawContext, this.label, this.dim.getCenterX() - (strWidth / 2), this.dim.getCenterY() - 4, textColor);
+
+        if (this.enabled && this.selected) {
+            this.drawRect(this.dim.x(), this.dim.getLimitY() - 1, this.dim.getLimitX(), this.dim.getLimitY(), 0xFF94E4D3);
+        }
+        if (this.enabled && this.isFocused()) {
+            this.drawBorder(this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY());
         }
     }
 
-    @Nullable
-    public GuiNavigationPath getNavigationPath(GuiNavigation navigation) {
-        return !this.isFocused() ? GuiNavigationPath.of(this) : null;
+    public void setSelected(boolean selected) {
+        this.selected = selected;
     }
 
     @Override
-    public boolean isFocused() {
-        return focused;
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!this.enabled || !this.visible) {
+            return false;
+        }
+
+        if (button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
+            doAction();
+
+            return true;
+        }
+
+        return false;
     }
 
     @Override
-    public void setFocused(boolean focused) {
-        this.focused = focused;
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (!this.isFocused())
+            return false;
+
+        if (keyCode == InputUtil.GLFW_KEY_ENTER) {
+            doAction();
+            return true;
+        }
+
+        return false;
     }
 
-    protected void drawBorder(DrawContext drawContext, int x1, int y1, int x2, int y2, int color) {
-        drawContext.fill(x1, y1, x2, y1 + 1, color);
-        drawContext.fill(x1, y2 - 1, x2, y2, color);
-        drawContext.fill(x1, y1, x1 + 1, y2, color);
-        drawContext.fill(x2 - 1, y1, x2, y2, color);
+    private void doAction() {
+        this.action.run();
+        this.playClickSound();
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    public void setLabel(Text text) {
+        this.label = text;
+    }
+
+    public Text getLabel() {
+        return this.label;
+    }
+
+    @Override
+    public @Nullable GuiNavigationPath getNavigationPath(GuiNavigation navigation) {
+        if (!enabled || !visible)
+            return null;
+        return super.getNavigationPath(navigation);
+    }
+
+    @Override
+    public ScreenRect getNavigationFocus() {
+        return new ScreenRect(this.dim.x(), this.dim.y(), this.dim.width(), this.dim.height());
     }
 }
