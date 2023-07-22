@@ -12,9 +12,11 @@ public class VertexConsumerUtils {
      */
     public static VertexBufferWriter convertOrLog(VertexConsumer consumer) {
         VertexBufferWriter writer = VertexBufferWriter.tryOf(consumer);
-        if(writer == null) {
+
+        if (writer == null) {
             VertexConsumerTracker.logBadConsumer(consumer);
         }
+
         return writer;
     }
 }
