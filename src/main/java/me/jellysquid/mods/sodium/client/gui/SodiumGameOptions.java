@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.gui;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.SerializedName;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.GraphicsMode;
@@ -36,7 +37,8 @@ public class SodiumGameOptions {
 
     public static class PerformanceSettings {
         public int chunkBuilderThreads = 0;
-        public boolean alwaysDeferChunkUpdates = false;
+        @SerializedName("always_defer_chunk_updates_v2") // this will reset the option in older configs
+        public boolean alwaysDeferChunkUpdates = true;
 
         public boolean animateOnlyVisibleTextures = true;
         public boolean useEntityCulling = true;
