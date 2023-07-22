@@ -41,7 +41,8 @@ public class MixinItemRenderer {
     @Inject(method = "renderBakedItemModel", at = @At("HEAD"), cancellable = true)
     private void renderModelFast(BakedModel model, ItemStack itemStack, int light, int overlay, MatrixStack matrixStack, VertexConsumer vertexConsumer, CallbackInfo ci) {
         var writer = VertexConsumerUtils.convertOrLog(vertexConsumer);
-        if(writer == null) {
+
+        if (writer == null) {
             return;
         }
 
