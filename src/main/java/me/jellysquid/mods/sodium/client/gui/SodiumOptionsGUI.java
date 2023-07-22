@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
 import me.jellysquid.mods.sodium.client.gui.options.storage.OptionStorage;
 import me.jellysquid.mods.sodium.client.gui.widgets.FlatButtonWidget;
+import me.jellysquid.mods.sodium.client.gui.widgets.WidgetColors;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.caffeinemc.mods.sodium.api.util.ColorMixer;
 import net.minecraft.client.MinecraftClient;
@@ -106,7 +107,7 @@ public class SodiumOptionsGUI extends Screen {
 
     private Style createDonateButtonStyle() {
         var cycle = Math.cos(GLFW.glfwGetTime() - this.openTime);
-        var color = ColorMixer.mix(0xFFAA00, 0xFFFFFF, 0.5F + (float) (cycle / 2.0D));
+        var color = WidgetColors.usesHighContrast() ? 0xFFFFFFFF : ColorMixer.mix(0xFFAA00, 0xFFFFFF, 0.5F + (float) (cycle / 2.0D));
 
         return Style.EMPTY.withColor(color);
     }
@@ -149,6 +150,8 @@ public class SodiumOptionsGUI extends Screen {
         int x = 6;
         int y = 28;
 
+        final int margin = WidgetColors.usesHighContrast() ? 20 : 18;
+
         for (OptionGroup group : this.currentPage.getGroups()) {
             // Add each option's control element
             for (Option<?> option : group.getOptions()) {
@@ -160,7 +163,7 @@ public class SodiumOptionsGUI extends Screen {
                 this.controls.add(element);
 
                 // Move down to the next option
-                y += 18;
+                y += margin;
             }
 
             // Add padding beneath each option group

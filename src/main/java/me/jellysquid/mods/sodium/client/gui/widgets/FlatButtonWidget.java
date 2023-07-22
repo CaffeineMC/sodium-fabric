@@ -28,13 +28,13 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
 
     @Override
     public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
-        if (!this.visible) {
+        if (!this.visible || (WidgetColors.usesHighContrast() && !this.enabled)) {
             return;
         }
 
         this.hovered = this.dim.containsCursor(mouseX, mouseY);
 
-        int backgroundColor = this.enabled ? (this.hovered ? 0xE0000000 : 0x90000000) : 0x60000000;
+        int backgroundColor = this.enabled ? (this.hovered ? WidgetColors.getHoveredFocusedColor() : WidgetColors.getBackgroundColor()) : WidgetColors.getDisabledColor();
         int textColor = this.enabled ? 0xFFFFFFFF : 0x90FFFFFF;
 
         int strWidth = this.font.getWidth(this.label);
@@ -42,11 +42,17 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
         this.drawRect(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), backgroundColor);
         this.drawString(drawContext, this.label, this.dim.getCenterX() - (strWidth / 2), this.dim.getCenterY() - 4, textColor);
 
-        if (this.enabled && this.selected) {
-            this.drawRect(drawContext, this.dim.x(), this.dim.getLimitY() - 1, this.dim.getLimitX(), this.dim.getLimitY(), 0xFF94E4D3);
-        }
-        if (this.enabled && this.isFocused()) {
-            this.drawBorder(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), -1);
+        if (WidgetColors.usesHighContrast()) {
+            this.drawRect(drawContext, this.dim.x(), this.dim.getLimitY() - 1, this.dim.getLimitX(), this.dim.getLimitY(), 0x00000000);
+            this.drawBorder(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), this.selected || this.focused ? WidgetColors.getSliderColor() : WidgetColors.getBorderColor());
+        } else {
+            if (this.enabled && this.selected) {
+                this.drawRect(drawContext, this.dim.x(), this.dim.getLimitY() - 1, this.dim.getLimitX(), this.dim.getLimitY(), 0xFF94E4D3);
+            }
+
+            if (this.enabled && this.isFocused()) {
+                this.drawBorder(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), -1);
+            }
         }
     }
 
