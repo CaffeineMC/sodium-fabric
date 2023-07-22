@@ -1,114 +1,76 @@
 name: Bug report
-description: "Use this template if you're running into bugs or other issues"
+description: "For reporting bugs (such as graphical issues, mod incompatibilities, etc...)"
 labels:
   - T-bug
   - S-needs-triage
 body:
-  - type: markdown
+  - type: checkboxes
+    id: user-read-the-instructions
     attributes:
-      value: >-
-        ## Instructions
-
-
-        This is a template for the issue you are about to open! It will help you
-        provide the information necessary to complete your **bug report**.
-        Before you open an issue, ensure you've completed every step on the
-        checklist below.
-
-
-        - Have you used the [search
-        tool](https://github.com/CaffeineMC/sodium-fabric/issues) to find
-        similar issues? If you find one that looks like what you are getting,
-        consider contributing additional information to it instead. Make sure
-        you are not opening a duplicate.
-
-        - Are you using the latest version of the mod? If not, try updating to
-        see if it resolves your issue. You can find the latest versions of
-        CaffeineMC mods [here](https://caffeinemc.net).
-
-
-        All good? Then continue to fill the issue by providing the following
-        information about it:
-  - type: input
-    id: version
-    attributes:
-      label: Version information
+      label: Important Information
       description: >-
-        Please provide the exact version of the mod you are using. Every part of
-        the version is important! If you do not know what version you are using,
-        look at the file name in your `mods` folder.
-      placeholder: 'Example: mc1.16.4-0.1.1+rev.4b3964a'
-    validations:
-      required: true
+        Before opening an issue, please make sure you have done the following:
+
+        - **Have you read the [list of known issues](https://github.com/CaffeineMC/sodium-fabric/wiki/Driver-Compatibility)?** Most problems
+        are caused by out-of-date or incompatible graphics drivers.
+        
+        - **Have you used the [search tool](https://github.com/CaffeineMC/sodium-fabric/issues) to see if someone has already
+        reported this problem?** If there is already an issue which describes your problem exactly, you should prefer to
+        add information to that issue, rather than open a new one.
+        
+        - **Have you ensured that all of your mods (including Sodium) are up-to-date?** The latest version of Sodium
+        can always be found [on Modrinth](https://modrinth.com/mod/sodium).
+        
+        - **If the issue occurs only with other mods installed, have you determined which mods exactly are causing the problem?** Please do not
+        provide your entire mod list and expect us to be able to find which mods are causing the problem. You may try using
+        a _binary search_ (also known as "divide and conquer") to figure out which mods are problematic.
+      options:
+      - label: >-
+         I have read the above, and understand that my issue may be closed if the pre-requisities are not met.
+        required: true
   - type: textarea
-    id: expected
+    id: description
     attributes:
-      label: Expected Behavior
-      description: What did you expect to happen?
-      placeholder: 'Example: The Piston should extend.'
-    validations:
-      required: true
+      label: Description
+      description: >-
+        Use this section to describe the issue you are experiencing in as much depth as possible. The description should
+        explain what behavior you were expecting, and why you believe the issue to be a bug. If the issue you are reporting
+        only occurs with specific mods installed, then provide the name and version of each mod.
+
+        **Hint:** If you have any screenshots, videos, or other information that you feel is necessary to
+        explain the issue, you can attach them here.
   - type: textarea
-    id: actual
-    attributes:
-      label: Actual Behavior
-      description: What did actually happen?
-      placeholder: 'Example: The Piston does not extend.'
-    validations:
-      required: true
-  - type: textarea
-    id: repro-steps
+    id: description-reproduction-steps
     attributes:
       label: Reproduction Steps
       description: >-
-        Provide information on how to reproduce this bug. You can either
-        fill this section in like the example below or do something else just
-        make sure your instructions are minimal and clear, as other people will
-        need to be able to replicate your issue.
-      placeholder: |
-        Example:
-        1. Place a Redstone Lamp in front of a Redstone Repeater
-        2. Use a Lever to activate the Redstone Repeater
-        3. Nothing happens
-    validations:
-      required: true
-  - type: markdown
-    attributes:
-      value: >-
-        # System Information
-
-
-        You can obtain this information from the right-side of the in-game debug
-        screen (F3) or through using
-        [DxDiag](https://support.microsoft.com/en-us/help/4028644/windows-open-and-run-dxdiagexe)
-        on Windows. 
-  - type: input
-    id: java
-    attributes:
-      label: Java version
-      placeholder: 'Example: Java 16'
-    validations:
-      required: true
-  - type: input
-    id: cpu
-    attributes:
-      label: CPU
-      placeholder: 'Example: Intel Core i5-7200U'
-    validations:
-      required: true
-  - type: input
-    id: gpu
-    attributes:
-      label: GPU
-      placeholder: 'Example: Intel HD Graphics 620'
+        Provide as much information as possible on how to reproduce this bug. Make sure your instructions are as clear and
+        concise as possible, because other people will need to be able to follow your guide in order to re-create the issue.
+        
+        **Hint:**  A common way to fill this section out is to write a step-by-step guide.
     validations:
       required: true
   - type: textarea
-    id: additional
+    id: log-file
     attributes:
-      label: Additional information
+      label: Log File
       description: >-
-        Provide a list of any other mods you are using, along with their
-        respective versions. If you have any screenshots, videos, or other
-        information that you feel is necessary to explain the issue, feel free
-        to attach them here.
+        Attach the most recent log file from your client (`logs/latest.log`). This file should always be present.
+      placeholder: >-
+        Upload the log file here...
+    validations:
+      required: true
+  - type: textarea
+    id: crash-report-file
+    attributes:
+      label: Crash Report
+      description: >-
+        Attach the most recent crash report from the `crash-reports` folder. This is different from the log file above, and it contains
+        important information about your hardware and software configuration.
+                
+        **Important:** If your game is not crashing as a result of your problem, then you need to obtain a crash report manually. This can be done
+        by loading the game to the main menu, and holding the F3+C keys together for approximately 10 seconds.
+      placeholder: >-
+        Upload the crash report file here...
+    validations:
+      required: true
