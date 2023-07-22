@@ -1,7 +1,6 @@
 name: Bug Report
 description: "For reporting either bugs or crashes"
 labels:
-  - T-bug
   - S-needs-triage
 body:
   - type: markdown
