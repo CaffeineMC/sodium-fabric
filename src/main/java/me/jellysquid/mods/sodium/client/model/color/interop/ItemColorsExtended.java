@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.world.biome;
+package me.jellysquid.mods.sodium.client.model.color.interop;
 
 import net.minecraft.client.color.item.ItemColorProvider;
 import net.minecraft.item.ItemStack;

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.biome;
 
-import me.jellysquid.mods.sodium.client.render.biome.BiomeColorMaps;
+import me.jellysquid.mods.sodium.client.world.biome.BiomeColorMaps;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeEffects;

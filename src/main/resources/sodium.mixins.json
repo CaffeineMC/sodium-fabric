@@ -36,6 +36,7 @@
     "features.chunk_rendering.MixinClientChunkMap",
     "features.chunk_rendering.MixinClientPlayNetworkHandler",
     "features.chunk_rendering.MixinClientWorld",
+    "features.chunk_rendering.MixinLightingProvider",
     "features.chunk_rendering.MixinPackedIntegerArray",
     "features.chunk_rendering.MixinPalettedContainer",
     "features.chunk_rendering.MixinWorldRenderer",
@@ -46,7 +47,6 @@
     "features.entity.fast_render.MixinModelPart",
     "features.fast_biome_colors.MixinBackgroundRenderer",
     "features.fast_biome_colors.MixinClientWorld",
-    "features.gui.MixinDebugHud",
     "features.gui.fast_loading_screen.MixinLevelLoadingScreen",
     "features.gui.font.MixinGlyphRenderer",
     "features.item.MixinItemRenderer",
@@ -73,7 +73,7 @@
     "features.texture_updates.MixinSpriteInterpolated",
     "features.texture_updates.SpriteInfoAccessor",
     "features.texture_updates.SpriteInfoAnimationAccessor",
-    "workarounds.MixinRenderSystem",
-    "workarounds.issue1486.MixinMinecraftClient"
+    "features.shaders.MixinShaderProgram",
+    "workarounds.MixinWindow"
   ]
 }

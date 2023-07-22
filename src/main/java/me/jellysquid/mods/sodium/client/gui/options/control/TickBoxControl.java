@@ -5,7 +5,6 @@ import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.Rect2i;
-import net.minecraft.client.util.math.MatrixStack;
 
 public class TickBoxControl implements Control<Boolean> {
     private final Option<Boolean> option;
@@ -59,10 +58,10 @@ public class TickBoxControl implements Control<Boolean> {
             }
 
             if (ticked) {
-                this.drawRect(x + 2, y + 2, w - 2, h - 2, color);
+                this.drawRect(drawContext, x + 2, y + 2, w - 2, h - 2, color);
             }
 
-            this.drawRectOutline(x, y, w, h, color);
+            this.drawBorder(drawContext, x, y, w, h, color);
         }
 
         @Override
@@ -94,21 +93,5 @@ public class TickBoxControl implements Control<Boolean> {
         public void toggleControl() {
             this.option.setValue(!this.option.getValue());
         }
-
-        protected void drawRectOutline(int x, int y, int w, int h, int color) {
-            final float a = (float) (color >> 24 & 255) / 255.0F;
-            final float r = (float) (color >> 16 & 255) / 255.0F;
-            final float g = (float) (color >> 8 & 255) / 255.0F;
-            final float b = (float) (color & 255) / 255.0F;
-
-            this.drawQuads(vertices -> {
-                addQuad(vertices, x, y, w, y + 1, a, r, g, b);
-                addQuad(vertices, x, h - 1, w, h, a, r, g, b);
-                addQuad(vertices, x, y, x + 1, h, a, r, g, b);
-                addQuad(vertices, w - 1, y, w, h, a, r, g, b);
-            });
-        }
     }
-
-
 }

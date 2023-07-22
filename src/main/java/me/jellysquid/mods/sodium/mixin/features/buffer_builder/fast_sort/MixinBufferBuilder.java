@@ -2,7 +2,6 @@
 package me.jellysquid.mods.sodium.mixin.features.buffer_builder.fast_sort;
 
 import com.mojang.blaze3d.systems.VertexSorter;
-import me.jellysquid.mods.sodium.client.util.GeometrySort;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexFormat;
 import org.jetbrains.annotations.Nullable;

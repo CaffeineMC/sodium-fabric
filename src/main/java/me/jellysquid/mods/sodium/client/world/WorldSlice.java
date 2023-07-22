@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.world;
 
+import me.jellysquid.mods.sodium.client.world.biome.BiomeColorSource;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeCache;
+import me.jellysquid.mods.sodium.client.world.biome.BiomeColorView;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeColorCache;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSection;
@@ -34,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Object pooling should be used to avoid huge allocations as this class contains many large arrays.
  */
-public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
+public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, BiomeColorView {
     // The number of blocks in a section.
     private static final int SECTION_BLOCK_COUNT = 16 * 16 * 16;
 
@@ -242,7 +244,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
     }
 
     private int getColor(int x, int y, int z, ColorResolver resolver) {
-        return this.biomeColors.getColor(resolver, x - this.baseX, y - this.baseY, z - this.baseZ);
+        return this.biomeColors.getColor(BiomeColorSource.from(resolver), x - this.baseX, y - this.baseY, z - this.baseZ);
     }
 
     @Override
@@ -297,5 +299,10 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView {
 
     public Biome getBiome(int x, int y, int z) {
         return this.biomeCache.getBiome(x, y, z);
+    }
+
+    @Override
+    public int getColor(BiomeColorSource source, int x, int y, int z) {
+        return this.biomeColors.getColor(source, x - this.baseX, y - this.baseY, z - this.baseZ);
     }
 }

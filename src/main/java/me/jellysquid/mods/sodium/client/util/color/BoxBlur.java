@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.world.biome;
+package me.jellysquid.mods.sodium.client.util.color;
 
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.minecraft.util.math.MathHelper;
@@ -116,6 +116,10 @@ public class BoxBlur {
 
         public int getARGB(int index) {
             return this.data[index];
+        }
+
+        public int getARGB(int x, int z) {
+            return this.data[this.getIndex(x, z)];
         }
 
         public int getRed(int index) {

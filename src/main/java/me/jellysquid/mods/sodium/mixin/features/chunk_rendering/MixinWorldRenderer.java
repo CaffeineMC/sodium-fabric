@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
+import me.jellysquid.mods.sodium.client.render.chunk.ChunkStatus;
 import me.jellysquid.mods.sodium.client.util.frustum.FrustumAdapter;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import net.minecraft.client.MinecraftClient;
@@ -178,7 +179,7 @@ public abstract class MixinWorldRenderer implements WorldRendererExtended {
      */
     @Overwrite
     public boolean isRenderingReady(BlockPos pos) {
-        return this.renderer.doesChunkHaveData(pos.getX() >> 4, pos.getZ() >> 4);
+        return this.renderer.doesChunkHaveFlag(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FLAG_ALL);
     }
 
     @Inject(method = "reload()V", at = @At("RETURN"))
