@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.fast_render;
 
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
+import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
 import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import me.jellysquid.mods.sodium.client.render.immediate.model.ModelCuboid;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
@@ -53,9 +54,15 @@ public class MixinModelPart {
      * @author JellySquid
      * @reason Use optimized vertex writer, avoid allocations, use quick matrix transformations
      */
-    @Overwrite
-    private void renderCuboids(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha) {
-        var writer = VertexBufferWriter.of(vertexConsumer);
+    @Inject(method = "renderCuboids", at = @At("HEAD"), cancellable = true)
+    private void renderCuboidsFast(MatrixStack.Entry matrices, VertexConsumer vertexConsumer, int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
+        var writer = VertexConsumerUtils.convertOrLog(vertexConsumer);
+        if(writer == null) {
+            return;
+        }
+
+        ci.cancel();
+
         int color = ColorABGR.pack(red, green, blue, alpha);
 
         for (ModelCuboid cuboid : this.sodium$cuboids) {
