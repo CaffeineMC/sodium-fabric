@@ -1,0 +1,29 @@
+name: Feature Request
+description: "For requesting new features or improvements"
+labels:
+  - T-enhancement
+  - S-needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: >- 
+        This form is for requesting new features or improvements, and should not be used to report bugs and crashes.
+  - type: markdown
+    attributes:
+      value: >- 
+        _Keep in mind that development is focused on improving performance and fixing graphical bugs, rather than
+        implementing new features (such as resource pack features, additional graphical settings, etc.) We believe that these
+        kinds of features or enhancements are out-of-scope for Sodium, and should be left to other standalone mods._
+  - type: markdown
+    attributes:
+      value: >- 
+        Make sure you have used the [search tool](https://github.com/CaffeineMC/sodium-fabric/issues) to see if a similar
+        request already exists. If we have previously closed a feature request, then please do not create another request.
+  - type: textarea
+    id: description
+    attributes:
+      label: Request Description
+      description: >-
+        Use this section to describe the feature or improvement that you are looking for. The description should explain
+        what problem you are trying to solve, what alternatives you have tried, and a clear and concise description
+        of what you would like changed.

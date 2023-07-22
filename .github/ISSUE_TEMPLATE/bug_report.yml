@@ -1,18 +1,16 @@
-name: Bug report
-description: "For reporting bugs (such as graphical issues, mod incompatibilities, etc...)"
+name: Bug Report
+description: "For reporting either bugs or crashes"
 labels:
   - T-bug
   - S-needs-triage
 body:
-  - type: checkboxes
-    id: user-read-the-instructions
+  - type: markdown
     attributes:
-      label: Important Information
-      description: >-
+      value: >- 
         Before opening an issue, please make sure you have done the following:
 
         - **Have you read the [list of known issues](https://github.com/CaffeineMC/sodium-fabric/wiki/Driver-Compatibility)?** Most problems
-        are caused by out-of-date or incompatible graphics drivers.
+        (such as poor performance) are caused by out-of-date or incompatible graphics drivers.
         
         - **Have you used the [search tool](https://github.com/CaffeineMC/sodium-fabric/issues) to see if someone has already
         reported this problem?** If there is already an issue which describes your problem exactly, you should prefer to
@@ -24,14 +22,10 @@ body:
         - **If the issue occurs only with other mods installed, have you determined which mods exactly are causing the problem?** Please do not
         provide your entire mod list and expect us to be able to find which mods are causing the problem. You may try using
         a _binary search_ (also known as "divide and conquer") to figure out which mods are problematic.
-      options:
-      - label: >-
-         I have read the above, and understand that my issue may be closed if the pre-requisities are not met.
-        required: true
   - type: textarea
     id: description
     attributes:
-      label: Description
+      label: Bug Description
       description: >-
         Use this section to describe the issue you are experiencing in as much depth as possible. The description should
         explain what behavior you were expecting, and why you believe the issue to be a bug. If the issue you are reporting
