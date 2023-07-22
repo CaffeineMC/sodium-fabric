@@ -37,6 +37,7 @@
   },
   "breaks": {
     "optifabric": "*",
-    "canvas": "*"
+    "canvas": "*",
+    "notenoughcrashes": "*"
   }
 }
