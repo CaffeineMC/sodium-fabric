@@ -11,6 +11,7 @@ import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
 import me.jellysquid.mods.sodium.client.gui.options.control.TickBoxControl;
 import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 import me.jellysquid.mods.sodium.client.gui.options.storage.SodiumOptionsStorage;
+import me.jellysquid.mods.sodium.client.util.workarounds.Workarounds;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.option.*;
@@ -314,7 +315,8 @@ public class SodiumGameOptionPages {
 
     private static boolean supportsNoErrorContext() {
         GLCapabilities capabilities = GL.getCapabilities();
-        return capabilities.OpenGL46 || capabilities.GL_KHR_no_error;
+        return (capabilities.OpenGL46 || capabilities.GL_KHR_no_error)
+                && !Workarounds.isWorkaroundEnabled(Workarounds.Reference.NO_ERROR_CONTEXT_UNSUPPORTED);
     }
 
     public static OptionPage advanced() {
