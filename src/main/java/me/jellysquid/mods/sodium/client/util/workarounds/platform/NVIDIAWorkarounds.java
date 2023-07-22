@@ -200,6 +200,9 @@ public class NVIDIAWorkarounds {
     }
 
     public static void setLinuxDisableEnv() {
+        LOGGER.info("Attempting to apply workarounds for the NVIDIA Graphics Driver...");
+        LOGGER.info("If the game crashes immediately after this point, please make a bug report: https://github.com/CaffeineMC/sodium-fabric/issues");
+
         try (SharedLibrary sharedLibrary = Library.loadNative("me.jellyquid.mods.sodium", "libc.so.6")) {
             long pfnSetenv = APIUtil.apiGetFunctionAddress(sharedLibrary, "setenv");
             try (var stack = MemoryStack.stackPush()) {

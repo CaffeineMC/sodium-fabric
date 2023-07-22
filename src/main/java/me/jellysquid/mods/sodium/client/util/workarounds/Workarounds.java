@@ -76,6 +76,10 @@ public class Workarounds {
          */
         NO_ERROR_CONTEXT_UNSUPPORTED,
 
+        /**
+         *  The NVIDIA driver applies "Threaded Optimizations" when Minecraft is detected, causing performance issues.
+         *  (This is for linux compared to windows)
+         */
         NVIDIA_BAD_DRIVER_LINUX
     }
 }
