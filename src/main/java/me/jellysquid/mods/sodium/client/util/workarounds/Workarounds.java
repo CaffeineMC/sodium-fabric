@@ -36,6 +36,11 @@ public class Workarounds {
             workarounds.add(Reference.NVIDIA_BAD_DRIVER_SETTINGS);
         }
 
+        if (operatingSystem == Util.OperatingSystem.LINUX && graphicsAdapters.stream()
+                .anyMatch(adapter -> adapter.vendor() == GraphicsAdapterProbe.Vendor.NVIDIA)) {
+            workarounds.add(Reference.NVIDIA_BAD_DRIVER_LINUX);
+        }
+
         return Collections.unmodifiableSet(workarounds);
     }
 
@@ -45,6 +50,7 @@ public class Workarounds {
     }
 
     public enum Reference {
-        NVIDIA_BAD_DRIVER_SETTINGS
+        NVIDIA_BAD_DRIVER_SETTINGS,
+        NVIDIA_BAD_DRIVER_LINUX
     }
 }

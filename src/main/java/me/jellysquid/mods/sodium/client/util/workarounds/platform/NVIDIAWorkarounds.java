@@ -199,6 +199,18 @@ public class NVIDIAWorkarounds {
         }
     }
 
+    public static void setLinuxDisableEnv() {
+        try (SharedLibrary sharedLibrary = Library.loadNative("me.jellyquid.mods.sodium", "libc.so.6")) {
+            long pfnSetenv = APIUtil.apiGetFunctionAddress(sharedLibrary, "setenv");
+            try (var stack = MemoryStack.stackPush()) {
+                JNI.callPPI(MemoryUtil.memAddress0(stack.UTF8("__GL_THREADED_OPTIMIZATIONS")), MemoryUtil.memAddress0(stack.UTF8("0")), 1, pfnSetenv);
+            }
+        } catch (Throwable t) {
+            LOGGER.error("Failure while applying workarounds", t);
+            LOGGER.error("READ ME! The workarounds for the NVIDIA Graphics Driver did not apply correctly!");
+        }
+    }
+
     public static void uninstall() {
         if (ACTIVE_HOOK == null) {
             return;
