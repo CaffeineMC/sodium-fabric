@@ -13,6 +13,10 @@ public class DriverWorkarounds {
         if (Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_BAD_DRIVER_SETTINGS)) {
             NVIDIAWorkarounds.install();
         }
+
+        if (Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_BAD_DRIVER_LINUX)) {
+            NVIDIAWorkarounds.setLinuxDisableEnv();
+        }
     }
 
     public static void afterContextCreation() {
