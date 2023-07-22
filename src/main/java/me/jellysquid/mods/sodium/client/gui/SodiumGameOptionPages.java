@@ -19,22 +19,45 @@ import net.minecraft.text.Text;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 
-import javax.sound.sampled.BooleanControl;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class SodiumGameOptionPages {
     private static final SodiumOptionsStorage sodiumOpts = new SodiumOptionsStorage();
     private static final MinecraftOptionsStorage vanillaOpts = new MinecraftOptionsStorage();
 
+    /**
+     * Extract the ValidatingIntSliderCallbacks from a vanilla game option if possible, otherwise return an empty
+     * optional.
+     */
+    private static Optional<SimpleOption.ValidatingIntSliderCallbacks> callbackForOption(SimpleOption<Integer> option) {
+        if(option.getCallbacks() instanceof SimpleOption.ValidatingIntSliderCallbacks cb)
+            return Optional.of(cb);
+        else
+            return Optional.empty();
+    }
+
+    private static int minimumForOptionOrElse(SimpleOption<Integer> option, int def) {
+        return callbackForOption(option).map(SimpleOption.ValidatingIntSliderCallbacks::minInclusive).orElse(def);
+    }
+
+    private static int maximumForOptionOrElse(SimpleOption<Integer> option, int def) {
+        return callbackForOption(option).map(SimpleOption.ValidatingIntSliderCallbacks::maxInclusive).orElse(def);
+    }
+
     public static OptionPage general() {
         List<OptionGroup> groups = new ArrayList<>();
+
+        var vanillaGameOptions = MinecraftClient.getInstance().options;
+        var vanillaViewDistanceOpt = vanillaGameOptions.getViewDistance();
+        var vanillaSimDistanceOpt = vanillaGameOptions.getSimulationDistance();
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.renderDistance"))
                         .setTooltip(Text.translatable("sodium.options.view_distance.tooltip"))
-                        .setControl(option -> new SliderControl(option, 2, 32, 1, ControlValueFormatter.translateVariable("options.chunks")))
+                        .setControl(option -> new SliderControl(option, minimumForOptionOrElse(vanillaViewDistanceOpt, 2), maximumForOptionOrElse(vanillaViewDistanceOpt, 32), 1, ControlValueFormatter.translateVariable("options.chunks")))
                         .setBinding((options, value) -> options.getViewDistance().setValue(value), options -> options.getViewDistance().getValue())
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -42,7 +65,7 @@ public class SodiumGameOptionPages {
                 .add(OptionImpl.createBuilder(int.class, vanillaOpts)
                         .setName(Text.translatable("options.simulationDistance"))
                         .setTooltip(Text.translatable("sodium.options.simulation_distance.tooltip"))
-                        .setControl(option -> new SliderControl(option, 5, 32, 1, ControlValueFormatter.translateVariable("options.chunks")))
+                        .setControl(option -> new SliderControl(option, minimumForOptionOrElse(vanillaSimDistanceOpt, 5), maximumForOptionOrElse(vanillaSimDistanceOpt, 32), 1, ControlValueFormatter.translateVariable("options.chunks")))
                         .setBinding((options, value) -> options.getSimulationDistance().setValue(value), options -> options.getSimulationDistance().getValue())
                         .setImpact(OptionImpact.HIGH)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
