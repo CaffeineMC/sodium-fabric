@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.common.util;
+package me.jellysquid.mods.sodium.client.util;
 
 import java.util.Collection;
 

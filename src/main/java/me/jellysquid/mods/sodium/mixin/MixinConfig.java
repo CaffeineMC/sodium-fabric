@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.common.config;
+package me.jellysquid.mods.sodium.mixin;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -16,14 +16,14 @@ import java.util.Properties;
  * Documentation of these options: https://github.com/jellysquid3/sodium-fabric/wiki/Configuration-File
  */
 @SuppressWarnings("CanBeFinal")
-public class SodiumConfig {
+public class MixinConfig {
     private static final Logger LOGGER = LogManager.getLogger("SodiumConfig");
 
     private static final String JSON_KEY_SODIUM_OPTIONS = "sodium:options";
 
-    private final Map<String, Option> options = new HashMap<>();
+    private final Map<String, MixinOption> options = new HashMap<>();
 
-    private SodiumConfig() {
+    private MixinConfig() {
         // Defines the default rules which can be configured by the user or other mods.
         // You must manually add a rule for any new mixins not covered by an existing package rule.
         this.addMixinRule("core", true); // TODO: Don't actually allow the user to disable this
@@ -93,7 +93,7 @@ public class SodiumConfig {
     private void addMixinRule(String mixin, boolean enabled) {
         String name = getMixinRuleName(mixin);
 
-        if (this.options.putIfAbsent(name, new Option(name, enabled, false)) != null) {
+        if (this.options.putIfAbsent(name, new MixinOption(name, enabled, false)) != null) {
             throw new IllegalStateException("Mixin rule already defined: " + mixin);
         }
     }
@@ -103,7 +103,7 @@ public class SodiumConfig {
             String key = (String) entry.getKey();
             String value = (String) entry.getValue();
 
-            Option option = this.options.get(key);
+            MixinOption option = this.options.get(key);
 
             if (option == null) {
                 LOGGER.warn("No configuration key exists with name '{}', ignoring", key);
@@ -145,7 +145,7 @@ public class SodiumConfig {
     }
 
     private void applyModOverride(ModMetadata meta, String name, CustomValue value) {
-        Option option = this.options.get(name);
+        MixinOption option = this.options.get(name);
 
         if (option == null) {
             LOGGER.warn("Mod '{}' attempted to override option '{}', which doesn't exist, ignoring", meta.getId(), name);
@@ -177,16 +177,16 @@ public class SodiumConfig {
      *
      * @return Null if no options matched the given mixin name, otherwise the effective option for this Mixin
      */
-    public Option getEffectiveOptionForMixin(String mixinClassName) {
+    public MixinOption getEffectiveOptionForMixin(String mixinClassName) {
         int lastSplit = 0;
         int nextSplit;
 
-        Option rule = null;
+        MixinOption rule = null;
 
         while ((nextSplit = mixinClassName.indexOf('.', lastSplit)) != -1) {
             String key = getMixinRuleName(mixinClassName.substring(0, nextSplit));
 
-            Option candidate = this.options.get(key);
+            MixinOption candidate = this.options.get(key);
 
             if (candidate != null) {
                 rule = candidate;
@@ -206,7 +206,7 @@ public class SodiumConfig {
      * Loads the configuration file from the specified location. If it does not exist, a new configuration file will be
      * created. The file on disk will then be updated to include any new options.
      */
-    public static SodiumConfig load(File file) {
+    public static MixinConfig load(File file) {
         if (!file.exists()) {
             try {
                 writeDefaultConfig(file);
@@ -214,7 +214,7 @@ public class SodiumConfig {
                 LOGGER.warn("Could not write default configuration file", e);
             }
 
-            SodiumConfig config = new SodiumConfig();
+            MixinConfig config = new MixinConfig();
             config.applyModOverrides();
 
             return config;
@@ -228,7 +228,7 @@ public class SodiumConfig {
             throw new RuntimeException("Could not load config file", e);
         }
 
-        SodiumConfig config = new SodiumConfig();
+        MixinConfig config = new MixinConfig();
         config.readProperties(props);
         config.applyModOverrides();
 
@@ -267,7 +267,7 @@ public class SodiumConfig {
     public int getOptionOverrideCount() {
         return (int) this.options.values()
                 .stream()
-                .filter(Option::isOverridden)
+                .filter(MixinOption::isOverridden)
                 .count();
     }
 }

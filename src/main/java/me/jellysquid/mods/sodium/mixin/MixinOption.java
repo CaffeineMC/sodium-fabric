@@ -1,18 +1,18 @@
-package me.jellysquid.mods.sodium.common.config;
+package me.jellysquid.mods.sodium.mixin;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class Option {
+public class MixinOption {
     private final String name;
 
     private Set<String> modDefined = null;
     private boolean enabled;
     private boolean userDefined;
 
-    public Option(String name, boolean enabled, boolean userDefined) {
+    public MixinOption(String name, boolean enabled, boolean userDefined) {
         this.name = name;
         this.enabled = enabled;
         this.userDefined = userDefined;

@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.mixin;
 
-import me.jellysquid.mods.sodium.common.config.Option;
-import me.jellysquid.mods.sodium.common.config.SodiumConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.tree.ClassNode;
@@ -17,12 +15,12 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
     private static final String MIXIN_PACKAGE_ROOT = "me.jellysquid.mods.sodium.mixin.";
 
     private final Logger logger = LogManager.getLogger("Sodium");
-    private SodiumConfig config;
+    private MixinConfig config;
 
     @Override
     public void onLoad(String mixinPackage) {
         try {
-            this.config = SodiumConfig.load(new File("./config/sodium-mixins.properties"));
+            this.config = MixinConfig.load(new File("./config/sodium-mixins.properties"));
         } catch (Exception e) {
             throw new RuntimeException("Could not load configuration file for Sodium", e);
         }
@@ -46,7 +44,7 @@ public class SodiumMixinPlugin implements IMixinConfigPlugin {
         }
 
         String mixin = mixinClassName.substring(MIXIN_PACKAGE_ROOT.length());
-        Option option = this.config.getEffectiveOptionForMixin(mixin);
+        MixinOption option = this.config.getEffectiveOptionForMixin(mixin);
 
         if (option == null) {
             this.logger.error("No rules matched mixin '{}', treating as foreign and disabling!", mixin);
