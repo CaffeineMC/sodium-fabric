@@ -71,7 +71,7 @@ public class SodiumWorldRenderer {
         var world = MinecraftClient.getInstance().worldRenderer;
 
         if (world instanceof WorldRendererExtended) {
-            return ((WorldRendererExtended) world).getSodiumWorldRenderer();
+            return ((WorldRendererExtended) world).sodium$getWorldRenderer();
         }
 
         return null;

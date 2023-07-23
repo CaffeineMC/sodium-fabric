@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.immediate;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import me.jellysquid.mods.sodium.mixin.features.render.world.clouds.BackgroundRendererInvoker;
 import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
@@ -204,7 +205,7 @@ public class CloudRenderer {
             fogData.fogEnd = Math.min((cloudDistance), 192.0f) * 0.5f;
         }
 
-        BackgroundRenderer.StatusEffectFogModifier fogModifier = BackgroundRenderer.getFogModifier(player, tickDelta);
+        BackgroundRenderer.StatusEffectFogModifier fogModifier = BackgroundRendererInvoker.invokeGetFogModifier(player, tickDelta);
         if (fogModifier != null) {
             StatusEffectInstance statusEffectInstance = player.getStatusEffect(fogModifier.getStatusEffect());
             if (statusEffectInstance != null) {

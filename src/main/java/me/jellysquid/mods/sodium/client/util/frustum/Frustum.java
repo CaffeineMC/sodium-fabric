@@ -4,13 +4,13 @@ public interface Frustum {
     /**
      * @return The visibility of an axis-aligned box within the frustum
      */
-    Visibility testBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ);
+    Visibility sodium$testBox(float minX, float minY, float minZ, float maxX, float maxY, float maxZ);
 
     /**
      * @return true if the axis-aligned box is visible within the frustum, otherwise false
      */
     default boolean isBoxVisible(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-        return this.testBox(minX, minY, minZ, maxX, maxY, maxZ) != Visibility.OUTSIDE;
+        return this.sodium$testBox(minX, minY, minZ, maxX, maxY, maxZ) != Visibility.OUTSIDE;
     }
 
     enum Visibility {

@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionFlags;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
-import me.jellysquid.mods.sodium.client.render.texture.SpriteContentsExtended;
+import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
@@ -88,7 +88,7 @@ public class ChunkRenderData {
          * @param sprite The sprite
          */
         public void addSprite(Sprite sprite) {
-            if (((SpriteContentsExtended) sprite.getContents()).hasAnimation()) {
+            if (SpriteUtil.hasAnimation(sprite)) {
                 this.animatedSprites.add(sprite);
             }
         }

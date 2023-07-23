@@ -28,41 +28,60 @@ public class SodiumConfig {
         // You must manually add a rule for any new mixins not covered by an existing package rule.
         this.addMixinRule("core", true); // TODO: Don't actually allow the user to disable this
 
-        this.addMixinRule("features.block", true);
-        this.addMixinRule("features.biome", true);
-        this.addMixinRule("features.buffer_builder", true);
-        this.addMixinRule("features.buffer_builder.fast_advance", true);
-        this.addMixinRule("features.buffer_builder.fast_sort", true);
-        this.addMixinRule("features.buffer_builder.intrinsics", true);
-        this.addMixinRule("features.chunk_rendering", true);
-        this.addMixinRule("features.debug", true);
-        this.addMixinRule("features.entity", true);
-        this.addMixinRule("features.entity.fast_render", true);
-        this.addMixinRule("features.entity.smooth_lighting", true);
+        this.addMixinRule("features", true);
         this.addMixinRule("features.gui", true);
-        this.addMixinRule("features.gui.fast_loading_screen", true);
-        this.addMixinRule("features.gui.font", true);
-        this.addMixinRule("features.item", true);
-        this.addMixinRule("features.matrix_stack", true);
-        this.addMixinRule("features.mipmaps", true);
+        this.addMixinRule("features.gui.hooks", true);
+        this.addMixinRule("features.gui.hooks.debug", true);
+        this.addMixinRule("features.gui.hooks.settings", true);
+        this.addMixinRule("features.gui.screen", true);
+
         this.addMixinRule("features.model", true);
-        this.addMixinRule("features.optimized_stitching", true);
-        this.addMixinRule("features.options", true);
-        this.addMixinRule("features.particle", true);
-        this.addMixinRule("features.particle.cull", true);
-        this.addMixinRule("features.particle.fast_render", true);
-        this.addMixinRule("features.render_layer", true);
-        this.addMixinRule("features.render_layer.leaves", true);
-        this.addMixinRule("features.sky", true);
-        this.addMixinRule("features.texture_tracking", true);
-        this.addMixinRule("features.texture_updates", true);
-        this.addMixinRule("features.world_ticking", true);
-        this.addMixinRule("features.fast_biome_colors", true);
-        this.addMixinRule("features.shaders", true);
-        this.addMixinRule("features.clouds", true);
+
+        this.addMixinRule("options", true);
+
+        this.addMixinRule("options.overlays", true);
+        this.addMixinRule("options.render_layers", true);
+        this.addMixinRule("options.weather", true);
+
+        this.addMixinRule("render", true);
+
+        this.addMixinRule("render.entity", true);
+        this.addMixinRule("render.entity.cull", true);
+        this.addMixinRule("render.entity.shadow", true);
+
+        this.addMixinRule("render.gui", true);
+        this.addMixinRule("render.gui.font", true);
+        this.addMixinRule("render.gui.outlines", true);
+
+        this.addMixinRule("render.immediate", true);
+        this.addMixinRule("render.immediate.buffer_builder", true);
+        this.addMixinRule("render.immediate.matrix_stack", true);
+
+        this.addMixinRule("render.model", true);
+        this.addMixinRule("render.model.block", true);
+        this.addMixinRule("render.model.item", true);
+
+        this.addMixinRule("render.particle", true);
+
+        this.addMixinRule("render.world", true);
+        this.addMixinRule("render.world.clouds", true);
+        this.addMixinRule("render.world.sky", true);
+
+        this.addMixinRule("render.shader", true);
+        this.addMixinRule("render.shader.uniform", true);
+
+        this.addMixinRule("textures", true);
+        this.addMixinRule("textures.animations", true);
+        this.addMixinRule("textures.mipmaps", true);
+
+        this.addMixinRule("world", true);
+        this.addMixinRule("world.biome", true);
+        this.addMixinRule("world.storage", true);
 
         this.addMixinRule("workarounds", true);
-        this.addMixinRule("workarounds.issue1486", true);
+        this.addMixinRule("workarounds.context_creation", true);
+        this.addMixinRule("workarounds.event_loop", true);
+
     }
 
     /**

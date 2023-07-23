@@ -18,7 +18,9 @@ public class ColorProviderRegistry {
     private final Reference2ReferenceMap<Fluid, ColorProvider<FluidState>> fluids = new Reference2ReferenceOpenHashMap<>();
 
     public ColorProviderRegistry(BlockColors blockColors) {
-        for (var entry : BlockColorsExtended.getProviders(blockColors)) {
+        var providers = BlockColorsExtended.getProviders(blockColors);
+
+        for (var entry : providers.reference2ReferenceEntrySet()) {
             this.blocks.put(entry.getKey(), DefaultColorProviders.adapt(entry.getValue()));
         }
 
