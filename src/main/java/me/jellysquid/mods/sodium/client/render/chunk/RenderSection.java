@@ -177,32 +177,22 @@ public class RenderSection {
     /**
      * @return The x-coordinate of the center position of this chunk render
      */
-    private float getCenterX() {
-        return this.getOriginX() + 8.0f;
+    private int getCenterX() {
+        return this.getOriginX() + 8;
     }
 
     /**
      * @return The y-coordinate of the center position of this chunk render
      */
-    private float getCenterY() {
-        return this.getOriginY() + 8.0f;
+    private int getCenterY() {
+        return this.getOriginY() + 8;
     }
 
     /**
      * @return The z-coordinate of the center position of this chunk render
      */
-    private float getCenterZ() {
-        return this.getOriginZ() + 8.0f;
-    }
-
-    /**
-     * @return The squared distance from the center of this chunk in the world to the given position
-     */
-    public float getSquaredDistanceXZ(float x, float z) {
-        float xDist = x - this.getCenterX();
-        float zDist = z - this.getCenterZ();
-
-        return (xDist * xDist) + (zDist * zDist);
+    private int getCenterZ() {
+        return this.getOriginZ() + 8;
     }
 
     public int getChunkX() {
