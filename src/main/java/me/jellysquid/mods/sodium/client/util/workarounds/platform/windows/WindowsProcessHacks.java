@@ -58,7 +58,7 @@ public class WindowsProcessHacks {
         private final String cmdline;
         private final ByteBuffer cmdlineBuf;
 
-        private boolean active;
+        private boolean active = true;
 
         private CommandLineHook(String cmdline, ByteBuffer cmdlineBuf) {
             this.cmdline = cmdline;
@@ -66,8 +66,8 @@ public class WindowsProcessHacks {
         }
 
         public void uninstall() {
-            if (this.active) {
-                throw new IllegalStateException();
+            if (!this.active) {
+                throw new IllegalStateException("Hook was already uninstalled");
             }
 
             // Restore the original value of the command line arguments
