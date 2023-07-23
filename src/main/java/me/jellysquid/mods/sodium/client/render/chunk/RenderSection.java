@@ -154,17 +154,17 @@ public class RenderSection {
      * @return The squared distance from the center of this chunk in the world to the center of the block position
      * given by {@param pos}
      */
-    public double getSquaredDistance(BlockPos pos) {
-        return this.getSquaredDistance(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
+    public float getSquaredDistance(BlockPos pos) {
+        return this.getSquaredDistance(pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f);
     }
 
     /**
      * @return The squared distance from the center of this chunk in the world to the given position
      */
-    public double getSquaredDistance(double x, double y, double z) {
-        double xDist = x - this.getCenterX();
-        double yDist = y - this.getCenterY();
-        double zDist = z - this.getCenterZ();
+    public float getSquaredDistance(float x, float y, float z) {
+        float xDist = x - this.getCenterX();
+        float yDist = y - this.getCenterY();
+        float zDist = z - this.getCenterZ();
 
         return (xDist * xDist) + (yDist * yDist) + (zDist * zDist);
     }
@@ -172,30 +172,30 @@ public class RenderSection {
     /**
      * @return The x-coordinate of the center position of this chunk render
      */
-    private double getCenterX() {
-        return this.getOriginX() + 8.0D;
+    private float getCenterX() {
+        return this.getOriginX() + 8.0f;
     }
 
     /**
      * @return The y-coordinate of the center position of this chunk render
      */
-    private double getCenterY() {
-        return this.getOriginY() + 8.0D;
+    private float getCenterY() {
+        return this.getOriginY() + 8.0f;
     }
 
     /**
      * @return The z-coordinate of the center position of this chunk render
      */
-    private double getCenterZ() {
-        return this.getOriginZ() + 8.0D;
+    private float getCenterZ() {
+        return this.getOriginZ() + 8.0f;
     }
 
     /**
      * @return The squared distance from the center of this chunk in the world to the given position
      */
-    public double getSquaredDistanceXZ(double x, double z) {
-        double xDist = x - this.getCenterX();
-        double zDist = z - this.getCenterZ();
+    public float getSquaredDistanceXZ(float x, float z) {
+        float xDist = x - this.getCenterX();
+        float zDist = z - this.getCenterZ();
 
         return (xDist * xDist) + (zDist * zDist);
     }
