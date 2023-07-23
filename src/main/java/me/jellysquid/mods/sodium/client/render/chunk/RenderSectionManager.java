@@ -10,27 +10,27 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
+import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
+import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
+import me.jellysquid.mods.sodium.client.util.collections.WorkStealingFutureDrain;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
-import me.jellysquid.mods.sodium.client.util.DirectionUtil;
-import me.jellysquid.mods.sodium.client.util.collections.WorkStealingFutureDrain;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
@@ -78,7 +78,7 @@ public class RenderSectionManager {
 
     private boolean useOcclusionCulling;
 
-    private Frustum frustum;
+    private Viewport viewport;
 
     private int currentFrame = 0;
     private boolean alwaysDeferChunkUpdates;
@@ -114,13 +114,13 @@ public class RenderSectionManager {
                 .forEach(pos -> this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
     }
 
-    public void update(Camera camera, Frustum frustum, int frame, boolean spectator) {
+    public void update(Camera camera, Viewport viewport, int frame, boolean spectator) {
         this.resetLists();
 
         var list = new ChunkRenderListBuilder();
 
         this.setup(camera);
-        this.iterateChunks(list, camera, frustum, frame, spectator);
+        this.iterateChunks(list, camera, viewport, frame, spectator);
 
         this.chunkRenderList = list.build();
         this.needsUpdate = false;
@@ -138,8 +138,8 @@ public class RenderSectionManager {
         this.alwaysDeferChunkUpdates = options.performance.alwaysDeferChunkUpdates;
     }
 
-    private void iterateChunks(ChunkRenderListBuilder list, Camera camera, Frustum frustum, int frame, boolean spectator) {
-        this.initSearch(list, camera, frustum, frame, spectator);
+    private void iterateChunks(ChunkRenderListBuilder list, Camera camera, Viewport viewport, int frame, boolean spectator) {
+        this.initSearch(list, camera, viewport, frame, spectator);
 
         ChunkGraphIterationQueue queue = this.iterationQueue;
 
@@ -481,9 +481,9 @@ public class RenderSectionManager {
         return this.useOcclusionCulling && from != null && !section.isVisibleThrough(from, to);
     }
 
-    private void initSearch(ChunkRenderListBuilder list, Camera camera, Frustum frustum, int frame, boolean spectator) {
+    private void initSearch(ChunkRenderListBuilder list, Camera camera, Viewport viewport, int frame, boolean spectator) {
         this.currentFrame = frame;
-        this.frustum = frustum;
+        this.viewport = viewport;
         this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
 
         if (SodiumClientMod.options().performance.useFogOcclusion) {
@@ -524,7 +524,7 @@ public class RenderSectionManager {
                 for (int z2 = -this.effectiveRenderDistance; z2 <= this.effectiveRenderDistance; ++z2) {
                     RenderSection render = this.getRenderSection(chunkX + x2, chunkY, chunkZ + z2);
 
-                    if (render == null || render.isCulledByFrustum(frustum)) {
+                    if (render == null || render.isInsideViewport(viewport)) {
                         continue;
                     }
 
@@ -561,7 +561,7 @@ public class RenderSectionManager {
             return;
         }
 
-        if (render.isCulledByFrustum(this.frustum)) {
+        if (render.isInsideViewport(this.viewport)) {
             return;
         }
 

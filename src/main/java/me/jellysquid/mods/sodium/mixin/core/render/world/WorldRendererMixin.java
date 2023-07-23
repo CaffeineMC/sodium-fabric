@@ -5,7 +5,7 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkStatus;
-import me.jellysquid.mods.sodium.client.util.frustum.FrustumAdapter;
+import me.jellysquid.mods.sodium.client.render.viewport.ViewportProvider;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
@@ -117,8 +117,10 @@ public abstract class WorldRendererMixin implements WorldRendererExtended {
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, boolean spectator) {
         RenderDevice.enterManagedCode();
 
+        var viewport = ((ViewportProvider) frustum).sodium$createViewport();
+
         try {
-            this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), this.frame++, spectator);
+            this.renderer.updateChunks(camera, viewport, this.frame++, spectator);
 
             if (FlawlessFrames.isActive()) {
                 // Block until all chunk updates have been processed
@@ -126,7 +128,7 @@ public abstract class WorldRendererMixin implements WorldRendererExtended {
 
                 // If that caused new chunks to become visible, repeat until we got them all
                 while (this.renderer.getRenderSectionManager().isGraphDirty()) {
-                    this.renderer.updateChunks(camera, FrustumAdapter.adapt(frustum), this.frame++, spectator);
+                    this.renderer.updateChunks(camera, viewport, this.frame++, spectator);
                     this.renderer.getRenderSectionManager().updateAllChunksNow();
                 }
 
