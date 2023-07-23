@@ -31,8 +31,8 @@ public class Workarounds {
         var workarounds = EnumSet.noneOf(Reference.class);
         var operatingSystem = Util.getOperatingSystem();
 
-        if (operatingSystem == Util.OperatingSystem.WINDOWS && graphicsAdapters.stream()
-                .anyMatch(adapter -> adapter.vendor() == GraphicsAdapterProbe.Vendor.NVIDIA)) {
+        if ((operatingSystem == Util.OperatingSystem.WINDOWS || operatingSystem == Util.OperatingSystem.LINUX) &&
+                graphicsAdapters.stream().anyMatch(adapter -> adapter.vendor() == GraphicsAdapterProbe.Vendor.NVIDIA)) {
             workarounds.add(Reference.NVIDIA_BAD_DRIVER_SETTINGS);
         }
 
@@ -69,6 +69,6 @@ public class Workarounds {
          * Requesting a No Error Context causes a crash at startup when using a Wayland session.
          * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/1624">GitHub Issue</a>
          */
-        NO_ERROR_CONTEXT_UNSUPPORTED
+        NO_ERROR_CONTEXT_UNSUPPORTED,
     }
 }

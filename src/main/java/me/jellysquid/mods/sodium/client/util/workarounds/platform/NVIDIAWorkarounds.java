@@ -178,12 +178,15 @@ public class NVIDIAWorkarounds {
             return;
         }
 
-        if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
-            return;
-        }
-
         LOGGER.info("Attempting to apply workarounds for the NVIDIA Graphics Driver...");
         LOGGER.info("If the game crashes immediately after this point, please make a bug report: https://github.com/CaffeineMC/sodium-fabric/issues");
+
+        if (Util.getOperatingSystem() == Util.OperatingSystem.LINUX) {
+            setLinuxDisableEnv();
+            return;
+        } else if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
+            return;
+        }
 
         try {
             ACTIVE_HOOK = new Hook();
@@ -196,6 +199,18 @@ public class NVIDIAWorkarounds {
             LOGGER.error("READ ME! The workarounds for the NVIDIA Graphics Driver did not apply correctly!");
             LOGGER.error("READ ME! You are very likely going to run into unexplained crashes and severe performance issues!");
             LOGGER.error("READ ME! Please see this issue for more information: https://github.com/CaffeineMC/sodium-fabric/issues/1816");
+        }
+    }
+
+    public static void setLinuxDisableEnv() {
+        try (SharedLibrary sharedLibrary = Library.loadNative("me.jellyquid.mods.sodium", "libc.so.6")) {
+            long pfnSetenv = APIUtil.apiGetFunctionAddress(sharedLibrary, "setenv");
+            try (var stack = MemoryStack.stackPush()) {
+                JNI.callPPI(MemoryUtil.memAddress0(stack.UTF8("__GL_THREADED_OPTIMIZATIONS")), MemoryUtil.memAddress0(stack.UTF8("0")), 1, pfnSetenv);
+            }
+        } catch (Throwable t) {
+            LOGGER.error("Failure while applying workarounds", t);
+            LOGGER.error("READ ME! The workarounds for the NVIDIA Graphics Driver did not apply correctly!");
         }
     }
 
