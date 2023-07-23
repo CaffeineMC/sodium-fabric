@@ -19,15 +19,15 @@ public class ChunkMeshData {
         this.vertexCount = vertexCount;
     }
 
-    public Map<ModelQuadFacing, VertexRange> getParts() {
-        return this.parts;
-    }
-
     public NativeBuffer getVertexData() {
         return this.buffer;
     }
 
     public int getVertexCount() {
         return this.vertexCount;
+    }
+
+    public VertexRange getPart(ModelQuadFacing facing) {
+        return this.parts.get(facing);
     }
 }

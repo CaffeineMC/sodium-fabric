@@ -8,7 +8,6 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
-import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.gl.device.MultiDrawBatch;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
@@ -82,54 +81,56 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         var commandBuffer = this.commandBufferBuilder;
         commandBuffer.clear();
 
-        ReversibleArrayIterator<RenderSection> sectionIterator = batch.ordered(pass.isReverseOrder());
-        RenderSection section;
+        var sectionIterator = batch.ordered(pass.isReverseOrder());
 
-        while ((section = sectionIterator.next()) != null) {
-            ChunkGraphicsState state = storage.getState(section);
+        while (sectionIterator.hasNext()) {
+            var sectionId = sectionIterator.next();
+            var sectionRenderData = storage.getRenderData(sectionId);
 
-            if (state == null) {
+            if (sectionRenderData == null) {
                 continue;
             }
 
-            int baseVertex = state.getVertexSegment()
-                    .getOffset();
-
-            this.collectDrawCommands(camera, section, state, baseVertex);
+            this.collectDrawCommands(camera, sectionRenderData);
         }
 
         return commandBuffer;
     }
 
-    private void collectDrawCommands(ChunkCameraContext camera, RenderSection section, ChunkGraphicsState state, int baseVertex) {
+    private void collectDrawCommands(ChunkCameraContext camera, ChunkGraphicsState renderData) {
         if (this.isBlockFaceCullingEnabled) {
-            this.addFilteredDrawCommands(camera, section, state, baseVertex);
+            this.addFilteredDrawCommands(camera, renderData);
         } else {
-            this.addUnfilteredDrawCommands(state, baseVertex);
+            this.addUnfilteredDrawCommands(renderData);
         }
     }
 
-    private void addFilteredDrawCommands(ChunkCameraContext camera, RenderSection section, ChunkGraphicsState state, int baseVertex) {
-        int faces = this.getFrontFacingPlanes(camera, section) & state.getFlags();
+    private void addFilteredDrawCommands(ChunkCameraContext camera, ChunkGraphicsState renderData) {
+        int faces = this.getFrontFacingPlanes(camera, renderData) & renderData.getNonEmptyModelParts();
 
         if (faces == 0) {
             return;
         }
 
+        final int[] slices = renderData.getModelParts();
+
+        int base = renderData.getBaseVertex();
+        int offset = 0;
+
         for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
-            if ((faces & (1 << facing)) == 0) {
-                continue;
+            int count = slices[facing];
+
+            if ((faces & (1 << facing)) != 0) {
+                addDrawCommand(this.commandBufferBuilder, offset, count, base);
             }
 
-            addDrawCommand(this.commandBufferBuilder, state.getModelPart(facing), baseVertex);
+            offset += count;
         }
     }
 
-    private void addUnfilteredDrawCommands(ChunkGraphicsState state, int baseVertex) {
-        var model = state.getModel();
-
-        if (model != null) {
-            addDrawCommand(this.commandBufferBuilder, model, baseVertex);
+    private void addUnfilteredDrawCommands(ChunkGraphicsState renderData) {
+        if (renderData.getVertexCount() > 0) {
+            addDrawCommand(this.commandBufferBuilder, 0, renderData.getVertexCount(), renderData.getBaseVertex());
         }
     }
 
@@ -147,33 +148,33 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
     private static final int MODEL_POS_Z      = ModelQuadFacing.SOUTH.ordinal();
     private static final int MODEL_NEG_Z      = ModelQuadFacing.NORTH.ordinal();
 
-    private int getFrontFacingPlanes(ChunkCameraContext camera, RenderSection section) {
+    private int getFrontFacingPlanes(ChunkCameraContext camera, ChunkGraphicsState renderData) {
         int flags = 0;
 
         // Always added, as we can't determine whether these faces are visible
         flags |= 1 << MODEL_UNASSIGNED;
 
-        if (camera.blockX > (section.getMinX() - RENDER_BOUNDS_MARGIN)) {
+        if (camera.blockX > (renderData.getMinX() - RENDER_BOUNDS_MARGIN)) {
             flags |= 1 << MODEL_POS_X;
         }
 
-        if (camera.blockX < (section.getMaxX() + RENDER_BOUNDS_MARGIN)) {
+        if (camera.blockX < (renderData.getMaxX() + RENDER_BOUNDS_MARGIN)) {
             flags |= 1 << MODEL_NEG_X;
         }
 
-        if (camera.blockY > (section.getMinY() - RENDER_BOUNDS_MARGIN)) {
+        if (camera.blockY > (renderData.getMinY() - RENDER_BOUNDS_MARGIN)) {
             flags |= 1 << MODEL_POS_Y;
         }
 
-        if (camera.blockY < (section.getMaxY() + RENDER_BOUNDS_MARGIN)) {
+        if (camera.blockY < (renderData.getMaxY() + RENDER_BOUNDS_MARGIN)) {
             flags |= 1 << MODEL_NEG_Y;
         }
 
-        if (camera.blockZ > (section.getMinZ() - RENDER_BOUNDS_MARGIN)) {
+        if (camera.blockZ > (renderData.getMinZ() - RENDER_BOUNDS_MARGIN)) {
             flags |= 1 << MODEL_POS_Z;
         }
 
-        if (camera.blockZ < (section.getMaxZ() + RENDER_BOUNDS_MARGIN)) {
+        if (camera.blockZ < (renderData.getMaxZ() + RENDER_BOUNDS_MARGIN)) {
             flags |= 1 << MODEL_NEG_Z;
         }
 
@@ -207,8 +208,8 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         shader.setRegionOffset(x, y, z);
     }
 
-    private static void addDrawCommand(MultiDrawBatch batch, VertexRange part, int baseVertex) {
-        batch.add(0L, (part.vertexCount() >> 2) * 6, baseVertex + part.vertexStart());
+    private static void addDrawCommand(MultiDrawBatch batch, int vertexStart, int vertexCount, int bufferBase) {
+        batch.add(0L, (vertexCount >> 2) * 6, bufferBase + vertexStart);
     }
 
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion region, SharedQuadIndexBuffer indexBuffer) {

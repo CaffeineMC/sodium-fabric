@@ -14,6 +14,7 @@ import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -90,7 +91,7 @@ public class RenderRegion {
 
     public void deleteTessellations(CommandList commandList) {
         for (var storage : this.storage.values()) {
-            storage.deleteTessellation(commandList);
+            storage.deleteTessellations(commandList);
         }
     }
 
@@ -130,6 +131,12 @@ public class RenderRegion {
         });
     }
 
+    public void refresh(CommandList commandList) {
+        for (var storage : this.storage.values()) {
+            storage.refresh(commandList);
+        }
+    }
+
     public static class RenderRegionStorage {
         private final ChunkGraphicsState[] graphicsStates = new ChunkGraphicsState[RenderRegion.REGION_SIZE];
 
@@ -144,8 +151,8 @@ public class RenderRegion {
             return prev;
         }
 
-        public ChunkGraphicsState getState(RenderSection section) {
-            return this.graphicsStates[section.getChunkId()];
+        public ChunkGraphicsState getRenderData(int section) {
+            return this.graphicsStates[section];
         }
 
         public void updateTessellation(CommandList commandList, SharedQuadIndexBuffer.IndexType indexType, GlTessellation tessellation) {
@@ -161,20 +168,18 @@ public class RenderRegion {
         }
 
         public void delete(CommandList commandList) {
-            this.deleteTessellation(commandList);
+            this.deleteTessellations(commandList);
 
-            for (int i = 0; i < this.graphicsStates.length; i++) {
-                ChunkGraphicsState state = this.graphicsStates[i];
-
+            for (ChunkGraphicsState state : this.graphicsStates) {
                 if (state != null) {
                     state.delete();
-
-                    this.graphicsStates[i] = null;
                 }
             }
+
+            Arrays.fill(this.graphicsStates, null);
         }
 
-        public void deleteTessellation(CommandList commandList) {
+        public void deleteTessellations(CommandList commandList) {
             for (var tessellation : this.tessellations.values()) {
                 commandList.deleteTessellation(tessellation);
             }
@@ -187,6 +192,16 @@ public class RenderRegion {
 
             if (prev != null) {
                 prev.delete();
+            }
+        }
+
+        public void refresh(CommandList commandList) {
+            this.deleteTessellations(commandList);
+
+            for (var state : this.graphicsStates) {
+                if (state != null) {
+                    state.refresh();
+                }
             }
         }
     }

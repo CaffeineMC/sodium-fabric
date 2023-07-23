@@ -96,13 +96,13 @@ public class RenderRegionManager {
         // If any of the buffers changed, the tessellation will need to be updated
         // Once invalidated the tessellation will be re-created on the next attempted use
         if (bufferChanged) {
-            region.deleteTessellations(commandList);
+            region.refresh(commandList);
         }
 
         // Collect the upload results
         for (PendingSectionUpload upload : sectionUploads) {
             region.createStorage(upload.pass)
-                    .replaceState(upload.section, new ChunkGraphicsState(upload.vertexUpload.getResult(), upload.meshData));
+                    .replaceState(upload.section, new ChunkGraphicsState(upload.section, upload.vertexUpload.getResult(), upload.meshData));
         }
     }
 

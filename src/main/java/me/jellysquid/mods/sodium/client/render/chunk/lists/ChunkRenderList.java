@@ -1,8 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.chunk.lists;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.util.ReversibleArrayIterator;
+import me.jellysquid.mods.sodium.client.util.ReversibleIntArrayIterator;
 
 public class ChunkRenderList {
     private final ObjectArrayList<RegionBatch> batches;
@@ -27,9 +28,9 @@ public class ChunkRenderList {
 
     public static class RegionBatch {
         private final long regionId;
-        private final ObjectArrayList<RenderSection> sections;
+        private final IntArrayList sections;
 
-        public RegionBatch(long regionId, ObjectArrayList<RenderSection> sections) {
+        public RegionBatch(long regionId, IntArrayList sections) {
             this.regionId = regionId;
             this.sections = sections;
         }
@@ -38,8 +39,8 @@ public class ChunkRenderList {
             return this.regionId;
         }
 
-        public ReversibleArrayIterator<RenderSection> ordered(boolean reverse) {
-            return new ReversibleArrayIterator<>(this.sections, reverse);
+        public ReversibleIntArrayIterator ordered(boolean reverse) {
+            return new ReversibleIntArrayIterator(this.sections, reverse);
         }
 
         public int size() {
