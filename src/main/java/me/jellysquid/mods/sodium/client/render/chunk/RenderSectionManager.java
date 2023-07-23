@@ -19,7 +19,6 @@ import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
@@ -178,7 +177,7 @@ public class RenderSectionManager {
             this.schedulePendingUpdates(section);
 
             for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
-                if (this.isCulled(section.getGraphInfo(), flow, dir)) {
+                if (this.isCulled(section, flow, dir)) {
                     continue;
                 }
 
@@ -311,8 +310,7 @@ public class RenderSectionManager {
             return false;
         }
 
-        return render.getGraphInfo()
-                .getLastVisibleFrame() == this.currentFrame;
+        return render.getLastVisibleFrame() == this.currentFrame;
     }
 
     public void updateChunks() {
@@ -501,12 +499,12 @@ public class RenderSectionManager {
         return x <= this.renderDistance && z <= this.renderDistance;
     }
 
-    private boolean isCulled(ChunkGraphInfo node, Direction from, Direction to) {
-        if (node.canCull(to)) {
+    private boolean isCulled(RenderSection section, Direction from, Direction to) {
+        if (section.canCull(to)) {
             return true;
         }
 
-        return this.useOcclusionCulling && from != null && !node.isVisibleThrough(from, to);
+        return this.useOcclusionCulling && from != null && !section.isVisibleThrough(from, to);
     }
 
     private void initSearch(ChunkRenderListBuilder list, Camera camera, Frustum frustum, int frame, boolean spectator) {
@@ -528,9 +526,8 @@ public class RenderSectionManager {
         RenderSection rootRender = this.getRenderSection(chunkX, chunkY, chunkZ);
 
         if (rootRender != null) {
-            ChunkGraphInfo rootInfo = rootRender.getGraphInfo();
-            rootInfo.resetCullingState();
-            rootInfo.setLastVisibleFrame(frame);
+            rootRender.resetCullingState();
+            rootRender.setLastVisibleFrame(frame);
 
             if (spectator && this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin)) {
                 this.useOcclusionCulling = false;
@@ -546,18 +543,12 @@ public class RenderSectionManager {
                 for (int z2 = -this.renderDistance; z2 <= this.renderDistance; ++z2) {
                     RenderSection render = this.getRenderSection(chunkX + x2, chunkY, chunkZ + z2);
 
-                    if (render == null) {
+                    if (render == null || render.isCulledByFrustum(frustum)) {
                         continue;
                     }
 
-                    ChunkGraphInfo info = render.getGraphInfo();
-
-                    if (info.isCulledByFrustum(frustum)) {
-                        continue;
-                    }
-
-                    info.resetCullingState();
-                    info.setLastVisibleFrame(frame);
+                    render.resetCullingState();
+                    render.setLastVisibleFrame(frame);
 
                     sorted.add(render);
                 }
@@ -573,18 +564,16 @@ public class RenderSectionManager {
 
 
     private void bfsEnqueue(ChunkRenderListBuilder list, RenderSection parent, RenderSection render, Direction flow) {
-        ChunkGraphInfo info = render.getGraphInfo();
-
-        if (info.getLastVisibleFrame() == this.currentFrame) {
+        if (render.getLastVisibleFrame() == this.currentFrame) {
             return;
         }
 
-        if (info.isCulledByFrustum(this.frustum)) {
+        if (render.isCulledByFrustum(this.frustum)) {
             return;
         }
 
-        info.setLastVisibleFrame(this.currentFrame);
-        info.setCullingState(parent.getGraphInfo().getCullingState(), flow);
+        render.setLastVisibleFrame(this.currentFrame);
+        render.setCullingState(parent.getCullingState(), flow);
 
         this.addVisible(list, render, flow);
     }

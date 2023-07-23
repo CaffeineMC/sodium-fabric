@@ -4,9 +4,9 @@ import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
-import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.client.util.frustum.Frustum;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
@@ -21,13 +21,13 @@ import java.util.concurrent.CompletableFuture;
  * data about the render in the chunk visibility graph.
  */
 public class RenderSection {
+    private static final long DEFAULT_VISIBILITY_DATA = calculateVisibilityData(ChunkRenderData.EMPTY.getOcclusionData());
+
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
-    private final ChunkGraphInfo graphInfo;
     private final int chunkId;
     private final long regionId;
-
 
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
@@ -43,6 +43,11 @@ public class RenderSection {
 
     private int flags;
 
+    private int lastVisibleFrame = -1;
+
+    private long visibilityData;
+    private byte cullingState;
+
     public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
         this.worldRenderer = worldRenderer;
 
@@ -50,14 +55,14 @@ public class RenderSection {
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
 
-        this.graphInfo = new ChunkGraphInfo(this);
-
         int rX = this.getChunkX() & (RenderRegion.REGION_WIDTH - 1);
         int rY = this.getChunkY() & (RenderRegion.REGION_HEIGHT - 1);
         int rZ = this.getChunkZ() & (RenderRegion.REGION_LENGTH - 1);
 
         this.chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
         this.regionId = RenderRegion.getRegionKeyForChunk(this.chunkX, this.chunkY, this.chunkZ);
+
+        this.visibilityData = DEFAULT_VISIBILITY_DATA;
     }
 
 
@@ -230,14 +235,6 @@ public class RenderSection {
                 this.chunkX, this.chunkY, this.chunkZ);
     }
 
-    public ChunkGraphInfo getGraphInfo() {
-        return this.graphInfo;
-    }
-
-    public void setOcclusionData(ChunkOcclusionData occlusionData) {
-        this.graphInfo.setOcclusionData(occlusionData);
-    }
-
     public ChunkUpdateType getPendingUpdate() {
         return this.pendingUpdate;
     }
@@ -277,5 +274,60 @@ public class RenderSection {
 
     public long getRegionId() {
         return this.regionId;
+    }
+
+
+    public void setLastVisibleFrame(int frame) {
+        this.lastVisibleFrame = frame;
+    }
+
+    public int getLastVisibleFrame() {
+        return this.lastVisibleFrame;
+    }
+
+    public void setOcclusionData(ChunkOcclusionData occlusionData) {
+        this.visibilityData = calculateVisibilityData(occlusionData);
+    }
+
+    private static long calculateVisibilityData(ChunkOcclusionData occlusionData) {
+        long visibilityData = 0;
+
+        for (Direction from : DirectionUtil.ALL_DIRECTIONS) {
+            for (Direction to : DirectionUtil.ALL_DIRECTIONS) {
+                if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
+                    visibilityData |= (1L << ((from.ordinal() << 3) + to.ordinal()));
+                }
+            }
+        }
+
+        return visibilityData;
+    }
+
+    public boolean isVisibleThrough(Direction from, Direction to) {
+        return ((this.visibilityData & (1L << ((from.ordinal() << 3) + to.ordinal()))) != 0L);
+    }
+
+    public void setCullingState(byte parent, Direction dir) {
+        this.cullingState = (byte) (parent | (1 << dir.ordinal()));
+    }
+
+    public boolean canCull(Direction dir) {
+        return (this.cullingState & 1 << dir.ordinal()) != 0;
+    }
+
+    public byte getCullingState() {
+        return this.cullingState;
+    }
+
+    public void resetCullingState() {
+        this.cullingState = 0;
+    }
+
+    public boolean isCulledByFrustum(Frustum frustum) {
+        float x = this.getOriginX();
+        float y = this.getOriginY();
+        float z = this.getOriginZ();
+
+        return !frustum.isBoxVisible(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
     }
 }
