@@ -31,8 +31,8 @@ public class Workarounds {
         var workarounds = EnumSet.noneOf(Reference.class);
         var operatingSystem = Util.getOperatingSystem();
 
-        if (operatingSystem == Util.OperatingSystem.WINDOWS && graphicsAdapters.stream()
-                .anyMatch(adapter -> adapter.vendor() == GraphicsAdapterProbe.Vendor.NVIDIA)) {
+        if ((operatingSystem == Util.OperatingSystem.WINDOWS || operatingSystem == Util.OperatingSystem.LINUX) &&
+                graphicsAdapters.stream().anyMatch(adapter -> adapter.vendor() == GraphicsAdapterProbe.Vendor.NVIDIA)) {
             workarounds.add(Reference.NVIDIA_BAD_DRIVER_SETTINGS);
         }
 
@@ -47,11 +47,6 @@ public class Workarounds {
                 // This will also apply under Xwayland, even though the problem does not happen there
                 workarounds.add(Reference.NO_ERROR_CONTEXT_UNSUPPORTED);
             }
-        }
-
-        if (operatingSystem == Util.OperatingSystem.LINUX && graphicsAdapters.stream()
-                .anyMatch(adapter -> adapter.vendor() == GraphicsAdapterProbe.Vendor.NVIDIA)) {
-            workarounds.add(Reference.NVIDIA_BAD_DRIVER_LINUX);
         }
 
         return Collections.unmodifiableSet(workarounds);
@@ -75,11 +70,5 @@ public class Workarounds {
          * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/1624">GitHub Issue</a>
          */
         NO_ERROR_CONTEXT_UNSUPPORTED,
-
-        /**
-         *  The NVIDIA driver applies "Threaded Optimizations" when Minecraft is detected, causing performance issues.
-         *  (This is for linux compared to windows)
-         */
-        NVIDIA_BAD_DRIVER_LINUX
     }
 }
