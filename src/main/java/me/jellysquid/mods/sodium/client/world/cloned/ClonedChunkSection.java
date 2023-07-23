@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPaletteFallback;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalleteArray;
+import me.jellysquid.mods.sodium.mixin.core.world.chunk.PalettedContainerAccessor;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -91,7 +92,7 @@ public class ClonedChunkSection {
     }
 
     private void copyBlockData(ChunkSection section) {
-        PalettedContainer.Data<BlockState> container = PalettedContainerAccessor.getData(section.getBlockStateContainer());
+        PalettedContainer.Data<BlockState> container = ((PalettedContainerAccessor<BlockState>) section.getBlockStateContainer()).getData();
 
         this.blockStateData = copyBlockData(container);
         this.blockStatePalette = copyPalette(container);

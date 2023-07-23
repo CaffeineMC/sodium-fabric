@@ -190,7 +190,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
 
     private void unpackBlockData(BlockState[] states, ClonedChunkSection section) {
         ((PackedIntegerArrayExtended) section.getBlockData())
-                .copyUsingPalette(states, section.getBlockPalette());
+                .sodium$unpack(states, section.getBlockPalette());
     }
 
 
@@ -294,7 +294,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
     }
 
     public long getBiomeSeed() {
-        return ((BiomeSeedProvider) this.world).getBiomeSeed();
+        return ((BiomeSeedProvider) this.world).sodium$getBiomeSeed();
     }
 
     public Biome getBiome(int x, int y, int z) {
