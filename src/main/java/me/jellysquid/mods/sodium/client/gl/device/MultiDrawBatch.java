@@ -59,9 +59,9 @@ public final class MultiDrawBatch {
             throw new BufferUnderflowException();
         }
 
-        MemoryUtil.memPutAddress(this.pPointer + (this.count * Pointer.POINTER_SIZE), pointer);
-        MemoryUtil.memPutInt(this.pCount + (this.count * Integer.BYTES), count);
-        MemoryUtil.memPutInt(this.pBaseVertex + (this.count * Integer.BYTES), baseVertex);
+        MemoryUtil.memPutAddress(this.pPointer + ((long) this.count * Pointer.POINTER_SIZE), pointer);
+        MemoryUtil.memPutInt(this.pCount + ((long) this.count * Integer.BYTES), count);
+        MemoryUtil.memPutInt(this.pBaseVertex + ((long) this.count * Integer.BYTES), baseVertex);
 
         this.count++;
         this.maxVertexCount = Math.max(this.maxVertexCount, count);

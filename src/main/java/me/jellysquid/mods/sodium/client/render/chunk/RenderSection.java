@@ -261,7 +261,6 @@ public class RenderSection {
         return this.regionId;
     }
 
-
     public void setLastVisibleFrame(int frame) {
         this.lastVisibleFrame = frame;
     }
@@ -314,29 +313,5 @@ public class RenderSection {
         float z = this.getOriginZ();
 
         return !frustum.isBoxVisible(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
-    }
-
-    public int getMinX() {
-        return this.getOriginX();
-    }
-
-    public int getMaxX() {
-        return this.getOriginX() + 16;
-    }
-
-    public int getMinY() {
-        return this.getOriginY();
-    }
-
-    public int getMaxY() {
-        return this.getOriginY() + 16;
-    }
-
-    public int getMinZ() {
-        return this.getOriginZ();
-    }
-
-    public int getMaxZ() {
-        return this.getOriginZ() + 16;
     }
 }
