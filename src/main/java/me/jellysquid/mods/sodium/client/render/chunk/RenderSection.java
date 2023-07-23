@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
@@ -207,10 +206,6 @@ public class RenderSection {
         return this.chunkZ;
     }
 
-    public ChunkRenderBounds getBounds() {
-        return this.data.getBounds();
-    }
-
     public boolean isTickable() {
         return this.tickable;
     }
@@ -319,5 +314,29 @@ public class RenderSection {
         float z = this.getOriginZ();
 
         return !frustum.isBoxVisible(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
+    }
+
+    public int getMinX() {
+        return this.getOriginX();
+    }
+
+    public int getMaxX() {
+        return this.getOriginX() + 16;
+    }
+
+    public int getMinY() {
+        return this.getOriginY();
+    }
+
+    public int getMaxY() {
+        return this.getOriginY() + 16;
+    }
+
+    public int getMinZ() {
+        return this.getOriginZ();
+    }
+
+    public int getMaxZ() {
+        return this.getOriginZ() + 16;
     }
 }

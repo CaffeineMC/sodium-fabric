@@ -10,7 +10,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -49,7 +48,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
     public ChunkBuildResult performBuild(ChunkBuildContext buildContext, CancellationSource cancellationSource) {
         ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
-        ChunkRenderBounds.Builder bounds = new ChunkRenderBounds.Builder();
 
         ChunkBuildBuffers buffers = buildContext.buffers;
         buffers.init(renderData, this.render.getChunkId());
@@ -96,13 +94,13 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
                         context.update(blockPos, modelOffset, blockState, model, seed);
                         cache.getBlockRenderer()
-                                .renderModel(context, buffers, bounds);
+                                .renderModel(context, buffers);
                     }
 
                     FluidState fluidState = blockState.getFluidState();
 
                     if (!fluidState.isEmpty()) {
-                        cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers, bounds);
+                        cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, buffers);
                     }
 
                     if (blockState.hasBlockEntity()) {
@@ -136,7 +134,6 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         }
 
         renderData.setOcclusionData(occluder.build());
-        renderData.setBounds(bounds.build(this.render.getChunkPos()));
 
         return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
     }
