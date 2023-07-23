@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.util.workarounds;
 
-import me.jellysquid.mods.sodium.client.util.workarounds.platform.NVIDIAWorkarounds;
+import me.jellysquid.mods.sodium.client.util.workarounds.platform.NvidiaWorkarounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,13 +11,13 @@ public class DriverWorkarounds {
         LOGGER.info("Checking for any workarounds that need to be applied prior to context creation...");
 
         if (Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_BAD_DRIVER_SETTINGS)) {
-            NVIDIAWorkarounds.install();
+            NvidiaWorkarounds.install();
         }
     }
 
     public static void afterContextCreation() {
         if (Workarounds.isWorkaroundEnabled(Workarounds.Reference.NVIDIA_BAD_DRIVER_SETTINGS)) {
-            NVIDIAWorkarounds.uninstall();
+            NvidiaWorkarounds.uninstall();
         }
     }
 }
