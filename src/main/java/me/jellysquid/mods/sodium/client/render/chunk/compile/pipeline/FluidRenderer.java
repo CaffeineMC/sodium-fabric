@@ -14,7 +14,6 @@ import me.jellysquid.mods.sodium.client.model.color.ColorProvider;
 import me.jellysquid.mods.sodium.client.model.color.DefaultColorProviders;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
@@ -102,7 +101,7 @@ public class FluidRenderer {
         return true;
     }
 
-    public void render(WorldSlice world, FluidState fluidState, BlockPos pos, BlockPos offset, ChunkBuildBuffers buffers, ChunkRenderBounds.Builder bounds) {
+    public void render(WorldSlice world, FluidState fluidState, BlockPos pos, BlockPos offset, ChunkBuildBuffers buffers) {
         var material = DefaultMaterials.forFluidState(fluidState);
         var meshBuilder = buffers.get(material);
 
@@ -220,10 +219,10 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
 
             this.updateQuad(quad, world, pos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
-            this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, false);
+            this.writeQuad(meshBuilder, material, offset, quad, facing, false);
 
             if (fluidState.canFlowTo(world, this.scratchPos.set(posX, posY + 1, posZ))) {
-                this.writeQuad(meshBuilder, bounds, material, offset, quad,
+                this.writeQuad(meshBuilder, material, offset, quad,
                         ModelQuadFacing.DOWN, true);
 
             }
@@ -245,7 +244,7 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.updateQuad(quad, world, pos, lighter, Direction.DOWN, 1.0F, colorProvider, fluidState);
-            this.writeQuad(meshBuilder, bounds, material, offset, quad, ModelQuadFacing.DOWN, false);
+            this.writeQuad(meshBuilder, material, offset, quad, ModelQuadFacing.DOWN, false);
 
         }
 
@@ -346,10 +345,10 @@ public class FluidRenderer {
                 ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
 
                 this.updateQuad(quad, world, pos, lighter, dir, br, colorProvider, fluidState);
-                this.writeQuad(meshBuilder, bounds, material, offset, quad, facing, false);
+                this.writeQuad(meshBuilder, material, offset, quad, facing, false);
 
                 if (!isOverlay) {
-                    this.writeQuad(meshBuilder, bounds, material, offset, quad, facing.getOpposite(), true);
+                    this.writeQuad(meshBuilder, material, offset, quad, facing.getOpposite(), true);
                 }
 
             }
@@ -391,7 +390,7 @@ public class FluidRenderer {
         }
     }
 
-    private void writeQuad(ChunkModelBuilder builder, ChunkRenderBounds.Builder bounds, Material material, BlockPos offset, ModelQuadView quad,
+    private void writeQuad(ChunkModelBuilder builder, Material material, BlockPos offset, ModelQuadView quad,
                            ModelQuadFacing facing, boolean flip) {
         var vertices = this.vertices;
 
@@ -400,8 +399,6 @@ public class FluidRenderer {
             out.x = offset.getX() + quad.getX(i);
             out.y = offset.getY() + quad.getY(i);
             out.z = offset.getZ() + quad.getZ(i);
-
-            bounds.add(out.x, out.y, out.z, facing);
 
             out.color = this.quadColors[i];
             out.u = quad.getTexU(i);

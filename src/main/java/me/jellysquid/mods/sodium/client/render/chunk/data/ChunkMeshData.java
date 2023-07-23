@@ -10,9 +10,13 @@ public class ChunkMeshData {
     private final Map<ModelQuadFacing, VertexRange> parts;
     private final NativeBuffer buffer;
 
-    public ChunkMeshData(NativeBuffer buffer, Map<ModelQuadFacing, VertexRange> parts) {
+    private final int vertexCount;
+
+    public ChunkMeshData(NativeBuffer buffer, Map<ModelQuadFacing, VertexRange> parts, int vertexCount) {
         this.parts = parts;
         this.buffer = buffer;
+
+        this.vertexCount = vertexCount;
     }
 
     public Map<ModelQuadFacing, VertexRange> getParts() {
@@ -21,5 +25,9 @@ public class ChunkMeshData {
 
     public NativeBuffer getVertexData() {
         return this.buffer;
+    }
+
+    public int getVertexCount() {
+        return this.vertexCount;
     }
 }

@@ -11,7 +11,6 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadOrientation;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.DefaultMaterials;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
@@ -54,7 +53,7 @@ public class BlockRenderer {
         this.useAmbientOcclusion = MinecraftClient.isAmbientOcclusionEnabled();
     }
 
-    public void renderModel(BlockRenderContext ctx, ChunkBuildBuffers buffers, ChunkRenderBounds.Builder bounds) {
+    public void renderModel(BlockRenderContext ctx, ChunkBuildBuffers buffers) {
         var material = DefaultMaterials.forBlockState(ctx.state());
         var meshBuilder = buffers.get(material);
 
@@ -67,14 +66,14 @@ public class BlockRenderer {
             List<BakedQuad> quads = this.getGeometry(ctx, face);
 
             if (!quads.isEmpty() && this.isFaceVisible(ctx, face)) {
-                this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, quads, face, bounds);
+                this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, quads, face);
             }
         }
 
         List<BakedQuad> all = this.getGeometry(ctx, null);
 
         if (!all.isEmpty()) {
-            this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, all, null, bounds);
+            this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, all, null);
         }
     }
 
@@ -90,7 +89,7 @@ public class BlockRenderer {
     }
 
     private void renderQuadList(BlockRenderContext ctx, Material material, LightPipeline lighter, ColorProvider<BlockState> colorizer, Vec3d offset,
-                                ChunkModelBuilder builder, List<BakedQuad> quads, Direction cullFace, ChunkRenderBounds.Builder bounds) {
+                                ChunkModelBuilder builder, List<BakedQuad> quads, Direction cullFace) {
 
         // This is a very hot allocation, iterate over it manually
         // noinspection ForLoopReplaceableByForEach
@@ -100,7 +99,7 @@ public class BlockRenderer {
             final var lightData = this.getVertexLight(ctx, lighter, cullFace, quad);
             final var vertexColors = this.getVertexColors(ctx, colorizer, quad);
 
-            this.writeGeometry(ctx, builder, offset, material, quad, vertexColors, lightData, bounds);
+            this.writeGeometry(ctx, builder, offset, material, quad, vertexColors, lightData);
 
             Sprite sprite = quad.getSprite();
 
@@ -135,8 +134,7 @@ public class BlockRenderer {
                                Material material,
                                BakedQuadView quad,
                                int[] colors,
-                               QuadLightData light,
-                               ChunkRenderBounds.Builder bounds)
+                               QuadLightData light)
     {
         ModelQuadOrientation orientation = ModelQuadOrientation.orientByBrightness(light.br, light.lm);
         var vertices = this.vertices;
@@ -157,8 +155,6 @@ public class BlockRenderer {
             out.v = quad.getTexV(srcIndex);
 
             out.light = light.lm[srcIndex];
-
-            bounds.add(out.x, out.y, out.z, normalFace);
         }
 
         var vertexBuffer = builder.getVertexBuffer(normalFace);
