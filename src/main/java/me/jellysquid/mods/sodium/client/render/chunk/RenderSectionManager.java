@@ -93,7 +93,7 @@ public class RenderSectionManager {
     private boolean useFogCulling;
     private boolean useOcclusionCulling;
 
-    private double fogRenderCutoff;
+    private float fogRenderCutoff;
 
     private Frustum frustum;
 
@@ -159,7 +159,7 @@ public class RenderSectionManager {
             float dist = RenderSystem.getShaderFogEnd() + FOG_PLANE_OFFSET;
 
             if (dist == 0.0f) {
-                this.fogRenderCutoff = Double.POSITIVE_INFINITY;
+                this.fogRenderCutoff = Float.POSITIVE_INFINITY;
             } else {
                 this.fogRenderCutoff = Math.max(FOG_PLANE_MIN_DISTANCE, dist * dist);
             }
@@ -440,7 +440,7 @@ public class RenderSectionManager {
     }
 
     public boolean isGraphDirty() {
-        return this.needsUpdate;
+        return true;
     }
 
     public ChunkBuilder getBuilder() {
