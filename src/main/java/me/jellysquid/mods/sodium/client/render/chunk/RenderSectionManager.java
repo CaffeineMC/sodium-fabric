@@ -411,7 +411,7 @@ public class RenderSectionManager {
     }
 
     public boolean isGraphDirty() {
-        return true;
+        return this.needsUpdate;
     }
 
     public ChunkBuilder getBuilder() {
