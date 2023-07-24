@@ -167,15 +167,15 @@ public class RenderSectionManager {
     }
 
     private void searchNeighbors(RenderSection section, int outgoing) {
-        for (int outgoingDirection = 0; outgoingDirection < GraphDirection.COUNT; outgoingDirection++) {
-            if ((outgoing & (1 << outgoingDirection)) == 0) {
+        for (int direction = 0; direction < GraphDirection.COUNT; direction++) {
+            if ((outgoing & (1 << direction)) == 0) {
                 continue;
             }
 
-            RenderSection adj = section.getAdjacent(outgoingDirection);
+            RenderSection adj = section.getAdjacent(direction);
 
             if (adj != null) {
-                this.bfsEnqueue(adj, 1 << GraphDirection.opposite(outgoingDirection));
+                this.bfsEnqueue(adj, 1 << GraphDirection.opposite(direction));
             }
         }
     }
