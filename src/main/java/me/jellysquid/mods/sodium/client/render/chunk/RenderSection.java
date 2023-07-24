@@ -19,8 +19,6 @@ import java.util.concurrent.CompletableFuture;
  * data about the render in the chunk visibility graph.
  */
 public class RenderSection {
-    private static final long DEFAULT_VISIBILITY_DATA = VisibilityEncoding.encode(ChunkRenderData.EMPTY.getOcclusionData());
-
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
@@ -63,7 +61,7 @@ public class RenderSection {
 
         this.region = region;
 
-        this.visibilityData = DEFAULT_VISIBILITY_DATA;
+        this.visibilityData = VisibilityEncoding.DEFAULT;
     }
 
 

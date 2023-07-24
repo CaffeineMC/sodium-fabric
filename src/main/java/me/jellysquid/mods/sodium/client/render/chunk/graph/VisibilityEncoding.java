@@ -6,17 +6,16 @@ import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.util.math.Direction;
 
 public class VisibilityEncoding {
+    public static final long DEFAULT = VisibilityEncoding.encode(null);
+
     public static long encode(ChunkOcclusionData occlusionData) {
         long visibilityData = 0;
 
-        for (Direction from : DirectionUtil.ALL_DIRECTIONS) {
-            for (Direction to : DirectionUtil.ALL_DIRECTIONS) {
-                if (from == to) {
-                    continue;
-                }
-
-                if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
-                    visibilityData |= 1L << bit(from.ordinal(), to.ordinal());
+        for (int from = 0; from < GraphDirection.COUNT; from++) {
+            for (int to = 0; to < GraphDirection.COUNT; to++) {
+                if (occlusionData == null ||
+                        occlusionData.isVisibleThrough(GraphDirection.toEnum(from), GraphDirection.toEnum(to))) {
+                    visibilityData |= 1L << bit(from, to);
                 }
             }
         }
@@ -29,14 +28,13 @@ public class VisibilityEncoding {
     }
 
     // Returns a merged bit-field of the outgoing directions for each incoming direction
-    public static int getOutgoingDirections(long data, int incoming) {
-        long outgoing = 0L;
+    public static int getConnections(long visibilityData, int incomingDirections) {
+        long outgoing = (((0b0000001_0000001_0000001_0000001_0000001_0000001L * Integer.toUnsignedLong(incomingDirections)) & 0x010101010101L) * 0xFF) // turn bitmask into lane wise mask
+            & visibilityData; // apply visibility to incoming
+        outgoing |= outgoing >> 32; // fold top 32 bits onto bottom 32 bits
+        outgoing |= outgoing >> 16; // fold top 16 bits onto bottom 16 bits
+        outgoing |= outgoing >> 8; // fold top 8 bits onto bottom 8 bits
 
-        for (int i = 0; i < 6; i++){
-            outgoing |= ((incoming & (1 << i)) != 0 ? data : 0);
-            data >>= 8;
-        }
-
-        return (int) (outgoing & 0b111111);
+        return (int) (outgoing & GraphDirection.ALL);
     }
 }
