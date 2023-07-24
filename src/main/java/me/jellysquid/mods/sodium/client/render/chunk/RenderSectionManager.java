@@ -15,6 +15,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.ChunkGraphIterationQueue;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphDirection;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
@@ -145,26 +146,30 @@ public class RenderSectionManager {
 
         for (int i = 0; i < queue.size(); i++) {
             RenderSection section = queue.getRender(i);
-            Direction flow = queue.getDirection(i);
+            int incomingDirection = queue.getDirection(i);
 
             this.schedulePendingUpdates(section);
 
-            for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
-                if (this.isCulled(section, flow, dir)) {
+            for (int outgoingDirection = 0; outgoingDirection < GraphDirection.COUNT; outgoingDirection++) {
+                if (this.isCulled(section, incomingDirection, outgoingDirection)) {
                     continue;
                 }
 
-                RenderSection adj = section.getAdjacent(dir);
+                RenderSection adj = section.getAdjacent(outgoingDirection);
 
                 if (adj != null && this.isWithinRenderDistance(adj)) {
-                    this.bfsEnqueue(list, section, adj, DirectionUtil.getOpposite(dir));
+                    this.bfsEnqueue(list, section, adj, GraphDirection.opposite(outgoingDirection));
                 }
             }
         }
     }
 
     private void schedulePendingUpdates(RenderSection section) {
-        if (section.getPendingUpdate() == null || !this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
+        if (section.getPendingUpdate() == null) {
+            return;
+        }
+
+        if (!this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
             return;
         }
 
@@ -473,12 +478,12 @@ public class RenderSectionManager {
         return Math.max(x, Math.max(y, z)) <= this.effectiveRenderDistance;
     }
 
-    private boolean isCulled(RenderSection section, Direction from, Direction to) {
-        if (section.canCull(to)) {
+    private boolean isCulled(RenderSection section, int incoming, int outgoing) {
+        if (section.canCull(outgoing)) {
             return true;
         }
 
-        return this.useOcclusionCulling && from != null && !section.isVisibleThrough(from, to);
+        return this.useOcclusionCulling && incoming != GraphDirection.NONE && !section.isVisibleThrough(incoming, outgoing);
     }
 
     private void initSearch(ChunkRenderListBuilder list, Camera camera, Viewport viewport, int frame, boolean spectator) {
@@ -514,7 +519,7 @@ public class RenderSectionManager {
                 this.useOcclusionCulling = false;
             }
 
-            this.addVisible(list, rootRender, null);
+            this.addVisible(list, rootRender, GraphDirection.NONE);
         } else {
             chunkY = MathHelper.clamp(origin.getY() >> 4, this.world.getBottomSectionCoord(), this.world.getTopSectionCoord() - 1);
 
@@ -538,7 +543,7 @@ public class RenderSectionManager {
             sorted.sort(Comparator.comparingDouble(node -> node.getSquaredDistance(origin)));
 
             for (RenderSection render : sorted) {
-                this.addVisible(list, render, null);
+                this.addVisible(list, render, GraphDirection.NONE);
             }
         }
     }
@@ -556,7 +561,7 @@ public class RenderSectionManager {
     }
 
 
-    private void bfsEnqueue(ChunkRenderListBuilder list, RenderSection parent, RenderSection render, Direction flow) {
+    private void bfsEnqueue(ChunkRenderListBuilder list, RenderSection parent, RenderSection render, int incomingDirection) {
         if (render.getLastVisibleFrame() == this.currentFrame) {
             return;
         }
@@ -566,13 +571,13 @@ public class RenderSectionManager {
         }
 
         render.setLastVisibleFrame(this.currentFrame);
-        render.setCullingState(parent.getCullingState(), flow);
+        render.setCullingState(parent.getCullingState(), incomingDirection);
 
-        this.addVisible(list, render, flow);
+        this.addVisible(list, render, incomingDirection);
     }
 
-    private void addVisible(ChunkRenderListBuilder list, RenderSection render, Direction flow) {
-        this.iterationQueue.add(render, flow);
+    private void addVisible(ChunkRenderListBuilder list, RenderSection render, int incomingDirection) {
+        this.iterationQueue.add(render, incomingDirection);
 
         int flags = render.getFlags();
 
@@ -586,25 +591,25 @@ public class RenderSectionManager {
     }
 
     private void connectNeighborNodes(RenderSection render) {
-        for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
-            RenderSection adj = this.getRenderSection(render.getChunkX() + dir.getOffsetX(),
-                    render.getChunkY() + dir.getOffsetY(),
-                    render.getChunkZ() + dir.getOffsetZ());
+        for (int direction = 0; direction < GraphDirection.COUNT; direction++) {
+            RenderSection adj = this.getRenderSection(render.getChunkX() + GraphDirection.x(direction),
+                    render.getChunkY() + GraphDirection.y(direction),
+                    render.getChunkZ() + GraphDirection.z(direction));
 
             if (adj != null) {
-                adj.setAdjacentNode(DirectionUtil.getOpposite(dir), render);
-                render.setAdjacentNode(dir, adj);
+                adj.setAdjacentNode(GraphDirection.opposite(direction), render);
+                render.setAdjacentNode(direction, adj);
             }
         }
     }
 
     private void disconnectNeighborNodes(RenderSection render) {
-        for (Direction dir : DirectionUtil.ALL_DIRECTIONS) {
-            RenderSection adj = render.getAdjacent(dir);
+        for (int direction = 0; direction < GraphDirection.COUNT; direction++) {
+            RenderSection adj = render.getAdjacent(direction);
 
             if (adj != null) {
-                adj.setAdjacentNode(DirectionUtil.getOpposite(dir), null);
-                render.setAdjacentNode(dir, null);
+                adj.setAdjacentNode(GraphDirection.opposite(direction), null);
+                render.setAdjacentNode(direction, null);
             }
         }
     }
