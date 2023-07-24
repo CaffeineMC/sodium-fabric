@@ -6,13 +6,14 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
-import me.jellysquid.mods.sodium.client.render.viewport.ViewportProvider;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import me.jellysquid.mods.sodium.client.util.ListUtil;
@@ -29,6 +30,7 @@ import net.minecraft.util.math.*;
 import net.minecraft.util.profiler.Profiler;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -240,8 +242,11 @@ public class SodiumWorldRenderer {
         this.renderSectionManager.reloadChunks(this.chunkTracker);
     }
 
-    public void renderTileEntities(MatrixStack matrices, BufferBuilderStorage bufferBuilders, Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
-                                   Camera camera, float tickDelta) {
+    public void renderTileEntities(MatrixStack matrices,
+                                   BufferBuilderStorage bufferBuilders,
+                                   Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
+                                   Camera camera,
+                                   float tickDelta) {
         VertexConsumerProvider.Immediate immediate = bufferBuilders.getEntityVertexConsumers();
 
         Vec3d cameraPos = camera.getPos();
@@ -251,31 +256,90 @@ public class SodiumWorldRenderer {
 
         BlockEntityRenderDispatcher blockEntityRenderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
 
-        for (BlockEntity blockEntity : this.renderSectionManager.getVisibleBlockEntities()) {
-            BlockPos pos = blockEntity.getPos();
+        this.renderBlockEntities(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer);
+        this.renderGlobalBlockEntities(matrices, tickDelta, immediate, x, y, z, blockEntityRenderer);
+    }
 
-            matrices.push();
-            matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
+    private void renderBlockEntities(MatrixStack matrices,
+                                     BufferBuilderStorage bufferBuilders,
+                                     Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
+                                     float tickDelta,
+                                     VertexConsumerProvider.Immediate immediate,
+                                     double x,
+                                     double y,
+                                     double z,
+                                     BlockEntityRenderDispatcher blockEntityRenderer) {
+        SortedRenderLists renderLists = this.renderSectionManager.getRenderLists();
 
-            VertexConsumerProvider consumer = immediate;
-            SortedSet<BlockBreakingInfo> breakingInfos = blockBreakingProgressions.get(pos.asLong());
-
-            if (breakingInfos != null && !breakingInfos.isEmpty()) {
-                int stage = breakingInfos.last().getStage();
-
-                if (stage >= 0) {
-                    MatrixStack.Entry entry = matrices.peek();
-                    VertexConsumer transformer = new OverlayVertexConsumer(bufferBuilders.getEffectVertexConsumers().getBuffer(ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.get(stage)), entry.getPositionMatrix(), entry.getNormalMatrix(), 1.0f);
-                    consumer = (layer) -> layer.hasCrumbling() ? VertexConsumers.union(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
-                }
-            }
-
-
-            blockEntityRenderer.render(blockEntity, tickDelta, matrices, consumer);
-
-            matrices.pop();
+        if (renderLists == null) {
+            return;
         }
 
+        Iterator<ChunkRenderList> renderListIterator = renderLists.sorted();
+
+        while (renderListIterator.hasNext()) {
+            var renderList = renderListIterator.next();
+
+            var region = renderList.getRegion();
+            var sectionIterator = renderList.sectionsWithEntitiesIterator();
+
+            if (sectionIterator == null) {
+                continue;
+            }
+
+            while (sectionIterator.hasNext()) {
+                var sectionId = sectionIterator.next();
+                var section = region.getSection(sectionId);
+
+                var renderData = section.getData();
+
+                for (BlockEntity blockEntity : renderData.getBlockEntities()) {
+                    renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer, blockEntity);
+                }
+            }
+        }
+    }
+
+
+    private static void renderBlockEntity(MatrixStack matrices,
+                                          BufferBuilderStorage bufferBuilders,
+                                          Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
+                                          float tickDelta,
+                                          VertexConsumerProvider.Immediate immediate,
+                                          double x,
+                                          double y,
+                                          double z,
+                                          BlockEntityRenderDispatcher dispatcher,
+                                          BlockEntity entity) {
+        BlockPos pos = entity.getPos();
+
+        matrices.push();
+        matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
+
+        VertexConsumerProvider consumer = immediate;
+        SortedSet<BlockBreakingInfo> breakingInfo = blockBreakingProgressions.get(pos.asLong());
+
+        if (breakingInfo != null && !breakingInfo.isEmpty()) {
+            int stage = breakingInfo.last().getStage();
+
+            if (stage >= 0) {
+                var bufferBuilder = bufferBuilders.getEffectVertexConsumers()
+                        .getBuffer(ModelLoader.BLOCK_DESTRUCTION_RENDER_LAYERS.get(stage));
+
+                MatrixStack.Entry entry = matrices.peek();
+                VertexConsumer transformer = new OverlayVertexConsumer(bufferBuilder,
+                        entry.getPositionMatrix(), entry.getNormalMatrix(), 1.0f);
+
+                consumer = (layer) -> layer.hasCrumbling() ? VertexConsumers.union(transformer, immediate.getBuffer(layer)) : immediate.getBuffer(layer);
+            }
+        }
+
+        dispatcher.render(entity, tickDelta, matrices, consumer);
+
+        matrices.pop();
+    }
+
+    private void renderGlobalBlockEntities(MatrixStack matrices, float tickDelta, VertexConsumerProvider.Immediate immediate, double x, double y, double z, BlockEntityRenderDispatcher blockEntityRenderer) {
         for (BlockEntity blockEntity : this.globalBlockEntities) {
             BlockPos pos = blockEntity.getPos();
 

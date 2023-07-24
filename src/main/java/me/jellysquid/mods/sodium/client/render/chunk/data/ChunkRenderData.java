@@ -56,11 +56,15 @@ public class ChunkRenderData {
         int flags = 0;
 
         if (!this.blockRenderPasses.isEmpty()) {
-            flags |= RenderSectionFlags.HAS_BLOCK_GEOMETRY;
+            flags |= 1 << RenderSectionFlags.HAS_BLOCK_GEOMETRY;
         }
 
         if (!this.blockEntities.isEmpty() || !this.globalBlockEntities.isEmpty()) {
-            flags |= RenderSectionFlags.HAS_BLOCK_ENTITIES;
+            flags |= 1 << RenderSectionFlags.HAS_BLOCK_ENTITIES;
+        }
+
+        if (!this.animatedSprites.isEmpty()) {
+            flags |= 1 << RenderSectionFlags.HAS_ANIMATED_SPRITES;
         }
 
         return flags;
