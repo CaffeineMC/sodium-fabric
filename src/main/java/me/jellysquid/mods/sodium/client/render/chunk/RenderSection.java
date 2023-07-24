@@ -65,12 +65,12 @@ public class RenderSection {
     }
 
 
-    public RenderSection getAdjacent(Direction dir) {
-        return this.adjacent[dir.ordinal()];
+    public RenderSection getAdjacent(int direction) {
+        return this.adjacent[direction];
     }
 
-    public void setAdjacentNode(Direction dir, RenderSection node) {
-        this.adjacent[dir.ordinal()] = node;
+    public void setAdjacentNode(int direction, RenderSection node) {
+        this.adjacent[direction] = node;
     }
 
     /**
@@ -287,16 +287,16 @@ public class RenderSection {
         return visibilityData;
     }
 
-    public boolean isVisibleThrough(Direction from, Direction to) {
-        return ((this.visibilityData & (1L << ((from.ordinal() << 3) + to.ordinal()))) != 0L);
+    public boolean isVisibleThrough(int from, int to) {
+        return ((this.visibilityData & (1L << ((from << 3) + to))) != 0L);
     }
 
-    public void setCullingState(byte parent, Direction dir) {
-        this.cullingState = (byte) (parent | (1 << dir.ordinal()));
+    public void setCullingState(byte parent, int dir) {
+        this.cullingState = (byte) (parent | (1 << dir));
     }
 
-    public boolean canCull(Direction dir) {
-        return (this.cullingState & 1 << dir.ordinal()) != 0;
+    public boolean canCull(int direction) {
+        return (this.cullingState & 1 << direction) != 0;
     }
 
     public byte getCullingState() {
