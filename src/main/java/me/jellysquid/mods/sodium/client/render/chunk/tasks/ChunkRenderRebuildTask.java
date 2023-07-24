@@ -50,7 +50,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
         ChunkBuildBuffers buffers = buildContext.buffers;
-        buffers.init(renderData, this.render.getChunkId());
+        buffers.init(renderData, this.render.getLocalCoord());
 
         BlockRenderCache cache = buildContext.cache;
         cache.init(this.renderContext);

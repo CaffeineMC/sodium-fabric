@@ -25,9 +25,10 @@ public class RenderSection {
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
-    private final int chunkId;
-    private final long regionId;
+    private final int sectionIndex;
+    private final int sectionCoord;
 
+    private final RenderRegion region;
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
     private ChunkRenderData data = ChunkRenderData.ABSENT;
@@ -35,7 +36,6 @@ public class RenderSection {
 
     private ChunkUpdateType pendingUpdate;
 
-    private boolean tickable;
     private boolean disposed;
 
     private int lastAcceptedBuildTime = -1;
@@ -47,7 +47,7 @@ public class RenderSection {
     private long visibilityData;
     private byte cullingState;
 
-    public RenderSection(SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
+    public RenderSection(RenderRegion region, SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
         this.worldRenderer = worldRenderer;
 
         this.chunkX = chunkX;
@@ -58,8 +58,10 @@ public class RenderSection {
         int rY = this.getChunkY() & (RenderRegion.REGION_HEIGHT - 1);
         int rZ = this.getChunkZ() & (RenderRegion.REGION_LENGTH - 1);
 
-        this.chunkId = RenderRegion.getChunkIndex(rX, rY, rZ);
-        this.regionId = RenderRegion.getRegionKeyForChunk(this.chunkX, this.chunkY, this.chunkZ);
+        this.sectionCoord = (rX << 5 | rY << 3 | rZ << 0) & 0xFF;
+        this.sectionIndex = LocalSectionIndex.pack(rX, rY, rZ);
+
+        this.region = region;
 
         this.visibilityData = DEFAULT_VISIBILITY_DATA;
     }
@@ -108,7 +110,6 @@ public class RenderSection {
         this.worldRenderer.onChunkRenderUpdated(this.chunkX, this.chunkY, this.chunkZ, this.data, info);
         this.data = info;
 
-        this.tickable = !info.getAnimatedSprites().isEmpty();
         this.flags = info.getFlags();
     }
 
@@ -124,8 +125,7 @@ public class RenderSection {
     }
 
     /**
-     * Ensures that all resources attached to the given chunk render are "ticked" forward. This should be called every
-     * time before this render is drawn if {@link RenderSection#isTickable()} is true.
+     * Ensures that all resources attached to the given chunk render are "ticked" forward.
      */
     public void tick() {
         for (Sprite sprite : this.data.getAnimatedSprites()) {
@@ -206,10 +206,6 @@ public class RenderSection {
         return this.chunkZ;
     }
 
-    public boolean isTickable() {
-        return this.tickable;
-    }
-
     public boolean isDisposed() {
         return this.disposed;
     }
@@ -253,12 +249,12 @@ public class RenderSection {
         this.lastAcceptedBuildTime = result.buildTime;
     }
 
-    public int getChunkId() {
-        return this.chunkId;
+    public int getSectionIndex() {
+        return this.sectionIndex;
     }
 
-    public long getRegionId() {
-        return this.regionId;
+    public RenderRegion getRegion() {
+        return this.region;
     }
 
     public void setLastVisibleFrame(int frame) {
@@ -313,5 +309,9 @@ public class RenderSection {
         float z = this.getOriginZ();
 
         return !viewport.isBoxVisible(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
+    }
+
+    public int getLocalCoord() {
+        return this.sectionCoord;
     }
 }
