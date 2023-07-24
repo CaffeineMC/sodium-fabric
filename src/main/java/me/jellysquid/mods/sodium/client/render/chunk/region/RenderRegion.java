@@ -6,17 +6,15 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import me.jellysquid.mods.sodium.client.render.chunk.SharedQuadIndexBuffer;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.Map;
 
 public class RenderRegion {
@@ -170,32 +168,31 @@ public class RenderRegion {
     }
 
     public static class DeviceResources {
-        private final EnumMap<SharedQuadIndexBuffer.IndexType, GlTessellation> tessellations = new EnumMap<>(SharedQuadIndexBuffer.IndexType.class);
         private final GlBufferArena geometryArena;
+        private GlTessellation tessellation;
 
         public DeviceResources(CommandList commandList, StagingBuffer stagingBuffer) {
             int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
             this.geometryArena = new GlBufferArena(commandList, REGION_SIZE * 756, stride, stagingBuffer);
         }
 
-        public void updateTessellation(CommandList commandList, SharedQuadIndexBuffer.IndexType indexType, GlTessellation tessellation) {
-            var prev = this.tessellations.put(indexType, tessellation);
-
-            if (prev != null) {
-                prev.delete(commandList);
+        public void updateTessellation(CommandList commandList, GlTessellation tessellation) {
+            if (this.tessellation != null) {
+                this.tessellation.delete(commandList);
             }
+
+            this.tessellation = tessellation;
         }
 
-        public GlTessellation getTessellation(SharedQuadIndexBuffer.IndexType indexType) {
-            return this.tessellations.get(indexType);
+        public GlTessellation getTessellation() {
+            return this.tessellation;
         }
 
         public void deleteTessellations(CommandList commandList) {
-            for (var tessellation : this.tessellations.values()) {
-                commandList.deleteTessellation(tessellation);
+            if (this.tessellation != null) {
+                this.tessellation.delete(commandList);
+                this.tessellation = null;
             }
-
-            this.tessellations.clear();
         }
 
         public GlBuffer getVertexBuffer() {

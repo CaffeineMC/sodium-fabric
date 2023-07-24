@@ -12,9 +12,9 @@ public class ChunkGraphicsState {
 
     private int baseVertex;
     private final int vertexCount;
-    private final int[] modelParts;
+    private final int[] sliceRanges;
 
-    private final int nonEmptyModelParts;
+    private final int sliceMask;
 
     public ChunkGraphicsState(RenderSection section, GlBufferSegment vertexSegment, ChunkMeshData data) {
         Validate.notNull(vertexSegment);
@@ -22,10 +22,10 @@ public class ChunkGraphicsState {
         this.vertexSegment = vertexSegment;
         this.vertexCount = data.getVertexCount();
 
-        this.modelParts = new int[ModelQuadFacing.COUNT];
+        this.sliceRanges = new int[ModelQuadFacing.COUNT];
 
-        int flags = 0;
-        int offset = 0;
+        int sliceMask = 0;
+        int elementOffset = 0;
 
         for (ModelQuadFacing facing : ModelQuadFacing.VALUES) {
             var entry = data.getPart(facing);
@@ -34,19 +34,20 @@ public class ChunkGraphicsState {
                 continue;
             }
 
-            var count = entry.vertexCount();
+            var elementStart = (entry.vertexStart() >> 2) * 6;
+            var elementCount = (entry.vertexCount() >> 2) * 6;
 
-            if (offset != entry.vertexStart()) {
+            if (elementOffset != elementStart) {
                 throw new IllegalStateException("Model parts are not sorted by quad facing");
             }
 
-            this.modelParts[facing.ordinal()] = count;
+            this.sliceRanges[facing.ordinal()] = elementCount;
 
-            offset += count;
-            flags |= 1 << facing.ordinal();
+            elementOffset += elementCount;
+            sliceMask |= 1 << facing.ordinal();
         }
 
-        this.nonEmptyModelParts = flags;
+        this.sliceMask = sliceMask;
 
         this.originX = section.getChunkX() << 4;
         this.originY = section.getChunkY() << 4;
@@ -63,12 +64,12 @@ public class ChunkGraphicsState {
         this.vertexSegment.delete();
     }
 
-    public int getNonEmptyModelParts() {
-        return this.nonEmptyModelParts;
+    public int getSliceMask() {
+        return this.sliceMask;
     }
-
-    public int[] getModelParts() {
-        return this.modelParts;
+    
+    public int getSliceRange(int facing) {
+        return this.sliceRanges[facing];
     }
 
     public int getVertexCount() {
