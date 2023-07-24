@@ -3,15 +3,14 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
-import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Direction;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -20,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
  * data about the render in the chunk visibility graph.
  */
 public class RenderSection {
-    private static final long DEFAULT_VISIBILITY_DATA = calculateVisibilityData(ChunkRenderData.EMPTY.getOcclusionData());
+    private static final long DEFAULT_VISIBILITY_DATA = VisibilityEncoding.encode(ChunkRenderData.EMPTY.getOcclusionData());
 
     private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
@@ -45,7 +44,8 @@ public class RenderSection {
     private int lastVisibleFrame = -1;
 
     private long visibilityData;
-    private byte cullingState;
+
+    private int incomingDirections;
 
     public RenderSection(RenderRegion region, SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
         this.worldRenderer = worldRenderer;
@@ -266,52 +266,26 @@ public class RenderSection {
     }
 
     public void setOcclusionData(ChunkOcclusionData occlusionData) {
-        this.visibilityData = calculateVisibilityData(occlusionData);
-    }
-
-    private static long calculateVisibilityData(ChunkOcclusionData occlusionData) {
-        long visibilityData = 0;
-
-        for (Direction from : DirectionUtil.ALL_DIRECTIONS) {
-            for (Direction to : DirectionUtil.ALL_DIRECTIONS) {
-                if (occlusionData == null || occlusionData.isVisibleThrough(from, to)) {
-                    visibilityData |= (1L << ((from.ordinal() << 3) + to.ordinal()));
-                }
-            }
-        }
-
-        return visibilityData;
-    }
-
-    public boolean isVisibleThrough(int from, int to) {
-        return ((this.visibilityData & (1L << ((from << 3) + to))) != 0L);
-    }
-
-    public void setCullingState(byte parent, int dir) {
-        this.cullingState = (byte) (parent | (1 << dir));
-    }
-
-    public boolean canCull(int direction) {
-        return (this.cullingState & 1 << direction) != 0;
-    }
-
-    public byte getCullingState() {
-        return this.cullingState;
-    }
-
-    public void resetCullingState() {
-        this.cullingState = 0;
-    }
-
-    public boolean isInsideViewport(Viewport viewport) {
-        float x = this.getOriginX();
-        float y = this.getOriginY();
-        float z = this.getOriginZ();
-
-        return !viewport.isBoxVisible(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
+        this.visibilityData = VisibilityEncoding.encode(occlusionData);
     }
 
     public int getLocalCoord() {
         return this.sectionCoord;
+    }
+
+    public long getVisibilityData() {
+        return this.visibilityData;
+    }
+
+    public int getIncomingDirections() {
+        return this.incomingDirections;
+    }
+
+    public void addIncomingDirections(int directions) {
+        this.incomingDirections |= directions;
+    }
+
+    public void setIncomingDirections(int directions) {
+        this.incomingDirections = directions;
     }
 }
