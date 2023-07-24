@@ -15,8 +15,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphDirection;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderListBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
@@ -27,6 +27,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshForm
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.collections.WorkStealingFutureDrain;
+import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
@@ -550,7 +551,7 @@ public class RenderSectionManager {
         } else {
             chunkY = MathHelper.clamp(origin.getY() >> 4, this.world.getBottomSectionCoord(), this.world.getTopSectionCoord() - 1);
 
-            List<RenderSection> sorted = new ArrayList<>();
+            List<RenderSection> sections = new ArrayList<>();
 
             for (int x2 = -this.effectiveRenderDistance; x2 <= this.effectiveRenderDistance; ++x2) {
                 for (int z2 = -this.effectiveRenderDistance; z2 <= this.effectiveRenderDistance; ++z2) {
@@ -563,15 +564,24 @@ public class RenderSectionManager {
                     section.setLastVisibleFrame(frame);
                     section.setIncomingDirections(GraphDirection.ALL);
 
-                    sorted.add(section);
+                    sections.add(section);
                 }
             }
 
-            sorted.sort(Comparator.comparingDouble(node -> node.getSquaredDistance(origin)));
+            this.enqueueAll(sections, camera.getBlockPos());
+        }
+    }
 
-            for (RenderSection render : sorted) {
-                this.iterationQueue.add(render);
-            }
+    private void enqueueAll(List<RenderSection> sections, BlockPos origin) {
+        final var distance = new float[sections.size()];
+
+        for (int index = 0; index < sections.size(); index++) {
+            var section = sections.get(index);
+            distance[index] = section.getSquaredDistance(origin);
+        }
+
+        for (int index : MergeSort.mergeSort(distance)) {
+            this.iterationQueue.add(sections.get(index));
         }
     }
 
