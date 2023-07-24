@@ -1,8 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.graph;
 
 public class GraphDirection {
-    public static final int NONE    = -1;
-
     public static final int DOWN    = 0;
     public static final int UP      = 1;
     public static final int NORTH   = 2;
@@ -12,6 +10,9 @@ public class GraphDirection {
 
 
     public static final int COUNT   = 6;
+
+    public static final int NONE    = 0b000000;
+    public static final int ALL     = 0b111111;
 
     private static final int[] OPPOSITE;
     private static final int[] X, Y, Z;
