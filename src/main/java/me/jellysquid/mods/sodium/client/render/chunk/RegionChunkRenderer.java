@@ -113,9 +113,9 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
         slices &= data.getSliceMask();
 
         if (slices == 0b1111111) {
-            this.addFilteredDrawCommands(batch, data, slices);
-        } else if (slices != 0) {
             this.addUnfilteredDrawCommands(batch, data);
+        } else if (slices != 0) {
+            this.addFilteredDrawCommands(batch, data, slices);
         }
     }
 
