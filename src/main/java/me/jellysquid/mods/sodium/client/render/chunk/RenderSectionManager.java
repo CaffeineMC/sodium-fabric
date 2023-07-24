@@ -146,18 +146,23 @@ public class RenderSectionManager {
                 continue;
             }
 
+            this.schedulePendingUpdates(section);
+
             renderList.add(section);
 
-            var visibilityData = this.useOcclusionCulling ? section.getVisibilityData() : -1L;
+            int connections;
 
-            var outgoingDirections = VisibilityEncoding.getOutgoingDirections(visibilityData, section.getIncomingDirections());
-            outgoingDirections &= this.getOutwardDirections(section.getChunkX(), section.getChunkY(), section.getChunkZ());
-
-            if (outgoingDirections != 0) {
-                this.searchNeighbors(section, outgoingDirections);
+            if (this.useOcclusionCulling) {
+                connections = VisibilityEncoding.getConnections(section.getVisibilityData(), section.getIncomingDirections());
+            } else {
+                connections = GraphDirection.ALL;
             }
 
-            this.schedulePendingUpdates(section);
+            connections &= this.getOutwardDirections(section.getChunkX(), section.getChunkY(), section.getChunkZ());
+
+            if (connections != GraphDirection.NONE) {
+                this.searchNeighbors(section, connections);
+            }
         }
     }
 
@@ -517,7 +522,6 @@ public class RenderSectionManager {
     private void initSearch(Camera camera, Viewport viewport, int frame, boolean spectator) {
         this.currentFrame = frame;
         this.viewport = viewport;
-        this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
 
         if (SodiumClientMod.options().performance.useFogOcclusion) {
             this.effectiveRenderDistance = Math.min(this.getEffectiveViewDistance(), this.renderDistance);
@@ -527,62 +531,74 @@ public class RenderSectionManager {
 
         this.iterationQueue.clear();
 
+        this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
+
         BlockPos origin = camera.getBlockPos();
 
-        int chunkX = origin.getX() >> 4;
-        int chunkY = origin.getY() >> 4;
-        int chunkZ = origin.getZ() >> 4;
+        if (spectator && this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin)) {
+            this.useOcclusionCulling = false;
+        }
 
-        this.centerChunkX = chunkX;
-        this.centerChunkY = chunkY;
-        this.centerChunkZ = chunkZ;
+        this.centerChunkX = origin.getX() >> 4;
+        this.centerChunkY = origin.getY() >> 4;
+        this.centerChunkZ = origin.getZ() >> 4;
 
-        RenderSection rootRender = this.getRenderSection(chunkX, chunkY, chunkZ);
-
-        if (rootRender != null) {
-            rootRender.setLastVisibleFrame(frame);
-            rootRender.setIncomingDirections(GraphDirection.ALL);
-
-            if (spectator && this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin)) {
-                this.useOcclusionCulling = false;
-            }
-
-            this.iterationQueue.add(rootRender);
+        if (this.centerChunkY < this.world.getBottomSectionCoord()) {
+            this.initSearchFallback(viewport, origin, this.centerChunkX, this.world.getBottomSectionCoord(), this.centerChunkZ, 1 << GraphDirection.DOWN);
+        } else if (this.centerChunkY >= this.world.getTopSectionCoord()) {
+            this.initSearchFallback(viewport, origin, this.centerChunkX, this.world.getTopSectionCoord() - 1, this.centerChunkZ, 1 << GraphDirection.UP);
         } else {
-            chunkY = MathHelper.clamp(origin.getY() >> 4, this.world.getBottomSectionCoord(), this.world.getTopSectionCoord() - 1);
+            var node = this.getRenderSection(this.centerChunkX, this.centerChunkY, this.centerChunkZ);
 
-            List<RenderSection> sections = new ArrayList<>();
-
-            for (int x2 = -this.effectiveRenderDistance; x2 <= this.effectiveRenderDistance; ++x2) {
-                for (int z2 = -this.effectiveRenderDistance; z2 <= this.effectiveRenderDistance; ++z2) {
-                    RenderSection section = this.getRenderSection(chunkX + x2, chunkY, chunkZ + z2);
-
-                    if (section == null || this.isOutsideViewport(section, viewport)) {
-                        continue;
-                    }
-
-                    section.setLastVisibleFrame(frame);
-                    section.setIncomingDirections(GraphDirection.ALL);
-
-                    sections.add(section);
-                }
+            if (node != null) {
+                this.bfsEnqueue(node, GraphDirection.ALL);
             }
-
-            this.enqueueAll(sections, camera.getBlockPos());
         }
     }
 
-    private void enqueueAll(List<RenderSection> sections, BlockPos origin) {
+    private void initSearchFallback(Viewport viewport, BlockPos origin, int chunkX, int chunkY, int chunkZ, int directions) {
+        List<RenderSection> sections = new ArrayList<>();
+
+        for (int x2 = -this.effectiveRenderDistance; x2 <= this.effectiveRenderDistance; ++x2) {
+            for (int z2 = -this.effectiveRenderDistance; z2 <= this.effectiveRenderDistance; ++z2) {
+                RenderSection section = this.getRenderSection(chunkX + x2, chunkY, chunkZ + z2);
+
+                if (section == null || this.isOutsideViewport(section, viewport)) {
+                    continue;
+                }
+
+                sections.add(section);
+            }
+        }
+
+        if (!sections.isEmpty()) {
+            this.bfsEnqueueAll(sections, origin, directions);
+        }
+    }
+
+    private void bfsEnqueueAll(List<RenderSection> sections, BlockPos origin, int directions) {
         final var distance = new float[sections.size()];
 
         for (int index = 0; index < sections.size(); index++) {
             var section = sections.get(index);
-            distance[index] = section.getSquaredDistance(origin);
+            distance[index] = -section.getSquaredDistance(origin); // sort by closest to camera
         }
 
+        // TODO: avoid indirect sort via indices
         for (int index : MergeSort.mergeSort(distance)) {
-            this.iterationQueue.add(sections.get(index));
+            this.bfsEnqueue(sections.get(index), directions);
         }
+    }
+
+    private void bfsEnqueue(RenderSection render, int incomingDirections) {
+        if (render.getLastVisibleFrame() != this.currentFrame) {
+            render.setLastVisibleFrame(this.currentFrame);
+            render.setIncomingDirections(GraphDirection.NONE);
+
+            this.iterationQueue.add(render);
+        }
+
+        render.addIncomingDirections(incomingDirections);
     }
 
     private int getEffectiveViewDistance() {
@@ -595,18 +611,6 @@ public class RenderSectionManager {
         }
 
         return MathHelper.floor(distance) >> 4;
-    }
-
-
-    private void bfsEnqueue(RenderSection render, int incomingDirections) {
-        if (render.getLastVisibleFrame() != this.currentFrame) {
-            render.setLastVisibleFrame(this.currentFrame);
-            render.setIncomingDirections(GraphDirection.NONE);
-
-            this.iterationQueue.add(render);
-        }
-
-        render.addIncomingDirections(incomingDirections);
     }
 
     private void connectNeighborNodes(RenderSection render) {
