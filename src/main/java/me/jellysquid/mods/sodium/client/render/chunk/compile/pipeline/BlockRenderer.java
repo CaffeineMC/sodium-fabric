@@ -154,13 +154,17 @@ public class BlockRenderer {
             out.y = ctx.origin().y() + quad.getY(srcIndex) + (float) offset.getY();
             out.z = ctx.origin().z() + quad.getZ(srcIndex) + (float) offset.getZ();
 
-            if (isTranslucent && dstIndex == 0) {
+            if (isTranslucent) {
                 if (normalFace == ModelQuadFacing.UNASSIGNED) {
-                    ctx.groupBuilder.addUnalignedFace(
+                    if (dstIndex == 0) {
+                        ctx.groupBuilder.addUnalignedFace(
                             quad.getGFNINormX(), quad.getGFNINormY(), quad.getGFNINormZ(),
                             out.x, out.y, out.z);
-                } else {
+                    }
+                } else if (dstIndex == 0) {
                     ctx.groupBuilder.addAlignedFace(normalFace, out.x, out.y, out.z);
+                } else {
+                    ctx.groupBuilder.updateAlignedBounds(out.x, out.y, out.z);
                 }
             }
 

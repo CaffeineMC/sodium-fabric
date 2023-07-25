@@ -1,10 +1,13 @@
 package me.jellysquid.mods.sodium.client.model.quad;
 
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
+import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.client.texture.Sprite;
 
 /**
- * Provides a read-only view of a model quad. For mutable access to a model quad, see {@link ModelQuadViewMutable}.
+ * Provides a read-only view of a model quad. For mutable access to a model
+ * quad, see {@link ModelQuadViewMutable}.
  */
 public interface ModelQuadView {
     /**
@@ -38,7 +41,8 @@ public interface ModelQuadView {
     float getTexV(int idx);
 
     /**
-     * @return The integer bit flags containing the {@link ModelQuadFlags} for this quad
+     * @return The integer bit flags containing the {@link ModelQuadFlags} for this
+     *         quad
      */
     int getFlags();
 
@@ -81,12 +85,7 @@ public interface ModelQuadView {
      */
     void setGFNINormal(int x, int y, int z);
 
-    /**
-     * Calculates the normal vector for this quad using the cross product of the
-     * vertices. Ensures the normal vector returned by the getNorm methods is up to
-     * date (and a unit vector).
-     */
-    default void calculateGFNINormal() {
+    default int calculateNormals(boolean calculateUnitNormal) {
         final float x0 = getX(0);
         final float y0 = getY(0);
         final float z0 = getZ(0);
@@ -114,18 +113,37 @@ public interface ModelQuadView {
         float normY = dz0 * dx1 - dx0 * dz1;
         float normZ = dx0 * dy1 - dy0 * dx1;
 
-        float l = (float) Math.sqrt(normX * normX + normY * normY + normZ * normZ);
+        int packedNormal = -1;
+        if (calculateUnitNormal) {
+            // normalize by length for the packed normal
+            float length = (float) Math.sqrt(normX * normX + normY * normY + normZ * normZ);
+            if (length != 0.0 && length != 1.0) {
+                normX /= length;
+                normY /= length;
+                normZ /= length;
+            }
 
-        if (l != 0 && l != 1) {
-            normX /= l;
-            normY /= l;
-            normZ /= l;
+            packedNormal = NormI8.pack(normX, normY, normZ);
         }
 
-        this.setGFNINormal(
-            (int) (normX * 32),
-            (int) (normY * 32),
-            (int) (normZ * 32));
+        // normalize onto the surface of a cube by dividing by the length of the longest
+        // component
+        float infNormLength = Math.max(Math.abs(normX), Math.max(Math.abs(normY), Math.abs(normZ)));
+        if (infNormLength != 0 && infNormLength != 1) {
+            normX /= infNormLength;
+            normY /= infNormLength;
+            normZ /= infNormLength;
+        }
+
+        // quantize the coordinates on the surface of the cube.
+        // in each axis the number of values is 2 * QUANTIZATION_FACTOR + 1.
+        // the total number of normals is the number of points on that cube's surface.
+        setGFNINormal(
+                (int) (normX * GFNI.QUANTIZATION_FACTOR),
+                (int) (normY * GFNI.QUANTIZATION_FACTOR),
+                (int) (normZ * GFNI.QUANTIZATION_FACTOR));
+
+        return packedNormal;
     }
 
     default boolean hasColor() {

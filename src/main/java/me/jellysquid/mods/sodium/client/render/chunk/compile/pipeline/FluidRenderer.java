@@ -405,14 +405,19 @@ public class FluidRenderer {
             out.y = offset.getY() + quad.getY(i);
             out.z = offset.getZ() + quad.getZ(i);
 
-            if (isTranslucent && i == 0) {
+            if (isTranslucent) {
                 if (facing == ModelQuadFacing.UNASSIGNED) {
-                    quad.calculateGFNINormal();
-                    groupBuilder.addUnalignedFace(
+                    if (i == 0) {
+                        // calculate the current GFNI normal but not the unit normal
+                        quad.calculateNormals(false);
+                        groupBuilder.addUnalignedFace(
                             quad.getGFNINormX(), quad.getGFNINormY(), quad.getGFNINormZ(),
                             out.x, out.y, out.z);
-                } else {
+                    }
+                } else if (i == 0) {
                     groupBuilder.addAlignedFace(facing, out.x, out.y, out.z);
+                } else {
+                    groupBuilder.updateAlignedBounds(out.x, out.y, out.z);
                 }
             }
 

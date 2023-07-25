@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.mixin.core.pipeline;
 import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
 import me.jellysquid.mods.sodium.client.util.ModelQuadUtil;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
 import net.minecraft.client.render.model.BakedQuad;
@@ -43,15 +44,16 @@ public abstract class MixinBakedQuad implements BakedQuadView {
     private int flags;
 
     private int normal;
-    private int normX;
-    private int normY;
-    private int normZ;
+    private int GFNINormX;
+    private int GFNINormY;
+    private int GFNINormZ;
     private ModelQuadFacing normalFace;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, Direction face, Sprite sprite, boolean shade, CallbackInfo ci) {
-        this.calculateGFNINormal();
-        this.normal = NormI8.pack(this.normX, this.normY, this.normZ);
+        // calculates the GFNI normal (side effect) and returns the packed unit normal
+        this.normal = calculateNormals(true);
+
         this.normalFace = ModelQuadUtil.findNormalFace(this.normal);
 
         this.flags = ModelQuadFlags.getQuadFlags(this, face);
@@ -89,24 +91,24 @@ public abstract class MixinBakedQuad implements BakedQuadView {
 
     @Override
     public int getGFNINormX() {
-        return this.normX;
+        return this.GFNINormX;
     }
 
     @Override
     public int getGFNINormY() {
-        return this.normY;
+        return this.GFNINormY;
     }
 
     @Override
     public int getGFNINormZ() {
-        return this.normZ;
+        return this.GFNINormZ;
     }
 
     @Override
     public void setGFNINormal(int x, int y, int z) {
-        this.normX = x;
-        this.normY = y;
-        this.normZ = z;
+        this.GFNINormX = x;
+        this.GFNINormY = y;
+        this.GFNINormZ = z;
     }
 
     @Override

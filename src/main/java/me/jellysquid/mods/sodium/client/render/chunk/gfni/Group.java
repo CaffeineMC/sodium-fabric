@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
+import org.joml.Vector3fc;
+
 import com.lodborg.intervaltree.DoubleInterval;
 
 import it.unimi.dsi.fastutil.doubles.DoubleAVLTreeSet;
@@ -50,11 +52,11 @@ public class Group {
         }
     }
 
-    void triggerRange(GFNI gfni, double start, double end) {
+    void triggerRange(GFNI gfni, double start, double end, Vector3fc normal) {
         // trigger self on the section if the query range overlaps with the group
         if (start < this.distances.getEnd() && end > this.distances.getStart()
                 && !this.facePlaneDistances.subSet(start, end).isEmpty()) {
-            gfni.triggerSection(this.sectionPos);
+            gfni.triggerSection(this.sectionPos, normal);
         }
     }
 }

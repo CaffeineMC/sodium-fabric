@@ -95,7 +95,7 @@ public class NormalList {
 
         // stop if the movement is reverse with regards to the normal
         // since this means it's moving against the normal
-        if (start > end) {
+        if (start >= end) {
             return;
         }
 
@@ -104,7 +104,7 @@ public class NormalList {
         var interval = new DoubleInterval(start, end, Bounded.CLOSED);
         for (Interval<Double> groupInterval : groupIntervals.query(interval)) {
             for (Group group : groupsByInterval.get(groupInterval)) {
-                group.triggerRange(gfni, start, end);
+                group.triggerRange(gfni, start, end, this.normalf);
             }
         }
     }

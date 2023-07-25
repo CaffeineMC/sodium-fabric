@@ -1,8 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
-import java.time.Duration;
-import java.time.Instant;
-
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
@@ -29,19 +26,25 @@ import net.minecraft.util.math.ChunkSectionPos;
  * Maximum add/update and remove durations are 0.4ms and 0.06ms respectively in
  * a 32rd world with around 230 normal lists.
  * 
+ * It triggers 600 sections for normal (0, 1, 0) at distance
+ * 62.88788890838623 in a 32rd world because of flooded caves that make the
+ * ocean surface heuristic not work. The distance being triggered on is the
+ * overworld water surface height. Flooded caves have water surfaces below solid
+ * blocks above the water source blocks.
+ * 
  * TODO:
  * - update GFNI document about how this implementation works with the
  * interval tree and update the diagram.
- * - do some benchmarking with spark to figure out if there are bottlenecks
  * - filter the triggered sections by visibility in the frame (using the graph
  * search result)
  * - sort the triggered sections by camera distance and possibly also use number
  * of translucent faces as a heuristic for importance
- * - fix the quantization to actually convert to polar form and back? just
- * quanitzing the normal components generates more different normals than
- * necessary
+ * - baked models could possibly precompute normals and then just calculate
+ * distances when processing a chunk?
  */
 public class GFNI {
+    public static final int QUANTIZATION_FACTOR = 4;
+
     /**
      * A map of all the normal lists, indexed by their normal.
      */
@@ -53,11 +56,12 @@ public class GFNI {
      * normal lists.
      */
     ObjectOpenHashSet<ChunkSectionPos> triggeredSections = new ObjectOpenHashSet<>(50);
+    ObjectOpenHashSet<Vector3fc> triggeredNormals = new ObjectOpenHashSet<>(50); // TODO: for debugging
 
     public void processMovement(double lastCameraX, double lastCameraY, double lastCameraZ,
             double cameraX, double cameraY, double cameraZ) {
-        var startTime = Instant.now();
         triggeredSections.clear();
+        triggeredNormals.clear();
 
         for (var normalList : this.normalLists.values()) {
             normalList.processMovement(this, lastCameraX, lastCameraY, lastCameraZ, cameraX, cameraY, cameraZ);
@@ -72,14 +76,11 @@ public class GFNI {
                 System.out.println(section.getX() + " " + section.getY() + " " + section.getZ());
             }
         }
-
-        // TODO: remove
-        var duration = Duration.between(startTime, Instant.now());
-        System.out.println("Processed movement in " + (float) duration.toNanos() / 1_000_000 + " ms");
     }
 
-    void triggerSection(ChunkSectionPos section) {
+    void triggerSection(ChunkSectionPos section, Vector3fc normal) {
         this.triggeredSections.add(section);
+        this.triggeredNormals.add(normal);
     }
 
     private void removeSectionFromList(NormalList normalList, long chunkSectionLongPos) {
