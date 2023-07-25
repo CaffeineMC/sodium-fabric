@@ -118,7 +118,8 @@ public class GFNI {
         long chunkSectionLongPos = builder.sectionPos.asLong();
 
         // if the builder is irrelevant, remove it from the normal lists
-        if (!builder.isRelevant()) {
+        // if the builder is relevant, this may also simplify it as a side effect
+        if (!builder.calculateRelevanceAndSimplify()) {
             removeSection(chunkSectionLongPos);
             return;
         }

@@ -110,13 +110,14 @@ public class GroupBuilder {
     /**
      * Checks if this group builder is relevant for translucency sort triggering.
      * 
-     * If there are no or only one normal, this builder can be considered
+     * A: If there are no or only one normal, this builder can be considered
      * practically empty.
      * 
-     * If there are two face planes with opposing normals at the same distance, then
+     * B: If there are two face planes with opposing normals at the same distance,
+     * then
      * they can't be seen through each other and this section can be ignored.
      * 
-     * If the translucent faces are on the surface of the convex hull of all
+     * C: If the translucent faces are on the surface of the convex hull of all
      * translucent faces in the section and face outwards, then there is no way to
      * see one through the other. Since convex nulls are hard, a simpler case only
      * uses the axis aligned normals: Under the condition that only aligned normals
@@ -126,29 +127,47 @@ public class GroupBuilder {
      * sections containing a single convex translucent cuboid (of which not all
      * faces need to exist).
      * 
+     * D1: If there are up to two normals with each up to two distances, then only
+     * the larger distance of each normal needs to be triggered on.
+     * 
+     * TODO: However, for this to work, the initial sort needs to happen fully above
+     * or below both of the distances. Otherwise there can be cases where it's
+     * wrong.
+     * 
+     * D2: More generally, if there are only two normals which are opposites of
+     * each other, then a special fixed sort order is always a correct sort order.
+     * This ordering sorts the two sets of face planes by their ascending
+     * normal-relative distance. The ordering between the two normals is irrelevant
+     * as they can't be seen through each other anyways. This case in includes case
+     * D1 and makes it unnecessary. Sections in D2 don't need to be triggered on at
+     * all. (not yet implemented since there is no sorting backend yet)
+     * 
      * More heuristics can be performed here to conservatively determine if this
      * section could possibly have more than one translucent sort order.
      * 
      * @return true if this group builder is relevant
      */
-    boolean isRelevant() {
-        if (facePlaneCount <= 1) {
+    boolean calculateRelevanceAndSimplify() {
+        // special case A
+        if (this.facePlaneCount <= 1) {
             return false;
         }
 
         if (this.unalignedDistances == null) {
+            boolean twoOpposingNormals = this.alignedNormalBitmap == 0b11
+                    || this.alignedNormalBitmap == 0b1100
+                    || this.alignedNormalBitmap == 0b110000;
+
+            // special case B
             // if there are just two normals, they are exact opposites of eachother and they
             // each only have one distance, there is no way to see through one face to the
             // other.
-            if (this.facePlaneCount == 2
-                    && (this.alignedNormalBitmap == 0b11
-                            || this.alignedNormalBitmap == 0b1100
-                            || this.alignedNormalBitmap == 0b110000)) {
+            if (this.facePlaneCount == 2 && twoOpposingNormals) {
                 return false;
             }
 
+            // special case C
             // the more complex test that checks for distances aligned with the bounding box
-            // of the geometry added to the group builder
             if (this.facePlaneCount <= ModelQuadFacing.DIRECTIONS.length) {
                 boolean passesBoundingBoxTest = true;
                 for (AccumulationGroup accGroup : this.axisAlignedDistances) {
@@ -175,6 +194,33 @@ public class GroupBuilder {
                 if (passesBoundingBoxTest) {
                     return false;
                 }
+            }
+
+            // special case D1
+            if (this.facePlaneCount <= 2 || this.facePlaneCount <= 4 && twoOpposingNormals) {
+                // remove the lesser distance of each normal, even if it only has one
+                for (AccumulationGroup accGroup : this.axisAlignedDistances) {
+                    if (accGroup == null) {
+                        continue;
+                    }
+
+                    var distanceIterator = accGroup.relativeDistances.iterator();
+                    var lesserDistance = distanceIterator.nextDouble();
+                    if (distanceIterator.hasNext()) {
+                        lesserDistance = Math.min(lesserDistance, distanceIterator.nextDouble());
+                    }
+                    accGroup.relativeDistances.remove(lesserDistance);
+                    this.facePlaneCount--;
+
+                    if (accGroup.relativeDistances.isEmpty()) {
+                        this.axisAlignedDistances[accGroup.groupBuilderKey] = null;
+                        this.alignedNormalBitmap ^= 1 << accGroup.groupBuilderKey;
+                    }
+                }
+
+                // in case D1 the group will always still need sorting, just now less often.
+                // the case where the only remaining face plane is removed is handled in A.
+                return true;
             }
         }
 
