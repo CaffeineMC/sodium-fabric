@@ -1,9 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.texture;
 
 public interface SpriteContentsExtended {
-    void setActive(boolean b);
+    void sodium$setActive(boolean value);
+    boolean sodium$isActive();
 
-    boolean hasAnimation();
-
-    boolean isActive();
+    boolean sodium$hasAnimation();
 }

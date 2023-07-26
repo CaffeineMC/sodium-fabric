@@ -6,9 +6,9 @@ import net.minecraft.client.color.block.BlockColorProvider;
 import net.minecraft.client.color.block.BlockColors;
 
 public interface BlockColorsExtended {
-    static Iterable<Reference2ReferenceMap.Entry<Block, BlockColorProvider>> getProviders(BlockColors blockColors) {
-        return ((BlockColorsExtended) blockColors).getProviders();
+    static Reference2ReferenceMap<Block, BlockColorProvider> getProviders(BlockColors blockColors) {
+        return ((BlockColorsExtended) blockColors).sodium$getProviders();
     }
 
-    Iterable<Reference2ReferenceMap.Entry<Block, BlockColorProvider>> getProviders();
+    Reference2ReferenceMap<Block, BlockColorProvider> sodium$getProviders();
 }

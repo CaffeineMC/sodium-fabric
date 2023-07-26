@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.vertex;
 
+import me.jellysquid.mods.sodium.mixin.core.render.VertexFormatAccessor;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.CommonVertexAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.format.VertexFormatDescription;
 import net.minecraft.client.render.VertexFormat;
@@ -21,22 +22,23 @@ public class VertexFormatDescriptionImpl implements VertexFormatDescription {
     }
 
     public static int[] getOffsets(VertexFormat format) {
-        final int[] offsets = new int[CommonVertexAttribute.COUNT];
+        final int[] commonElementOffsets = new int[CommonVertexAttribute.COUNT];
 
-        Arrays.fill(offsets, -1);
+        Arrays.fill(commonElementOffsets, -1);
 
-        var elements = format.getElements();
+        var elementList = format.getElements();
+        var elementOffsets = ((VertexFormatAccessor) format).getOffsets();
 
-        for (int elementIndex = 0; elementIndex < elements.size(); elementIndex++) {
-            var element = elements.get(elementIndex);
+        for (int elementIndex = 0; elementIndex < elementList.size(); elementIndex++) {
+            var element = elementList.get(elementIndex);
             var commonType = CommonVertexAttribute.getCommonType(element);
 
             if (commonType != null) {
-                offsets[commonType.ordinal()] = format.offsets.getInt(elementIndex);
+                commonElementOffsets[commonType.ordinal()] = elementOffsets.getInt(elementIndex);
             }
         }
 
-        return offsets;
+        return commonElementOffsets;
     }
 
     @Override

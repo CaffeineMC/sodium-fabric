@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionFlags;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
-import me.jellysquid.mods.sodium.client.render.texture.SpriteContentsExtended;
+import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
@@ -26,13 +26,8 @@ public class ChunkRenderData {
     private List<BlockEntity> blockEntities;
 
     private ChunkOcclusionData occlusionData;
-    private ChunkRenderBounds bounds;
 
     private List<Sprite> animatedSprites;
-
-    public ChunkRenderBounds getBounds() {
-        return this.bounds;
-    }
 
     public ChunkOcclusionData getOcclusionData() {
         return this.occlusionData;
@@ -61,11 +56,15 @@ public class ChunkRenderData {
         int flags = 0;
 
         if (!this.blockRenderPasses.isEmpty()) {
-            flags |= RenderSectionFlags.HAS_BLOCK_GEOMETRY;
+            flags |= 1 << RenderSectionFlags.HAS_BLOCK_GEOMETRY;
         }
 
         if (!this.blockEntities.isEmpty() || !this.globalBlockEntities.isEmpty()) {
-            flags |= RenderSectionFlags.HAS_BLOCK_ENTITIES;
+            flags |= 1 << RenderSectionFlags.HAS_BLOCK_ENTITIES;
+        }
+
+        if (!this.animatedSprites.isEmpty()) {
+            flags |= 1 << RenderSectionFlags.HAS_ANIMATED_SPRITES;
         }
 
         return flags;
@@ -78,14 +77,9 @@ public class ChunkRenderData {
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
         private ChunkOcclusionData occlusionData;
-        private ChunkRenderBounds bounds = ChunkRenderBounds.ALWAYS_FALSE;
 
         public void addRenderPass(TerrainRenderPass pass) {
             this.renderPasses.add(pass);
-        }
-
-        public void setBounds(ChunkRenderBounds bounds) {
-            this.bounds = bounds;
         }
 
         public void setOcclusionData(ChunkOcclusionData data) {
@@ -98,7 +92,7 @@ public class ChunkRenderData {
          * @param sprite The sprite
          */
         public void addSprite(Sprite sprite) {
-            if (((SpriteContentsExtended) sprite.getContents()).hasAnimation()) {
+            if (SpriteUtil.hasAnimation(sprite)) {
                 this.animatedSprites.add(sprite);
             }
         }
@@ -117,7 +111,6 @@ public class ChunkRenderData {
             data.globalBlockEntities = this.globalBlockEntities;
             data.blockEntities = this.blockEntities;
             data.occlusionData = this.occlusionData;
-            data.bounds = this.bounds;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
             data.blockRenderPasses = this.renderPasses;
 

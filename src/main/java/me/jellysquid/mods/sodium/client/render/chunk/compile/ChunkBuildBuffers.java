@@ -93,7 +93,7 @@ public class ChunkBuildBuffers {
 
         mergedBufferBuilder.flip();
 
-        return new ChunkMeshData(mergedBuffer, vertexRanges);
+        return new ChunkMeshData(mergedBuffer, vertexRanges, vertexCount);
     }
 
     public void destroy() {

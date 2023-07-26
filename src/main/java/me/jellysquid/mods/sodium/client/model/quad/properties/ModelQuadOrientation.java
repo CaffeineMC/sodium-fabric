@@ -24,9 +24,20 @@ public enum ModelQuadOrientation {
     /**
      * Determines the orientation of the vertices in the quad.
      */
-    public static ModelQuadOrientation orientByBrightness(float[] brightnesses) {
+    public static ModelQuadOrientation orientByBrightness(float[] brightnesses, int[] lightmaps) {
         // If one side of the quad is brighter, flip the sides
-        if (brightnesses[0] + brightnesses[2] >= brightnesses[1] + brightnesses[3]) {
+        float br02 = brightnesses[0] + brightnesses[2];
+        float br13 = brightnesses[1] + brightnesses[3];
+        if (br02 > br13) {
+            return NORMAL;
+        } else if (br02 < br13) {
+            return FLIP;
+        }
+
+        // If one side of the quad is darker, flip the sides
+        int lm02 = lightmaps[0] + lightmaps[2];
+        int lm13 = lightmaps[1] + lightmaps[3];
+        if (lm02 <= lm13) {
             return NORMAL;
         } else {
             return FLIP;

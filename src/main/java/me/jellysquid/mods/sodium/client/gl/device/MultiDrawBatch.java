@@ -18,8 +18,7 @@ public final class MultiDrawBatch {
 
     private final int capacity;
 
-    private int maxVertexCount;
-    private int count;
+    private int size;
 
     public MultiDrawBatch(int capacity) {
         this.pPointer = MemoryUtil.memAddress(MemoryUtil.memAllocPointer(capacity));
@@ -41,30 +40,24 @@ public final class MultiDrawBatch {
         return this.pBaseVertex;
     }
 
-    public int getMaxVertexCount() {
-        return this.maxVertexCount;
-    }
-
     int size() {
-        return this.count;
+        return this.size;
     }
 
     public void clear() {
-        this.count = 0;
-        this.maxVertexCount = 0;
+        this.size = 0;
     }
 
     public void add(long pointer, int count, int baseVertex) {
-        if (this.count >= this.capacity) {
+        if (this.size >= this.capacity) {
             throw new BufferUnderflowException();
         }
 
-        MemoryUtil.memPutAddress(this.pPointer + (this.count * Pointer.POINTER_SIZE), pointer);
-        MemoryUtil.memPutInt(this.pCount + (this.count * Integer.BYTES), count);
-        MemoryUtil.memPutInt(this.pBaseVertex + (this.count * Integer.BYTES), baseVertex);
+        long index = this.size++;
 
-        this.count++;
-        this.maxVertexCount = Math.max(this.maxVertexCount, count);
+        MemoryUtil.memPutAddress(this.pPointer + (index * Pointer.POINTER_SIZE), pointer);
+        MemoryUtil.memPutInt(this.pCount + (index * Integer.BYTES), count);
+        MemoryUtil.memPutInt(this.pBaseVertex + (index * Integer.BYTES), baseVertex);
     }
 
     public void delete() {
@@ -74,7 +67,7 @@ public final class MultiDrawBatch {
     }
 
     public boolean isEmpty() {
-        return this.count <= 0;
+        return this.size <= 0;
     }
 
 }

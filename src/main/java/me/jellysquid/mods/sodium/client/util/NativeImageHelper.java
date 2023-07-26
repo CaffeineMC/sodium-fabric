@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.util;
 
+import me.jellysquid.mods.sodium.mixin.features.textures.NativeImageAccessor;
 import net.minecraft.client.texture.NativeImage;
 
 import java.util.Locale;
@@ -11,6 +12,7 @@ public class NativeImageHelper {
                     "Tried to get pointer to RGBA pixel data on NativeImage of wrong format; have %s", nativeImage.getFormat()));
         }
 
-        return nativeImage.pointer;
+        return ((NativeImageAccessor) (Object) nativeImage) // duck type since NativeImage is final
+                .getPointer();
     }
 }
