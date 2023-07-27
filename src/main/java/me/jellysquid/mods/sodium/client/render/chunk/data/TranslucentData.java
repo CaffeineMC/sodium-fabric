@@ -1,10 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.chunk.data;
 
+import java.util.Map;
+
 import org.joml.Vector3f;
 
+import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.SortType;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 
 /**
  * TODO: figure out if the encoded vertex data should be decoded or taken from
@@ -13,14 +15,14 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexTy
  * later decides that it's not necessary.
  */
 public interface TranslucentData {
-    public static TranslucentData fromMeshData(ChunkVertexType vertexType, ChunkMeshData meshData, SortType sortType) {
+    public static TranslucentData fromMeshData(SortType sortType, Map<ModelQuadFacing, ReferenceArrayList<Vector3f>> centers) {
         switch (sortType) {
             case NONE:
                 return null;
             case STATIC_NORMAL_RELATIVE:
-                return new StaticTranslucentData(vertexType, meshData);
+                return new StaticTranslucentData(centers);
             case DYNAMIC:
-                return new DynamicTranslucentData(vertexType, meshData);
+                return new DynamicTranslucentData(centers);
             default:
                 throw new UnsupportedOperationException("Unknown sort type: " + sortType);
         }

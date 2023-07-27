@@ -145,7 +145,8 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
                 if (isTranslucent) {
                     // calculate the primitive centers and initialize indexes for sorting.
                     // also does an initial sort
-                    translucentData = TranslucentData.fromMeshData(buildContext.vertexType, mesh, sortType);
+                    translucentData = TranslucentData.fromMeshData(
+                        sortType, context.groupBuilder.quadCenters);
 
                     // initial sort
                     if (translucentData != null) {

@@ -1,9 +1,13 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -24,9 +28,19 @@ public class GroupBuilder {
     private int alignedNormalBitmap = 0;
     private Vector3f minBounds = new Vector3f(16, 16, 16);
     private Vector3f maxBounds = new Vector3f(0, 0, 0);
+    public final Map<ModelQuadFacing, ReferenceArrayList<Vector3f>> quadCenters = new EnumMap<>(ModelQuadFacing.class);
 
     public GroupBuilder(ChunkSectionPos sectionPos) {
         this.sectionPos = sectionPos;
+    }
+
+    public void appendQuadCenter(ModelQuadFacing facing, float xSum, float ySum, float zSum) {
+        var list = this.quadCenters.get(facing);
+        if (list == null) {
+            list = new ReferenceArrayList<>();
+            this.quadCenters.put(facing, list);
+        }
+        list.add(new Vector3f(xSum / 4, ySum / 4, zSum / 4));
     }
 
     public void addAlignedFace(ModelQuadFacing facing, float vertexX, float vertexY, float vertexZ) {

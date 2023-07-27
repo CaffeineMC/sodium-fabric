@@ -144,6 +144,10 @@ public class BlockRenderer {
         // if translucent, add this face to the GFNI group builder
         boolean isTranslucent = material == DefaultMaterials.TRANSLUCENT;
 
+        float xSum = 0.0F;
+        float ySum = 0.0F;
+        float zSum = 0.0F;
+
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
 
@@ -164,6 +168,10 @@ public class BlockRenderer {
                 } else {
                     ctx.groupBuilder.updateAlignedBounds(out.x, out.y, out.z);
                 }
+
+                xSum += out.x;
+                ySum += out.y;
+                zSum += out.z;
             }
 
             out.color = ColorABGR.withAlpha(colors != null ? colors[srcIndex] : 0xFFFFFFFF, light.br[srcIndex]);
@@ -173,6 +181,8 @@ public class BlockRenderer {
 
             out.light = light.lm[srcIndex];
         }
+
+        ctx.groupBuilder.appendQuadCenter(normalFace, xSum, ySum, zSum);
 
         var vertexBuffer = builder.getVertexBuffer(normalFace);
         vertexBuffer.push(vertices, material);

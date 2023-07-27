@@ -7,8 +7,8 @@ import org.joml.Vector3f;
 
 import com.mojang.blaze3d.systems.VertexSorter;
 
+import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 
 public class StaticTranslucentData implements TranslucentData {
@@ -22,14 +22,11 @@ public class StaticTranslucentData implements TranslucentData {
 
     private final Map<ModelQuadFacing, IndexedPrimitives> data = new EnumMap<>(ModelQuadFacing.class);
 
-    public StaticTranslucentData(ChunkVertexType vertexType, ChunkMeshData meshData) {
-        var buffer = meshData.getVertexData().getDirectBuffer();
-        int primitiveCount = meshData.getVertexCount() / 4; // TODO: is it quads or triangles?
-
+    public StaticTranslucentData(Map<ModelQuadFacing, ReferenceArrayList<Vector3f>> centers) {
         for (ModelQuadFacing facing : ModelQuadFacing.DIRECTIONS) {
-            var vertexRange = meshData.getPart(facing);
-            if (vertexRange != null) {
-                this.data.put(facing, new IndexedPrimitives(vertexType, buffer, vertexRange, primitiveCount));
+            var centersForFacing = centers.get(facing);
+            if (centersForFacing != null) {
+                this.data.put(facing, new IndexedPrimitives((Vector3f[]) centersForFacing.toArray()));
             }
         }
     }
