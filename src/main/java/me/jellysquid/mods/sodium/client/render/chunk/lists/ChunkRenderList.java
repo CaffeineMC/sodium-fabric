@@ -5,10 +5,12 @@ import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionFlags;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+
 public class ChunkRenderList {
     private RenderRegion region;
 
-    private final byte[] sectionsWithGeometry = new byte[RenderRegion.REGION_SIZE + 1];
+    private final short[] sectionsWithGeometry = new short[RenderRegion.REGION_SIZE + 1];
     private int sectionsWithGeometryCount = 0;
 
     private final byte[] sectionsWithSprites = new byte[RenderRegion.REGION_SIZE + 1];
@@ -33,7 +35,7 @@ public class ChunkRenderList {
         this.size = 0;
     }
 
-    public void add(RenderSection render) {
+    public void add(RenderSection render, int faces) {
         if (this.size >= RenderRegion.REGION_SIZE) {
             throw new ArrayIndexOutOfBoundsException("Render list is full");
         }
@@ -43,7 +45,7 @@ public class ChunkRenderList {
         int index = render.getSectionIndex();
         int flags = render.getFlags();
 
-        this.sectionsWithGeometry[this.sectionsWithGeometryCount] = (byte) index;
+        this.sectionsWithGeometry[this.sectionsWithGeometryCount] = (short) pack(index, faces);
         this.sectionsWithGeometryCount += (flags >>> RenderSectionFlags.HAS_BLOCK_GEOMETRY) & 1;
 
         this.sectionsWithSprites[this.sectionsWithSpritesCount] = (byte) index;
@@ -98,14 +100,14 @@ public class ChunkRenderList {
     }
 
     public static class ReversibleSectionIterator {
-        private final byte[] elements;
+        private final short[] elements;
 
         private final int step;
 
         private int cur;
         private int rem;
 
-        public ReversibleSectionIterator(byte[] elements, int start, int end, boolean reverse) {
+        public ReversibleSectionIterator(short[] elements, int start, int end, boolean reverse) {
             this.elements = elements;
             this.rem = end - start;
 
@@ -118,7 +120,7 @@ public class ChunkRenderList {
         }
 
         public int next() {
-            int result = Byte.toUnsignedInt(this.elements[this.cur]);
+            int result = Short.toUnsignedInt(this.elements[this.cur]);
 
             this.cur += this.step;
             this.rem--;
@@ -146,5 +148,17 @@ public class ChunkRenderList {
         public int next() {
             return Byte.toUnsignedInt(this.elements[this.index++]);
         }
+    }
+
+    public static int pack(int idx, int faces) {
+        return ((idx & 0xFF) << 0) | ((faces & 0xFF) << 8);
+    }
+
+    public static int unpackIndex(int packed) {
+        return (packed >> 0) & 0xFF;
+    }
+
+    public static int unpackFaces(int packed) {
+        return (packed >> 8) & 0xFF;
     }
 }

@@ -16,10 +16,10 @@ import java.util.*;
  * The render data for a chunk render container containing all the information about which meshes are attached, the
  * block entities contained by it, and any data used for occlusion testing.
  */
-public class ChunkRenderData {
-    public static final ChunkRenderData ABSENT = new ChunkRenderData.Builder()
+public class BuiltSectionInfo {
+    public static final BuiltSectionInfo ABSENT = new BuiltSectionInfo.Builder()
             .build();
-    public static final ChunkRenderData EMPTY = createEmptyData();
+    public static final BuiltSectionInfo EMPTY = createEmptyData();
 
     private List<TerrainRenderPass> blockRenderPasses;
     private List<BlockEntity> globalBlockEntities;
@@ -106,8 +106,8 @@ public class ChunkRenderData {
             (cull ? this.blockEntities : this.globalBlockEntities).add(entity);
         }
 
-        public ChunkRenderData build() {
-            ChunkRenderData data = new ChunkRenderData();
+        public BuiltSectionInfo build() {
+            BuiltSectionInfo data = new BuiltSectionInfo();
             data.globalBlockEntities = this.globalBlockEntities;
             data.blockEntities = this.blockEntities;
             data.occlusionData = this.occlusionData;
@@ -118,11 +118,11 @@ public class ChunkRenderData {
         }
     }
 
-    private static ChunkRenderData createEmptyData() {
+    private static BuiltSectionInfo createEmptyData() {
         ChunkOcclusionData occlusionData = new ChunkOcclusionData();
         occlusionData.addOpenEdgeFaces(EnumSet.allOf(Direction.class));
 
-        ChunkRenderData.Builder meshInfo = new ChunkRenderData.Builder();
+        BuiltSectionInfo.Builder meshInfo = new BuiltSectionInfo.Builder();
         meshInfo.setOcclusionData(occlusionData);
 
         return meshInfo.build();

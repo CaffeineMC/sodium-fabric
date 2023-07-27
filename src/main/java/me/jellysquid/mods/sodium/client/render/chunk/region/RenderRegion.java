@@ -6,8 +6,8 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
@@ -44,7 +44,7 @@ public class RenderRegion {
     private final RenderSection[] sections = new RenderSection[RenderRegion.REGION_SIZE];
     private int sectionCount;
 
-    private final Map<TerrainRenderPass, SectionStorage> sectionRenderData = new Reference2ReferenceOpenHashMap<>();
+    private final Map<TerrainRenderPass, SectionRenderDataStorage> sectionRenderData = new Reference2ReferenceOpenHashMap<>();
     private DeviceResources resources;
 
     public RenderRegion(int x, int y, int z, StagingBuffer stagingBuffer) {
@@ -59,16 +59,28 @@ public class RenderRegion {
         return ChunkSectionPos.asLong(x, y, z);
     }
 
+    public int getChunkX() {
+        return this.x << REGION_WIDTH_SH;
+    }
+
+    public int getChunkY() {
+        return this.y << REGION_HEIGHT_SH;
+    }
+
+    public int getChunkZ() {
+        return this.z << REGION_LENGTH_SH;
+    }
+
     public int getOriginX() {
-        return this.x << REGION_WIDTH_SH << 4;
+        return this.getChunkX() << 4;
     }
 
     public int getOriginY() {
-        return this.y << REGION_HEIGHT_SH << 4;
+        return this.getChunkY() << 4;
     }
 
     public int getOriginZ() {
-        return this.z << REGION_LENGTH_SH << 4;
+        return this.getChunkZ() << 4;
     }
 
     public void delete(CommandList commandList) {
@@ -90,15 +102,15 @@ public class RenderRegion {
         return this.sectionCount == 0;
     }
 
-    public SectionStorage getStorage(TerrainRenderPass pass) {
+    public SectionRenderDataStorage getStorage(TerrainRenderPass pass) {
         return this.sectionRenderData.get(pass);
     }
 
-    public SectionStorage createStorage(TerrainRenderPass pass) {
-        SectionStorage storage = this.sectionRenderData.get(pass);
+    public SectionRenderDataStorage createStorage(TerrainRenderPass pass) {
+        var storage = this.sectionRenderData.get(pass);
 
         if (storage == null) {
-            this.sectionRenderData.put(pass, storage = new SectionStorage());
+            this.sectionRenderData.put(pass, storage = new SectionRenderDataStorage());
         }
 
         return storage;
@@ -137,7 +149,7 @@ public class RenderRegion {
         }
 
         for (var storage : this.sectionRenderData.values()) {
-            storage.updateState(section, null);
+            storage.removeMesh(sectionIndex);
         }
 
         this.sections[sectionIndex] = null;
@@ -210,45 +222,6 @@ public class RenderRegion {
 
         public boolean shouldDelete() {
             return this.geometryArena.isEmpty();
-        }
-    }
-
-    public static class SectionStorage {
-        private final ChunkGraphicsState[] state = new ChunkGraphicsState[RenderRegion.REGION_SIZE];
-
-        public ChunkGraphicsState getRenderData(int section) {
-            return this.state[section];
-        }
-
-        public void updateState(RenderSection section, ChunkGraphicsState state) {
-            var id = section.getSectionIndex();
-
-            var prev = this.state[id];
-
-            if (prev != null) {
-                prev.delete();
-            }
-
-            this.state[id] = state;
-        }
-
-        public void delete() {
-            for (ChunkGraphicsState state : this.state) {
-                if (state != null) {
-                    state.delete();
-                }
-            }
-
-            Arrays.fill(this.state, null);
-        }
-
-
-        public void refresh() {
-            for (var state : this.state) {
-                if (state != null) {
-                    state.refresh();
-                }
-            }
         }
     }
 }
