@@ -10,10 +10,12 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.data.TranslucentData;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.*;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.GroupBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.SortType;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -50,7 +52,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
     @Override
     public ChunkBuildResult performBuild(ChunkBuildContext buildContext, CancellationSource cancellationSource) {
-        ChunkRenderData.Builder renderData = new ChunkRenderData.Builder();
+        BuiltSectionInfo.Builder renderData = new BuiltSectionInfo.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
         ChunkBuildBuffers buffers = buildContext.buffers;
@@ -130,13 +132,13 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         SortType sortType = this.gfni.integrateGroupBuilder(context.groupBuilder);
         TranslucentData translucentData = null;
 
-        Map<TerrainRenderPass, ChunkMeshData> meshes = new Reference2ReferenceOpenHashMap<>();
+        Map<TerrainRenderPass, BuiltSectionMeshParts> meshes = new Reference2ReferenceOpenHashMap<>();
         for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
             // consolidate all translucent geometry into UNASSIGNED so that it's rendered
             // all together if GFNI's heuristic determines that it needs to be dynamically
             // sorted
             boolean isTranslucent = pass == DefaultTerrainRenderPasses.TRANSLUCENT;
-            ChunkMeshData mesh = buffers.createMesh(pass, isTranslucent && sortType.needsDynamicSort);
+            BuiltSectionMeshParts mesh = buffers.createMesh(pass, isTranslucent && sortType.needsDynamicSort);
 
             if (mesh != null) {
                 meshes.put(pass, mesh);

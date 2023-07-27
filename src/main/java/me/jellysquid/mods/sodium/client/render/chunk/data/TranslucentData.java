@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.data;
 
-import java.util.Map;
-
 import org.joml.Vector3f;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
@@ -15,7 +13,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.gfni.SortType;
  * later decides that it's not necessary.
  */
 public interface TranslucentData {
-    public static TranslucentData fromMeshData(SortType sortType, Map<ModelQuadFacing, ReferenceArrayList<Vector3f>> centers) {
+    public static TranslucentData fromMeshData(SortType sortType, ReferenceArrayList<Vector3f>[] centers) {
         switch (sortType) {
             case NONE:
                 return null;

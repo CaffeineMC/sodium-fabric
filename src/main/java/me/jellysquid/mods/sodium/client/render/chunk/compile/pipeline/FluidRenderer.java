@@ -172,7 +172,7 @@ public class FluidRenderer {
 
             if (velocity.x == 0.0D && velocity.z == 0.0D) {
                 sprite = sprites[0];
-                facing = ModelQuadFacing.UP;
+                facing = ModelQuadFacing.POS_Y;
                 u1 = sprite.getFrameU(0.0D);
                 v1 = sprite.getFrameV(0.0D);
                 u2 = u1;
@@ -224,7 +224,7 @@ public class FluidRenderer {
 
             if (fluidState.canFlowTo(world, this.scratchPos.set(posX, posY + 1, posZ))) {
                 this.writeQuad(meshBuilder, groupBuilder, material, offset, quad,
-                        ModelQuadFacing.DOWN, true);
+                        ModelQuadFacing.NEG_Y, true);
 
             }
 
@@ -245,7 +245,7 @@ public class FluidRenderer {
             setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
             this.updateQuad(quad, world, pos, lighter, Direction.DOWN, 1.0F, colorProvider, fluidState);
-            this.writeQuad(meshBuilder, groupBuilder, material, offset, quad, ModelQuadFacing.DOWN, false);
+            this.writeQuad(meshBuilder, groupBuilder, material, offset, quad, ModelQuadFacing.NEG_Y, false);
 
         }
 

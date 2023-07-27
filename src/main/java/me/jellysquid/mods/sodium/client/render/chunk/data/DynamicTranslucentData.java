@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.data;
 
-import java.util.Map;
-
 import org.joml.Vector3f;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
@@ -11,18 +9,18 @@ import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 public class DynamicTranslucentData implements TranslucentData {
     private IndexedPrimitives data;
 
-    public DynamicTranslucentData(Map<ModelQuadFacing, ReferenceArrayList<Vector3f>> centers) {
+    public DynamicTranslucentData(ReferenceArrayList<Vector3f>[] centers) {
         var length = 0;
-        for (var facing : ModelQuadFacing.DIRECTIONS) {
-            var centersForFacing = centers.get(facing);
+        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
+            var centersForFacing = centers[i];
             if (centersForFacing != null) {
                 length += centersForFacing.size();
             }
         }
         var centersArray = new Vector3f[length];
-        var index = 0;
-        for (var facing : ModelQuadFacing.DIRECTIONS) {
-            var centersForFacing = centers.get(facing);
+        int index = 0;
+        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
+            var centersForFacing = centers[i];
             if (centersForFacing != null) {
                 for (var center : centersForFacing) {
                     centersArray[index++] = center;

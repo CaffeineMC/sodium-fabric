@@ -13,20 +13,20 @@ public class VertexSorters {
 
     public static VertexSorter sortByAxis(ModelQuadFacing facing) {
         switch (facing) {
-            case DOWN:
-                return new SortByAxis(1, -1.0F);
-            case UP:
-                return new SortByAxis(1, 1.0F);
-            case NORTH:
-                return new SortByAxis(2, -1.0F);
-            case SOUTH:
-                return new SortByAxis(2, 1.0F);
-            case WEST:
-                return new SortByAxis(0, -1.0F);
-            case EAST:
+            case POS_X:
                 return new SortByAxis(0, 1.0F);
+            case NEG_X:
+                return new SortByAxis(0, -1.0F);
+            case POS_Y:
+                return new SortByAxis(1, 1.0F);
+            case NEG_Y:
+                return new SortByAxis(1, -1.0F);
+            case POS_Z:
+                return new SortByAxis(2, 1.0F);
+            case NEG_Z:
+                return new SortByAxis(2, -1.0F);
             default:
-                throw new IllegalArgumentException("Invalid facing: " + facing);
+                throw new IllegalArgumentException("Unknown facing: " + facing);
         }
     }
 

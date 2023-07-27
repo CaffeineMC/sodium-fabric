@@ -11,11 +11,10 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.data.TranslucentData;
 
 import org.jetbrains.annotations.NotNull;
@@ -78,10 +77,10 @@ public class RenderRegionManager {
                     var storage = region.getStorage(pass);
 
                     if (storage != null) {
-                        storage.updateState(result.render, null);
+                        storage.removeMesh(result.render.getSectionIndex());
                     }
 
-                    ChunkMeshData mesh = meshBuildResult.getMesh(pass);
+                    BuiltSectionMeshParts mesh = meshBuildResult.getMesh(pass);
 
                     if (mesh != null) {
                         uploads.add(new PendingSectionMeshUpload(meshBuildResult.render, mesh, pass,
@@ -110,10 +109,10 @@ public class RenderRegionManager {
 
         // Collect the upload results
         for (PendingSectionMeshUpload upload : uploads) {
-            var state = new ChunkGraphicsState(upload.section, upload.vertexUpload.getResult(), upload.meshData);
-
             var storage = region.createStorage(upload.pass);
-            storage.updateState(upload.section, state);
+            storage.removeMesh(upload.section.getSectionIndex());
+            storage.addMesh(upload.section.getSectionIndex(),
+                    upload.vertexUpload.getResult(), upload.meshData.getVertexRanges());
         }
     }
 
@@ -172,7 +171,7 @@ public class RenderRegionManager {
         return instance;
     }
 
-    private record PendingSectionMeshUpload(RenderSection section, ChunkMeshData meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
+    private record PendingSectionMeshUpload(RenderSection section, BuiltSectionMeshParts meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
     }
 
     // TODO: Does this need to use native buffers or not? If so, then they should

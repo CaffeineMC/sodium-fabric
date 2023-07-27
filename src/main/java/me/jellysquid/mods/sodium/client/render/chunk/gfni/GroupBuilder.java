@@ -1,8 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
-import java.util.EnumMap;
-import java.util.Map;
-
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
@@ -12,11 +9,11 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public class GroupBuilder {
-    public static final Vector3fc[] ALIGNED_NORMALS = new Vector3fc[ModelQuadFacing.DIRECTIONS.length];
+    public static final Vector3fc[] ALIGNED_NORMALS = new Vector3fc[ModelQuadFacing.DIRECTIONS];
 
     static {
-        for (int i = 0; i < ModelQuadFacing.DIRECTIONS.length; i++) {
-            ALIGNED_NORMALS[i] = new Vector3f(ModelQuadFacing.DIRECTIONS[i].toDirection().getUnitVector());
+        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
+            ALIGNED_NORMALS[i] = new Vector3f(ModelQuadFacing.VALUES[i].toDirection().getUnitVector());
         }
     }
 
@@ -28,17 +25,19 @@ public class GroupBuilder {
     private int alignedNormalBitmap = 0;
     private Vector3f minBounds = new Vector3f(16, 16, 16);
     private Vector3f maxBounds = new Vector3f(0, 0, 0);
-    public final Map<ModelQuadFacing, ReferenceArrayList<Vector3f>> quadCenters = new EnumMap<>(ModelQuadFacing.class);
+
+    @SuppressWarnings("unchecked")
+    public final ReferenceArrayList<Vector3f>[] quadCenters = new ReferenceArrayList[ModelQuadFacing.DIRECTIONS];
 
     public GroupBuilder(ChunkSectionPos sectionPos) {
         this.sectionPos = sectionPos;
     }
 
     public void appendQuadCenter(ModelQuadFacing facing, float xSum, float ySum, float zSum) {
-        var list = this.quadCenters.get(facing);
+        var list = this.quadCenters[facing.ordinal()];
         if (list == null) {
             list = new ReferenceArrayList<>();
-            this.quadCenters.put(facing, list);
+            this.quadCenters[facing.ordinal()] = list;
         }
         list.add(new Vector3f(xSum * 0.25f, ySum * 0.25f, zSum * 0.25f));
     }
@@ -49,7 +48,7 @@ public class GroupBuilder {
         }
 
         if (this.axisAlignedDistances == null) {
-            this.axisAlignedDistances = new AccumulationGroup[ModelQuadFacing.DIRECTIONS.length];
+            this.axisAlignedDistances = new AccumulationGroup[ModelQuadFacing.DIRECTIONS];
         }
 
         int index = facing.ordinal();
@@ -182,7 +181,7 @@ public class GroupBuilder {
 
             // special case C
             // the more complex test that checks for distances aligned with the bounding box
-            if (this.facePlaneCount <= ModelQuadFacing.DIRECTIONS.length) {
+            if (this.facePlaneCount <= ModelQuadFacing.DIRECTIONS) {
                 boolean passesBoundingBoxTest = true;
                 for (AccumulationGroup accGroup : this.axisAlignedDistances) {
                     if (accGroup == null) {

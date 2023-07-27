@@ -3,50 +3,53 @@ package me.jellysquid.mods.sodium.client.model.quad.properties;
 import net.minecraft.util.math.Direction;
 
 public enum ModelQuadFacing {
-    UP,
-    DOWN,
-    EAST,
-    WEST,
-    SOUTH,
-    NORTH,
+    POS_X,
+    POS_Y,
+    POS_Z,
+    NEG_X,
+    NEG_Y,
+    NEG_Z,
     UNASSIGNED;
 
     public static final ModelQuadFacing[] VALUES = ModelQuadFacing.values();
-    public static final ModelQuadFacing[] DIRECTIONS = new ModelQuadFacing[] { UP, DOWN, EAST, WEST, SOUTH, NORTH };
 
     public static final int COUNT = VALUES.length;
+    public static final int DIRECTIONS = VALUES.length;
+
+    public static final int NONE = 0;
+    public static final int ALL = (1 << COUNT) - 1;
 
     public static ModelQuadFacing fromDirection(Direction dir) {
         return switch (dir) {
-            case DOWN -> DOWN;
-            case UP -> UP;
-            case NORTH -> NORTH;
-            case SOUTH -> SOUTH;
-            case WEST -> WEST;
-            case EAST -> EAST;
+            case DOWN   -> NEG_Y;
+            case UP     -> POS_Y;
+            case NORTH  -> NEG_Z;
+            case SOUTH  -> POS_Z;
+            case WEST   -> NEG_X;
+            case EAST   -> POS_X;
         };
     }
 
     public ModelQuadFacing getOpposite() {
         return switch (this) {
-            case UP -> DOWN;
-            case DOWN -> UP;
-            case EAST -> WEST;
-            case WEST -> EAST;
-            case SOUTH -> NORTH;
-            case NORTH -> SOUTH;
+            case POS_Y -> NEG_Y;
+            case NEG_Y -> POS_Y;
+            case POS_X -> NEG_X;
+            case NEG_X -> POS_X;
+            case POS_Z -> NEG_Z;
+            case NEG_Z -> POS_Z;
             default -> UNASSIGNED;
         };
     }
 
     public Direction toDirection() {
         return switch (this) {
-            case UP -> Direction.UP;
-            case DOWN -> Direction.DOWN;
-            case EAST -> Direction.EAST;
-            case WEST -> Direction.WEST;
-            case SOUTH -> Direction.SOUTH;
-            case NORTH -> Direction.NORTH;
+            case POS_Y -> Direction.UP;
+            case NEG_Y -> Direction.DOWN;
+            case POS_X -> Direction.EAST;
+            case NEG_X -> Direction.WEST;
+            case POS_Z -> Direction.SOUTH;
+            case NEG_Z -> Direction.NORTH;
             default -> Direction.UP;
         };
     }
