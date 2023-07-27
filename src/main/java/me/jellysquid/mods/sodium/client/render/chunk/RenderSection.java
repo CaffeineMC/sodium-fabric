@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
@@ -28,7 +28,7 @@ public class RenderSection {
     private final RenderRegion region;
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
-    private ChunkRenderData data = ChunkRenderData.ABSENT;
+    private BuiltSectionInfo data = BuiltSectionInfo.ABSENT;
     private CompletableFuture<?> rebuildTask = null;
 
     private ChunkUpdateType pendingUpdate;
@@ -84,7 +84,7 @@ public class RenderSection {
         }
     }
 
-    public ChunkRenderData getData() {
+    public BuiltSectionInfo getData() {
         return this.data;
     }
 
@@ -95,12 +95,12 @@ public class RenderSection {
      */
     public void delete() {
         this.cancelRebuildTask();
-        this.setData(ChunkRenderData.ABSENT);
+        this.setData(BuiltSectionInfo.ABSENT);
 
         this.disposed = true;
     }
 
-    public void setData(ChunkRenderData info) {
+    public void setData(BuiltSectionInfo info) {
         if (info == null) {
             throw new NullPointerException("Mesh information must not be null");
         }
@@ -235,7 +235,7 @@ public class RenderSection {
     }
 
     public boolean isBuilt() {
-        return this.data != ChunkRenderData.ABSENT;
+        return this.data != BuiltSectionInfo.ABSENT;
     }
 
     public boolean canAcceptBuildResults(ChunkBuildResult result) {
@@ -243,7 +243,7 @@ public class RenderSection {
     }
 
     public void onBuildFinished(ChunkBuildResult result) {
-        this.setData(result.data);
+        this.setData(result.info);
         this.lastAcceptedBuildTime = result.buildTime;
     }
 

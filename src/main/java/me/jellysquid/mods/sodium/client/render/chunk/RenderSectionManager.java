@@ -8,10 +8,11 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphDirection;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
@@ -25,6 +26,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTas
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
+import me.jellysquid.mods.sodium.client.util.BitwiseMath;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.collections.WorkStealingFutureDrain;
 import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
@@ -73,6 +75,7 @@ public class RenderSectionManager {
     private boolean needsUpdate;
 
     private boolean useOcclusionCulling;
+    private boolean useBlockFaceCulling;
 
     private Viewport viewport;
 
@@ -136,7 +139,7 @@ public class RenderSectionManager {
         this.alwaysDeferChunkUpdates = options.performance.alwaysDeferChunkUpdates;
     }
 
-    private void iterateChunks(SortedRenderListBuilder renderList, Camera camera, Viewport viewport, int frame, boolean spectator) {
+    private void iterateChunks(SortedRenderListBuilder renderLists, Camera camera, Viewport viewport, int frame, boolean spectator) {
         this.initSearch(camera, viewport, frame, spectator);
 
         while (!this.iterationQueue.isEmpty()) {
@@ -147,8 +150,7 @@ public class RenderSectionManager {
             }
 
             this.schedulePendingUpdates(section);
-
-            renderList.add(section);
+            this.addToRenderLists(renderLists, section);
 
             int connections;
 
@@ -164,6 +166,62 @@ public class RenderSectionManager {
                 this.searchNeighbors(section, connections);
             }
         }
+    }
+
+    private void addToRenderLists(SortedRenderListBuilder renderLists, RenderSection section) {
+        renderLists.add(section, this.getVisibleFaces(section.getChunkX(), section.getChunkY(), section.getChunkZ()));
+    }
+
+    private static final int MODEL_UNASSIGNED = ModelQuadFacing.UNASSIGNED.ordinal();
+    private static final int MODEL_POS_X      = ModelQuadFacing.POS_X.ordinal();
+    private static final int MODEL_NEG_X      = ModelQuadFacing.NEG_X.ordinal();
+    private static final int MODEL_POS_Y      = ModelQuadFacing.POS_Y.ordinal();
+    private static final int MODEL_NEG_Y      = ModelQuadFacing.NEG_Y.ordinal();
+    private static final int MODEL_POS_Z      = ModelQuadFacing.POS_Z.ordinal();
+    private static final int MODEL_NEG_Z      = ModelQuadFacing.NEG_Z.ordinal();
+
+    private int getVisibleFaces(int x, int y, int z) {
+        if (!this.useBlockFaceCulling) {
+            return ModelQuadFacing.ALL;
+        }
+
+        // This is carefully written so that we can keep everything branch-less.
+        //
+        // Normally, this would be a ridiculous way to handle the problem. But the Hotspot VM's
+        // heuristic for generating SETcc/CMOV instructions is broken, and it will always create a
+        // branch even when a trivial ternary is encountered.
+        //
+        // For example, the following will never be transformed into a SETcc:
+        //   (a > b) ? 1 : 0
+        //
+        // So we have to instead rely on sign-bit extension and masking (which generates a ton
+        // of unnecessary instructions) to get this to be branch-less.
+        //
+        // To do this, we can transform the previous expression into the following.
+        //   (b - a) >> 31
+        //
+        // This works because if (a > b) then (b - a) will always create a negative number. We then shift the sign bit
+        // into the least significant bit's position (which also discards any bits following the sign bit) to get the
+        // output we are looking for.
+        //
+        // If you look at the output which LLVM produces for a series of ternaries, you will instantly become distraught,
+        // because it manages to a) correctly evaluate the cost of instructions, and b) go so far
+        // as to actually produce vector code.  (https://godbolt.org/z/GaaEx39T9)
+
+        int planes = 0;
+
+        planes |= BitwiseMath.lessThan(x - 1, this.centerChunkX) << MODEL_POS_X;
+        planes |= BitwiseMath.lessThan(y - 1, this.centerChunkY) << MODEL_POS_Y;
+        planes |= BitwiseMath.lessThan(z - 1, this.centerChunkZ) << MODEL_POS_Z;
+
+        planes |= BitwiseMath.greaterThan(x + 1, this.centerChunkX) << MODEL_NEG_X;
+        planes |= BitwiseMath.greaterThan(y + 1, this.centerChunkY) << MODEL_NEG_Y;
+        planes |= BitwiseMath.greaterThan(z + 1, this.centerChunkZ) << MODEL_NEG_Z;
+
+        // the "unassigned" plane is always front-facing, since we can't check it
+        planes |= (1 << MODEL_UNASSIGNED);
+
+        return planes;
     }
 
     private void searchNeighbors(RenderSection section, int outgoing) {
@@ -200,7 +258,8 @@ public class RenderSectionManager {
         float y = section.getOriginY();
         float z = section.getOriginZ();
 
-        return !viewport.isBoxVisible(x, y, z, x + 16.0f, y + 16.0f, z + 16.0f);
+        return !viewport.isBoxVisible(x, y, z,
+                x + 16.0f, y + 16.0f, z + 16.0f);
     }
 
     private void schedulePendingUpdates(RenderSection section) {
@@ -253,7 +312,7 @@ public class RenderSectionManager {
         ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
 
         if (section.isEmpty()) {
-            renderSection.setData(ChunkRenderData.EMPTY);
+            renderSection.setData(BuiltSectionInfo.EMPTY);
         } else {
             renderSection.markForUpdate(ChunkUpdateType.INITIAL_BUILD);
         }
@@ -503,7 +562,7 @@ public class RenderSectionManager {
         return render.getSquaredDistance(this.cameraX, this.cameraY, this.cameraZ) <= NEARBY_CHUNK_DISTANCE;
     }
 
-    public void onChunkRenderUpdates(int x, int y, int z, ChunkRenderData data) {
+    public void onChunkRenderUpdates(int x, int y, int z, BuiltSectionInfo data) {
         RenderSection node = this.getRenderSection(x, y, z);
 
         if (node != null) {
@@ -520,23 +579,27 @@ public class RenderSectionManager {
     }
 
     private void initSearch(Camera camera, Viewport viewport, int frame, boolean spectator) {
+        this.iterationQueue.clear();
+
         this.currentFrame = frame;
         this.viewport = viewport;
 
-        if (SodiumClientMod.options().performance.useFogOcclusion) {
+        var options = SodiumClientMod.options();
+
+        if (options.performance.useFogOcclusion) {
             this.effectiveRenderDistance = Math.min(this.getEffectiveViewDistance(), this.renderDistance);
         } else {
             this.effectiveRenderDistance = this.renderDistance;
         }
 
-        this.iterationQueue.clear();
-
-        this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
+        this.useBlockFaceCulling = options.performance.useBlockFaceCulling;
 
         BlockPos origin = camera.getBlockPos();
 
         if (spectator && this.world.getBlockState(origin).isOpaqueFullCube(this.world, origin)) {
             this.useOcclusionCulling = false;
+        } else {
+            this.useOcclusionCulling = MinecraftClient.getInstance().chunkCullingEnabled;
         }
 
         this.centerChunkX = origin.getX() >> 4;

@@ -11,10 +11,9 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -71,10 +70,10 @@ public class RenderRegionManager {
                 var storage = region.getStorage(pass);
 
                 if (storage != null) {
-                    storage.updateState(result.render, null);
+                    storage.removeMesh(result.render.getSectionIndex());
                 }
 
-                ChunkMeshData mesh = result.getMesh(pass);
+                BuiltSectionMeshParts mesh = result.getMesh(pass);
 
                 if (mesh != null) {
                     uploads.add(new PendingSectionUpload(result.render, mesh, pass,
@@ -102,10 +101,10 @@ public class RenderRegionManager {
 
         // Collect the upload results
         for (PendingSectionUpload upload : uploads) {
-            var state = new ChunkGraphicsState(upload.section, upload.vertexUpload.getResult(), upload.meshData);
-
             var storage = region.createStorage(upload.pass);
-            storage.updateState(upload.section, state);
+            storage.removeMesh(upload.section.getSectionIndex());
+            storage.addMesh(upload.section.getSectionIndex(),
+                    upload.vertexUpload.getResult(), upload.meshData.getVertexRanges());
         }
     }
 
@@ -164,7 +163,7 @@ public class RenderRegionManager {
         return instance;
     }
 
-    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
+    private record PendingSectionUpload(RenderSection section, BuiltSectionMeshParts meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
     }
 
 

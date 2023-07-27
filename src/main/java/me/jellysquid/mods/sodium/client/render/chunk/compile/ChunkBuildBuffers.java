@@ -2,23 +2,21 @@ package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.BakedChunkModelBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuilder;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
-import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.builder.ChunkMeshBufferBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A collection of temporary buffers for each worker thread which will be used to build chunk meshes for given render
@@ -44,7 +42,7 @@ public class ChunkBuildBuffers {
         }
     }
 
-    public void init(ChunkRenderData.Builder renderData, int chunkId) {
+    public void init(BuiltSectionInfo.Builder renderData, int chunkId) {
         for (var builder : this.builders.values()) {
             builder.begin(renderData, chunkId);
         }
@@ -59,11 +57,11 @@ public class ChunkBuildBuffers {
      * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
      * times to return multiple copies.
      */
-    public ChunkMeshData createMesh(TerrainRenderPass pass) {
+    public BuiltSectionMeshParts createMesh(TerrainRenderPass pass) {
         var builder = this.builders.get(pass);
 
         List<ByteBuffer> vertexBuffers = new ArrayList<>();
-        Map<ModelQuadFacing, VertexRange> vertexRanges = new EnumMap<>(ModelQuadFacing.class);
+        VertexRange[] vertexRanges = new VertexRange[ModelQuadFacing.COUNT];
 
         int vertexCount = 0;
 
@@ -75,12 +73,12 @@ public class ChunkBuildBuffers {
             }
 
             vertexBuffers.add(buffer.slice());
-            vertexRanges.put(facing, new VertexRange(vertexCount, buffer.count()));
+            vertexRanges[facing.ordinal()] = new VertexRange(vertexCount, buffer.count());
 
             vertexCount += buffer.count();
         }
 
-        if (vertexRanges.isEmpty()) {
+        if (vertexCount == 0) {
             return null;
         }
 
@@ -93,7 +91,7 @@ public class ChunkBuildBuffers {
 
         mergedBufferBuilder.flip();
 
-        return new ChunkMeshData(mergedBuffer, vertexRanges, vertexCount);
+        return new BuiltSectionMeshParts(mergedBuffer, vertexRanges);
     }
 
     public void destroy() {

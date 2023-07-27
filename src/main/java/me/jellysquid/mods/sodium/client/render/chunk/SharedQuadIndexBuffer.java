@@ -26,22 +26,12 @@ public class SharedQuadIndexBuffer {
         this.indexType = indexType;
     }
 
-    static IndexType getSmallestIndexType(int vertexCount) {
-        for (var type : IndexType.VALUES) {
-            if (vertexCount <= type.getMaxVertexCount()) {
-                return type;
-            }
-        }
-
-        throw new IllegalArgumentException("No index type can represent %s vertices".formatted(vertexCount));
-    }
-
-    public void ensureCapacity(CommandList commandList, int vertexCount) {
-        if (vertexCount > this.indexType.getMaxVertexCount()) {
+    public void ensureCapacity(CommandList commandList, int elementCount) {
+        if (elementCount > this.indexType.getMaxElementCount()) {
             throw new IllegalArgumentException("Tried to reserve storage for more vertices in this buffer than it can hold");
         }
 
-        int primitiveCount = vertexCount / VERTICES_PER_PRIMITIVE;
+        int primitiveCount = elementCount / ELEMENTS_PER_PRIMITIVE;
 
         if (primitiveCount > this.maxPrimitives) {
             this.grow(commandList, this.getNextSize(primitiveCount));
@@ -125,11 +115,11 @@ public class SharedQuadIndexBuffer {
         public static final IndexType[] VALUES = IndexType.values();
 
         private final GlIndexType format;
-        private final int maxVertexCount;
+        private final int maxElementCount;
 
-        IndexType(GlIndexType format, int maxVertexCount) {
+        IndexType(GlIndexType format, int maxElementCount) {
             this.format = format;
-            this.maxVertexCount = maxVertexCount;
+            this.maxElementCount = maxElementCount;
         }
 
         public abstract void createIndexBuffer(ByteBuffer buffer, int primitiveCount);
@@ -143,11 +133,11 @@ public class SharedQuadIndexBuffer {
         }
 
         public int getMaxPrimitiveCount() {
-            return this.maxVertexCount / 4;
+            return this.maxElementCount / 4;
         }
 
-        public int getMaxVertexCount() {
-            return this.maxVertexCount;
+        public int getMaxElementCount() {
+            return this.maxElementCount;
         }
     }
 }

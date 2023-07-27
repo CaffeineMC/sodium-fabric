@@ -12,7 +12,7 @@ public class SortedRenderListBuilder {
             new Reference2ReferenceLinkedOpenHashMap<>();
     private final ArrayDeque<ChunkRenderList> cache = new ArrayDeque<>();
 
-    public void add(RenderSection render) {
+    public void add(RenderSection render, int faces) {
         var region = render.getRegion();
         var list = this.lists.get(region);
 
@@ -20,7 +20,7 @@ public class SortedRenderListBuilder {
             this.lists.put(region, list = this.createRenderList(region));
         }
 
-        list.add(render);
+        list.add(render, faces);
     }
 
     private ChunkRenderList createRenderList(RenderRegion region) {
