@@ -40,7 +40,7 @@ public class GroupBuilder {
             list = new ReferenceArrayList<>();
             this.quadCenters.put(facing, list);
         }
-        list.add(new Vector3f(xSum / 4, ySum / 4, zSum / 4));
+        list.add(new Vector3f(xSum * 0.25f, ySum * 0.25f, zSum * 0.25f));
     }
 
     public void addAlignedFace(ModelQuadFacing facing, float vertexX, float vertexY, float vertexZ) {

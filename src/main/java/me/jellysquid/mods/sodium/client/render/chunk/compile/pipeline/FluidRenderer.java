@@ -398,6 +398,10 @@ public class FluidRenderer {
         // if translucent, add this face to the GFNI group builder
         boolean isTranslucent = material == DefaultMaterials.TRANSLUCENT;
 
+        float xSum = 0.0F;
+        float ySum = 0.0F;
+        float zSum = 0.0F;
+
         for (int i = 0; i < 4; i++) {
             var out = vertices[flip ? 3 - i : i];
             out.x = offset.getX() + quad.getX(i);
@@ -418,6 +422,10 @@ public class FluidRenderer {
                 } else {
                     groupBuilder.updateAlignedBounds(out.x, out.y, out.z);
                 }
+
+                xSum += out.x;
+                ySum += out.y;
+                zSum += out.z;
             }
 
             out.color = this.quadColors[i];
@@ -431,6 +439,8 @@ public class FluidRenderer {
         if (sprite != null) {
             builder.addSprite(sprite);
         }
+
+        groupBuilder.appendQuadCenter(facing, xSum, ySum, zSum);
 
         var vertexBuffer = builder.getVertexBuffer(facing);
         vertexBuffer.push(vertices, material);
