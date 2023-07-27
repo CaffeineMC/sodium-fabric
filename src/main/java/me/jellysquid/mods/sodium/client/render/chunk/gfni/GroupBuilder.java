@@ -147,10 +147,10 @@ public class GroupBuilder {
      * 
      * @return true if this group builder is relevant
      */
-    boolean calculateRelevanceAndSimplify() {
+    SortType getSortTypeAndSimplify() {
         // special case A
         if (this.facePlaneCount <= 1) {
-            return false;
+            return SortType.NONE;
         }
 
         if (this.unalignedDistances == null) {
@@ -163,7 +163,7 @@ public class GroupBuilder {
             // each only have one distance, there is no way to see through one face to the
             // other.
             if (this.facePlaneCount == 2 && twoOpposingNormals) {
-                return false;
+                return SortType.NONE;
             }
 
             // special case C
@@ -192,7 +192,7 @@ public class GroupBuilder {
                     }
                 }
                 if (passesBoundingBoxTest) {
-                    return false;
+                    return SortType.NONE;
                 }
             }
 
@@ -220,10 +220,10 @@ public class GroupBuilder {
 
                 // in case D1 the group will always still need sorting, just now less often.
                 // the case where the only remaining face plane is removed is handled in A.
-                return true;
+                return SortType.STATIC_NORMAL_RELATIVE;
             }
         }
 
-        return true;
+        return SortType.DYNAMIC;
     }
 }

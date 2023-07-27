@@ -59,7 +59,7 @@ public class ChunkBuildBuffers {
      * have been rendered to pass the finished meshes over to the graphics card. This function can be called multiple
      * times to return multiple copies.
      */
-    public ChunkMeshData createMesh(TerrainRenderPass pass) {
+    public ChunkMeshData createMesh(TerrainRenderPass pass, boolean forceUnassigned) {
         var builder = this.builders.get(pass);
 
         List<ByteBuffer> vertexBuffers = new ArrayList<>();
@@ -75,9 +75,15 @@ public class ChunkBuildBuffers {
             }
 
             vertexBuffers.add(buffer.slice());
-            vertexRanges.put(facing, new VertexRange(vertexCount, buffer.count()));
+            if (!forceUnassigned) {
+                vertexRanges.put(facing, new VertexRange(vertexCount, buffer.count()));
+            }
 
             vertexCount += buffer.count();
+        }
+
+        if (forceUnassigned) {
+            vertexRanges.put(ModelQuadFacing.UNASSIGNED, new VertexRange(0, vertexCount));
         }
 
         if (vertexRanges.isEmpty()) {

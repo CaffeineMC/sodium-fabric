@@ -7,10 +7,12 @@ import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.*;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -27,6 +29,8 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.Map;
 
+import org.joml.Vector3f;
+
 /**
  * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
  * to graphics memory on the main thread.
@@ -35,16 +39,13 @@ import java.util.Map;
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
 public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
-    private final RenderSection render;
     private final ChunkRenderContext renderContext;
     private final GFNI gfni;
-    private final int frame;
 
-    public ChunkRenderRebuildTask(RenderSection render, ChunkRenderContext renderContext, GFNI gfni, int frame) {
-        this.render = render;
+    public ChunkRenderRebuildTask(RenderSection render, int frame, Vector3f cameraPos, ChunkRenderContext renderContext, GFNI gfni) {
+        super(render, frame, cameraPos);
         this.renderContext = renderContext;
         this.gfni = gfni;
-        this.frame = frame;
     }
 
     @Override
@@ -126,22 +127,38 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
             }
         }
 
-        Map<TerrainRenderPass, ChunkMeshData> meshes = new Reference2ReferenceOpenHashMap<>();
+        SortType sortType = this.gfni.integrateGroupBuilder(context.groupBuilder);
+        TranslucentData translucentData = null;
 
+        Map<TerrainRenderPass, ChunkMeshData> meshes = new Reference2ReferenceOpenHashMap<>();
         for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
-            ChunkMeshData mesh = buffers.createMesh(pass);
+            // consolidate all translucent geometry into UNASSIGNED so that it's rendered
+            // all together if GFNI's heuristic determines that it needs to be dynamically
+            // sorted
+            boolean isTranslucent = pass == DefaultTerrainRenderPasses.TRANSLUCENT;
+            ChunkMeshData mesh = buffers.createMesh(pass, isTranslucent && sortType.needsDynamicSort);
 
             if (mesh != null) {
                 meshes.put(pass, mesh);
                 renderData.addRenderPass(pass);
+
+                if (isTranslucent) {
+                    // calculate the primitive centers and initialize indexes for sorting.
+                    // also does an initial sort
+                    translucentData = TranslucentData.fromMeshData(buildContext.vertexType, mesh, sortType);
+
+                    // initial sort
+                    if (translucentData != null) {
+                        translucentData.sort(this.cameraPos);
+                    }
+                }
             }
         }
 
-        renderData.setOcclusionData(occluder.build());
+        this.render.setTranslucentData(translucentData);
+        renderData.addTranslucentData(translucentData);
 
-        this.gfni.integrateGroupBuilder(context.groupBuilder);
-
-        return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
+        return new ChunkMeshBuildResult(this.render, this.frame, renderData.build(), meshes);
     }
 
     @Override

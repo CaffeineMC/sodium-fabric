@@ -14,7 +14,10 @@ import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
+import me.jellysquid.mods.sodium.client.render.chunk.data.TranslucentData;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -64,21 +67,26 @@ public class RenderRegionManager {
     }
 
     private void upload(CommandList commandList, RenderRegion region, List<ChunkBuildResult> results) {
-        List<PendingSectionUpload> uploads = new ArrayList<>();
+        List<PendingSectionMeshUpload> uploads = new ArrayList<>();
 
         for (ChunkBuildResult result : results) {
-            for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
-                var storage = region.getStorage(pass);
+            // TODO: missing support for sort results. how are those uploaded to the gpu?
+            // does the data need to be stuck into a buffer?
+            // Where are index buffers anyways?
+            if (result instanceof ChunkMeshBuildResult meshBuildResult) {
+                for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
+                    var storage = region.getStorage(pass);
 
-                if (storage != null) {
-                    storage.updateState(result.render, null);
-                }
+                    if (storage != null) {
+                        storage.updateState(result.render, null);
+                    }
 
-                ChunkMeshData mesh = result.getMesh(pass);
+                    ChunkMeshData mesh = meshBuildResult.getMesh(pass);
 
-                if (mesh != null) {
-                    uploads.add(new PendingSectionUpload(result.render, mesh, pass,
-                            new PendingUpload(mesh.getVertexData())));
+                    if (mesh != null) {
+                        uploads.add(new PendingSectionMeshUpload(meshBuildResult.render, mesh, pass,
+                        new PendingUpload(mesh.getVertexData())));
+                    }
                 }
             }
         }
@@ -101,7 +109,7 @@ public class RenderRegionManager {
         }
 
         // Collect the upload results
-        for (PendingSectionUpload upload : uploads) {
+        for (PendingSectionMeshUpload upload : uploads) {
             var state = new ChunkGraphicsState(upload.section, upload.vertexUpload.getResult(), upload.meshData);
 
             var storage = region.createStorage(upload.pass);
@@ -164,7 +172,13 @@ public class RenderRegionManager {
         return instance;
     }
 
-    private record PendingSectionUpload(RenderSection section, ChunkMeshData meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
+    private record PendingSectionMeshUpload(RenderSection section, ChunkMeshData meshData, TerrainRenderPass pass, PendingUpload vertexUpload) {
+    }
+
+    // TODO: Does this need to use native buffers or not? If so, then they should
+    // probably be used all throughout translucent data and not just here? Or should
+    // they only be used for uploading and not for off-thread sorting?
+    private record PendingSectionSortUpload(RenderSection section, TranslucentData data) {
     }
 
 

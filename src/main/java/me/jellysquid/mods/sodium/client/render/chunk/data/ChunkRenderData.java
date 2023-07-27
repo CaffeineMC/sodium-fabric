@@ -25,9 +25,14 @@ public class ChunkRenderData {
     private List<BlockEntity> globalBlockEntities;
     private List<BlockEntity> blockEntities;
 
+    private TranslucentData translucentData;
     private ChunkOcclusionData occlusionData;
 
     private List<Sprite> animatedSprites;
+
+    public TranslucentData getTranslucentData() {
+        return this.translucentData;
+    }
 
     public ChunkOcclusionData getOcclusionData() {
         return this.occlusionData;
@@ -76,6 +81,7 @@ public class ChunkRenderData {
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
+        private TranslucentData translucentData;
         private ChunkOcclusionData occlusionData;
 
         public void addRenderPass(TerrainRenderPass pass) {
@@ -106,6 +112,10 @@ public class ChunkRenderData {
             (cull ? this.blockEntities : this.globalBlockEntities).add(entity);
         }
 
+        public void addTranslucentData(TranslucentData data) {
+            this.translucentData = data;
+        }
+
         public ChunkRenderData build() {
             ChunkRenderData data = new ChunkRenderData();
             data.globalBlockEntities = this.globalBlockEntities;
@@ -113,6 +123,7 @@ public class ChunkRenderData {
             data.occlusionData = this.occlusionData;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
             data.blockRenderPasses = this.renderPasses;
+            data.translucentData = this.translucentData;
 
             return data;
         }

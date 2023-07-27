@@ -1,8 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
+import java.util.function.Consumer;
+
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -41,6 +44,11 @@ import net.minecraft.util.math.ChunkSectionPos;
  * of translucent faces as a heuristic for importance
  * - baked models could possibly precompute normals and then just calculate
  * distances when processing a chunk?
+ * - many sections can be marked as needing an update but they are only actually
+ * scheduled for sorting when the RenderSectionManager makes them visible. This
+ * may result in many sections suddenly needing sorting when the camera moves.
+ * Maybe it's better to schedule them to be sorted gradually even if not
+ * visible, if there are idle threads.
  */
 public class GFNI {
     public static final int QUANTIZATION_FACTOR = 4;
@@ -50,25 +58,25 @@ public class GFNI {
      */
     private Object2ReferenceOpenHashMap<Vector3fc, NormalList> normalLists = new Object2ReferenceOpenHashMap<>(50);
 
-    /**
-     * A temporary set of sections that were triggered during movement. A set is
-     * needed because the same section can be triggered multiple times by different
-     * normal lists.
-     */
-    ObjectOpenHashSet<ChunkSectionPos> triggeredSections = new ObjectOpenHashSet<>(50);
-    ObjectOpenHashSet<Vector3fc> triggeredNormals = new ObjectOpenHashSet<>(50); // TODO: for debugging
+    private Consumer<ChunkSectionPos> triggerSectionCallback;
 
-    public void processMovement(double lastCameraX, double lastCameraY, double lastCameraZ,
+    // TODO: both of these are for debugging
+    ObjectLinkedOpenHashSet<ChunkSectionPos> triggeredSections = new ObjectLinkedOpenHashSet<>(50);
+    ObjectOpenHashSet<Vector3fc> triggeredNormals = new ObjectOpenHashSet<>(50);
+
+    public void findTriggeredSections(
+            Consumer<ChunkSectionPos> triggerSectionCallback,
+            double lastCameraX, double lastCameraY, double lastCameraZ,
             double cameraX, double cameraY, double cameraZ) {
         triggeredSections.clear();
         triggeredNormals.clear();
+        this.triggerSectionCallback = triggerSectionCallback;
 
         for (var normalList : this.normalLists.values()) {
             normalList.processMovement(this, lastCameraX, lastCameraY, lastCameraZ, cameraX, cameraY, cameraZ);
         }
 
-        // TODO: do something with the triggered sections
-        // for now just log the amount
+        // TODO: the collections for tracking sections are only used for debugging
         int triggerCount = this.triggeredSections.size();
         if (triggerCount > 0) {
             System.out.println("Triggered " + triggerCount + " sections");
@@ -76,11 +84,18 @@ public class GFNI {
                 System.out.println(section.getX() + " " + section.getY() + " " + section.getZ());
             }
         }
+
+        triggerSectionCallback = null;
     }
 
     void triggerSection(ChunkSectionPos section, Vector3fc normal) {
         this.triggeredSections.add(section);
         this.triggeredNormals.add(normal);
+
+        // by simply setting a chunk update type on the section, it naturally only gets
+        // updated once the section becomes visible.
+        // by definition, all sections in GFNI have SortType.DYNAMIC
+        this.triggerSectionCallback.accept(section);
     }
 
     private void removeSectionFromList(NormalList normalList, long chunkSectionLongPos) {
@@ -114,14 +129,15 @@ public class GFNI {
     }
 
     // TODO: synchronized because it's expected to be fast, see class comment
-    public synchronized void integrateGroupBuilder(GroupBuilder builder) {
+    public synchronized SortType integrateGroupBuilder(GroupBuilder builder) {
         long chunkSectionLongPos = builder.sectionPos.asLong();
 
         // if the builder is irrelevant, remove it from the normal lists
         // if the builder is relevant, this may also simplify it as a side effect
-        if (!builder.calculateRelevanceAndSimplify()) {
+        SortType sortType = builder.getSortTypeAndSimplify();
+        if (!sortType.needsDynamicSort) {
             removeSection(chunkSectionLongPos);
-            return;
+            return sortType;
         }
 
         int normalListCount = this.normalLists.size();
@@ -163,5 +179,7 @@ public class GFNI {
         if (normalListCount != this.normalLists.size()) {
             System.out.println(normalLists.size() + " normal lists");
         }
+
+        return sortType;
     }
 }

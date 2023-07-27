@@ -36,6 +36,10 @@ public class CompactChunkVertex implements ChunkVertexType {
         return (short) ((MODEL_ORIGIN + v) * MODEL_SCALE_INV);
     }
 
+    public static float decodePositionSum(short v, int members) {
+        return (v * MODEL_SCALE) - MODEL_ORIGIN * members;
+    }
+
     @Override
     public float getTextureScale() {
         return TEXTURE_SCALE;

@@ -1,5 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 
+import org.joml.Vector3f;
+
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
@@ -15,6 +18,16 @@ import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
  * on the main thread.
  */
 public abstract class ChunkRenderBuildTask {
+    protected final RenderSection render;
+    protected final int frame;
+    protected final Vector3f cameraPos;
+
+    public ChunkRenderBuildTask(RenderSection render, int frame, Vector3f cameraPos) {
+        this.render = render;
+        this.frame = frame;
+        this.cameraPos = cameraPos;
+    }
+
     /**
      * Executes the given build task asynchronously from the calling thread. The implementation should be careful not
      * to access or modify global mutable state.

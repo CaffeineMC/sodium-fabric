@@ -23,6 +23,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
+import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkSortBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
@@ -39,6 +40,7 @@ import net.minecraft.util.math.*;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import org.apache.commons.lang3.Validate;
+import org.joml.Vector3f;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -69,7 +71,7 @@ public class RenderSectionManager {
     private final int renderDistance;
     private int effectiveRenderDistance;
 
-    private float cameraX, cameraY, cameraZ;
+    private Vector3f cameraPos = new Vector3f();
     private int centerChunkX, centerChunkY, centerChunkZ;
 
     private boolean needsUpdate;
@@ -130,9 +132,7 @@ public class RenderSectionManager {
     private void setup(Camera camera) {
         Vec3d cameraPos = camera.getPos();
 
-        this.cameraX = (float) cameraPos.x;
-        this.cameraY = (float) cameraPos.y;
-        this.cameraZ = (float) cameraPos.z;
+        this.cameraPos.set(cameraPos.x, cameraPos.y, cameraPos.z);
 
         var options = SodiumClientMod.options();
 
@@ -344,6 +344,7 @@ public class RenderSectionManager {
     private void updateChunks(boolean allImmediately) {
         var blockingFutures = new LinkedList<CompletableFuture<ChunkBuildResult>>();
 
+        this.submitRebuildTasks(ChunkUpdateType.TRANSLUCENT_SORT, blockingFutures);
         this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD, blockingFutures);
         this.submitRebuildTasks(ChunkUpdateType.INITIAL_BUILD, allImmediately ? blockingFutures : null);
         this.submitRebuildTasks(ChunkUpdateType.REBUILD, allImmediately ? blockingFutures : null);
@@ -377,7 +378,13 @@ public class RenderSectionManager {
                 continue;
             }
 
-            ChunkRenderBuildTask task = this.createRebuildTask(section);
+            // TODO: Use a more elegant solution, like associating a method handle of this class with each enum
+            ChunkRenderBuildTask task;
+            if (filterType == ChunkUpdateType.TRANSLUCENT_SORT) {
+                task = this.createSortTask(section);
+            } else {
+                task = this.createRebuildTask(section);
+            }
             CompletableFuture<?> future;
 
             if (immediateFutures != null) {
@@ -444,16 +451,22 @@ public class RenderSectionManager {
         int frame = this.currentFrame;
 
         if (context == null) {
-            return new ChunkRenderEmptyBuildTask(render, frame);
+            return new ChunkRenderEmptyBuildTask(render, frame, this.cameraPos);
         }
 
-        return new ChunkRenderRebuildTask(render, context, this.gfni, frame);
+        return new ChunkRenderRebuildTask(render, frame, this.cameraPos, context, this.gfni);
+    }
+
+    public ChunkRenderBuildTask createSortTask(RenderSection render) {
+        return new ChunkSortBuildTask(render, this.currentFrame, this.cameraPos);
     }
 
     public void processGFNIMovement(
         double lastCameraX, double lastCameraY, double lastCameraZ,
         double cameraX, double cameraY, double cameraZ) {
-        this.gfni.processMovement(lastCameraX, lastCameraY, lastCameraZ, cameraX, cameraY, cameraZ);
+        this.gfni.findTriggeredSections(this::scheduleSort,
+            lastCameraX, lastCameraY, lastCameraZ,
+            cameraX, cameraY, cameraZ);
     }
 
     public void markGraphDirty() {
@@ -495,6 +508,16 @@ public class RenderSectionManager {
         return sections;
     }
 
+    public void scheduleSort(ChunkSectionPos pos) {
+        // TODO: Does this need to invalidate the section cache?
+
+        RenderSection section = this.sectionByPosition.get(pos.asLong());
+
+        if (section != null) {
+            section.markForUpdate(ChunkUpdateType.TRANSLUCENT_SORT);
+        }
+    }
+
     public void scheduleRebuild(int x, int y, int z, boolean important) {
         this.sectionCache.invalidate(x, y, z);
 
@@ -512,7 +535,7 @@ public class RenderSectionManager {
     }
 
     public boolean isChunkPrioritized(RenderSection render) {
-        return render.getSquaredDistance(this.cameraX, this.cameraY, this.cameraZ) <= NEARBY_CHUNK_DISTANCE;
+        return render.getSquaredDistance(this.cameraPos.x, this.cameraPos.y, this.cameraPos.z) <= NEARBY_CHUNK_DISTANCE;
     }
 
     public void onChunkRenderUpdates(int x, int y, int z, ChunkRenderData data) {

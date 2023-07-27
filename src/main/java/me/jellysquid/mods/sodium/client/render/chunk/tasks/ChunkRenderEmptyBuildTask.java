@@ -3,10 +3,13 @@ package me.jellysquid.mods.sodium.client.render.chunk.tasks;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkMeshBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderData;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 
 import java.util.Collections;
+
+import org.joml.Vector3f;
 
 /**
  * A build task which does no computation and always return an empty build result. These tasks are created whenever
@@ -15,17 +18,13 @@ import java.util.Collections;
  * synchronously update the render's data to an empty state to speed things along.
  */
 public class ChunkRenderEmptyBuildTask extends ChunkRenderBuildTask {
-    private final RenderSection render;
-    private final int frame;
-
-    public ChunkRenderEmptyBuildTask(RenderSection render, int frame) {
-        this.render = render;
-        this.frame = frame;
+    public ChunkRenderEmptyBuildTask(RenderSection render, int frame, Vector3f cameraPos) {
+        super(render, frame, cameraPos);
     }
 
     @Override
     public ChunkBuildResult performBuild(ChunkBuildContext context, CancellationSource cancellationSource) {
-        return new ChunkBuildResult(this.render, ChunkRenderData.EMPTY, Collections.emptyMap(), this.frame);
+        return new ChunkMeshBuildResult(this.render, this.frame, ChunkRenderData.EMPTY, Collections.emptyMap());
     }
 
     @Override

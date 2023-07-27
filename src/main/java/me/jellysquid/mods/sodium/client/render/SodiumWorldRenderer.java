@@ -176,16 +176,11 @@ public class SodiumWorldRenderer {
         boolean dirty = cameraLocationChanged ||
                 pitch != this.lastCameraPitch || yaw != this.lastCameraYaw || fogDistance != this.lastFogDistance;
 
-        if (cameraLocationChanged) {
-            this.renderSectionManager.processGFNIMovement(lastCameraX, lastCameraY, lastCameraZ, pos.x, pos.y, pos.z);
-        }
         if (dirty) {
             this.renderSectionManager.markGraphDirty();
         }
 
-        this.lastCameraX = pos.x;
-        this.lastCameraY = pos.y;
-        this.lastCameraZ = pos.z;
+
         this.lastCameraPitch = pitch;
         this.lastCameraYaw = yaw;
         this.lastFogDistance = fogDistance;
@@ -194,6 +189,15 @@ public class SodiumWorldRenderer {
 
         this.chunkTracker.update();
         this.renderSectionManager.updateChunks();
+
+        if (cameraLocationChanged) {
+            profiler.swap("gfni_query");
+
+            this.renderSectionManager.processGFNIMovement(lastCameraX, lastCameraY, lastCameraZ, pos.x, pos.y, pos.z);
+            this.lastCameraX = pos.x;
+            this.lastCameraY = pos.y;
+            this.lastCameraZ = pos.z;
+        }
 
         if (this.renderSectionManager.isGraphDirty()) {
             profiler.swap("chunk_graph_rebuild");
