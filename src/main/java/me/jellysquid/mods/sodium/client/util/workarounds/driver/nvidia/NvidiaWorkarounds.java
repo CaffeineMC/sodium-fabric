@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.util.workarounds.platform;
+package me.jellysquid.mods.sodium.client.util.workarounds.driver.nvidia;
 
 import me.jellysquid.mods.sodium.client.util.workarounds.platform.linux.LibC;
 import me.jellysquid.mods.sodium.client.util.workarounds.platform.windows.Kernel32;
