@@ -12,12 +12,14 @@ import java.util.List;
 public class PrelaunchChecks {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-PrelaunchChecks");
 
-    private static boolean shouldCheckPlatform() {
-        return Boolean.parseBoolean(System.getProperty("sodium.platform.check", "true"));
+    private static boolean isEnabled(String key) {
+        return Boolean.parseBoolean(System.getProperty(key, "true"));
     }
 
-    public static void validate(List<GraphicsAdapterInfo> adapters) {
-        if (!shouldCheckPlatform()) {
+    public static void checkPlatform() {
+        boolean check = isEnabled("sodium.platform.check");
+
+        if (!check) {
             return;
         }
 
@@ -39,6 +41,14 @@ public class PrelaunchChecks {
             throw new RuntimeException("Android is not supported when using Sodium, please " +
                     "see this issue for more details: https://github.com/CaffeineMC/sodium-fabric/issues/1916");
         }
+    }
+
+    public static void checkDrivers(List<GraphicsAdapterInfo> adapters) {
+        boolean check = isEnabled("sodium.driver.check");
+
+        if (!check) {
+            return;
+        }
 
         if (isBrokenIntelGen7GraphicsDriver(adapters)) {
             LOGGER.error("------------------------------------------------------------------------------------------------------------");
@@ -52,7 +62,7 @@ public class PrelaunchChecks {
 
             LOGGER.error("  * HINT: If you believe this is an error, then you can force the game to start anyways by adding the " +
                     "following JVM argument.");
-            LOGGER.error("      -Dsodium.platform.check=false");
+            LOGGER.error("      -Dsodium.driver.check=false");
             LOGGER.error("  * NOTE: We will not provide support for any issues caused by using this option. You are on your own!");
             LOGGER.error("------------------------------------------------------------------------------------------------------------");
 

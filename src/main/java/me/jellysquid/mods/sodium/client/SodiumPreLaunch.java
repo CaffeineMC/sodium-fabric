@@ -9,7 +9,10 @@ public class SodiumPreLaunch implements PreLaunchEntrypoint {
     @Override
     public void onPreLaunch() {
         var adapters = GraphicsAdapterProbe.findAdapters();
-        PrelaunchChecks.validate(adapters);
+
+        PrelaunchChecks.checkPlatform();
+        PrelaunchChecks.checkDrivers(adapters);
+
         Workarounds.init(adapters);
     }
 }
