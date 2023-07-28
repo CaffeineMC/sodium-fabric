@@ -5,13 +5,16 @@ import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 public class GraphicsAdapterProbe {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-GraphicsAdapterProbe");
 
-    public static List<GraphicsAdapterInfo> findAdapters() {
+    private static List<GraphicsAdapterInfo> ADAPTERS;
+
+    public static void findAdapters() {
         LOGGER.info("Searching for graphics cards...");
 
         var systemInfo = new SystemInfo();
@@ -35,6 +38,14 @@ public class GraphicsAdapterProbe {
                     "something has gone terribly wrong!");
         }
 
-        return Collections.unmodifiableList(results);
+        ADAPTERS = results;
+    }
+
+    public static Collection<GraphicsAdapterInfo> getAdapters() {
+        if (ADAPTERS == null) {
+            throw new RuntimeException("Graphics adapters not probed yet");
+        }
+
+        return ADAPTERS;
     }
 }

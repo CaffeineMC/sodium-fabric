@@ -1,15 +1,13 @@
 package me.jellysquid.mods.sodium.client.util.workarounds;
 
 import me.jellysquid.mods.sodium.client.util.workarounds.platform.windows.WindowsDriverStoreVersion;
-import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterInfo;
+import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterProbe;
 import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterVendor;
 import net.minecraft.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
-public class PrelaunchChecks {
+public class PreLaunchChecks {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-PrelaunchChecks");
 
     private static boolean isEnabled(String key) {
@@ -43,14 +41,14 @@ public class PrelaunchChecks {
         }
     }
 
-    public static void checkDrivers(List<GraphicsAdapterInfo> adapters) {
+    public static void checkDrivers() {
         boolean check = isEnabled("sodium.driver.check");
 
         if (!check) {
             return;
         }
 
-        if (isBrokenIntelGen7GraphicsDriver(adapters)) {
+        if (isBrokenIntelGen7GraphicsDriver()) {
             LOGGER.error("------------------------------------------------------------------------------------------------------------");
             LOGGER.error("READ ME! You appear to be using an Intel graphics card with unsupported drivers!");
             LOGGER.error("  * Certain graphics cards (such as the Intel HD 2500/4000) currently ship with broken graphics drivers " +
@@ -71,12 +69,12 @@ public class PrelaunchChecks {
         }
     }
 
-    private static boolean isBrokenIntelGen7GraphicsDriver(List<GraphicsAdapterInfo> adapters) {
+    private static boolean isBrokenIntelGen7GraphicsDriver() {
         if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
             return false;
         }
 
-        for (var adapter : adapters) {
+        for (var adapter : GraphicsAdapterProbe.getAdapters()) {
             if (adapter.vendor() != GraphicsAdapterVendor.INTEL) {
                 continue;
             }
