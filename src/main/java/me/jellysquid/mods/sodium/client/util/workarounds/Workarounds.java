@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.util.workarounds;
 
 import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterInfo;
+import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterProbe;
 import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterVendor;
 import net.minecraft.util.Util;
 import org.slf4j.Logger;
@@ -15,8 +16,8 @@ public class Workarounds {
 
     private static final AtomicReference<Set<Reference>> ACTIVE_WORKAROUNDS = new AtomicReference<>(EnumSet.noneOf(Reference.class));
 
-    public static void init(List<GraphicsAdapterInfo> adapters) {
-        var workarounds = findNecessaryWorkarounds(adapters);
+    public static void init() {
+        var workarounds = findNecessaryWorkarounds();
 
         if (!workarounds.isEmpty()) {
             LOGGER.warn("One or more workarounds were enabled to prevent crashes or other issues on your system: [{}]", workarounds.stream()
@@ -28,9 +29,11 @@ public class Workarounds {
         ACTIVE_WORKAROUNDS.set(workarounds);
     }
 
-    private static Set<Reference> findNecessaryWorkarounds(List<GraphicsAdapterInfo> graphicsAdapters) {
+    private static Set<Reference> findNecessaryWorkarounds() {
         var workarounds = EnumSet.noneOf(Reference.class);
         var operatingSystem = Util.getOperatingSystem();
+
+        var graphicsAdapters = GraphicsAdapterProbe.getAdapters();
 
         if ((operatingSystem == Util.OperatingSystem.WINDOWS || operatingSystem == Util.OperatingSystem.LINUX) &&
                 graphicsAdapters.stream().anyMatch(adapter -> adapter.vendor() == GraphicsAdapterVendor.NVIDIA)) {

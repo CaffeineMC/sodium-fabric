@@ -4,7 +4,7 @@ import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.gui.console.Console;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
-import me.jellysquid.mods.sodium.client.util.workarounds.Workarounds;
+import me.jellysquid.mods.sodium.client.util.workarounds.PostLaunchChecks;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -39,6 +39,9 @@ public class SodiumClientMod implements ClientModInitializer {
         logStartupMessages();
 
         FlawlessFrames.onClientInitialization();
+
+        PostLaunchChecks.checkWorkarounds();
+        PostLaunchChecks.checkDrivers();
     }
 
     public static SodiumGameOptions options() {
@@ -100,16 +103,5 @@ public class SodiumClientMod implements ClientModInitializer {
 
         Console.instance()
                 .logMessage(MessageLevel.INFO, name.append(version), 7.0);
-
-        var workarounds = Workarounds.getEnabledWorkarounds();
-
-        if (!workarounds.isEmpty()) {
-            Console.instance()
-                    .logMessage(MessageLevel.WARN, Text.literal("One or more workarounds have been enabled to prevent problems."), 10.0);
-            Console.instance()
-                    .logMessage(MessageLevel.WARN, Text.literal(" * Performance may be reduced, and certain features may be disabled."), 10.0);
-            Console.instance()
-                    .logMessage(MessageLevel.WARN, Text.literal(" * Please see the log file for more information."), 10.0);
-        }
     }
 }
