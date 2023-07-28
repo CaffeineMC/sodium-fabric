@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gui.console.Console;
+import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
@@ -274,15 +276,25 @@ public class SodiumOptionsGUI extends Screen {
 
         MinecraftClient client = MinecraftClient.getInstance();
 
-        if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
-            client.worldRenderer.reload();
-        } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
-            client.worldRenderer.scheduleTerrainUpdate();
+        if (client.world != null) {
+            if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
+                Console.instance().logMessage(MessageLevel.INFO,
+                        Text.literal("Reloading terrain..."), 3.0);
+            } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
+                client.worldRenderer.scheduleTerrainUpdate();
+            }
         }
 
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
+            Console.instance().logMessage(MessageLevel.INFO,
+                    Text.literal("Reloading assets... (this may take a few moments)"), 5.0);
             client.setMipmapLevels(client.options.getMipmapLevels().getValue());
             client.reloadResourcesConcurrently();
+        }
+
+        if (flags.contains(OptionFlag.REQUIRES_GAME_RESTART)) {
+            Console.instance().logMessage(MessageLevel.WARN,
+                    Text.literal("The game must be restarted to apply one or more settings!"), 10.0);
         }
 
         for (OptionStorage<?> storage : dirtyStorages) {

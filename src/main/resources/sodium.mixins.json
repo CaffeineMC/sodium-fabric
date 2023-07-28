@@ -29,6 +29,7 @@
     "core.world.biome.ClientWorldMixin",
     "core.world.chunk.PackedIntegerArrayMixin",
     "core.world.chunk.PalettedContainerAccessor",
+    "features.gui.hooks.console.GameRendererMixin",
     "features.gui.hooks.debug.DebugHudMixin",
     "features.gui.hooks.settings.OptionsScreenMixin",
     "features.gui.screen.LevelLoadingScreenMixin",
