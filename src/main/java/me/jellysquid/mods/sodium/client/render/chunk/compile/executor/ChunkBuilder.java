@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 
 public class ChunkBuilder {
     static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
+    private static final int MBS_PER_CHUNK_BUILDER = 64;
 
     private volatile boolean isRunning;
 
@@ -130,8 +131,13 @@ public class ChunkBuilder {
         return requested == 0 ? getOptimalThreadCount() : Math.min(requested, getMaxThreadCount());
     }
 
-    private static int getMaxThreadCount() {
-        return Runtime.getRuntime().availableProcessors();
+    public static int getMaxThreadCount() {
+        int totalCores = Runtime.getRuntime().availableProcessors();
+        long memoryMb = Runtime.getRuntime().maxMemory() / (1024L * 1024L);
+        // always allow at least one builder regardless of heap size
+        int maxBuilders = Math.max(1, (int)(memoryMb / MBS_PER_CHUNK_BUILDER));
+        // choose the total CPU cores or the number of builders the heap permits, whichever is smaller
+        return Math.min(totalCores, maxBuilders);
     }
 
     /**
