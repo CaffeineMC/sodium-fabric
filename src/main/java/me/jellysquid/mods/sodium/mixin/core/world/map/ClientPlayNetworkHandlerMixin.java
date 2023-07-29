@@ -4,17 +4,13 @@ import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkStatus;
 import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTrackerHolder;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.network.packet.s2c.play.LightData;
 import net.minecraft.network.packet.s2c.play.UnloadChunkS2CPacket;
-import net.minecraft.world.LightType;
-import net.minecraft.world.chunk.light.LightingProvider;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.util.BitSet;
-import java.util.Iterator;
 
 @Mixin(ClientPlayNetworkHandler.class)
 public class ClientPlayNetworkHandlerMixin {
