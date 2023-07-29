@@ -249,13 +249,25 @@ public class RenderSectionManager {
         return planes;
     }
 
+    private static final float CHUNK_RENDER_BOUNDS_EPSILON = 0.0125f;
+
     private boolean isOutsideViewport(RenderSection section, Viewport viewport) {
         float x = section.getOriginX();
         float y = section.getOriginY();
         float z = section.getOriginZ();
 
-        return !viewport.isBoxVisible(x, y, z,
-                x + 16.0f, y + 16.0f, z + 16.0f);
+        // TODO: This epsilon is a hack because we're losing precision in the world->view transform
+        // We should first translate chunk coordinates to camera-relative space, and then create a bounding
+        // box from that.
+        float minX = x - CHUNK_RENDER_BOUNDS_EPSILON;
+        float minY = y - CHUNK_RENDER_BOUNDS_EPSILON;
+        float minZ = z - CHUNK_RENDER_BOUNDS_EPSILON;
+
+        float maxX = x + 16.0f + CHUNK_RENDER_BOUNDS_EPSILON;
+        float maxY = y + 16.0f + CHUNK_RENDER_BOUNDS_EPSILON;
+        float maxZ = z + 16.0f + CHUNK_RENDER_BOUNDS_EPSILON;
+
+        return !viewport.isBoxVisible(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     private void schedulePendingUpdates(RenderSection section) {
