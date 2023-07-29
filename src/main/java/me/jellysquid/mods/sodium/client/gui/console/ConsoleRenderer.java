@@ -1,19 +1,27 @@
 package me.jellysquid.mods.sodium.client.gui.console;
 
+import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.gui.console.message.Message;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.ColorU8;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextHandler;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.text.OrderedText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Language;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.EnumMap;
 import java.util.LinkedList;
+import java.util.List;
 
 public class ConsoleRenderer {
+    private static final OrderedText SPACES = OrderedText.styled(32, Style.EMPTY);
+
     static final ConsoleRenderer INSTANCE = new ConsoleRenderer();
 
     private final LinkedList<ActiveMessage> activeMessages = new LinkedList<>();
@@ -49,7 +57,6 @@ public class ConsoleRenderer {
         int y = 4;
 
         var width = 270;
-        var height = 10;
 
         var paddingWidth = 3;
         var paddingHeight = 2;
@@ -61,21 +68,39 @@ public class ConsoleRenderer {
                 continue;
             }
 
+            List<OrderedText> lines = Lists.newArrayList();
+
+            TextHandler textHandler = client.textRenderer.getTextHandler();
+            textHandler.wrapLines(message.text(), width - 20, Style.EMPTY, (text, lastLineWrapped) -> {
+                lines.add(Language.getInstance().reorder(text));
+            });
+
+            var lineHeight = client.textRenderer.fontHeight;
+            var messageHeight = lineHeight * lines.size();
+
             var colors = COLORS.get(message.level());
 
             // message background
-            context.fill(x, y, x + width + paddingWidth, y + height + paddingHeight,
+            context.fill(x, y, x + width + paddingWidth, y + messageHeight + paddingHeight,
                     ColorARGB.withAlpha(colors.background(), weightAlpha(0.9D, opacity)));
 
             // message colored stripe
-            context.fill(x, y, x + 1, y + height + paddingHeight,
+            context.fill(x, y, x + 1, y + messageHeight + paddingHeight,
                     ColorARGB.withAlpha(colors.foreground(), weightAlpha(1.0D, opacity)));
 
-            // message text
-            context.drawText(client.textRenderer, message.text(), x + paddingWidth + 3, y + (paddingHeight / 2),
-                    ColorARGB.withAlpha(colors.text(), weightAlpha(1.0D, opacity)), false);
+            // padding at top of message
+            y += (paddingHeight / 2);
 
-            y += height + paddingHeight;
+            for (var line : lines) {
+                // message text
+                context.drawText(client.textRenderer, line, x + paddingWidth + 3, y,
+                        ColorARGB.withAlpha(colors.text(), weightAlpha(1.0D, opacity)), false);
+
+                y += lineHeight;
+            }
+
+            // padding at bottom of message
+            y += (paddingHeight / 2);
         }
 
         matrices.pop();
