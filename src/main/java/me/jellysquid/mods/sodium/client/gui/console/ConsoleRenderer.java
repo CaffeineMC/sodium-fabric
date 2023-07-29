@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.gui.console;
 
-import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.gui.console.message.Message;
 import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
@@ -15,13 +14,12 @@ import net.minecraft.util.Language;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
 
 public class ConsoleRenderer {
-    private static final OrderedText SPACES = OrderedText.styled(32, Style.EMPTY);
-
     static final ConsoleRenderer INSTANCE = new ConsoleRenderer();
 
     private final LinkedList<ActiveMessage> activeMessages = new LinkedList<>();
@@ -68,7 +66,7 @@ public class ConsoleRenderer {
                 continue;
             }
 
-            List<OrderedText> lines = Lists.newArrayList();
+            List<OrderedText> lines = new ArrayList<>();
 
             TextHandler textHandler = client.textRenderer.getTextHandler();
             textHandler.wrapLines(message.text(), width - 20, Style.EMPTY, (text, lastLineWrapped) -> {
