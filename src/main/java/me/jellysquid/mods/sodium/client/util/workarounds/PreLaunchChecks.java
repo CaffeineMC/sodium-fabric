@@ -23,10 +23,10 @@ public class PreLaunchChecks {
 
         if (isRunningOnAndroid()) {
             LOGGER.error("------------------------------------------------------------------------------------------------------------");
-            LOGGER.error("READ ME! You appear to be using an Android device!");
+            LOGGER.error("READ ME! You appear to be using Pojav Launcher!");
             LOGGER.error("  * Most Android devices and OpenGL compatibility layers are not compatible with Sodium, and will cause severe " +
                     "graphical issues and crashes. These problems are not caused by Sodium.");
-            LOGGER.error("  * By default, the game will not start if it detects an Android device is being used, since it almost " +
+            LOGGER.error("  * By default, the game will not start if it detects Pojav Launcher is being used, since it almost " +
                     "never works correctly, and results in users submitting many invalid bug reports.");
             LOGGER.error("  * For more information, please see the following issue:");
             LOGGER.error("      https://github.com/CaffeineMC/sodium-fabric/issues/1916");
@@ -36,7 +36,7 @@ public class PreLaunchChecks {
             LOGGER.error("  * NOTE: We will not provide support for any issues caused by using this option. You are on your own!");
             LOGGER.error("------------------------------------------------------------------------------------------------------------");
 
-            throw new RuntimeException("Android is not supported when using Sodium, please " +
+            throw new RuntimeException("Pojav Launcher is not supported when using Sodium, please " +
                     "see this issue for more details: https://github.com/CaffeineMC/sodium-fabric/issues/1916");
         }
     }
