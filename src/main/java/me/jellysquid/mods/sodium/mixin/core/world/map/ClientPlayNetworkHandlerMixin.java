@@ -22,16 +22,12 @@ public class ClientPlayNetworkHandlerMixin {
     private ClientWorld world;
 
     @Inject(
-            method = "updateLighting",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/chunk/light/LightingProvider;enqueueSectionData(Lnet/minecraft/world/LightType;Lnet/minecraft/util/math/ChunkSectionPos;Lnet/minecraft/world/chunk/ChunkNibbleArray;)V",
-                    shift = At.Shift.AFTER
-            )
+            method = "readLightData",
+            at = @At("RETURN")
     )
-    private void onLightDataReceived(int chunkX, int chunkZ, LightingProvider provider, LightType type, BitSet inited, BitSet uninited, Iterator<byte[]> nibbles, CallbackInfo ci) {
+    private void onLightDataReceived(int x, int z, LightData data, CallbackInfo ci) {
         ChunkTrackerHolder.get(this.world)
-                .onChunkStatusAdded(chunkX, chunkZ, ChunkStatus.FLAG_HAS_LIGHT_DATA);
+                .onChunkStatusAdded(x, z, ChunkStatus.FLAG_HAS_LIGHT_DATA);
     }
 
     @Inject(method = "onUnloadChunk", at = @At("RETURN"))
