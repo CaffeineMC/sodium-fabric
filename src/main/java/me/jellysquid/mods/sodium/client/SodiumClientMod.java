@@ -40,7 +40,6 @@ public class SodiumClientMod implements ClientModInitializer {
 
         FlawlessFrames.onClientInitialization();
 
-        PostLaunchChecks.checkWorkarounds();
         PostLaunchChecks.checkDrivers();
     }
 
