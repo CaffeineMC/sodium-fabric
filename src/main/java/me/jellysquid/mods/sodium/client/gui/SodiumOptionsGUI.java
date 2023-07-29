@@ -279,7 +279,7 @@ public class SodiumOptionsGUI extends Screen {
         if (client.world != null) {
             if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
                 Console.instance().logMessage(MessageLevel.INFO,
-                        Text.literal("Reloading the renderer..."), 3.0);
+                        Text.translatable("sodium.console.renderer_reload"), 3.0);
                 client.worldRenderer.reload();
             } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
                 client.worldRenderer.scheduleTerrainUpdate();
@@ -288,14 +288,14 @@ public class SodiumOptionsGUI extends Screen {
 
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
             Console.instance().logMessage(MessageLevel.INFO,
-                    Text.literal("Reloading resource packs... (this may take a few moments)"), 5.0);
+                    Text.translatable("sodium.console.asset_reload"), 5.0);
             client.setMipmapLevels(client.options.getMipmapLevels().getValue());
             client.reloadResourcesConcurrently();
         }
 
         if (flags.contains(OptionFlag.REQUIRES_GAME_RESTART)) {
             Console.instance().logMessage(MessageLevel.WARN,
-                    Text.literal("The game must be restarted to apply one or more settings!"), 10.0);
+                    Text.translatable("sodium.console.game_restart"), 10.0);
         }
 
         for (OptionStorage<?> storage : dirtyStorages) {

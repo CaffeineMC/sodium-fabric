@@ -17,19 +17,13 @@ public class PostLaunchChecks {
 
     public static void checkDrivers() {
         if (isBrokenNvidiaDriverInstalled()) {
-            var message = Text.literal("""
-                    Your NVIDIA graphics drivers are out of date!
-                      * This will cause severe performance issues and crashes.
-                      * Please update your graphics drivers to the latest version.
-                    (Read the log file for more information.)""");
+            var message = Text.translatable("sodium.console.broken_nvidia_driver");
 
             Console.instance().logMessage(MessageLevel.ERROR, message, 45.0);
         }
 
         if (isUsingPojavLauncher()) {
-            var message = Text.literal("Pojav Launcher is not supported when using Sodium. You are very likely " +
-                                       "to run into extreme performance issues, graphical bugs, and crashes. We will " +
-                                       "not provide technical support or help with these issues.");
+            var message = Text.translatable("sodium.console.pojav_launcher");
 
             Console.instance().logMessage(MessageLevel.ERROR, message, 45.0);
         }
