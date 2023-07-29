@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk;
+package me.jellysquid.mods.sodium.client.render.chunk.map;
 
 public class ChunkStatus {
     public static final int FLAG_HAS_BLOCK_DATA = 1;

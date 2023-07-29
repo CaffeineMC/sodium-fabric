@@ -4,6 +4,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongIterable;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
@@ -82,8 +84,6 @@ public class RenderSectionManager {
     private int currentFrame = 0;
     private boolean alwaysDeferChunkUpdates;
 
-    private final ChunkTracker tracker;
-
     private final SortedRenderListBuilder renderListBuilder = new SortedRenderListBuilder();
     private SortedRenderLists renderLists;
 
@@ -105,13 +105,6 @@ public class RenderSectionManager {
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
             this.rebuildQueues.put(type, new ObjectArrayFIFOQueue<>());
         }
-
-        this.tracker = this.worldRenderer.getChunkTracker();
-    }
-
-    public void reloadChunks(ChunkTracker tracker) {
-        tracker.getChunks(ChunkStatus.FLAG_HAS_BLOCK_DATA)
-                .forEach(pos -> this.onChunkAdded(ChunkPos.getPackedX(pos), ChunkPos.getPackedZ(pos)));
     }
 
     public void update(Camera camera, Viewport viewport, int frame, boolean spectator) {
@@ -149,8 +142,11 @@ public class RenderSectionManager {
                 continue;
             }
 
-            this.schedulePendingUpdates(section);
             this.addToRenderLists(renderLists, section);
+
+            if (section.getPendingUpdate() != null) {
+                this.schedulePendingUpdates(section);
+            }
 
             int connections;
 
@@ -263,14 +259,6 @@ public class RenderSectionManager {
     }
 
     private void schedulePendingUpdates(RenderSection section) {
-        if (section.getPendingUpdate() == null) {
-            return;
-        }
-
-        if (!this.tracker.hasMergedFlags(section.getChunkX(), section.getChunkZ(), ChunkStatus.FLAG_ALL)) {
-            return;
-        }
-
         PriorityQueue<RenderSection> queue = this.rebuildQueues.get(section.getPendingUpdate());
 
         if (queue.size() >= 32) {
@@ -288,25 +276,19 @@ public class RenderSectionManager {
         this.renderLists = null;
     }
 
-    public void onChunkAdded(int x, int z) {
-        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
-            this.needsUpdate |= this.loadSection(x, y, z);
-        }
-    }
+    public void onSectionAdded(int x, int y, int z) {
+        long key = ChunkSectionPos.asLong(x, y, z);
 
-    public void onChunkRemoved(int x, int z) {
-        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
-            this.needsUpdate |= this.unloadSection(x, y, z);
+        if (this.sectionByPosition.containsKey(key)) {
+            return;
         }
-    }
 
-    private boolean loadSection(int x, int y, int z) {
         RenderRegion region = this.regions.createForChunk(x, y, z);
 
         RenderSection renderSection = new RenderSection(region, this.worldRenderer, x, y, z);
         region.addSection(renderSection);
 
-        this.sectionByPosition.put(ChunkSectionPos.asLong(x, y, z), renderSection);
+        this.sectionByPosition.put(key, renderSection);
 
         Chunk chunk = this.world.getChunk(x, z);
         ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
@@ -319,14 +301,14 @@ public class RenderSectionManager {
 
         this.connectNeighborNodes(renderSection);
 
-        return true;
+        this.needsUpdate = true;
     }
 
-    private boolean unloadSection(int x, int y, int z) {
+    public void onSectionRemoved(int x, int y, int z) {
         RenderSection section = this.sectionByPosition.remove(ChunkSectionPos.asLong(x, y, z));
 
         if (section == null) {
-            throw new IllegalStateException("Chunk is not loaded: " + ChunkSectionPos.from(x, y, z));
+            return;
         }
 
         RenderRegion region = section.getRegion();
@@ -339,7 +321,7 @@ public class RenderSectionManager {
 
         section.delete();
 
-        return true;
+        this.needsUpdate = true;
     }
 
     public void renderLayer(ChunkRenderMatrices matrices, TerrainRenderPass pass, double x, double y, double z) {
@@ -735,5 +717,22 @@ public class RenderSectionManager {
 
     public SortedRenderLists getRenderLists() {
         return this.renderLists;
+    }
+
+    public boolean isSectionBuilt(int x, int y, int z) {
+        var section = this.getRenderSection(x, y, z);
+        return section != null && section.isBuilt();
+    }
+
+    public void onChunkAdded(int x, int z) {
+        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
+            this.onSectionAdded(x, y, z);
+        }
+    }
+
+    public void onChunkRemoved(int x, int z) {
+        for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
+            this.onSectionRemoved(x, y, z);
+        }
     }
 }
