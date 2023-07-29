@@ -13,17 +13,6 @@ import net.minecraft.util.Util;
 import net.minecraft.util.Util.OperatingSystem;
 
 public class PostLaunchChecks {
-    public static void checkWorkarounds() {
-        var workarounds = Workarounds.getEnabledWorkarounds();
-
-        if (!workarounds.isEmpty()) {
-            Console.instance().logMessage(MessageLevel.WARN, Text.literal("""
-                    One or more workarounds have been enabled to prevent problems.
-                      * This may affect performance and disable certain features.
-                    (Read the log file for more information.)"""), 10.0);
-        }
-    }
-
     public static void checkDrivers() {
         if (isBrokenNvidiaDriverInstalled()) {
             var message = Text.literal("""
