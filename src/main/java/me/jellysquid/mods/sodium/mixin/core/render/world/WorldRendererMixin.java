@@ -113,29 +113,19 @@ public abstract class WorldRendererMixin implements WorldRendererExtended {
      */
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, boolean spectator) {
-        RenderDevice.enterManagedCode();
 
         var viewport = ((ViewportProvider) frustum).sodium$createViewport();
+        var updateChunksImmediately = FlawlessFrames.isActive();
+
+        RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.updateChunks(camera, viewport, this.frame++, spectator);
-
-            if (FlawlessFrames.isActive()) {
-                // Block until all chunk updates have been processed
-                this.renderer.getRenderSectionManager().updateAllChunksNow();
-
-                // If that caused new chunks to become visible, repeat until we got them all
-                while (this.renderer.getRenderSectionManager().isGraphDirty()) {
-                    this.renderer.updateChunks(camera, viewport, this.frame++, spectator);
-                    this.renderer.getRenderSectionManager().updateAllChunksNow();
-                }
-
-                // We set this because third-party mods may use it (to loop themselves), even if Vanilla does not.
-                this.shouldUpdate = false;
-            }
+            this.renderer.setupTerrain(camera, viewport, this.frame++, spectator, updateChunksImmediately);
         } finally {
             RenderDevice.exitManagedCode();
         }
+
+        this.shouldUpdate = false; // We set this because third-party mods may use it (to loop themselves), even if Vanilla does not.
     }
 
     /**

@@ -1,7 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.region;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceMap;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.arena.PendingUpload;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.FallbackStagingBuffer;
@@ -9,11 +10,11 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
-import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
+import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -47,30 +48,21 @@ public class RenderRegionManager {
         }
     }
 
-    public void upload(CommandList commandList, Iterator<ChunkBuildResult> queue) {
-        for (Map.Entry<RenderRegion, List<ChunkBuildResult>> entry : this.setupUploadBatches(queue).entrySet()) {
-            RenderRegion region = entry.getKey();
-            List<ChunkBuildResult> uploadQueue = entry.getValue();
-
-            this.upload(commandList, region, uploadQueue);
-
-            for (ChunkBuildResult result : uploadQueue) {
-                result.render.onBuildFinished(result);
-
-                result.delete();
-            }
+    public void uploadMeshes(CommandList commandList, Collection<ChunkBuildResult> results) {
+        for (var entry : this.createMeshUploadQueues(results)) {
+            this.uploadMeshes(commandList, entry.getKey(), entry.getValue());
         }
     }
 
-    private void upload(CommandList commandList, RenderRegion region, List<ChunkBuildResult> results) {
-        List<PendingSectionUpload> uploads = new ArrayList<>();
+    private void uploadMeshes(CommandList commandList, RenderRegion region, Collection<ChunkBuildResult> results) {
+        var uploads = new ArrayList<PendingSectionUpload>();
 
         for (ChunkBuildResult result : results) {
             for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
                 var storage = region.getStorage(pass);
 
                 if (storage != null) {
-                    storage.removeMesh(result.render.getSectionIndex());
+                    storage.removeMeshes(result.render.getSectionIndex());
                 }
 
                 BuiltSectionMeshParts mesh = result.getMesh(pass);
@@ -102,30 +94,20 @@ public class RenderRegionManager {
         // Collect the upload results
         for (PendingSectionUpload upload : uploads) {
             var storage = region.createStorage(upload.pass);
-            storage.removeMesh(upload.section.getSectionIndex());
-            storage.addMesh(upload.section.getSectionIndex(),
+            storage.setMeshes(upload.section.getSectionIndex(),
                     upload.vertexUpload.getResult(), upload.meshData.getVertexRanges());
         }
     }
 
-    private Map<RenderRegion, List<ChunkBuildResult>> setupUploadBatches(Iterator<ChunkBuildResult> renders) {
-        Map<RenderRegion, List<ChunkBuildResult>> map = new Reference2ObjectLinkedOpenHashMap<>();
+    private Reference2ReferenceMap.FastEntrySet<RenderRegion, List<ChunkBuildResult>> createMeshUploadQueues(Collection<ChunkBuildResult> results) {
+        var map = new Reference2ReferenceOpenHashMap<RenderRegion, List<ChunkBuildResult>>();
 
-        while (renders.hasNext()) {
-            ChunkBuildResult result = renders.next();
-            RenderSection render = result.render;
-
-            if (!render.canAcceptBuildResults(result)) {
-                result.delete();
-
-                continue;
-            }
-
-            List<ChunkBuildResult> uploadQueue = map.computeIfAbsent(render.getRegion(), k -> new ArrayList<>());
-            uploadQueue.add(result);
+        for (var result : results) {
+            var queue = map.computeIfAbsent(result.render.getRegion(), k -> new ArrayList<>());
+            queue.add(result);
         }
 
-        return map;
+        return map.reference2ReferenceEntrySet();
     }
 
     public void delete(CommandList commandList) {

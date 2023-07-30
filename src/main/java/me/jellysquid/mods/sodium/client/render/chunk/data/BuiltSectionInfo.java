@@ -17,8 +17,6 @@ import java.util.*;
  * block entities contained by it, and any data used for occlusion testing.
  */
 public class BuiltSectionInfo {
-    public static final BuiltSectionInfo ABSENT = new BuiltSectionInfo.Builder()
-            .build();
     public static final BuiltSectionInfo EMPTY = createEmptyData();
 
     private List<TerrainRenderPass> blockRenderPasses;

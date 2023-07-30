@@ -1,17 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 public enum ChunkUpdateType {
-    INITIAL_BUILD(false),
-    REBUILD(false),
-    IMPORTANT_REBUILD(true);
+    INITIAL_BUILD,
+    REBUILD,
+    IMPORTANT_REBUILD;
 
-    private final boolean important;
-
-    ChunkUpdateType(boolean important) {
-        this.important = important;
-    }
-
-    public boolean isImportant() {
-        return this.important;
+    public static boolean canPromote(ChunkUpdateType prev, ChunkUpdateType next) {
+        return prev == null || (prev == REBUILD && next == IMPORTANT_REBUILD);
     }
 }

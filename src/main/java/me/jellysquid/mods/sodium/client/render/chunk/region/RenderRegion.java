@@ -122,7 +122,7 @@ public class RenderRegion {
         }
 
         for (var storage : this.sectionRenderData.values()) {
-            storage.refresh();
+            storage.onBufferResized();
         }
     }
 
@@ -149,7 +149,7 @@ public class RenderRegion {
         }
 
         for (var storage : this.sectionRenderData.values()) {
-            storage.removeMesh(sectionIndex);
+            storage.removeMeshes(sectionIndex);
         }
 
         this.sections[sectionIndex] = null;

@@ -2,22 +2,18 @@ package me.jellysquid.mods.sodium.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.longs.LongConsumer;
-import it.unimi.dsi.fastutil.longs.LongIterable;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
-import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTracker;
 import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTrackerHolder;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
-import me.jellysquid.mods.sodium.client.util.ListUtil;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import net.minecraft.block.entity.BlockEntity;
@@ -149,7 +145,11 @@ public class SodiumWorldRenderer {
     /**
      * Called prior to any chunk rendering in order to update necessary state.
      */
-    public void updateChunks(Camera camera, Viewport viewport, @Deprecated(forRemoval = true) int frame, boolean spectator) {
+    public void setupTerrain(Camera camera,
+                             Viewport viewport,
+                             @Deprecated(forRemoval = true) int frame,
+                             boolean spectator,
+                             boolean updateChunksImmediately) {
         NativeBuffer.reclaim(false);
 
         this.processChunkEvents();
@@ -188,17 +188,27 @@ public class SodiumWorldRenderer {
         this.lastCameraYaw = yaw;
         this.lastFogDistance = fogDistance;
 
-        profiler.swap("chunk_update");
+        profiler.swap("chunk_upload");
 
-        this.renderSectionManager.updateChunks();
+        this.renderSectionManager.uploadChunks();
 
-        if (this.renderSectionManager.isGraphDirty()) {
-            profiler.swap("chunk_graph_rebuild");
+        if (this.renderSectionManager.needsUpdate()) {
+            profiler.swap("chunk_render_lists");
 
-            this.renderSectionManager.update(camera, viewport, frame, spectator);
+            this.renderSectionManager.updateRenderLists(camera, viewport, frame, spectator);
         }
 
-        profiler.swap("visible_chunk_tick");
+        profiler.swap("chunk_update");
+
+        this.renderSectionManager.updateChunks(updateChunksImmediately);
+
+        if (updateChunksImmediately) {
+            profiler.swap("chunk_upload_immediately");
+
+            this.renderSectionManager.uploadChunks();
+        }
+
+        profiler.swap("chunk_render_tick");
 
         this.renderSectionManager.tickVisibleRenders();
 
@@ -244,7 +254,7 @@ public class SodiumWorldRenderer {
 
         this.renderDistance = this.client.options.getClampedViewDistance();
 
-        this.renderSectionManager = new RenderSectionManager(this, this.world, this.renderDistance, commandList);
+        this.renderSectionManager = new RenderSectionManager(this.world, this.renderDistance, commandList);
 
         var tracker = ChunkTrackerHolder.get(this.world);
         ChunkTracker.forEachChunk(tracker.getReadyChunks(), this.renderSectionManager::onChunkAdded);
@@ -299,7 +309,11 @@ public class SodiumWorldRenderer {
                 var sectionId = sectionIterator.next();
                 var section = region.getSection(sectionId);
 
-                var renderData = section.getData();
+                var renderData = section.getInfo();
+
+                if (renderData == null) {
+                    continue;
+                }
 
                 for (BlockEntity blockEntity : renderData.getBlockEntities()) {
                     renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer, blockEntity);
@@ -358,12 +372,6 @@ public class SodiumWorldRenderer {
 
             matrices.pop();
         }
-    }
-
-    public void onChunkRenderUpdated(int x, int y, int z, BuiltSectionInfo meshBefore, BuiltSectionInfo meshAfter) {
-        ListUtil.updateList(this.globalBlockEntities, meshBefore.getGlobalBlockEntities(), meshAfter.getGlobalBlockEntities());
-
-        this.renderSectionManager.onChunkRenderUpdates(x, y, z, meshAfter);
     }
 
     /**
@@ -448,10 +456,6 @@ public class SodiumWorldRenderer {
 
     public Collection<String> getMemoryDebugStrings() {
         return this.renderSectionManager.getDebugStrings();
-    }
-
-    public RenderSectionManager getRenderSectionManager() {
-        return this.renderSectionManager;
     }
 
     public boolean isSectionReady(int x, int y, int z) {
