@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
@@ -30,7 +29,6 @@ import net.minecraft.util.profiler.Profiler;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.SortedSet;
 
 /**
@@ -47,8 +45,6 @@ public class SodiumWorldRenderer {
     private float lastFogDistance;
 
     private boolean useEntityCulling;
-
-    private final Set<BlockEntity> globalBlockEntities = new ObjectOpenHashSet<>();
 
     private RenderSectionManager renderSectionManager;
 
@@ -112,8 +108,6 @@ public class SodiumWorldRenderer {
             this.renderSectionManager.destroy();
             this.renderSectionManager = null;
         }
-
-        this.globalBlockEntities.clear();
 
         this.world = null;
     }
@@ -275,7 +269,7 @@ public class SodiumWorldRenderer {
         BlockEntityRenderDispatcher blockEntityRenderer = MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
 
         this.renderBlockEntities(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer);
-        this.renderGlobalBlockEntities(matrices, tickDelta, immediate, x, y, z, blockEntityRenderer);
+        this.renderGlobalBlockEntities(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer);
     }
 
     private void renderBlockEntities(MatrixStack matrices,
@@ -298,18 +292,18 @@ public class SodiumWorldRenderer {
         while (renderListIterator.hasNext()) {
             var renderList = renderListIterator.next();
 
-            var region = renderList.getRegion();
-            var sectionIterator = renderList.sectionsWithEntitiesIterator();
+            var renderRegion = renderList.getRegion();
+            var renderSectionIterator = renderList.sectionsWithEntitiesIterator();
 
-            if (sectionIterator == null) {
+            if (renderSectionIterator == null) {
                 continue;
             }
 
-            while (sectionIterator.hasNext()) {
-                var sectionId = sectionIterator.next();
-                var section = region.getSection(sectionId);
+            while (renderSectionIterator.hasNext()) {
+                var renderSectionId = renderSectionIterator.next();
+                var renderSection = renderRegion.getSection(renderSectionId);
 
-                var renderData = section.getInfo();
+                var renderData = renderSection.getInfo();
 
                 if (renderData == null) {
                     continue;
@@ -322,6 +316,27 @@ public class SodiumWorldRenderer {
         }
     }
 
+    private void renderGlobalBlockEntities(MatrixStack matrices,
+                                           BufferBuilderStorage bufferBuilders,
+                                           Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
+                                           float tickDelta,
+                                           VertexConsumerProvider.Immediate immediate,
+                                           double x,
+                                           double y,
+                                           double z,
+                                           BlockEntityRenderDispatcher blockEntityRenderer) {
+        for (var renderSection : this.renderSectionManager.getSectionsWithGlobalEntities()) {
+            var renderInfo = renderSection.getInfo();
+
+            if (renderInfo == null) {
+                continue;
+            }
+
+            for (var blockEntity : renderInfo.getGlobalBlockEntities()) {
+                renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer, blockEntity);
+            }
+        }
+    }
 
     private static void renderBlockEntity(MatrixStack matrices,
                                           BufferBuilderStorage bufferBuilders,
@@ -361,18 +376,6 @@ public class SodiumWorldRenderer {
         matrices.pop();
     }
 
-    private void renderGlobalBlockEntities(MatrixStack matrices, float tickDelta, VertexConsumerProvider.Immediate immediate, double x, double y, double z, BlockEntityRenderDispatcher blockEntityRenderer) {
-        for (BlockEntity blockEntity : this.globalBlockEntities) {
-            BlockPos pos = blockEntity.getPos();
-
-            matrices.push();
-            matrices.translate((double) pos.getX() - x, (double) pos.getY() - y, (double) pos.getZ() - z);
-
-            blockEntityRenderer.render(blockEntity, tickDelta, matrices, immediate);
-
-            matrices.pop();
-        }
-    }
 
     /**
      * Returns whether or not the entity intersects with any visible chunks in the graph.
