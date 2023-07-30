@@ -207,7 +207,14 @@ public class ClonedChunkSection {
     }
 
     public int getLightLevel(LightType type, int x, int y, int z) {
-        return this.lightDataArrays[type.ordinal()].get(x, y, z);
+        var array = this.lightDataArrays[type.ordinal()];
+
+        // The sky-light array may not exist in certain dimensions.
+        if (array == null) {
+            return 0;
+        }
+
+        return array.get(x, y, z);
     }
 
     private final AtomicInteger referenceCount = new AtomicInteger(0);
