@@ -14,6 +14,7 @@ import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobResult;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderMeshingTask;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphDirection;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
@@ -22,7 +23,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderListBuild
 import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderMeshingTask;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
@@ -41,7 +41,7 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
-import org.apache.commons.lang3.Validate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -77,7 +77,9 @@ public class RenderSectionManager {
     private int currentFrame = 0;
     private boolean alwaysDeferChunkUpdates;
 
-    private final SortedRenderListBuilder renderListBuilder = new SortedRenderListBuilder();
+    @NotNull
+    private final SortedRenderListBuilder renderListBuilder;
+    @NotNull
     private SortedRenderLists renderLists;
 
     private final ReferenceSet<RenderSection> sectionsWithGlobalEntities = new ReferenceOpenHashSet<>();
@@ -97,6 +99,9 @@ public class RenderSectionManager {
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
             this.rebuildQueues.put(type, new ArrayDeque<>());
         }
+
+        this.renderListBuilder = new SortedRenderListBuilder();
+        this.renderLists = SortedRenderLists.empty();
     }
 
     public void updateRenderLists(Camera camera, Viewport viewport, int frame, boolean spectator) {
@@ -262,7 +267,7 @@ public class RenderSectionManager {
             queue.clear();
         }
 
-        this.renderLists = null;
+        this.renderLists = SortedRenderLists.empty();
     }
 
     public void onSectionAdded(int x, int y, int z) {
@@ -317,8 +322,6 @@ public class RenderSectionManager {
     }
 
     public void renderLayer(ChunkRenderMatrices matrices, TerrainRenderPass pass, double x, double y, double z) {
-        Validate.notNull(this.renderLists, "Render list is null");
-
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
@@ -722,7 +725,7 @@ public class RenderSectionManager {
         return list;
     }
 
-    public SortedRenderLists getRenderLists() {
+    public @NotNull SortedRenderLists getRenderLists() {
         return this.renderLists;
     }
 
