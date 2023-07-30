@@ -280,4 +280,8 @@ public class RenderSection {
     public void setLastBuiltFrame(int lastBuiltFrame) {
         this.lastBuiltFrame = lastBuiltFrame;
     }
+
+    public long getGlobalCoord() {
+        return ChunkSectionPos.asLong(this.chunkX, this.chunkY, this.chunkZ);
+    }
 }

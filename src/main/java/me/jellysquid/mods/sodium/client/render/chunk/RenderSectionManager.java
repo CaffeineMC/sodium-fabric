@@ -4,6 +4,9 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ReferenceSet;
+import it.unimi.dsi.fastutil.objects.ReferenceSets;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
@@ -73,6 +76,8 @@ public class RenderSectionManager {
 
     private final SortedRenderListBuilder renderListBuilder = new SortedRenderListBuilder();
     private SortedRenderLists renderLists;
+
+    private final ReferenceSet<RenderSection> sectionsWithGlobalEntities = new ReferenceOpenHashSet<>();
 
     public RenderSectionManager(ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
@@ -277,7 +282,7 @@ public class RenderSectionManager {
         ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
 
         if (section.isEmpty()) {
-            renderSection.setInfo(BuiltSectionInfo.EMPTY);
+            this.updateSectionInfo(renderSection, BuiltSectionInfo.EMPTY);
         } else {
             renderSection.setPendingUpdate(ChunkUpdateType.INITIAL_BUILD);
         }
@@ -303,6 +308,7 @@ public class RenderSectionManager {
         }
 
         this.disconnectNeighborNodes(section);
+        this.updateSectionInfo(section, null);
 
         section.delete();
 
@@ -380,13 +386,27 @@ public class RenderSectionManager {
         this.regions.uploadMeshes(RenderDevice.INSTANCE.createCommandList(), filtered);
 
         for (var result : filtered) {
-            this.onChunkUpdated(result);
+            this.updateSectionInfo(result.render, result.info);
+
+            updateSectionJobStatus(result);
         }
     }
 
-    private void onChunkUpdated(ChunkBuildResult result) {
-        result.render.setInfo(result.info);
+    private void updateSectionInfo(RenderSection render, BuiltSectionInfo info) {
+        render.setInfo(info);
 
+        if (info != null) {
+            var globalBlockEntities = info.getGlobalBlockEntities();
+
+            if (!globalBlockEntities.isEmpty()) {
+                this.sectionsWithGlobalEntities.add(render);
+            } else {
+                this.sectionsWithGlobalEntities.remove(render);
+            }
+        }
+    }
+
+    private static void updateSectionJobStatus(ChunkBuildResult result) {
         var job = result.render.getCurrentJob();
 
         if (job != null && job.isDone()) {
@@ -488,6 +508,8 @@ public class RenderSectionManager {
             this.regions.delete(commandList);
             this.chunkRenderer.delete(commandList);
         }
+
+        this.sectionsWithGlobalEntities.clear();
 
         this.builder.stopWorkers();
     }
@@ -713,5 +735,9 @@ public class RenderSectionManager {
         for (int y = this.world.getBottomSectionCoord(); y < this.world.getTopSectionCoord(); y++) {
             this.onSectionRemoved(x, y, z);
         }
+    }
+
+    public Collection<RenderSection> getSectionsWithGlobalEntities() {
+        return ReferenceSets.unmodifiable(this.sectionsWithGlobalEntities);
     }
 }
