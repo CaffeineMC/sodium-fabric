@@ -10,39 +10,8 @@ import org.slf4j.LoggerFactory;
 public class PreLaunchChecks {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-PrelaunchChecks");
 
-    private static boolean isEnabled(String key) {
-        return Boolean.parseBoolean(System.getProperty(key, "true"));
-    }
-
-    public static void checkPlatform() {
-        boolean check = isEnabled("sodium.platform.check");
-
-        if (!check) {
-            return;
-        }
-
-        if (isRunningOnAndroid()) {
-            LOGGER.error("------------------------------------------------------------------------------------------------------------");
-            LOGGER.error("READ ME! You appear to be using Pojav Launcher!");
-            LOGGER.error("  * Most Android devices and OpenGL compatibility layers are not compatible with Sodium, and will cause severe " +
-                    "graphical issues and crashes. These problems are not caused by Sodium.");
-            LOGGER.error("  * By default, the game will not start if it detects Pojav Launcher is being used, since it almost " +
-                    "never works correctly, and results in users submitting many invalid bug reports.");
-            LOGGER.error("  * For more information, please see the following issue:");
-            LOGGER.error("      https://github.com/CaffeineMC/sodium-fabric/issues/1916");
-            LOGGER.error("  * HINT: If you are absolutely sure that you know what you are doing (i.e. you are a developer working on the " +
-                    "code), then you can force the game to start anyways by adding the following JVM argument.");
-            LOGGER.error("      -Dsodium.platform.check=false");
-            LOGGER.error("  * NOTE: We will not provide support for any issues caused by using this option. You are on your own!");
-            LOGGER.error("------------------------------------------------------------------------------------------------------------");
-
-            throw new RuntimeException("Pojav Launcher is not supported when using Sodium, please " +
-                    "see this issue for more details: https://github.com/CaffeineMC/sodium-fabric/issues/1916");
-        }
-    }
-
     public static void checkDrivers() {
-        boolean check = isEnabled("sodium.driver.check");
+        boolean check = Boolean.parseBoolean(System.getProperty("sodium.driver.check", "true"));
 
         if (!check) {
             return;
@@ -89,39 +58,5 @@ public class PreLaunchChecks {
         }
 
         return false;
-    }
-
-    private static boolean isRunningOnAndroid() {
-        if (System.getenv("POJAV_RENDERER") != null) {
-            LOGGER.warn("Detected presence of environment variable POJAV_LAUNCHER, which seems to indicate we are running on Android");
-
-            return true;
-        }
-
-        var librarySearchPaths = System.getProperty("java.library.path", null);
-
-        if (librarySearchPaths != null) {
-            for (var path : librarySearchPaths.split(":")) {
-                if (isKnownAndroidPathFragment(path)) {
-                    LOGGER.warn("Found a library search path which seems to be hosted in an Android filesystem: {}", path);
-
-                    return true;
-                }
-            }
-        }
-
-        var workingDirectory = System.getProperty("user.home", null);
-
-        if (workingDirectory != null) {
-            if (isKnownAndroidPathFragment(workingDirectory)) {
-                LOGGER.warn("Working directory seems to be hosted in an Android filesystem: {}", workingDirectory);
-            }
-        }
-
-        return false;
-    }
-
-    private static boolean isKnownAndroidPathFragment(String path) {
-        return path.matches("/data/user/[0-9]+/net\\.kdt\\.pojavlaunch");
     }
 }
