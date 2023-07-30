@@ -54,6 +54,7 @@
     "features.render.immediate.buffer_builder.sorting.VertexSorterMixin",
     "features.render.immediate.matrix_stack.MatrixStackMixin",
     "features.render.immediate.matrix_stack.VertexConsumerMixin",
+    "features.render.model.RenderLayersMixin",
     "features.render.model.block.BlockModelRendererMixin",
     "features.render.model.item.ItemRendererMixin",
     "features.render.particle.BillboardParticleMixin",
