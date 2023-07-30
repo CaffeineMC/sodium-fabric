@@ -60,7 +60,13 @@ public class BlockRenderer {
         ColorProvider<BlockState> colorizer = this.colorProviderRegistry.getColorProvider(ctx.state().getBlock());
 
         LightPipeline lighter = this.lighters.getLighter(this.getLightingMode(ctx.state(), ctx.model()));
-        Vec3d renderOffset = ctx.state().getModelOffset(ctx.world(), ctx.pos());
+        Vec3d renderOffset;
+        
+        if (ctx.state().hasModelOffset()) {
+            renderOffset = ctx.state().getModelOffset(ctx.world(), ctx.pos());
+        } else {
+            renderOffset = Vec3d.ZERO;
+        }
 
         for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
             List<BakedQuad> quads = this.getGeometry(ctx, face);
