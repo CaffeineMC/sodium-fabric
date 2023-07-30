@@ -667,7 +667,7 @@ public class RenderSectionManager {
             return this.renderDistance;
         }
 
-        return MathHelper.floor(distance) >> 4;
+        return MathHelper.ceil(distance / 16.0f);
     }
 
     private void connectNeighborNodes(RenderSection render) {
