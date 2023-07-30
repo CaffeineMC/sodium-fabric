@@ -452,7 +452,7 @@ public class SodiumWorldRenderer {
         this.renderSectionManager.scheduleRebuild(x, y, z, important);
     }
 
-    public Collection<String> getMemoryDebugStrings() {
+    public Collection<String> getDebugStrings() {
         return this.renderSectionManager.getDebugStrings();
     }
 

@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.executor;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.model.light.cache.ArrayLightDataCache;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderTask;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
@@ -12,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class ChunkBuilder {
@@ -24,6 +26,8 @@ public class ChunkBuilder {
     private final List<Thread> threads = new ArrayList<>();
 
     private final ThreadLocal<ChunkBuildContext> localContexts = new ThreadLocal<>();
+
+    private final AtomicInteger busyThreadCount = new AtomicInteger();
 
     public ChunkBuilder(ClientWorld world, ChunkVertexType vertexType) {
         int count = getThreadCount();
@@ -163,6 +167,18 @@ public class ChunkBuilder {
         return this.queue.isEmpty();
     }
 
+    public int getScheduledJobCount() {
+        return this.queue.size();
+    }
+
+    public int getBusyThreadCount() {
+        return this.busyThreadCount.get();
+    }
+
+    public int getTotalThreadCount() {
+        return this.threads.size();
+    }
+
     private class WorkerRunnable implements Runnable {
         // Making this thread-local provides a small boost to performance by avoiding the overhead in synchronizing
         // caches between different CPU cores
@@ -188,10 +204,14 @@ public class ChunkBuilder {
                     continue;
                 }
 
+                ChunkBuilder.this.busyThreadCount.getAndIncrement();
+
                 try {
                     job.execute(this.context);
                 } finally {
                     this.context.cleanup();
+
+                    ChunkBuilder.this.busyThreadCount.decrementAndGet();
                 }
             }
         }
