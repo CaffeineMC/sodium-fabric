@@ -43,7 +43,6 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import oshi.util.tuples.Pair;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -126,7 +125,9 @@ public class RenderSectionManager {
         while (!this.iterationQueue.isEmpty()) {
             RenderSection section = this.iterationQueue.remove();
 
-            if (!this.isWithinRenderDistance(section) || this.isOutsideViewport(section, viewport)) {
+            int distance = this.getDistanceFromCamera(section);
+
+            if (distance > this.effectiveRenderDistance || (distance > 0 && this.isOutsideViewport(section, viewport))) {
                 continue;
             }
 
@@ -237,23 +238,20 @@ public class RenderSectionManager {
         return planes;
     }
 
-    private static final float CHUNK_RENDER_BOUNDS_EPSILON = 1.0f / 32.0f;
+    private static final double CHUNK_RENDER_BOUNDS_EPSILON = 1.0D / 32.0D;
 
     private boolean isOutsideViewport(RenderSection section, Viewport viewport) {
-        float x = section.getOriginX();
-        float y = section.getOriginY();
-        float z = section.getOriginZ();
+        double x = section.getOriginX();
+        double y = section.getOriginY();
+        double z = section.getOriginZ();
 
-        // TODO: This epsilon is a hack because we're losing precision in the world->view transform
-        // We should first translate chunk coordinates to camera-relative space, and then create a bounding
-        // box from that.
-        float minX = x - CHUNK_RENDER_BOUNDS_EPSILON;
-        float minY = y - CHUNK_RENDER_BOUNDS_EPSILON;
-        float minZ = z - CHUNK_RENDER_BOUNDS_EPSILON;
+        double minX = x - CHUNK_RENDER_BOUNDS_EPSILON;
+        double minY = y - CHUNK_RENDER_BOUNDS_EPSILON;
+        double minZ = z - CHUNK_RENDER_BOUNDS_EPSILON;
 
-        float maxX = x + 16.0f + CHUNK_RENDER_BOUNDS_EPSILON;
-        float maxY = y + 16.0f + CHUNK_RENDER_BOUNDS_EPSILON;
-        float maxZ = z + 16.0f + CHUNK_RENDER_BOUNDS_EPSILON;
+        double maxX = x + 16.0D + CHUNK_RENDER_BOUNDS_EPSILON;
+        double maxY = y + 16.0D + CHUNK_RENDER_BOUNDS_EPSILON;
+        double maxZ = z + 16.0D + CHUNK_RENDER_BOUNDS_EPSILON;
 
         return !viewport.isBoxVisible(minX, minY, minZ, maxX, maxY, maxZ);
     }
@@ -564,12 +562,12 @@ public class RenderSectionManager {
         this.needsUpdate = true;
     }
 
-    private boolean isWithinRenderDistance(RenderSection section) {
+    private int getDistanceFromCamera(RenderSection section) {
         int x = Math.abs(section.getChunkX() - this.centerChunkX);
         int y = Math.abs(section.getChunkY() - this.centerChunkY);
         int z = Math.abs(section.getChunkZ() - this.centerChunkZ);
 
-        return Math.max(x, Math.max(y, z)) <= this.effectiveRenderDistance;
+        return Math.max(x, Math.max(y, z));
     }
 
     private void initSearch(Camera camera, Viewport viewport, int frame, boolean spectator) {
