@@ -11,7 +11,7 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
@@ -48,16 +48,16 @@ public class RenderRegionManager {
         }
     }
 
-    public void uploadMeshes(CommandList commandList, Collection<ChunkBuildResult> results) {
+    public void uploadMeshes(CommandList commandList, Collection<ChunkBuildOutput> results) {
         for (var entry : this.createMeshUploadQueues(results)) {
             this.uploadMeshes(commandList, entry.getKey(), entry.getValue());
         }
     }
 
-    private void uploadMeshes(CommandList commandList, RenderRegion region, Collection<ChunkBuildResult> results) {
+    private void uploadMeshes(CommandList commandList, RenderRegion region, Collection<ChunkBuildOutput> results) {
         var uploads = new ArrayList<PendingSectionUpload>();
 
-        for (ChunkBuildResult result : results) {
+        for (ChunkBuildOutput result : results) {
             for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
                 var storage = region.getStorage(pass);
 
@@ -99,8 +99,8 @@ public class RenderRegionManager {
         }
     }
 
-    private Reference2ReferenceMap.FastEntrySet<RenderRegion, List<ChunkBuildResult>> createMeshUploadQueues(Collection<ChunkBuildResult> results) {
-        var map = new Reference2ReferenceOpenHashMap<RenderRegion, List<ChunkBuildResult>>();
+    private Reference2ReferenceMap.FastEntrySet<RenderRegion, List<ChunkBuildOutput>> createMeshUploadQueues(Collection<ChunkBuildOutput> results) {
+        var map = new Reference2ReferenceOpenHashMap<RenderRegion, List<ChunkBuildOutput>>();
 
         for (var result : results) {
             var queue = map.computeIfAbsent(result.render.getRegion(), k -> new ArrayList<>());

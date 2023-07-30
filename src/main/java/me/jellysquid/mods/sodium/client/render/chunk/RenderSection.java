@@ -1,11 +1,11 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilderJob;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
+import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -39,13 +39,14 @@ public class RenderSection {
     private int incomingDirections;
 
     @Nullable
-    private ChunkBuilderJob currentJob = null;
+    private CancellationToken buildCancellationToken = null;
 
     @Nullable
     private ChunkUpdateType pendingUpdateType;
 
     private int lastModifiedFrame = -1;
     private int lastBuiltFrame = -1;
+    private int lastSubmittedFrame = -1;
 
     public RenderSection(RenderRegion region, int chunkX, int chunkY, int chunkZ) {
         this.chunkX = chunkX;
@@ -81,9 +82,9 @@ public class RenderSection {
      * be used.
      */
     public void delete() {
-        if (this.currentJob != null) {
-            this.currentJob.cancel();
-            this.currentJob = null;
+        if (this.buildCancellationToken != null) {
+            this.buildCancellationToken.setCancelled();
+            this.buildCancellationToken = null;
         }
 
         this.setInfo(null);
@@ -249,12 +250,12 @@ public class RenderSection {
         this.incomingDirections = directions;
     }
 
-    public @Nullable ChunkBuilderJob getCurrentJob() {
-        return this.currentJob;
+    public @Nullable CancellationToken getBuildCancellationToken() {
+        return this.buildCancellationToken;
     }
 
-    public void setCurrentJob(@Nullable ChunkBuilderJob job) {
-        this.currentJob = job;
+    public void setBuildCancellationToken(@Nullable CancellationToken token) {
+        this.buildCancellationToken = token;
     }
 
     public @Nullable ChunkUpdateType getPendingUpdate() {
@@ -274,14 +275,18 @@ public class RenderSection {
     }
 
     public int getLastBuiltFrame() {
-        return lastBuiltFrame;
+        return this.lastBuiltFrame;
     }
 
     public void setLastBuiltFrame(int lastBuiltFrame) {
         this.lastBuiltFrame = lastBuiltFrame;
     }
 
-    public long getGlobalCoord() {
-        return ChunkSectionPos.asLong(this.chunkX, this.chunkY, this.chunkZ);
+    public int getLastSubmittedFrame() {
+        return this.lastSubmittedFrame;
+    }
+
+    public void setLastSubmittedFrame(int lastSubmittedFrame) {
+        this.lastSubmittedFrame = lastSubmittedFrame;
     }
 }

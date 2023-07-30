@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.tasks;
+package me.jellysquid.mods.sodium.client.render.chunk.compile.tasks;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
@@ -6,12 +6,12 @@ import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRende
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
-import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
+import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.block.BlockRenderType;
@@ -33,19 +33,20 @@ import java.util.Map;
  * This task takes a slice of the world from the thread it is created on. Since these slices require rather large
  * array allocations, they are pooled to ensure that the garbage collector doesn't become overloaded.
  */
-public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
+public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> {
     private final RenderSection render;
     private final ChunkRenderContext renderContext;
-    private final int frame;
 
-    public ChunkRenderRebuildTask(RenderSection render, ChunkRenderContext renderContext, int frame) {
+    private final int buildTime;
+
+    public ChunkBuilderMeshingTask(RenderSection render, ChunkRenderContext renderContext, int time) {
         this.render = render;
         this.renderContext = renderContext;
-        this.frame = frame;
+        this.buildTime = time;
     }
 
     @Override
-    public ChunkBuildResult performBuild(ChunkBuildContext buildContext, CancellationSource cancellationSource) {
+    public ChunkBuildOutput execute(ChunkBuildContext buildContext, CancellationToken cancellationToken) {
         BuiltSectionInfo.Builder renderData = new BuiltSectionInfo.Builder();
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
@@ -71,7 +72,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
         BlockRenderContext context = new BlockRenderContext(slice);
 
         for (int y = minY; y < maxY; y++) {
-            if (cancellationSource.isCancelled()) {
+            if (cancellationToken.isCancelled()) {
                 return null;
             }
 
@@ -135,7 +136,7 @@ public class ChunkRenderRebuildTask extends ChunkRenderBuildTask {
 
         renderData.setOcclusionData(occluder.build());
 
-        return new ChunkBuildResult(this.render, renderData.build(), meshes, this.frame);
+        return new ChunkBuildOutput(this.render, renderData.build(), meshes, this.buildTime);
     }
 
     @Override

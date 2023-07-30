@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.compile;
+package me.jellysquid.mods.sodium.client.render.chunk.compile.executor;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -7,13 +7,13 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
 
-public class ChunkBuildQueues {
-    private final ConcurrentLinkedDeque<ChunkBuilderJob> synchronousJobs = new ConcurrentLinkedDeque<>();
-    private final ConcurrentLinkedDeque<ChunkBuilderJob> asynchronousJobs = new ConcurrentLinkedDeque<>();
+class ChunkJobQueue {
+    private final ConcurrentLinkedDeque<ChunkJob> synchronousJobs = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<ChunkJob> asynchronousJobs = new ConcurrentLinkedDeque<>();
 
     private final Semaphore semaphore = new Semaphore(0);
 
-    public void add(ChunkBuilderJob job, boolean asynchronous) {
+    public void add(ChunkJob job, boolean asynchronous) {
         if (asynchronous) {
             this.asynchronousJobs.add(job);
         } else {
@@ -24,14 +24,14 @@ public class ChunkBuildQueues {
     }
 
     @Nullable
-    public ChunkBuilderJob waitForNextJob() throws InterruptedException {
+    public ChunkJob waitForNextJob() throws InterruptedException {
         this.semaphore.acquire();
 
         return this.getNextTask();
     }
 
     @Nullable
-    public ChunkBuilderJob stealSynchronousJob() {
+    public ChunkJob stealSynchronousJob() {
         if (!this.semaphore.tryAcquire()) {
             return null;
         }
@@ -48,8 +48,8 @@ public class ChunkBuildQueues {
     }
 
     @Nullable
-    private ChunkBuilderJob getNextTask() {
-        ChunkBuilderJob job;
+    private ChunkJob getNextTask() {
+        ChunkJob job;
 
         if ((job = this.synchronousJobs.poll()) != null) {
             return job;
@@ -63,8 +63,8 @@ public class ChunkBuildQueues {
     }
 
 
-    public Collection<ChunkBuilderJob> removeAll() {
-        var list = new ArrayDeque<ChunkBuilderJob>();
+    public Collection<ChunkJob> removeAll() {
+        var list = new ArrayDeque<ChunkJob>();
 
         while (this.semaphore.tryAcquire()) {
             var task = this.getNextTask();

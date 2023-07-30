@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderCache;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.world.World;
@@ -15,7 +14,7 @@ public class ChunkBuildContext {
         this.cache = new BlockRenderCache(MinecraftClient.getInstance(), world);
     }
 
-    public void release() {
+    public void cleanup() {
         this.buffers.destroy();
     }
 }
