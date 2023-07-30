@@ -1,25 +1,21 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilderJob;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
-import net.minecraft.client.render.chunk.ChunkOcclusionData;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-
-import java.util.concurrent.CompletableFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The render state object for a chunk section. This contains all the graphics state for each render pass along with
  * data about the render in the chunk visibility graph.
  */
 public class RenderSection {
-    private final SodiumWorldRenderer worldRenderer;
     private final int chunkX, chunkY, chunkZ;
 
     private final int sectionIndex;
@@ -28,26 +24,30 @@ public class RenderSection {
     private final RenderRegion region;
     private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
 
-    private BuiltSectionInfo data = BuiltSectionInfo.ABSENT;
-    private CompletableFuture<?> rebuildTask = null;
+    @Nullable
+    private BuiltSectionInfo info;
 
-    private ChunkUpdateType pendingUpdate;
 
     private boolean disposed;
-
-    private int lastAcceptedBuildTime = -1;
 
     private int flags;
 
     private int lastVisibleFrame = -1;
 
-    private long visibilityData;
+    private long visibilityData = VisibilityEncoding.NULL;
 
     private int incomingDirections;
 
-    public RenderSection(RenderRegion region, SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ) {
-        this.worldRenderer = worldRenderer;
+    @Nullable
+    private ChunkBuilderJob currentJob = null;
 
+    @Nullable
+    private ChunkUpdateType pendingUpdateType;
+
+    private int lastModifiedFrame = -1;
+    private int lastBuiltFrame = -1;
+
+    public RenderSection(RenderRegion region, int chunkX, int chunkY, int chunkZ) {
         this.chunkX = chunkX;
         this.chunkY = chunkY;
         this.chunkZ = chunkZ;
@@ -60,8 +60,6 @@ public class RenderSection {
         this.sectionIndex = LocalSectionIndex.pack(rX, rY, rZ);
 
         this.region = region;
-
-        this.visibilityData = VisibilityEncoding.DEFAULT;
     }
 
 
@@ -73,19 +71,8 @@ public class RenderSection {
         this.adjacent[direction] = node;
     }
 
-    /**
-     * Cancels any pending tasks to rebuild the chunk. If the result of any pending tasks has not been processed yet,
-     * those will also be discarded when processing finally happens.
-     */
-    public void cancelRebuildTask() {
-        if (this.rebuildTask != null) {
-            this.rebuildTask.cancel(false);
-            this.rebuildTask = null;
-        }
-    }
-
-    public BuiltSectionInfo getData() {
-        return this.data;
+    public @Nullable BuiltSectionInfo getInfo() {
+        return this.info;
     }
 
     /**
@@ -94,21 +81,25 @@ public class RenderSection {
      * be used.
      */
     public void delete() {
-        this.cancelRebuildTask();
-        this.setData(BuiltSectionInfo.ABSENT);
+        if (this.currentJob != null) {
+            this.currentJob.cancel();
+            this.currentJob = null;
+        }
 
+        this.setInfo(null);
         this.disposed = true;
     }
 
-    public void setData(BuiltSectionInfo info) {
-        if (info == null) {
-            throw new NullPointerException("Mesh information must not be null");
+    public void setInfo(@Nullable BuiltSectionInfo info) {
+        this.info = info;
+
+        if (this.info != null) {
+            this.flags = info.getFlags();
+            this.visibilityData = VisibilityEncoding.encode(info.getOcclusionData());
+        } else {
+            this.flags = 0;
+            this.visibilityData = VisibilityEncoding.NULL;
         }
-
-        this.worldRenderer.onChunkRenderUpdated(this.chunkX, this.chunkY, this.chunkZ, this.data, info);
-        this.data = info;
-
-        this.flags = info.getFlags();
     }
 
     public int getFlags() {
@@ -126,7 +117,11 @@ public class RenderSection {
      * Ensures that all resources attached to the given chunk render are "ticked" forward.
      */
     public void tick() {
-        for (Sprite sprite : this.data.getAnimatedSprites()) {
+        if (this.info == null) {
+            return;
+        }
+
+        for (Sprite sprite : this.info.getAnimatedSprites()) {
             SpriteUtil.markSpriteActive(sprite);
         }
     }
@@ -214,37 +209,8 @@ public class RenderSection {
                 this.chunkX, this.chunkY, this.chunkZ);
     }
 
-    public ChunkUpdateType getPendingUpdate() {
-        return this.pendingUpdate;
-    }
-
-    public void markForUpdate(ChunkUpdateType type) {
-        if (this.pendingUpdate == null || type.ordinal() > this.pendingUpdate.ordinal()) {
-            this.pendingUpdate = type;
-        }
-    }
-
-    public void onBuildSubmitted(CompletableFuture<?> task) {
-        if (this.rebuildTask != null) {
-            this.rebuildTask.cancel(false);
-            this.rebuildTask = null;
-        }
-
-        this.rebuildTask = task;
-        this.pendingUpdate = null;
-    }
-
     public boolean isBuilt() {
-        return this.data != BuiltSectionInfo.ABSENT;
-    }
-
-    public boolean canAcceptBuildResults(ChunkBuildResult result) {
-        return !this.isDisposed() && result.buildTime > this.lastAcceptedBuildTime;
-    }
-
-    public void onBuildFinished(ChunkBuildResult result) {
-        this.setData(result.info);
-        this.lastAcceptedBuildTime = result.buildTime;
+        return this.info != null;
     }
 
     public int getSectionIndex() {
@@ -261,10 +227,6 @@ public class RenderSection {
 
     public int getLastVisibleFrame() {
         return this.lastVisibleFrame;
-    }
-
-    public void setOcclusionData(ChunkOcclusionData occlusionData) {
-        this.visibilityData = VisibilityEncoding.encode(occlusionData);
     }
 
     public int getLocalCoord() {
@@ -285,5 +247,37 @@ public class RenderSection {
 
     public void setIncomingDirections(int directions) {
         this.incomingDirections = directions;
+    }
+
+    public @Nullable ChunkBuilderJob getCurrentJob() {
+        return this.currentJob;
+    }
+
+    public void setCurrentJob(@Nullable ChunkBuilderJob job) {
+        this.currentJob = job;
+    }
+
+    public @Nullable ChunkUpdateType getPendingUpdate() {
+        return this.pendingUpdateType;
+    }
+
+    public void setPendingUpdate(@Nullable ChunkUpdateType type) {
+        this.pendingUpdateType = type;
+    }
+
+    public int getLastModifiedFrame() {
+        return this.lastModifiedFrame;
+    }
+
+    public void setLastModifiedFrame(int lastModifiedFrame) {
+        this.lastModifiedFrame = lastModifiedFrame;
+    }
+
+    public int getLastBuiltFrame() {
+        return lastBuiltFrame;
+    }
+
+    public void setLastBuiltFrame(int lastBuiltFrame) {
+        this.lastBuiltFrame = lastBuiltFrame;
     }
 }

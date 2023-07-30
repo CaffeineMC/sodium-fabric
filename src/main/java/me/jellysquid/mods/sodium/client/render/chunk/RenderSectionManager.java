@@ -1,17 +1,14 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongIterable;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilderJob;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
@@ -30,7 +27,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshForm
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.client.util.collections.WorkStealingFutureDrain;
 import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
@@ -38,20 +34,16 @@ import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import org.apache.commons.lang3.Validate;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 public class RenderSectionManager {
-    /**
-     * The maximum distance a chunk can be from the player's camera in order to be eligible for blocking updates.
-     */
-    private static final double NEARBY_CHUNK_DISTANCE = Math.pow(32, 2.0);
-
     private final ChunkBuilder builder;
 
     private final RenderRegionManager regions;
@@ -59,19 +51,16 @@ public class RenderSectionManager {
 
     private final Long2ReferenceMap<RenderSection> sectionByPosition = new Long2ReferenceOpenHashMap<>();
 
-    private final Map<ChunkUpdateType, PriorityQueue<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
+    private final EnumMap<ChunkUpdateType, ArrayDeque<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
 
     private final ArrayDeque<RenderSection> iterationQueue = new ArrayDeque<>();
 
     private final ChunkRenderer chunkRenderer;
 
-    private final SodiumWorldRenderer worldRenderer;
     private final ClientWorld world;
 
     private final int renderDistance;
     private int effectiveRenderDistance;
-
-    private float cameraX, cameraY, cameraZ;
     private int centerChunkX, centerChunkY, centerChunkZ;
 
     private boolean needsUpdate;
@@ -79,18 +68,15 @@ public class RenderSectionManager {
     private boolean useOcclusionCulling;
     private boolean useBlockFaceCulling;
 
-    private Viewport viewport;
-
     private int currentFrame = 0;
     private boolean alwaysDeferChunkUpdates;
 
     private final SortedRenderListBuilder renderListBuilder = new SortedRenderListBuilder();
     private SortedRenderLists renderLists;
 
-    public RenderSectionManager(SodiumWorldRenderer worldRenderer, ClientWorld world, int renderDistance, CommandList commandList) {
+    public RenderSectionManager(ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
-        this.worldRenderer = worldRenderer;
         this.world = world;
 
         this.builder = new ChunkBuilder(ChunkMeshFormats.COMPACT);
@@ -103,49 +89,39 @@ public class RenderSectionManager {
         this.sectionCache = new ClonedChunkSectionCache(this.world);
 
         for (ChunkUpdateType type : ChunkUpdateType.values()) {
-            this.rebuildQueues.put(type, new ObjectArrayFIFOQueue<>());
+            this.rebuildQueues.put(type, new ArrayDeque<>());
         }
     }
 
-    public void update(Camera camera, Viewport viewport, int frame, boolean spectator) {
+    public void updateRenderLists(Camera camera, Viewport viewport, int frame, boolean spectator) {
         this.resetLists();
 
-        var renderList = this.renderListBuilder;
-        renderList.reset();
+        var renderListBuilder = this.renderListBuilder;
+        renderListBuilder.reset();
 
-        this.setup(camera);
-        this.iterateChunks(renderList, camera, viewport, frame, spectator);
+        var options = SodiumClientMod.options();
+        this.alwaysDeferChunkUpdates = options.performance.alwaysDeferChunkUpdates;
 
-        this.renderLists = renderList.build();
+        this.searchChunks(renderListBuilder, camera, viewport, frame, spectator);
+
+        this.renderLists = renderListBuilder.build();
         this.needsUpdate = false;
     }
 
-    private void setup(Camera camera) {
-        Vec3d cameraPos = camera.getPos();
-
-        this.cameraX = (float) cameraPos.x;
-        this.cameraY = (float) cameraPos.y;
-        this.cameraZ = (float) cameraPos.z;
-
-        var options = SodiumClientMod.options();
-
-        this.alwaysDeferChunkUpdates = options.performance.alwaysDeferChunkUpdates;
-    }
-
-    private void iterateChunks(SortedRenderListBuilder renderLists, Camera camera, Viewport viewport, int frame, boolean spectator) {
+    private void searchChunks(SortedRenderListBuilder renderListBuilder, Camera camera, Viewport viewport, int frame, boolean spectator) {
         this.initSearch(camera, viewport, frame, spectator);
 
         while (!this.iterationQueue.isEmpty()) {
             RenderSection section = this.iterationQueue.remove();
 
-            if (!this.isWithinRenderDistance(section) || this.isOutsideViewport(section, this.viewport)) {
+            if (!this.isWithinRenderDistance(section) || this.isOutsideViewport(section, viewport)) {
                 continue;
             }
 
-            this.addToRenderLists(renderLists, section);
+            this.addToRenderLists(renderListBuilder, section);
 
-            if (section.getPendingUpdate() != null) {
-                this.schedulePendingUpdates(section);
+            if (section.getPendingUpdate() != null && section.getCurrentJob() == null) {
+                this.addToRebuildLists(section);
             }
 
             int connections;
@@ -164,8 +140,8 @@ public class RenderSectionManager {
         }
     }
 
-    private void addToRenderLists(SortedRenderListBuilder renderLists, RenderSection section) {
-        renderLists.add(section, this.getVisibleFaces(section.getChunkX(), section.getChunkY(), section.getChunkZ()));
+    private void addToRenderLists(SortedRenderListBuilder renderListBuilder, RenderSection section) {
+        renderListBuilder.add(section, this.getVisibleFaces(section.getChunkX(), section.getChunkY(), section.getChunkZ()));
     }
 
     private static final int MODEL_UNASSIGNED = ModelQuadFacing.UNASSIGNED.ordinal();
@@ -270,18 +246,13 @@ public class RenderSectionManager {
         return !viewport.isBoxVisible(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
-    private void schedulePendingUpdates(RenderSection section) {
-        PriorityQueue<RenderSection> queue = this.rebuildQueues.get(section.getPendingUpdate());
-
-        if (queue.size() >= 32) {
-            return;
-        }
-
-        queue.enqueue(section);
+    private void addToRebuildLists(RenderSection section) {
+        Queue<RenderSection> queue = this.rebuildQueues.get(section.getPendingUpdate());
+        queue.add(section);
     }
 
     private void resetLists() {
-        for (PriorityQueue<RenderSection> queue : this.rebuildQueues.values()) {
+        for (Queue<RenderSection> queue : this.rebuildQueues.values()) {
             queue.clear();
         }
 
@@ -297,7 +268,7 @@ public class RenderSectionManager {
 
         RenderRegion region = this.regions.createForChunk(x, y, z);
 
-        RenderSection renderSection = new RenderSection(region, this.worldRenderer, x, y, z);
+        RenderSection renderSection = new RenderSection(region, x, y, z);
         region.addSection(renderSection);
 
         this.sectionByPosition.put(key, renderSection);
@@ -306,10 +277,12 @@ public class RenderSectionManager {
         ChunkSection section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
 
         if (section.isEmpty()) {
-            renderSection.setData(BuiltSectionInfo.EMPTY);
+            renderSection.setInfo(BuiltSectionInfo.EMPTY);
         } else {
-            renderSection.markForUpdate(ChunkUpdateType.INITIAL_BUILD);
+            renderSection.setPendingUpdate(ChunkUpdateType.INITIAL_BUILD);
         }
+
+        renderSection.setLastModifiedFrame(this.currentFrame);
 
         this.connectNeighborNodes(renderSection);
 
@@ -377,118 +350,117 @@ public class RenderSectionManager {
         return render.getLastVisibleFrame() == this.currentFrame;
     }
 
-    public void updateChunks() {
-        this.updateChunks(false);
+    public void updateChunks(boolean updateImmediately) {
+        this.regions.update();
+
+        this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD, false);
+        this.submitRebuildTasks(ChunkUpdateType.REBUILD, !updateImmediately);
+        this.submitRebuildTasks(ChunkUpdateType.INITIAL_BUILD, !updateImmediately);
     }
 
-    public void updateAllChunksNow() {
-        this.updateChunks(true);
+    public void uploadChunks() {
+        this.waitForBlockingTasks();
 
-        // Also wait for any rebuilds which had already been scheduled before this method was called
-        this.needsUpdate |= this.performAllUploads();
-    }
+        var results = this.collectChunkBuildResults();
 
-    private void updateChunks(boolean allImmediately) {
-        var blockingFutures = new LinkedList<CompletableFuture<ChunkBuildResult>>();
+        if (!results.isEmpty()) {
+            this.processChunkBuildResults(results);
 
-        this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD, blockingFutures);
-        this.submitRebuildTasks(ChunkUpdateType.INITIAL_BUILD, allImmediately ? blockingFutures : null);
-        this.submitRebuildTasks(ChunkUpdateType.REBUILD, allImmediately ? blockingFutures : null);
+            for (var result : results) {
+                result.delete();
+            }
 
-        // Try to complete some other work on the main thread while we wait for rebuilds to complete
-        this.needsUpdate |= this.performPendingUploads();
-
-        if (!blockingFutures.isEmpty()) {
             this.needsUpdate = true;
-            this.regions.upload(RenderDevice.INSTANCE.createCommandList(), new WorkStealingFutureDrain<>(blockingFutures, this.builder::stealTask));
+        }
+    }
+
+    private void processChunkBuildResults(ArrayList<ChunkBuildResult> results) {
+        var filtered = filterChunkBuildResults(results);
+
+        this.regions.uploadMeshes(RenderDevice.INSTANCE.createCommandList(), filtered);
+
+        for (var result : filtered) {
+            this.onChunkUpdated(result);
+        }
+    }
+
+    private void onChunkUpdated(ChunkBuildResult result) {
+        result.render.setInfo(result.info);
+
+        var job = result.render.getCurrentJob();
+
+        if (job != null && job.isDone()) {
+            result.render.setCurrentJob(null);
         }
 
-        this.regions.update();
+        result.render.setLastBuiltFrame(result.buildTime);
     }
 
-    private void submitRebuildTasks(ChunkUpdateType filterType, LinkedList<CompletableFuture<ChunkBuildResult>> immediateFutures) {
-        int budget = immediateFutures != null ? Integer.MAX_VALUE : this.builder.getSchedulingBudget();
+    private static List<ChunkBuildResult> filterChunkBuildResults(ArrayList<ChunkBuildResult> results) {
+        var map = new Reference2ReferenceLinkedOpenHashMap<RenderSection, ChunkBuildResult>();
 
-        PriorityQueue<RenderSection> queue = this.rebuildQueues.get(filterType);
+        for (var next : results) {
+            if (next.render.isDisposed() || next.render.getLastBuiltFrame() > next.buildTime) {
+                continue;
+            }
+
+            var render = next.render;
+            var previous = map.get(render);
+
+            if (previous == null || previous.buildTime < next.buildTime) {
+                map.put(render, next);
+            }
+        }
+
+        return new ArrayList<>(map.values());
+    }
+
+    private ArrayList<ChunkBuildResult> collectChunkBuildResults() {
+        var results = new ArrayList<ChunkBuildResult>();
+
+        Iterator<ChunkBuilderJob.Result> iterator = this.builder.pollResults();
+
+        while (iterator.hasNext()) {
+            ChunkBuilderJob.Result job = iterator.next();
+            ChunkBuildResult result = job.unwrap();
+
+            results.add(result);
+        }
+
+        return results;
+    }
+
+    private void waitForBlockingTasks() {
+        boolean shouldContinue;
+
+        do {
+            shouldContinue = this.builder.stealBlockingTask();
+        } while (shouldContinue);
+    }
+
+    private void submitRebuildTasks(ChunkUpdateType type, boolean asynchronous) {
+        var budget = asynchronous ? this.builder.getSchedulingBudget() : Integer.MAX_VALUE;
+        var queue = this.rebuildQueues.get(type);
 
         while (budget > 0 && !queue.isEmpty()) {
-            RenderSection section = queue.dequeue();
+            RenderSection section = queue.poll();
 
             if (section.isDisposed()) {
                 continue;
             }
 
-            // Sections can move between update queues, but they won't be removed from the queue they were
-            // previously in to save CPU cycles. We just filter any changed entries here instead.
-            if (section.getPendingUpdate() != filterType) {
-                continue;
-            }
+            ChunkRenderBuildTask task = this.createRebuildTask(section, this.currentFrame);
 
-            ChunkRenderBuildTask task = this.createRebuildTask(section);
-            CompletableFuture<?> future;
-
-            if (immediateFutures != null) {
-                CompletableFuture<ChunkBuildResult> immediateFuture = this.builder.schedule(task);
-                immediateFutures.add(immediateFuture);
-
-                future = immediateFuture;
-            } else {
-                future = this.builder.scheduleDeferred(task);
-            }
-
-            section.onBuildSubmitted(future);
+            ChunkBuilderJob job = this.builder.scheduleTask(task, asynchronous);
+            section.setCurrentJob(job);
+            section.setPendingUpdate(null);
 
             budget--;
         }
     }
 
-    private boolean performPendingUploads() {
-        Iterator<ChunkBuildResult> it = this.builder.createDeferredBuildResultDrain();
-
-        if (!it.hasNext()) {
-            return false;
-        }
-
-        this.regions.upload(RenderDevice.INSTANCE.createCommandList(), it);
-
-        return true;
-    }
-
-    /**
-     * Processes all build task uploads, blocking for tasks to complete if necessary.
-     */
-    private boolean performAllUploads() {
-        boolean anythingUploaded = false;
-
-        while (true) {
-            // First check if all tasks are done building (and therefore the upload queue is final)
-            boolean allTasksBuilt = this.builder.isIdle();
-
-            // Then process the entire upload queue
-            anythingUploaded |= this.performPendingUploads();
-
-            // If the upload queue was the final one
-            if (allTasksBuilt) {
-                // then we are done
-                return anythingUploaded;
-            } else {
-                // otherwise we need to wait for the worker threads to make progress
-                try {
-                    // This code path is not the default one, it doesn't need super high performance, and having the
-                    // workers notify the main thread just for it is probably not worth it.
-                    //noinspection BusyWait
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return true;
-                }
-            }
-        }
-    }
-
-    public ChunkRenderBuildTask createRebuildTask(RenderSection render) {
+    public ChunkRenderBuildTask createRebuildTask(RenderSection render, int frame) {
         ChunkRenderContext context = WorldSlice.prepare(this.world, render.getChunkPos(), this.sectionCache);
-        int frame = this.currentFrame;
 
         if (context == null) {
             return new ChunkRenderEmptyBuildTask(render, frame);
@@ -501,7 +473,7 @@ public class RenderSectionManager {
         this.needsUpdate = true;
     }
 
-    public boolean isGraphDirty() {
+    public boolean needsUpdate() {
         return this.needsUpdate;
     }
 
@@ -542,26 +514,22 @@ public class RenderSectionManager {
         RenderSection section = this.sectionByPosition.get(ChunkSectionPos.asLong(x, y, z));
 
         if (section != null && section.isBuilt()) {
-            if (!this.alwaysDeferChunkUpdates && (important || this.isChunkPrioritized(section))) {
-                section.markForUpdate(ChunkUpdateType.IMPORTANT_REBUILD);
+            ChunkUpdateType pendingUpdate;
+
+            if (!this.alwaysDeferChunkUpdates && important) {
+                pendingUpdate = ChunkUpdateType.IMPORTANT_REBUILD;
             } else {
-                section.markForUpdate(ChunkUpdateType.REBUILD);
+                pendingUpdate = ChunkUpdateType.REBUILD;
             }
+
+            if (ChunkUpdateType.canPromote(section.getPendingUpdate(), pendingUpdate)) {
+                section.setPendingUpdate(pendingUpdate);
+            }
+
+            section.setLastModifiedFrame(this.currentFrame);
         }
 
         this.needsUpdate = true;
-    }
-
-    public boolean isChunkPrioritized(RenderSection render) {
-        return render.getSquaredDistance(this.cameraX, this.cameraY, this.cameraZ) <= NEARBY_CHUNK_DISTANCE;
-    }
-
-    public void onChunkRenderUpdates(int x, int y, int z, BuiltSectionInfo data) {
-        RenderSection node = this.getRenderSection(x, y, z);
-
-        if (node != null) {
-            node.setOcclusionData(data.getOcclusionData());
-        }
     }
 
     private boolean isWithinRenderDistance(RenderSection section) {
@@ -576,7 +544,6 @@ public class RenderSectionManager {
         this.iterationQueue.clear();
 
         this.currentFrame = frame;
-        this.viewport = viewport;
 
         var options = SodiumClientMod.options();
 
