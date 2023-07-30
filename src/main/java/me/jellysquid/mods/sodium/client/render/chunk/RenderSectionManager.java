@@ -361,6 +361,7 @@ public class RenderSectionManager {
 
     public void updateChunks(boolean updateImmediately) {
         this.regions.update();
+        this.sectionCache.update();
 
         this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD, false);
         this.submitRebuildTasks(ChunkUpdateType.REBUILD, !updateImmediately);
@@ -722,15 +723,16 @@ public class RenderSectionManager {
         list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
         list.add(String.format("Staging buffer: %s", this.regions.getStagingBuffer().toString()));
 
-        list.add(String.format("Chunk builder: %02d permits, %02d/%02d threads",
+        list.add(String.format("Chunk builder: P=%02d | A=%02d | I=%02d",
                 this.builder.getScheduledJobCount(), this.builder.getBusyThreadCount(), this.builder.getTotalThreadCount())
         );
-        list.add(String.format("Chunk updates: U=%02d | P0=%03d P1=%03d P2=%05d",
+        list.add(String.format("Chunk updates: U=%02d (P0=%03d | P1=%03d | P2=%05d)",
                 this.buildResults.size(),
                 this.rebuildQueues.get(ChunkUpdateType.IMPORTANT_REBUILD).size(),
                 this.rebuildQueues.get(ChunkUpdateType.REBUILD).size(),
                 this.rebuildQueues.get(ChunkUpdateType.INITIAL_BUILD).size())
         );
+        list.add("Chunk cache: " + this.sectionCache.getDebugString());
 
         return list;
     }
