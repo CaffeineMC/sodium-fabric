@@ -80,11 +80,11 @@ public class ConsoleRenderer {
 
             // message background
             context.fill(x, y, x + width + paddingWidth, y + messageHeight + paddingHeight,
-                    ColorARGB.withAlpha(colors.background(), weightAlpha(0.9D, opacity)));
+                    ColorARGB.withAlpha(colors.background(), weightAlpha(opacity)));
 
             // message colored stripe
             context.fill(x, y, x + 1, y + messageHeight + paddingHeight,
-                    ColorARGB.withAlpha(colors.foreground(), weightAlpha(1.0D, opacity)));
+                    ColorARGB.withAlpha(colors.foreground(), weightAlpha(opacity)));
 
             // padding at top of message
             y += (paddingHeight / 2);
@@ -92,7 +92,7 @@ public class ConsoleRenderer {
             for (var line : lines) {
                 // message text
                 context.drawText(client.textRenderer, line, x + paddingWidth + 3, y,
-                        ColorARGB.withAlpha(colors.text(), weightAlpha(1.0D, opacity)), false);
+                        ColorARGB.withAlpha(colors.text(), weightAlpha(opacity)), false);
 
                 y += lineHeight;
             }
@@ -139,9 +139,8 @@ public class ConsoleRenderer {
         return MathHelper.clamp(MathHelper.getLerpProgress(currentTime, startTime, endTime), 0.0D, 1.0D);
     }
 
-    private static int weightAlpha(double value, double scale) {
-        var alpha = (float) MathHelper.clamp(value * scale, 0.0D, 1.0D);
-        return ColorU8.normalizedFloatToByte(alpha);
+    private static int weightAlpha(double scale) {
+        return ColorU8.normalizedFloatToByte((float) scale);
     }
 
     private record ActiveMessage(MessageLevel level, Text text, double duration, double timestamp) {
@@ -166,13 +165,13 @@ public class ConsoleRenderer {
 
         COLORS.put(MessageLevel.WARN, new ColorPalette(
                 ColorARGB.pack(224, 187,   0),
-                ColorARGB.pack( 42,  35,   0),
+                ColorARGB.pack( 25,  21,   0),
                 ColorARGB.pack(180, 150,   0)
         ));
 
         COLORS.put(MessageLevel.ERROR, new ColorPalette(
-                ColorARGB.pack(200,   0,   0),
-                ColorARGB.pack( 42,   0,   0),
+                ColorARGB.pack(220,   0,   0),
+                ColorARGB.pack( 25,   0,   0),
                 ColorARGB.pack(160,   0,   0)
         ));
     }
