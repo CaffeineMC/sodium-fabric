@@ -6,13 +6,15 @@ import me.jellysquid.mods.sodium.client.util.workarounds.driver.nvidia.NvidiaDri
 import me.jellysquid.mods.sodium.client.util.workarounds.platform.windows.WindowsDriverStoreVersion;
 import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterProbe;
 import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterVendor;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
 import net.minecraft.util.Util.OperatingSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PostLaunchChecks {
+    private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-PostlaunchChecks");
+
     public static void checkDrivers() {
         if (isBrokenNvidiaDriverInstalled()) {
             var message = Text.literal("""
@@ -20,6 +22,14 @@ public class PostLaunchChecks {
                       * This will cause severe performance issues and crashes.
                       * Please update your graphics drivers to the latest version.
                     (Read the log file for more information.)""");
+
+            Console.instance().logMessage(MessageLevel.ERROR, message, 45.0);
+        }
+
+        if (isUsingPojavLauncher()) {
+            var message = Text.literal("Pojav Launcher is not supported when using Sodium. You are very likely " +
+                                       "to run into extreme performance issues, graphical bugs, and crashes. We will " +
+                                       "not provide technical support or help with these issues.");
 
             Console.instance().logMessage(MessageLevel.ERROR, message, 45.0);
         }
@@ -54,5 +64,40 @@ public class PostLaunchChecks {
         }
 
         return false;
+    }
+
+
+    private static boolean isUsingPojavLauncher() {
+        if (System.getenv("POJAV_RENDERER") != null) {
+            LOGGER.warn("Detected presence of environment variable POJAV_LAUNCHER, which seems to indicate we are running on Android");
+
+            return true;
+        }
+
+        var librarySearchPaths = System.getProperty("java.library.path", null);
+
+        if (librarySearchPaths != null) {
+            for (var path : librarySearchPaths.split(":")) {
+                if (isKnownAndroidPathFragment(path)) {
+                    LOGGER.warn("Found a library search path which seems to be hosted in an Android filesystem: {}", path);
+
+                    return true;
+                }
+            }
+        }
+
+        var workingDirectory = System.getProperty("user.home", null);
+
+        if (workingDirectory != null) {
+            if (isKnownAndroidPathFragment(workingDirectory)) {
+                LOGGER.warn("Working directory seems to be hosted in an Android filesystem: {}", workingDirectory);
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean isKnownAndroidPathFragment(String path) {
+        return path.matches("/data/user/[0-9]+/net\\.kdt\\.pojavlaunch");
     }
 }
