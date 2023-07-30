@@ -12,10 +12,22 @@ debug = true
 
 [profile.release]
 panic = "abort"
+lto = "thin"
+
+[profile.asm]
+inherits = "release"
+panic = "abort"
+debug = true
+lto = "off"
 
 [profile.production]
 inherits = "release"
-lto = true
+lto = "fat"
+
+[profile.profiling]
+inherits = "release"
+lto = "fat"
+debug = true
 
 [dependencies]
 rustc-hash = "1.1.0"

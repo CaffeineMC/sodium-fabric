@@ -9,11 +9,11 @@ import me.jellysquid.mods.sodium.core.types.CVec;
 
 import java.util.function.Consumer;
 
-public class ChunkRenderList {
+public class SectionRenderList {
     private final int count;
     private final long addr;
 
-    public ChunkRenderList(CVec vec) {
+    public SectionRenderList(CVec vec) {
         this.count = vec.len();
         this.addr = vec.data();
     }

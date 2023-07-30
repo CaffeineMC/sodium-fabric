@@ -1,15 +1,14 @@
 package me.jellysquid.mods.sodium.core;
 
-import me.jellysquid.mods.sodium.client.render.chunk.graph.LocalSectionIndex;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.SectionRenderList;
 import me.jellysquid.mods.sodium.core.callback.PanicCallback;
-import me.jellysquid.mods.sodium.core.types.CRegionDrawBatch;
 import me.jellysquid.mods.sodium.core.types.CVec;
 import org.joml.FrustumIntersection;
-import org.joml.Vector3f;
+import org.joml.Vector3d;
 import org.joml.Vector4f;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.*;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
 
@@ -18,16 +17,16 @@ import static org.lwjgl.system.MemoryUtil.*;
 public class CoreLib {
     private static final PanicCallback CALLBACK = PanicCallback.defaultHandler();
 
-    public static Frustum createFrustum(FrustumIntersection frustum, Vector3f offset) {
+    public static Frustum createFrustum(FrustumIntersection frustum, Vector3d offset) {
         long pFrustum;
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var ppFrustum = stack.mallocPointer(1);
 
-            var ppPoints = stack.mallocFloat(4 * 6);
+            var ppPoints = stack.mallocFloat(6 * 4);
             copyFrustumPoints(ppPoints, frustum);
 
-            var pOffset = stack.mallocFloat(3);
+            var pOffset = stack.mallocDouble(3);
             offset.get(pOffset);
 
             CoreLibFFI.frustumCreate(memAddress(ppFrustum), memAddress(ppPoints), memAddress(pOffset));
@@ -39,7 +38,7 @@ public class CoreLib {
 
     public static void deleteFrustum(Frustum frustum) {
         CoreLibFFI.frustumDelete(frustum.ptr());
-        frustum.invalidate();;
+        frustum.invalidate();
     }
 
     private static void copyFrustumPoints(FloatBuffer buf, FrustumIntersection frustum) {
@@ -50,11 +49,15 @@ public class CoreLib {
             var planes = (Vector4f[]) field.get(frustum);
 
             for (int i = 0; i < 6; i++) {
-                buf.put((i * 4) + 0, planes[i].x);
-                buf.put((i * 4) + 1, planes[i].y);
-                buf.put((i * 4) + 2, planes[i].z);
-                buf.put((i * 4) + 3, planes[i].w);
+                buf.put((i * )planes[i].x);
             }
+
+            planes[0].get(0, buf);
+            planes[1].get(16, buf);
+            planes[2].get(32, buf);
+            planes[3].get(48, buf);
+            planes[4].get(64, buf);
+            planes[5].get(80, buf);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Failed to extract planes from frustum", e);
         }
@@ -78,31 +81,32 @@ public class CoreLib {
         graph.invalidate();
     }
 
-    public static void graphAddChunk(Graph graph, int x, int y, int z) {
-        CoreLibFFI.graphAddChunk(graph.ptr(), x, y, z);
+    public static void graphAddSection(Graph graph, int x, int y, int z) {
+        CoreLibFFI.graphAddSection(graph.ptr(), x, y, z);
     }
 
-    public static void graphUpdateChunk(Graph graph, int x, int y, int z, GraphNode node) {
+    public static void graphUpdateSection(Graph graph, int x, int y, int z, long connections, int flags) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var pNode = stack.mallocInt(16);
-            memPutLong(memAddress(pNode) + 0, node.connections);
-            memPutInt(memAddress(pNode) + 8, node.flags);
+            memPutLong(memAddress(pNode) + 0, connections);
+            memPutInt(memAddress(pNode) + 8, flags);
 
-            CoreLibFFI.graphUpdateChunk(graph.ptr(), x, y, z, memAddress(pNode));
+            CoreLibFFI.graphUpdateSection(graph.ptr(), x, y, z, memAddress(pNode));
         }
     }
 
-    public static void graphRemoveChunk(Graph graph, int x, int y, int z) {
-        CoreLibFFI.graphRemoveChunk(graph.ptr(), x, y, z);
+    public static void graphRemoveSection(Graph graph, int x, int y, int z) {
+        CoreLibFFI.graphRemoveSection(graph.ptr(), x, y, z);
     }
 
-    public static ChunkRenderList graphSearch(Graph graph, Frustum frustum, int viewDistance) {
+    public static SectionRenderList graphSearch(Graph graph, Frustum frustum, int viewDistance) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var drawBatches = CVec.stackAlloc(stack);
+            // TODO: deallocate the cvec at some point, because right now we never do...
             CoreLibFFI.graphSearch(graph.ptr(), frustum.ptr(), viewDistance,
                     drawBatches.address());
 
-            return new ChunkRenderList(drawBatches);
+            return new SectionRenderList(drawBatches);
         }
     }
 

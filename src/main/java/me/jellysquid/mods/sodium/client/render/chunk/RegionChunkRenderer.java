@@ -11,7 +11,7 @@ import me.jellysquid.mods.sodium.client.gl.device.MultiDrawBatch;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataUnsafe;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.LocalSectionIndex;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.SectionRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
@@ -39,7 +39,7 @@ public class RegionChunkRenderer extends ShaderChunkRenderer {
 
     @Override
     public void render(ChunkRenderMatrices matrices, CommandList commandList,
-                       ChunkRenderList list, TerrainRenderPass renderPass,
+                       SectionRenderList list, TerrainRenderPass renderPass,
                        ChunkCameraContext camera, RenderRegionManager renderRegions) {
         super.begin(renderPass);
 

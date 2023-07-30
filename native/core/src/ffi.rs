@@ -4,7 +4,7 @@ use std::boxed::Box;
 use std::mem::MaybeUninit;
 use std::ptr;
 
-use crate::frustum::Frustum;
+use crate::graph::frustum::LocalFrustum;
 use crate::graph::*;
 use crate::jni::types::*;
 use crate::math::*;
@@ -67,12 +67,6 @@ impl<T, const LEN: usize> CInlineVec<T, LEN> {
     }
 }
 
-#[repr(C)]
-pub struct CGraphNode {
-    connections: u64,
-    flags: u32,
-}
-
 #[allow(non_snake_case)]
 mod java {
     use std::boxed::Box;
@@ -82,7 +76,7 @@ mod java {
     use core_simd::simd::f32x4;
 
     use crate::ffi::*;
-    use crate::frustum::Frustum;
+    use crate::graph::frustum::LocalFrustum;
     use crate::graph::*;
     use crate::jni::types::*;
     use crate::math::*;
@@ -124,7 +118,7 @@ mod java {
     }
 
     #[no_mangle]
-    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphAddChunk(
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphAddSection(
         _: *mut JEnv,
         _: *mut JClass,
         graph: JPtrMut<Graph>,
@@ -133,30 +127,30 @@ mod java {
         z: Jint,
     ) {
         let graph = graph.into_mut_ref();
-        graph.add_chunk(i32x3::from_xyz(x, y, z));
+        graph.add_chunk(LocalSectionCoord::from_xyz(x, y, z));
     }
 
     #[no_mangle]
-    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphUpdateChunk(
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphUpdateSection(
         _: *mut JEnv,
         _: *mut JClass,
         graph: JPtrMut<Graph>,
         x: Jint,
         y: Jint,
         z: Jint,
-        node: JPtr<CGraphNode>,
+        node: JPtr<CSectionData>,
     ) {
         let node = node.as_ref();
 
         let graph = graph.into_mut_ref();
         graph.update_chunk(
-            i32x3::from_xyz(x, y, z),
-            Node::new(VisibilityData::from_u64(node.connections), node.flags as u8),
+            LocalSectionCoord::from_xyz(x, y, z),
+            Node::new(VisibilityData::pack(node.connections), node.flags as u8),
         );
     }
 
     #[no_mangle]
-    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphRemoveChunk(
+    pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphRemoveSection(
         _: *mut JEnv,
         _: *mut JClass,
         graph: JPtrMut<Graph>,
@@ -165,7 +159,7 @@ mod java {
         z: Jint,
     ) {
         let graph = graph.into_mut_ref();
-        graph.remove_chunk(i32x3::from_xyz(x, y, z));
+        graph.remove_chunk(LocalSectionCoord::from_xyz(x, y, z));
     }
 
     #[no_mangle]
@@ -173,7 +167,7 @@ mod java {
         _: *mut JEnv,
         _: *mut JClass,
         graph: JPtrMut<Graph>,
-        frustum: JPtr<Frustum>,
+        frustum: JPtr<LocalFrustum>,
         view_distance: Jint,
         out_results: JPtrMut<CVec<RegionDrawBatch>>,
     ) {
@@ -197,15 +191,15 @@ mod java {
     pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_frustumCreate(
         _: *mut JEnv,
         _: *mut JClass,
-        out_frustum: JPtrMut<*const Frustum>,
+        out_frustum: JPtrMut<*const LocalFrustum>,
         planes: JPtr<[[f32; 4]; 6]>,
         offset: JPtr<[f32; 3]>,
     ) {
-        let planes = planes.as_ref().map(f32x4::from_array);
+        let planes = planes.as_ref().map(f32x3::from_array);
 
         let offset = f32x3::from_array(*offset.as_ref());
 
-        let frustum = Box::new(Frustum::new(planes, offset));
+        let frustum = Box::new(LocalFrustum::new(planes, offset));
 
         let out_frustum = out_frustum.into_mut_ref();
         *out_frustum = Box::into_raw(frustum);
@@ -215,7 +209,7 @@ mod java {
     pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_frustumDelete(
         _: *mut JEnv,
         _: *mut JClass,
-        frustum: JPtrMut<Frustum>,
+        frustum: JPtrMut<LocalFrustum>,
     ) {
         std::mem::drop(Box::from_raw(frustum.into_mut_ref()));
     }

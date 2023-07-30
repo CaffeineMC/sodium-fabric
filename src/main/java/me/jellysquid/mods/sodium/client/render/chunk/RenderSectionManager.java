@@ -10,7 +10,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.SectionRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
 import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
@@ -24,7 +24,6 @@ import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import me.jellysquid.mods.sodium.common.util.collections.WorkStealingFutureDrain;
 import me.jellysquid.mods.sodium.core.CoreLib;
-import me.jellysquid.mods.sodium.core.GraphNode;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;
@@ -65,7 +64,7 @@ public class RenderSectionManager {
     private boolean alwaysDeferChunkUpdates;
 
     // TODO: do not allow this to be null
-    private @Nullable ChunkRenderList renderList = null;
+    private @Nullable SectionRenderList renderList = null;
 
     private final SodiumWorldRenderer worldRenderer;
     private final CoreLib.Graph pGraph;
@@ -386,8 +385,7 @@ public class RenderSectionManager {
         if (section.region != null) { // TODO: terrible hack, we shouldn't even get here if this was unloaded already
             section.region.updateNode(section, data);
 
-            CoreLib.graphUpdateChunk(this.pGraph, x, y, z,
-                    new GraphNode(VisibilityEncoding.encode(data.getOcclusionData()), data.getFlags()));
+            CoreLib.graphUpdateChunk(this.pGraph, x, y, z, VisibilityEncoding.extract(data.getOcclusionData()), data.getFlags());
         }
     }
 
@@ -455,7 +453,7 @@ public class RenderSectionManager {
         return false;
     }
 
-    public ChunkRenderList getRenderList() {
+    public SectionRenderList getRenderList() {
         return this.renderList;
     }
 }

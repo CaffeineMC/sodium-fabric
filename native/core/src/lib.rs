@@ -4,7 +4,6 @@
 
 mod collections;
 mod ffi;
-mod frustum;
 mod graph;
 mod jni;
 mod math;

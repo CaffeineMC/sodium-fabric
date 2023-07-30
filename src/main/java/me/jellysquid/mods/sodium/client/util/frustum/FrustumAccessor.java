@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.util.frustum;
 
 import net.minecraft.client.render.Frustum;
 import org.joml.FrustumIntersection;
+import org.joml.Vector3d;
 import org.joml.Vector3f;
 
 public interface FrustumAccessor {
@@ -9,6 +10,6 @@ public interface FrustumAccessor {
         return (FrustumAccessor) frustum;
     }
 
-    Vector3f getTranslation();
+    Vector3d getTranslation();
     FrustumIntersection getFrustumIntersection();
 }

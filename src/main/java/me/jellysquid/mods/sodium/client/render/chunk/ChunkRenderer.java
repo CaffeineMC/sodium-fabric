@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.SectionRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 
@@ -20,7 +20,7 @@ public interface ChunkRenderer {
      * @param camera        The camera context containing chunk offsets for the current render
      * @param renderRegions
      */
-    void render(ChunkRenderMatrices matrices, CommandList commandList, ChunkRenderList renderList, TerrainRenderPass pass, ChunkCameraContext camera, RenderRegionManager renderRegions);
+    void render(ChunkRenderMatrices matrices, CommandList commandList, SectionRenderList renderList, TerrainRenderPass pass, ChunkCameraContext camera, RenderRegionManager renderRegions);
 
     /**
      * Deletes this render backend and any resources attached to it.

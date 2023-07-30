@@ -63,7 +63,7 @@ tasks.register('remapApiJar', RemapJarTask) {
 
 build.dependsOn apiJar
 build.dependsOn remapApiJar
-build.dependsOn buildNatives
+//build.dependsOn buildNatives
 
 jar {
     from sourceSets.api.output.classesDirs
