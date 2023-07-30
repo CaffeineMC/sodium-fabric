@@ -32,7 +32,7 @@ public abstract class DebugHudMixin {
         var renderer = SodiumWorldRenderer.instanceNullable();
 
         if (renderer != null) {
-            strings.addAll(renderer.getMemoryDebugStrings());
+            strings.addAll(renderer.getDebugStrings());
         }
 
         for (int i = 0; i < strings.size(); i++) {

@@ -43,6 +43,7 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import oshi.util.tuples.Pair;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -722,6 +723,17 @@ public class RenderSectionManager {
         list.add(String.format("Device buffer objects: %d", count));
         list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
         list.add(String.format("Staging buffer: %s", this.regions.getStagingBuffer().toString()));
+
+        list.add(String.format("Chunk builder: %02d permits, %02d/%02d threads",
+                this.builder.getScheduledJobCount(), this.builder.getBusyThreadCount(), this.builder.getTotalThreadCount())
+        );
+        list.add(String.format("Chunk updates: U=%02d | P0=%03d P1=%03d P2=%05d",
+                this.buildResults.size(),
+                this.rebuildQueues.get(ChunkUpdateType.IMPORTANT_REBUILD).size(),
+                this.rebuildQueues.get(ChunkUpdateType.REBUILD).size(),
+                this.rebuildQueues.get(ChunkUpdateType.INITIAL_BUILD).size())
+        );
+
         return list;
     }
 
