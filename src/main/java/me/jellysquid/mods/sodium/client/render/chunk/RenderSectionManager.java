@@ -230,7 +230,7 @@ public class RenderSectionManager {
         return planes;
     }
 
-    private static final float CHUNK_RENDER_BOUNDS_EPSILON = 0.0125f;
+    private static final float CHUNK_RENDER_BOUNDS_EPSILON = 1.0f / 32.0f;
 
     private boolean isOutsideViewport(RenderSection section, Viewport viewport) {
         float x = section.getOriginX();
