@@ -2,19 +2,20 @@ package me.jellysquid.mods.sodium.client.world.cloned;
 
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.ChunkSectionPos;
+import org.jetbrains.annotations.Nullable;
 
 public class ChunkRenderContext {
     private final ChunkSectionPos origin;
-    private final ClonedChunkSection[] sections;
+    private final @Nullable ClonedChunkSection[] sections;
     private final BlockBox volume;
 
-    public ChunkRenderContext(ChunkSectionPos origin, ClonedChunkSection[] sections, BlockBox volume) {
+    public ChunkRenderContext(ChunkSectionPos origin, @Nullable ClonedChunkSection[] sections, BlockBox volume) {
         this.origin = origin;
         this.sections = sections;
         this.volume = volume;
     }
 
-    public ClonedChunkSection[] getSections() {
+    public @Nullable ClonedChunkSection[] getSections() {
         return this.sections;
     }
 
@@ -27,10 +28,9 @@ public class ChunkRenderContext {
     }
 
     public void releaseResources() {
-        for (ClonedChunkSection section : this.sections) {
+        for (var section : this.sections) {
             if (section != null) {
-                section.getBackingCache()
-                        .release(section);
+                section.releaseReference();
             }
         }
     }

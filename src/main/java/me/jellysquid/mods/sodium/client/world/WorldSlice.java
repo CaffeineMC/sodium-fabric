@@ -11,9 +11,11 @@ import me.jellysquid.mods.sodium.client.world.cloned.PackedIntegerArrayExtended;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.*;
 import net.minecraft.world.BlockRenderView;
@@ -25,6 +27,8 @@ import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
 
 /**
  * Takes a slice of world state (block states, biome and light data arrays) and copies the data for use in off-thread
@@ -72,7 +76,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
     private final BlockState[][] blockStatesArrays;
 
     // Local section copies. Read-only.
-    private ClonedChunkSection[] sections;
+    private @Nullable ClonedChunkSection[] sections;
 
     // The biome blend cache
     private BiomeColorCache biomeColors;
@@ -154,6 +158,11 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
     }
 
     private void unpackBlockData(BlockState[] states, ClonedChunkSection section, BlockBox box) {
+        if (section == null) {
+            Arrays.fill(states, Blocks.AIR.getDefaultState());
+            return;
+        }
+
         if (this.origin.equals(section.getPosition()))  {
             this.unpackBlockData(states, section);
         } else {
@@ -179,10 +188,16 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
         for (int y = minBlockY; y <= maxBlockY; y++) {
             for (int z = minBlockZ; z <= maxBlockZ; z++) {
                 for (int x = minBlockX; x <= maxBlockX; x++) {
-                    int blockIdx = getLocalBlockIndex(x & 15, y & 15, z & 15);
-                    int value = intArray.get(blockIdx);
+                    int localBlockIndex = getLocalBlockIndex(x & 15, y & 15, z & 15);
+                    int paletteIndex = intArray.get(localBlockIndex);
 
-                    states[blockIdx] = palette.get(value);
+                    var blockState =  palette.get(paletteIndex);
+
+                    if (blockState == null) {
+                        throw new IllegalStateException("Palette does not contain entry: " + paletteIndex);
+                    }
+
+                    states[localBlockIndex] = blockState;
                 }
             }
         }
@@ -204,8 +219,13 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
         int relY = y - this.baseY;
         int relZ = z - this.baseZ;
 
-        return this.blockStatesArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                [getLocalBlockIndex(relX & 15, relY & 15, relZ & 15)];
+        var array = this.blockStatesArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)];
+
+        if (array == null) {
+            return Blocks.AIR.getDefaultState();
+        }
+
+        return array[getLocalBlockIndex(relX & 15, relY & 15, relZ & 15)];
     }
 
     @Override
@@ -234,8 +254,13 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
         int relY = y - this.baseY;
         int relZ = z - this.baseZ;
 
-        return this.sections[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                .getBlockEntity(relX & 15, relY & 15, relZ & 15);
+        var section = this.sections[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)];
+
+        if (section == null) {
+            return null;
+        }
+
+        return section.getBlockEntity(relX & 15, relY & 15, relZ & 15);
     }
 
     @Override
@@ -253,8 +278,13 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
         int relY = pos.getY() - this.baseY;
         int relZ = pos.getZ() - this.baseZ;
 
-        return this.sections[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                .getLightLevel(type, relX & 15, relY & 15, relZ & 15);
+        var section = this.sections[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)];
+
+        if (section == null) {
+            return 15;
+        }
+
+        return section.getLightLevel(type, relX & 15, relY & 15, relZ & 15);
     }
 
     public ChunkSectionPos getOrigin() {
@@ -277,11 +307,16 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
         int relY = pos.getY() - this.baseY;
         int relZ = pos.getZ() - this.baseZ;
 
-        return this.sections[WorldSlice.getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                .getBlockEntityRenderAttachment(relX & 15, relY & 15, relZ & 15);
+        var section = this.sections[WorldSlice.getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)];
+
+        if (section == null) {
+            return null;
+        }
+
+        return section.getBlockEntityRenderAttachment(relX & 15, relY & 15, relZ & 15);
     }
 
-    public ClonedChunkSection getSection(int x, int y, int z) {
+    public ClonedChunkSection getClonedSection(int x, int y, int z) {
         return this.sections[WorldSlice.getLocalSectionIndex(x, y, z)];
     }
 
@@ -304,5 +339,9 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
     @Override
     public int getColor(BiomeColorSource source, int x, int y, int z) {
         return this.biomeColors.getColor(source, x - this.baseX, y - this.baseY, z - this.baseZ);
+    }
+
+    public DynamicRegistryManager getRegistryManager() {
+        return this.world.getRegistryManager();
     }
 }
