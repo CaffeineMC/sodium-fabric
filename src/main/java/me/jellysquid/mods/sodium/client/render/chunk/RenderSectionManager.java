@@ -11,9 +11,9 @@ import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilderJob;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.GraphDirection;
 import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
@@ -22,15 +22,14 @@ import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderListBuild
 import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
-import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderBuildTask;
-import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderEmptyBuildTask;
-import me.jellysquid.mods.sodium.client.render.chunk.tasks.ChunkRenderRebuildTask;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderMeshingTask;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
+import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
@@ -43,8 +42,10 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import org.apache.commons.lang3.Validate;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class RenderSectionManager {
     private final ChunkBuilder builder;
@@ -55,6 +56,8 @@ public class RenderSectionManager {
     private final Long2ReferenceMap<RenderSection> sectionByPosition = new Long2ReferenceOpenHashMap<>();
 
     private final EnumMap<ChunkUpdateType, ArrayDeque<RenderSection>> rebuildQueues = new EnumMap<>(ChunkUpdateType.class);
+
+    private final ConcurrentLinkedDeque<ChunkJobResult<ChunkBuildOutput>> buildResults = new ConcurrentLinkedDeque<>();
 
     private final ArrayDeque<RenderSection> iterationQueue = new ArrayDeque<>();
 
@@ -83,9 +86,7 @@ public class RenderSectionManager {
         this.chunkRenderer = new RegionChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
         this.world = world;
-
-        this.builder = new ChunkBuilder(ChunkMeshFormats.COMPACT);
-        this.builder.init(world);
+        this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
@@ -99,7 +100,7 @@ public class RenderSectionManager {
     }
 
     public void updateRenderLists(Camera camera, Viewport viewport, int frame, boolean spectator) {
-        this.resetLists();
+        this.resetRenderLists();
 
         var renderListBuilder = this.renderListBuilder;
         renderListBuilder.reset();
@@ -125,7 +126,7 @@ public class RenderSectionManager {
 
             this.addToRenderLists(renderListBuilder, section);
 
-            if (section.getPendingUpdate() != null && section.getCurrentJob() == null) {
+            if (section.getPendingUpdate() != null && section.getBuildCancellationToken() == null) {
                 this.addToRebuildLists(section);
             }
 
@@ -256,7 +257,7 @@ public class RenderSectionManager {
         queue.add(section);
     }
 
-    private void resetLists() {
+    private void resetRenderLists() {
         for (Queue<RenderSection> queue : this.rebuildQueues.values()) {
             queue.clear();
         }
@@ -380,7 +381,7 @@ public class RenderSectionManager {
         }
     }
 
-    private void processChunkBuildResults(ArrayList<ChunkBuildResult> results) {
+    private void processChunkBuildResults(ArrayList<ChunkBuildOutput> results) {
         var filtered = filterChunkBuildResults(results);
 
         this.regions.uploadMeshes(RenderDevice.INSTANCE.createCommandList(), filtered);
@@ -388,7 +389,13 @@ public class RenderSectionManager {
         for (var result : filtered) {
             this.updateSectionInfo(result.render, result.info);
 
-            updateSectionJobStatus(result);
+            var job = result.render.getBuildCancellationToken();
+
+            if (job != null && result.buildTime >= result.render.getLastSubmittedFrame()) {
+                result.render.setBuildCancellationToken(null);
+            }
+
+            result.render.setLastBuiltFrame(result.buildTime);
         }
     }
 
@@ -406,45 +413,31 @@ public class RenderSectionManager {
         }
     }
 
-    private static void updateSectionJobStatus(ChunkBuildResult result) {
-        var job = result.render.getCurrentJob();
+    private static List<ChunkBuildOutput> filterChunkBuildResults(ArrayList<ChunkBuildOutput> outputs) {
+        var map = new Reference2ReferenceLinkedOpenHashMap<RenderSection, ChunkBuildOutput>();
 
-        if (job != null && job.isDone()) {
-            result.render.setCurrentJob(null);
-        }
-
-        result.render.setLastBuiltFrame(result.buildTime);
-    }
-
-    private static List<ChunkBuildResult> filterChunkBuildResults(ArrayList<ChunkBuildResult> results) {
-        var map = new Reference2ReferenceLinkedOpenHashMap<RenderSection, ChunkBuildResult>();
-
-        for (var next : results) {
-            if (next.render.isDisposed() || next.render.getLastBuiltFrame() > next.buildTime) {
+        for (var output : outputs) {
+            if (output.render.isDisposed() || output.render.getLastBuiltFrame() > output.buildTime) {
                 continue;
             }
 
-            var render = next.render;
+            var render = output.render;
             var previous = map.get(render);
 
-            if (previous == null || previous.buildTime < next.buildTime) {
-                map.put(render, next);
+            if (previous == null || previous.buildTime < output.buildTime) {
+                map.put(render, output);
             }
         }
 
         return new ArrayList<>(map.values());
     }
 
-    private ArrayList<ChunkBuildResult> collectChunkBuildResults() {
-        var results = new ArrayList<ChunkBuildResult>();
+    private ArrayList<ChunkBuildOutput> collectChunkBuildResults() {
+        ArrayList<ChunkBuildOutput> results = new ArrayList<>();
+        ChunkJobResult<ChunkBuildOutput> result;
 
-        Iterator<ChunkBuilderJob.Result> iterator = this.builder.pollResults();
-
-        while (iterator.hasNext()) {
-            ChunkBuilderJob.Result job = iterator.next();
-            ChunkBuildResult result = job.unwrap();
-
-            results.add(result);
+        while ((result = this.buildResults.poll()) != null) {
+            results.add(result.unwrap());
         }
 
         return results;
@@ -469,24 +462,34 @@ public class RenderSectionManager {
                 continue;
             }
 
-            ChunkRenderBuildTask task = this.createRebuildTask(section, this.currentFrame);
+            int frame = this.currentFrame;
+            ChunkBuilderMeshingTask task = this.createRebuildTask(section, frame);
 
-            ChunkBuilderJob job = this.builder.scheduleTask(task, asynchronous);
-            section.setCurrentJob(job);
+            if (task != null) {
+                CancellationToken token = this.builder.scheduleTask(task, asynchronous, this.buildResults::add);
+                section.setBuildCancellationToken(token);
+            } else {
+                var result = ChunkJobResult.successfully(new ChunkBuildOutput(section, BuiltSectionInfo.EMPTY, Collections.emptyMap(), frame));
+                this.buildResults.add(result);
+
+                section.setBuildCancellationToken(null);
+            }
+
+            section.setLastSubmittedFrame(frame);
             section.setPendingUpdate(null);
 
             budget--;
         }
     }
 
-    public ChunkRenderBuildTask createRebuildTask(RenderSection render, int frame) {
+    public @Nullable ChunkBuilderMeshingTask createRebuildTask(RenderSection render, int frame) {
         ChunkRenderContext context = WorldSlice.prepare(this.world, render.getChunkPos(), this.sectionCache);
 
         if (context == null) {
-            return new ChunkRenderEmptyBuildTask(render, frame);
+            return null;
         }
 
-        return new ChunkRenderRebuildTask(render, context, frame);
+        return new ChunkBuilderMeshingTask(render, context, frame);
     }
 
     public void markGraphDirty() {
@@ -502,16 +505,19 @@ public class RenderSectionManager {
     }
 
     public void destroy() {
-        this.resetLists();
+        this.builder.shutdown(); // stop all the workers, and cancel any tasks
+
+        for (var result : this.collectChunkBuildResults()) {
+            result.delete(); // delete resources for any pending tasks (including those that were cancelled)
+        }
+
+        this.sectionsWithGlobalEntities.clear();
+        this.resetRenderLists();
 
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.regions.delete(commandList);
             this.chunkRenderer.delete(commandList);
         }
-
-        this.sectionsWithGlobalEntities.clear();
-
-        this.builder.stopWorkers();
     }
 
     public int getTotalSections() {
