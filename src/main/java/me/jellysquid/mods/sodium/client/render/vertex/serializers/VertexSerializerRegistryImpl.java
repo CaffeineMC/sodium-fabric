@@ -46,6 +46,27 @@ public class VertexSerializerRegistryImpl implements VertexSerializerRegistry {
         return serializer;
     }
 
+    @Override
+    public void register(VertexFormatDescription srcFormat, VertexFormatDescription dstFormat, VertexSerializer serializer) {
+        var identifier = createKey(srcFormat, dstFormat);
+
+        if (this.cache.containsKey(identifier)) {
+            throw new IllegalArgumentException("Serializer already exists for the given vertex formats: " + srcFormat + " -> " + dstFormat);
+        }
+
+        if (serializer == null) {
+            throw new NullPointerException("Serializer parameter is null.");
+        }
+
+        var stamp = this.lock.writeLock();
+
+        try {
+            this.cache.put(identifier, serializer);
+        } finally {
+            this.lock.unlockWrite(stamp);
+        }
+    }
+
     private VertexSerializer create(long identifier, VertexFormatDescription srcFormat, VertexFormatDescription dstFormat) {
         var serializer = createSerializer(srcFormat, dstFormat);
         var stamp = this.lock.writeLock();
