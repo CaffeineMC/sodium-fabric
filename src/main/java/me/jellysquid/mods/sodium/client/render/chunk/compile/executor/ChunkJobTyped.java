@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.executor;
 
-import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderTask;
 
@@ -50,8 +49,6 @@ public class ChunkJobTyped<TASK extends ChunkBuilderTask<OUTPUT>, OUTPUT>
         } catch (Throwable throwable) {
             result = ChunkJobResult.exceptionally(throwable);
             ChunkBuilder.LOGGER.error("Chunk build failed", throwable);
-        } finally {
-            this.task.releaseResources();
         }
 
         try {

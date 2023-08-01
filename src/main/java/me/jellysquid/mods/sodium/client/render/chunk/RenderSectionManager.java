@@ -360,8 +360,8 @@ public class RenderSectionManager {
     }
 
     public void updateChunks(boolean updateImmediately) {
+        this.sectionCache.cleanup();
         this.regions.update();
-        this.sectionCache.update();
 
         this.submitRebuildTasks(ChunkUpdateType.IMPORTANT_REBUILD, false);
         this.submitRebuildTasks(ChunkUpdateType.REBUILD, !updateImmediately);
@@ -732,7 +732,6 @@ public class RenderSectionManager {
                 this.rebuildQueues.get(ChunkUpdateType.REBUILD).size(),
                 this.rebuildQueues.get(ChunkUpdateType.INITIAL_BUILD).size())
         );
-        list.add("Chunk cache: " + this.sectionCache.getDebugString());
 
         return list;
     }
