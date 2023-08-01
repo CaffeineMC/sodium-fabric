@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.widgets.AbstractWidget;
+import me.jellysquid.mods.sodium.client.gui.widgets.WidgetColors;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.ScreenRect;
@@ -41,11 +42,11 @@ public class ControlElement<T> extends AbstractWidget {
 
         this.hovered = this.dim.containsCursor(mouseX, mouseY);
 
-        this.drawRect(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), this.hovered ? 0xE0000000 : 0x90000000);
+        this.drawRect(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), this.hovered ? WidgetColors.getHoveredFocusedColor() : WidgetColors.getBackgroundColor());
         this.drawString(drawContext, label, this.dim.x() + 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
 
-        if (this.isFocused()) {
-            this.drawBorder(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), -1);
+        if (WidgetColors.usesHighContrast() || this.isFocused()) {
+            this.drawBorder(drawContext, this.dim.x(), this.dim.y(), this.dim.getLimitX(), this.dim.getLimitY(), (this.isFocused() && WidgetColors.usesHighContrast()) ? WidgetColors.getSliderColor() : WidgetColors.getBorderColor());
         }
     }
 

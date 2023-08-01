@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
 import me.jellysquid.mods.sodium.client.gui.options.Option;
+import me.jellysquid.mods.sodium.client.gui.widgets.WidgetColors;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.util.InputUtil;
@@ -49,12 +50,16 @@ public class TickBoxControl implements Control<Boolean> {
             final boolean enabled = this.option.isAvailable();
             final boolean ticked = enabled && this.option.getValue();
 
-            final int color;
+            int color;
 
             if (enabled) {
                 color = ticked ? 0xFF94E4D3 : 0xFFFFFFFF;
             } else {
                 color = 0xFFAAAAAA;
+            }
+
+            if (WidgetColors.usesHighContrast()) {
+                color = enabled ? (ticked ? WidgetColors.getSliderColor() : 0xFFFFFFFF) : WidgetColors.getDisabledColor();
             }
 
             if (ticked) {
