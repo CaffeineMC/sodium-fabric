@@ -44,8 +44,6 @@ public class SodiumOptionsGUI extends Screen {
     private boolean hasPendingChanges;
     private ControlElement<?> hoveredElement;
 
-    private final double openTime;
-
     public SodiumOptionsGUI(Screen prevScreen) {
         super(Text.translatable("Sodium Options"));
 
@@ -55,8 +53,6 @@ public class SodiumOptionsGUI extends Screen {
         this.pages.add(SodiumGameOptionPages.quality());
         this.pages.add(SodiumGameOptionPages.performance());
         this.pages.add(SodiumGameOptionPages.advanced());
-
-        this.openTime = GLFW.glfwGetTime();
     }
 
     public void setPage(OptionPage page) {
@@ -104,13 +100,6 @@ public class SodiumOptionsGUI extends Screen {
         this.addDrawableChild(this.closeButton);
         this.addDrawableChild(this.donateButton);
         this.addDrawableChild(this.hideDonateButton);
-    }
-
-    private Style createDonateButtonStyle() {
-        var cycle = Math.cos(GLFW.glfwGetTime() - this.openTime);
-        var color = ColorMixer.mix(0xFFAA00, 0xFFFFFF, 0.5F + (float) (cycle / 2.0D));
-
-        return Style.EMPTY.withColor(color);
     }
 
     private void setDonationButtonVisibility(boolean value) {
@@ -173,9 +162,6 @@ public class SodiumOptionsGUI extends Screen {
     @Override
     public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
         super.renderBackground(drawContext);
-
-        this.donateButton.setLabel(this.donateButton.getLabel()
-                .copy().setStyle(createDonateButtonStyle()));
 
         this.updateControls();
 
