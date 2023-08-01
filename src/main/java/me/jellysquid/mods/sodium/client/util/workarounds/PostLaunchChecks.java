@@ -29,6 +29,10 @@ public class PostLaunchChecks {
         }
     }
 
+    // https://github.com/CaffeineMC/sodium-fabric/issues/1486
+    // The way which NVIDIA tries to detect the Minecraft process could not be circumvented until fairly recently
+    // So we require that an up-to-date graphics driver is installed so that our workarounds can disable the Threaded
+    // Optimizations driver hack.
     private static boolean isBrokenNvidiaDriverInstalled() {
         if (Util.getOperatingSystem() != OperatingSystem.WINDOWS) {
             return false;
@@ -43,24 +47,18 @@ public class PostLaunchChecks {
                 var driverStoreVersion = WindowsDriverStoreVersion.parse(adapter.version());
                 var nvidiaVersion = NvidiaDriverVersion.parse(driverStoreVersion);
 
-                // first broken version: 522.25
-                if (nvidiaVersion.isOlderThan(new NvidiaDriverVersion(522, 25))) {
-                    continue;
+                // Broken in 526.47
+                // Fixed in 536.23
+                if (nvidiaVersion.isWithinRange(new NvidiaDriverVersion(526, 47), new NvidiaDriverVersion(536, 23))) {
+                    return true;
                 }
-
-                // last broken version: 535.98
-                if (nvidiaVersion.isNewerThan(new NvidiaDriverVersion(535, 98))) {
-                    continue;
-                }
-
-                return true;
             } catch (WindowsDriverStoreVersion.ParseException | NvidiaDriverVersion.ParseException ignored) { }
         }
 
         return false;
     }
 
-
+    // https://github.com/CaffeineMC/sodium-fabric/issues/1916
     private static boolean isUsingPojavLauncher() {
         if (System.getenv("POJAV_RENDERER") != null) {
             LOGGER.warn("Detected presence of environment variable POJAV_LAUNCHER, which seems to indicate we are running on Android");

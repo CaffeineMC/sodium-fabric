@@ -29,12 +29,24 @@ public record NvidiaDriverVersion(int major, int minor) {
         return new NvidiaDriverVersion(major, minor);
     }
 
-    public boolean isOlderThan(NvidiaDriverVersion other) {
-        return this.major < other.major || this.minor < other.minor;
-    }
+    /**
+     * @param oldest The oldest version (inclusive) to test against
+     * @param newest The newest version (exclusive) to test against
+     * @return True if this version is within the specified version range
+     */
+    public boolean isWithinRange(NvidiaDriverVersion oldest, NvidiaDriverVersion newest) {
+        // Fail when (this < oldest)
+        if (this.major < oldest.major || this.minor < oldest.minor) {
+            return false;
+        }
 
-    public boolean isNewerThan(NvidiaDriverVersion other) {
-        return this.major > other.major || this.minor > other.minor;
+        // Fail when (this >= newest)
+        if (this.major >= newest.major && this.minor >= newest.minor) {
+            return false;
+        }
+
+        // Succeed when (this >= oldest) and (this < newest)
+        return true;
     }
 
     public static class ParseException extends Exception {

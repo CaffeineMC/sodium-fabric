@@ -38,6 +38,7 @@ public class PreLaunchChecks {
         }
     }
 
+    // https://github.com/CaffeineMC/sodium-fabric/issues/899
     private static boolean isBrokenIntelGen7GraphicsDriver() {
         if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
             return false;
