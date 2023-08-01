@@ -25,9 +25,9 @@ public class ChunkBuilder {
 
     private final List<Thread> threads = new ArrayList<>();
 
-    private final ThreadLocal<ChunkBuildContext> localContexts = new ThreadLocal<>();
-
     private final AtomicInteger busyThreadCount = new AtomicInteger();
+
+    private final ChunkBuildContext localContext;
 
     public ChunkBuilder(ClientWorld world, ChunkVertexType vertexType) {
         int count = getThreadCount();
@@ -47,7 +47,7 @@ public class ChunkBuilder {
 
         LOGGER.info("Started {} worker threads", this.threads.size());
 
-        this.localContexts.set(new ChunkBuildContext(world, vertexType));
+        this.localContext = new ChunkBuildContext(world, vertexType);
     }
 
     /**
@@ -142,22 +142,18 @@ public class ChunkBuilder {
      * @return True if it was able to steal a task, otherwise false
      */
     public boolean stealBlockingTask() {
-        ChunkBuildContext context = this.localContexts.get();
-
-        if (context == null) {
-            throw new RuntimeException("Tried to steal work from a thread other than the one which created us");
-        }
-
         var job = this.queue.stealSynchronousJob();
 
         if (job == null) {
             return false;
         }
 
+        var localContext = this.localContext;
+
         try {
-            job.execute(context);
+            job.execute(localContext);
         } finally {
-            context.cleanup();
+            localContext.cleanup();
         }
 
         return true;
