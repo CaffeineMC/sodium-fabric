@@ -134,6 +134,8 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
         this.sections = new ClonedChunkSection[SECTION_TABLE_ARRAY_SIZE];
         this.blockStatesArrays = new BlockState[SECTION_TABLE_ARRAY_SIZE][SECTION_BLOCK_COUNT];
         this.biomeCache = new BiomeCache();
+
+        this.biomeColors = new BiomeColorCache(MinecraftClient.getInstance().options.getBiomeBlendRadius().getValue());
     }
 
     public void copyData(ChunkRenderContext context) {
@@ -153,7 +155,7 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
             }
         }
 
-        this.biomeColors = new BiomeColorCache(this, MinecraftClient.getInstance().options.getBiomeBlendRadius().getValue());
+        this.biomeColors.update(this);
         this.biomeCache.update(this);
     }
 
@@ -332,10 +334,6 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
         return ((BiomeSeedProvider) this.world).sodium$getBiomeSeed();
     }
 
-    public Biome getBiome(int x, int y, int z) {
-        return this.biomeCache.getBiome(x, y, z);
-    }
-
     @Override
     public int getColor(BiomeColorSource source, int x, int y, int z) {
         return this.biomeColors.getColor(source, x - this.baseX, y - this.baseY, z - this.baseZ);
@@ -343,5 +341,9 @@ public class WorldSlice implements BlockRenderView, RenderAttachedBlockView, Bio
 
     public DynamicRegistryManager getRegistryManager() {
         return this.world.getRegistryManager();
+    }
+
+    public BiomeCache getBiomeCache() {
+        return this.biomeCache;
     }
 }
