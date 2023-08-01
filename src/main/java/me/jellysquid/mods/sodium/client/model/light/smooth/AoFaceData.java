@@ -5,7 +5,7 @@ import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
-import static me.jellysquid.mods.sodium.client.model.light.cache.ArrayLightDataCache.*;
+import static me.jellysquid.mods.sodium.client.model.light.data.ArrayLightDataCache.*;
 
 class AoFaceData {
     public final int[] lm = new int[4];
@@ -35,7 +35,7 @@ class AoFaceData {
             adjZ = z;
         }
 
-        long adjWord = cache.get(adjX, adjY, adjZ);
+        final int adjWord = cache.get(adjX, adjY, adjZ);
 
         final int calm;
         final boolean caem;
@@ -44,7 +44,7 @@ class AoFaceData {
             calm = getLightmap(adjWord);
             caem = unpackEM(adjWord);
         } else {
-            final long offsetWord = cache.get(x, y, z, direction);
+            final int offsetWord = cache.get(x, y, z, direction);
             if (unpackFO(offsetWord)) {
                 calm = getLightmap(adjWord);
                 caem = unpackEM(adjWord);
@@ -58,25 +58,25 @@ class AoFaceData {
 
         Direction[] faces = AoNeighborInfo.get(direction).faces;
 
-        final long e0 = cache.get(adjX, adjY, adjZ, faces[0]);
+        final int e0 = cache.get(adjX, adjY, adjZ, faces[0]);
         final int e0lm = getLightmap(e0);
         final float e0ao = unpackAO(e0);
         final boolean e0op = unpackOP(e0);
         final boolean e0em = unpackEM(e0);
 
-        final long e1 = cache.get(adjX, adjY, adjZ, faces[1]);
+        final int e1 = cache.get(adjX, adjY, adjZ, faces[1]);
         final int e1lm = getLightmap(e1);
         final float e1ao = unpackAO(e1);
         final boolean e1op = unpackOP(e1);
         final boolean e1em = unpackEM(e1);
 
-        final long e2 = cache.get(adjX, adjY, adjZ, faces[2]);
+        final int e2 = cache.get(adjX, adjY, adjZ, faces[2]);
         final int e2lm = getLightmap(e2);
         final float e2ao = unpackAO(e2);
         final boolean e2op = unpackOP(e2);
         final boolean e2em = unpackEM(e2);
 
-        final long e3 = cache.get(adjX, adjY, adjZ, faces[3]);
+        final int e3 = cache.get(adjX, adjY, adjZ, faces[3]);
         final int e3lm = getLightmap(e3);
         final float e3ao = unpackAO(e3);
         final boolean e3op = unpackOP(e3);
@@ -92,7 +92,7 @@ class AoFaceData {
             c0ao = e0ao;
             c0em = e0em;
         } else {
-            long d0 = cache.get(adjX, adjY, adjZ, faces[0], faces[2]);
+            int d0 = cache.get(adjX, adjY, adjZ, faces[0], faces[2]);
             c0lm = getLightmap(d0);
             c0ao = unpackAO(d0);
             c0em = unpackEM(d0);
@@ -107,7 +107,7 @@ class AoFaceData {
             c1ao = e0ao;
             c1em = e0em;
         } else {
-            long d1 = cache.get(adjX, adjY, adjZ, faces[0], faces[3]);
+            int d1 = cache.get(adjX, adjY, adjZ, faces[0], faces[3]);
             c1lm = getLightmap(d1);
             c1ao = unpackAO(d1);
             c1em = unpackEM(d1);
@@ -123,7 +123,7 @@ class AoFaceData {
             c2ao = e1ao;
             c2em = e1em;
         } else {
-            long d2 = cache.get(adjX, adjY, adjZ, faces[1], faces[2]);
+            int d2 = cache.get(adjX, adjY, adjZ, faces[1], faces[2]);
             c2lm = getLightmap(d2);
             c2ao = unpackAO(d2);
             c2em = unpackEM(d2);
@@ -139,7 +139,7 @@ class AoFaceData {
             c3ao = e1ao;
             c3em = e1em;
         } else {
-            long d3 = cache.get(adjX, adjY, adjZ, faces[1], faces[3]);
+            int d3 = cache.get(adjX, adjY, adjZ, faces[1], faces[3]);
             c3lm = getLightmap(d3);
             c3ao = unpackAO(d3);
             c3em = unpackEM(d3);

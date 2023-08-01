@@ -1,6 +1,5 @@
-package me.jellysquid.mods.sodium.client.model.light.cache;
+package me.jellysquid.mods.sodium.client.model.light.data;
 
-import me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.BlockRenderView;
@@ -16,13 +15,13 @@ public class ArrayLightDataCache extends LightDataAccess {
     private static final int NEIGHBOR_BLOCK_RADIUS = 2;
     private static final int BLOCK_LENGTH = 16 + (NEIGHBOR_BLOCK_RADIUS * 2);
 
-    private final long[] light;
+    private final int[] light;
 
     private int xOffset, yOffset, zOffset;
 
     public ArrayLightDataCache(BlockRenderView world) {
         this.world = world;
-        this.light = new long[BLOCK_LENGTH * BLOCK_LENGTH * BLOCK_LENGTH];
+        this.light = new int[BLOCK_LENGTH * BLOCK_LENGTH * BLOCK_LENGTH];
     }
 
     public void reset(ChunkSectionPos origin) {
@@ -30,7 +29,7 @@ public class ArrayLightDataCache extends LightDataAccess {
         this.yOffset = origin.getMinY() - NEIGHBOR_BLOCK_RADIUS;
         this.zOffset = origin.getMinZ() - NEIGHBOR_BLOCK_RADIUS;
 
-        Arrays.fill(this.light, 0L);
+        Arrays.fill(this.light, 0);
     }
 
     private int index(int x, int y, int z) {
@@ -42,10 +41,10 @@ public class ArrayLightDataCache extends LightDataAccess {
     }
 
     @Override
-    public long get(int x, int y, int z) {
+    public int get(int x, int y, int z) {
         int l = this.index(x, y, z);
 
-        long word = this.light[l];
+        int word = this.light[l];
 
         if (word != 0) {
             return word;
@@ -53,5 +52,4 @@ public class ArrayLightDataCache extends LightDataAccess {
 
         return this.light[l] = this.compute(x, y, z);
     }
-
 }

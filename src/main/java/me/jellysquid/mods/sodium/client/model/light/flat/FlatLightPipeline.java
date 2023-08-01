@@ -60,7 +60,7 @@ public class FlatLightPipeline implements LightPipeline {
      * inconsistent values so this method exists to mirror vanilla behavior as closely as possible.
      */
     private int getOffsetLightmap(BlockPos pos, Direction face) {
-        long word = this.lightCache.get(pos);
+        int word = this.lightCache.get(pos);
 
         // Check emissivity of the origin state
         if (unpackEM(word)) {
@@ -68,7 +68,7 @@ public class FlatLightPipeline implements LightPipeline {
         }
 
         // Use world light values from the offset pos, but luminance from the origin pos
-        long adjWord = this.lightCache.get(pos, face);
+        int adjWord = this.lightCache.get(pos, face);
         return LightmapTextureManager.pack(Math.max(unpackBL(adjWord), unpackLU(word)), unpackSL(adjWord));
     }
 }
