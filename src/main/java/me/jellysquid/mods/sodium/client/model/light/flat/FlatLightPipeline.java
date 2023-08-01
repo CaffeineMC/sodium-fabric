@@ -6,12 +6,15 @@ import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFlags;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockRenderView;
 
 import java.util.Arrays;
+
+import static me.jellysquid.mods.sodium.client.model.light.data.LightDataAccess.*;
 
 /**
  * A light pipeline which implements "classic-style" lighting through simply using the light value of the adjacent
@@ -38,10 +41,10 @@ public class FlatLightPipeline implements LightPipeline {
             int flags = quad.getFlags();
             // If the face is aligned, use the light data above it
             // To match vanilla behavior, also treat the face as aligned if it is parallel and the block state is a full cube
-            if ((flags & ModelQuadFlags.IS_ALIGNED) != 0 || ((flags & ModelQuadFlags.IS_PARALLEL) != 0 && LightDataAccess.unpackFC(this.lightCache.get(pos)))) {
+            if ((flags & ModelQuadFlags.IS_ALIGNED) != 0 || ((flags & ModelQuadFlags.IS_PARALLEL) != 0 && unpackFC(this.lightCache.get(pos)))) {
                 lightmap = getOffsetLightmap(pos, lightFace);
             } else {
-                lightmap = LightDataAccess.unpackFinalLM(this.lightCache.get(pos));
+                lightmap = getEmissiveLightmap(this.lightCache.get(pos));
             }
         }
 
@@ -57,14 +60,15 @@ public class FlatLightPipeline implements LightPipeline {
      * inconsistent values so this method exists to mirror vanilla behavior as closely as possible.
      */
     private int getOffsetLightmap(BlockPos pos, Direction face) {
-        // Ignore emissivity here to match vanilla
-        int lightmap = LightDataAccess.unpackLM(this.lightCache.get(pos, face));
-        // If the block light is not 15 (max)...
-        if ((lightmap & 0xF0) != 0xF0) {
-            int originLightmap = LightDataAccess.unpackFinalLM(this.lightCache.get(pos));
-            // ...take the maximum combined block light at the origin and offset positions
-            lightmap = (lightmap & ~0xFF) | Math.max(lightmap & 0xFF, originLightmap & 0xFF);
+        long word = this.lightCache.get(pos);
+
+        // Check emissivity of the origin state
+        if (unpackEM(word)) {
+            return LightmapTextureManager.MAX_LIGHT_COORDINATE;
         }
-        return lightmap;
+
+        // Use world light values from the offset pos, but luminance from the origin pos
+        long adjWord = this.lightCache.get(pos, face);
+        return LightmapTextureManager.pack(Math.max(unpackBL(adjWord), unpackLU(word)), unpackSL(adjWord));
     }
 }

@@ -41,15 +41,15 @@ class AoFaceData {
         final boolean caem;
 
         if (offset) {
-            calm = unpackLM(adjWord);
+            calm = getLightmap(adjWord);
             caem = unpackEM(adjWord);
         } else {
             final long offsetWord = cache.get(x, y, z, direction);
             if (unpackFO(offsetWord)) {
-                calm = unpackLM(adjWord);
+                calm = getLightmap(adjWord);
                 caem = unpackEM(adjWord);
             } else {
-                calm = unpackLM(offsetWord);
+                calm = getLightmap(offsetWord);
                 caem = unpackEM(offsetWord);
             }
         }
@@ -59,25 +59,25 @@ class AoFaceData {
         Direction[] faces = AoNeighborInfo.get(direction).faces;
 
         final long e0 = cache.get(adjX, adjY, adjZ, faces[0]);
-        final int e0lm = unpackLM(e0);
+        final int e0lm = getLightmap(e0);
         final float e0ao = unpackAO(e0);
         final boolean e0op = unpackOP(e0);
         final boolean e0em = unpackEM(e0);
 
         final long e1 = cache.get(adjX, adjY, adjZ, faces[1]);
-        final int e1lm = unpackLM(e1);
+        final int e1lm = getLightmap(e1);
         final float e1ao = unpackAO(e1);
         final boolean e1op = unpackOP(e1);
         final boolean e1em = unpackEM(e1);
 
         final long e2 = cache.get(adjX, adjY, adjZ, faces[2]);
-        final int e2lm = unpackLM(e2);
+        final int e2lm = getLightmap(e2);
         final float e2ao = unpackAO(e2);
         final boolean e2op = unpackOP(e2);
         final boolean e2em = unpackEM(e2);
 
         final long e3 = cache.get(adjX, adjY, adjZ, faces[3]);
-        final int e3lm = unpackLM(e3);
+        final int e3lm = getLightmap(e3);
         final float e3ao = unpackAO(e3);
         final boolean e3op = unpackOP(e3);
         final boolean e3em = unpackEM(e3);
@@ -93,7 +93,7 @@ class AoFaceData {
             c0em = e0em;
         } else {
             long d0 = cache.get(adjX, adjY, adjZ, faces[0], faces[2]);
-            c0lm = unpackLM(d0);
+            c0lm = getLightmap(d0);
             c0ao = unpackAO(d0);
             c0em = unpackEM(d0);
         }
@@ -108,7 +108,7 @@ class AoFaceData {
             c1em = e0em;
         } else {
             long d1 = cache.get(adjX, adjY, adjZ, faces[0], faces[3]);
-            c1lm = unpackLM(d1);
+            c1lm = getLightmap(d1);
             c1ao = unpackAO(d1);
             c1em = unpackEM(d1);
         }
@@ -124,7 +124,7 @@ class AoFaceData {
             c2em = e1em;
         } else {
             long d2 = cache.get(adjX, adjY, adjZ, faces[1], faces[2]);
-            c2lm = unpackLM(d2);
+            c2lm = getLightmap(d2);
             c2ao = unpackAO(d2);
             c2em = unpackEM(d2);
         }
@@ -140,7 +140,7 @@ class AoFaceData {
             c3em = e1em;
         } else {
             long d3 = cache.get(adjX, adjY, adjZ, faces[1], faces[3]);
-            c3lm = unpackLM(d3);
+            c3lm = getLightmap(d3);
             c3ao = unpackAO(d3);
             c3em = unpackEM(d3);
         }

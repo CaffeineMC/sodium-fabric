@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.model.light.data;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockRenderView;
@@ -15,8 +16,10 @@ import net.minecraft.world.LightType;
  * good cache locality.
  *
  * Each long integer contains the following fields:
- * - LM: Light map texture coordinates, two packed UV shorts in an integer; excludes fullbright lightmaps from emissive blocks
- * - AO: Ambient occlusion, floating point value in the range of 0.0..1.0 encoded as a 12-bit unsigned integer
+ * - BL: World block light, encoded as a 4-bit unsigned integer
+ * - SL: World sky light, encoded as a 4-bit unsigned integer
+ * - LU: Block luminance, encoded as a 4-bit unsigned integer
+ * - AO: Ambient occlusion, floating point value in the range of 0.0..1.0 encoded as a 16-bit unsigned integer with 12-bit precision
  * - EM: Emissive test, true if block uses emissive lighting
  * - OP: Block opacity test, true if opaque
  * - FO: Full cube opacity test, true if opaque full cube
@@ -67,16 +70,15 @@ public abstract class LightDataAccess {
 
         int lu = state.getLuminance();
 
-        // OPTIMIZE: Do not calculate lightmap data if the block is full and opaque and does not emit light.
-        int lm;
+        // OPTIMIZE: Do not calculate light data if the block is full and opaque and does not emit light.
+        int bl;
+        int sl;
         if (fo && lu == 0) {
-            lm = 0;
+            bl = 0;
+            sl = 0;
         } else {
-            // Same as WorldRenderer#getLightmapCoordinates but without the emissive check
-            // This lightmap value is necessary in some calculations even if the block is emissive
-            int sky = world.getLightLevel(LightType.SKY, pos);
-            int block = world.getLightLevel(LightType.BLOCK, pos);
-            lm = LightmapTextureManager.pack(Math.max(block, lu), sky);
+            bl = world.getLightLevel(LightType.BLOCK, pos);
+            sl = world.getLightLevel(LightType.SKY, pos);
         }
 
         // FIX: Do not apply AO from blocks that emit light
@@ -87,69 +89,99 @@ public abstract class LightDataAccess {
             ao = 1.0f;
         }
 
-        return packFC(fc) | packFO(fo) | packOP(op) | packEM(em) | packAO(ao) | packLM(lm);
+        return packFC(fc) | packFO(fo) | packOP(op) | packEM(em) | packAO(ao) | packLU(lu) | packSL(sl) | packBL(bl);
     }
 
-    public static long packLM(int lm) {
-        return (long) lm & 0xFFFFFFFFL;
+    public static long packBL(int blockLight) {
+        return (long) blockLight & 0xFL;
     }
 
-    public static int unpackLM(long word) {
-        return (int) (word & 0xFFFFFFFFL);
+    public static int unpackBL(long word) {
+        return (int) (word & 0xFL);
     }
 
-    /**
-     * Like {@link #unpackLM(long)}, but checks {@link #unpackEM(long)} first and returns
-     * the {@link LightmapTextureManager#MAX_LIGHT_COORDINATE fullbright lightmap} if emissive.
-     */
-    public static int unpackFinalLM(long word) {
-        if (unpackEM(word)) {
-            return LightmapTextureManager.MAX_LIGHT_COORDINATE;
-        } else {
-            return unpackLM(word);
-        }
+    public static long packSL(int skyLight) {
+        return ((long) skyLight & 0xFL) << 4;
+    }
+
+    public static int unpackSL(long word) {
+        return (int) (word >> 4 & 0xFL);
+    }
+
+    public static long packLU(int luminance) {
+        return ((long) luminance & 0xFL) << 8;
+    }
+
+    public static int unpackLU(long word) {
+        return (int) (word >> 8 & 0xFL);
     }
 
     public static long packAO(float ao) {
         int aoi = (int) (ao * 4096.0f);
-        return ((long) aoi & 0xFFFFL) << 32;
+        return ((long) aoi & 0xFFFFL) << 12;
     }
 
     public static float unpackAO(long word) {
-        int aoi = (int) (word >>> 32 & 0xFFFFL);
+        int aoi = (int) (word >>> 12 & 0xFFFFL);
         return aoi * (1.0f / 4096.0f);
     }
 
     public static long packEM(boolean emissive) {
-        return (emissive ? 1L : 0L) << 56;
+        return (emissive ? 1L : 0L) << 28;
     }
 
     public static boolean unpackEM(long word) {
-        return ((word >>> 56) & 0b1) != 0;
+        return ((word >>> 28) & 0b1) != 0;
     }
 
     public static long packOP(boolean opaque) {
-        return (opaque ? 1L : 0L) << 57;
+        return (opaque ? 1L : 0L) << 29;
     }
 
     public static boolean unpackOP(long word) {
-        return ((word >>> 57) & 0b1) != 0;
+        return ((word >>> 29) & 0b1) != 0;
     }
 
     public static long packFO(boolean opaque) {
-        return (opaque ? 1L : 0L) << 58;
+        return (opaque ? 1L : 0L) << 30;
     }
 
     public static boolean unpackFO(long word) {
-        return ((word >>> 58) & 0b1) != 0;
+        return ((word >>> 30) & 0b1) != 0;
     }
 
     public static long packFC(boolean fullCube) {
-        return (fullCube ? 1L : 0L) << 59;
+        return (fullCube ? 1L : 0L) << 31;
     }
 
     public static boolean unpackFC(long word) {
-        return ((word >>> 59) & 0b1) != 0;
+        return ((word >>> 31) & 0b1) != 0;
+    }
+
+    /**
+     * Computes the combined lightmap using block light, sky light, and luminance values.
+     *
+     * <p>This method's logic is equivalent to
+     * {@link WorldRenderer#getLightmapCoordinates(BlockRenderView, BlockPos)}, but without the
+     * emissive check.
+     */
+    public static int getLightmap(long word) {
+        return LightmapTextureManager.pack(Math.max(unpackBL(word), unpackLU(word)), unpackSL(word));
+    }
+
+    /**
+     * Like {@link #getLightmap(long)}, but checks {@link #unpackEM(long)} first and returns
+     * the {@link LightmapTextureManager#MAX_LIGHT_COORDINATE fullbright lightmap} if emissive.
+     *
+     * <p>This method's logic is equivalent to
+     * {@link WorldRenderer#getLightmapCoordinates(BlockRenderView, BlockPos)}.
+     */
+    public static int getEmissiveLightmap(long word) {
+        if (unpackEM(word)) {
+            return LightmapTextureManager.MAX_LIGHT_COORDINATE;
+        } else {
+            return getLightmap(word);
+        }
     }
 
     public BlockRenderView getWorld() {
