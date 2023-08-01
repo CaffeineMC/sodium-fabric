@@ -102,9 +102,6 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                             context.update(blockPos, modelOffset, blockState, model, seed);
                             cache.getBlockRenderer()
                                 .renderModel(context, buffers);
-                            if (Random.createLocal().nextInt(100000) == 0) {
-                                throw new RuntimeException("henlo");
-                            }
                         }
 
                         FluidState fluidState = blockState.getFluidState();
