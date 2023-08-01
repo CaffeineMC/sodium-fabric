@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.mixin.features.render.entity;
 
 import me.jellysquid.mods.sodium.client.model.ModelCuboidAccessor;
 import me.jellysquid.mods.sodium.client.render.vertex.VertexConsumerUtils;
-import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import me.jellysquid.mods.sodium.client.render.immediate.model.ModelCuboid;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -69,7 +68,7 @@ public class ModelPartMixin {
         for (ModelCuboid cuboid : this.sodium$cuboids) {
             cuboid.updateVertices(matrices.getPositionMatrix());
 
-            try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
                 long buffer = stack.nmalloc(4 * 6 * ModelVertex.STRIDE);
                 long ptr = buffer;
 

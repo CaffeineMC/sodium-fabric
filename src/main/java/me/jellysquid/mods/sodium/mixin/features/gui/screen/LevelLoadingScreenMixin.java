@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.mixin.features.gui.screen;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
-import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -121,7 +120,7 @@ public class LevelLoadingScreenMixin {
 
     @Unique
     private static void addRect(VertexBufferWriter writer, Matrix4f matrix, int x1, int y1, int x2, int y2, int color) {
-        try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             long buffer = stack.nmalloc(4 * ColorVertex.STRIDE);
             long ptr = buffer;
 

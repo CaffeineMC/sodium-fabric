@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.mixin.features.render.entity.shadows;
 
-import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ModelVertex;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -91,7 +90,7 @@ public class EntityRenderDispatcherMixin {
         var color = ColorABGR.withAlpha(SHADOW_COLOR, alpha);
         var normal = MatrixHelper.transformNormal(matNormal, 0.0f, 1.0f, 0.0f);
 
-        try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
             long ptr = buffer;
 

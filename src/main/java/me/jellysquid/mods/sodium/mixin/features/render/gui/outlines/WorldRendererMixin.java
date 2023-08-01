@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.mixin.features.render.gui.outlines;
 
-import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.LineVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
@@ -101,7 +100,7 @@ public class WorldRendererMixin {
 
     @Unique
     private static void writeLineVertices(VertexBufferWriter writer, float x, float y, float z, int color, int normal) {
-        try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             long buffer = stack.nmalloc(2 * LineVertex.STRIDE);
             long ptr = buffer;
 

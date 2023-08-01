@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.render.immediate;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.mixin.features.render.world.clouds.BackgroundRendererInvoker;
-import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
@@ -230,7 +229,7 @@ public class CloudRenderer {
                 float x = offsetX * 12;
                 float z = offsetZ * 12;
 
-                try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
+                try (MemoryStack stack = MemoryStack.stackPush()) {
                     final long buffer = stack.nmalloc(6 * 4 * ColorVertex.STRIDE);
 
                     long ptr = buffer;
