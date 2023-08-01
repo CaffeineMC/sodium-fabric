@@ -168,9 +168,4 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
         return new CrashException(report);
     }
-
-    @Override
-    public void releaseResources() {
-        this.renderContext.releaseResources();
-    }
 }

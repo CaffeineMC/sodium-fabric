@@ -24,6 +24,4 @@ public abstract class ChunkBuilderTask<OUTPUT> {
      *         if the task was cancelled.
      */
     public abstract OUTPUT execute(ChunkBuildContext context, CancellationToken cancellationToken);
-
-    public abstract void releaseResources();
 }

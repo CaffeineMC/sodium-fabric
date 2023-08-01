@@ -26,12 +26,4 @@ public class ChunkRenderContext {
     public BlockBox getVolume() {
         return this.volume;
     }
-
-    public void releaseResources() {
-        for (var section : this.sections) {
-            if (section != null) {
-                section.releaseReference();
-            }
-        }
-    }
 }

@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.world.cloned;
 
-import it.unimi.dsi.fastutil.shorts.Short2ShortOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPaletteFallback;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalleteArray;
@@ -18,62 +20,34 @@ import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.*;
-import org.apache.commons.lang3.Validate;
 
-import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClonedChunkSection {
     private static final LightType[] LIGHT_TYPES = LightType.values();
 
-    private final BlockEntity[] blockEntity = new BlockEntity[16 * 16 * 16];
-    private final Object[] blockEntityAttachments = new Object[16 * 16 * 16];
+    private Int2ReferenceMap<BlockEntity> blockEntities;
+    private Int2ReferenceMap<Object> blockEntityAttachments;
 
-    private final Short2ShortOpenHashMap blockEntityIds;
-    private final ChunkNibbleArray[] lightDataArrays;
+    private final ChunkNibbleArray[] lightDataArrays = new ChunkNibbleArray[LIGHT_TYPES.length];
 
-    private ChunkSectionPos pos;
+    private final ChunkSectionPos pos;
 
     private PackedIntegerArray blockStateData;
     private ClonedPalette<BlockState> blockStatePalette;
 
     private ReadableContainer<RegistryEntry<Biome>> biomeData;
 
-    private boolean empty = true;
+    private long lastUsedTimestamp = Long.MAX_VALUE;
 
-    ClonedChunkSection() {
-        this.blockEntityIds = new Short2ShortOpenHashMap();
-        this.blockEntityIds.defaultReturnValue((short) -1);
-
-        this.lightDataArrays = new ChunkNibbleArray[LIGHT_TYPES.length];
-    }
-
-    public void copy(World world, WorldChunk chunk, ChunkSection section, ChunkSectionPos pos) {
-        Validate.isTrue(this.empty);
-
+    public ClonedChunkSection(World world, WorldChunk chunk, ChunkSection section, ChunkSectionPos pos) {
         this.pos = pos;
 
         this.copyBlockData(section);
         this.copyLightData(world);
         this.copyBiomeData(section);
         this.copyBlockEntities(chunk, pos);
-    }
-
-    void clear() {
-        Arrays.fill(this.blockEntity, 0, this.blockEntityIds.size(), null);
-        Arrays.fill(this.blockEntityAttachments, 0, this.blockEntityIds.size(), null);
-
-        this.blockEntityIds.clear();
-
-        this.blockStateData = null;
-        this.blockStatePalette = null;
-
-        this.biomeData = null;
-
-        Arrays.fill(this.lightDataArrays, null);
-
-        this.empty = true;
     }
 
     private void copyBlockData(ChunkSection section) {
@@ -103,32 +77,41 @@ public class ClonedChunkSection {
         BlockBox box = new BlockBox(chunkCoord.getMinX(), chunkCoord.getMinY(), chunkCoord.getMinZ(),
                 chunkCoord.getMaxX(), chunkCoord.getMaxY(), chunkCoord.getMaxZ());
 
+        Int2ReferenceOpenHashMap<BlockEntity> blockEntities = null;
+
         // Copy the block entities from the chunk into our cloned section
         for (Map.Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities().entrySet()) {
             BlockPos pos = entry.getKey();
             BlockEntity entity = entry.getValue();
 
             if (box.contains(pos)) {
-                var id = (short) this.blockEntityIds.size();
-                var prev = this.blockEntityIds.put(ChunkSectionPos.packLocal(pos), id);
-
-                if (prev != this.blockEntityIds.defaultReturnValue()) {
-                    throw new IllegalStateException("Already inserted block entity at " + pos);
+                if (blockEntities == null) {
+                    blockEntities = new Int2ReferenceOpenHashMap<>();
                 }
 
-                this.blockEntity[id] = entity;
+                blockEntities.put(packLocal(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), entity);
             }
         }
+
+        this.blockEntities = blockEntities != null ? blockEntities : Int2ReferenceMaps.emptyMap();
+
+        Int2ReferenceOpenHashMap<Object> blockEntityAttachments = null;
 
         // Retrieve any render attachments after we have copied all block entities, as this will call into the code of
         // other mods. This could potentially result in the chunk being modified, which would cause problems if we
         // were iterating over any data in that chunk.
         // See https://github.com/CaffeineMC/sodium-fabric/issues/942 for more info.
-        for (int i = 0; i < this.blockEntityIds.size(); i++) {
-            if (this.blockEntity[i] instanceof RenderAttachmentBlockEntity holder) {
-                this.blockEntityAttachments[i] = holder.getRenderAttachmentData();
+        for (var entry : Int2ReferenceMaps.fastIterable(this.blockEntities)) {
+            if (entry.getValue() instanceof RenderAttachmentBlockEntity holder) {
+                if (blockEntityAttachments == null) {
+                    blockEntityAttachments = new Int2ReferenceOpenHashMap<>();
+                }
+
+                blockEntityAttachments.put(entry.getIntKey(), holder.getRenderAttachmentData());
             }
         }
+
+        this.blockEntityAttachments = blockEntityAttachments != null ? blockEntityAttachments : Int2ReferenceMaps.emptyMap();
     }
 
     public RegistryEntry<Biome> getBiome(int x, int y, int z) {
@@ -136,23 +119,11 @@ public class ClonedChunkSection {
     }
 
     public BlockEntity getBlockEntity(int x, int y, int z) {
-        var id = this.blockEntityIds.get(packLocal(x, y, z));
-
-        if (id < 0) {
-            return null;
-        }
-
-        return this.blockEntity[id];
+        return this.blockEntities.get(packLocal(x, y, z));
     }
 
     public Object getBlockEntityRenderAttachment(int x, int y, int z) {
-        var id = this.blockEntityIds.get(packLocal(x, y, z));
-
-        if (id < 0) {
-            return null;
-        }
-
-        return this.blockEntityAttachments[id];
+        return this.blockEntityAttachments.get(packLocal(x, y, z));
     }
 
     public PackedIntegerArray getBlockData() {
@@ -207,7 +178,7 @@ public class ClonedChunkSection {
     }
 
     public int getLightLevel(LightType type, int x, int y, int z) {
-        var array = this.lightDataArrays[type.ordinal()];
+        var array = this.getLightArray(type);
 
         // The sky-light array may not exist in certain dimensions.
         if (array == null) {
@@ -217,27 +188,11 @@ public class ClonedChunkSection {
         return array.get(x, y, z);
     }
 
-    private final AtomicInteger referenceCount = new AtomicInteger(0);
-
-    private long lastUsedTimestamp;
-
-    public int getReferenceCount() {
-        return this.referenceCount.get();
-    }
-
     public long getLastUsedTimestamp() {
         return this.lastUsedTimestamp;
     }
 
     public void setLastUsedTimestamp(long timestamp) {
         this.lastUsedTimestamp = timestamp;
-    }
-
-    public void acquireReference() {
-        this.referenceCount.getAndIncrement();
-    }
-
-    public void releaseReference() {
-        this.referenceCount.getAndDecrement();
     }
 }
