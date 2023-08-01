@@ -26,6 +26,7 @@ import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
 
 import java.util.Map;
 
@@ -101,6 +102,9 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                             context.update(blockPos, modelOffset, blockState, model, seed);
                             cache.getBlockRenderer()
                                 .renderModel(context, buffers);
+                            if (Random.createLocal().nextInt(100000) == 0) {
+                                throw new RuntimeException("henlo");
+                            }
                         }
 
                         FluidState fluidState = blockState.getFluidState();
@@ -160,9 +164,9 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         } catch (Exception ignored) {}
         CrashReportSection.addBlockInfo(crashReportSection, slice, pos, state);
 
-        crashReportSection.add("Chunk section", render);
-        if (renderContext != null) {
-            crashReportSection.add("Render context volume", renderContext.getVolume());
+        crashReportSection.add("Chunk section", this.render);
+        if (this.renderContext != null) {
+            crashReportSection.add("Render context volume", this.renderContext.getVolume());
         }
 
         return new CrashException(report);

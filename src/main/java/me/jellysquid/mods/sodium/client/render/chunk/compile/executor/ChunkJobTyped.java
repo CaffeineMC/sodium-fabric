@@ -49,7 +49,7 @@ public class ChunkJobTyped<TASK extends ChunkBuilderTask<OUTPUT>, OUTPUT>
             result = ChunkJobResult.successfully(output);
         } catch (Throwable throwable) {
             result = ChunkJobResult.exceptionally(throwable);
-            SodiumClientMod.logger().error("Chunk build failed", throwable);
+            ChunkBuilder.LOGGER.error("Chunk build failed", throwable);
         } finally {
             this.task.releaseResources();
         }
