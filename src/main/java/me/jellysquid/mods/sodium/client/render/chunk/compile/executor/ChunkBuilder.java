@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class ChunkBuilder {
-    private static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
+    static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
     private volatile boolean isRunning;
 

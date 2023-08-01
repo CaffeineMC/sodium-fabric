@@ -1,5 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.executor;
 
+import net.minecraft.util.crash.CrashException;
+
 public class ChunkJobResult<OUTPUT> {
     private final OUTPUT output;
     private final Throwable throwable;
@@ -18,7 +20,10 @@ public class ChunkJobResult<OUTPUT> {
     }
 
     public OUTPUT unwrap() {
-        if (this.throwable != null) {
+        if (this.throwable instanceof CrashException crashException) {
+            // Propagate CrashExceptions directly to provide extra information
+            throw crashException;
+        } else if (this.throwable != null) {
             throw new RuntimeException("Exception thrown while executing job", this.throwable);
         }
 
