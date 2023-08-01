@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.mixin.features.render.gui.font;
 
-import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.GlyphVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -64,7 +63,7 @@ public class GlyphRendererMixin {
 
         var writer = VertexBufferWriter.of(vertexConsumer);
 
-        try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             long buffer = stack.nmalloc(4 * GlyphVertex.STRIDE);
             long ptr = buffer;
 
