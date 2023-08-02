@@ -533,7 +533,7 @@ public class RenderSectionManager {
     public void processGFNIMovement(
         double lastCameraX, double lastCameraY, double lastCameraZ,
         double cameraX, double cameraY, double cameraZ) {
-        this.gfni.findTriggeredSections(this::scheduleSort,
+        this.gfni.triggerSections(this::scheduleSort,
             lastCameraX, lastCameraY, lastCameraZ,
             cameraX, cameraY, cameraZ);
     }

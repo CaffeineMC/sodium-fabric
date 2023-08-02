@@ -8,7 +8,7 @@ import com.lodborg.intervaltree.Interval.Bounded;
 import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
 import net.minecraft.util.math.ChunkSectionPos;
 
-public class AccumulationGroup {
+class AccumulationGroup {
     final DoubleOpenHashSet relativeDistances = new DoubleOpenHashSet(16);
     final Vector3fc normal;
     final int groupBuilderKey;
@@ -18,7 +18,7 @@ public class AccumulationGroup {
     private double relMinDistance = Double.POSITIVE_INFINITY;
     private double relMaxDistance = Double.NEGATIVE_INFINITY;
 
-    public AccumulationGroup(ChunkSectionPos sectionPos, Vector3fc normal, int groupBuilderKey) {
+    AccumulationGroup(ChunkSectionPos sectionPos, Vector3fc normal, int groupBuilderKey) {
         this.sectionPos = sectionPos;
         this.normal = normal;
         this.groupBuilderKey = groupBuilderKey;

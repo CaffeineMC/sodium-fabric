@@ -12,7 +12,7 @@ import net.minecraft.util.math.ChunkSectionPos;
  * group keeps a tree of its face plane distances to determine if it needs to be
  * triggered.
  */
-public class Group {
+class Group {
     /**
      * The section this group is for
      */

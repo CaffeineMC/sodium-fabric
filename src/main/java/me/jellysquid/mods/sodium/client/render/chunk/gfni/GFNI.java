@@ -18,7 +18,7 @@ import net.minecraft.util.math.ChunkSectionPos;
  * TODO: synchronization is used for integrating group builders submitted from
  * chunk build threads. It is assumed that integrating a group builder is fast
  * and thus synchronization is not a big problem. However, if it is, it might be
- * better to put the group builder in the ChunkBuildResult and have the main
+ * better to put the group builder in the ChunkSortOutput and have the main
  * thread integrate it. The distadvantage is that the main thread would be busy
  * with group integration while actually the chunk build thread could be doing
  * it itself. If fine grained synchronization is needed, threads could also work
@@ -38,8 +38,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * TODO:
  * - update GFNI document about how this implementation works with the
  * interval tree and update the diagram.
- * - filter the triggered sections by visibility in the frame (using the graph
- * search result)
  * - sort the triggered sections by camera distance and possibly also use number
  * of translucent faces as a heuristic for importance
  * - baked models could possibly precompute normals and then just calculate
@@ -51,6 +49,14 @@ import net.minecraft.util.math.ChunkSectionPos;
  * visible, if there are idle threads.
  */
 public class GFNI {
+    /**
+     * The quantization factor with which the normals are quantized such that there
+     * are fewer possible unique normals. The factor describes the number of steps
+     * in each direction per dimension that the components of the normals can have.
+     * It determines the density of the grid on the surface of a unit cube centered
+     * at the origin onto which the normals are projected. The normals are snapped
+     * to the nearest grid point.
+     */
     public static final int QUANTIZATION_FACTOR = 4;
 
     /**
@@ -58,13 +64,29 @@ public class GFNI {
      */
     private Object2ReferenceOpenHashMap<Vector3fc, NormalList> normalLists = new Object2ReferenceOpenHashMap<>(50);
 
+    /**
+     * To avoid generating a collection of the triggered sections, this callback is
+     * used to process the triggered sections directly as they are queried from the
+     * normal lists' interval trees.
+     */
     private Consumer<ChunkSectionPos> triggerSectionCallback;
 
     // TODO: both of these are for debugging
     ObjectLinkedOpenHashSet<ChunkSectionPos> triggeredSections = new ObjectLinkedOpenHashSet<>(50);
     ObjectOpenHashSet<Vector3fc> triggeredNormals = new ObjectOpenHashSet<>(50);
 
-    public void findTriggeredSections(
+    /**
+     * Triggers the sections that the given camera movement crosses face planes of.
+     * 
+     * @param triggerSectionCallback called for each section that is triggered
+     * @param lastCameraX            the camera x position before the movement
+     * @param lastCameraY            the camera y position before the movement
+     * @param lastCameraZ            the camera z position before the movement
+     * @param cameraX                the camera x position after the movement
+     * @param cameraY                the camera y position after the movement
+     * @param cameraZ                the camera z position after the movement
+     */
+    public void triggerSections(
             Consumer<ChunkSectionPos> triggerSectionCallback,
             double lastCameraX, double lastCameraY, double lastCameraZ,
             double cameraX, double cameraY, double cameraZ) {
@@ -105,6 +127,11 @@ public class GFNI {
         }
     }
 
+    /**
+     * Removes a section from GFNI. This removes all its face planes.
+     * 
+     * @param chunkSectionLongPos the section to remove
+     */
     public void removeSection(long chunkSectionLongPos) {
         int normalListCount = this.normalLists.size();
 
@@ -128,7 +155,17 @@ public class GFNI {
         }
     }
 
-    // TODO: synchronized because it's expected to be fast, see class comment
+    /**
+     * Integrates the data from a group builder into GFNI. The group builder
+     * contains the translucent face planes of a single section. This method may
+     * also remove the section if it has become irrelevant.
+     * 
+     * TODO: marked as synchronized because it's expected to be fast, see class
+     * comment
+     * 
+     * @param builder the group builder to integrate
+     * @return the sort type that the group builder's relevance heuristic determined
+     */
     public synchronized SortType integrateGroupBuilder(GroupBuilder builder) {
         long chunkSectionLongPos = builder.sectionPos.asLong();
 

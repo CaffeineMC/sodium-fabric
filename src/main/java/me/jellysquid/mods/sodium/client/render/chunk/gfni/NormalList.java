@@ -20,7 +20,7 @@ import net.minecraft.util.math.ChunkSectionPos;
 /**
  * A normal list contains all the face planes that have the same normal.
  */
-public class NormalList {
+class NormalList {
     /**
      * Size threshold after which group sets in {@link #groupsByInterval} are
      * replaced with hash sets to improve update performance.
@@ -79,11 +79,11 @@ public class NormalList {
         this.groupBuilderKey = groupBuilderKey;
     }
 
-    public Vector3fc getNormal() {
+    Vector3fc getNormal() {
         return normalf;
     }
 
-    public int getGroupBuilderKey() {
+    int getGroupBuilderKey() {
         return groupBuilderKey;
     }
 
