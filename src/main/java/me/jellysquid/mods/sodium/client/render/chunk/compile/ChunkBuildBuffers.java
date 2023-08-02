@@ -42,9 +42,9 @@ public class ChunkBuildBuffers {
         }
     }
 
-    public void init(BuiltSectionInfo.Builder renderData, int chunkId) {
+    public void init(BuiltSectionInfo.Builder renderData, int sectionIndex) {
         for (var builder : this.builders.values()) {
-            builder.begin(renderData, chunkId);
+            builder.begin(renderData, sectionIndex);
         }
     }
 

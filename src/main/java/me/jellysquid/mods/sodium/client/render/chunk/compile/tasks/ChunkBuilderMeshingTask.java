@@ -55,7 +55,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         ChunkOcclusionDataBuilder occluder = new ChunkOcclusionDataBuilder();
 
         ChunkBuildBuffers buffers = buildContext.buffers;
-        buffers.init(renderData, this.render.getLocalCoord());
+        buffers.init(renderData, this.render.getSectionIndex());
 
         BlockRenderCache cache = buildContext.cache;
         cache.init(this.renderContext);

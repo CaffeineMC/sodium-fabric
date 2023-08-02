@@ -1,14 +1,18 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
+import me.jellysquid.mods.sodium.client.world.BiomeSeedProvider;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.biome.source.SeedMixer;
 
-public class BiomeCache {
+public class BiomeSlice {
     private static final int SIZE = 3 * 4; // 3 chunks * 4 biomes per chunk
 
     // Arrays are in ZYX order
@@ -20,36 +24,36 @@ public class BiomeCache {
 
     private int worldX, worldY, worldZ;
 
-    public void update(WorldSlice slice) {
-        var pos = slice.getOrigin();
+    public void update(ClientWorld world, ChunkRenderContext context) {
+        this.worldX = context.getOrigin().getMinX() - 16;
+        this.worldY = context.getOrigin().getMinY() - 16;
+        this.worldZ = context.getOrigin().getMinZ() - 16;
 
-        this.worldX = pos.getMinX() - 16;
-        this.worldY = pos.getMinY() - 16;
-        this.worldZ = pos.getMinZ() - 16;
+        this.biomeSeed = BiomeSeedProvider.getBiomeSeed(world);
 
-        this.biomeSeed = slice.getBiomeSeed();
-
-        this.copyBiomeData(slice);
+        this.copyBiomeData(world, context);
 
         this.calculateBias();
         this.calculateUniform();
     }
 
-    private void copyBiomeData(WorldSlice slice) {
+    private void copyBiomeData(World world, ChunkRenderContext context) {
+        var defaultValue = world.getRegistryManager()
+                .get(RegistryKeys.BIOME)
+                .entryOf(BiomeKeys.PLAINS)
+                .value();
+
         for (int sectionX = 0; sectionX < 3; sectionX++) {
             for (int sectionY = 0; sectionY < 3; sectionY++) {
                 for (int sectionZ = 0; sectionZ < 3; sectionZ++) {
-                    this.copySectionBiomeData(slice, sectionX, sectionY, sectionZ);
+                    this.copySectionBiomeData(context, sectionX, sectionY, sectionZ, defaultValue);
                 }
             }
         }
     }
 
-    private void copySectionBiomeData(WorldSlice slice, int sectionX, int sectionY, int sectionZ) {
-        var section = slice.getClonedSection(sectionX, sectionY, sectionZ);
-        var defaultBiome = slice.getRegistryManager()
-                .get(RegistryKeys.BIOME)
-                .entryOf(BiomeKeys.PLAINS);
+    private void copySectionBiomeData(ChunkRenderContext context, int sectionX, int sectionY, int sectionZ, Biome defaultBiome) {
+        var section = context.getSections()[WorldSlice.getLocalSectionIndex(sectionX, sectionY, sectionZ)];
 
         for (int x = 0; x < 4; x++) {
             for (int y = 0; y < 4; y++) {
@@ -61,7 +65,7 @@ public class BiomeCache {
                     var idx = dataArrayIndex(biomeX, biomeY, biomeZ);
 
                     if (section == null) {
-                        this.biomes[idx] = defaultBiome.value();
+                        this.biomes[idx] = defaultBiome;
                     } else {
                         this.biomes[idx] = section.getBiome(x, y, z).value();
                     }
@@ -140,16 +144,20 @@ public class BiomeCache {
     }
 
     public Biome getBiome(int x, int y, int z) {
+        int relX = x - this.worldX;
+        int relY = y - this.worldY;
+        int relZ = z - this.worldZ;
+
         int centerIndex = dataArrayIndex(
-                BiomeCoords.fromBlock(x - 2),
-                BiomeCoords.fromBlock(y - 2),
-                BiomeCoords.fromBlock(z - 2));
+                BiomeCoords.fromBlock(relX - 2),
+                BiomeCoords.fromBlock(relY - 2),
+                BiomeCoords.fromBlock(relZ - 2));
 
         if (this.uniform[centerIndex]) {
             return this.biomes[centerIndex];
         }
 
-        return this.getBiomeUsingVoronoi(x, y, z);
+        return this.getBiomeUsingVoronoi(relX, relY, relZ);
     }
 
     private Biome getBiomeUsingVoronoi(int worldX, int worldY, int worldZ) {
