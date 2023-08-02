@@ -1,8 +1,10 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.biome.source.SeedMixer;
 
@@ -44,7 +46,10 @@ public class BiomeCache {
     }
 
     private void copySectionBiomeData(WorldSlice slice, int sectionX, int sectionY, int sectionZ) {
-        var section = slice.getSection(sectionX, sectionY, sectionZ);
+        var section = slice.getClonedSection(sectionX, sectionY, sectionZ);
+        var defaultBiome = slice.getRegistryManager()
+                .get(RegistryKeys.BIOME)
+                .entryOf(BiomeKeys.PLAINS);
 
         for (int x = 0; x < 4; x++) {
             for (int y = 0; y < 4; y++) {
@@ -53,7 +58,13 @@ public class BiomeCache {
                     int biomeY = (sectionY * 4) + y;
                     int biomeZ = (sectionZ * 4) + z;
 
-                    this.biomes[dataArrayIndex(biomeX, biomeY, biomeZ)] = section.getBiome(x, y, z).value();
+                    var idx = dataArrayIndex(biomeX, biomeY, biomeZ);
+
+                    if (section == null) {
+                        this.biomes[idx] = defaultBiome.value();
+                    } else {
+                        this.biomes[idx] = section.getBiome(x, y, z).value();
+                    }
                 }
             }
         }

@@ -17,22 +17,16 @@ import java.util.*;
  * block entities contained by it, and any data used for occlusion testing.
  */
 public class BuiltSectionInfo {
-    public static final BuiltSectionInfo ABSENT = new BuiltSectionInfo.Builder()
-            .build();
     public static final BuiltSectionInfo EMPTY = createEmptyData();
 
     private List<TerrainRenderPass> blockRenderPasses;
     private List<BlockEntity> globalBlockEntities;
     private List<BlockEntity> blockEntities;
 
-    private TranslucentData translucentData;
     private ChunkOcclusionData occlusionData;
 
     private List<Sprite> animatedSprites;
 
-    public TranslucentData getTranslucentData() {
-        return this.translucentData;
-    }
 
     public ChunkOcclusionData getOcclusionData() {
         return this.occlusionData;
@@ -81,7 +75,6 @@ public class BuiltSectionInfo {
         private final List<BlockEntity> blockEntities = new ArrayList<>();
         private final Set<Sprite> animatedSprites = new ObjectOpenHashSet<>();
 
-        private TranslucentData translucentData;
         private ChunkOcclusionData occlusionData;
 
         public void addRenderPass(TerrainRenderPass pass) {
@@ -112,10 +105,6 @@ public class BuiltSectionInfo {
             (cull ? this.blockEntities : this.globalBlockEntities).add(entity);
         }
 
-        public void addTranslucentData(TranslucentData data) {
-            this.translucentData = data;
-        }
-
         public BuiltSectionInfo build() {
             BuiltSectionInfo data = new BuiltSectionInfo();
             data.globalBlockEntities = this.globalBlockEntities;
@@ -123,7 +112,6 @@ public class BuiltSectionInfo {
             data.occlusionData = this.occlusionData;
             data.animatedSprites = new ObjectArrayList<>(this.animatedSprites);
             data.blockRenderPasses = this.renderPasses;
-            data.translucentData = this.translucentData;
 
             return data;
         }

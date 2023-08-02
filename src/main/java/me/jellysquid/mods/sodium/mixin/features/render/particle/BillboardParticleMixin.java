@@ -1,6 +1,5 @@
 package me.jellysquid.mods.sodium.mixin.features.render.particle;
 
-import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import net.caffeinemc.mods.sodium.api.vertex.format.common.ParticleVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -74,7 +73,7 @@ public abstract class BillboardParticleMixin extends Particle {
 
         var writer = VertexBufferWriter.of(vertexConsumer);
 
-        try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             long buffer = stack.nmalloc(4 * ParticleVertex.STRIDE);
             long ptr = buffer;
 

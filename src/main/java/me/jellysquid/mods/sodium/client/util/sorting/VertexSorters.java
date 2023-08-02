@@ -59,25 +59,9 @@ public class VertexSorters {
     }
 
     private static abstract class AbstractVertexSorter implements VertexSorter {
-        private static final int RADIX_SORT_THRESHOLD = 64;
-
         @Override
         public final int[] sort(Vector3f[] positions) {
-            if (positions.length >= RADIX_SORT_THRESHOLD) {
-                return this.radixSort(positions);
-            } else {
-                return this.mergeSort(positions);
-            }
-        }
-
-        private int[] radixSort(Vector3f[] positions) {
-            final var keys = new int[positions.length];
-
-            for (int index = 0; index < positions.length; index++) {
-                keys[index] = RadixSort.Floats.createRadixKey(this.getKey(positions[index]));
-            }
-
-            return RadixSort.sort(keys);
+            return this.mergeSort(positions);
         }
 
         private int[] mergeSort(Vector3f[] positions) {

@@ -16,7 +16,7 @@ public class ChunkBuildContext {
         this.vertexType = vertexType;
     }
 
-    public void release() {
+    public void cleanup() {
         this.buffers.destroy();
     }
 }

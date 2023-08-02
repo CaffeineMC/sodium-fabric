@@ -102,13 +102,13 @@ public class FluidRenderer {
         return true;
     }
 
-    public void render(WorldSlice world, FluidState fluidState, BlockPos pos, BlockPos offset, GroupBuilder groupBuilder, ChunkBuildBuffers buffers) {
+    public void render(WorldSlice world, FluidState fluidState, BlockPos blockPos, BlockPos offset, GroupBuilder groupBuilder, ChunkBuildBuffers buffers) {
         var material = DefaultMaterials.forFluidState(fluidState);
         var meshBuilder = buffers.get(material);
 
-        int posX = pos.getX();
-        int posY = pos.getY();
-        int posZ = pos.getZ();
+        int posX = blockPos.getX();
+        int posY = blockPos.getY();
+        int posZ = blockPos.getZ();
 
         Fluid fluid = fluidState.getFluid();
 
@@ -129,24 +129,33 @@ public class FluidRenderer {
         final FluidRenderHandler handler = getFluidRenderHandler(fluidState);
         final ColorProvider<FluidState> colorProvider = this.getColorProvider(fluid, handler);
 
-        Sprite[] sprites = handler.getFluidSprites(world, pos, fluidState);
+        Sprite[] sprites = handler.getFluidSprites(world, blockPos, fluidState);
 
-        float fluidHeight = this.fluidHeight(world, fluid, pos, Direction.UP);
-        float h1, h2, h3, h4;
+        float fluidHeight = this.fluidHeight(world, fluid, blockPos, Direction.UP);
+        float northWestHeight, southWestHeight, southEastHeight, northEastHeight;
         if (fluidHeight >= 1.0f) {
-            h1 = 1.0f;
-            h2 = 1.0f;
-            h3 = 1.0f;
-            h4 = 1.0f;
+            northWestHeight = 1.0f;
+            southWestHeight = 1.0f;
+            southEastHeight = 1.0f;
+            northEastHeight = 1.0f;
         } else {
-            float north1 = this.fluidHeight(world, fluid, pos.north(), Direction.NORTH);
-            float south1 = this.fluidHeight(world, fluid, pos.south(), Direction.SOUTH);
-            float east1 = this.fluidHeight(world, fluid, pos.east(), Direction.EAST);
-            float west1 = this.fluidHeight(world, fluid, pos.west(), Direction.WEST);
-            h1 = this.fluidCornerHeight(world, fluid, fluidHeight, north1, west1, pos.offset(Direction.NORTH).offset(Direction.WEST));
-            h2 = this.fluidCornerHeight(world, fluid, fluidHeight, south1, west1, pos.offset(Direction.SOUTH).offset(Direction.WEST));
-            h3 = this.fluidCornerHeight(world, fluid, fluidHeight, south1, east1, pos.offset(Direction.SOUTH).offset(Direction.EAST));
-            h4 = this.fluidCornerHeight(world, fluid, fluidHeight, north1, east1, pos.offset(Direction.NORTH).offset(Direction.EAST));
+            var scratchPos = new BlockPos.Mutable();
+            float heightNorth = this.fluidHeight(world, fluid, scratchPos.set(blockPos, Direction.NORTH), Direction.NORTH);
+            float heightSouth = this.fluidHeight(world, fluid, scratchPos.set(blockPos, Direction.SOUTH), Direction.SOUTH);
+            float heightEast = this.fluidHeight(world, fluid, scratchPos.set(blockPos, Direction.EAST), Direction.EAST);
+            float heightWest = this.fluidHeight(world, fluid, scratchPos.set(blockPos, Direction.WEST), Direction.WEST);
+            northWestHeight = this.fluidCornerHeight(world, fluid, fluidHeight, heightNorth, heightWest, scratchPos.set(blockPos)
+                    .move(Direction.NORTH)
+                    .move(Direction.WEST));
+            southWestHeight = this.fluidCornerHeight(world, fluid, fluidHeight, heightSouth, heightWest, scratchPos.set(blockPos)
+                    .move(Direction.SOUTH)
+                    .move(Direction.WEST));
+            southEastHeight = this.fluidCornerHeight(world, fluid, fluidHeight, heightSouth, heightEast, scratchPos.set(blockPos)
+                    .move(Direction.SOUTH)
+                    .move(Direction.EAST));
+            northEastHeight = this.fluidCornerHeight(world, fluid, fluidHeight, heightNorth, heightEast, scratchPos.set(blockPos)
+                    .move(Direction.NORTH)
+                    .move(Direction.EAST));
         }
         float yOffset = sfDown ? 0.0F : EPSILON;
 
@@ -157,13 +166,13 @@ public class FluidRenderer {
 
         quad.setFlags(0);
 
-        if (!sfUp && this.isSideExposed(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(h1, h2), Math.min(h3, h4)))) {
-            h1 -= EPSILON;
-            h2 -= EPSILON;
-            h3 -= EPSILON;
-            h4 -= EPSILON;
+        if (!sfUp && this.isSideExposed(world, posX, posY, posZ, Direction.UP, Math.min(Math.min(northWestHeight, southWestHeight), Math.min(southEastHeight, northEastHeight)))) {
+            northWestHeight -= EPSILON;
+            southWestHeight -= EPSILON;
+            southEastHeight -= EPSILON;
+            northEastHeight -= EPSILON;
 
-            Vec3d velocity = fluidState.getVelocity(world, pos);
+            Vec3d velocity = fluidState.getVelocity(world, blockPos);
 
             Sprite sprite;
             ModelQuadFacing facing;
@@ -214,12 +223,12 @@ public class FluidRenderer {
 
             quad.setSprite(sprite);
 
-            setVertex(quad, 0, 0.0f, h1, 0.0f, u1, v1);
-            setVertex(quad, 1, 0.0f, h2, 1.0F, u2, v2);
-            setVertex(quad, 2, 1.0F, h3, 1.0F, u3, v3);
-            setVertex(quad, 3, 1.0F, h4, 0.0f, u4, v4);
+            setVertex(quad, 0, 0.0f, northWestHeight, 0.0f, u1, v1);
+            setVertex(quad, 1, 0.0f, southWestHeight, 1.0F, u2, v2);
+            setVertex(quad, 2, 1.0F, southEastHeight, 1.0F, u3, v3);
+            setVertex(quad, 3, 1.0F, northEastHeight, 0.0f, u4, v4);
 
-            this.updateQuad(quad, world, pos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
+            this.updateQuad(quad, world, blockPos, lighter, Direction.UP, 1.0F, colorProvider, fluidState);
             this.writeQuad(meshBuilder, groupBuilder, material, offset, quad, facing, false);
 
             if (fluidState.canFlowTo(world, this.scratchPos.set(posX, posY + 1, posZ))) {
@@ -244,7 +253,7 @@ public class FluidRenderer {
             setVertex(quad, 2, 1.0F, yOffset, 0.0f, maxU, minV);
             setVertex(quad, 3, 1.0F, yOffset, 1.0F, maxU, maxV);
 
-            this.updateQuad(quad, world, pos, lighter, Direction.DOWN, 1.0F, colorProvider, fluidState);
+            this.updateQuad(quad, world, blockPos, lighter, Direction.DOWN, 1.0F, colorProvider, fluidState);
             this.writeQuad(meshBuilder, groupBuilder, material, offset, quad, ModelQuadFacing.NEG_Y, false);
 
         }
@@ -264,8 +273,8 @@ public class FluidRenderer {
                     if (sfNorth) {
                         continue;
                     }
-                    c1 = h1;
-                    c2 = h4;
+                    c1 = northWestHeight;
+                    c2 = northEastHeight;
                     x1 = 0.0f;
                     x2 = 1.0F;
                     z1 = EPSILON;
@@ -275,8 +284,8 @@ public class FluidRenderer {
                     if (sfSouth) {
                         continue;
                     }
-                    c1 = h3;
-                    c2 = h2;
+                    c1 = southEastHeight;
+                    c2 = southWestHeight;
                     x1 = 1.0F;
                     x2 = 0.0f;
                     z1 = 1.0f - EPSILON;
@@ -286,8 +295,8 @@ public class FluidRenderer {
                     if (sfWest) {
                         continue;
                     }
-                    c1 = h2;
-                    c2 = h1;
+                    c1 = southWestHeight;
+                    c2 = northWestHeight;
                     x1 = EPSILON;
                     x2 = x1;
                     z1 = 1.0F;
@@ -297,8 +306,8 @@ public class FluidRenderer {
                     if (sfEast) {
                         continue;
                     }
-                    c1 = h4;
-                    c2 = h3;
+                    c1 = northEastHeight;
+                    c2 = southEastHeight;
                     x1 = 1.0f - EPSILON;
                     x2 = x1;
                     z1 = 0.0f;
@@ -345,7 +354,7 @@ public class FluidRenderer {
 
                 ModelQuadFacing facing = ModelQuadFacing.fromDirection(dir);
 
-                this.updateQuad(quad, world, pos, lighter, dir, br, colorProvider, fluidState);
+                this.updateQuad(quad, world, blockPos, lighter, dir, br, colorProvider, fluidState);
                 this.writeQuad(meshBuilder, groupBuilder, material, offset, quad, facing, false);
 
                 if (!isOverlay) {
@@ -466,12 +475,12 @@ public class FluidRenderer {
                 return 1.0f;
             }
 
-            modifyHeight(this.scratchHeight, this.scratchSamples, height);
+            this.modifyHeight(this.scratchHeight, this.scratchSamples, height);
         }
 
-        modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeight);
-        modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeightY);
-        modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeightX);
+        this.modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeight);
+        this.modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeightY);
+        this.modifyHeight(this.scratchHeight, this.scratchSamples, fluidHeightX);
 
         float result = this.scratchHeight.floatValue() / this.scratchSamples.intValue();
         this.scratchHeight.setValue(0);

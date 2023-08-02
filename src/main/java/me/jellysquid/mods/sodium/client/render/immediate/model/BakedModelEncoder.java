@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client.render.immediate.model;
 
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
-import net.caffeinemc.mods.sodium.api.render.immediate.RenderImmediate;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorU8;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
@@ -17,7 +16,7 @@ public class BakedModelEncoder {
         Matrix3f matNormal = matrices.getNormalMatrix();
         Matrix4f matPosition = matrices.getPositionMatrix();
 
-        try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
             long ptr = buffer;
 
@@ -47,7 +46,7 @@ public class BakedModelEncoder {
         Matrix3f matNormal = matrices.getNormalMatrix();
         Matrix4f matPosition = matrices.getPositionMatrix();
 
-        try (MemoryStack stack = RenderImmediate.VERTEX_DATA.push()) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             long buffer = stack.nmalloc(4 * ModelVertex.STRIDE);
             long ptr = buffer;
 

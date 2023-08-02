@@ -1,71 +1,97 @@
 package me.jellysquid.mods.sodium.client.world.cloned;
 
-import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
-import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.WorldChunk;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 public class ClonedChunkSectionCache {
+    private static final int MAX_CACHE_SIZE = 512; /* number of entries */
+    private static final long MAX_CACHE_DURATION = TimeUnit.SECONDS.toNanos(5); /* number of nanoseconds */
+
     private final World world;
 
-    private final ConcurrentLinkedQueue<ClonedChunkSection> inactivePool = new ConcurrentLinkedQueue<>();
-    private final Long2ReferenceMap<ClonedChunkSection> byPosition = new Long2ReferenceOpenHashMap<>();
+    private final Long2ReferenceLinkedOpenHashMap<ClonedChunkSection> positionToEntry = new Long2ReferenceLinkedOpenHashMap<>();
+
+    private long time; // updated once per frame to be the elapsed time since application start
 
     public ClonedChunkSectionCache(World world) {
         this.world = world;
+        this.time = getMonotonicTimeSource();
     }
 
-    public ClonedChunkSection acquire(int x, int y, int z) {
-        long key = ChunkSectionPos.asLong(x, y, z);
-        ClonedChunkSection section = this.byPosition.get(key);
+    public void cleanup() {
+        this.time = getMonotonicTimeSource();
+        this.positionToEntry.values()
+                .removeIf(entry -> this.time > (entry.getLastUsedTimestamp() + MAX_CACHE_DURATION));
+    }
 
-        if (section != null) {
-            this.inactivePool.remove(section);
-        } else {
-            section = this.createSection(x, y, z);
+    @Nullable
+    public ClonedChunkSection acquire(int x, int y, int z) {
+        var pos = ChunkSectionPos.asLong(x, y, z);
+        var section = this.positionToEntry.getAndMoveToLast(pos);
+
+        if (section == null) {
+            section = this.clone(x, y, z);
+
+            // There was nothing to clone, because that section is empty
+            if (section == null) {
+                return null;
+            }
+
+            while (this.positionToEntry.size() >= MAX_CACHE_SIZE) {
+                this.positionToEntry.removeFirst();
+            }
+
+            this.positionToEntry.putAndMoveToLast(pos, section);
         }
 
-        section.acquireReference();
+        section.setLastUsedTimestamp(this.time);
 
         return section;
     }
 
-    private ClonedChunkSection createSection(int x, int y, int z) {
-        ClonedChunkSection section;
+    @Nullable
+    private ClonedChunkSection clone(int x, int y, int z) {
+        WorldChunk chunk = this.world.getChunk(x, z);
 
-        if (!this.inactivePool.isEmpty()) {
-            section = this.inactivePool.remove();
+        if (chunk == null) {
+            return null;
+        }
 
-            this.byPosition.remove(section.getPosition().asLong());
-        } else {
-            section = this.allocate();
+        ChunkSection section = getChunkSection(this.world, chunk, y);
+
+        if (section == null) {
+            return null;
         }
 
         ChunkSectionPos pos = ChunkSectionPos.from(x, y, z);
-        section.init(this.world, pos);
 
-        this.byPosition.put(pos.asLong(), section);
+        return new ClonedChunkSection(this.world, chunk, section, pos);
+    }
+
+    public void invalidate(int x, int y, int z) {
+        this.positionToEntry.remove(ChunkSectionPos.asLong(x, y, z));
+    }
+
+    @Nullable
+    private static ChunkSection getChunkSection(World world, Chunk chunk, int y) {
+        ChunkSection section = null;
+
+        if (!world.isOutOfHeightLimit(ChunkSectionPos.getBlockCoord(y))) {
+            section = chunk.getSectionArray()[world.sectionCoordToIndex(y)];
+        }
 
         return section;
     }
 
-    public void invalidate(int x, int y, int z) {
-        this.byPosition.remove(ChunkSectionPos.asLong(x, y, z));
-    }
-
-    public void release(ClonedChunkSection section) {
-        if (section.releaseReference()) {
-            this.tryReclaim(section);
-        }
-    }
-
-    private ClonedChunkSection allocate() {
-        return new ClonedChunkSection(this);
-    }
-
-    private void tryReclaim(ClonedChunkSection section) {
-        this.inactivePool.add(section);
+    private static long getMonotonicTimeSource() {
+        // Should be monotonic in JDK 17 on sane platforms...
+        return System.nanoTime();
     }
 }

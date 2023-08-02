@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline;
 
-import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
-import me.jellysquid.mods.sodium.client.model.light.cache.ArrayLightDataCache;
 import me.jellysquid.mods.sodium.client.model.color.ColorProviderRegistry;
+import me.jellysquid.mods.sodium.client.model.light.LightPipelineProvider;
+import me.jellysquid.mods.sodium.client.model.light.data.ArrayLightDataCache;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.client.MinecraftClient;

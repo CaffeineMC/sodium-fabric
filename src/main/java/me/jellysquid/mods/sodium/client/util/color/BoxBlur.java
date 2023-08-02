@@ -2,35 +2,36 @@ package me.jellysquid.mods.sodium.client.util.color;
 
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.minecraft.util.math.MathHelper;
-import org.apache.commons.lang3.Validate;
 
 public class BoxBlur {
 
-    public static void blur(ColorBuffer buffer, int radius) {
-        if (buffer.isHomogenous()) {
+    public static void blur(ColorBuffer buf, ColorBuffer tmp, int radius) {
+        if (buf.width != tmp.width || buf.height != tmp.height) {
+            throw new IllegalArgumentException("Color buffers must have same dimensions");
+        }
+
+        if (isHomogenous(buf.data)) {
             return;
         }
 
-        var tmp = new ColorBuffer(buffer.width, buffer.height);
-        blur(buffer, tmp, radius); // X-axis
-        blur(tmp, buffer, radius); // Y-axis
+        blurImpl(buf.data, tmp.data, buf.width, buf.height, radius); // X-axis
+        blurImpl(tmp.data, buf.data, buf.width, buf.height, radius); // Y-axis
     }
 
-    private static void blur(ColorBuffer src, ColorBuffer dst, int radius) {
-        Validate.isTrue(src.width == dst.width);
-        Validate.isTrue(src.height == dst.height);
-
+    private static void blurImpl(int[] src, int[] dst, int width, int height, int radius) {
         int multiplier = getAveragingMultiplier((radius * 2) + 1);
 
-        int width = src.width;
-        int height = src.height;
-
         for (int y = 0; y < height; y++) {
-            int srcRowOffset = src.getIndex(0, y);
+            int srcRowOffset = ColorBuffer.getIndex(0, y, width);
 
-            int red = src.getRed(srcRowOffset);
-            int green = src.getGreen(srcRowOffset);
-            int blue = src.getBlue(srcRowOffset);
+            int red, green, blue;
+
+            {
+                int color = src[srcRowOffset];
+                red = ColorARGB.unpackRed(color);
+                green = ColorARGB.unpackGreen(color);
+                blue = ColorARGB.unpackBlue(color);
+            }
 
             // Extend the window backwards by repeating the colors at the edge N times
             red += red * radius;
@@ -39,31 +40,31 @@ public class BoxBlur {
 
             // Extend the window forwards by sampling ahead N times
             for (int x = 1; x <= radius; x++) {
-                red += src.getRed(srcRowOffset + x);
-                green += src.getGreen(srcRowOffset + x);
-                blue += src.getBlue(srcRowOffset + x);
+                var color = src[srcRowOffset + x];
+                red += ColorARGB.unpackRed(color);
+                green += ColorARGB.unpackGreen(color);
+                blue += ColorARGB.unpackBlue(color);
             }
 
             for (int x = 0; x < width; x++) {
                 // The x and y coordinates are transposed to flip the output image
-                dst.setARGB(dst.getIndex(y, x), averageRGB(red, green, blue, multiplier));
+                dst[ColorBuffer.getIndex(y, x, width)] = averageRGB(red, green, blue, multiplier);
 
                 {
-                    int prevX = Math.max(0, x - radius);
-
                     // Remove the color values that are behind the window
-                    red -= src.getRed(srcRowOffset + prevX);
-                    green -= src.getGreen(srcRowOffset + prevX);
-                    blue -= src.getBlue(srcRowOffset + prevX);
+                    var color = src[srcRowOffset + Math.max(0, x - radius)];
+
+                    red -= ColorARGB.unpackRed(color);
+                    green -= ColorARGB.unpackGreen(color);
+                    blue -= ColorARGB.unpackBlue(color);
                 }
 
                 {
-                    int nextX = Math.min(width - 1, x + radius + 1);
-
                     // Add the color values that are ahead of the window
-                    red += src.getRed(srcRowOffset + nextX);
-                    green += src.getGreen(srcRowOffset + nextX);
-                    blue += src.getBlue(srcRowOffset + nextX);
+                    var color = src[srcRowOffset + Math.min(width - 1, x + radius + 1)];
+                    red += ColorARGB.unpackRed(color);
+                    green += ColorARGB.unpackGreen(color);
+                    blue += ColorARGB.unpackBlue(color);
                 }
             }
         }
@@ -94,10 +95,21 @@ public class BoxBlur {
         return value;
     }
 
-    public static class ColorBuffer {
-        private final int[] data;
+    private static boolean isHomogenous(int[] array) {
+        int first = array[0];
 
-        private final int width, height;
+        for (int i = 1; i < array.length; i++) {
+            if (array[i] != first) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static class ColorBuffer {
+        protected final int[] data;
+        protected final int width, height;
 
         public ColorBuffer(int width, int height) {
             this.data = new int[width * height];
@@ -105,46 +117,17 @@ public class BoxBlur {
             this.height = height;
         }
 
-        public int getIndex(int x, int y) {
-            return (y * this.width) + x;
+        public void set(int x, int y, int color) {
+            this.data[getIndex(x, y, this.width)] = color;
         }
 
-        public void setARGB(int index, int packed)
-        {
-            this.data[index] = packed;
+
+        public int get(int x, int y) {
+            return this.data[getIndex(x, y, this.width)];
         }
 
-        public int getARGB(int index) {
-            return this.data[index];
-        }
-
-        public int getARGB(int x, int z) {
-            return this.data[this.getIndex(x, z)];
-        }
-
-        public int getRed(int index) {
-            return ColorARGB.unpackRed(this.getARGB(index));
-        }
-
-        public int getGreen(int index) {
-            return ColorARGB.unpackGreen(this.getARGB(index));
-        }
-
-        public int getBlue(int index) {
-            return ColorARGB.unpackBlue(this.getARGB(index));
-        }
-
-        public boolean isHomogenous() {
-            int[] data = this.data;
-            int first = data[0];
-
-            for (int i = 1; i < data.length; i++) {
-                if (data[i] != first) {
-                    return false;
-                }
-            }
-
-            return true;
+        public static int getIndex(int x, int y, int width) {
+            return (y * width) + x;
         }
     }
 }

@@ -26,6 +26,6 @@ public class FrustumMixin implements ViewportProvider {
     @Override
     public Viewport sodium$createViewport() {
         return new Viewport(new FrustumIntersection[] { this.frustumIntersection },
-                (float) this.x, (float) this.y, (float) this.z);
+                this.x, this.y, this.z);
     }
 }

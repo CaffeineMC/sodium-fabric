@@ -1,5 +1,8 @@
 package me.jellysquid.mods.sodium.client.util.workarounds;
 
+import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterInfo;
+import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterProbe;
+import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterVendor;
 import net.minecraft.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,13 +12,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class Workarounds {
-    private static final Logger LOGGER = LoggerFactory.getLogger("Sodium");
+    private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-Workarounds");
 
     private static final AtomicReference<Set<Reference>> ACTIVE_WORKAROUNDS = new AtomicReference<>(EnumSet.noneOf(Reference.class));
 
     public static void init() {
-        var graphicsVendors = GraphicsAdapterProbe.findAdapters();
-        var workarounds = findNecessaryWorkarounds(graphicsVendors);
+        var workarounds = findNecessaryWorkarounds();
 
         if (!workarounds.isEmpty()) {
             LOGGER.warn("One or more workarounds were enabled to prevent crashes or other issues on your system: [{}]", workarounds.stream()
@@ -27,13 +29,15 @@ public class Workarounds {
         ACTIVE_WORKAROUNDS.set(workarounds);
     }
 
-    private static Set<Reference> findNecessaryWorkarounds(List<GraphicsAdapterProbe.Result> graphicsAdapters) {
+    private static Set<Reference> findNecessaryWorkarounds() {
         var workarounds = EnumSet.noneOf(Reference.class);
         var operatingSystem = Util.getOperatingSystem();
 
+        var graphicsAdapters = GraphicsAdapterProbe.getAdapters();
+
         if ((operatingSystem == Util.OperatingSystem.WINDOWS || operatingSystem == Util.OperatingSystem.LINUX) &&
-                graphicsAdapters.stream().anyMatch(adapter -> adapter.vendor() == GraphicsAdapterProbe.Vendor.NVIDIA)) {
-            workarounds.add(Reference.NVIDIA_BAD_DRIVER_SETTINGS);
+                graphicsAdapters.stream().anyMatch(adapter -> adapter.vendor() == GraphicsAdapterVendor.NVIDIA)) {
+            workarounds.add(Reference.NVIDIA_THREADED_OPTIMIZATIONS);
         }
 
         if (operatingSystem == Util.OperatingSystem.LINUX) {
@@ -57,13 +61,17 @@ public class Workarounds {
                 .contains(id);
     }
 
+    public static Set<Reference> getEnabledWorkarounds() {
+        return ACTIVE_WORKAROUNDS.get();
+    }
+
     public enum Reference {
         /**
          * The NVIDIA driver applies "Threaded Optimizations" when Minecraft is detected, causing severe
          * performance issues and crashes.
          * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/1816">GitHub Issue</a>
          */
-        NVIDIA_BAD_DRIVER_SETTINGS,
+        NVIDIA_THREADED_OPTIMIZATIONS,
 
         /**
          * Requesting a No Error Context causes a crash at startup when using a Wayland session.

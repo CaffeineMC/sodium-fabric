@@ -3,9 +3,8 @@ package me.jellysquid.mods.sodium.mixin.core.render.world;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
-import me.jellysquid.mods.sodium.client.render.chunk.ChunkStatus;
 import me.jellysquid.mods.sodium.client.render.viewport.ViewportProvider;
+import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
 import me.jellysquid.mods.sodium.client.world.WorldRendererExtended;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
@@ -15,7 +14,6 @@ import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
-
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -115,29 +113,19 @@ public abstract class WorldRendererMixin implements WorldRendererExtended {
      */
     @Overwrite
     private void setupTerrain(Camera camera, Frustum frustum, boolean hasForcedFrustum, boolean spectator) {
-        RenderDevice.enterManagedCode();
 
         var viewport = ((ViewportProvider) frustum).sodium$createViewport();
+        var updateChunksImmediately = FlawlessFrames.isActive();
+
+        RenderDevice.enterManagedCode();
 
         try {
-            this.renderer.updateChunks(camera, viewport, this.frame++, spectator);
-
-            if (FlawlessFrames.isActive()) {
-                // Block until all chunk updates have been processed
-                this.renderer.getRenderSectionManager().updateAllChunksNow();
-
-                // If that caused new chunks to become visible, repeat until we got them all
-                while (this.renderer.getRenderSectionManager().isGraphDirty()) {
-                    this.renderer.updateChunks(camera, viewport, this.frame++, spectator);
-                    this.renderer.getRenderSectionManager().updateAllChunksNow();
-                }
-
-                // We set this because third-party mods may use it (to loop themselves), even if Vanilla does not.
-                this.shouldUpdate = false;
-            }
+            this.renderer.setupTerrain(camera, viewport, this.frame++, spectator, updateChunksImmediately);
         } finally {
             RenderDevice.exitManagedCode();
         }
+
+        this.shouldUpdate = false; // We set this because third-party mods may use it (to loop themselves), even if Vanilla does not.
     }
 
     /**
@@ -182,7 +170,7 @@ public abstract class WorldRendererMixin implements WorldRendererExtended {
      */
     @Overwrite
     public boolean isRenderingReady(BlockPos pos) {
-        return this.renderer.doesChunkHaveFlag(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FLAG_ALL);
+        return this.renderer.isSectionReady(pos.getX() >> 4, pos.getY() >> 4, pos.getZ() >> 4);
     }
 
     @Inject(method = "reload()V", at = @At("RETURN"))

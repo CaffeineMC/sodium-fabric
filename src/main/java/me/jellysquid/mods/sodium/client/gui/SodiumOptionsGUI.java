@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.gui;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gui.console.Console;
+import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import me.jellysquid.mods.sodium.client.gui.options.*;
 import me.jellysquid.mods.sodium.client.gui.options.control.Control;
 import me.jellysquid.mods.sodium.client.gui.options.control.ControlElement;
@@ -42,8 +44,6 @@ public class SodiumOptionsGUI extends Screen {
     private boolean hasPendingChanges;
     private ControlElement<?> hoveredElement;
 
-    private final double openTime;
-
     public SodiumOptionsGUI(Screen prevScreen) {
         super(Text.translatable("Sodium Options"));
 
@@ -53,8 +53,6 @@ public class SodiumOptionsGUI extends Screen {
         this.pages.add(SodiumGameOptionPages.quality());
         this.pages.add(SodiumGameOptionPages.performance());
         this.pages.add(SodiumGameOptionPages.advanced());
-
-        this.openTime = GLFW.glfwGetTime();
     }
 
     public void setPage(OptionPage page) {
@@ -102,13 +100,6 @@ public class SodiumOptionsGUI extends Screen {
         this.addDrawableChild(this.closeButton);
         this.addDrawableChild(this.donateButton);
         this.addDrawableChild(this.hideDonateButton);
-    }
-
-    private Style createDonateButtonStyle() {
-        var cycle = Math.cos(GLFW.glfwGetTime() - this.openTime);
-        var color = ColorMixer.mix(0xFFAA00, 0xFFFFFF, 0.5F + (float) (cycle / 2.0D));
-
-        return Style.EMPTY.withColor(color);
     }
 
     private void setDonationButtonVisibility(boolean value) {
@@ -171,9 +162,6 @@ public class SodiumOptionsGUI extends Screen {
     @Override
     public void render(DrawContext drawContext, int mouseX, int mouseY, float delta) {
         super.renderBackground(drawContext);
-
-        this.donateButton.setLabel(this.donateButton.getLabel()
-                .copy().setStyle(createDonateButtonStyle()));
 
         this.updateControls();
 
@@ -274,15 +262,26 @@ public class SodiumOptionsGUI extends Screen {
 
         MinecraftClient client = MinecraftClient.getInstance();
 
-        if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
-            client.worldRenderer.reload();
-        } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
-            client.worldRenderer.scheduleTerrainUpdate();
+        if (client.world != null) {
+            if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
+                Console.instance().logMessage(MessageLevel.INFO,
+                        Text.translatable("sodium.console.renderer_reload"), 3.0);
+                client.worldRenderer.reload();
+            } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
+                client.worldRenderer.scheduleTerrainUpdate();
+            }
         }
 
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
+            Console.instance().logMessage(MessageLevel.INFO,
+                    Text.translatable("sodium.console.asset_reload"), 5.0);
             client.setMipmapLevels(client.options.getMipmapLevels().getValue());
             client.reloadResourcesConcurrently();
+        }
+
+        if (flags.contains(OptionFlag.REQUIRES_GAME_RESTART)) {
+            Console.instance().logMessage(MessageLevel.WARN,
+                    Text.translatable("sodium.console.game_restart"), 10.0);
         }
 
         for (OptionStorage<?> storage : dirtyStorages) {
