@@ -29,6 +29,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
+import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
@@ -39,12 +40,14 @@ import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
+import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
@@ -302,8 +305,6 @@ public class RenderSectionManager {
             renderSection.setPendingUpdate(ChunkUpdateType.INITIAL_BUILD);
         }
 
-        renderSection.setLastModifiedFrame(this.currentFrame);
-
         this.connectNeighborNodes(renderSection);
 
         this.needsUpdate = true;
@@ -357,7 +358,20 @@ public class RenderSectionManager {
 
             while (iterator.hasNext()) {
                 var section = region.getSection(iterator.next());
-                section.tick();
+
+                if (section == null) {
+                    continue;
+                }
+
+                var sprites = section.getAnimatedSprites();
+
+                if (sprites == null) {
+                    continue;
+                }
+
+                for (Sprite sprite : sprites) {
+                    SpriteUtil.markSpriteActive(sprite);
+                }
             }
         }
     }
@@ -419,14 +433,10 @@ public class RenderSectionManager {
     private void updateSectionInfo(RenderSection render, BuiltSectionInfo info) {
         render.setInfo(info);
 
-        if (info != null) {
-            var globalBlockEntities = info.getGlobalBlockEntities();
-
-            if (!globalBlockEntities.isEmpty()) {
-                this.sectionsWithGlobalEntities.add(render);
-            } else {
-                this.sectionsWithGlobalEntities.remove(render);
-            }
+        if (info == null || ArrayUtils.isEmpty(info.globalBlockEntities)) {
+            this.sectionsWithGlobalEntities.remove(render);
+        } else {
+            this.sectionsWithGlobalEntities.add(render);
         }
     }
 
@@ -599,8 +609,6 @@ public class RenderSectionManager {
             if (ChunkUpdateType.canPromote(section.getPendingUpdate(), pendingUpdate)) {
                 section.setPendingUpdate(pendingUpdate);
             }
-
-            section.setLastModifiedFrame(this.currentFrame);
         }
 
         this.needsUpdate = true;

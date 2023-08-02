@@ -2,60 +2,59 @@ package me.jellysquid.mods.sodium.client.world.biome;
 
 import me.jellysquid.mods.sodium.client.util.color.BoxBlur;
 import me.jellysquid.mods.sodium.client.util.color.BoxBlur.ColorBuffer;
-import me.jellysquid.mods.sodium.client.world.WorldSlice;
+import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 public class BiomeColorCache {
-    private final int minCoord, maxCoord;
+    private static final int NEIGHBOR_BLOCK_RADIUS = 2;
+    private final BiomeSlice biomeData;
+
     private final Slice[] slices;
     private final boolean[] populatedSlices;
 
-    private final int blendDistance;
-    private final int diameter;
-    private final int margin;
+    private final int blendRadius;
 
     private final ColorBuffer tempColorBuffer;
 
-    private BiomeCache biomeCache;
-    private int originX, originZ;
+    private int minX, minY, minZ;
+    private int maxX, maxY, maxZ;
 
-    public BiomeColorCache(int blendDistance) {
-        this.blendDistance = blendDistance;
+    public BiomeColorCache(BiomeSlice biomeData, int blendRadius) {
+        this.biomeData = biomeData;
+        this.blendRadius = blendRadius;
 
-        this.margin = MathHelper.clamp(this.blendDistance, 3, 15);
+        int sizeXZ = 16 + ((NEIGHBOR_BLOCK_RADIUS + this.blendRadius) * 2);
+        int sizeY = 16 + (NEIGHBOR_BLOCK_RADIUS * 2);
 
-        this.diameter = 16 + (this.margin * 2);
+        this.slices = new Slice[sizeY];
+        this.populatedSlices = new boolean[sizeY];
 
-        this.minCoord = 16 - this.margin;
-        this.maxCoord = this.diameter - 1;
-
-        this.slices = new Slice[this.diameter];
-        this.populatedSlices = new boolean[this.diameter];
-
-        for (int y = 0; y < this.diameter; y++) {
-            this.slices[y] = new Slice(this.diameter);
+        for (int y = 0; y < sizeY; y++) {
+            this.slices[y] = new Slice(sizeXZ);
         }
 
-        this.tempColorBuffer = new ColorBuffer(this.diameter, this.diameter);
+        this.tempColorBuffer = new ColorBuffer(sizeXZ, sizeXZ);
     }
 
-    public void update(WorldSlice slice) {
-        this.biomeCache = slice.getBiomeCache();
+    public void update(ChunkRenderContext context) {
+        this.minX = (context.getOrigin().getMinX() - NEIGHBOR_BLOCK_RADIUS) - this.blendRadius;
+        this.minY = (context.getOrigin().getMinY() - NEIGHBOR_BLOCK_RADIUS);
+        this.minZ = (context.getOrigin().getMinZ() - NEIGHBOR_BLOCK_RADIUS) - this.blendRadius;
 
-        this.originX = slice.getOrigin().getMinX() - this.margin;
-        this.originZ = slice.getOrigin().getMinZ() - this.margin;
+        this.maxX = (context.getOrigin().getMaxX() + NEIGHBOR_BLOCK_RADIUS) + this.blendRadius;
+        this.maxY = (context.getOrigin().getMaxY() + NEIGHBOR_BLOCK_RADIUS);
+        this.maxZ = (context.getOrigin().getMaxZ() + NEIGHBOR_BLOCK_RADIUS) + this.blendRadius;
 
         Arrays.fill(this.populatedSlices, false);
     }
 
     public int getColor(BiomeColorSource source, int blockX, int blockY, int blockZ) {
-        var relX = MathHelper.clamp(blockX - this.minCoord, 0, this.maxCoord);
-        var relY = MathHelper.clamp(blockY - this.minCoord, 0, this.maxCoord);
-        var relZ = MathHelper.clamp(blockZ - this.minCoord, 0, this.maxCoord);
+        var relX = MathHelper.clamp(blockX, this.minX, this.maxX) - this.minX;
+        var relY = MathHelper.clamp(blockY, this.minY, this.maxY) - this.minY;
+        var relZ = MathHelper.clamp(blockZ, this.minZ, this.maxZ) - this.minZ;
 
         if (!this.populatedSlices[relY]) {
             this.updateColorBuffers(relY);
@@ -67,26 +66,31 @@ public class BiomeColorCache {
         return buffer.get(relX, relZ);
     }
 
-    private void updateColorBuffers(int y) {
-        var slice = this.slices[y];
+    private void updateColorBuffers(int relY) {
+        var slice = this.slices[relY];
 
-        for (int z = 0; z < this.diameter; z++) {
-            for (int x = 0; x < this.diameter; x++) {
-                Biome biome = this.biomeCache.getBiome(this.minCoord + x, this.minCoord + y, this.minCoord + z);
+        int worldY = this.minY + relY;
 
-                slice.grass.set(x, z, biome.getGrassColorAt(this.originX + x, this.originZ + z));
-                slice.foliage.set(x, z, biome.getFoliageColor());
-                slice.water.set(x, z, biome.getWaterColor());
+        for (int worldZ = this.minZ; worldZ <= this.maxZ; worldZ++) {
+            for (int worldX = this.minX; worldX <= this.maxX; worldX++) {
+                Biome biome = this.biomeData.getBiome(worldX, worldY, worldZ);
+
+                int relativeX = worldX - this.minX;
+                int relativeZ = worldZ - this.minZ;
+
+                slice.grass.set(relativeX, relativeZ, biome.getGrassColorAt(worldX, worldZ));
+                slice.foliage.set(relativeX, relativeZ, biome.getFoliageColor());
+                slice.water.set(relativeX, relativeZ, biome.getWaterColor());
             }
         }
 
-        if (this.blendDistance > 0) {
-            BoxBlur.blur(slice.grass, this.tempColorBuffer, this.blendDistance);
-            BoxBlur.blur(slice.foliage, this.tempColorBuffer, this.blendDistance);
-            BoxBlur.blur(slice.water, this.tempColorBuffer, this.blendDistance);
+        if (this.blendRadius > 0) {
+            BoxBlur.blur(slice.grass, this.tempColorBuffer, this.blendRadius);
+            BoxBlur.blur(slice.foliage, this.tempColorBuffer, this.blendRadius);
+            BoxBlur.blur(slice.water, this.tempColorBuffer, this.blendRadius);
         }
 
-        this.populatedSlices[y] = true;
+        this.populatedSlices[relY] = true;
     }
 
     private static class Slice {

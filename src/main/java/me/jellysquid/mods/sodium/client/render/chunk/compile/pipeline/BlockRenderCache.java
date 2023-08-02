@@ -7,6 +7,7 @@ import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.BlockModels;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.World;
 
 public class BlockRenderCache {
@@ -18,7 +19,7 @@ public class BlockRenderCache {
     private final BlockModels blockModels;
     private final WorldSlice worldSlice;
 
-    public BlockRenderCache(MinecraftClient client, World world) {
+    public BlockRenderCache(MinecraftClient client, ClientWorld world) {
         this.worldSlice = new WorldSlice(world);
         this.lightDataCache = new ArrayLightDataCache(this.worldSlice);
 
@@ -51,5 +52,9 @@ public class BlockRenderCache {
 
     public WorldSlice getWorldSlice() {
         return this.worldSlice;
+    }
+
+    public void cleanup() {
+        this.worldSlice.reset();
     }
 }

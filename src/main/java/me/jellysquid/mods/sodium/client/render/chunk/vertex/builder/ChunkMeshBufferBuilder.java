@@ -16,7 +16,7 @@ public class ChunkMeshBufferBuilder {
     private ByteBuffer buffer;
     private int count;
     private int capacity;
-    private int chunkId;
+    private int sectionIndex;
 
     public ChunkMeshBufferBuilder(ChunkVertexType vertexType, int initialCapacity) {
         this.encoder = vertexType.getEncoder();
@@ -39,7 +39,7 @@ public class ChunkMeshBufferBuilder {
         long ptr = MemoryUtil.memAddress(this.buffer, this.count * this.stride);
 
         for (ChunkVertexEncoder.Vertex vertex : vertices) {
-            ptr = this.encoder.write(ptr, material, vertex, this.chunkId);
+            ptr = this.encoder.write(ptr, material, vertex, (byte) this.sectionIndex);
         }
 
         this.count += vertexCount;
@@ -58,9 +58,9 @@ public class ChunkMeshBufferBuilder {
         this.capacity = capacity;
     }
 
-    public void start(int chunkId) {
+    public void start(int sectionIndex) {
         this.count = 0;
-        this.chunkId = chunkId;
+        this.sectionIndex = sectionIndex;
 
         this.setBufferSize(this.initialCapacity);
     }

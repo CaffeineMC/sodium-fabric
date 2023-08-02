@@ -30,11 +30,11 @@ public class BakedChunkModelBuilder implements ChunkModelBuilder {
         }
     }
 
-    public void begin(BuiltSectionInfo.Builder renderData, int chunkId) {
+    public void begin(BuiltSectionInfo.Builder renderData, int sectionIndex) {
         this.renderData = renderData;
 
         for (var vertexBuffer : this.vertexBuffers) {
-            vertexBuffer.start(chunkId);
+            vertexBuffer.start(sectionIndex);
         }
     }
 }

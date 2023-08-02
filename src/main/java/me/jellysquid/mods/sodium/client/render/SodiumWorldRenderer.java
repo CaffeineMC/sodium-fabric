@@ -306,13 +306,13 @@ public class SodiumWorldRenderer {
                 var renderSectionId = renderSectionIterator.next();
                 var renderSection = renderRegion.getSection(renderSectionId);
 
-                var renderData = renderSection.getInfo();
+                var blockEntities = renderSection.getCulledBlockEntities();
 
-                if (renderData == null) {
+                if (blockEntities == null) {
                     continue;
                 }
 
-                for (BlockEntity blockEntity : renderData.getBlockEntities()) {
+                for (BlockEntity blockEntity : blockEntities) {
                     renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer, blockEntity);
                 }
             }
@@ -329,13 +329,13 @@ public class SodiumWorldRenderer {
                                            double z,
                                            BlockEntityRenderDispatcher blockEntityRenderer) {
         for (var renderSection : this.renderSectionManager.getSectionsWithGlobalEntities()) {
-            var renderInfo = renderSection.getInfo();
+            var blockEntities = renderSection.getGlobalBlockEntities();
 
-            if (renderInfo == null) {
+            if (blockEntities == null) {
                 continue;
             }
 
-            for (var blockEntity : renderInfo.getGlobalBlockEntities()) {
+            for (var blockEntity : blockEntities) {
                 renderBlockEntity(matrices, bufferBuilders, blockBreakingProgressions, tickDelta, immediate, x, y, z, blockEntityRenderer, blockEntity);
             }
         }
