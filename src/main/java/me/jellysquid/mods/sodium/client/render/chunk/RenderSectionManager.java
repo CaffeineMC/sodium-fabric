@@ -419,10 +419,10 @@ public class RenderSectionManager {
     private void updateSectionInfo(RenderSection render, BuiltSectionInfo info) {
         render.setInfo(info);
 
-        if (info != null && ArrayUtils.isEmpty(info.globalBlockEntities)) {
-            this.sectionsWithGlobalEntities.add(render);
-        } else {
+        if (info == null || ArrayUtils.isEmpty(info.globalBlockEntities)) {
             this.sectionsWithGlobalEntities.remove(render);
+        } else {
+            this.sectionsWithGlobalEntities.add(render);
         }
     }
 
