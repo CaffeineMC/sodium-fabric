@@ -69,8 +69,8 @@ public class ClonedChunkSection {
         this.biomeData = section.getBiomeContainer();
     }
 
-    public ChunkNibbleArray getLightArray(LightType type) {
-        return this.lightDataArrays[type.ordinal()];
+    public ChunkNibbleArray[] getLightDataArrays() {
+        return this.lightDataArrays;
     }
 
     private void copyBlockEntities(WorldChunk chunk, ChunkSectionPos chunkCoord) {
@@ -116,14 +116,6 @@ public class ClonedChunkSection {
 
     public RegistryEntry<Biome> getBiome(int x, int y, int z) {
         return this.biomeData.get(x, y, z);
-    }
-
-    public BlockEntity getBlockEntity(int x, int y, int z) {
-        return this.blockEntities.get(packLocal(x, y, z));
-    }
-
-    public Object getBlockEntityRenderAttachment(int x, int y, int z) {
-        return this.blockEntityAttachments.get(packLocal(x, y, z));
     }
 
     public PackedIntegerArray getBlockData() {
@@ -177,22 +169,19 @@ public class ClonedChunkSection {
         return (short) (x << 8 | z << 4 | y);
     }
 
-    public int getLightLevel(LightType type, int x, int y, int z) {
-        var array = this.getLightArray(type);
-
-        // The sky-light array may not exist in certain dimensions.
-        if (array == null) {
-            return 0;
-        }
-
-        return array.get(x, y, z);
-    }
-
     public long getLastUsedTimestamp() {
         return this.lastUsedTimestamp;
     }
 
     public void setLastUsedTimestamp(long timestamp) {
         this.lastUsedTimestamp = timestamp;
+    }
+
+    public Int2ReferenceMap<BlockEntity> getBlockEntityMap() {
+        return this.blockEntities;
+    }
+
+    public Int2ReferenceMap<Object> getBlockEntityAttachmentMap() {
+        return this.blockEntityAttachments;
     }
 }

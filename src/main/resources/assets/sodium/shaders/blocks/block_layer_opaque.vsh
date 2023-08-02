@@ -25,7 +25,8 @@ vec4 _sample_lightmap(sampler2D lightMap, ivec2 uv) {
 }
 
 uvec3 _get_relative_chunk_coord(uint pos) {
-    return uvec3(pos) >> uvec3(5u, 3u, 0u) & uvec3(7u, 3u, 7u);
+    // Packing scheme is defined by LocalSectionIndex
+    return uvec3(pos) >> uvec3(5u, 0u, 2u) & uvec3(7u, 3u, 7u);
 }
 
 vec3 _get_draw_translation(uint pos) {
