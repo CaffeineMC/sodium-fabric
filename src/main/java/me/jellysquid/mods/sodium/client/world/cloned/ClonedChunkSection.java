@@ -3,6 +3,7 @@ package me.jellysquid.mods.sodium.client.world.cloned;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPaletteFallback;
 import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalleteArray;
@@ -109,7 +110,7 @@ public class ClonedChunkSection {
                     blockEntities = new Int2ReferenceOpenHashMap<>();
                 }
 
-                blockEntities.put(packLocal(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), entity);
+                blockEntities.put(WorldSlice.getLocalBlockIndex(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), entity);
             }
         }
 
@@ -176,16 +177,6 @@ public class ClonedChunkSection {
         }
 
         return new PackedIntegerArray(bits, storage.getSize(), data.clone());
-    }
-
-    /**
-     * @param x The local x-coordinate
-     * @param y The local y-coordinate
-     * @param z The local z-coordinate
-     * @return An index which can be used to key entities or blocks within a chunk
-     */
-    private static short packLocal(int x, int y, int z) {
-        return (short) (x << 8 | z << 4 | y);
     }
 
     public long getLastUsedTimestamp() {
