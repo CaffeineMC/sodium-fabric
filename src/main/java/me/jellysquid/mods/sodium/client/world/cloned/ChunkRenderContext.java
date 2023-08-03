@@ -6,16 +6,16 @@ import org.jetbrains.annotations.Nullable;
 
 public class ChunkRenderContext {
     private final ChunkSectionPos origin;
-    private final @Nullable ClonedChunkSection[] sections;
+    private final ClonedChunkSection[] sections;
     private final BlockBox volume;
 
-    public ChunkRenderContext(ChunkSectionPos origin, @Nullable ClonedChunkSection[] sections, BlockBox volume) {
+    public ChunkRenderContext(ChunkSectionPos origin, ClonedChunkSection[] sections, BlockBox volume) {
         this.origin = origin;
         this.sections = sections;
         this.volume = volume;
     }
 
-    public @Nullable ClonedChunkSection[] getSections() {
+    public ClonedChunkSection[] getSections() {
         return this.sections;
     }
 

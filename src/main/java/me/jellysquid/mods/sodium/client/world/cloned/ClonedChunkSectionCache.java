@@ -3,9 +3,9 @@ package me.jellysquid.mods.sodium.client.world.cloned;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceLinkedOpenHashMap;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.WorldChunk;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.TimeUnit;
@@ -39,11 +39,6 @@ public class ClonedChunkSectionCache {
         if (section == null) {
             section = this.clone(x, y, z);
 
-            // There was nothing to clone, because that section is empty
-            if (section == null) {
-                return null;
-            }
-
             while (this.positionToEntry.size() >= MAX_CACHE_SIZE) {
                 this.positionToEntry.removeFirst();
             }
@@ -56,38 +51,25 @@ public class ClonedChunkSectionCache {
         return section;
     }
 
-    @Nullable
+    @NotNull
     private ClonedChunkSection clone(int x, int y, int z) {
         WorldChunk chunk = this.world.getChunk(x, z);
 
         if (chunk == null) {
-            return null;
+            throw new RuntimeException("Chunk is not loaded at: " + ChunkSectionPos.asLong(x, y, z));
         }
 
-        ChunkSection section = getChunkSection(this.world, chunk, y);
+        @Nullable ChunkSection section = null;
 
-        if (section == null) {
-            return null;
+        if (!this.world.isOutOfHeightLimit(ChunkSectionPos.getBlockCoord(y))) {
+            section = chunk.getSectionArray()[this.world.sectionCoordToIndex(y)];
         }
 
-        ChunkSectionPos pos = ChunkSectionPos.from(x, y, z);
-
-        return new ClonedChunkSection(this.world, chunk, section, pos);
+        return new ClonedChunkSection(this.world, chunk, section, ChunkSectionPos.from(x, y, z));
     }
 
     public void invalidate(int x, int y, int z) {
         this.positionToEntry.remove(ChunkSectionPos.asLong(x, y, z));
-    }
-
-    @Nullable
-    private static ChunkSection getChunkSection(World world, Chunk chunk, int y) {
-        ChunkSection section = null;
-
-        if (!world.isOutOfHeightLimit(ChunkSectionPos.getBlockCoord(y))) {
-            section = chunk.getSectionArray()[world.sectionCoordToIndex(y)];
-        }
-
-        return section;
     }
 
     private static long getMonotonicTimeSource() {
