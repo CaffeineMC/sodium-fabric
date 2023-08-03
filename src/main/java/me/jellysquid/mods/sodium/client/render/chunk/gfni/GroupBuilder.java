@@ -27,7 +27,7 @@ public class GroupBuilder {
     private Vector3f maxBounds = new Vector3f(0, 0, 0);
 
     @SuppressWarnings("unchecked")
-    public final ReferenceArrayList<Vector3f>[] quadCenters = new ReferenceArrayList[ModelQuadFacing.DIRECTIONS];
+    public final ReferenceArrayList<Vector3f>[] quadCenters = new ReferenceArrayList[ModelQuadFacing.COUNT];
 
     public GroupBuilder(ChunkSectionPos sectionPos) {
         this.sectionPos = sectionPos;

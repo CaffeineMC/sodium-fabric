@@ -7,6 +7,6 @@ public enum ChunkUpdateType {
     IMPORTANT_REBUILD;
 
     public static boolean canPromote(ChunkUpdateType prev, ChunkUpdateType next) {
-        return prev == null || (prev == REBUILD && next == IMPORTANT_REBUILD);
+        return prev == null || prev == TRANSLUCENT_SORT || (prev == REBUILD && next == IMPORTANT_REBUILD);
     }
 }

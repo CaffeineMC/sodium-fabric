@@ -11,7 +11,7 @@ public class DynamicTranslucentData implements TranslucentData {
 
     public DynamicTranslucentData(ReferenceArrayList<Vector3f>[] centers) {
         var length = 0;
-        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
+        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
             var centersForFacing = centers[i];
             if (centersForFacing != null) {
                 length += centersForFacing.size();
@@ -19,7 +19,7 @@ public class DynamicTranslucentData implements TranslucentData {
         }
         var centersArray = new Vector3f[length];
         int index = 0;
-        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
+        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
             var centersForFacing = centers[i];
             if (centersForFacing != null) {
                 for (var center : centersForFacing) {

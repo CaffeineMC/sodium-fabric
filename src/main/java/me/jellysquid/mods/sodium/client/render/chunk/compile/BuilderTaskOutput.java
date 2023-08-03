@@ -13,4 +13,6 @@ public abstract class BuilderTaskOutput {
 
     public void delete() {
     }
+
+    public abstract void setDataOn(RenderSection render);
 }

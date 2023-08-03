@@ -18,12 +18,13 @@ public class StaticTranslucentData implements TranslucentData {
     }
 
     private final IndexedPrimitives[] data = new IndexedPrimitives[ModelQuadFacing.DIRECTIONS];
+    private static final Vector3f[] EMPTY_CENTERS = new Vector3f[0];
 
     public StaticTranslucentData(ReferenceArrayList<Vector3f>[] centers) {
         for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
             var centersForFacing = centers[i];
             if (centersForFacing != null) {
-                this.data[i] = new IndexedPrimitives((Vector3f[]) centersForFacing.toArray());
+                this.data[i] = new IndexedPrimitives(centersForFacing.toArray(EMPTY_CENTERS));
             }
         }
     }

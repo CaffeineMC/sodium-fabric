@@ -11,4 +11,9 @@ public class ChunkSortOutput extends BuilderTaskOutput {
 
         this.translucentData = translucentData;
     }
+
+    @Override
+    public void setDataOn(RenderSection render) {
+        render.setTranslucentData(translucentData);;
+    }
 }

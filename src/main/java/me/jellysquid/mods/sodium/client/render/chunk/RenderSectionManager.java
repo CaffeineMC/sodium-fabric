@@ -431,6 +431,7 @@ public class RenderSectionManager {
     }
 
     private void updateSectionInfo(RenderSection render, BuiltSectionInfo info) {
+        // TODO: make this work with translucent data and figure out a nice way to use BuilderTaskOutput
         render.setInfo(info);
 
         if (info == null || ArrayUtils.isEmpty(info.globalBlockEntities)) {
@@ -493,9 +494,9 @@ public class RenderSectionManager {
             int frame = this.currentFrame;
             ChunkBuilderTask<? extends BuilderTaskOutput> task;
             if (type == ChunkUpdateType.TRANSLUCENT_SORT) {
-                task = this.createRebuildTask(section, frame);
-            } else {
                 task = this.createSortTask(section);
+            } else {
+                task = this.createRebuildTask(section, frame);
             }
 
             if (task != null) {
@@ -527,6 +528,10 @@ public class RenderSectionManager {
     }
 
     public ChunkBuilderSortingTask createSortTask(RenderSection render) {
+        if (render.getTranslucentData() == null) {
+            return null;
+        }
+
         return new ChunkBuilderSortingTask(render, this.currentFrame, this.cameraPos);
     }
 

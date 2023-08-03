@@ -35,4 +35,11 @@ public class ChunkBuildOutput extends ChunkSortOutput {
                     .free();
         }
     }
+
+    @Override
+    public void setDataOn(RenderSection render) {
+        super.setDataOn(render);
+
+        render.setInfo(this.info);
+    }
 }
