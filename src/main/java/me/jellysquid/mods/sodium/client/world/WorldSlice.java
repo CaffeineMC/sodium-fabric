@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.client.world;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeColorSource;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeSlice;
-import me.jellysquid.mods.sodium.client.world.biome.BiomeColorView;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeColorCache;
+import me.jellysquid.mods.sodium.client.world.biome.BiomeColorSource;
+import me.jellysquid.mods.sodium.client.world.biome.BiomeColorView;
+import me.jellysquid.mods.sodium.client.world.biome.BiomeSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSection;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
@@ -30,6 +30,7 @@ import net.minecraft.world.chunk.light.LightingProvider;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * <p>Takes a slice of world state (block states, biome and light data arrays) and copies the data for use in off-thread
@@ -42,6 +43,8 @@ import java.util.Arrays;
  * <p>Object pooling should be used to avoid huge allocations as this class contains many large arrays.</p>
  */
 public final class WorldSlice implements BlockRenderView, RenderAttachedBlockView, BiomeColorView {
+    private static final LightType[] LIGHT_TYPES = LightType.values();
+
     // The number of blocks in a section.
     private static final int SECTION_BLOCK_COUNT = 16 * 16 * 16;
 
@@ -130,7 +133,7 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
         this.world = world;
 
         this.blockArrays = new BlockState[SECTION_ARRAY_SIZE][SECTION_BLOCK_COUNT];
-        this.lightArrays = new ChunkNibbleArray[SECTION_ARRAY_SIZE][];
+        this.lightArrays = new ChunkNibbleArray[SECTION_ARRAY_SIZE][LIGHT_TYPES.length];
 
         this.blockEntityArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
         this.blockEntityAttachmentArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
@@ -159,29 +162,32 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
     private void copySectionData(ChunkRenderContext context, int sectionIndex) {
         var section = context.getSections()[sectionIndex];
 
-        if (section == null) {
-            Arrays.fill(this.blockArrays[sectionIndex], Blocks.AIR.getDefaultState());
-            Arrays.fill(this.lightArrays[sectionIndex], null);
+        Objects.requireNonNull(section, "Chunk section must be non-null");
 
-            this.blockEntityArrays[sectionIndex] = null;
-            this.blockEntityAttachmentArrays[sectionIndex] = null;
+        this.unpackBlockData(this.blockArrays[sectionIndex], context, section);
+
+        this.lightArrays[sectionIndex][LightType.BLOCK.ordinal()] = section.getLightArray(LightType.BLOCK);
+        this.lightArrays[sectionIndex][LightType.SKY.ordinal()] = section.getLightArray(LightType.SKY);
+
+        this.blockEntityArrays[sectionIndex] = section.getBlockEntityMap();
+        this.blockEntityAttachmentArrays[sectionIndex] = section.getBlockEntityAttachmentMap();
+    }
+
+    private void unpackBlockData(BlockState[] blockArray, ChunkRenderContext context, ClonedChunkSection section) {
+        if (section.getBlockData() == null) {
+            this.unpackBlockDataEmpty(blockArray);
+        } else if (context.getOrigin().equals(section.getPosition()))  {
+            this.unpackBlockDataWhole(blockArray, section);
         } else {
-            BlockState[] blockArray = this.blockArrays[sectionIndex];
-
-            if (context.getOrigin().equals(section.getPosition()))  {
-                this.unpackBlockData(blockArray, section);
-            } else {
-                this.unpackBlockDataSlow(blockArray, section, context.getVolume());
-            }
-
-            this.lightArrays[sectionIndex] = section.getLightDataArrays();
-
-            this.blockEntityArrays[sectionIndex] = section.getBlockEntityMap();
-            this.blockEntityAttachmentArrays[sectionIndex] = section.getBlockEntityAttachmentMap();
+            this.unpackBlockDataPartial(blockArray, section, context.getVolume());
         }
     }
 
-    private void unpackBlockDataSlow(BlockState[] states, ClonedChunkSection section, BlockBox box) {
+    private void unpackBlockDataEmpty(BlockState[] blockArray) {
+        Arrays.fill(blockArray, Blocks.AIR.getDefaultState());
+    }
+
+    private void unpackBlockDataPartial(BlockState[] states, ClonedChunkSection section, BlockBox box) {
         PackedIntegerArray intArray = section.getBlockData();
         ClonedPalette<BlockState> palette = section.getBlockPalette();
 
@@ -214,7 +220,7 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
         }
     }
 
-    private void unpackBlockData(BlockState[] states, ClonedChunkSection section) {
+    private void unpackBlockDataWhole(BlockState[] states, ClonedChunkSection section) {
         ((PackedIntegerArrayExtended) section.getBlockData())
                 .sodium$unpack(states, section.getBlockPalette());
     }
@@ -271,10 +277,8 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
         var lightArray = this.lightArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)][type.ordinal()];
 
         if (lightArray == null) {
-            return switch (type) {
-                case SKY -> 15;
-                case BLOCK -> 0;
-            };
+            // If the array is null, it means the dimension for the current world does not support that light type
+            return 0;
         }
 
         return lightArray.get(relX & 15, relY & 15, relZ & 15);
