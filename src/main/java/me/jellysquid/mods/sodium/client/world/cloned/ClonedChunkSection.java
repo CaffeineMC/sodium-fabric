@@ -20,34 +20,38 @@ import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.*;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.EnumMap;
 import java.util.Map;
 
 public class ClonedChunkSection {
-    private static final LightType[] LIGHT_TYPES = LightType.values();
-
-    private Int2ReferenceMap<BlockEntity> blockEntities;
-    private Int2ReferenceMap<Object> blockEntityAttachments;
-
-    private final ChunkNibbleArray[] lightDataArrays = new ChunkNibbleArray[LIGHT_TYPES.length];
+    private static final ChunkNibbleArray DEFAULT_SKY_LIGHT_ARRAY = new ChunkNibbleArray(15);
+    private static final ChunkNibbleArray DEFAULT_BLOCK_LIGHT_ARRAY = new ChunkNibbleArray(0);
 
     private final ChunkSectionPos pos;
 
-    private PackedIntegerArray blockStateData;
-    private ClonedPalette<BlockState> blockStatePalette;
+    private @Nullable Int2ReferenceMap<BlockEntity> blockEntities;
+    private @Nullable Int2ReferenceMap<Object> blockEntityAttachments;
 
-    private ReadableContainer<RegistryEntry<Biome>> biomeData;
+    private final @Nullable ChunkNibbleArray[] lightDataArrays = new ChunkNibbleArray[LightType.values().length];
+
+    private @Nullable PackedIntegerArray blockStateData;
+    private @Nullable ClonedPalette<BlockState> blockStatePalette;
+
+    private @Nullable ReadableContainer<RegistryEntry<Biome>> biomeData;
 
     private long lastUsedTimestamp = Long.MAX_VALUE;
 
-    public ClonedChunkSection(World world, WorldChunk chunk, ChunkSection section, ChunkSectionPos pos) {
+    public ClonedChunkSection(World world, WorldChunk chunk, @Nullable ChunkSection section, ChunkSectionPos pos) {
         this.pos = pos;
 
-        this.copyBlockData(section);
+        if (section != null && !section.isEmpty()) {
+            this.copyBlockData(section);
+            this.copyBlockEntities(chunk, pos);
+            this.copyBiomeData(section);
+        }
+
         this.copyLightData(world);
-        this.copyBiomeData(section);
-        this.copyBlockEntities(chunk, pos);
     }
 
     private void copyBlockData(ChunkSection section) {
@@ -58,19 +62,35 @@ public class ClonedChunkSection {
     }
 
     private void copyLightData(World world) {
-        for (LightType type : LIGHT_TYPES) {
-            this.lightDataArrays[type.ordinal()] = world.getLightingProvider()
-                    .get(type)
-                    .getLightSection(this.pos);
+        this.lightDataArrays[LightType.BLOCK.ordinal()] = copyLightArray(world, LightType.BLOCK, this.pos);
+
+        // Dimensions without sky-light should not have a default-initialized array
+        if (world.getDimension().hasSkyLight()) {
+            this.lightDataArrays[LightType.SKY.ordinal()] = copyLightArray(world, LightType.SKY, this.pos);
         }
+    }
+
+    /**
+     * Copies the light data array for the given light type for this chunk, or returns a default-initialized value if
+     * the light array is not loaded.
+     */
+    private static ChunkNibbleArray copyLightArray(World world, LightType type, ChunkSectionPos pos) {
+        var array = world.getLightingProvider()
+                .get(type)
+                .getLightSection(pos);
+
+        if (array == null) {
+            array = switch (type) {
+                case SKY -> DEFAULT_SKY_LIGHT_ARRAY;
+                case BLOCK -> DEFAULT_BLOCK_LIGHT_ARRAY;
+            };
+        }
+
+        return array;
     }
 
     private void copyBiomeData(ChunkSection section) {
         this.biomeData = section.getBiomeContainer();
-    }
-
-    public ChunkNibbleArray[] getLightDataArrays() {
-        return this.lightDataArrays;
     }
 
     private void copyBlockEntities(WorldChunk chunk, ChunkSectionPos chunkCoord) {
@@ -114,15 +134,15 @@ public class ClonedChunkSection {
         this.blockEntityAttachments = blockEntityAttachments != null ? blockEntityAttachments : Int2ReferenceMaps.emptyMap();
     }
 
-    public RegistryEntry<Biome> getBiome(int x, int y, int z) {
-        return this.biomeData.get(x, y, z);
+    public @Nullable ReadableContainer<RegistryEntry<Biome>> getBiomeData() {
+        return this.biomeData;
     }
 
-    public PackedIntegerArray getBlockData() {
+    public @Nullable PackedIntegerArray getBlockData() {
         return this.blockStateData;
     }
 
-    public ClonedPalette<BlockState> getBlockPalette() {
+    public @Nullable ClonedPalette<BlockState> getBlockPalette() {
         return this.blockStatePalette;
     }
 
@@ -152,8 +172,7 @@ public class ClonedChunkSection {
         var bits = container.configuration().bits();
 
         if (bits == 0) {
-            // TODO: avoid this allocation
-            return new PackedIntegerArray(1, storage.getSize());
+            return null;
         }
 
         return new PackedIntegerArray(bits, storage.getSize(), data.clone());
@@ -177,11 +196,15 @@ public class ClonedChunkSection {
         this.lastUsedTimestamp = timestamp;
     }
 
-    public Int2ReferenceMap<BlockEntity> getBlockEntityMap() {
+    public @Nullable Int2ReferenceMap<BlockEntity> getBlockEntityMap() {
         return this.blockEntities;
     }
 
-    public Int2ReferenceMap<Object> getBlockEntityAttachmentMap() {
+    public @Nullable Int2ReferenceMap<Object> getBlockEntityAttachmentMap() {
         return this.blockEntityAttachments;
+    }
+
+    public @Nullable ChunkNibbleArray getLightArray(LightType lightType) {
+        return this.lightDataArrays[lightType.ordinal()];
     }
 }

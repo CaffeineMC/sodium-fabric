@@ -54,6 +54,7 @@ public class BiomeSlice {
 
     private void copySectionBiomeData(ChunkRenderContext context, int sectionX, int sectionY, int sectionZ, Biome defaultBiome) {
         var section = context.getSections()[WorldSlice.getLocalSectionIndex(sectionX, sectionY, sectionZ)];
+        var biomeData = section.getBiomeData();
 
         for (int x = 0; x < 4; x++) {
             for (int y = 0; y < 4; y++) {
@@ -64,10 +65,10 @@ public class BiomeSlice {
 
                     var idx = dataArrayIndex(biomeX, biomeY, biomeZ);
 
-                    if (section == null) {
+                    if (biomeData == null) {
                         this.biomes[idx] = defaultBiome;
                     } else {
-                        this.biomes[idx] = section.getBiome(x, y, z).value();
+                        this.biomes[idx] = biomeData.get(x, y, z).value();
                     }
                 }
             }
