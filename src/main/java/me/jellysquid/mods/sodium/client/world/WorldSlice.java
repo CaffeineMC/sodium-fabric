@@ -27,6 +27,7 @@ import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
+import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -188,8 +189,11 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
     }
 
     private void unpackBlockDataPartial(BlockState[] states, ClonedChunkSection section, BlockBox box) {
-        PackedIntegerArray intArray = section.getBlockData();
+        PackedIntegerArray array = section.getBlockData();
+        Objects.requireNonNull(array);
+
         ClonedPalette<BlockState> palette = section.getBlockPalette();
+        Objects.requireNonNull(palette);
 
         ChunkSectionPos pos = section.getPosition();
 
@@ -206,15 +210,15 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
             for (int z = minBlockZ; z <= maxBlockZ; z++) {
                 for (int x = minBlockX; x <= maxBlockX; x++) {
                     int localBlockIndex = getLocalBlockIndex(x & 15, y & 15, z & 15);
-                    int paletteIndex = intArray.get(localBlockIndex);
 
-                    var blockState =  palette.get(paletteIndex);
+                    int paletteIndex = array.get(localBlockIndex);
+                    var paletteValue =  palette.get(paletteIndex);
 
-                    if (blockState == null) {
+                    if (paletteValue == null) {
                         throw new IllegalStateException("Palette does not contain entry: " + paletteIndex);
                     }
 
-                    states[localBlockIndex] = blockState;
+                    states[localBlockIndex] = paletteValue;
                 }
             }
         }
