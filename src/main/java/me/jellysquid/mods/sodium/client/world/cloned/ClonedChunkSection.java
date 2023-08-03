@@ -46,9 +46,11 @@ public class ClonedChunkSection {
     public ClonedChunkSection(World world, WorldChunk chunk, @Nullable ChunkSection section, ChunkSectionPos pos) {
         this.pos = pos;
 
-        if (section != null && !section.isEmpty()) {
-            this.copyBlockData(section);
-            this.copyBlockEntities(chunk, pos);
+        if (section != null) {
+            if (!section.isEmpty()) {
+                this.copyBlockData(section);
+                this.copyBlockEntities(chunk, pos);
+            }
             this.copyBiomeData(section);
         }
 
