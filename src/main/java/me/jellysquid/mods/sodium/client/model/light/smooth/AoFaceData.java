@@ -40,18 +40,13 @@ class AoFaceData {
         final int calm;
         final boolean caem;
 
-        if (offset) {
+        if (offset && unpackFO(adjWord)) {
+            final int originWord = cache.get(x, y, z);
+            calm = getLightmap(originWord);
+            caem = unpackEM(originWord);
+        } else {
             calm = getLightmap(adjWord);
             caem = unpackEM(adjWord);
-        } else {
-            final int offsetWord = cache.get(x, y, z, direction);
-            if (unpackFO(offsetWord)) {
-                calm = getLightmap(adjWord);
-                caem = unpackEM(adjWord);
-            } else {
-                calm = getLightmap(offsetWord);
-                caem = unpackEM(offsetWord);
-            }
         }
 
         final float caao = unpackAO(adjWord);
