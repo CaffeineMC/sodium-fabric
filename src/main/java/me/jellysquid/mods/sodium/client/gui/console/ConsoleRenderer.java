@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class ConsoleRenderer {
     static final ConsoleRenderer INSTANCE = new ConsoleRenderer();
@@ -51,54 +52,81 @@ public class ConsoleRenderer {
         matrices.push();
         matrices.translate(0.0f, 0.0f, 1000.0f);
 
-        int x = 4;
-        int y = 4;
-
-        var width = 270;
 
         var paddingWidth = 3;
-        var paddingHeight = 2;
+        var paddingHeight = 1;
 
-        for (ActiveMessage message : this.activeMessages) {
-            double opacity = getMessageOpacity(message, currentTime);
+        var renders = new ArrayList<MessageRender>();
 
-            if (opacity < 0.025D) {
-                continue;
+        {
+            int x = 4;
+            int y = 4;
+
+            for (ActiveMessage message : this.activeMessages) {
+                double opacity = getMessageOpacity(message, currentTime);
+
+                if (opacity < 0.025D) {
+                    continue;
+                }
+
+                List<OrderedText> lines = new ArrayList<>();
+
+                var messageWidth = 270;
+
+                TextHandler textHandler = client.textRenderer.getTextHandler();
+                textHandler.wrapLines(message.text(), messageWidth - 20, Style.EMPTY, (text, lastLineWrapped) -> {
+                    lines.add(Language.getInstance().reorder(text));
+                });
+
+                var messageHeight = (client.textRenderer.fontHeight * lines.size()) + (paddingHeight * 2);
+
+                renders.add(new MessageRender(x, y, messageWidth, messageHeight, message.level(), lines, opacity));
+
+                y += messageHeight;
+            }
+        }
+
+        var mouseX = client.mouse.getX() / client.getWindow().getScaleFactor();
+        var mouseY = client.mouse.getY() / client.getWindow().getScaleFactor();
+
+        boolean hovered = false;
+
+        for (var render : renders) {
+            if (mouseX >= render.x && mouseX < render.x + render.width && mouseY >= render.y && mouseY < render.y + render.height) {
+                hovered = true;
+                break;
+            }
+        }
+
+        for (var render : renders) {
+            var x = render.x();
+            var y = render.y();
+
+            var width = render.width();
+            var height = render.height();
+
+            var colors = COLORS.get(render.level());
+            var opacity = render.opacity();
+
+            if (hovered) {
+                opacity *= 0.2D;
             }
 
-            List<OrderedText> lines = new ArrayList<>();
-
-            TextHandler textHandler = client.textRenderer.getTextHandler();
-            textHandler.wrapLines(message.text(), width - 20, Style.EMPTY, (text, lastLineWrapped) -> {
-                lines.add(Language.getInstance().reorder(text));
-            });
-
-            var lineHeight = client.textRenderer.fontHeight;
-            var messageHeight = lineHeight * lines.size();
-
-            var colors = COLORS.get(message.level());
-
             // message background
-            context.fill(x, y, x + width + paddingWidth, y + messageHeight + paddingHeight,
+            context.fill(x, y, x + width, y + height,
                     ColorARGB.withAlpha(colors.background(), weightAlpha(opacity)));
 
             // message colored stripe
-            context.fill(x, y, x + 1, y + messageHeight + paddingHeight,
+            context.fill(x, y, x + 1, y + height,
                     ColorARGB.withAlpha(colors.foreground(), weightAlpha(opacity)));
 
-            // padding at top of message
-            y += (paddingHeight / 2);
-
-            for (var line : lines) {
+            for (var line : render.lines()) {
                 // message text
-                context.drawText(client.textRenderer, line, x + paddingWidth + 3, y,
+                context.drawText(client.textRenderer, line, x + paddingWidth + 3, y + paddingHeight,
                         ColorARGB.withAlpha(colors.text(), weightAlpha(opacity)), false);
 
-                y += lineHeight;
+                y += client.textRenderer.fontHeight;
             }
-
-            // padding at bottom of message
-            y += (paddingHeight / 2);
         }
 
         matrices.pop();
@@ -177,6 +205,10 @@ public class ConsoleRenderer {
     }
 
     private record ColorPalette(int text, int background, int foreground) {
+
+    }
+
+    private record MessageRender(int x, int y, int width, int height, MessageLevel level, List<OrderedText> lines, double opacity) {
 
     }
 }
