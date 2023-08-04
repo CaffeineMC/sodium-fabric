@@ -197,7 +197,7 @@ public class ConsoleRenderer {
                 ColorARGB.pack(180, 150,   0)
         ));
 
-        COLORS.put(MessageLevel.ERROR, new ColorPalette(
+        COLORS.put(MessageLevel.SEVERE, new ColorPalette(
                 ColorARGB.pack(220,   0,   0),
                 ColorARGB.pack( 25,   0,   0),
                 ColorARGB.pack(160,   0,   0)

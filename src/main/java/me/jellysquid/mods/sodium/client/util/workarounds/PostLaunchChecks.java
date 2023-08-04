@@ -6,6 +6,7 @@ import me.jellysquid.mods.sodium.client.util.workarounds.driver.nvidia.NvidiaDri
 import me.jellysquid.mods.sodium.client.util.workarounds.platform.windows.WindowsDriverStoreVersion;
 import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterProbe;
 import me.jellysquid.mods.sodium.client.util.workarounds.probe.GraphicsAdapterVendor;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import net.minecraft.util.Util.OperatingSystem;
@@ -17,16 +18,26 @@ public class PostLaunchChecks {
 
     public static void checkDrivers() {
         if (isBrokenNvidiaDriverInstalled()) {
-            var message = Text.translatable("sodium.console.broken_nvidia_driver");
-
-            Console.instance().logMessage(MessageLevel.ERROR, message, 30.0);
+            showConsoleMessage(Text.translatable("sodium.console.broken_nvidia_driver"));
+            logMessage("The NVIDIA graphics driver appears to be out of date. This will likely cause severe " +
+                    "performance issues and crashes when used with Sodium. The graphics driver should be updated to " +
+                    "the latest version (version 536.23 or newer).");
         }
 
         if (isUsingPojavLauncher()) {
-            var message = Text.translatable("sodium.console.pojav_launcher");
-
-            Console.instance().logMessage(MessageLevel.ERROR, message, 30.0);
+            showConsoleMessage(Text.translatable("sodium.console.pojav_launcher"));
+            logMessage("It appears that PojavLauncher is being used with an OpenGL compatibility layer. This will " +
+                    "likely cause severe performance issues, graphical issues, and crashes when used with Sodium. This " +
+                    "configuration is not supported -- you are on your own!");
         }
+    }
+
+    private static void showConsoleMessage(MutableText message) {
+        Console.instance().logMessage(MessageLevel.SEVERE, message, 30.0);
+    }
+
+    private static void logMessage(String message, Object... args) {
+        LOGGER.error(message, args);
     }
 
     // https://github.com/CaffeineMC/sodium-fabric/issues/1486
