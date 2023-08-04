@@ -8,8 +8,6 @@ import me.jellysquid.mods.sodium.client.world.biome.BiomeSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSection;
 import me.jellysquid.mods.sodium.client.world.cloned.ClonedChunkSectionCache;
-import me.jellysquid.mods.sodium.client.world.cloned.PackedIntegerArrayExtended;
-import me.jellysquid.mods.sodium.client.world.cloned.palette.ClonedPalette;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -17,7 +15,6 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.util.collection.PackedIntegerArray;
 import net.minecraft.util.math.*;
 import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.LightType;
@@ -27,7 +24,6 @@ import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
-import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -176,57 +172,32 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
 
     private void unpackBlockData(BlockState[] blockArray, ChunkRenderContext context, ClonedChunkSection section) {
         if (section.getBlockData() == null) {
-            this.unpackBlockDataEmpty(blockArray);
-        } else if (context.getOrigin().equals(section.getPosition()))  {
-            this.unpackBlockDataWhole(blockArray, section);
-        } else {
-            this.unpackBlockDataPartial(blockArray, section, context.getVolume());
+            Arrays.fill(blockArray, Blocks.AIR.getDefaultState());
+            return;
         }
-    }
 
-    private void unpackBlockDataEmpty(BlockState[] blockArray) {
-        Arrays.fill(blockArray, Blocks.AIR.getDefaultState());
-    }
+        var container = ReadableContainerExtended.of(section.getBlockData());
 
-    private void unpackBlockDataPartial(BlockState[] states, ClonedChunkSection section, BlockBox box) {
-        PackedIntegerArray array = section.getBlockData();
-        Objects.requireNonNull(array);
-
-        ClonedPalette<BlockState> palette = section.getBlockPalette();
-        Objects.requireNonNull(palette);
-
+        ChunkSectionPos origin = context.getOrigin();
         ChunkSectionPos pos = section.getPosition();
 
-        int minBlockX = Math.max(box.getMinX(), pos.getMinX());
-        int maxBlockX = Math.min(box.getMaxX(), pos.getMaxX());
+        if (origin.equals(pos))  {
+            container.sodium$unpack(blockArray);
+        } else {
+            var bounds = context.getVolume();
 
-        int minBlockY = Math.max(box.getMinY(), pos.getMinY());
-        int maxBlockY = Math.min(box.getMaxY(), pos.getMaxY());
+            int minBlockX = Math.max(bounds.getMinX(), pos.getMinX());
+            int maxBlockX = Math.min(bounds.getMaxX(), pos.getMaxX());
 
-        int minBlockZ = Math.max(box.getMinZ(), pos.getMinZ());
-        int maxBlockZ = Math.min(box.getMaxZ(), pos.getMaxZ());
+            int minBlockY = Math.max(bounds.getMinY(), pos.getMinY());
+            int maxBlockY = Math.min(bounds.getMaxY(), pos.getMaxY());
 
-        for (int y = minBlockY; y <= maxBlockY; y++) {
-            for (int z = minBlockZ; z <= maxBlockZ; z++) {
-                for (int x = minBlockX; x <= maxBlockX; x++) {
-                    int localBlockIndex = getLocalBlockIndex(x & 15, y & 15, z & 15);
+            int minBlockZ = Math.max(bounds.getMinZ(), pos.getMinZ());
+            int maxBlockZ = Math.min(bounds.getMaxZ(), pos.getMaxZ());
 
-                    int paletteIndex = array.get(localBlockIndex);
-                    var paletteValue =  palette.get(paletteIndex);
-
-                    if (paletteValue == null) {
-                        throw new IllegalStateException("Palette does not contain entry: " + paletteIndex);
-                    }
-
-                    states[localBlockIndex] = paletteValue;
-                }
-            }
+            container.sodium$unpack(blockArray, minBlockX & 15, minBlockY & 15, minBlockZ & 15,
+                    maxBlockX & 15, maxBlockY & 15, maxBlockZ & 15);
         }
-    }
-
-    private void unpackBlockDataWhole(BlockState[] states, ClonedChunkSection section) {
-        ((PackedIntegerArrayExtended) section.getBlockData())
-                .sodium$unpack(states, section.getBlockPalette());
     }
 
     public void reset() {
