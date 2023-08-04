@@ -19,13 +19,13 @@ public class PostLaunchChecks {
         if (isBrokenNvidiaDriverInstalled()) {
             var message = Text.translatable("sodium.console.broken_nvidia_driver");
 
-            Console.instance().logMessage(MessageLevel.ERROR, message, 45.0);
+            Console.instance().logMessage(MessageLevel.ERROR, message, 30.0);
         }
 
         if (isUsingPojavLauncher()) {
             var message = Text.translatable("sodium.console.pojav_launcher");
 
-            Console.instance().logMessage(MessageLevel.ERROR, message, 45.0);
+            Console.instance().logMessage(MessageLevel.ERROR, message, 30.0);
         }
     }
 

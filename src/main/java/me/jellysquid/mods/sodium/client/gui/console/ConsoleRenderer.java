@@ -109,7 +109,7 @@ public class ConsoleRenderer {
             var opacity = render.opacity();
 
             if (hovered) {
-                opacity *= 0.2D;
+                opacity *= 0.4D;
             }
 
             // message background

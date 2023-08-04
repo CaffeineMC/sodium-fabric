@@ -264,8 +264,6 @@ public class SodiumOptionsGUI extends Screen {
 
         if (client.world != null) {
             if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
-                Console.instance().logMessage(MessageLevel.INFO,
-                        Text.translatable("sodium.console.renderer_reload"), 3.0);
                 client.worldRenderer.reload();
             } else if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
                 client.worldRenderer.scheduleTerrainUpdate();
@@ -273,8 +271,6 @@ public class SodiumOptionsGUI extends Screen {
         }
 
         if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
-            Console.instance().logMessage(MessageLevel.INFO,
-                    Text.translatable("sodium.console.asset_reload"), 5.0);
             client.setMipmapLevels(client.options.getMipmapLevels().getValue());
             client.reloadResourcesConcurrently();
         }
