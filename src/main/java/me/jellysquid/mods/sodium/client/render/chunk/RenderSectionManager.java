@@ -41,6 +41,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import org.apache.commons.lang3.ArrayUtils;
@@ -70,6 +71,8 @@ public class RenderSectionManager {
 
     private final int renderDistance;
     private int effectiveRenderDistance;
+    private double maxVertexDistanceSquared;
+
     private int centerChunkX, centerChunkY, centerChunkZ;
 
     private boolean needsUpdate;
@@ -128,10 +131,12 @@ public class RenderSectionManager {
         while (!this.iterationQueue.isEmpty()) {
             RenderSection section = this.iterationQueue.remove();
 
-            int distance = this.getDistanceFromCamera(section);
+            if (this.centerChunkX != section.getChunkX() || this.centerChunkY != section.getChunkY() || this.centerChunkZ != section.getChunkZ()) {
+                var vertexDistance = this.getClosestVertexDistanceToCamera(camera.getPos(), section);
 
-            if (distance > this.effectiveRenderDistance || (distance > 0 && this.isOutsideViewport(section, viewport))) {
-                continue;
+                if (vertexDistance > this.maxVertexDistanceSquared || this.isOutsideViewport(section, viewport)) {
+                    continue;
+                }
             }
 
             this.addToRenderLists(renderListBuilder, section);
@@ -571,12 +576,21 @@ public class RenderSectionManager {
         this.needsUpdate = true;
     }
 
-    private int getDistanceFromCamera(RenderSection section) {
-        int x = Math.abs(section.getChunkX() - this.centerChunkX);
-        int y = Math.abs(section.getChunkY() - this.centerChunkY);
-        int z = Math.abs(section.getChunkZ() - this.centerChunkZ);
+    // picks the closest vertex to the camera of the chunk render bounds, and returns the distance of the vertex from
+    // the camera position
+    private double getClosestVertexDistanceToCamera(Vec3d origin, RenderSection section) {
+        // the offset of the vertex from the center of the chunk
+        int offsetX = Integer.signum(this.centerChunkX - section.getChunkX()) * 8; // (chunk.x > center.x) ? -8 : +8
+        int offsetY = Integer.signum(this.centerChunkY - section.getChunkY()) * 8; // (chunk.y > center.y) ? -8 : +8
+        int offsetZ = Integer.signum(this.centerChunkZ - section.getChunkZ()) * 8; // (chunk.z > center.z) ? -8 : +8
 
-        return Math.max(x, Math.max(y, z));
+        // the vertex's distance from the origin on each axis
+        double distanceX = origin.x - (section.getCenterX() + offsetX);
+        double distanceY = origin.y - (section.getCenterY() + offsetY);
+        double distanceZ = origin.z - (section.getCenterZ() + offsetZ);
+
+        // squared distance: (x^2)+(y^2)+(z^2)
+        return (distanceX * distanceX) + (distanceY * distanceY) + (distanceZ * distanceZ);
     }
 
     private void initSearch(Camera camera, Viewport viewport, int frame, boolean spectator) {
@@ -586,11 +600,16 @@ public class RenderSectionManager {
 
         var options = SodiumClientMod.options();
 
+        double maxVertexDistance;
+
         if (options.performance.useFogOcclusion) {
-            this.effectiveRenderDistance = Math.min(this.getEffectiveViewDistance(), this.renderDistance);
+            maxVertexDistance = this.getEffectiveViewDistance();
         } else {
-            this.effectiveRenderDistance = this.renderDistance;
+            maxVertexDistance = this.renderDistance * 16.0D;
         }
+
+        this.effectiveRenderDistance = Math.min(MathHelper.ceil(maxVertexDistance / 16.0D), this.renderDistance);
+        this.maxVertexDistanceSquared = maxVertexDistance * maxVertexDistance;
 
         this.useBlockFaceCulling = options.performance.useBlockFaceCulling;
 
@@ -664,7 +683,7 @@ public class RenderSectionManager {
         render.addIncomingDirections(incomingDirections);
     }
 
-    private int getEffectiveViewDistance() {
+    private double getEffectiveViewDistance() {
         var color = RenderSystem.getShaderFogColor();
         var distance = RenderSystem.getShaderFogEnd();
 
@@ -673,7 +692,7 @@ public class RenderSectionManager {
             return this.renderDistance;
         }
 
-        return MathHelper.ceil(distance / 16.0f);
+        return Math.max(16.0D, distance);
     }
 
     private void connectNeighborNodes(RenderSection render) {
