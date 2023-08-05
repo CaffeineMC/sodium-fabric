@@ -45,8 +45,7 @@ pub trait Coords3<T> {
     fn y(&self) -> T;
     fn z(&self) -> T;
 }
-ays)]
-    fn x(&self) -
+
 impl<T> Coords3<T> for Simd<T, 3>
 where
     T: SimdElement,

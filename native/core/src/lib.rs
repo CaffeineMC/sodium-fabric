@@ -9,3 +9,7 @@ mod jni;
 mod math;
 mod mem;
 mod panic;
+
+pub fn test<const VAL: usize>() {
+    test::<{ VAL - 1 }>()
+}

@@ -22,34 +22,43 @@ pub struct LocalCoordinateContext {
     iter_start_section_idx: LocalSectionIndex,
     iter_start_section_coords: u8x3,
 
-    // similar to the previous, but rounded to the closest region coord and relative to the world
+    // similar to the previous, but rounded to the closest region coord and relative to the worldFd
     // origin, rather than the data structure origin.
-    iter_start_region_coord: i32x3,
+    iter_start_region_coords: i32x3,
 
     fog_distance_squared: f32,
 
-    world_bottom_section_y: i32,
-    world_top_section_y: i32,
+    world_bottom_section_y: i8,
+    world_top_section_y: i8,
 }
 
 impl LocalCoordinateContext {
+    pub const NODE_HEIGHT_OFFSET: u8 = 128;
+
     pub fn new(
         world_pos: f64x3,
         planes: [f32x6; 4],
         fog_distance: f32,
         section_view_distance: i32,
-        world_bottom_section_y: i32,
-        world_top_section_y: i32,
+        world_bottom_section_y: i8,
+        world_top_section_y: i8,
     ) -> Self {
         let frustum = LocalFrustum::new(planes);
 
         let camera_section_world_coords = world_pos.floor().cast::<i64>() >> i64x3::splat(4);
 
-        // the cast to u8 puts it in the local coordinate space
+        // the cast to u8 puts it in the local coordinate space by effectively doing a mod 256
         let camera_section_coords = camera_section_world_coords.cast::<u8>();
+        let camera_coords = (world_pos % f64x3::splat(256.0)).cast::<f32>();
 
-        let camera_coords = (camera_section_coords.cast::<i32>() << i32x3::splat(4)).cast::<f32>();
+        let iter_start_section_coords = simd_swizzle!(
+            camera_section_coords - Simd::splat(section_view_distance),
+            Simd::splat(world_bottom_section_y as u8),
+            [First(X), Second(0), First(Z)]
+        );
+        let iter_start_section_idx = LocalSectionIndex::pack(iter_start_section_coords);
 
+        // this lower bound may not be necessary
         let fog_distance_capped = fog_distance.min(((section_view_distance + 1) << 4) as f32);
         let fog_distance_squared = fog_distance_capped * fog_distance_capped;
 
@@ -57,8 +66,9 @@ impl LocalCoordinateContext {
             frustum,
             camera_coords,
             camera_section_coords,
-            iter_start_section_idx: LocalSectionIndex(),
-            iter_start_region_coord: Default::default(),
+            iter_start_section_idx,
+            iter_start_section_coords,
+            iter_start_region_coords,
             fog_distance_squared,
             world_bottom_section_y,
             world_top_section_y,
@@ -66,44 +76,75 @@ impl LocalCoordinateContext {
     }
 
     #[inline(always)]
-    pub fn bounds_inside_world(&self, local_bounds: LocalBoundingBox) -> BoundsCheckResult {
-        // on the x and z axis, check if the bounding box is inside the fog.
-        let camera_coords_xz = simd_swizzle!(self.camera_coords, [X, Z, X, Z]);
+    pub fn bounds_inside_world_height<const LEVEL: u8>(
+        &self,
+        local_node_height: i8,
+    ) -> BoundsCheckResult {
+        let node_min_y = local_node_height as i32;
+        let node_max_y = node_min_y + (1 << LEVEL) - 1;
+        let world_min_y = self.world_bottom_section_y as i32;
+        let world_max_y = self.world_top_section_y as i32;
 
-        // the first pair of lanes is the closest xz to the player in the chunk,
-        // the second pair of lanes is the furthest xz from the player in the chunk
-        let extrema_in_chunk = camera_coords_xz
-            .simd_min(simd_swizzle!(
-                local_bounds.min,
-                local_bounds.max,
-                [Second(X), Second(Z), First(X), First(Z)]
-            ))
-            .simd_max(simd_swizzle!(
-                local_bounds.min,
-                local_bounds.max,
-                [First(X), First(Z), Second(X), Second(Z)]
-            ));
+        let min_in_bounds = node_min_y >= world_min_y && node_min_y <= world_max_y;
+        let max_in_bounds = node_max_y >= world_min_y && node_max_y <= world_max_y;
 
-        let differences = camera_coords_xz - extrema_in_chunk;
+        unsafe { BoundsCheckResult::from_int_unchecked(min_in_bounds as u8 + max_in_bounds as u8) }
+    }
+
+    // this only cares about the x and z axis
+    #[inline(always)]
+    pub fn bounds_inside_fog<const LEVEL: u8>(
+        &self,
+        local_bounds: LocalBoundingBox,
+    ) -> BoundsCheckResult {
+        // find closest to (0,0) because the bounding box coordinates are relative to the camera
+        let closest_in_chunk = local_bounds
+            .min
+            .abs()
+            .simd_lt(local_bounds.max.abs())
+            .select(local_bounds.min, local_bounds.max);
+
+        let furthest_in_chunk = {
+            let adjusted_int = unsafe {
+                // minus 1 if the input is negative
+                // SAFETY: values will never be out of range
+                closest_in_chunk.to_int_unchecked::<i32>()
+                    + (closest_in_chunk.to_bits().cast::<i32>() >> Simd::splat(31))
+            };
+
+            let add_bit = Simd::splat(0b1000 << LEVEL);
+            // additive is nonzero if the bit is *not* set
+            let additive = ((adjusted_int & add_bit) ^ add_bit) << Simd::splat(1);
+
+            // set the bottom (4 + LEVEL) bits to 0
+            let bitmask = Simd::splat(-1 << (4 + LEVEL));
+
+            ((adjusted_int + additive) & bitmask).cast::<f32>()
+        };
+
+        // combine operations and single out the XZ lanes on both extrema from here.
+        // also, we don't have to subtract from the camera pos because the bounds are already
+        // relative to it
+        let differences = simd_swizzle!(
+            closest_in_chunk,
+            furthest_in_chunk,
+            [First(X), First(Z), Second(X), Second(Z)]
+        );
         let differences_squared = differences * differences;
 
-        // lane 1 is closest dist, lane 2 is furthest dist
+        // add Xs and Zs
         let distances_squared =
             simd_swizzle!(differences_squared, [0, 2]) + simd_swizzle!(differences_squared, [1, 3]);
 
-        let fog_result = unsafe {
+        // janky way of calculating the result from the two points
+        unsafe {
             BoundsCheckResult::from_int_unchecked(
                 distances_squared
                     .simd_lt(f32x2::splat(self.fog_distance_squared))
                     .select(u32x2::splat(1), u32x2::splat(0))
                     .reduce_sum() as u8,
             )
-        };
-
-        // on the y axis, check if the bounding box is inside the world height.
-        let height_result = BoundsCheckResult::Outside;
-
-        BoundsCheckResult::combine(fog_result, height_result)
+        }
     }
 
     #[inline(always)]
@@ -115,15 +156,13 @@ impl LocalCoordinateContext {
     }
 
     #[inline(always)]
-    pub fn node_get_local_bounds<const LEVEL: usize>(
-        &self,
-        local_origin: u8x3,
-    ) -> LocalBoundingBox {
-        let min_pos = local_origin.cast::<f32>()
-            + local_origin
+    pub fn node_get_local_bounds<const LEVEL: u8>(&self, local_node_pos: u8x3) -> LocalBoundingBox {
+        let min_pos = local_node_pos.cast::<f32>()
+            + local_node_pos
                 .simd_lt(self.iter_start_section_coords)
                 .cast()
-                .select(Simd::splat(256.0_f32), Simd::splat(0.0_f32));
+                .select(Simd::splat(256.0_f32), Simd::splat(0.0_f32))
+            - self.camera_coords;
 
         let max_pos = min_pos + Simd::splat((16 << LEVEL) as f32);
 
@@ -155,6 +194,7 @@ impl BoundsCheckResult {
     }
 }
 
+/// Relative to the camera position
 pub struct LocalBoundingBox {
     pub min: f32x3,
     pub max: f32x3,

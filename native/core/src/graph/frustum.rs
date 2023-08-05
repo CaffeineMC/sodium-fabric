@@ -27,23 +27,31 @@ impl LocalFrustum {
     #[inline(always)]
     pub fn test_local_bounding_box(&self, bb: &LocalBoundingBox) -> BoundsCheckResult {
         unsafe {
-            // The unsafe mask shenanigans here just checks if the sign bit is set for each lane.
-            // This is faster than doing a manual comparison with something like simd_gt, and compiles
-            // down to 1 instruction each (vmaskmovps) on x86 machines with AVX.
+            // These unsafe mask shenanigans just check if the sign bit is set for each lane.
+            // This is faster than doing a manual comparison with something like simd_gt.
+            let is_neg_x =
+                Mask::from_int_unchecked(self.plane_xs.to_bits().cast::<i32>() >> Simd::splat(31));
+            let is_neg_y =
+                Mask::from_int_unchecked(self.plane_ys.to_bits().cast::<i32>() >> Simd::splat(31));
+            let is_neg_z =
+                Mask::from_int_unchecked(self.plane_zs.to_bits().cast::<i32>() >> Simd::splat(31));
 
-            let points_x =
-                Mask::from_int_unchecked(self.plane_xs.to_bits().cast::<i32>() >> Simd::splat(31))
-                    .select(Simd::splat(bb.min.x()), Simd::splat(bb.max.x()));
+            let bb_min_x = Simd::splat(bb.min.x());
+            let bb_max_x = Simd::splat(bb.max.x());
+            let outside_bounds_x = is_neg_x.select(bb_min_x, bb_max_x);
+            let inside_bounds_x = is_neg_x.select(bb_max_x, bb_min_x);
 
-            let points_y =
-                Mask::from_int_unchecked(self.plane_ys.to_bits().cast::<i32>() >> Simd::splat(31))
-                    .select(Simd::splat(bb.min.y()), Simd::splat(bb.max.y()));
+            let bb_min_y = Simd::splat(bb.min.y());
+            let bb_max_y = Simd::splat(bb.max.y());
+            let outside_bounds_y = is_neg_y.select(bb_min_y, bb_max_y);
+            let inside_bounds_y = is_neg_y.select(bb_max_y, bb_min_y);
 
-            let points_z =
-                Mask::from_int_unchecked(self.plane_zs.to_bits().cast::<i32>() >> Simd::splat(31))
-                    .select(Simd::splat(bb.min.z()), Simd::splat(bb.max.z()));
+            let bb_min_z = Simd::splat(bb.min.z());
+            let bb_max_z = Simd::splat(bb.max.z());
+            let outside_bounds_z = is_neg_z.select(bb_min_z, bb_max_z);
+            let inside_bounds_z = is_neg_z.select(bb_max_z, bb_min_z);
 
-            let points_dot = self.plane_xs.fast_fma(
+            let outside_length_sq = self.plane_xs.fast_fma(
                 points_x,
                 self.plane_ys.fast_fma(points_y, self.plane_zs * points_z),
             );
