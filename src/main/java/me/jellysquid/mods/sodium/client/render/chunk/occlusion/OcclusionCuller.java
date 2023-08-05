@@ -120,8 +120,9 @@ public class OcclusionCuller {
         double distanceY = camera.y - (section.getCenterY() + offsetY);
         double distanceZ = camera.z - (section.getCenterZ() + offsetZ);
 
-        // squared distance: (x^2)+(y^2)+(z^2)
-        return (distanceX * distanceX) + (distanceY * distanceY) + (distanceZ * distanceZ);
+        // vanilla's "cylindrical fog" algorithm
+        // max(length(distance.xz), abs(distance.y))
+        return Math.max((distanceX * distanceX) + (distanceZ * distanceZ), distanceY * distanceY);
     }
 
     private void init(ArrayDeque<RenderSection> queue,
