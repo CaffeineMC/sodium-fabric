@@ -1,8 +1,9 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
-import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
+import me.jellysquid.mods.sodium.client.render.chunk.occlusion.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 import net.minecraft.block.entity.BlockEntity;
@@ -305,5 +306,23 @@ public class RenderSection {
 
     public void setLastSubmittedFrame(int lastSubmittedFrame) {
         this.lastSubmittedFrame = lastSubmittedFrame;
+    }
+
+    private static final double CHUNK_RENDER_BOUNDS_EPSILON = 1.0D / 32.0D;
+
+    public boolean isOutsideViewport(Viewport viewport) {
+        double x = this.getOriginX();
+        double y = this.getOriginY();
+        double z = this.getOriginZ();
+
+        double minX = x - CHUNK_RENDER_BOUNDS_EPSILON;
+        double minY = y - CHUNK_RENDER_BOUNDS_EPSILON;
+        double minZ = z - CHUNK_RENDER_BOUNDS_EPSILON;
+
+        double maxX = x + 16.0D + CHUNK_RENDER_BOUNDS_EPSILON;
+        double maxY = y + 16.0D + CHUNK_RENDER_BOUNDS_EPSILON;
+        double maxZ = z + 16.0D + CHUNK_RENDER_BOUNDS_EPSILON;
+
+        return !viewport.isBoxVisible(minX, minY, minZ, maxX, maxY, maxZ);
     }
 }

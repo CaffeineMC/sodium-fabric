@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.viewport;
 
 import org.joml.FrustumIntersection;
 
-public class Viewport {
+public final class Viewport {
     private final FrustumIntersection[] frustums;
     private final double x, y, z;
 
