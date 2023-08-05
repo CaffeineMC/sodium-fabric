@@ -47,16 +47,23 @@ public class VertexSerializerRegistryImpl implements VertexSerializerRegistry {
     }
 
     private VertexSerializer create(long identifier, VertexFormatDescription srcFormat, VertexFormatDescription dstFormat) {
-        var serializer = createSerializer(srcFormat, dstFormat);
         var stamp = this.lock.writeLock();
 
         try {
+            // Additional lookup to avoid calling createSerializer twice
+            // Necessary because 'find' only acquires a non-exclusive lock
+            var cached = this.cache.get(identifier);
+            if (cached != null) {
+                return cached;
+            }
+
+            // Create serializer
+            var serializer = createSerializer(srcFormat, dstFormat);
             this.cache.put(identifier, serializer);
+            return serializer;
         } finally {
             this.lock.unlockWrite(stamp);
         }
-
-        return serializer;
     }
 
     private VertexSerializer find(long identifier) {
