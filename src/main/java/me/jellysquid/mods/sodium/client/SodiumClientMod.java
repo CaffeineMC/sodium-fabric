@@ -2,7 +2,6 @@ package me.jellysquid.mods.sodium.client;
 
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
-import me.jellysquid.mods.sodium.client.util.workarounds.PostLaunchChecks;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -31,8 +30,6 @@ public class SodiumClientMod implements ClientModInitializer {
         CONFIG = loadConfig();
 
         FlawlessFrames.onClientInitialization();
-
-        PostLaunchChecks.checkDrivers();
     }
 
     public static SodiumGameOptions options() {
