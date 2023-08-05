@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.graph;
+package me.jellysquid.mods.sodium.client.render.chunk.occlusion;
 
 import net.minecraft.util.math.Direction;
 

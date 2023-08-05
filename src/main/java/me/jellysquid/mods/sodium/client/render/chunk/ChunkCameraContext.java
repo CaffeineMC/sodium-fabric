@@ -8,6 +8,7 @@ public class ChunkCameraContext {
     private static final float PRECISION_MODIFIER = RenderRegion.REGION_WIDTH * 16; // 16 blocks per section
 
     public final int blockX, blockY, blockZ;
+    public final int chunkX, chunkY, chunkZ;
     public final float deltaX, deltaY, deltaZ;
     public final double posX, posY, posZ;
 
@@ -15,6 +16,10 @@ public class ChunkCameraContext {
         this.blockX = (int) x;
         this.blockY = (int) y;
         this.blockZ = (int) z;
+
+        this.chunkX = this.blockX >> 4;
+        this.chunkY = this.blockY >> 4;
+        this.chunkZ = this.blockZ >> 4;
 
         float deltaXFullPrecision = (float) (x - this.blockX);
         float deltaYFullPrecision = (float) (y - this.blockY);

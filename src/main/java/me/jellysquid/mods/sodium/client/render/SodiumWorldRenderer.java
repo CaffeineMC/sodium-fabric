@@ -282,7 +282,7 @@ public class SodiumWorldRenderer {
                                      double z,
                                      BlockEntityRenderDispatcher blockEntityRenderer) {
         SortedRenderLists renderLists = this.renderSectionManager.getRenderLists();
-        Iterator<ChunkRenderList> renderListIterator = renderLists.sorted();
+        Iterator<ChunkRenderList> renderListIterator = renderLists.iterator();
 
         while (renderListIterator.hasNext()) {
             var renderList = renderListIterator.next();
