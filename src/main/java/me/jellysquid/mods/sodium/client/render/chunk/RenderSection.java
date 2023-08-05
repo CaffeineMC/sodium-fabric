@@ -165,21 +165,21 @@ public class RenderSection {
     /**
      * @return The x-coordinate of the center position of this chunk render
      */
-    private int getCenterX() {
+    public int getCenterX() {
         return this.getOriginX() + 8;
     }
 
     /**
      * @return The y-coordinate of the center position of this chunk render
      */
-    private int getCenterY() {
+    public int getCenterY() {
         return this.getOriginY() + 8;
     }
 
     /**
      * @return The z-coordinate of the center position of this chunk render
      */
-    private int getCenterZ() {
+    public int getCenterZ() {
         return this.getOriginZ() + 8;
     }
 
