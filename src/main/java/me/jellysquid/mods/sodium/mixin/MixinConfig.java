@@ -29,16 +29,19 @@ public class MixinConfig {
         this.addMixinRule("core", true); // TODO: Don't actually allow the user to disable this
 
         this.addMixinRule("features", true);
+
         this.addMixinRule("features.gui", true);
+
         this.addMixinRule("features.gui.hooks", true);
+        this.addMixinRule("features.gui.hooks.console", true);
         this.addMixinRule("features.gui.hooks.debug", true);
         this.addMixinRule("features.gui.hooks.settings", true);
+
         this.addMixinRule("features.gui.screen", true);
 
         this.addMixinRule("features.model", true);
 
         this.addMixinRule("features.options", true);
-
         this.addMixinRule("features.options.overlays", true);
         this.addMixinRule("features.options.render_layers", true);
         this.addMixinRule("features.options.weather", true);
@@ -67,8 +70,8 @@ public class MixinConfig {
         this.addMixinRule("features.render.world.clouds", true);
         this.addMixinRule("features.render.world.sky", true);
 
-        this.addMixinRule("features.render.shader", true);
-        this.addMixinRule("features.render.shader.uniform", true);
+        this.addMixinRule("features.shader", true);
+        this.addMixinRule("features.shader.uniform", true);
 
         this.addMixinRule("features.textures", true);
         this.addMixinRule("features.textures.animations", true);
@@ -81,7 +84,6 @@ public class MixinConfig {
         this.addMixinRule("workarounds", true);
         this.addMixinRule("workarounds.context_creation", true);
         this.addMixinRule("workarounds.event_loop", true);
-
     }
 
     /**
