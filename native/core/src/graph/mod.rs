@@ -3,10 +3,9 @@ use std::fmt::Debug;
 use std::ops::*;
 use std::vec::Vec;
 
-use coords::LocalCoordinateContext;
 use core_simd::simd::Which::*;
 use core_simd::simd::*;
-use frustum::LocalFrustum;
+use local::LocalCoordinateContext;
 use std_float::StdFloat;
 
 use crate::collections::ArrayDeque;
@@ -14,18 +13,18 @@ use crate::ffi::{CInlineVec, CVec};
 use crate::graph::octree::LinearBitOctree;
 use crate::math::*;
 
-pub mod coords;
-pub mod frustum;
+pub mod local;
 mod octree;
 
-const SECTIONS_IN_REGION: usize = 8 * 4 * 8;
-const SECTIONS_IN_GRAPH: usize = 256 * 256 * 256;
+pub const REGION_COORD_MASK: u8x3 = u8x3::from_array([0b11111000, 0b11111100, 0b11111000]);
+pub const SECTIONS_IN_REGION: usize = 8 * 4 * 8;
+pub const SECTIONS_IN_GRAPH: usize = 256 * 256 * 256;
 
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-pub struct LocalSectionIndex(u32);
+pub struct LocalNodeIndex(u32);
 
-impl LocalSectionIndex {
+impl LocalNodeIndex {
     // XYZXYZXYZXYZXYZXYZXYZXYZ
     const X_MASK: u32 = 0b10010010_01001001_00100100;
     const Y_MASK: u32 = 0b01001001_00100100_10010010;
@@ -77,7 +76,7 @@ impl LocalSectionIndex {
     }
 
     #[inline(always)]
-    pub fn inc_x(self) -> Self {
+    pub fn inc_x<const LEVEL: u8>(self) -> Self {
         self.inc::<{ Self::X_MASK }>()
     }
 
@@ -400,17 +399,17 @@ struct GraphSearchState {
 }
 
 impl GraphSearchState {
-    pub fn enqueue(&mut self, index: LocalNodeIndex, directions: GraphDirectionSet) {
-        let incoming = &mut self.incoming[index.as_array_offset()];
-        let should_enqueue = incoming.is_empty();
-
-        incoming.add_all(directions);
-
-        unsafe {
-            self.queue
-                .push_conditionally_unchecked(index, should_enqueue);
-        }
-    }
+    // pub fn enqueue(&mut self, index: LocalNodeIndex, directions: GraphDirectionSet) {
+    //     let incoming = &mut self.incoming[index.as_array_offset()];
+    //     let should_enqueue = incoming.is_empty();
+    //
+    //     incoming.add_all(directions);
+    //
+    //     unsafe {
+    //         self.queue
+    //             .push_conditionally_unchecked(index, should_enqueue);
+    //     }
+    // }
 
     fn reset(&mut self) {
         self.queue.reset();
@@ -447,138 +446,138 @@ impl Graph {
 
     fn frustum_and_fog(&mut self, context: LocalCoordinateContext) {}
 
-    fn bfs_and_occlusion_cull(
-        &mut self,
-        context: LocalCoordinateContext,
-        no_occlusion_cull: bool,
-    ) -> CVec<RegionDrawBatch> {
-        let mut region_iteration_queue: VecDeque<LocalSectionCoord> = VecDeque::new();
+    // fn bfs_and_occlusion_cull(
+    //     &mut self,
+    //     context: LocalCoordinateContext,
+    //     no_occlusion_cull: bool,
+    // ) -> CVec<RegionDrawBatch> {
+    //     let mut region_iteration_queue: VecDeque<LocalSectionCoord> = VecDeque::new();
+    //
+    //     let origin_node_coord = position_to_chunk_coord(*frustum.position());
+    //
+    //     if let Some(node) = self.get_node(origin_node_coord) {
+    //         let region_coord = chunk_coord_to_region_coord(origin_node_coord);
+    //
+    //         let mut region = self.regions.get_mut(&region_coord).unwrap();
+    //         region.search_state.enqueue(
+    //             LocalNodeIndex::from_global(origin_node_coord),
+    //             GraphDirectionSet::all(),
+    //         );
+    //         region.search_state.enqueued = true;
+    //
+    //         region_iteration_queue.push_back(region_coord);
+    //     }
+    //
+    //     let mut sorted_batches: Vec<RegionDrawBatch> = Vec::new();
+    //
+    //     while let Some(region_coord) = region_iteration_queue.pop_front() {
+    //         let mut search_ctx = SearchContext::create(&mut self.regions, region_coord);
+    //         let mut batch: RegionDrawBatch = RegionDrawBatch::new(region_coord);
+    //
+    //         while let Some(node_idx) = search_ctx.origin().search_state.queue.pop() {
+    //             let node_coord = node_idx.as_global_coord(region_coord);
+    //
+    //             let node = search_ctx.origin().nodes[node_idx.as_array_offset()];
+    //             let node_incoming =
+    //                 search_ctx.origin().search_state.incoming[node_idx.as_array_offset()];
+    //
+    //             if !chunk_inside_fog(node_coord, origin_node_coord, view_distance)
+    //                 || !chunk_inside_frustum(node_coord, frustum)
+    //             {
+    //                 continue;
+    //             }
+    //
+    //             if (node.flags & (1 << 1)) != 0 {
+    //                 batch.sections.push(node_idx);
+    //             }
+    //
+    //             let valid_directions = get_valid_directions(origin_node_coord, node_coord);
+    //             let allowed_directions =
+    //                 node.connections.get_outgoing_directions(node_incoming) & valid_directions;
+    //
+    //             Self::enqueue_all_neighbors(&mut search_ctx, allowed_directions, node_idx);
+    //         }
+    //
+    //         if !batch.is_empty() {
+    //             sorted_batches.push(batch);
+    //         }
+    //
+    //         for direction in GraphDirection::ORDERED {
+    //             let adjacent_region_coord: LocalSectionCoord = region_coord + direction.as_vector();
+    //
+    //             if let Some(region) = &mut search_ctx.adjacent(*direction, true) {
+    //                 if region.search_state.queue.is_empty() || region.search_state.enqueued {
+    //                     continue;
+    //                 }
+    //
+    //                 region.search_state.enqueued = true;
+    //                 region_iteration_queue.push_back(adjacent_region_coord);
+    //             }
+    //         }
+    //
+    //         search_ctx.origin().search_state.reset();
+    //     }
+    //
+    //     CVec::from_boxed_slice(sorted_batches.into_boxed_slice())
+    // }
+    //
+    // fn enqueue_all_neighbors(
+    //     context: &mut SearchContext,
+    //     directions: GraphDirectionSet,
+    //     origin: LocalNodeIndex,
+    // ) {
+    //     for direction in GraphDirection::ORDERED {
+    //         if directions.contains(direction) {
+    //             let (neighbor, wrapped) = match direction {
+    //                 GraphDirection::NegX => origin.dec_x(),
+    //                 GraphDirection::NegY => origin.dec_y(),
+    //                 GraphDirection::NegZ => origin.dec_z(),
+    //                 GraphDirection::PosX => origin.inc_x(),
+    //                 GraphDirection::PosY => origin.inc_y(),
+    //                 GraphDirection::PosZ => origin.inc_z(),
+    //             };
+    //
+    //             if let Some(neighbor_region) = context.adjacent(direction, wrapped) {
+    //                 neighbor_region
+    //                     .search_state
+    //                     .enqueue(neighbor, GraphDirectionSet::single(direction.opposite()));
+    //             }
+    //         }
+    //     }
+    // }
 
-        let origin_node_coord = position_to_chunk_coord(*frustum.position());
-
-        if let Some(node) = self.get_node(origin_node_coord) {
-            let region_coord = chunk_coord_to_region_coord(origin_node_coord);
-
-            let mut region = self.regions.get_mut(&region_coord).unwrap();
-            region.search_state.enqueue(
-                LocalNodeIndex::from_global(origin_node_coord),
-                GraphDirectionSet::all(),
-            );
-            region.search_state.enqueued = true;
-
-            region_iteration_queue.push_back(region_coord);
-        }
-
-        let mut sorted_batches: Vec<RegionDrawBatch> = Vec::new();
-
-        while let Some(region_coord) = region_iteration_queue.pop_front() {
-            let mut search_ctx = SearchContext::create(&mut self.regions, region_coord);
-            let mut batch: RegionDrawBatch = RegionDrawBatch::new(region_coord);
-
-            while let Some(node_idx) = search_ctx.origin().search_state.queue.pop() {
-                let node_coord = node_idx.as_global_coord(region_coord);
-
-                let node = search_ctx.origin().nodes[node_idx.as_array_offset()];
-                let node_incoming =
-                    search_ctx.origin().search_state.incoming[node_idx.as_array_offset()];
-
-                if !chunk_inside_fog(node_coord, origin_node_coord, view_distance)
-                    || !chunk_inside_frustum(node_coord, frustum)
-                {
-                    continue;
-                }
-
-                if (node.flags & (1 << 1)) != 0 {
-                    batch.sections.push(node_idx);
-                }
-
-                let valid_directions = get_valid_directions(origin_node_coord, node_coord);
-                let allowed_directions =
-                    node.connections.get_outgoing_directions(node_incoming) & valid_directions;
-
-                Self::enqueue_all_neighbors(&mut search_ctx, allowed_directions, node_idx);
-            }
-
-            if !batch.is_empty() {
-                sorted_batches.push(batch);
-            }
-
-            for direction in GraphDirection::ORDERED {
-                let adjacent_region_coord: LocalSectionCoord = region_coord + direction.as_vector();
-
-                if let Some(region) = &mut search_ctx.adjacent(*direction, true) {
-                    if region.search_state.queue.is_empty() || region.search_state.enqueued {
-                        continue;
-                    }
-
-                    region.search_state.enqueued = true;
-                    region_iteration_queue.push_back(adjacent_region_coord);
-                }
-            }
-
-            search_ctx.origin().search_state.reset();
-        }
-
-        CVec::from_boxed_slice(sorted_batches.into_boxed_slice())
-    }
-
-    fn enqueue_all_neighbors(
-        context: &mut SearchContext,
-        directions: GraphDirectionSet,
-        origin: LocalNodeIndex,
-    ) {
-        for direction in GraphDirection::ORDERED {
-            if directions.contains(direction) {
-                let (neighbor, wrapped) = match direction {
-                    GraphDirection::NegX => origin.dec_x(),
-                    GraphDirection::NegY => origin.dec_y(),
-                    GraphDirection::NegZ => origin.dec_z(),
-                    GraphDirection::PosX => origin.inc_x(),
-                    GraphDirection::PosY => origin.inc_y(),
-                    GraphDirection::PosZ => origin.inc_z(),
-                };
-
-                if let Some(neighbor_region) = context.adjacent(direction, wrapped) {
-                    neighbor_region
-                        .search_state
-                        .enqueue(neighbor, GraphDirectionSet::single(direction.opposite()));
-                }
-            }
-        }
-    }
-
-    pub fn add_section(&mut self, chunk_coord: LocalSectionCoord) {
-        let mut region = self
-            .regions
-            .entry(chunk_coord_to_region_coord(chunk_coord))
-            .or_insert_with(Region::new);
-
-        region.set_chunk(chunk_coord, Node::default());
-    }
-
-    pub fn update_section(&mut self, chunk_coord: LocalSectionCoord, node: Node) {
-        if let Some(region) = self
-            .regions
-            .get_mut(&chunk_coord_to_region_coord(chunk_coord))
-        {
-            region.set_chunk(chunk_coord, node);
-        }
-    }
-
-    pub fn remove_section(&mut self, chunk_coord: LocalSectionCoord) {
-        if let Some(region) = self
-            .regions
-            .get_mut(&chunk_coord_to_region_coord(chunk_coord))
-        {
-            region.remove_chunk(chunk_coord);
-        }
-    }
-
-    fn get_node(&self, chunk_coord: LocalSectionCoord) -> Option<Node> {
-        self.regions
-            .get(&chunk_coord_to_region_coord(chunk_coord))
-            .map(|region| *region.get_chunk(chunk_coord))
-    }
+    // pub fn add_section(&mut self, chunk_coord: LocalSectionCoord) {
+    //     let mut region = self
+    //         .regions
+    //         .entry(chunk_coord_to_region_coord(chunk_coord))
+    //         .or_insert_with(Region::new);
+    //
+    //     region.set_chunk(chunk_coord, Node::default());
+    // }
+    //
+    // pub fn update_section(&mut self, chunk_coord: LocalSectionCoord, node: Node) {
+    //     if let Some(region) = self
+    //         .regions
+    //         .get_mut(&chunk_coord_to_region_coord(chunk_coord))
+    //     {
+    //         region.set_chunk(chunk_coord, node);
+    //     }
+    // }
+    //
+    // pub fn remove_section(&mut self, chunk_coord: LocalSectionCoord) {
+    //     if let Some(region) = self
+    //         .regions
+    //         .get_mut(&chunk_coord_to_region_coord(chunk_coord))
+    //     {
+    //         region.remove_chunk(chunk_coord);
+    //     }
+    // }
+    //
+    // fn get_node(&self, chunk_coord: LocalSectionCoord) -> Option<Node> {
+    //     self.regions
+    //         .get(&chunk_coord_to_region_coord(chunk_coord))
+    //         .map(|region| *region.get_chunk(chunk_coord))
+    // }
 }
 
 #[repr(C)]
