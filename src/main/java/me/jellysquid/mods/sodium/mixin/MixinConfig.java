@@ -67,8 +67,8 @@ public class MixinConfig {
         this.addMixinRule("features.render.world.clouds", true);
         this.addMixinRule("features.render.world.sky", true);
 
-        this.addMixinRule("features.render.shader", true);
-        this.addMixinRule("features.render.shader.uniform", true);
+        this.addMixinRule("features.shader", true);
+        this.addMixinRule("features.shader.uniform", true);
 
         this.addMixinRule("features.textures", true);
         this.addMixinRule("features.textures.animations", true);
