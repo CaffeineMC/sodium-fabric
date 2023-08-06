@@ -38,6 +38,9 @@
   "breaks": {
     "optifabric": "*",
     "canvas": "*",
-    "notenoughcrashes": "*"
+    "notenoughcrashes": "<4.4.6",
+    "reeses-sodium-options": "<1.6.4",
+    "iris": "<1.6.5",
+    "immersive_portals": "<3.2.2"
   }
 }
