@@ -95,19 +95,9 @@ public abstract class BiomeMixin {
 
     @Unique
     private int getDefaultColorIndex() {
-        double temperature = MathHelper.clamp(this.getTemperature(), 0.0F, 1.0F);
-        double humidity = MathHelper.clamp(this.getDownfall(), 0.0F, 1.0F);
+        double temperature = MathHelper.clamp(this.weather.temperature(), 0.0F, 1.0F);
+        double humidity = MathHelper.clamp(this.weather.downfall(), 0.0F, 1.0F);
 
         return BiomeColorMaps.getIndex(temperature, humidity);
-    }
-
-    @Unique
-    private float getTemperature() {
-        return ((WeatherAccessor) (Object) this.weather).getTemperature();
-    }
-
-    @Unique
-    private float getDownfall() {
-        return ((WeatherAccessor) (Object) this.weather).getDownfall();
     }
 }
