@@ -11,13 +11,13 @@ import org.jetbrains.annotations.Nullable;
 public class ChunkRenderList {
     private final RenderRegion region;
 
-    private final byte[] sectionsWithGeometry = new byte[RenderRegion.REGION_SIZE + 1];
+    private final byte[] sectionsWithGeometry = new byte[RenderRegion.REGION_SIZE];
     private int sectionsWithGeometryCount = 0;
 
-    private final byte[] sectionsWithSprites = new byte[RenderRegion.REGION_SIZE + 1];
+    private final byte[] sectionsWithSprites = new byte[RenderRegion.REGION_SIZE];
     private int sectionsWithSpritesCount = 0;
 
-    private final byte[] sectionsWithEntities = new byte[RenderRegion.REGION_SIZE + 1];
+    private final byte[] sectionsWithEntities = new byte[RenderRegion.REGION_SIZE];
     private int sectionsWithEntitiesCount = 0;
 
     private int size;
@@ -41,6 +41,8 @@ public class ChunkRenderList {
         if (this.size >= RenderRegion.REGION_SIZE) {
             throw new ArrayIndexOutOfBoundsException("Render list is full");
         }
+
+        this.size++;
 
         int index = render.getSectionIndex();
         int flags = render.getFlags();
@@ -89,10 +91,6 @@ public class ChunkRenderList {
 
     public int getSectionsWithEntitiesCount() {
         return this.sectionsWithEntitiesCount;
-    }
-
-    public int getSize() {
-        return this.size;
     }
 
     public int getLastVisibleFrame() {

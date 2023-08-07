@@ -227,7 +227,7 @@ public class RenderSectionManager {
             }
 
             while (iterator.hasNext()) {
-                var section = region.getSection(iterator.next());
+                var section = region.getSection(iterator.nextByteAsInt());
 
                 if (section == null) {
                     continue;

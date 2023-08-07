@@ -295,7 +295,7 @@ public class SodiumWorldRenderer {
             }
 
             while (renderSectionIterator.hasNext()) {
-                var renderSectionId = renderSectionIterator.next();
+                var renderSectionId = renderSectionIterator.nextByteAsInt();
                 var renderSection = renderRegion.getSection(renderSectionId);
 
                 var blockEntities = renderSection.getCulledBlockEntities();
