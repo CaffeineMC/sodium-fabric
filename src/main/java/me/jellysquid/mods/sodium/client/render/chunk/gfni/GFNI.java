@@ -170,8 +170,7 @@ public class GFNI {
         long chunkSectionLongPos = builder.sectionPos.asLong();
 
         // if the builder is irrelevant, remove it from the normal lists
-        // if the builder is relevant, this may also simplify it as a side effect
-        SortType sortType = builder.getSortTypeAndSimplify();
+        SortType sortType = builder.getSortType();
         if (!sortType.needsDynamicSort) {
             removeSection(chunkSectionLongPos);
             return sortType;

@@ -121,7 +121,12 @@ public class GroupBuilder {
     }
 
     /**
-     * Checks if this group builder is relevant for translucency sort triggering.
+     * Checks if this group builder is relevant for translucency sort triggering. It
+     * determines a sort type, which is either no sorting, a static sort or a
+     * dynamic sort (section in GFNI only in this case).
+     * 
+     * See the section on special cases for an explanation of the special sorting
+     * cases: https://hackmd.io/@douira100/sodium-sl-gfni#Special-Sorting-Cases
      * 
      * A: If there are no or only one normal, this builder can be considered
      * practically empty.
@@ -132,7 +137,7 @@ public class GroupBuilder {
      * 
      * C: If the translucent faces are on the surface of the convex hull of all
      * translucent faces in the section and face outwards, then there is no way to
-     * see one through the other. Since convex nulls are hard, a simpler case only
+     * see one through another. Since convex hulls are hard, a simpler case only
      * uses the axis aligned normals: Under the condition that only aligned normals
      * are used in the section, tracking the bounding box of the translucent
      * geometry (the vertices) in the section and then checking if the normal
@@ -140,27 +145,18 @@ public class GroupBuilder {
      * sections containing a single convex translucent cuboid (of which not all
      * faces need to exist).
      * 
-     * D1: If there are up to two normals with each up to two distances, then only
-     * the larger distance of each normal needs to be triggered on.
-     * 
-     * TODO: However, for this to work, the initial sort needs to happen fully above
-     * or below both of the distances. Otherwise there can be cases where it's
-     * wrong.
-     * 
-     * D2: More generally, if there are only two normals which are opposites of
+     * D: If there are only two normals which are opposites of
      * each other, then a special fixed sort order is always a correct sort order.
      * This ordering sorts the two sets of face planes by their ascending
      * normal-relative distance. The ordering between the two normals is irrelevant
-     * as they can't be seen through each other anyways. This case in includes case
-     * D1 and makes it unnecessary. Sections in D2 don't need to be triggered on at
-     * all. (not yet implemented since there is no sorting backend yet)
+     * as they can't be seen through each other anyways.
      * 
      * More heuristics can be performed here to conservatively determine if this
      * section could possibly have more than one translucent sort order.
      * 
-     * @return true if this group builder is relevant
+     * @return the required sort type to ensure this section always looks correct
      */
-    SortType getSortTypeAndSimplify() {
+    SortType getSortType() {
         // special case A
         if (this.facePlaneCount <= 1) {
             return SortType.NONE;
@@ -209,31 +205,27 @@ public class GroupBuilder {
                 }
             }
 
-            // special case D1
-            if (this.facePlaneCount <= 2 || this.facePlaneCount <= 4 && twoOpposingNormals) {
-                // remove the lesser distance of each normal, even if it only has one
-                for (AccumulationGroup accGroup : this.axisAlignedDistances) {
-                    if (accGroup == null) {
-                        continue;
-                    }
-
-                    var distanceIterator = accGroup.relativeDistances.iterator();
-                    var lesserDistance = distanceIterator.nextDouble();
-                    if (distanceIterator.hasNext()) {
-                        lesserDistance = Math.min(lesserDistance, distanceIterator.nextDouble());
-                    }
-                    accGroup.relativeDistances.remove(lesserDistance);
-                    this.facePlaneCount--;
-
-                    if (accGroup.relativeDistances.isEmpty()) {
-                        this.axisAlignedDistances[accGroup.groupBuilderKey] = null;
-                        this.alignedNormalBitmap ^= 1 << accGroup.groupBuilderKey;
-                    }
-                }
-
-                // in case D1 the group will always still need sorting, just now less often.
-                // the case where the only remaining face plane is removed is handled in A.
+            // special case D
+            // there are up to two normals that are opposing, this means no dynamic sorting
+            // is necessary. Without static sorting, the geometry to trigger on could be
+            // reduced but this isn't done here as we assume static sorting is possible.
+            if (twoOpposingNormals || Integer.bitCount(this.alignedNormalBitmap) == 1) {
                 return SortType.STATIC_NORMAL_RELATIVE;
+            }
+        } else if (this.alignedNormalBitmap == 0) {
+            if (this.unalignedDistances.size() == 1) {
+                // special case D but for one unaligned normal
+                return SortType.STATIC_NORMAL_RELATIVE;
+            } else if (this.unalignedDistances.size() == 2) {
+                // special case D but for two opposing unaligned normals
+                var iterator = this.unalignedDistances.values().iterator();
+                var normalA = iterator.next().normal;
+                var normalB = iterator.next().normal;
+                if (normalA.x() == -normalB.x()
+                        && normalA.y() == -normalB.y()
+                        && normalA.z() == -normalB.z()) {
+                    return SortType.STATIC_NORMAL_RELATIVE;
+                }
             }
         }
 
