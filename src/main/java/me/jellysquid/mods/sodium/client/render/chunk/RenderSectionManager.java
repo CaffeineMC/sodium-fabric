@@ -16,11 +16,11 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkBuild
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderMeshingTask;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.VisibleChunkCollector;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.GraphDirection;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.OcclusionCuller;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.VisibleChunkCollector;
-import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
@@ -518,15 +518,14 @@ public class RenderSectionManager {
             count++;
         }
 
-        list.add(String.format("Device buffer objects: %d", count));
-        list.add(String.format("Device memory: %d/%d MiB", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated)));
-        list.add(String.format("Staging buffer: %s", this.regions.getStagingBuffer().toString()));
+        list.add(String.format("Geometry Pool: %d/%d MiB (%d buffers)", MathUtil.toMib(deviceUsed), MathUtil.toMib(deviceAllocated), count));
+        list.add(String.format("Transfer Queue: %s", this.regions.getStagingBuffer().toString()));
 
-        list.add(String.format("Chunk builder: P=%02d | A=%02d | I=%02d",
+        list.add(String.format("Chunk Builder: Permits=%02d | Busy=%02d | Total=%02d",
                 this.builder.getScheduledJobCount(), this.builder.getBusyThreadCount(), this.builder.getTotalThreadCount())
         );
 
-        list.add(String.format("Chunk updates: U=%02d (P0=%03d | P1=%03d | P2=%05d)",
+        list.add(String.format("Chunk Queues: U=%02d (P0=%03d | P1=%03d | P2=%03d)",
                 this.buildResults.size(),
                 this.rebuildLists.get(ChunkUpdateType.IMPORTANT_REBUILD).size(),
                 this.rebuildLists.get(ChunkUpdateType.REBUILD).size(),
