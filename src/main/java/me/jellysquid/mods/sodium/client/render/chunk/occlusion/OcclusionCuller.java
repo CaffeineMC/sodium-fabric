@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.render.chunk.occlusion;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
-import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import net.minecraft.client.render.Camera;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
@@ -11,8 +10,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 
 public class OcclusionCuller {
@@ -38,7 +35,7 @@ public class OcclusionCuller {
 
         final ArrayDeque<RenderSection> queue = this.queue;
 
-        this.init(queue, viewport, camera, origin, searchDistance, frame);
+        this.init(queue, viewport, origin, searchDistance, frame);
 
         while ((section = queue.poll()) != null) {
             if (origin.getX() != section.getChunkX() || origin.getY() != section.getChunkY() || origin.getZ() != section.getChunkZ()) {
@@ -127,18 +124,17 @@ public class OcclusionCuller {
 
     private void init(ArrayDeque<RenderSection> queue,
                       Viewport viewport,
-                      Camera camera,
                       ChunkSectionPos origin,
                       double searchDistance,
                       int frame)
     {
         if (origin.getY() < this.world.getBottomSectionCoord()) {
-            // above the world
-            this.initOutsideWorldHeight(queue, viewport, camera, origin, searchDistance, frame,
+            // below the world
+            this.initOutsideWorldHeight(queue, viewport, origin, searchDistance, frame,
                     this.world.getBottomSectionCoord(), GraphDirection.DOWN);
         } else if (origin.getY() >= this.world.getTopSectionCoord()) {
-            // below the world
-            this.initOutsideWorldHeight(queue, viewport, camera, origin, searchDistance, frame,
+            // above the world
+            this.initOutsideWorldHeight(queue, viewport, origin, searchDistance, frame,
                     this.world.getTopSectionCoord() - 1, GraphDirection.UP);
         } else {
             var node = this.getRenderSection(origin.getX(), origin.getY(), origin.getZ());
@@ -150,53 +146,72 @@ public class OcclusionCuller {
         }
     }
 
+    // Enqueues sections that are inside the viewport using diamond spiral iteration to avoid sorting and ensure a
+    // consistent order. Innermost layers are enqueued first. Within each layer, iteration starts at the northernmost
+    // section and proceeds counterclockwise (N->W->S->E).
     private void initOutsideWorldHeight(ArrayDeque<RenderSection> queue,
                                         Viewport viewport,
-                                        Camera camera,
                                         ChunkSectionPos origin,
                                         double searchDistance,
                                         int frame,
                                         int height,
                                         int direction)
     {
-        List<RenderSection> sections = new ArrayList<>();
         int radius = MathHelper.ceil(searchDistance / 16.0D);
 
-        for (int x = -radius; x <= radius; x++) {
-            for (int z = -radius; z <= radius; z++) {
-                RenderSection section = this.getRenderSection(origin.getX() + x, height, origin.getZ() + z);
+        int originX = origin.getX();
+        int originZ = origin.getZ();
 
-                if (section == null || section.isOutsideViewport(viewport)) {
-                    continue;
-                }
+        // Layer 0
+        this.enqueue(queue, originX, height, originZ, direction, frame, viewport);
 
-                sections.add(section);
+        // Complete layers, excluding layer 0
+        for (int layer = 1; layer <= radius; layer++) {
+            for (int z = -layer; z < layer; z++) {
+                int x = Math.abs(z) - layer;
+                this.enqueue(queue, originX + x, height, originZ + z, direction, frame, viewport);
+            }
+
+            for (int z = layer; z > -layer; z--) {
+                int x = layer - Math.abs(z);
+                this.enqueue(queue, originX + x, height, originZ + z, direction, frame, viewport);
             }
         }
 
-        if (!sections.isEmpty()) {
-            enqueueAll(queue, sections, camera, direction, frame);
+        // Incomplete layers
+        for (int layer = radius + 1; layer <= 2 * radius; layer++) {
+            int l = layer - radius;
+
+            for (int z = -radius; z <= -l; z++) {
+                int x = -z - layer;
+                this.enqueue(queue, originX + x, height, originZ + z, direction, frame, viewport);
+            }
+
+            for (int z = l; z <= radius; z++) {
+                int x = z - layer;
+                this.enqueue(queue, originX + x, height, originZ + z, direction, frame, viewport);
+            }
+
+            for (int z = radius; z >= l; z--) {
+                int x = layer - z;
+                this.enqueue(queue, originX + x, height, originZ + z, direction, frame, viewport);
+            }
+
+            for (int z = -l; z >= -radius; z--) {
+                int x = layer + z;
+                this.enqueue(queue, originX + x, height, originZ + z, direction, frame, viewport);
+            }
         }
     }
 
-    private static void enqueueAll(ArrayDeque<RenderSection> queue,
-                                   List<RenderSection> sections,
-                                   Camera camera,
-                                   int direction,
-                                   int frame)
-    {
-        final var distance = new float[sections.size()];
-        final var origin = camera.getBlockPos();
+    private void enqueue(ArrayDeque<RenderSection> queue, int x, int y, int z, int direction, int frame, Viewport viewport) {
+        RenderSection section = this.getRenderSection(x, y, z);
 
-        for (int index = 0; index < sections.size(); index++) {
-            var section = sections.get(index);
-            distance[index] = -section.getSquaredDistance(origin); // sort by closest to camera
+        if (section == null || section.isOutsideViewport(viewport)) {
+            return;
         }
 
-        // TODO: avoid indirect sort via indices
-        for (int index : MergeSort.mergeSort(distance)) {
-            enqueue(queue, sections.get(index), 1 << direction, frame);
-        }
+        enqueue(queue, section, 1 << direction, frame);
     }
 
     private RenderSection getRenderSection(int x, int y, int z) {
