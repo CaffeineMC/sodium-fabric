@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 
 @Mixin(SpriteContents.Interpolation.class)
-public class SpriteInterpolatedMixin {
+public class SpriteContentsInterpolationMixin {
     @Shadow
     @Final
     private NativeImage[] images;
@@ -40,14 +40,14 @@ public class SpriteInterpolatedMixin {
      */
     @Overwrite
     void apply(int x, int y, SpriteContents.AnimatorImpl arg) {
-        SpriteContents.Animation animation = ((SpriteInfoAnimationAccessor) arg).getAnimation();
-        AnimationAccessor animation2 = (AnimationAccessor) ((SpriteInfoAnimationAccessor) arg).getAnimation();
-        List<SpriteContents.AnimationFrame> frames = ((AnimationAccessor) animation).getFrames();
-        SpriteInfoAnimationAccessor accessor = (SpriteInfoAnimationAccessor) arg;
-        AnimationFrameAccessor animationFrame = (AnimationFrameAccessor) frames.get(accessor.getFrameIndex());
+        SpriteContents.Animation animation = ((SpriteContentsAnimatorImplAccessor) arg).getAnimation();
+        SpriteContentsAnimationAccessor animation2 = (SpriteContentsAnimationAccessor) ((SpriteContentsAnimatorImplAccessor) arg).getAnimation();
+        List<SpriteContents.AnimationFrame> frames = ((SpriteContentsAnimationAccessor) animation).getFrames();
+        SpriteContentsAnimatorImplAccessor accessor = (SpriteContentsAnimatorImplAccessor) arg;
+        SpriteContentsAnimationFrameAccessor animationFrame = (SpriteContentsAnimationFrameAccessor) frames.get(accessor.getFrameIndex());
 
         int curIndex = animationFrame.getIndex();
-        int nextIndex = ((AnimationFrameAccessor) animation2.getFrames().get((accessor.getFrameIndex() + 1) % frames.size())).getIndex();
+        int nextIndex = ((SpriteContentsAnimationFrameAccessor) animation2.getFrames().get((accessor.getFrameIndex() + 1) % frames.size())).getIndex();
 
         if (curIndex == nextIndex) {
             return;
@@ -66,7 +66,7 @@ public class SpriteInterpolatedMixin {
             int nextX = ((nextIndex % animation2.getFrameCount()) * width);
             int nextY = ((nextIndex / animation2.getFrameCount()) * height);
 
-            NativeImage src = ((SpriteInfoAccessor) this.parent).getImages()[layer];
+            NativeImage src = ((SpriteContentsAccessor) this.parent).getImages()[layer];
             NativeImage dst = this.images[layer];
 
             long ppSrcPixel = NativeImageHelper.getPointerRGBA(src);

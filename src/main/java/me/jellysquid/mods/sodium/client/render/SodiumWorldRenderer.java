@@ -254,11 +254,11 @@ public class SodiumWorldRenderer {
         ChunkTracker.forEachChunk(tracker.getReadyChunks(), this.renderSectionManager::onChunkAdded);
     }
 
-    public void renderTileEntities(MatrixStack matrices,
-                                   BufferBuilderStorage bufferBuilders,
-                                   Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
-                                   Camera camera,
-                                   float tickDelta) {
+    public void renderBlockEntities(MatrixStack matrices,
+                                    BufferBuilderStorage bufferBuilders,
+                                    Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
+                                    Camera camera,
+                                    float tickDelta) {
         VertexConsumerProvider.Immediate immediate = bufferBuilders.getEntityVertexConsumers();
 
         Vec3d cameraPos = camera.getPos();
@@ -295,7 +295,7 @@ public class SodiumWorldRenderer {
             }
 
             while (renderSectionIterator.hasNext()) {
-                var renderSectionId = renderSectionIterator.next();
+                var renderSectionId = renderSectionIterator.nextByteAsInt();
                 var renderSection = renderRegion.getSection(renderSectionId);
 
                 var blockEntities = renderSection.getCulledBlockEntities();

@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(DrawContext.class)
-public class DrawableHelperMixin {
+public class DrawContextMixin {
     @Inject(method = "drawSprite(IIIIILnet/minecraft/client/texture/Sprite;)V", at = @At("HEAD"))
     private void preDrawSprite(int x, int y, int z,
                                int width, int height,

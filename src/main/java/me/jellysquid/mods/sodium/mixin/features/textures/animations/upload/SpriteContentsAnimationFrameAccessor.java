@@ -4,13 +4,11 @@ import net.minecraft.client.texture.SpriteContents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-import java.util.List;
-
-@Mixin(SpriteContents.Animation.class)
-public interface AnimationAccessor {
+@Mixin(SpriteContents.AnimationFrame.class)
+public interface SpriteContentsAnimationFrameAccessor {
     @Accessor
-    List<SpriteContents.AnimationFrame> getFrames();
+    int getIndex();
 
     @Accessor
-    int getFrameCount();
+    int getTime();
 }
