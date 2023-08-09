@@ -101,7 +101,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         int originZ = renderRegion.getChunkZ();
 
         while (iterator.hasNext()) {
-            int sectionIndex = iterator.next();
+            int sectionIndex = iterator.nextByteAsInt();
 
             int x = originX + LocalSectionIndex.unpackX(sectionIndex);
             int y = originY + LocalSectionIndex.unpackY(sectionIndex);

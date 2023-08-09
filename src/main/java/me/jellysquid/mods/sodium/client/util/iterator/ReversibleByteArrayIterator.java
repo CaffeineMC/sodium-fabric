@@ -25,7 +25,7 @@ public class ReversibleByteArrayIterator implements ByteIterator {
     }
 
     @Override
-    public int next() {
+    public int nextByteAsInt() {
         if (!this.hasNext()) {
             throw new NoSuchElementException();
         }
