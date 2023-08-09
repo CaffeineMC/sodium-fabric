@@ -307,6 +307,18 @@ public class SodiumOptionsGUI extends Screen {
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        boolean clicked = super.mouseClicked(mouseX, mouseY, button);
+
+        if (!clicked) {
+            this.setFocused(null);
+            return true;
+        }
+
+        return clicked;
+    }
+
+    @Override
     public boolean shouldCloseOnEsc() {
         return !this.hasPendingChanges;
     }

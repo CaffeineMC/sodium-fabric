@@ -8,6 +8,7 @@ import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.navigation.GuiNavigation;
 import net.minecraft.client.gui.navigation.GuiNavigationPath;
+import net.minecraft.client.gui.navigation.GuiNavigationType;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.screen.narration.NarrationPart;
 import net.minecraft.client.sound.PositionedSoundInstance;
@@ -81,7 +82,14 @@ public abstract class AbstractWidget implements Drawable, Element, Selectable {
 
     @Override
     public void setFocused(boolean focused) {
-        this.focused = focused;
+        if (!focused) {
+            this.focused = false;
+        } else {
+            GuiNavigationType guiNavigationType = MinecraftClient.getInstance().getNavigationType();
+            if (guiNavigationType == GuiNavigationType.KEYBOARD_TAB || guiNavigationType == GuiNavigationType.KEYBOARD_ARROW) {
+                this.focused = true;
+            }
+        }
     }
 
     protected void drawBorder(DrawContext drawContext, int x1, int y1, int x2, int y2, int color) {
