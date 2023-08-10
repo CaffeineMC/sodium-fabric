@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
+use std::intrinsics::{prefetch_read_data, prefetch_write_data};
 use std::ops::*;
 use std::vec::Vec;
 
@@ -10,6 +11,7 @@ use std_float::StdFloat;
 
 use crate::collections::ArrayDeque;
 use crate::ffi::{CInlineVec, CVec};
+use crate::graph::local::BoundsCheckResult;
 use crate::graph::octree::LinearBitOctree;
 use crate::math::*;
 
@@ -77,53 +79,53 @@ impl LocalNodeIndex {
 
     #[inline(always)]
     pub fn inc_x<const LEVEL: u8>(self) -> Self {
-        self.inc::<{ Self::X_MASK }>()
+        self.inc::<LEVEL, { Self::Z_MASK }>()
     }
 
     #[inline(always)]
-    pub fn inc_y(self) -> Self {
-        self.inc::<{ Self::Y_MASK }>()
+    pub fn inc_y<const LEVEL: u8>(self) -> Self {
+        self.inc::<LEVEL, { Self::Z_MASK }>()
     }
 
     #[inline(always)]
-    pub fn inc_z(self) -> Self {
-        self.inc::<{ Self::Z_MASK }>()
+    pub fn inc_z<const LEVEL: u8>(self) -> Self {
+        self.inc::<LEVEL, { Self::Z_MASK }>()
     }
 
     #[inline(always)]
-    pub fn dec_x(self) -> Self {
-        self.dec::<{ Self::X_MASK }>()
+    pub fn dec_x<const LEVEL: u8>(self) -> Self {
+        self.dec::<LEVEL, { Self::Z_MASK }>()
     }
 
     #[inline(always)]
-    pub fn dec_y(self) -> Self {
-        self.dec::<{ Self::Y_MASK }>()
+    pub fn dec_y<const LEVEL: u8>(self) -> Self {
+        self.dec::<LEVEL, { Self::Z_MASK }>()
     }
 
     #[inline(always)]
-    pub fn dec_z(self) -> Self {
-        self.dec::<{ Self::Z_MASK }>()
+    pub fn dec_z<const LEVEL: u8>(self) -> Self {
+        self.dec::<LEVEL, { Self::Z_MASK }>()
     }
 
     #[inline(always)]
-    pub fn inc<const MASK: u32>(self) -> Self {
+    pub fn inc<const LEVEL: u8, const MASK: u32>(self) -> Self {
         // make the other bits in the number 1
         let mut masked = self.0 | !MASK;
 
         // increment
-        masked = masked.wrapping_add(1);
+        masked = masked.wrapping_add(1_u32 << LEVEL);
 
         // modify only the masked bits in the original number
         Self((self.0 & !MASK) | (masked & MASK))
     }
 
     #[inline(always)]
-    pub fn dec<const MASK: u32>(self) -> Self {
+    pub fn dec<const LEVEL: u8, const MASK: u32>(self) -> Self {
         // make the other bits in the number 0
         let mut masked = self.0 & MASK;
 
         // decrement
-        masked = masked.wrapping_sub(1);
+        masked = masked.wrapping_sub(1_u32 << LEVEL);
 
         // modify only the masked bits in the original number
         Self((self.0 & !MASK) | (masked & MASK))
@@ -444,7 +446,38 @@ impl Graph {
 
     pub fn cull(&mut self, context: LocalCoordinateContext, no_occlusion_cull: bool) {}
 
-    fn frustum_and_fog(&mut self, context: LocalCoordinateContext) {}
+    fn frustum_and_fog_cull(&mut self, context: LocalCoordinateContext) {
+        let cur_idx = context.iter_node_origin_idx;
+
+        // figure out how to make this go linearly in the
+        for _x in 0..context.level_3_node_iters.x() {
+            for _y in 0..context.level_3_node_iters.y() {
+                for _z in 0..context.level_3_node_iters.z() {
+                    unsafe {
+                        // inside of individual level 3 nodes, the cache locality is *extremely* good.
+                        const LOCALITY: i32 = 3;
+
+                        prefetch_read_data(&self.section_populated_bits, LOCALITY);
+                        prefetch_write_data(&self.section_visibility_bits, LOCALITY);
+                    }
+
+                    let cur_pos = cur_idx.unpack();
+
+                    match context.check_node::<3>(cur_pos) {
+                        BoundsCheckResult::Outside => {}
+                        BoundsCheckResult::Inside => {
+                            self.section_visibility_bits
+                                .copy_from::<3>(&self.section_populated_bits, cur_idx);
+                        }
+                        BoundsCheckResult::Outside | BoundsCheckResult::Inside => {
+                            cur_idx.inc_z::<3>();
+                        }
+                        BoundsCheckResult::Partial => {}
+                    }
+                }
+            }
+        }
+    }
 
     // fn bfs_and_occlusion_cull(
     //     &mut self,

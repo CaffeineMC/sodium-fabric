@@ -1,5 +1,6 @@
 #![allow(unused)]
 #![feature(portable_simd)]
+#![feature(core_intrinsics)]
 #![feature(cell_leak)]
 
 mod collections;

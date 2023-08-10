@@ -13,8 +13,8 @@ pub struct LocalCoordinateContext {
 
     // the camera coords relative to the local origin, which is the (0, 0, 0) point of the
     // 256x256x256 cube we hold the section data in.
-    camera_coords: f32x3,
-    camera_section_coords: u8x3,
+    pub camera_coords: f32x3,
+    pub camera_section_coords: u8x3,
 
     fog_distance_squared: f32,
 
@@ -24,19 +24,14 @@ pub struct LocalCoordinateContext {
     // this is the index that encompasses the corner of the view distance bounding box where the
     // coordinate for each axis is closest to negative infinity, and truncated to the origin of the
     // level 3 node it's contained in.
-    iter_node_origin_idx: LocalNodeIndex,
-    iter_node_origin_coords: u8x3,
-    level_3_node_iters: u8x3,
+    pub iter_node_origin_idx: LocalNodeIndex,
+    pub iter_node_origin_coords: u8x3,
+    pub level_3_node_iters: u8x3,
 
     // similar to the previous, but truncated to the closest region coord and relative to the world
     // origin, rather than the data structure origin.
-    iter_region_origin_coords: i32x3,
-    region_iters: u8x3,
-}
-
-#[no_mangle]
-pub fn test(var1: LocalCoordinateContext, local_node_pos: u8x3) -> BoundsCheckResult {
-    var1.check_node::<0>(local_node_pos)
+    pub iter_region_origin_coords: i32x3,
+    pub region_iters: u8x3,
 }
 
 impl LocalCoordinateContext {
@@ -100,6 +95,11 @@ impl LocalCoordinateContext {
             region_iters: todo!(),
         }
     }
+
+    // #[no_mangle]
+    // pub fn test(&self, local_node_pos: u8x3) -> BoundsCheckResult {
+    //     self.check_node::<3>(local_node_pos)
+    // }
 
     #[inline(always)]
     pub fn check_node<const LEVEL: u8>(&self, local_node_pos: u8x3) -> BoundsCheckResult {
@@ -278,6 +278,9 @@ impl LocalFrustum {
                     BoundsCheckResult::Partial
                 }
             } else {
+                if inside_length_sq.simd_ge(-self.plane_ws).to_bitmask() == 0b111111 {
+                    panic!("BAD!!!!!");
+                }
                 BoundsCheckResult::Outside
             }
         }
