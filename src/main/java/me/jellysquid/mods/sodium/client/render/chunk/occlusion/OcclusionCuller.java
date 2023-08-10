@@ -74,6 +74,7 @@ public class OcclusionCuller {
 
             if (adj != null) {
                 enqueue(queue, adj, 1 << GraphDirection.opposite(direction), frame);
+                adj.setIncomingDirections(1 << GraphDirection.opposite(direction));
             }
         }
     }
