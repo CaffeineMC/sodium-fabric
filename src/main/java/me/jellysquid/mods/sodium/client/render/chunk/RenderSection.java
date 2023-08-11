@@ -1,10 +1,10 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
+import me.jellysquid.mods.sodium.client.render.chunk.occlusion.GraphDirection;
+import me.jellysquid.mods.sodium.client.render.chunk.occlusion.GraphDirectionSet;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
-import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
-import me.jellysquid.mods.sodium.client.util.DirectionUtil;
 import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.texture.Sprite;
@@ -26,10 +26,19 @@ public class RenderSection {
     private final int chunkX, chunkY, chunkZ;
 
     // Occlusion Culling State
-    private final RenderSection[] adjacent = new RenderSection[DirectionUtil.ALL_DIRECTIONS.length];
     private long visibilityData = VisibilityEncoding.NULL;
+
     private int incomingDirections;
     private int lastVisibleFrame = -1;
+
+    private int adjacentMask;
+    public RenderSection
+            adjacentDown,
+            adjacentUp,
+            adjacentNorth,
+            adjacentSouth,
+            adjacentWest,
+            adjacentEast;
 
 
     // Rendering State
@@ -68,11 +77,37 @@ public class RenderSection {
     }
 
     public RenderSection getAdjacent(int direction) {
-        return this.adjacent[direction];
+        return switch (direction) {
+            case GraphDirection.DOWN -> this.adjacentDown;
+            case GraphDirection.UP -> this.adjacentUp;
+            case GraphDirection.NORTH -> this.adjacentNorth;
+            case GraphDirection.SOUTH -> this.adjacentSouth;
+            case GraphDirection.WEST -> this.adjacentWest;
+            case GraphDirection.EAST -> this.adjacentEast;
+            default -> null;
+        };
     }
 
     public void setAdjacentNode(int direction, RenderSection node) {
-        this.adjacent[direction] = node;
+        if (node == null) {
+            this.adjacentMask &= ~GraphDirectionSet.of(direction);
+        } else {
+            this.adjacentMask |= GraphDirectionSet.of(direction);
+        }
+
+        switch (direction) {
+            case GraphDirection.DOWN -> this.adjacentDown = node;
+            case GraphDirection.UP -> this.adjacentUp = node;
+            case GraphDirection.NORTH -> this.adjacentNorth = node;
+            case GraphDirection.SOUTH -> this.adjacentSouth = node;
+            case GraphDirection.WEST -> this.adjacentWest = node;
+            case GraphDirection.EAST -> this.adjacentEast = node;
+            default -> { }
+        }
+    }
+
+    public int getAdjacentMask() {
+        return this.adjacentMask;
     }
 
     /**
@@ -306,9 +341,5 @@ public class RenderSection {
 
     public void setLastSubmittedFrame(int lastSubmittedFrame) {
         this.lastSubmittedFrame = lastSubmittedFrame;
-    }
-
-    public boolean isOutsideViewport(Viewport viewport) {
-        return !viewport.isBoxVisible(this.getCenterX(), this.getCenterY(), this.getCenterZ(), 8.0f);
     }
 }
