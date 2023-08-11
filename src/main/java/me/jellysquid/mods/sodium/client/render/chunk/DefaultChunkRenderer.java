@@ -21,7 +21,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
+import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.Iterator;
@@ -43,7 +45,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                        CommandList commandList,
                        ChunkRenderListIterable renderLists,
                        TerrainRenderPass renderPass,
-                       ChunkCameraContext camera) {
+                       CameraTransform camera) {
         super.begin(renderPass);
 
         boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
@@ -85,7 +87,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                                           RenderRegion renderRegion,
                                           SectionRenderDataStorage renderDataStorage,
                                           ChunkRenderList renderList,
-                                          ChunkCameraContext camera,
+                                          CameraTransform camera,
                                           TerrainRenderPass pass,
                                           boolean useBlockFaceCulling) {
         batch.clear();
@@ -96,6 +98,10 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             return;
         }
 
+        int centerChunkX = ChunkSectionPos.getSectionCoord(camera.intX);
+        int centerChunkY = ChunkSectionPos.getSectionCoord(camera.intY);
+        int centerChunkZ = ChunkSectionPos.getSectionCoord(camera.intZ);
+
         int originX = renderRegion.getChunkX();
         int originY = renderRegion.getChunkY();
         int originZ = renderRegion.getChunkZ();
@@ -103,13 +109,21 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         while (iterator.hasNext()) {
             int sectionIndex = iterator.nextByteAsInt();
 
-            int x = originX + LocalSectionIndex.unpackX(sectionIndex);
-            int y = originY + LocalSectionIndex.unpackY(sectionIndex);
-            int z = originZ + LocalSectionIndex.unpackZ(sectionIndex);
+            int chunkX = originX + LocalSectionIndex.unpackX(sectionIndex);
+            int chunkY = originY + LocalSectionIndex.unpackY(sectionIndex);
+            int chunkZ = originZ + LocalSectionIndex.unpackZ(sectionIndex);
 
             var pMeshData = renderDataStorage.getDataPointer(sectionIndex);
 
-            int slices = useBlockFaceCulling ? getVisibleFaces(camera, x, y, z) : ModelQuadFacing.ALL;
+            int slices;
+
+            if (useBlockFaceCulling) {
+                slices = getVisibleFaces(centerChunkX, centerChunkY, centerChunkZ,
+                        chunkX, chunkY, chunkZ);
+            } else {
+                slices = ModelQuadFacing.ALL;
+            }
+
             slices &= SectionRenderDataUnsafe.getSliceMask(pMeshData);
 
             if (slices != 0) {
@@ -143,7 +157,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     private static final int MODEL_POS_Z      = ModelQuadFacing.POS_Z.ordinal();
     private static final int MODEL_NEG_Z      = ModelQuadFacing.NEG_Z.ordinal();
 
-    private static int getVisibleFaces(ChunkCameraContext context, int x, int y, int z) {
+    private static int getVisibleFaces(int x1, int y1, int z1, int x2, int y2, int z2) {
         // This is carefully written so that we can keep everything branch-less.
         //
         // Normally, this would be a ridiculous way to handle the problem. But the Hotspot VM's
@@ -169,13 +183,13 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         int planes = 0;
 
-        planes |= BitwiseMath.lessThan(x - 1, context.chunkX) << MODEL_POS_X;
-        planes |= BitwiseMath.lessThan(y - 1, context.chunkY) << MODEL_POS_Y;
-        planes |= BitwiseMath.lessThan(z - 1, context.chunkZ) << MODEL_POS_Z;
+        planes |= BitwiseMath.lessThan(x2 - 1, x1) << MODEL_POS_X;
+        planes |= BitwiseMath.lessThan(y2 - 1, y1) << MODEL_POS_Y;
+        planes |= BitwiseMath.lessThan(z2 - 1, z1) << MODEL_POS_Z;
 
-        planes |= BitwiseMath.greaterThan(x + 1, context.chunkX) << MODEL_NEG_X;
-        planes |= BitwiseMath.greaterThan(y + 1, context.chunkY) << MODEL_NEG_Y;
-        planes |= BitwiseMath.greaterThan(z + 1, context.chunkZ) << MODEL_NEG_Z;
+        planes |= BitwiseMath.greaterThan(x2 + 1, x1) << MODEL_NEG_X;
+        planes |= BitwiseMath.greaterThan(y2 + 1, y1) << MODEL_NEG_Y;
+        planes |= BitwiseMath.greaterThan(z2 + 1, z1) << MODEL_NEG_Z;
 
         // the "unassigned" plane is always front-facing, since we can't check it
         planes |= (1 << MODEL_UNASSIGNED);
@@ -183,10 +197,10 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         return planes;
     }
 
-    private static void setModelMatrixUniforms(ChunkShaderInterface shader, RenderRegion region, ChunkCameraContext camera) {
-        float x = getCameraTranslation(region.getOriginX(), camera.blockX, camera.deltaX);
-        float y = getCameraTranslation(region.getOriginY(), camera.blockY, camera.deltaY);
-        float z = getCameraTranslation(region.getOriginZ(), camera.blockZ, camera.deltaZ);
+    private static void setModelMatrixUniforms(ChunkShaderInterface shader, RenderRegion region, CameraTransform camera) {
+        float x = getCameraTranslation(region.getOriginX(), camera.intX, camera.fracX);
+        float y = getCameraTranslation(region.getOriginY(), camera.intY, camera.fracY);
+        float z = getCameraTranslation(region.getOriginZ(), camera.intZ, camera.fracZ);
 
         shader.setRegionOffset(x, y, z);
     }

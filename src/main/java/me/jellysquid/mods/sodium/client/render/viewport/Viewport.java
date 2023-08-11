@@ -3,29 +3,27 @@ package me.jellysquid.mods.sodium.client.render.viewport;
 import org.joml.FrustumIntersection;
 
 public final class Viewport {
-    private final FrustumIntersection[] frustums;
-    private final double x, y, z;
+    private final FrustumIntersection frustum;
+    private final CameraTransform transform;
 
-    public Viewport(FrustumIntersection[] frustums, double x, double y, double z) {
-        this.frustums = frustums;
-
-        this.x = x;
-        this.y = y;
-        this.z = z;
+    public Viewport(FrustumIntersection frustum, double x, double y, double z) {
+        this.frustum = frustum;
+        this.transform = new CameraTransform(x, y, z);
     }
 
-    public boolean isBoxVisible(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        for (var frustum : this.frustums) {
-            var result = frustum.testAab((float) (minX - this.x), (float) (minY - this.y), (float) (minZ - this.z),
-                    (float) (maxX - this.x), (float) (maxY - this.y), (float) (maxZ - this.z));
+    public boolean isBoxVisible(int intX, int intY, int intZ, float radius) {
+        float floatX = (intX - this.transform.intX) - this.transform.fracX;
+        float floatY = (intY - this.transform.intY) - this.transform.fracY;
+        float floatZ = (intZ - this.transform.intZ) - this.transform.fracZ;
 
-            // early-exit if not inside one of the frustums
-            if (!result) {
-                return false;
-            }
-        }
+        return this.frustum.testAab(
+                floatX - radius,
+                floatY - radius,
+                floatZ - radius,
 
-        // passed all frustum checks
-        return true;
+                floatX + radius,
+                floatY + radius,
+                floatZ + radius
+        );
     }
 }

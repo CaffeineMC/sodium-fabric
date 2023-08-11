@@ -26,6 +26,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
+import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
@@ -208,7 +209,7 @@ public class RenderSectionManager {
         RenderDevice device = RenderDevice.INSTANCE;
         CommandList commandList = device.createCommandList();
 
-        this.chunkRenderer.render(matrices, commandList, this.renderLists, pass, new ChunkCameraContext(x, y, z));
+        this.chunkRenderer.render(matrices, commandList, this.renderLists, pass, new CameraTransform(x, y, z));
 
         commandList.flush();
     }
