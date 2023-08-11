@@ -10,6 +10,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.function.Consumer;
 
 public class OcclusionCuller {
@@ -35,15 +36,13 @@ public class OcclusionCuller {
 
         final ArrayDeque<RenderSection> queue = this.queue;
 
-        this.init(queue, viewport, origin, searchDistance, frame);
+        this.init(visitor, queue, viewport, origin, searchDistance, useOcclusionCulling, frame);
 
         while ((section = queue.poll()) != null) {
-            if (origin.getX() != section.getChunkX() || origin.getY() != section.getChunkY() || origin.getZ() != section.getChunkZ()) {
-                var distance = getClosestVertexDistanceToCamera(camera.getPos(), origin, section);
+            var distance = getClosestVertexDistanceToCamera(camera.getPos(), origin, section);
 
-                if (distance > (searchDistance * searchDistance) || section.isOutsideViewport(viewport)) {
-                    continue;
-                }
+            if (distance > (searchDistance * searchDistance) || section.isOutsideViewport(viewport)) {
+                continue;
             }
 
             visitor.accept(section);
@@ -53,12 +52,12 @@ public class OcclusionCuller {
             if (useOcclusionCulling) {
                 connections = VisibilityEncoding.getConnections(section.getVisibilityData(), section.getIncomingDirections());
             } else {
-                connections = GraphDirection.ALL;
+                connections = GraphDirectionSet.ALL;
             }
 
             connections &= getOutwardDirections(origin, section);
 
-            if (connections != GraphDirection.NONE) {
+            if (connections != GraphDirectionSet.NONE) {
                 searchNeighbors(queue, section, connections, frame);
             }
         }
@@ -66,14 +65,14 @@ public class OcclusionCuller {
 
     private static void searchNeighbors(ArrayDeque<RenderSection> queue, RenderSection section, int outgoing, int frame) {
         for (int direction = 0; direction < GraphDirection.COUNT; direction++) {
-            if ((outgoing & (1 << direction)) == 0) {
+            if (!GraphDirectionSet.contains(outgoing, direction)) {
                 continue;
             }
 
             RenderSection adj = section.getAdjacent(direction);
 
             if (adj != null) {
-                enqueue(queue, adj, 1 << GraphDirection.opposite(direction), frame);
+                enqueue(queue, adj, GraphDirectionSet.of(GraphDirection.opposite(direction)), frame);
             }
         }
     }
@@ -81,7 +80,7 @@ public class OcclusionCuller {
     private static void enqueue(ArrayDeque<RenderSection> queue, RenderSection render, int directions, int frame) {
         if (render.getLastVisibleFrame() != frame) {
             render.setLastVisibleFrame(frame);
-            render.setIncomingDirections(GraphDirection.NONE);
+            render.setIncomingDirections(GraphDirectionSet.NONE);
 
             queue.add(render);
         }
@@ -122,10 +121,12 @@ public class OcclusionCuller {
         return Math.max((distanceX * distanceX) + (distanceZ * distanceZ), distanceY * distanceY);
     }
 
-    private void init(ArrayDeque<RenderSection> queue,
+    private void init(Consumer<RenderSection> visitor,
+                      ArrayDeque<RenderSection> queue,
                       Viewport viewport,
                       ChunkSectionPos origin,
                       double searchDistance,
+                      boolean useOcclusionCulling,
                       int frame)
     {
         if (origin.getY() < this.world.getBottomSectionCoord()) {
@@ -137,12 +138,29 @@ public class OcclusionCuller {
             this.initOutsideWorldHeight(queue, viewport, origin, searchDistance, frame,
                     this.world.getTopSectionCoord() - 1, GraphDirection.UP);
         } else {
-            var node = this.getRenderSection(origin.getX(), origin.getY(), origin.getZ());
+            this.initWithinWorld(visitor, queue, origin, useOcclusionCulling, frame);
+        }
+    }
 
-            if (node != null) {
-                // within a loaded section
-                enqueue(queue, node, GraphDirection.ALL, frame);
-            }
+    private void initWithinWorld(Consumer<RenderSection> visitor, ArrayDeque<RenderSection> queue, ChunkSectionPos origin, boolean useOcclusionCulling, int frame) {
+        var node = this.getRenderSection(origin.getX(), origin.getY(), origin.getZ());
+
+        if (node == null) {
+            return;
+        }
+
+        visitor.accept(node);
+
+        int outgoing;
+
+        if (useOcclusionCulling) {
+            outgoing = VisibilityEncoding.getConnections(node.getVisibilityData());
+        } else {
+            outgoing = GraphDirectionSet.ALL;
+        }
+
+        if (outgoing != GraphDirectionSet.NONE) {
+            searchNeighbors(queue, node, outgoing, frame);
         }
     }
 
@@ -211,7 +229,7 @@ public class OcclusionCuller {
             return;
         }
 
-        enqueue(queue, section, 1 << direction, frame);
+        enqueue(queue, section, GraphDirectionSet.of(direction), frame);
     }
 
     private RenderSection getRenderSection(int x, int y, int z) {
