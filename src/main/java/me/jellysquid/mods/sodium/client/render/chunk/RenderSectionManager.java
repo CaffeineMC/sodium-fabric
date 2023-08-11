@@ -116,19 +116,19 @@ public class RenderSectionManager {
 
         var visitor = new VisibleChunkCollector(frame);
 
-        this.occlusionCuller.searchChunks(visitor, camera, viewport, searchDistance, useOcclusionCulling, frame);
+        this.occlusionCuller.searchChunks(visitor, viewport, searchDistance, useOcclusionCulling, frame);
 
         this.renderLists = visitor.createRenderLists();
         this.rebuildLists = visitor.getRebuildLists();
     }
 
-    private double getSearchDistance() {
-        double distance;
+    private float getSearchDistance() {
+        float distance;
 
         if (SodiumClientMod.options().performance.useFogOcclusion) {
             distance = this.getEffectiveRenderDistance();
         } else {
-            distance = this.renderDistance * 16.0D;
+            distance = this.renderDistance * 16.0f;
         }
 
         return distance;
@@ -456,7 +456,7 @@ public class RenderSectionManager {
         this.needsUpdate = true;
     }
 
-    private double getEffectiveRenderDistance() {
+    private float getEffectiveRenderDistance() {
         var color = RenderSystem.getShaderFogColor();
         var distance = RenderSystem.getShaderFogEnd();
 
