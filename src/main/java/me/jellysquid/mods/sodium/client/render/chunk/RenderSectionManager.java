@@ -464,7 +464,7 @@ public class RenderSectionManager {
             return this.renderDistance;
         }
 
-        return Math.max(16.0D, distance);
+        return distance;
     }
 
     private void connectNeighborNodes(RenderSection render) {
