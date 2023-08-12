@@ -20,13 +20,11 @@ jobs:
               return;
             }
 
-            console.log(context.payload.issue.labels);
-
             const author_name = context.payload.issue.user ? context.payload.issue.user.login : context.payload.sender.login;
             const LOG_FILE_REGEX = /### Log File[^]+?\[.+\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.log\)/;
             const CRASH_REPORT_REGEX = /### Crash Report[^]+?\[.+\.(txt|log)\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.(txt|log)\)/;
 
-            if (context.payload.issue.state == "closed") {
+            if (context.payload.issue.state == "open") {
               if (!LOG_FILE_REGEX.test(issue_content)) {
                 await github.rest.issues.update({
                   issue_number: context.issue.number,
