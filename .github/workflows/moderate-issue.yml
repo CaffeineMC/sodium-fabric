@@ -21,7 +21,7 @@ jobs:
             [
               {
                 "type": "body",
-                "regex": "### Log File[\n \t]+\[latest.log\]\(https:\/\/github.com\/${{ github.event.issue.repository.full_name }}\/files\/\d+\/latest.log\)",
+                "regex": "### Log File[\\n \\t]+\\[latest.log\\]\\(https:\/\/github.com\/${{ github.event.issue.repository.full_name }}\/files\/\\d+\/latest.log\\)",
                 "closeIfMatch": false,
                 "message": "@${issue.user.login} this issue was automatically closed because it did not follow the issue template"
               }
