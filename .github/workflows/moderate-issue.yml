@@ -20,8 +20,8 @@ jobs:
                 return;
             }
             
-            const LOG_FILE_REGEX = /### Log File\s+\[latest\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest\.log\)/;
-            const CRASH_REPORT_REGEX = /### Crash Report\s+\[crash.+\.txt\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/crash.+\.txt\)/;
+            const LOG_FILE_REGEX = /### Log File[^]+?\[latest\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest\.log\)/;
+            const CRASH_REPORT_REGEX = /### Crash Report[^]+?\[crash.+\.txt\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/crash.+\.txt\)/;
 
             if (!LOG_FILE_REGEX.test(issue_content)) {
                 await github.rest.issues.update({
