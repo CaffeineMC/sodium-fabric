@@ -1,0 +1,28 @@
+name: Moderate Issue
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - reopened
+  issue_comment:
+    types:
+      - created
+jobs:
+  moderate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Moderate issues
+        uses: tachiyomiorg/issue-moderator-action@v2
+        if: startsWith( ${{ github.event.issue.body }} , "### Bug Description")
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-close-rules: |
+            [
+              {
+                "type": "body",
+                "regex": "### Log File\s+\[latest.log\]\(https:\/\/github.com\/${{ github.event.issue.repository.full_name }}\/files\/\d+\/latest.log\)",
+                "closeIfMatch": false,
+                "message": "@${issue.user.login} this issue was automatically closed because it did not follow the issue template"
+              }
+            ]
