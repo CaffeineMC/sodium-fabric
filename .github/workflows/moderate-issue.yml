@@ -13,7 +13,7 @@ jobs:
         with:
           result-encoding: string
           script: |
-            const LOG_FILE_REGEX = "### Log File[\n \t]+\[latest.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest.log\)";
+            const LOG_FILE_REGEX = new RegExp("### Log File[\n \t]+\[latest.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest.log\)");
             
             if (LOG_FILE_REGEX.test(context.payload.issue.body)) {
                 console.log("Log file found!")
