@@ -36,8 +36,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * blocks above the water source blocks.
  * 
  * TODO:
- * - update GFNI document about how this implementation works with the
- * interval tree and update the diagram.
  * - sort the triggered sections by camera distance and possibly also use number
  * of translucent faces as a heuristic for importance
  * - baked models could possibly precompute normals and then just calculate
