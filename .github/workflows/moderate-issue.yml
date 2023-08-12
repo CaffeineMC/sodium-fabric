@@ -16,12 +16,13 @@ jobs:
           result-encoding: string
           script: |
             const issue_content = context.payload.issue.body;
-            if (context.payload.issue.state == "closed" || !issue_content.startsWith("### Bug Description")) {
+            if (context.payload.issue.pull_request != null || context.payload.issue.state == "closed" || !issue_content.startsWith("### Bug Description")) {
                 return;
             }
-            
+
+            const author_name = context.payload.issue.user ? context.payload.issue.user.login : context.payload.sender.login;
             const LOG_FILE_REGEX = /### Log File[^]+?\[.+\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.log\)/;
-            const CRASH_REPORT_REGEX = /### Crash Report[^]+?\[.+\.txt\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.txt\)/;
+            const CRASH_REPORT_REGEX = /### Crash Report[^]+?\[.+\.(txt|log)\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.(txt|log)\)/;
 
             if (!LOG_FILE_REGEX.test(issue_content)) {
                 await github.rest.issues.update({
@@ -36,7 +37,7 @@ jobs:
                   issue_number: context.issue.number,
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  body: "Issue closed.",
+                  body: `${author_name}, your issue was closed.",
                 });
             } else if (!CRASH_REPORT_REGEX.test(issue_content)) {
                 await github.rest.issues.update({
@@ -51,6 +52,6 @@ jobs:
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: "Issue closed.",
+                body: `${author_name}, your issue was closed.",
               });
             }
