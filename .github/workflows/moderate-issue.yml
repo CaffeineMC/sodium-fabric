@@ -16,14 +16,14 @@ jobs:
             const LOG_FILE_REGEX = /### Log File[\n \t]+\[latest.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest.log\)/
 
             if (!LOG_FILE_REGEX.test(context.payload.issue.body)) {
-                await github.rest.issues.get({
+                await github.rest.issues.update({
                   issue_number: context.issue.number,
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   state: "closed",
                   state_reason: "not_planned",
                 })
-                await octokit.rest.issues.createComment({
+                await github.rest.issues.createComment({
                   issue_number: context.issue.number,
                   owner: context.repo.owner,
                   repo: context.repo.repo,
