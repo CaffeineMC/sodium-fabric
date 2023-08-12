@@ -16,14 +16,14 @@ jobs:
           result-encoding: string
           script: |
             const issue_content = context.payload.issue.body;
+            if (context.payload.issue == "closed" || !issue_content.startsWith("### Bug Description")) {
+                return;
+            }
+            
             const LOG_FILE_REGEX = /### Log File\s+\[latest\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest\.log\)/;
             const CRASH_REPORT_REGEX = /### Crash Report\s+\[crash.+\.txt\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/crash.+\.txt\)/;
 
-            if (!issue_content.startsWith("### Bug Description")) {
-                return;
-            }
-
-            if (!LOG_FILE_REGEX.test(context.payload.issue.body)) {
+            if (!LOG_FILE_REGEX.test(issue_content)) {
                 await github.rest.issues.update({
                   issue_number: context.issue.number,
                   owner: context.repo.owner,
@@ -38,7 +38,7 @@ jobs:
                   repo: context.repo.repo,
                   body: "Issue closed.",
                 });
-            } else if (!CRASH_REPORT_REGEX.test(context.payload.issue.body)) {
+            } else if (!CRASH_REPORT_REGEX.test(issue_content)) {
                 await github.rest.issues.update({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
