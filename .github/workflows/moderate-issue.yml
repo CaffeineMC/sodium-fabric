@@ -3,6 +3,7 @@ on:
   issues:
     types:
       - opened
+      - edited
       - reopened
 jobs:
   moderate:
@@ -10,10 +11,12 @@ jobs:
     steps:
       - uses: actions/github-script@v6
         id: match_script
+        if: startsWith( ${{ github.event.issue.body }} , "### Bug Description")
         with:
           result-encoding: string
           script: |
-            const LOG_FILE_REGEX = /### Log File[\n \t]+\[latest.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest.log\)/
+            const LOG_FILE_REGEX = /### Log File\s+\[latest\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest\.log\)/
+            const CRASH_REPORT_REGEX = /### Crash Report\s+\[crash.+\.txt\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/crash.+\.txt\)/
 
             if (!LOG_FILE_REGEX.test(context.payload.issue.body)) {
                 await github.rest.issues.update({
@@ -22,6 +25,7 @@ jobs:
                   repo: context.repo.repo,
                   state: "closed",
                   state_reason: "not_planned",
+                  labels: ["E-invalid"],
                 })
                 await github.rest.issues.createComment({
                   issue_number: context.issue.number,
@@ -29,4 +33,19 @@ jobs:
                   repo: context.repo.repo,
                   body: "Issue closed.",
                 });
+            } else if (!CRASH_REPORT_REGEX.test(context.payload.issue.body)) {
+                await github.rest.issues.update({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: "closed",
+                state_reason: "not_planned",
+                labels: ["E-invalid"],
+              })
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: "Issue closed.",
+              });
             }
