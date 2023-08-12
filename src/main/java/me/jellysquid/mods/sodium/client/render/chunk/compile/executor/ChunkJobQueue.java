@@ -8,16 +8,15 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
 
 class ChunkJobQueue {
-    private final ConcurrentLinkedDeque<ChunkJob> synchronousJobs = new ConcurrentLinkedDeque<>();
-    private final ConcurrentLinkedDeque<ChunkJob> asynchronousJobs = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<ChunkJob> jobs = new ConcurrentLinkedDeque<>();
 
     private final Semaphore semaphore = new Semaphore(0);
 
-    public void add(ChunkJob job, boolean asynchronous) {
-        if (asynchronous) {
-            this.asynchronousJobs.add(job);
+    public void add(ChunkJob job, boolean important) {
+        if (important) {
+            this.jobs.addFirst(job);
         } else {
-            this.synchronousJobs.add(job);
+            this.jobs.addLast(job);
         }
 
         this.semaphore.release(1);
@@ -30,36 +29,24 @@ class ChunkJobQueue {
         return this.getNextTask();
     }
 
-    @Nullable
-    public ChunkJob stealSynchronousJob() {
+    public boolean stealJob(ChunkJob job) {
         if (!this.semaphore.tryAcquire()) {
-            return null;
+            return false;
         }
 
-        var job = this.synchronousJobs.poll();
+        var success = this.jobs.remove(job);
 
-        if (job == null) {
-            // If there was nothing in the synchronous queue, that means we stole from the
-            // asynchronous queue, and we need to return the permit
+        if (!success) {
+            // If we didn't manage to actually steal the task, then we need to release the permit which we did steal
             this.semaphore.release(1);
         }
 
-        return job;
+        return success;
     }
 
     @Nullable
     private ChunkJob getNextTask() {
-        ChunkJob job;
-
-        if ((job = this.synchronousJobs.poll()) != null) {
-            return job;
-        }
-
-        if ((job = this.asynchronousJobs.poll()) != null) {
-            return job;
-        }
-
-        return job;
+        return this.jobs.poll();
     }
 
 
@@ -67,7 +54,7 @@ class ChunkJobQueue {
         var list = new ArrayDeque<ChunkJob>();
 
         while (this.semaphore.tryAcquire()) {
-            var task = this.getNextTask();
+            var task = this.jobs.poll();
 
             if (task != null) {
                 list.add(task);

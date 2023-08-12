@@ -182,6 +182,10 @@ public class SodiumWorldRenderer {
         this.lastCameraYaw = yaw;
         this.lastFogDistance = fogDistance;
 
+        profiler.swap("chunk_update");
+
+        this.renderSectionManager.updateChunks(updateChunksImmediately);
+
         profiler.swap("chunk_upload");
 
         this.renderSectionManager.uploadChunks();
@@ -189,12 +193,8 @@ public class SodiumWorldRenderer {
         if (this.renderSectionManager.needsUpdate()) {
             profiler.swap("chunk_render_lists");
 
-            this.renderSectionManager.updateRenderLists(camera, viewport, frame, spectator);
+            this.renderSectionManager.update(camera, viewport, frame, spectator);
         }
-
-        profiler.swap("chunk_update");
-
-        this.renderSectionManager.updateChunks(updateChunksImmediately);
 
         if (updateChunksImmediately) {
             profiler.swap("chunk_upload_immediately");
