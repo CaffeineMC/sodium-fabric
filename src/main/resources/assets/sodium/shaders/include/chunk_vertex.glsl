@@ -1,9 +1,9 @@
-#define MODEL_SCALE        32.0 / 65535.0
+#define MODEL_SCALE        32.0 / 65536.0
 #define MODEL_ORIGIN       8.0
 
 #define COLOR_SCALE        1.0 / 255.0
 
-#define TEX_DIFFUSE_SCALE  1.0 / 65535.0
+#define TEX_DIFFUSE_SCALE  1.0 / 65536.0
 
 #define TEX_LIGHT_SCALE    1.0 / 16.0
 #define TEX_LIGHT_OFFSET   0.5 / 16.0
