@@ -17,8 +17,8 @@ public class CompactChunkVertex implements ChunkVertexType {
 
     public static final int STRIDE = 16;
 
-    private static final int POSITION_MAX_VALUE = 0xFFFF;
-    private static final int TEXTURE_MAX_VALUE = 0xFFFF;
+    private static final int POSITION_MAX_VALUE = 65536;
+    private static final int TEXTURE_MAX_VALUE = 65536;
 
     private static final float MODEL_ORIGIN = 8.0f;
     private static final float MODEL_SCALE = 32.0f;
@@ -66,6 +66,6 @@ public class CompactChunkVertex implements ChunkVertexType {
     }
 
     private static int encodeTexture(float value) {
-        return (int) (value * TEXTURE_MAX_VALUE);
+        return (int) (Math.min(0.99999997F, value) * TEXTURE_MAX_VALUE);
     }
 }
