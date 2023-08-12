@@ -13,6 +13,9 @@ public class CameraTransform {
     // The fractional component of the translation vector
     public final float fracX, fracY, fracZ;
 
+    // The original transform.
+    public final double x, y, z;
+
     public CameraTransform(double x, double y, double z) {
         this.intX = integral(x);
         this.intY = integral(y);
@@ -21,6 +24,10 @@ public class CameraTransform {
         this.fracX = fractional(x);
         this.fracY = fractional(y);
         this.fracZ = fractional(z);
+
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     private static int integral(double value) {
