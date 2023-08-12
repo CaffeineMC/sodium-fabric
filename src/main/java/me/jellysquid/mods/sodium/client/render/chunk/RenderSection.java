@@ -154,7 +154,7 @@ public class RenderSection {
     /**
      * Returns the chunk section position which this render refers to in the world.
      */
-    public ChunkSectionPos getChunkPos() {
+    public ChunkSectionPos getPosition() {
         return ChunkSectionPos.from(this.chunkX, this.chunkY, this.chunkZ);
     }
 

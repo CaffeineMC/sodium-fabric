@@ -101,8 +101,8 @@ public class ChunkBuilder {
         this.threads.clear();
     }
 
-    public <TASK extends ChunkBuilderTask<OUTPUT>, OUTPUT> CancellationToken scheduleTask(TASK task, boolean asynchronous,
-                                                                                          Consumer<ChunkJobResult<OUTPUT>> consumer)
+    public <TASK extends ChunkBuilderTask<OUTPUT>, OUTPUT> ChunkJobTyped<TASK, OUTPUT> scheduleTask(TASK task, boolean important,
+                                                                                                    Consumer<ChunkJobResult<OUTPUT>> consumer)
     {
         Validate.notNull(task, "Task must be non-null");
 
@@ -112,7 +112,7 @@ public class ChunkBuilder {
 
         var job = new ChunkJobTyped<>(task, consumer);
 
-        this.queue.add(job, asynchronous);
+        this.queue.add(job, important);
 
         return job;
     }
@@ -134,18 +134,9 @@ public class ChunkBuilder {
         return Runtime.getRuntime().availableProcessors();
     }
 
-    /**
-     * "Steals" a task on the queue and allows the currently calling thread to execute it using locally-allocated
-     * resources instead. While this function returns true, the caller should continually execute it so that additional
-     * tasks can be processed.
-     *
-     * @return True if it was able to steal a task, otherwise false
-     */
-    public boolean stealBlockingTask() {
-        var job = this.queue.stealSynchronousJob();
-
-        if (job == null) {
-            return false;
+    public void tryStealTask(ChunkJob job) {
+        if (!this.queue.stealJob(job)) {
+            return;
         }
 
         var localContext = this.localContext;
@@ -155,8 +146,6 @@ public class ChunkBuilder {
         } finally {
             localContext.cleanup();
         }
-
-        return true;
     }
 
     public boolean isBuildQueueEmpty() {

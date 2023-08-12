@@ -18,4 +18,8 @@ public enum ChunkUpdateType {
     public int getMaximumQueueSize() {
         return this.maximumQueueSize;
     }
+
+    public boolean isImportant() {
+        return this == IMPORTANT_REBUILD;
+    }
 }
