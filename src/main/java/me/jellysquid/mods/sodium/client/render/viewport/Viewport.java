@@ -1,27 +1,28 @@
 package me.jellysquid.mods.sodium.client.render.viewport;
 
+import me.jellysquid.mods.sodium.client.render.viewport.frustum.Frustum;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import org.joml.FrustumIntersection;
+import org.joml.Vector3d;
 
 public final class Viewport {
-    private final FrustumIntersection frustum;
+    private final Frustum frustum;
     private final CameraTransform transform;
 
     private final ChunkSectionPos chunkCoords;
     private final BlockPos blockCoords;
 
-    public Viewport(FrustumIntersection frustum, double x, double y, double z) {
+    public Viewport(Frustum frustum, Vector3d position) {
         this.frustum = frustum;
-        this.transform = new CameraTransform(x, y, z);
+        this.transform = new CameraTransform(position.x, position.y, position.z);
 
         this.chunkCoords = ChunkSectionPos.from(
-                ChunkSectionPos.getSectionCoord(x),
-                ChunkSectionPos.getSectionCoord(y),
-                ChunkSectionPos.getSectionCoord(z)
+                ChunkSectionPos.getSectionCoord(position.x),
+                ChunkSectionPos.getSectionCoord(position.y),
+                ChunkSectionPos.getSectionCoord(position.z)
         );
 
-        this.blockCoords = BlockPos.ofFloored(x, y, z);
+        this.blockCoords = BlockPos.ofFloored(position.x, position.y, position.z);
     }
 
     public boolean isBoxVisible(int intX, int intY, int intZ, float radius) {
