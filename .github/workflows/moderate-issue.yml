@@ -37,7 +37,7 @@ jobs:
                   issue_number: context.issue.number,
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  body: `${author_name}, your issue was closed.",
+                  body: `${author_name}, your issue was closed.`,
                 });
             } else if (!CRASH_REPORT_REGEX.test(issue_content)) {
                 await github.rest.issues.update({
@@ -52,6 +52,6 @@ jobs:
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `${author_name}, your issue was closed.",
+                body: `${author_name}, your issue was closed.`,
               });
             }
