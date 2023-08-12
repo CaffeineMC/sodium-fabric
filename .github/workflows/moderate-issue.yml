@@ -21,7 +21,7 @@ jobs:
             [
               {
                 "type": "body",
-                "regex": "### Log File\\s+\\[latest.log\\]\\(https:\/\/github/.com\/\\w+\/sodium-fabric\/files\/\\d+\/latest.log\\)",
+                "regex": "### Log File\\s+\\[latest.log\\]\\(https:\/\/github\\.com\/\\w+\/sodium-fabric\/files\/\\d+\/latest.log\\)",
                 "closeIfMatch": false,
                 "message": "@${issue.user.login} this issue was automatically closed because it did not follow the issue template",
                 "ignoreCase": true
