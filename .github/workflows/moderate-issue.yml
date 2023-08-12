@@ -16,7 +16,7 @@ jobs:
           result-encoding: string
           script: |
             const issue_content = context.payload.issue.body;
-            if (context.payload.issue == "closed" || !issue_content.startsWith("### Bug Description")) {
+            if (context.payload.issue.state == "closed" || !issue_content.startsWith("### Bug Description")) {
                 return;
             }
             
