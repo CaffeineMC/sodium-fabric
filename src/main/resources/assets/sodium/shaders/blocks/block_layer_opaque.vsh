@@ -5,12 +5,8 @@
 #import <sodium:include/chunk_matrices.glsl>
 #import <sodium:include/chunk_material.glsl>
 
-uniform sampler2D u_LightTex; // The light map texture
-
-out vec3 v_Color;
-out vec3 v_Light;
-
-out vec2 v_TexDiffuseCoord;
+out vec3 v_ColorModulator;
+out vec2 v_TexCoord;
 
 out float v_MaterialMipBias;
 out float v_MaterialAlphaCutoff;
@@ -21,6 +17,12 @@ out float v_FragDistance;
 
 uniform int u_FogShape;
 uniform vec3 u_RegionOffset;
+
+uniform sampler2D u_LightTex; // The light map texture
+
+vec3 _sample_lightmap(uvec2 coord) {
+    return texelFetch(u_LightTex, ivec2(coord), 0).rgb;
+}
 
 uvec3 _get_relative_chunk_coord(uint pos) {
     // Packing scheme is defined by LocalSectionIndex
@@ -45,10 +47,8 @@ void main() {
     // Transform the vertex position into model-view-projection space
     gl_Position = u_ProjectionMatrix * u_ModelViewMatrix * vec4(position, 1.0);
 
-    v_Color = _vert_color;
-    v_Light = texture(u_LightTex, _vert_tex_light_coord).rgb;
-
-    v_TexDiffuseCoord = _vert_tex_diffuse_coord;
+    v_ColorModulator = _vert_color * _sample_lightmap(_vert_light);
+    v_TexCoord = _vert_tex_coord;
 
     v_MaterialMipBias = _material_mip_bias(_vert_material);
     v_MaterialAlphaCutoff = _material_alpha_cutoff(_vert_material);
