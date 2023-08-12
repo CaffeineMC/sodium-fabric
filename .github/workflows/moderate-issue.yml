@@ -15,8 +15,13 @@ jobs:
         with:
           result-encoding: string
           script: |
-            const LOG_FILE_REGEX = /### Log File\s+\[latest\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest\.log\)/
-            const CRASH_REPORT_REGEX = /### Crash Report\s+\[crash.+\.txt\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/crash.+\.txt\)/
+            const issue_content = context.payload.issue.body;
+            const LOG_FILE_REGEX = /### Log File\s+\[latest\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest\.log\)/;
+            const CRASH_REPORT_REGEX = /### Crash Report\s+\[crash.+\.txt\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/crash.+\.txt\)/;
+
+            if (!issue_content.startsWith("### Bug Description")) {
+                return;
+            }
 
             if (!LOG_FILE_REGEX.test(context.payload.issue.body)) {
                 await github.rest.issues.update({
