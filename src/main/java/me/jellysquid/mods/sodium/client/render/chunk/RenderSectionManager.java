@@ -116,7 +116,7 @@ public class RenderSectionManager {
 
         var visitor = new VisibleChunkCollector(frame);
 
-        this.occlusionCuller.searchChunks(visitor, viewport, searchDistance, useOcclusionCulling, frame);
+        this.occlusionCuller.findVisible(visitor, viewport, searchDistance, useOcclusionCulling, frame);
 
         this.renderLists = visitor.createRenderLists();
         this.rebuildLists = visitor.getRebuildLists();
