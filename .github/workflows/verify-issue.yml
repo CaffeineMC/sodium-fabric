@@ -19,13 +19,14 @@ jobs:
             if (issue_payload.pull_request != null || !issue_content.startsWith("### Bug Description")) {
               return;
             }
-
+            
             const author_name = issue_payload.user ? issue_payload.user.login : context.payload.sender.login;
-            const LOG_FILE_REGEX = /### Log File[^]+?\[.+\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.log\)/;
+            const LOG_FILE_REGEX = /### Log File[^]+?\[.+\.(txt|log)\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.(txt|log)\)/;
             const CRASH_REPORT_REGEX = /### Crash Report[^]+?\[.+\.(txt|log)\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.(txt|log)\)/;
-
+            
             if (issue_payload.state == "open") {
-              if (!LOG_FILE_REGEX.test(issue_content)) {
+              let match = LOG_FILE_REGEX.exec(issue_content);
+              if (!match || !match[0].includes("### Crash Report")) {
                 await github.rest.issues.update({
                   issue_number: context.issue.number,
                   owner: context.repo.owner,
