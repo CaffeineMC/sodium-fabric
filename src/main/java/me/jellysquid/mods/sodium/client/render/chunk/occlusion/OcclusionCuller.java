@@ -206,26 +206,29 @@ public class OcclusionCuller {
 
     private void initWithinWorld(Consumer<RenderSection> visitor, WriteQueue<RenderSection> queue, Viewport viewport, boolean useOcclusionCulling, int frame) {
         var origin = viewport.getChunkCoord();
-        var node = this.getRenderSection(origin.getX(), origin.getY(), origin.getZ());
+        var section = this.getRenderSection(origin.getX(), origin.getY(), origin.getZ());
 
-        if (node == null) {
+        if (section == null) {
             return;
         }
 
-        visitor.accept(node);
+        section.setLastVisibleFrame(frame);
+        section.setIncomingDirections(GraphDirectionSet.NONE);
+
+        visitor.accept(section);
 
         int outgoing;
 
         if (useOcclusionCulling) {
             // Since the camera is located inside this chunk, there are no "incoming" directions. So we need to instead
             // find any possible paths out of this chunk and enqueue those neighbors.
-            outgoing = VisibilityEncoding.getConnections(node.getVisibilityData());
+            outgoing = VisibilityEncoding.getConnections(section.getVisibilityData());
         } else {
             // Occlusion culling is disabled, so we can traverse into any neighbor.
             outgoing = GraphDirectionSet.ALL;
         }
 
-        visitNeighbors(queue, node, outgoing, frame);
+        visitNeighbors(queue, section, outgoing, frame);
     }
 
     // Enqueues sections that are inside the viewport using diamond spiral iteration to avoid sorting and ensure a
