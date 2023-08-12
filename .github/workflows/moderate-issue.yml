@@ -11,20 +11,20 @@ jobs:
     steps:
       - uses: actions/github-script@v6
         id: verify-issue
-        if: startsWith( ${{ github.event.issue.body }} , "### Bug Description")
         with:
           result-encoding: string
           script: |
-            const issue_content = context.payload.issue.body;
-            if (context.payload.issue.pull_request != null || !issue_content.startsWith("### Bug Description")) {
+            const issue_payload = context.payload.issue;
+            const issue_content = issue_payload.body;
+            if (issue_payload.pull_request != null || !issue_content.startsWith("### Bug Description")) {
               return;
             }
 
-            const author_name = context.payload.issue.user ? context.payload.issue.user.login : context.payload.sender.login;
+            const author_name = issue_payload.user ? issue_payload.user.login : context.payload.sender.login;
             const LOG_FILE_REGEX = /### Log File[^]+?\[.+\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.log\)/;
             const CRASH_REPORT_REGEX = /### Crash Report[^]+?\[.+\.(txt|log)\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.(txt|log)\)/;
 
-            if (context.payload.issue.state == "open") {
+            if (issue_payload.state == "open") {
               if (!LOG_FILE_REGEX.test(issue_content)) {
                 await github.rest.issues.update({
                   issue_number: context.issue.number,
@@ -56,7 +56,7 @@ jobs:
                   body: `@${author_name}, this issue was automatically closed because it did not follow the issue template. You either did not upload a crash log or didn't upload it in the required format. Attach a log file and a crash log as described in the issue template by dragging and dropping the file and letting GitHub create an attachment. Do not copy-paste the content of the log file into the area. Please edit your issue to add the required data and the issue will be automatically be reopened.`,
                 });
               }
-            } else if (context.payload.issue.labels.some(label => label.name == "E-invalid") && LOG_FILE_REGEX.test(issue_content) && CRASH_REPORT_REGEX.test(issue_content)) {
+            } else if (issue_payload.labels.some(label => label.name == "E-invalid") && LOG_FILE_REGEX.test(issue_content) && CRASH_REPORT_REGEX.test(issue_content)) {
               await github.rest.issues.update({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
