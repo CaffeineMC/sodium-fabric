@@ -13,9 +13,20 @@ jobs:
         with:
           result-encoding: string
           script: |
-            const LOG_FILE_REGEX = new RegExp("### Log File[\n \t]+\[latest.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest.log\)");
-            console.log(context.payload.issue.body);
-            
-            if (LOG_FILE_REGEX.test(context.payload.issue.body)) {
-                return "woo";
+            const LOG_FILE_REGEX = /### Log File[\n \t]+\[latest.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest.log\)/
+
+            if (!LOG_FILE_REGEX.test(a_str)) {
+                await github.rest.issues.get({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: "closed",
+                  state_reason: "not_planned",
+                })
+                await octokit.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: "Issue closed.",
+                });
             }
