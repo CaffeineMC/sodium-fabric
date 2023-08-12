@@ -1,4 +1,4 @@
-name: Moderate Issue
+name: Verify Issue
 on:
   issues:
     types:
@@ -10,21 +10,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v6
-        id: match_script
+        id: verify-issue
         if: startsWith( ${{ github.event.issue.body }} , "### Bug Description")
         with:
           result-encoding: string
           script: |
             const issue_content = context.payload.issue.body;
-            if (context.payload.issue.pull_request != null || context.payload.issue.state == "closed" || !issue_content.startsWith("### Bug Description")) {
-                return;
+            if (context.payload.issue.pull_request != null || !issue_content.startsWith("### Bug Description")) {
+              return;
             }
 
             const author_name = context.payload.issue.user ? context.payload.issue.user.login : context.payload.sender.login;
             const LOG_FILE_REGEX = /### Log File[^]+?\[.+\.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.log\)/;
             const CRASH_REPORT_REGEX = /### Crash Report[^]+?\[.+\.(txt|log)\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/.+\.(txt|log)\)/;
 
-            if (!LOG_FILE_REGEX.test(issue_content)) {
+            if (context.payload.issue.state == "closed") {
+              if (!LOG_FILE_REGEX.test(issue_content)) {
                 await github.rest.issues.update({
                   issue_number: context.issue.number,
                   owner: context.repo.owner,
@@ -37,21 +38,35 @@ jobs:
                   issue_number: context.issue.number,
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  body: `${author_name}, your issue was closed.`,
+                  body: `@${author_name}, this issue was automatically closed because it did not follow the issue template. You either did not upload a log file or didn't upload it in the required format. Attach a log file and a crashlog as described in the issue template by dragging and dropping the file and letting GitHub create an attachment. Do not copy-paste the content of the log file into the area. Please edit your issue to add the required data and the issue will be automatically be reopened.`,
                 });
-            } else if (!CRASH_REPORT_REGEX.test(issue_content)) {
+              } else if (!CRASH_REPORT_REGEX.test(issue_content)) {
                 await github.rest.issues.update({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: "closed",
+                  state_reason: "not_planned",
+                  labels: ["E-invalid"],
+                })
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `@${author_name}, this issue was automatically closed because it did not follow the issue template. You either did not upload a crash log or didn't upload it in the required format. Attach a log file and a crash log as described in the issue template by dragging and dropping the file and letting GitHub create an attachment. Do not copy-paste the content of the log file into the area. Please edit your issue to add the required data and the issue will be automatically be reopened.`,
+                });
+              }
+            } else if (context.payload.issue.labels.some(label => label.name == "E-invalid") && LOG_FILE_REGEX.test(issue_content) && CRASH_REPORT_REGEX.test(issue_content)) {
+              await github.rest.issues.update({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                state: "closed",
-                state_reason: "not_planned",
-                labels: ["E-invalid"],
+                state: "open",
               })
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `${author_name}, your issue was closed.`,
+                body: "Reopened because the issue now follows the issue template.",
               });
             }
