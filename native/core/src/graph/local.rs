@@ -1,5 +1,6 @@
 use std::mem::transmute;
 use std::ops::Shr;
+use std::thread::current;
 
 use core_simd::simd::*;
 use std_float::StdFloat;
@@ -7,6 +8,212 @@ use std_float::StdFloat;
 use crate::graph::octree::{LEVEL_3_COORD_LENGTH, LEVEL_3_COORD_MASK, LEVEL_3_COORD_SHIFT};
 use crate::graph::*;
 use crate::math::*;
+
+#[derive(Clone, Copy)]
+#[repr(transparent)]
+pub struct LocalNodeIndex<const LEVEL: u8>(u32);
+
+// XYZXYZXYZXYZXYZXYZXYZXYZ
+const LOCAL_NODE_INDEX_X_MASK: u32 = 0b10010010_01001001_00100100;
+const LOCAL_NODE_INDEX_Y_MASK: u32 = 0b01001001_00100100_10010010;
+const LOCAL_NODE_INDEX_Z_MASK: u32 = 0b00100100_10010010_01001001;
+
+impl<const LEVEL: u8> LocalNodeIndex<LEVEL> {
+    #[inline(always)]
+    pub fn pack(unpacked: u8x3) -> Self {
+        // allocate one byte per bit for each element.
+        // each element is still has its individual bits in linear ordering, but the bytes in the
+        // vector are in morton ordering.
+        #[rustfmt::skip]
+            let expanded_linear_bits = simd_swizzle!(
+            unpacked,
+            [
+            //  X, Y, Z
+                2, 1, 0,
+                2, 1, 0,
+                2, 1, 0,
+                2, 1, 0,
+                2, 1, 0,
+                2, 1, 0,
+                2, 1, 0,
+                2, 1, 0, // LSB
+            ]
+        );
+
+        // shift each bit into the sign bit for morton ordering
+        #[rustfmt::skip]
+            let expanded_morton_bits = expanded_linear_bits << Simd::<u8, 24>::from_array(
+            [
+                7, 7, 7,
+                6, 6, 6,
+                5, 5, 5,
+                4, 4, 4,
+                3, 3, 3,
+                2, 2, 2,
+                1, 1, 1,
+                0, 0, 0, // LSB
+            ],
+        );
+
+        // arithmetic shift to set each whole lane to its sign bit, then shrinking all lanes to bitmask
+        let morton_packed = unsafe {
+            Mask::<i8, 24>::from_int_unchecked(expanded_morton_bits.cast::<i8>() >> Simd::splat(7))
+        }
+        .to_bitmask();
+
+        Self(morton_packed)
+    }
+
+    #[inline(always)]
+    pub fn inc_x(self) -> Self {
+        self.inc::<{ LOCAL_NODE_INDEX_X_MASK }>()
+    }
+
+    #[inline(always)]
+    pub fn inc_y(self) -> Self {
+        self.inc::<{ LOCAL_NODE_INDEX_Y_MASK }>()
+    }
+
+    #[inline(always)]
+    pub fn inc_z(self) -> Self {
+        self.inc::<{ LOCAL_NODE_INDEX_Z_MASK }>()
+    }
+
+    #[inline(always)]
+    pub fn dec_x(self) -> Self {
+        self.dec::<{ LOCAL_NODE_INDEX_X_MASK }>()
+    }
+
+    #[inline(always)]
+    pub fn dec_y(self) -> Self {
+        self.dec::<{ LOCAL_NODE_INDEX_Y_MASK }>()
+    }
+
+    #[inline(always)]
+    pub fn dec_z(self) -> Self {
+        self.dec::<{ LOCAL_NODE_INDEX_Z_MASK }>()
+    }
+
+    #[inline(always)]
+    pub fn inc<const MASK: u32>(self) -> Self {
+        // make the other bits in the number 1
+        let mut masked = self.0 | !MASK;
+
+        // increment
+        masked = masked.wrapping_add(1_u32 << LEVEL);
+
+        // modify only the masked bits in the original number
+        Self((self.0 & !MASK) | (masked & MASK))
+    }
+
+    #[inline(always)]
+    pub fn dec<const MASK: u32>(self) -> Self {
+        // make the other bits in the number 0
+        let mut masked = self.0 & MASK;
+
+        // decrement
+        masked = masked.wrapping_sub(1_u32 << LEVEL);
+
+        // modify only the masked bits in the original number
+        Self((self.0 & !MASK) | (masked & MASK))
+    }
+
+    #[inline(always)]
+    pub fn as_array_offset(&self) -> usize {
+        self.0 as usize
+    }
+
+    #[inline(always)]
+    pub fn iter_lower_nodes<const LOWER_LEVEL: u8>(&self) -> LowerNodeIter<LEVEL, LOWER_LEVEL> {
+        LowerNodeIter::new(self)
+    }
+
+    // #[inline(always)]
+    // pub fn get_all_neighbors(&self) -> [Self; 6] {
+    //     const INC_MASKS: Simd<u32, 6> = Simd::from_array([]);
+    // }
+
+    #[inline(always)]
+    pub fn unpack(&self) -> u8x3 {
+        // allocate one byte per bit for each element.
+        // each element is still has its individual bits in morton ordering, but the bytes in the
+        // vector are in linear ordering.
+        #[rustfmt::skip]
+            let expanded_linear_bits = simd_swizzle!(
+            u8x4::from_array(self.0.to_le_bytes()),
+            [
+                // X
+                2, 2, 2, 1, 1, 1, 0, 0,
+                // Y
+                2, 2, 2, 1, 1, 0, 0, 0,
+                // Z
+                2, 2, 1, 1, 1, 0, 0, 0, // LSB
+            ]
+        );
+
+        // shift each bit into the sign bit for morton ordering
+        #[rustfmt::skip]
+            let expanded_morton_bits = expanded_linear_bits << Simd::<u8, 24>::from_array(
+            [
+                // X
+                0, 3, 6,
+                1, 4, 7,
+                2, 5,
+                // Y
+                1, 4, 7,
+                2, 5, 0,
+                3, 6,
+                // Z
+                2, 5, 0,
+                3, 6, 1,
+                4, 7, // LSB
+            ],
+        );
+
+        // arithmetic shift to set each whole lane to its sign bit, then shrinking all lanes to bitmask
+        let linear_packed = unsafe {
+            Mask::<i8, 24>::from_int_unchecked(expanded_morton_bits.cast::<i8>() >> Simd::splat(7))
+        }
+        .to_bitmask();
+
+        u8x3::from_slice(&linear_packed.to_le_bytes()[0..=2])
+    }
+}
+
+pub struct LowerNodeIter<const LEVEL: u8, const LOWER_LEVEL: u8> {
+    current: u32,
+    end: u32,
+}
+
+impl<const LEVEL: u8, const LOWER_LEVEL: u8> LowerNodeIter<LEVEL, LOWER_LEVEL> {
+    fn new(index: &LocalNodeIndex<LEVEL>) -> Self {
+        assert!(LEVEL > LOWER_LEVEL);
+
+        let node_size = 1 << (LEVEL * 3);
+
+        Self {
+            current: index.0,
+            end: index.0 + node_size,
+        }
+    }
+}
+
+impl<const LEVEL: u8, const LOWER_LEVEL: u8> Iterator for LowerNodeIter<LEVEL, LOWER_LEVEL> {
+    type Item = LocalNodeIndex<LOWER_LEVEL>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.end {
+            None
+        } else {
+            let current = self.current;
+
+            let lower_node_size = 1 << (LOWER_LEVEL * 3);
+            self.current += lower_node_size;
+
+            Some(LocalNodeIndex(current))
+        }
+    }
+}
 
 pub struct LocalCoordinateContext {
     frustum: LocalFrustum,
@@ -24,7 +231,7 @@ pub struct LocalCoordinateContext {
     // this is the index that encompasses the corner of the view distance bounding box where the
     // coordinate for each axis is closest to negative infinity, and truncated to the origin of the
     // level 3 node it's contained in.
-    pub iter_node_origin_idx: LocalNodeIndex,
+    pub iter_node_origin_index: LocalNodeIndex<3>,
     pub iter_node_origin_coords: u8x3,
     pub level_3_node_iters: u8x3,
 
@@ -65,7 +272,7 @@ impl LocalCoordinateContext {
         );
 
         let iter_node_origin_coords = iter_section_origin_coords & u8x3::splat(LEVEL_3_COORD_MASK);
-        let iter_node_origin_idx = LocalNodeIndex::pack(iter_node_origin_coords);
+        let iter_node_origin_index = LocalNodeIndex::pack(iter_node_origin_coords);
 
         let view_cube_length = (section_view_distance * 2) + 1;
         // convert to i32 to avoid implicit wrapping, then explicitly wrap
@@ -88,7 +295,7 @@ impl LocalCoordinateContext {
             fog_distance_squared,
             world_bottom_section_y,
             world_top_section_y,
-            iter_node_origin_idx,
+            iter_node_origin_index,
             iter_node_origin_coords,
             level_3_node_iters,
             iter_region_origin_coords: todo!(),
@@ -102,7 +309,12 @@ impl LocalCoordinateContext {
     // }
 
     #[inline(always)]
-    pub fn check_node<const LEVEL: u8>(&self, local_node_pos: u8x3) -> BoundsCheckResult {
+    pub fn test_node<const LEVEL: u8>(
+        &self,
+        local_node_index: LocalNodeIndex<LEVEL>,
+    ) -> BoundsCheckResult {
+        let local_node_pos = local_node_index.unpack();
+
         let bounds = self.node_get_local_bounds::<LEVEL>(local_node_pos);
 
         let mut result = self.bounds_inside_fog::<LEVEL>(&bounds);
@@ -232,7 +444,8 @@ impl LocalFrustum {
         }
     }
 
-    #[inline(always)]
+    // #[inline(always)]
+    #[no_mangle]
     pub fn test_local_bounding_box(&self, bb: &LocalBoundingBox) -> BoundsCheckResult {
         unsafe {
             // These unsafe mask shenanigans just check if the sign bit is set for each lane.
@@ -271,18 +484,13 @@ impl LocalFrustum {
                     .fast_fma(inside_bounds_y, self.plane_zs * inside_bounds_z),
             );
 
-            if outside_length_sq.simd_ge(-self.plane_ws).to_bitmask() == 0b111111 {
-                if inside_length_sq.simd_ge(-self.plane_ws).to_bitmask() == 0b111111 {
-                    BoundsCheckResult::Inside
-                } else {
-                    BoundsCheckResult::Partial
-                }
-            } else {
-                if inside_length_sq.simd_ge(-self.plane_ws).to_bitmask() == 0b111111 {
-                    panic!("BAD!!!!!");
-                }
-                BoundsCheckResult::Outside
-            }
+            // if any outside lengths are greater than -w, return OUTSIDE
+            // if all inside lengths are greater than -w, return INSIDE
+            // otherwise, return PARTIAL
+            let none_outside = outside_length_sq.simd_ge(-self.plane_ws).to_bitmask() == 0b000000;
+            let all_inside = inside_length_sq.simd_ge(-self.plane_ws).to_bitmask() == 0b111111;
+
+            BoundsCheckResult::from_int_unchecked(none_outside as u8 + all_inside as u8)
         }
     }
 }

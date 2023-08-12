@@ -186,31 +186,4 @@ impl<T, const LEN: usize> CInlineVec<T, LEN> {
 //         let graph = Box::from_raw(graph.into_mut_ref());
 //         std::mem::drop(graph);
 //     }
-//
-//     #[no_mangle]
-//     pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_frustumCreate(
-//         _: *mut JEnv,
-//         _: *mut JClass,
-//         out_frustum: JPtrMut<*const LocalFrustum>,
-//         planes: JPtr<[[f32; 4]; 6]>,
-//         offset: JPtr<[f32; 3]>,
-//     ) {
-//         let planes = planes.as_ref().map(f32x3::from_array);
-//
-//         let offset = f32x3::from_array(*offset.as_ref());
-//
-//         let frustum = Box::new(LocalFrustum::new(planes, offset));
-//
-//         let out_frustum = out_frustum.into_mut_ref();
-//         *out_frustum = Box::into_raw(frustum);
-//     }
-//
-//     #[no_mangle]
-//     pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_frustumDelete(
-//         _: *mut JEnv,
-//         _: *mut JClass,
-//         frustum: JPtrMut<LocalFrustum>,
-//     ) {
-//         std::mem::drop(Box::from_raw(frustum.into_mut_ref()));
-//     }
 // }

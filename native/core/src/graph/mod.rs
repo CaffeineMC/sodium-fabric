@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::intrinsics::{prefetch_read_data, prefetch_write_data};
+use std::marker::PhantomData;
+use std::mem::transmute;
 use std::ops::*;
 use std::vec::Vec;
 
@@ -11,7 +13,7 @@ use std_float::StdFloat;
 
 use crate::collections::ArrayDeque;
 use crate::ffi::{CInlineVec, CVec};
-use crate::graph::local::BoundsCheckResult;
+use crate::graph::local::*;
 use crate::graph::octree::LinearBitOctree;
 use crate::math::*;
 
@@ -21,167 +23,6 @@ mod octree;
 pub const REGION_COORD_MASK: u8x3 = u8x3::from_array([0b11111000, 0b11111100, 0b11111000]);
 pub const SECTIONS_IN_REGION: usize = 8 * 4 * 8;
 pub const SECTIONS_IN_GRAPH: usize = 256 * 256 * 256;
-
-#[derive(Clone, Copy)]
-#[repr(transparent)]
-pub struct LocalNodeIndex(u32);
-
-impl LocalNodeIndex {
-    // XYZXYZXYZXYZXYZXYZXYZXYZ
-    const X_MASK: u32 = 0b10010010_01001001_00100100;
-    const Y_MASK: u32 = 0b01001001_00100100_10010010;
-    const Z_MASK: u32 = 0b00100100_10010010_01001001;
-
-    #[inline(always)]
-    pub fn pack(unpacked: u8x3) -> Self {
-        // allocate one byte per bit for each element.
-        // each element is still has its individual bits in linear ordering, but the bytes in the
-        // vector are in morton ordering.
-        #[rustfmt::skip]
-        let expanded_linear_bits = simd_swizzle!(
-            unpacked,
-            [
-            //  X, Y, Z
-                2, 1, 0,
-                2, 1, 0,
-                2, 1, 0,
-                2, 1, 0,
-                2, 1, 0,
-                2, 1, 0,
-                2, 1, 0,
-                2, 1, 0, // LSB
-            ]
-        );
-
-        // shift each bit into the sign bit for morton ordering
-        #[rustfmt::skip]
-        let expanded_morton_bits = expanded_linear_bits << Simd::<u8, 24>::from_array(
-            [
-                7, 7, 7,
-                6, 6, 6,
-                5, 5, 5,
-                4, 4, 4,
-                3, 3, 3,
-                2, 2, 2,
-                1, 1, 1,
-                0, 0, 0, // LSB
-            ],
-        );
-
-        // arithmetic shift to set each whole lane to its sign bit, then shrinking all lanes to bitmask
-        let morton_packed = unsafe {
-            Mask::<i8, 24>::from_int_unchecked(expanded_morton_bits.cast::<i8>() >> Simd::splat(7))
-        }
-        .to_bitmask();
-
-        Self(morton_packed)
-    }
-
-    #[inline(always)]
-    pub fn inc_x<const LEVEL: u8>(self) -> Self {
-        self.inc::<LEVEL, { Self::Z_MASK }>()
-    }
-
-    #[inline(always)]
-    pub fn inc_y<const LEVEL: u8>(self) -> Self {
-        self.inc::<LEVEL, { Self::Z_MASK }>()
-    }
-
-    #[inline(always)]
-    pub fn inc_z<const LEVEL: u8>(self) -> Self {
-        self.inc::<LEVEL, { Self::Z_MASK }>()
-    }
-
-    #[inline(always)]
-    pub fn dec_x<const LEVEL: u8>(self) -> Self {
-        self.dec::<LEVEL, { Self::Z_MASK }>()
-    }
-
-    #[inline(always)]
-    pub fn dec_y<const LEVEL: u8>(self) -> Self {
-        self.dec::<LEVEL, { Self::Z_MASK }>()
-    }
-
-    #[inline(always)]
-    pub fn dec_z<const LEVEL: u8>(self) -> Self {
-        self.dec::<LEVEL, { Self::Z_MASK }>()
-    }
-
-    #[inline(always)]
-    pub fn inc<const LEVEL: u8, const MASK: u32>(self) -> Self {
-        // make the other bits in the number 1
-        let mut masked = self.0 | !MASK;
-
-        // increment
-        masked = masked.wrapping_add(1_u32 << LEVEL);
-
-        // modify only the masked bits in the original number
-        Self((self.0 & !MASK) | (masked & MASK))
-    }
-
-    #[inline(always)]
-    pub fn dec<const LEVEL: u8, const MASK: u32>(self) -> Self {
-        // make the other bits in the number 0
-        let mut masked = self.0 & MASK;
-
-        // decrement
-        masked = masked.wrapping_sub(1_u32 << LEVEL);
-
-        // modify only the masked bits in the original number
-        Self((self.0 & !MASK) | (masked & MASK))
-    }
-
-    #[inline(always)]
-    pub fn as_array_offset(&self) -> usize {
-        self.0 as usize
-    }
-
-    #[inline(always)]
-    pub fn unpack(&self) -> u8x3 {
-        // allocate one byte per bit for each element.
-        // each element is still has its individual bits in morton ordering, but the bytes in the
-        // vector are in linear ordering.
-        #[rustfmt::skip]
-        let expanded_linear_bits = simd_swizzle!(
-            u8x4::from_array(self.0.to_le_bytes()),
-            [
-                // X
-                2, 2, 2, 1, 1, 1, 0, 0,
-                // Y
-                2, 2, 2, 1, 1, 0, 0, 0,
-                // Z
-                2, 2, 1, 1, 1, 0, 0, 0, // LSB
-            ]
-        );
-
-        // shift each bit into the sign bit for morton ordering
-        #[rustfmt::skip]
-        let expanded_morton_bits = expanded_linear_bits << Simd::<u8, 24>::from_array(
-            [
-                // X
-                0, 3, 6,
-                1, 4, 7,
-                2, 5,
-                // Y
-                1, 4, 7,
-                2, 5, 0,
-                3, 6,
-                // Z
-                2, 5, 0,
-                3, 6, 1,
-                4, 7, // LSB
-            ],
-        );
-
-        // arithmetic shift to set each whole lane to its sign bit, then shrinking all lanes to bitmask
-        let linear_packed = unsafe {
-            Mask::<i8, 24>::from_int_unchecked(expanded_morton_bits.cast::<i8>() >> Simd::splat(7))
-        }
-        .to_bitmask();
-
-        u8x3::from_slice(&linear_packed.to_le_bytes()[0..=2])
-    }
-}
 
 #[derive(Clone, Copy)]
 #[repr(transparent)]
@@ -215,13 +56,14 @@ impl RegionSectionIndex {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum GraphDirection {
-    NegX,
-    NegY,
-    NegZ,
-    PosX,
-    PosY,
-    PosZ,
+    NegX = 0,
+    NegY = 1,
+    NegZ = 2,
+    PosX = 3,
+    PosY = 4,
+    PosZ = 5,
 }
 
 impl GraphDirection {
@@ -245,9 +87,17 @@ impl GraphDirection {
             GraphDirection::PosZ => GraphDirection::NegZ,
         }
     }
+
+    /// SAFETY: if out of bounds, this will fail to assert in debug mode
+    #[inline(always)]
+    pub unsafe fn from_int_unchecked(val: u8) -> Self {
+        debug_assert!(val <= 5);
+        transmute(val)
+    }
 }
 
 #[derive(Clone, Copy)]
+#[repr(transparent)]
 pub struct GraphDirectionSet(u8);
 
 impl GraphDirectionSet {
@@ -281,7 +131,7 @@ impl GraphDirectionSet {
 
     #[inline(always)]
     pub fn add(&mut self, dir: GraphDirection) {
-        self.0 |= 1 << dir as usize;
+        self.0 |= 1 << dir as u8;
     }
 
     #[inline(always)]
@@ -291,7 +141,7 @@ impl GraphDirectionSet {
 
     #[inline(always)]
     pub fn contains(&self, dir: GraphDirection) -> bool {
-        (self.0 & (1 << dir as usize)) != 0
+        (self.0 & (1 << dir as u8)) != 0
     }
 
     #[inline(always)]
@@ -314,7 +164,40 @@ impl BitAnd for GraphDirectionSet {
     }
 }
 
+impl IntoIterator for GraphDirectionSet {
+    type Item = GraphDirection;
+    type IntoIter = GraphDirectionSetIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        GraphDirectionSetIter(self.0)
+    }
+}
+
+#[repr(transparent)]
+pub struct GraphDirectionSetIter(u8);
+
+impl Iterator for GraphDirectionSetIter {
+    type Item = GraphDirection;
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        // Description of the iteration approach on daniel lemire's blog
+        // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
+        if self.0 != 0 {
+            // SAFETY: the result from a valid GraphDirectionSet value should never be out of bounds
+            let direction =
+                unsafe { GraphDirection::from_int_unchecked(self.0.trailing_zeros() as u8) };
+            self.0 &= (self.0 - 1);
+            Some(direction)
+        } else {
+            None
+        }
+    }
+}
+
+// todo: should the top bit signify if it's populated or not?
 #[derive(Default, Clone, Copy)]
+#[repr(transparent)]
 pub struct VisibilityData(u16);
 
 impl VisibilityData {
@@ -393,25 +276,29 @@ impl VisibilityData {
     }
 }
 
-struct GraphSearchState {
-    incoming: [GraphDirectionSet; SECTIONS_IN_REGION],
-    queue: ArrayDeque<RegionSectionIndex, { SECTIONS_IN_REGION + 1 }>,
+pub struct GraphSearchState {
+    incoming: [GraphDirectionSet; SECTIONS_IN_GRAPH],
+    // TODO: figure out a way to calculate a smaller value
+    queue: ArrayDeque<LocalNodeIndex<1>, SECTIONS_IN_GRAPH>,
 
     enqueued: bool,
 }
 
 impl GraphSearchState {
-    // pub fn enqueue(&mut self, index: LocalNodeIndex, directions: GraphDirectionSet) {
-    //     let incoming = &mut self.incoming[index.as_array_offset()];
-    //     let should_enqueue = incoming.is_empty();
-    //
-    //     incoming.add_all(directions);
-    //
-    //     unsafe {
-    //         self.queue
-    //             .push_conditionally_unchecked(index, should_enqueue);
-    //     }
-    // }
+    pub fn enqueue(&mut self, index: LocalNodeIndex<1>, incoming_direction: GraphDirection) {
+        // SAFETY: LocalNodeIndex should never have the top 8 bits set, and the array is exactly
+        // 2^24 elements long.
+        let node_incoming_directions =
+            unsafe { self.incoming.get_unchecked_mut(index.as_array_offset()) };
+        let should_enqueue = node_incoming_directions.is_empty();
+
+        node_incoming_directions.add(incoming_direction);
+
+        unsafe {
+            self.queue
+                .push_conditionally_unchecked(index, should_enqueue);
+        }
+    }
 
     fn reset(&mut self) {
         self.queue.reset();
@@ -425,63 +312,92 @@ impl Default for GraphSearchState {
     fn default() -> Self {
         Self {
             queue: Default::default(),
-            incoming: [GraphDirectionSet::default(); SECTIONS_IN_REGION],
+            incoming: [GraphDirectionSet::default(); SECTIONS_IN_GRAPH],
             enqueued: false,
         }
     }
 }
 
 pub struct Graph {
-    section_populated_bits: LinearBitOctree,
-    section_visibility_bits: LinearBitOctree,
+    section_is_populated_bits: LinearBitOctree,
+    section_is_visible_bits: LinearBitOctree,
+
+    section_visibility_bit_sets: [VisibilityData; SECTIONS_IN_GRAPH],
 }
 
 impl Graph {
     pub fn new() -> Self {
         Graph {
-            section_populated_bits: Default::default(),
-            section_visibility_bits: Default::default(),
+            section_is_populated_bits: Default::default(),
+            section_is_visible_bits: Default::default(),
+            section_visibility_bit_sets: [Default::default(); SECTIONS_IN_GRAPH],
         }
     }
 
-    pub fn cull(&mut self, context: LocalCoordinateContext, no_occlusion_cull: bool) {}
+    pub fn cull(&mut self, context: &LocalCoordinateContext, no_occlusion_cull: bool) {
+        self.section_is_visible_bits.clear();
 
-    fn frustum_and_fog_cull(&mut self, context: LocalCoordinateContext) {
-        let cur_idx = context.iter_node_origin_idx;
+        self.frustum_and_fog_cull(context);
+    }
 
-        // figure out how to make this go linearly in the
+    // #[no_mangle]
+    fn frustum_and_fog_cull(&mut self, context: &LocalCoordinateContext) {
+        let mut level_3_index = context.iter_node_origin_index;
+
+        // this could go more linear in memory prolly, but eh
         for _x in 0..context.level_3_node_iters.x() {
             for _y in 0..context.level_3_node_iters.y() {
                 for _z in 0..context.level_3_node_iters.z() {
-                    unsafe {
-                        // inside of individual level 3 nodes, the cache locality is *extremely* good.
-                        const LOCALITY: i32 = 3;
+                    self.check_node(level_3_index, context);
 
-                        prefetch_read_data(&self.section_populated_bits, LOCALITY);
-                        prefetch_write_data(&self.section_visibility_bits, LOCALITY);
-                    }
+                    level_3_index = level_3_index.inc_z();
+                }
+                level_3_index = level_3_index.inc_y();
+            }
+            level_3_index = level_3_index.inc_x();
+        }
+    }
 
-                    let cur_pos = cur_idx.unpack();
-
-                    match context.check_node::<3>(cur_pos) {
-                        BoundsCheckResult::Outside => {}
-                        BoundsCheckResult::Inside => {
-                            self.section_visibility_bits
-                                .copy_from::<3>(&self.section_populated_bits, cur_idx);
-                        }
-                        BoundsCheckResult::Outside | BoundsCheckResult::Inside => {
-                            cur_idx.inc_z::<3>();
-                        }
-                        BoundsCheckResult::Partial => {}
+    #[inline(always)]
+    fn check_node<const LEVEL: u8>(
+        &mut self,
+        index: LocalNodeIndex<LEVEL>,
+        context: &LocalCoordinateContext,
+    ) {
+        match context.test_node(index) {
+            BoundsCheckResult::Outside => {}
+            BoundsCheckResult::Inside => {
+                self.section_is_visible_bits
+                    .copy_from(&self.section_is_populated_bits, index);
+            }
+            BoundsCheckResult::Partial => match LEVEL {
+                3 => {
+                    for lower_node_index in index.iter_lower_nodes::<2>() {
+                        self.check_node(lower_node_index, context);
                     }
                 }
-            }
+                2 => {
+                    for lower_node_index in index.iter_lower_nodes::<1>() {
+                        self.check_node(lower_node_index, context);
+                    }
+                }
+                1 => {
+                    for lower_node_index in index.iter_lower_nodes::<0>() {
+                        self.check_node(lower_node_index, context);
+                    }
+                }
+                0 => {
+                    self.section_is_visible_bits
+                        .copy_from(&self.section_is_populated_bits, index);
+                }
+                _ => panic!("Invalid node level: {}", LEVEL),
+            },
         }
     }
 
     // fn bfs_and_occlusion_cull(
     //     &mut self,
-    //     context: LocalCoordinateContext,
+    //     context: &LocalCoordinateContext,
     //     no_occlusion_cull: bool,
     // ) -> CVec<RegionDrawBatch> {
     //     let mut region_iteration_queue: VecDeque<LocalSectionCoord> = VecDeque::new();
@@ -507,12 +423,12 @@ impl Graph {
     //         let mut search_ctx = SearchContext::create(&mut self.regions, region_coord);
     //         let mut batch: RegionDrawBatch = RegionDrawBatch::new(region_coord);
     //
-    //         while let Some(node_idx) = search_ctx.origin().search_state.queue.pop() {
-    //             let node_coord = node_idx.as_global_coord(region_coord);
+    //         while let Some(node_index) = search_ctx.origin().search_state.queue.pop() {
+    //             let node_coord = node_index.as_global_coord(region_coord);
     //
-    //             let node = search_ctx.origin().nodes[node_idx.as_array_offset()];
+    //             let node = search_ctx.origin().nodes[node_index.as_array_offset()];
     //             let node_incoming =
-    //                 search_ctx.origin().search_state.incoming[node_idx.as_array_offset()];
+    //                 search_ctx.origin().search_state.incoming[node_index.as_array_offset()];
     //
     //             if !chunk_inside_fog(node_coord, origin_node_coord, view_distance)
     //                 || !chunk_inside_frustum(node_coord, frustum)
@@ -521,14 +437,14 @@ impl Graph {
     //             }
     //
     //             if (node.flags & (1 << 1)) != 0 {
-    //                 batch.sections.push(node_idx);
+    //                 batch.sections.push(node_index);
     //             }
     //
     //             let valid_directions = get_valid_directions(origin_node_coord, node_coord);
     //             let allowed_directions =
     //                 node.connections.get_outgoing_directions(node_incoming) & valid_directions;
     //
-    //             Self::enqueue_all_neighbors(&mut search_ctx, allowed_directions, node_idx);
+    //             Self::enqueue_all_neighbors(&mut search_ctx, allowed_directions, node_index);
     //         }
     //
     //         if !batch.is_empty() {
@@ -553,11 +469,15 @@ impl Graph {
     //
     //     CVec::from_boxed_slice(sorted_batches.into_boxed_slice())
     // }
-    //
+
+    fn divide_graph_into_regions(&self) -> CVec<RegionDrawBatch> {
+        todo!()
+    }
+
     // fn enqueue_all_neighbors(
-    //     context: &mut SearchContext,
+    //     state: &mut GraphSearchState,
     //     directions: GraphDirectionSet,
-    //     origin: LocalNodeIndex,
+    //     index: LocalNodeIndex<1>,
     // ) {
     //     for direction in GraphDirection::ORDERED {
     //         if directions.contains(direction) {
@@ -611,6 +531,39 @@ impl Graph {
     //         .get(&chunk_coord_to_region_coord(chunk_coord))
     //         .map(|region| *region.get_chunk(chunk_coord))
     // }
+}
+
+#[inline(always)]
+pub fn get_neighbors(
+    outgoing: GraphDirectionSet,
+    index: LocalNodeIndex<1>,
+    search_state: &mut GraphSearchState,
+) {
+    for direction in outgoing {
+        let neighbor = match direction {
+            GraphDirection::NegX => index.dec_x(),
+            GraphDirection::NegY => index.dec_y(),
+            GraphDirection::NegZ => index.dec_z(),
+            GraphDirection::PosX => index.inc_x(),
+            GraphDirection::PosY => index.inc_y(),
+            GraphDirection::PosZ => index.inc_z(),
+        };
+
+        // the outgoing direction for the current node is the incoming direction for the neighbor
+        search_state.enqueue(neighbor, direction.opposite());
+    }
+}
+
+// #[no_mangle]
+pub fn get_all_neighbors(index: LocalNodeIndex<1>) -> [LocalNodeIndex<1>; 6] {
+    [
+        index.dec_x(),
+        index.dec_y(),
+        index.dec_z(),
+        index.inc_x(),
+        index.inc_y(),
+        index.inc_z(),
+    ]
 }
 
 #[repr(C)]

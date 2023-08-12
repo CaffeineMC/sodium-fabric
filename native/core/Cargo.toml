@@ -17,7 +17,7 @@ lto = "thin"
 [profile.asm]
 inherits = "release"
 panic = "abort"
-debug = true
+debug = false
 lto = "off"
 
 [profile.production]
