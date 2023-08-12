@@ -128,10 +128,28 @@ impl<const LEVEL: u8> LocalNodeIndex<LEVEL> {
         LowerNodeIter::new(self)
     }
 
-    // #[inline(always)]
-    // pub fn get_all_neighbors(&self) -> [Self; 6] {
-    //     const INC_MASKS: Simd<u32, 6> = Simd::from_array([]);
-    // }
+    #[inline(always)]
+    pub fn get_all_neighbors(&self) -> [Self; 6] {
+        const DEC_MASKS: Simd<u32, 6> = Simd::from_array([
+            LOCAL_NODE_INDEX_X_MASK,
+            LOCAL_NODE_INDEX_Y_MASK,
+            LOCAL_NODE_INDEX_Z_MASK,
+            u32::MAX,
+            u32::MAX,
+            u32::MAX,
+        ]);
+
+        const INC_MASKS: Simd<u32, 6> = Simd::from_array([
+            u32::MAX,
+            u32::MAX,
+            u32::MAX,
+            LOCAL_NODE_INDEX_X_MASK,
+            LOCAL_NODE_INDEX_Y_MASK,
+            LOCAL_NODE_INDEX_Z_MASK,
+        ]);
+
+        todo!()
+    }
 
     #[inline(always)]
     pub fn unpack(&self) -> u8x3 {
@@ -253,7 +271,7 @@ impl LocalCoordinateContext {
         world_top_section_y: i8,
     ) -> Self {
         assert!(
-            section_view_distance <= 127,
+            section_view_distance <= MAX_VIEW_DISTANCE,
             "View distances above 127 are not supported"
         );
 
@@ -279,6 +297,12 @@ impl LocalCoordinateContext {
         // todo: should the +1 be here?
         let world_height =
             ((world_top_section_y as i32) - (world_bottom_section_y as i32) + 1) as u8;
+
+        assert!(
+            world_height <= MAX_WORLD_HEIGHT,
+            "World heights larger than 254 sections are not supported"
+        );
+
         // the add is done to make sure we round up during truncation
         let level_3_node_iters = (u8x3::from_xyz(view_cube_length, world_height, view_cube_length)
             + Simd::splat(LEVEL_3_COORD_LENGTH - 1))
@@ -302,11 +326,6 @@ impl LocalCoordinateContext {
             region_iters: todo!(),
         }
     }
-
-    // #[no_mangle]
-    // pub fn test(&self, local_node_pos: u8x3) -> BoundsCheckResult {
-    //     self.check_node::<3>(local_node_pos)
-    // }
 
     #[inline(always)]
     pub fn test_node<const LEVEL: u8>(
@@ -487,7 +506,8 @@ impl LocalFrustum {
             // if any outside lengths are greater than -w, return OUTSIDE
             // if all inside lengths are greater than -w, return INSIDE
             // otherwise, return PARTIAL
-            let none_outside = outside_length_sq.simd_ge(-self.plane_ws).to_bitmask() == 0b000000;
+            // NOTE: it is impossible for a lane to be both inside and outside at the same time
+            let none_outside = outside_length_sq.simd_ge(-self.plane_ws).to_bitmask() == 0b111111;
             let all_inside = inside_length_sq.simd_ge(-self.plane_ws).to_bitmask() == 0b111111;
 
             BoundsCheckResult::from_int_unchecked(none_outside as u8 + all_inside as u8)

@@ -48,16 +48,33 @@ public class CoreLib {
 
             var planes = (Vector4f[]) field.get(frustum);
 
-            for (int i = 0; i < 6; i++) {
-                buf.put((i * )planes[i].x);
-            }
+            buf.put(planes[0].x);
+            buf.put(planes[1].x);
+            buf.put(planes[2].x);
+            buf.put(planes[3].x);
+            buf.put(planes[4].x);
+            buf.put(planes[5].x);
 
-            planes[0].get(0, buf);
-            planes[1].get(16, buf);
-            planes[2].get(32, buf);
-            planes[3].get(48, buf);
-            planes[4].get(64, buf);
-            planes[5].get(80, buf);
+            buf.put(planes[0].y);
+            buf.put(planes[1].y);
+            buf.put(planes[2].y);
+            buf.put(planes[3].y);
+            buf.put(planes[4].y);
+            buf.put(planes[5].y);
+
+            buf.put(planes[0].z);
+            buf.put(planes[1].z);
+            buf.put(planes[2].z);
+            buf.put(planes[3].z);
+            buf.put(planes[4].z);
+            buf.put(planes[5].z);
+
+            buf.put(planes[0].w);
+            buf.put(planes[1].w);
+            buf.put(planes[2].w);
+            buf.put(planes[3].w);
+            buf.put(planes[4].w);
+            buf.put(planes[5].w);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Failed to extract planes from frustum", e);
         }

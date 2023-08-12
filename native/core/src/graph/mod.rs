@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::intrinsics::{prefetch_read_data, prefetch_write_data};
 use std::marker::PhantomData;
-use std::mem::transmute;
+use std::mem::{swap, transmute};
 use std::ops::*;
 use std::vec::Vec;
 
@@ -23,6 +23,12 @@ mod octree;
 pub const REGION_COORD_MASK: u8x3 = u8x3::from_array([0b11111000, 0b11111100, 0b11111000]);
 pub const SECTIONS_IN_REGION: usize = 8 * 4 * 8;
 pub const SECTIONS_IN_GRAPH: usize = 256 * 256 * 256;
+
+pub const MAX_VIEW_DISTANCE: u8 = 127;
+pub const MAX_WORLD_HEIGHT: u8 = 254;
+pub const BFS_QUEUE_SIZE: usize =
+    GraphSearchState::get_bfs_queue_max_size(MAX_VIEW_DISTANCE, MAX_WORLD_HEIGHT, true) as usize;
+pub type BfsQueue = ArrayDeque<LocalNodeIndex<1>, BFS_QUEUE_SIZE>;
 
 #[derive(Clone, Copy)]
 #[repr(transparent)]
@@ -278,13 +284,57 @@ impl VisibilityData {
 
 pub struct GraphSearchState {
     incoming: [GraphDirectionSet; SECTIONS_IN_GRAPH],
-    // TODO: figure out a way to calculate a smaller value
-    queue: ArrayDeque<LocalNodeIndex<1>, SECTIONS_IN_GRAPH>,
+    queues: [BfsQueue; 2],
 
-    enqueued: bool,
+    /// when false, queue 0 is read and queue 1 is write.
+    /// when true, queue 0 is write and queue 1 is read.
+    queues_flipped: bool,
 }
 
 impl GraphSearchState {
+    pub const fn get_bfs_queue_max_size(
+        section_render_distance: u8,
+        world_height: u8,
+        frustum: bool,
+    ) -> u32 {
+        // for the worst case, we will assume the player is in the center of the render distance and
+        // world height.
+        // for traversal lengths, we don't include the chunk the player is in.
+
+        let max_height_traversal = (world_height.div_ceil(2) - 1) as u32;
+        let max_width_traversal = section_render_distance as u32;
+
+        // the 2 accounts for the chunks directly above and below the player
+        let mut count = 2;
+        let mut layer_index = 1_u32;
+
+        // check if the traversal up and down is restricted by the world height. if so, remove the
+        // out-of-bounds layers from the iteration
+        if max_height_traversal < max_width_traversal {
+            count = 0;
+            layer_index = max_width_traversal - max_height_traversal;
+        }
+
+        // add rings that are on both the top and bottom.
+        // simplification of:
+        // while layer_index < max_width_traversal {
+        //     count += (layer_index * 8);
+        //     layer_index += 1;
+        // }
+        count += 4 * (max_width_traversal - layer_index) * (max_width_traversal + layer_index - 1);
+
+        // add final, outer-most ring.
+        count += (max_width_traversal * 4);
+
+        if frustum {
+            // divide by 2 because the player should never be able to see more than half of the world
+            // at once with frustum culling. This assumes an FOV maximum of 180 degrees.
+            count = count.div_ceil(2);
+        }
+
+        count
+    }
+
     pub fn enqueue(&mut self, index: LocalNodeIndex<1>, incoming_direction: GraphDirection) {
         // SAFETY: LocalNodeIndex should never have the top 8 bits set, and the array is exactly
         // 2^24 elements long.
@@ -295,25 +345,37 @@ impl GraphSearchState {
         node_incoming_directions.add(incoming_direction);
 
         unsafe {
-            self.queue
+            self.get_write_queue()
                 .push_conditionally_unchecked(index, should_enqueue);
         }
     }
 
-    fn reset(&mut self) {
-        self.queue.reset();
-        self.incoming.fill(GraphDirectionSet::none());
+    fn get_read_queue(&self) -> &BfsQueue {
+        let idx = self.queues_flipped as usize;
+        &self.queues[idx]
+    }
 
-        self.enqueued = false;
+    fn get_write_queue(&mut self) -> &mut BfsQueue {
+        let idx = !self.queues_flipped as usize;
+        &mut self.queues[idx]
+    }
+
+    fn flip(&mut self) {
+        self.queues[0].reset();
+        self.queues[1].reset();
+
+        self.queues_flipped = !self.queues_flipped;
+
+        self.incoming.fill(GraphDirectionSet::none());
     }
 }
 
 impl Default for GraphSearchState {
     fn default() -> Self {
         Self {
-            queue: Default::default(),
             incoming: [GraphDirectionSet::default(); SECTIONS_IN_GRAPH],
-            enqueued: false,
+            queues: [Default::default(), Default::default()],
+            queues_flipped: false,
         }
     }
 }
@@ -344,7 +406,8 @@ impl Graph {
     fn frustum_and_fog_cull(&mut self, context: &LocalCoordinateContext) {
         let mut level_3_index = context.iter_node_origin_index;
 
-        // this could go more linear in memory prolly, but eh
+        // this could go more linearly in memory, but we probably have good enough locality inside
+        // level 3 nodes
         for _x in 0..context.level_3_node_iters.x() {
             for _y in 0..context.level_3_node_iters.y() {
                 for _z in 0..context.level_3_node_iters.z() {
@@ -473,31 +536,6 @@ impl Graph {
     fn divide_graph_into_regions(&self) -> CVec<RegionDrawBatch> {
         todo!()
     }
-
-    // fn enqueue_all_neighbors(
-    //     state: &mut GraphSearchState,
-    //     directions: GraphDirectionSet,
-    //     index: LocalNodeIndex<1>,
-    // ) {
-    //     for direction in GraphDirection::ORDERED {
-    //         if directions.contains(direction) {
-    //             let (neighbor, wrapped) = match direction {
-    //                 GraphDirection::NegX => origin.dec_x(),
-    //                 GraphDirection::NegY => origin.dec_y(),
-    //                 GraphDirection::NegZ => origin.dec_z(),
-    //                 GraphDirection::PosX => origin.inc_x(),
-    //                 GraphDirection::PosY => origin.inc_y(),
-    //                 GraphDirection::PosZ => origin.inc_z(),
-    //             };
-    //
-    //             if let Some(neighbor_region) = context.adjacent(direction, wrapped) {
-    //                 neighbor_region
-    //                     .search_state
-    //                     .enqueue(neighbor, GraphDirectionSet::single(direction.opposite()));
-    //             }
-    //         }
-    //     }
-    // }
 
     // pub fn add_section(&mut self, chunk_coord: LocalSectionCoord) {
     //     let mut region = self

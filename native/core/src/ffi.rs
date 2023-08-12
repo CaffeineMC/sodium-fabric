@@ -167,7 +167,7 @@ impl<T, const LEN: usize> CInlineVec<T, LEN> {
 //         _: *mut JEnv,
 //         _: *mut JClass,
 //         graph: JPtrMut<Graph>,
-//         frustum: JPtr<LocalFrustum>,
+//         frustum: JPtr<[[f32; 6]; 4]>,
 //         view_distance: Jint,
 //         out_results: JPtrMut<CVec<RegionDrawBatch>>,
 //     ) {

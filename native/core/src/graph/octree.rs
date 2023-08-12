@@ -133,8 +133,7 @@ impl LinearBitOctree {
 
     #[inline(always)]
     pub fn clear(&mut self) {
-        // The default content is just 0s, so we can create a default and use that.
-        unsafe { self.level_3 = Self::default().level_3 };
+        self.level_3.fill(Level3Node::splat(0));
     }
 
     // inside of individual level 3 nodes, the cache locality is *extremely* good.
