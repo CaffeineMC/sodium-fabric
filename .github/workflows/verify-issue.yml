@@ -26,7 +26,7 @@ jobs:
             
             if (issue_payload.state == "open") {
               let match = LOG_FILE_REGEX.exec(issue_content);
-              if (!match || !match[0].includes("### Crash Report")) {
+              if (!match || match[0].includes("### Crash Report")) {
                 await github.rest.issues.update({
                   issue_number: context.issue.number,
                   owner: context.repo.owner,
