@@ -3,27 +3,17 @@ on:
   issues:
     types:
       - opened
-      - edited
-      - reopened
-  issue_comment:
-    types:
-      - created
 jobs:
   moderate:
     runs-on: ubuntu-latest
     steps:
-      - name: Moderate issues
-        uses: tachiyomiorg/issue-moderator-action@v2
-        if: startsWith( ${{ github.event.issue.body }} , "### Bug Description")
+      - uses: actions/github-script@v6
+        id: match_script
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-close-rules: |
-            [
-              {
-                "type": "body",
-                "regex": "### Log File\\s+\\[latest.log\\]\\(https:\/\/github\\.com\/\\w+\/sodium-fabric\/files\/\\d+\/latest.log\\)",
-                "closeIfMatch": false,
-                "message": "@${issue.user.login} this issue was automatically closed because it did not follow the issue template",
-                "ignoreCase": true
-              }
-            ]
+          result-encoding: string
+          script: |
+            const LOG_FILE_REGEX = "### Log File[\n \t]+\[latest.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest.log\)";
+            
+            if (LOG_FILE_REGEX.test(context.issue().payload.body)) {
+                console.log("Log file found!")
+            }
