@@ -14,7 +14,7 @@ jobs:
           result-encoding: string
           script: |
             const LOG_FILE_REGEX = new RegExp("### Log File[\n \t]+\[latest.log\]\(https:\/\/github\.com\/\w+\/sodium-fabric\/files\/\d+\/latest.log\)");
-            console.log(context.issue.payload.body);
+            console.log(context.payload.issue.body);
             
             if (LOG_FILE_REGEX.test(context.payload.issue.body)) {
                 return "woo";
