@@ -21,6 +21,8 @@ public class GraphicsAdapterProbe {
     public static void findAdapters() {
         LOGGER.info("Searching for graphics cards...");
 
+        // We rely on separate detection logic for Linux because Oshi fails to find GPUs without
+        // display outputs, and we can also retrieve the driver version for NVIDIA GPUs this way.
         var results = Util.getOperatingSystem() == Util.OperatingSystem.LINUX
                 ? findAdaptersLinux()
                 : findAdaptersCrossPlatform();
