@@ -10,11 +10,11 @@ public enum GraphicsAdapterVendor {
 
     @NotNull
     static GraphicsAdapterVendor identifyVendorFromString(String vendor) {
-        if (vendor.startsWith("Advanced Micro Devices, Inc.") || vendor.contains("(0x1002)")) {
+        if (vendor.startsWith("Advanced Micro Devices, Inc.") || vendor.contains("0x1002")) {
             return AMD;
-        } else if (vendor.startsWith("NVIDIA") || vendor.contains("(0x10de)")) {
+        } else if (vendor.startsWith("NVIDIA") || vendor.contains("0x10de")) {
             return NVIDIA;
-        } else if (vendor.startsWith("Intel") || vendor.contains("(0x8086)")) {
+        } else if (vendor.startsWith("Intel") || vendor.contains("0x8086")) {
             return INTEL;
         }
 
