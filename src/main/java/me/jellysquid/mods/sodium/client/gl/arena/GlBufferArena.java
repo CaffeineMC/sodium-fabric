@@ -1,10 +1,9 @@
 package me.jellysquid.mods.sodium.client.gl.arena;
 
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
-import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
-import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferUsage;
-import me.jellysquid.mods.sodium.client.gl.buffer.GlMutableBuffer;
+import me.jellysquid.mods.sodium.client.gl.buffer.*;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
+import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -22,7 +21,7 @@ public class GlBufferArena {
     private final int resizeIncrement;
 
     private final StagingBuffer stagingBuffer;
-    private GlMutableBuffer arenaBuffer;
+    private GlImmutableBuffer arenaBuffer;
 
     private GlBufferSegment head;
 
@@ -40,8 +39,7 @@ public class GlBufferArena {
         this.head = new GlBufferSegment(this, 0, initialCapacity);
         this.head.setFree(true);
 
-        this.arenaBuffer = commands.createMutableBuffer();
-        commands.allocateStorage(this.arenaBuffer, this.capacity * stride, BUFFER_USAGE);
+        this.arenaBuffer = commands.createImmutableBuffer((long) this.capacity * stride, EnumBitField.of(GlBufferStorageFlags.NONE));
 
         this.stagingBuffer = stagingBuffer;
     }
@@ -118,16 +116,15 @@ public class GlBufferArena {
     }
 
     private void transferSegments(CommandList commandList, Collection<PendingBufferCopyCommand> list, int capacity) {
-        GlMutableBuffer srcBufferObj = this.arenaBuffer;
-        GlMutableBuffer dstBufferObj = commandList.createMutableBuffer();
-
-        commandList.allocateStorage(dstBufferObj, capacity * this.stride, BUFFER_USAGE);
+        GlImmutableBuffer srcBufferObj = this.arenaBuffer;
+        GlImmutableBuffer dstBufferObj = commandList.createImmutableBuffer((long) capacity * this.stride,
+                EnumBitField.of(GlBufferStorageFlags.NONE));
 
         for (PendingBufferCopyCommand cmd : list) {
             commandList.copyBufferSubData(srcBufferObj, dstBufferObj,
-                    cmd.readOffset * this.stride,
-                    cmd.writeOffset * this.stride,
-                    cmd.length * this.stride);
+                    (long) cmd.readOffset * this.stride,
+                    (long) cmd.writeOffset * this.stride,
+                    (long) cmd.length * this.stride);
         }
 
         commandList.deleteBuffer(srcBufferObj);
