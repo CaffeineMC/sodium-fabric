@@ -2,12 +2,12 @@ package me.jellysquid.mods.sodium.client.render.chunk.occlusion;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.util.collections.DoubleBufferedQueue;
 import me.jellysquid.mods.sodium.client.util.collections.ReadQueue;
 import me.jellysquid.mods.sodium.client.util.collections.WriteQueue;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,7 +26,7 @@ public class OcclusionCuller {
 
     public void findVisible(Consumer<RenderSection> visitor,
                             Viewport viewport,
-                            float searchDistance,
+                            int searchDistance,
                             boolean useOcclusionCulling,
                             int frame)
     {
@@ -42,7 +42,7 @@ public class OcclusionCuller {
 
     private static void processQueue(Consumer<RenderSection> visitor,
                                      Viewport viewport,
-                                     float searchDistance,
+                                     int searchDistance,
                                      boolean useOcclusionCulling,
                                      int frame,
                                      ReadQueue<RenderSection> readQueue,
@@ -51,7 +51,7 @@ public class OcclusionCuller {
         RenderSection section;
 
         while ((section = readQueue.dequeue()) != null) {
-            if (isOutsideRenderDistance(viewport, section, searchDistance)) {
+            if (isOutsideRenderDistance(viewport.getTransform(), section, searchDistance)) {
                 continue;
             }
 
@@ -150,32 +150,30 @@ public class OcclusionCuller {
         return planes;
     }
 
-    // picks the closest vertex to the camera of the chunk render bounds, and returns the distance of the vertex from
-    // the camera position
-    private static boolean isOutsideRenderDistance(Viewport viewport, RenderSection section, float maxDistance) {
-        var origin = viewport.getBlockCoord();
-        var transform = viewport.getTransform();
+    private static boolean isOutsideRenderDistance(CameraTransform camera, RenderSection section, int maxDistance) {
+        // origin point of the chunk's bounding box (in view space)
+        int ox = section.getOriginX() - camera.intX;
+        int oy = section.getOriginY() - camera.intY;
+        int oz = section.getOriginZ() - camera.intZ;
 
-        // The position of the point which will be used for distance calculations
-        int pointX = section.getCenterX();
-        int pointY = section.getCenterY();
-        int pointZ = section.getCenterZ();
-
-        pointX += Integer.signum(origin.getX() - pointX) * 8; // (chunk.x > center.x) ? -8 : +8
-        pointY += Integer.signum(origin.getY() - pointY) * 8; // (chunk.y > center.y) ? -8 : +8
-        pointZ += Integer.signum(origin.getZ() - pointZ) * 8; // (chunk.z > center.z) ? -8 : +8
-
-        // the vertex's distance from the origin on each axis
-        float distanceX = (pointX - transform.intX) - transform.fracX;
-        float distanceY = (pointY - transform.intY) - transform.fracY;
-        float distanceZ = (pointZ - transform.intZ) - transform.fracZ;
+        // coordinates of the point to compare (in view space)
+        // this is the closest point within the bounding box to the center (0, 0, 0)
+        float dx = nearestToZero(ox, ox + 16) - camera.fracX;
+        float dy = nearestToZero(oy, oy + 16) - camera.fracY;
+        float dz = nearestToZero(oz, oz + 16) - camera.fracZ;
 
         // vanilla's "cylindrical fog" algorithm
         // max(length(distance.xz), abs(distance.y))
-        var distanceSq = Math.max((distanceX * distanceX) + (distanceZ * distanceZ), distanceY * distanceY);
-        var distanceLimitSq = MathHelper.square(maxDistance);
+        return (((dx * dx) + (dz * dz)) > (maxDistance * maxDistance)) || (Math.abs(dy) > maxDistance);
+    }
 
-        return distanceSq > distanceLimitSq;
+    @SuppressWarnings("ManualMinMaxCalculation") // we know what we are doing.
+    private static int nearestToZero(int min, int max) {
+        // this compiles to slightly better code than Math.min(Math.max(0, min), max)
+        int clamped = 0;
+        if (min > 0) { clamped = min; }
+        if (max < 0) { clamped = max; }
+        return clamped;
     }
 
     public static boolean isOutsideFrustum(Viewport viewport, RenderSection section) {
@@ -185,7 +183,7 @@ public class OcclusionCuller {
     private void init(Consumer<RenderSection> visitor,
                       WriteQueue<RenderSection> queue,
                       Viewport viewport,
-                      float searchDistance,
+                      int searchDistance,
                       boolean useOcclusionCulling,
                       int frame)
     {
@@ -236,13 +234,13 @@ public class OcclusionCuller {
     // section and proceeds counterclockwise (N->W->S->E).
     private void initOutsideWorldHeight(WriteQueue<RenderSection> queue,
                                         Viewport viewport,
-                                        float searchDistance,
+                                        int searchDistance,
                                         int frame,
                                         int height,
                                         int direction)
     {
         var origin = viewport.getChunkCoord();
-        var radius = MathHelper.ceil(searchDistance / 16.0f);
+        var radius = searchDistance >> 4;
 
         // Layer 0
         this.tryVisitNode(queue, origin.getX(), height, origin.getZ(), direction, frame, viewport);
