@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import me.jellysquid.mods.sodium.client.util.workarounds.driver.nvidia.NvidiaGLContextInfo;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11C;
 import org.slf4j.Logger;
@@ -70,6 +71,12 @@ public class PostLaunchChecks {
     // So we require that an up-to-date graphics driver is installed so that our workarounds can disable the Threaded
     // Optimizations driver hack.
     private static boolean isBrokenNvidiaDriverInstalled(GLContextInfo driver) {
+        // The Linux driver has two separate branches which have overlapping version numbers, despite also having
+        // different feature sets. As a result, we can't reliably determine which Linux drivers are broken...
+        if (Util.getOperatingSystem() != Util.OperatingSystem.WINDOWS) {
+            return false;
+        }
+
         var version = NvidiaGLContextInfo.tryParse(driver);
 
         if (version != null) {
