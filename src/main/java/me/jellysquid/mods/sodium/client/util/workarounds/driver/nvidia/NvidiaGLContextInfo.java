@@ -1,13 +1,14 @@
 package me.jellysquid.mods.sodium.client.util.workarounds.driver.nvidia;
 
 import me.jellysquid.mods.sodium.client.util.workarounds.GLContextInfo;
+import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.regex.Pattern;
 
 public record NvidiaGLContextInfo(int major, int minor) {
-    private static final Pattern PATTERN = Pattern.compile("^.*NVIDIA (?<major>\\d+)\\.(?<minor>\\d+)$");
+    private static final Pattern PATTERN = Pattern.compile("^.*NVIDIA (?<major>\\d+)\\.(?<minor>\\d+)(?<suffix>\\.\\d+)?$");
 
     @Nullable
     public static NvidiaGLContextInfo tryParse(GLContextInfo driver) {
@@ -39,17 +40,13 @@ public record NvidiaGLContextInfo(int major, int minor) {
      * @return True if this version is within the specified version range
      */
     public boolean isWithinRange(NvidiaGLContextInfo oldest, NvidiaGLContextInfo newest) {
-        // Fail when (this < oldest)
-        if (this.major < oldest.major || this.minor < oldest.minor) {
-            return false;
-        }
+        return this.asInteger() >= oldest.asInteger() && this.asInteger() < newest.asInteger();
+    }
 
-        // Fail when (this >= newest)
-        if (this.major >= newest.major && this.minor >= newest.minor) {
-            return false;
-        }
+    private long asInteger() {
+        Validate.isTrue(this.major >= 0);
+        Validate.isTrue(this.minor >= 0);
 
-        // Succeed when (this >= oldest) and (this < newest)
-        return true;
+        return (Integer.toUnsignedLong(this.major) << 32) | (Integer.toUnsignedLong(this.minor) << 0);
     }
 }
