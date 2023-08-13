@@ -23,7 +23,6 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttr
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
-import net.minecraft.util.math.ChunkSectionPos;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.Iterator;
@@ -98,10 +97,6 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             return;
         }
 
-        int centerChunkX = ChunkSectionPos.getSectionCoord(camera.intX);
-        int centerChunkY = ChunkSectionPos.getSectionCoord(camera.intY);
-        int centerChunkZ = ChunkSectionPos.getSectionCoord(camera.intZ);
-
         int originX = renderRegion.getChunkX();
         int originY = renderRegion.getChunkY();
         int originZ = renderRegion.getChunkZ();
@@ -118,8 +113,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             int slices;
 
             if (useBlockFaceCulling) {
-                slices = getVisibleFaces(centerChunkX, centerChunkY, centerChunkZ,
-                        chunkX, chunkY, chunkZ);
+                slices = getVisibleFaces(camera.intX, camera.intY, camera.intZ, chunkX, chunkY, chunkZ);
             } else {
                 slices = ModelQuadFacing.ALL;
             }
@@ -151,13 +145,14 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private static final int MODEL_UNASSIGNED = ModelQuadFacing.UNASSIGNED.ordinal();
     private static final int MODEL_POS_X      = ModelQuadFacing.POS_X.ordinal();
-    private static final int MODEL_NEG_X      = ModelQuadFacing.NEG_X.ordinal();
     private static final int MODEL_POS_Y      = ModelQuadFacing.POS_Y.ordinal();
-    private static final int MODEL_NEG_Y      = ModelQuadFacing.NEG_Y.ordinal();
     private static final int MODEL_POS_Z      = ModelQuadFacing.POS_Z.ordinal();
+
+    private static final int MODEL_NEG_X      = ModelQuadFacing.NEG_X.ordinal();
+    private static final int MODEL_NEG_Y      = ModelQuadFacing.NEG_Y.ordinal();
     private static final int MODEL_NEG_Z      = ModelQuadFacing.NEG_Z.ordinal();
 
-    private static int getVisibleFaces(int x1, int y1, int z1, int x2, int y2, int z2) {
+    private static int getVisibleFaces(int originX, int originY, int originZ, int chunkX, int chunkY, int chunkZ) {
         // This is carefully written so that we can keep everything branch-less.
         //
         // Normally, this would be a ridiculous way to handle the problem. But the Hotspot VM's
@@ -181,18 +176,20 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         // because it manages to a) correctly evaluate the cost of instructions, and b) go so far
         // as to actually produce vector code.  (https://godbolt.org/z/GaaEx39T9)
 
-        int planes = 0;
-
-        planes |= BitwiseMath.lessThan(x2 - 1, x1) << MODEL_POS_X;
-        planes |= BitwiseMath.lessThan(y2 - 1, y1) << MODEL_POS_Y;
-        planes |= BitwiseMath.lessThan(z2 - 1, z1) << MODEL_POS_Z;
-
-        planes |= BitwiseMath.greaterThan(x2 + 1, x1) << MODEL_NEG_X;
-        planes |= BitwiseMath.greaterThan(y2 + 1, y1) << MODEL_NEG_Y;
-        planes |= BitwiseMath.greaterThan(z2 + 1, z1) << MODEL_NEG_Z;
+        int boundsMinX = (chunkX << 4), boundsMaxX = boundsMinX + 16;
+        int boundsMinY = (chunkY << 4), boundsMaxY = boundsMinY + 16;
+        int boundsMinZ = (chunkZ << 4), boundsMaxZ = boundsMinZ + 16;
 
         // the "unassigned" plane is always front-facing, since we can't check it
-        planes |= (1 << MODEL_UNASSIGNED);
+        int planes = (1 << MODEL_UNASSIGNED);
+
+        planes |= BitwiseMath.greaterThan(originX, (boundsMinX - 3)) << MODEL_POS_X;
+        planes |= BitwiseMath.greaterThan(originY, (boundsMinY - 3)) << MODEL_POS_Y;
+        planes |= BitwiseMath.greaterThan(originZ, (boundsMinZ - 3)) << MODEL_POS_Z;
+
+        planes |=    BitwiseMath.lessThan(originX, (boundsMaxX + 3)) << MODEL_NEG_X;
+        planes |=    BitwiseMath.lessThan(originY, (boundsMaxY + 3)) << MODEL_NEG_Y;
+        planes |=    BitwiseMath.lessThan(originZ, (boundsMaxZ + 3)) << MODEL_NEG_Z;
 
         return planes;
     }
