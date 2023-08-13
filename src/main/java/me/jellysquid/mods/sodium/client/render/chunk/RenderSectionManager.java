@@ -126,13 +126,13 @@ public class RenderSectionManager {
         this.rebuildLists = visitor.getRebuildLists();
     }
 
-    private float getSearchDistance() {
-        float distance;
+    private int getSearchDistance() {
+        int distance;
 
         if (SodiumClientMod.options().performance.useFogOcclusion) {
             distance = this.getEffectiveRenderDistance();
         } else {
-            distance = this.renderDistance * 16.0f;
+            distance = this.renderDistance << 4;
         }
 
         return distance;
@@ -465,7 +465,7 @@ public class RenderSectionManager {
         return !SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
     }
 
-    private float getEffectiveRenderDistance() {
+    private int getEffectiveRenderDistance() {
         var color = RenderSystem.getShaderFogColor();
         var distance = RenderSystem.getShaderFogEnd();
 
@@ -474,7 +474,7 @@ public class RenderSectionManager {
             return this.renderDistance;
         }
 
-        return distance;
+        return MathHelper.floor(distance);
     }
 
     private void connectNeighborNodes(RenderSection render) {
