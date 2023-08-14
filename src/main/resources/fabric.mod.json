@@ -27,10 +27,10 @@
     "fabric-renderer-api-v1:contains_renderer": true,
     "modmenu": {
       "links": {
-        "modmenu.donate": "https://jellysquid.me/donate",
+        "modmenu.donate": "https://caffeinemc.net/donate",
         "modmenu.discord": "https://caffeinemc.net/discord",
         "modmenu.github_releases": "https://github.com/CaffeineMC/sodium-fabric/releases",
-        "modmenu.kofi": "https://ko-fi.com/jellysquid_",
+        "modmenu.kofi": "https://caffeinemc.net/donate",
         "modmenu.modrinth": "https://modrinth.com/mod/sodium"
       }
     }
