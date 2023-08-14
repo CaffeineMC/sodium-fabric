@@ -126,13 +126,13 @@ public class RenderSectionManager {
         this.rebuildLists = visitor.getRebuildLists();
     }
 
-    private int getSearchDistance() {
-        int distance;
+    private float getSearchDistance() {
+        float distance;
 
         if (SodiumClientMod.options().performance.useFogOcclusion) {
             distance = this.getEffectiveRenderDistance();
         } else {
-            distance = this.renderDistance << 4;
+            distance = this.getRenderDistance();
         }
 
         return distance;
@@ -465,16 +465,22 @@ public class RenderSectionManager {
         return !SodiumClientMod.options().performance.alwaysDeferChunkUpdates;
     }
 
-    private int getEffectiveRenderDistance() {
+    private float getEffectiveRenderDistance() {
         var color = RenderSystem.getShaderFogColor();
         var distance = RenderSystem.getShaderFogEnd();
 
+        var renderDistance = this.getRenderDistance();
+
         // The fog must be fully opaque in order to skip rendering of chunks behind it
         if (!MathHelper.approximatelyEquals(color[3], 1.0f)) {
-            return this.renderDistance;
+            return renderDistance;
         }
 
-        return MathHelper.floor(distance);
+        return Math.min(renderDistance, distance + 0.5f);
+    }
+
+    private float getRenderDistance() {
+        return this.renderDistance * 16.0f;
     }
 
     private void connectNeighborNodes(RenderSection render) {

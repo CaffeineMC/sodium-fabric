@@ -8,6 +8,7 @@ import me.jellysquid.mods.sodium.client.util.collections.ReadQueue;
 import me.jellysquid.mods.sodium.client.util.collections.WriteQueue;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,7 +27,7 @@ public class OcclusionCuller {
 
     public void findVisible(Consumer<RenderSection> visitor,
                             Viewport viewport,
-                            int searchDistance,
+                            float searchDistance,
                             boolean useOcclusionCulling,
                             int frame)
     {
@@ -42,7 +43,7 @@ public class OcclusionCuller {
 
     private static void processQueue(Consumer<RenderSection> visitor,
                                      Viewport viewport,
-                                     int searchDistance,
+                                     float searchDistance,
                                      boolean useOcclusionCulling,
                                      int frame,
                                      ReadQueue<RenderSection> readQueue,
@@ -150,7 +151,7 @@ public class OcclusionCuller {
         return planes;
     }
 
-    private static boolean isOutsideRenderDistance(CameraTransform camera, RenderSection section, int maxDistance) {
+    private static boolean isOutsideRenderDistance(CameraTransform camera, RenderSection section, float maxDistance) {
         // origin point of the chunk's bounding box (in view space)
         int ox = section.getOriginX() - camera.intX;
         int oy = section.getOriginY() - camera.intY;
@@ -183,7 +184,7 @@ public class OcclusionCuller {
     private void init(Consumer<RenderSection> visitor,
                       WriteQueue<RenderSection> queue,
                       Viewport viewport,
-                      int searchDistance,
+                      float searchDistance,
                       boolean useOcclusionCulling,
                       int frame)
     {
@@ -234,13 +235,13 @@ public class OcclusionCuller {
     // section and proceeds counterclockwise (N->W->S->E).
     private void initOutsideWorldHeight(WriteQueue<RenderSection> queue,
                                         Viewport viewport,
-                                        int searchDistance,
+                                        float searchDistance,
                                         int frame,
                                         int height,
                                         int direction)
     {
         var origin = viewport.getChunkCoord();
-        var radius = searchDistance >> 4;
+        var radius = MathHelper.floor(searchDistance / 16.0f);
 
         // Layer 0
         this.tryVisitNode(queue, origin.getX(), height, origin.getZ(), direction, frame, viewport);
