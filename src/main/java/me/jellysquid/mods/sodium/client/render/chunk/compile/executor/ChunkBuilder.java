@@ -13,15 +13,16 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class ChunkBuilder {
     static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
-    private volatile boolean isRunning;
+    private final AtomicBoolean isRunning = new AtomicBoolean(true);
 
-    private final ChunkJobQueue queue = new ChunkJobQueue();
+    private final ChunkJobQueue queue = new ChunkJobQueue(isRunning);
 
     private final List<Thread> threads = new ArrayList<>();
 
@@ -31,8 +32,6 @@ public class ChunkBuilder {
 
     public ChunkBuilder(ClientWorld world, ChunkVertexType vertexType) {
         int count = getThreadCount();
-
-        this.isRunning = true;
 
         for (int i = 0; i < count; i++) {
             ChunkBuildContext context = new ChunkBuildContext(world, vertexType);
@@ -67,29 +66,22 @@ public class ChunkBuilder {
      * waiting for worker threads to shut down will still have their results processed for later cleanup.</p>
      */
     public void shutdown() {
-        if (!this.isRunning) {
+        if (!this.isRunning.get()) {
             throw new IllegalStateException("Worker threads are not running");
         }
 
-        this.shutdownThreads();
-
         // Delete any queued tasks and resources attached to them
-        var jobs = this.queue.removeAll();
+        var jobs = this.queue.shutdown();
 
         for (var job : jobs) {
             job.setCancelled();
         }
+
+        this.shutdownThreads();
     }
 
     private void shutdownThreads() {
-        this.isRunning = false;
-
         LOGGER.info("Stopping worker threads");
-
-        // Interrupt all the threads, so they wake up if they're waiting on the semaphore
-        for (Thread thread : this.threads) {
-            thread.interrupt();
-        }
 
         // Wait for every remaining thread to terminate
         for (Thread thread : this.threads) {
@@ -106,7 +98,7 @@ public class ChunkBuilder {
     {
         Validate.notNull(task, "Task must be non-null");
 
-        if (!this.isRunning) {
+        if (!this.isRunning.get()) {
             throw new IllegalStateException("Executor is stopped");
         }
 
@@ -176,7 +168,7 @@ public class ChunkBuilder {
         @Override
         public void run() {
             // Run until the chunk builder shuts down
-            while (ChunkBuilder.this.isRunning) {
+            while (ChunkBuilder.this.isRunning.get()) {
                 ChunkJob job;
 
                 try {
@@ -186,6 +178,7 @@ public class ChunkBuilder {
                 }
 
                 if (job == null) {
+                    // might mean we are not running anymore... go around and check isRunning
                     continue;
                 }
 

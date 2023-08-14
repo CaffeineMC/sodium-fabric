@@ -6,13 +6,22 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class ChunkJobQueue {
     private final ConcurrentLinkedDeque<ChunkJob> jobs = new ConcurrentLinkedDeque<>();
 
     private final Semaphore semaphore = new Semaphore(0);
 
+    private final AtomicBoolean isRunning;
+
+    public ChunkJobQueue(AtomicBoolean isRunning) {
+        this.isRunning = isRunning;
+    }
+
     public void add(ChunkJob job, boolean important) {
+        assert this.isRunning.get();
+
         if (important) {
             this.jobs.addFirst(job);
         } else {
@@ -50,8 +59,10 @@ class ChunkJobQueue {
     }
 
 
-    public Collection<ChunkJob> removeAll() {
+    public Collection<ChunkJob> shutdown() {
         var list = new ArrayDeque<ChunkJob>();
+
+        this.isRunning.set(false);
 
         while (this.semaphore.tryAcquire()) {
             var task = this.jobs.poll();
@@ -60,6 +71,9 @@ class ChunkJobQueue {
                 list.add(task);
             }
         }
+
+        // force the worker threads to wake up and exit
+        this.semaphore.release(Runtime.getRuntime().availableProcessors());
 
         return list;
     }
