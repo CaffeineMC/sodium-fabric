@@ -25,9 +25,11 @@
   },
   "custom": {
     "fabric-renderer-api-v1:contains_renderer": true,
-    "links": {
+    "modmenu": {
+      "links": {
         "modmenu.donate": "https://jellysquid.me/donate"
       }
+    }
   },
   "accessWidener": "sodium.accesswidener",
   "mixins": [
