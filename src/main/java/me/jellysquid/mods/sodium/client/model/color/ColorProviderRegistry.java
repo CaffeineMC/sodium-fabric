@@ -38,7 +38,7 @@ public class ColorProviderRegistry {
                 Blocks.DARK_OAK_LEAVES, Blocks.VINE, Blocks.MANGROVE_LEAVES);
 
         this.registerBlocks(DefaultColorProviders.WaterColorProvider.BLOCKS,
-                Blocks.WATER, Blocks.BUBBLE_COLUMN, Blocks.WATER_CAULDRON);
+                Blocks.WATER, Blocks.BUBBLE_COLUMN);
 
         this.registerFluids(DefaultColorProviders.WaterColorProvider.FLUIDS,
                 Fluids.WATER, Fluids.FLOWING_WATER);
