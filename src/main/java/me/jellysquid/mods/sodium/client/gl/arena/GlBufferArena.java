@@ -6,17 +6,12 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.util.EnumBitField;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class GlBufferArena {
     static final boolean CHECK_ASSERTIONS = false;
-
-    private static final GlBufferUsage BUFFER_USAGE = GlBufferUsage.STATIC_DRAW;
 
     private final int resizeIncrement;
 
@@ -39,7 +34,7 @@ public class GlBufferArena {
         this.head = new GlBufferSegment(this, 0, initialCapacity);
         this.head.setFree(true);
 
-        this.arenaBuffer = commands.createImmutableBuffer((long) this.capacity * stride, EnumBitField.of(GlBufferStorageFlags.NONE));
+        this.arenaBuffer = commands.createImmutableBuffer((long) this.capacity * stride, EnumBitField.noneOf(GlBufferStorageFlags.class));
 
         this.stagingBuffer = stagingBuffer;
     }
@@ -118,7 +113,7 @@ public class GlBufferArena {
     private void transferSegments(CommandList commandList, Collection<PendingBufferCopyCommand> list, int capacity) {
         GlImmutableBuffer srcBufferObj = this.arenaBuffer;
         GlImmutableBuffer dstBufferObj = commandList.createImmutableBuffer((long) capacity * this.stride,
-                EnumBitField.of(GlBufferStorageFlags.NONE));
+                EnumBitField.noneOf(GlBufferStorageFlags.class));
 
         for (PendingBufferCopyCommand cmd : list) {
             commandList.copyBufferSubData(srcBufferObj, dstBufferObj,
