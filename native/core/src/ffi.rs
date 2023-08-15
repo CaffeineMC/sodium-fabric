@@ -125,25 +125,12 @@ impl<T, const LEN: usize> CInlineVec<T, LEN> {
 //         x: Jint,
 //         y: Jint,
 //         z: Jint,
-//     ) {
-//         let graph = graph.into_mut_ref();
-//         graph.add_chunk(LocalSectionCoord::from_xyz(x, y, z));
-//     }
-//
-//     #[no_mangle]
-//     pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphUpdateSection(
-//         _: *mut JEnv,
-//         _: *mut JClass,
-//         graph: JPtrMut<Graph>,
-//         x: Jint,
-//         y: Jint,
-//         z: Jint,
 //         node: JPtr<CSectionData>,
 //     ) {
 //         let node = node.as_ref();
 //
 //         let graph = graph.into_mut_ref();
-//         graph.update_chunk(
+//         graph.add_chunk(
 //             LocalSectionCoord::from_xyz(x, y, z),
 //             Node::new(VisibilityData::pack(node.connections), node.flags as u8),
 //         );
@@ -176,6 +163,8 @@ impl<T, const LEN: usize> CInlineVec<T, LEN> {
 //
 //         *out_results.into_mut_ref() = graph.search(frustum, view_distance);
 //     }
+//
+// TODO: deleteSearchResults
 //
 //     #[no_mangle]
 //     pub unsafe extern "C" fn Java_me_jellysquid_mods_sodium_core_CoreLibFFI_graphDelete(

@@ -8,11 +8,12 @@ use std::vec::Vec;
 
 use core_simd::simd::Which::*;
 use core_simd::simd::*;
-use local::LocalCoordinateContext;
+use local::LocalCoordContext;
 use std_float::StdFloat;
 
 use crate::collections::ArrayDeque;
 use crate::ffi::{CInlineVec, CVec};
+use crate::graph::local::index::LocalNodeIndex;
 use crate::graph::local::*;
 use crate::graph::octree::LinearBitOctree;
 use crate::math::*;
@@ -27,7 +28,7 @@ pub const SECTIONS_IN_GRAPH: usize = 256 * 256 * 256;
 pub const MAX_VIEW_DISTANCE: u8 = 127;
 pub const MAX_WORLD_HEIGHT: u8 = 254;
 pub const BFS_QUEUE_SIZE: usize =
-    GraphSearchState::get_bfs_queue_max_size(MAX_VIEW_DISTANCE, MAX_WORLD_HEIGHT, true) as usize;
+    get_bfs_queue_max_size(MAX_VIEW_DISTANCE, MAX_WORLD_HEIGHT, true) as usize;
 pub type BfsQueue = ArrayDeque<LocalNodeIndex<1>, BFS_QUEUE_SIZE>;
 
 #[derive(Clone, Copy)]
@@ -282,136 +283,102 @@ impl VisibilityData {
     }
 }
 
-pub struct GraphSearchState {
-    incoming: [GraphDirectionSet; SECTIONS_IN_GRAPH],
-    queues: [BfsQueue; 2],
+pub const fn get_bfs_queue_max_size(
+    section_render_distance: u8,
+    world_height: u8,
+    frustum: bool,
+) -> u32 {
+    // for the worst case, we will assume the player is in the center of the render distance and
+    // world height.
+    // for traversal lengths, we don't include the chunk the player is in.
 
-    /// when false, queue 0 is read and queue 1 is write.
-    /// when true, queue 0 is write and queue 1 is read.
-    queues_flipped: bool,
+    let max_height_traversal = (world_height.div_ceil(2) - 1) as u32;
+    let max_width_traversal = section_render_distance as u32;
+
+    // the 2 accounts for the chunks directly above and below the player
+    let mut count = 2;
+    let mut layer_index = 1_u32;
+
+    // check if the traversal up and down is restricted by the world height. if so, remove the
+    // out-of-bounds layers from the iteration
+    if max_height_traversal < max_width_traversal {
+        count = 0;
+        layer_index = max_width_traversal - max_height_traversal;
+    }
+
+    // add rings that are on both the top and bottom.
+    // simplification of:
+    // while layer_index < max_width_traversal {
+    //     count += (layer_index * 8);
+    //     layer_index += 1;
+    // }
+    count += 4 * (max_width_traversal - layer_index) * (max_width_traversal + layer_index - 1);
+
+    // add final, outer-most ring.
+    count += (max_width_traversal * 4);
+
+    if frustum {
+        // divide by 2 because the player should never be able to see more than half of the world
+        // at once with frustum culling. This assumes an FOV maximum of 180 degrees.
+        count = count.div_ceil(2);
+    }
+
+    count
 }
 
-impl GraphSearchState {
-    pub const fn get_bfs_queue_max_size(
-        section_render_distance: u8,
-        world_height: u8,
-        frustum: bool,
-    ) -> u32 {
-        // for the worst case, we will assume the player is in the center of the render distance and
-        // world height.
-        // for traversal lengths, we don't include the chunk the player is in.
+pub struct BfsCachedState {
+    incoming_directions: [GraphDirectionSet; SECTIONS_IN_GRAPH],
+}
 
-        let max_height_traversal = (world_height.div_ceil(2) - 1) as u32;
-        let max_width_traversal = section_render_distance as u32;
-
-        // the 2 accounts for the chunks directly above and below the player
-        let mut count = 2;
-        let mut layer_index = 1_u32;
-
-        // check if the traversal up and down is restricted by the world height. if so, remove the
-        // out-of-bounds layers from the iteration
-        if max_height_traversal < max_width_traversal {
-            count = 0;
-            layer_index = max_width_traversal - max_height_traversal;
-        }
-
-        // add rings that are on both the top and bottom.
-        // simplification of:
-        // while layer_index < max_width_traversal {
-        //     count += (layer_index * 8);
-        //     layer_index += 1;
-        // }
-        count += 4 * (max_width_traversal - layer_index) * (max_width_traversal + layer_index - 1);
-
-        // add final, outer-most ring.
-        count += (max_width_traversal * 4);
-
-        if frustum {
-            // divide by 2 because the player should never be able to see more than half of the world
-            // at once with frustum culling. This assumes an FOV maximum of 180 degrees.
-            count = count.div_ceil(2);
-        }
-
-        count
-    }
-
-    pub fn enqueue(&mut self, index: LocalNodeIndex<1>, incoming_direction: GraphDirection) {
-        // SAFETY: LocalNodeIndex should never have the top 8 bits set, and the array is exactly
-        // 2^24 elements long.
-        let node_incoming_directions =
-            unsafe { self.incoming.get_unchecked_mut(index.as_array_offset()) };
-        let should_enqueue = node_incoming_directions.is_empty();
-
-        node_incoming_directions.add(incoming_direction);
-
-        unsafe {
-            self.get_write_queue()
-                .push_conditionally_unchecked(index, should_enqueue);
-        }
-    }
-
-    fn get_read_queue(&self) -> &BfsQueue {
-        let idx = self.queues_flipped as usize;
-        &self.queues[idx]
-    }
-
-    fn get_write_queue(&mut self) -> &mut BfsQueue {
-        let idx = !self.queues_flipped as usize;
-        &mut self.queues[idx]
-    }
-
-    fn flip(&mut self) {
-        self.queues[0].reset();
-        self.queues[1].reset();
-
-        self.queues_flipped = !self.queues_flipped;
-
-        self.incoming.fill(GraphDirectionSet::none());
+impl BfsCachedState {
+    pub fn reset(&mut self) {
+        self.incoming_directions.fill(GraphDirectionSet::none());
     }
 }
 
-impl Default for GraphSearchState {
+impl Default for BfsCachedState {
     fn default() -> Self {
-        Self {
-            incoming: [GraphDirectionSet::default(); SECTIONS_IN_GRAPH],
-            queues: [Default::default(), Default::default()],
-            queues_flipped: false,
+        BfsCachedState {
+            incoming_directions: [GraphDirectionSet::default(); SECTIONS_IN_GRAPH],
         }
     }
 }
 
 pub struct Graph {
-    section_is_populated_bits: LinearBitOctree,
+    section_has_geometry_bits: LinearBitOctree,
     section_is_visible_bits: LinearBitOctree,
 
     section_visibility_bit_sets: [VisibilityData; SECTIONS_IN_GRAPH],
+
+    bfs_cached_state: BfsCachedState,
 }
 
 impl Graph {
     pub fn new() -> Self {
         Graph {
-            section_is_populated_bits: Default::default(),
+            section_has_geometry_bits: Default::default(),
             section_is_visible_bits: Default::default(),
             section_visibility_bit_sets: [Default::default(); SECTIONS_IN_GRAPH],
+            bfs_cached_state: Default::default(),
         }
     }
 
-    pub fn cull(&mut self, context: &LocalCoordinateContext, no_occlusion_cull: bool) {
+    pub fn cull(&mut self, coord_context: &LocalCoordContext, no_occlusion_cull: bool) {
         self.section_is_visible_bits.clear();
 
-        self.frustum_and_fog_cull(context);
+        self.frustum_and_fog_cull(coord_context);
+        self.bfs_and_occlusion_cull(coord_context, no_occlusion_cull);
     }
 
-    // #[no_mangle]
-    fn frustum_and_fog_cull(&mut self, context: &LocalCoordinateContext) {
-        let mut level_3_index = context.iter_node_origin_index;
+    fn frustum_and_fog_cull(&mut self, coord_context: &LocalCoordContext) {
+        let mut level_3_index = coord_context.iter_node_origin_index;
 
         // this could go more linearly in memory, but we probably have good enough locality inside
-        // level 3 nodes
-        for _x in 0..context.level_3_node_iters.x() {
-            for _y in 0..context.level_3_node_iters.y() {
-                for _z in 0..context.level_3_node_iters.z() {
-                    self.check_node(level_3_index, context);
+        // the level 3 nodes
+        for _x in 0..coord_context.level_3_node_iters.x() {
+            for _y in 0..coord_context.level_3_node_iters.y() {
+                for _z in 0..coord_context.level_3_node_iters.z() {
+                    self.check_node(level_3_index, coord_context);
 
                     level_3_index = level_3_index.inc_z();
                 }
@@ -425,183 +392,120 @@ impl Graph {
     fn check_node<const LEVEL: u8>(
         &mut self,
         index: LocalNodeIndex<LEVEL>,
-        context: &LocalCoordinateContext,
+        coord_context: &LocalCoordContext,
     ) {
-        match context.test_node(index) {
+        match coord_context.test_node(index) {
             BoundsCheckResult::Outside => {}
             BoundsCheckResult::Inside => {
                 self.section_is_visible_bits
-                    .copy_from(&self.section_is_populated_bits, index);
+                    .copy_from(&self.section_has_geometry_bits, index);
             }
             BoundsCheckResult::Partial => match LEVEL {
                 3 => {
                     for lower_node_index in index.iter_lower_nodes::<2>() {
-                        self.check_node(lower_node_index, context);
+                        self.check_node(lower_node_index, coord_context);
                     }
                 }
                 2 => {
                     for lower_node_index in index.iter_lower_nodes::<1>() {
-                        self.check_node(lower_node_index, context);
+                        self.check_node(lower_node_index, coord_context);
                     }
                 }
                 1 => {
                     for lower_node_index in index.iter_lower_nodes::<0>() {
-                        self.check_node(lower_node_index, context);
+                        self.check_node(lower_node_index, coord_context);
                     }
                 }
                 0 => {
                     self.section_is_visible_bits
-                        .copy_from(&self.section_is_populated_bits, index);
+                        .copy_from(&self.section_has_geometry_bits, index);
                 }
                 _ => panic!("Invalid node level: {}", LEVEL),
             },
         }
     }
 
-    // fn bfs_and_occlusion_cull(
-    //     &mut self,
-    //     context: &LocalCoordinateContext,
-    //     no_occlusion_cull: bool,
-    // ) -> CVec<RegionDrawBatch> {
-    //     let mut region_iteration_queue: VecDeque<LocalSectionCoord> = VecDeque::new();
-    //
-    //     let origin_node_coord = position_to_chunk_coord(*frustum.position());
-    //
-    //     if let Some(node) = self.get_node(origin_node_coord) {
-    //         let region_coord = chunk_coord_to_region_coord(origin_node_coord);
-    //
-    //         let mut region = self.regions.get_mut(&region_coord).unwrap();
-    //         region.search_state.enqueue(
-    //             LocalNodeIndex::from_global(origin_node_coord),
-    //             GraphDirectionSet::all(),
-    //         );
-    //         region.search_state.enqueued = true;
-    //
-    //         region_iteration_queue.push_back(region_coord);
-    //     }
-    //
-    //     let mut sorted_batches: Vec<RegionDrawBatch> = Vec::new();
-    //
-    //     while let Some(region_coord) = region_iteration_queue.pop_front() {
-    //         let mut search_ctx = SearchContext::create(&mut self.regions, region_coord);
-    //         let mut batch: RegionDrawBatch = RegionDrawBatch::new(region_coord);
-    //
-    //         while let Some(node_index) = search_ctx.origin().search_state.queue.pop() {
-    //             let node_coord = node_index.as_global_coord(region_coord);
-    //
-    //             let node = search_ctx.origin().nodes[node_index.as_array_offset()];
-    //             let node_incoming =
-    //                 search_ctx.origin().search_state.incoming[node_index.as_array_offset()];
-    //
-    //             if !chunk_inside_fog(node_coord, origin_node_coord, view_distance)
-    //                 || !chunk_inside_frustum(node_coord, frustum)
-    //             {
-    //                 continue;
-    //             }
-    //
-    //             if (node.flags & (1 << 1)) != 0 {
-    //                 batch.sections.push(node_index);
-    //             }
-    //
-    //             let valid_directions = get_valid_directions(origin_node_coord, node_coord);
-    //             let allowed_directions =
-    //                 node.connections.get_outgoing_directions(node_incoming) & valid_directions;
-    //
-    //             Self::enqueue_all_neighbors(&mut search_ctx, allowed_directions, node_index);
-    //         }
-    //
-    //         if !batch.is_empty() {
-    //             sorted_batches.push(batch);
-    //         }
-    //
-    //         for direction in GraphDirection::ORDERED {
-    //             let adjacent_region_coord: LocalSectionCoord = region_coord + direction.as_vector();
-    //
-    //             if let Some(region) = &mut search_ctx.adjacent(*direction, true) {
-    //                 if region.search_state.queue.is_empty() || region.search_state.enqueued {
-    //                     continue;
-    //                 }
-    //
-    //                 region.search_state.enqueued = true;
-    //                 region_iteration_queue.push_back(adjacent_region_coord);
-    //             }
-    //         }
-    //
-    //         search_ctx.origin().search_state.reset();
-    //     }
-    //
-    //     CVec::from_boxed_slice(sorted_batches.into_boxed_slice())
-    // }
+    fn bfs_and_occlusion_cull(
+        &mut self,
+        coord_context: &LocalCoordContext,
+        no_occlusion_cull: bool,
+    ) {
+        let mut read_queue = BfsQueue::default();
+        let mut write_queue = BfsQueue::default();
+
+        read_queue.push(coord_context.camera_section_idx);
+
+        let mut read_queue_ref = &mut read_queue;
+        let mut write_queue_ref = &mut write_queue;
+
+        let mut finished = false;
+        while !finished {
+            finished = true;
+
+            while let Some(node_index) = read_queue.pop() {
+                finished = false;
+
+                let node_pos = node_index.unpack();
+                let outgoing_directions = coord_context.get_valid_directions(node_pos);
+
+                let neighbor_indices = node_index.get_all_neighbors();
+
+                for direction in outgoing_directions {
+                    let neighbor = neighbor_indices.get(direction);
+
+                    // the outgoing direction for the current node is the incoming direction for the neighbor
+                    let incoming_direction = direction.opposite();
+
+                    // SAFETY: LocalNodeIndex should never have the top 8 bits set, and the array is exactly
+                    // 2^24 elements long.
+                    let node_incoming_directions = unsafe {
+                        self.bfs_cached_state
+                            .incoming_directions
+                            .get_unchecked_mut(node_index.as_array_offset())
+                    };
+
+                    let should_enqueue = node_incoming_directions.is_empty();
+
+                    node_incoming_directions.add(incoming_direction);
+
+                    unsafe {
+                        write_queue.push_conditionally_unchecked(node_index, should_enqueue);
+                    }
+                }
+            }
+
+            read_queue.reset();
+            write_queue.reset();
+            swap(&mut read_queue, &mut write_queue);
+
+            self.bfs_cached_state.reset();
+        }
+    }
 
     fn divide_graph_into_regions(&self) -> CVec<RegionDrawBatch> {
+        // let mut sorted_batches: Vec<RegionDrawBatch> = Vec::new();
+        // CVec::from_boxed_slice(sorted_batches.into_boxed_slice())
         todo!()
     }
 
-    // pub fn add_section(&mut self, chunk_coord: LocalSectionCoord) {
-    //     let mut region = self
-    //         .regions
-    //         .entry(chunk_coord_to_region_coord(chunk_coord))
-    //         .or_insert_with(Region::new);
-    //
-    //     region.set_chunk(chunk_coord, Node::default());
-    // }
-    //
-    // pub fn update_section(&mut self, chunk_coord: LocalSectionCoord, node: Node) {
-    //     if let Some(region) = self
-    //         .regions
-    //         .get_mut(&chunk_coord_to_region_coord(chunk_coord))
-    //     {
-    //         region.set_chunk(chunk_coord, node);
-    //     }
-    // }
-    //
-    // pub fn remove_section(&mut self, chunk_coord: LocalSectionCoord) {
-    //     if let Some(region) = self
-    //         .regions
-    //         .get_mut(&chunk_coord_to_region_coord(chunk_coord))
-    //     {
-    //         region.remove_chunk(chunk_coord);
-    //     }
-    // }
-    //
-    // fn get_node(&self, chunk_coord: LocalSectionCoord) -> Option<Node> {
-    //     self.regions
-    //         .get(&chunk_coord_to_region_coord(chunk_coord))
-    //         .map(|region| *region.get_chunk(chunk_coord))
-    // }
-}
+    pub fn add_section(
+        &mut self,
+        section_coord: u8x3,
+        has_geometry: bool,
+        visibility_data: VisibilityData,
+    ) {
+        let index = LocalNodeIndex::<3>::pack(section_coord);
 
-#[inline(always)]
-pub fn get_neighbors(
-    outgoing: GraphDirectionSet,
-    index: LocalNodeIndex<1>,
-    search_state: &mut GraphSearchState,
-) {
-    for direction in outgoing {
-        let neighbor = match direction {
-            GraphDirection::NegX => index.dec_x(),
-            GraphDirection::NegY => index.dec_y(),
-            GraphDirection::NegZ => index.dec_z(),
-            GraphDirection::PosX => index.inc_x(),
-            GraphDirection::PosY => index.inc_y(),
-            GraphDirection::PosZ => index.inc_z(),
-        };
-
-        // the outgoing direction for the current node is the incoming direction for the neighbor
-        search_state.enqueue(neighbor, direction.opposite());
+        self.section_has_geometry_bits.set(index, has_geometry);
+        self.section_visibility_bit_sets[index.as_array_offset()] = visibility_data;
     }
-}
 
-// #[no_mangle]
-pub fn get_all_neighbors(index: LocalNodeIndex<1>) -> [LocalNodeIndex<1>; 6] {
-    [
-        index.dec_x(),
-        index.dec_y(),
-        index.dec_z(),
-        index.inc_x(),
-        index.inc_y(),
-        index.inc_z(),
-    ]
+    pub fn remove_section(&mut self, section_coord: u8x3) {
+        let index = LocalNodeIndex::<1>::pack(section_coord);
+
+        self.section_has_geometry_bits.set(index, false);
+        self.section_visibility_bit_sets[index.as_array_offset()] = Default::default();
+    }
 }
 
 #[repr(C)]

@@ -85,6 +85,50 @@ impl LinearBitOctree {
         }
     }
 
+    /// Sets all of the bits in the node to the given value
+    pub fn set<const LEVEL: u8>(&mut self, section: LocalNodeIndex<LEVEL>, value: bool) {
+        let array_offset = section.as_array_offset();
+
+        match LEVEL {
+            0 => {
+                let level_1_index = array_offset >> LEVEL_1_INDEX_SHIFT;
+                let bit_index = array_offset & 0b111;
+
+                let level_1_node = unsafe { self.level_1.get_unchecked_mut(level_1_index) };
+
+                let bit = 0b1 << bit_index;
+
+                if value {
+                    *level_1_node |= bit;
+                } else {
+                    *level_1_node &= !bit;
+                }
+            }
+            1 => {
+                let level_1_index = array_offset >> LEVEL_1_INDEX_SHIFT;
+
+                let level_1_node = unsafe { self.level_1.get_unchecked_mut(level_1_index) };
+
+                *level_1_node = if value { u8::MAX } else { 0_u8 };
+            }
+            2 => {
+                let level_2_index = array_offset >> LEVEL_2_INDEX_SHIFT;
+
+                let level_2_node = unsafe { self.level_2.get_unchecked_mut(level_2_index) };
+
+                *level_2_node = if value { u64::MAX } else { 0_u64 };
+            }
+            3 => {
+                let level_3_index = array_offset >> LEVEL_3_INDEX_SHIFT;
+
+                let level_3_node = unsafe { self.level_3.get_unchecked_mut(level_3_index) };
+
+                *level_3_node = u8x64::splat(if value { u8::MAX } else { 0_u8 });
+            }
+            _ => unreachable!(),
+        }
+    }
+
     #[inline(always)]
     pub fn copy_from<const LEVEL: u8>(&mut self, src: &Self, index: LocalNodeIndex<LEVEL>) {
         let array_offset = index.as_array_offset();
@@ -133,7 +177,7 @@ impl LinearBitOctree {
 
     #[inline(always)]
     pub fn clear(&mut self) {
-        self.level_3.fill(Level3Node::splat(0));
+        unsafe { self.level_3 }.fill(Level3Node::splat(0));
     }
 
     // inside of individual level 3 nodes, the cache locality is *extremely* good.

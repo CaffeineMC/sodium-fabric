@@ -24,7 +24,9 @@ impl<T: Copy, const CAPACITY: usize> ArrayDeque<T, CAPACITY> {
             return None;
         }
 
-        let value = unsafe { MaybeUninit::assume_init(self.elements[self.head]) };
+        // the get_unchecked should be fine, because if we read past the array, it would've already
+        // been a problem when we pushed an element past the array.
+        let value = unsafe { MaybeUninit::assume_init(*self.elements.get_unchecked(self.head)) };
         self.head += 1;
 
         Some(value)
