@@ -20,9 +20,7 @@ import java.util.function.Consumer;
 public class ChunkBuilder {
     static final Logger LOGGER = LogManager.getLogger("ChunkBuilder");
 
-    private final AtomicBoolean isRunning = new AtomicBoolean(true);
-
-    private final ChunkJobQueue queue = new ChunkJobQueue(isRunning);
+    private final ChunkJobQueue queue = new ChunkJobQueue();
 
     private final List<Thread> threads = new ArrayList<>();
 
@@ -66,7 +64,7 @@ public class ChunkBuilder {
      * waiting for worker threads to shut down will still have their results processed for later cleanup.</p>
      */
     public void shutdown() {
-        if (!this.isRunning.get()) {
+        if (!this.queue.isRunning()) {
             throw new IllegalStateException("Worker threads are not running");
         }
 
@@ -98,7 +96,7 @@ public class ChunkBuilder {
     {
         Validate.notNull(task, "Task must be non-null");
 
-        if (!this.isRunning.get()) {
+        if (!this.queue.isRunning()) {
             throw new IllegalStateException("Executor is stopped");
         }
 
@@ -168,7 +166,7 @@ public class ChunkBuilder {
         @Override
         public void run() {
             // Run until the chunk builder shuts down
-            while (ChunkBuilder.this.isRunning.get()) {
+            while (ChunkBuilder.this.queue.isRunning()) {
                 ChunkJob job;
 
                 try {

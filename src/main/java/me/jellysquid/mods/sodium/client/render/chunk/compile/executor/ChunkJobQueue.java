@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.executor;
 
+import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
@@ -13,14 +14,14 @@ class ChunkJobQueue {
 
     private final Semaphore semaphore = new Semaphore(0);
 
-    private final AtomicBoolean isRunning;
+    private final AtomicBoolean isRunning = new AtomicBoolean(true);
 
-    public ChunkJobQueue(AtomicBoolean isRunning) {
-        this.isRunning = isRunning;
+    public boolean isRunning() {
+        return this.isRunning.get();
     }
 
     public void add(ChunkJob job, boolean important) {
-        assert this.isRunning.get();
+        Validate.isTrue(this.isRunning());
 
         if (important) {
             this.jobs.addFirst(job);
@@ -33,6 +34,8 @@ class ChunkJobQueue {
 
     @Nullable
     public ChunkJob waitForNextJob() throws InterruptedException {
+        if(!this.isRunning())
+            return null;
         this.semaphore.acquire();
 
         return this.getNextTask();
