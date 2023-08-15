@@ -21,7 +21,7 @@ class ChunkJobQueue {
     }
 
     public void add(ChunkJob job, boolean important) {
-        Validate.isTrue(this.isRunning());
+        Validate.isTrue(this.isRunning(), "Queue is no longer running");
 
         if (important) {
             this.jobs.addFirst(job);
@@ -34,8 +34,9 @@ class ChunkJobQueue {
 
     @Nullable
     public ChunkJob waitForNextJob() throws InterruptedException {
-        if(!this.isRunning())
+        if (!this.isRunning()) {
             return null;
+        }
 
         this.semaphore.acquire();
 
