@@ -1,18 +1,28 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.executor;
 
+import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class ChunkJobQueue {
     private final ConcurrentLinkedDeque<ChunkJob> jobs = new ConcurrentLinkedDeque<>();
 
     private final Semaphore semaphore = new Semaphore(0);
 
+    private final AtomicBoolean isRunning = new AtomicBoolean(true);
+
+    public boolean isRunning() {
+        return this.isRunning.get();
+    }
+
     public void add(ChunkJob job, boolean important) {
+        Validate.isTrue(this.isRunning(), "Queue is no longer running");
+
         if (important) {
             this.jobs.addFirst(job);
         } else {
@@ -24,6 +34,10 @@ class ChunkJobQueue {
 
     @Nullable
     public ChunkJob waitForNextJob() throws InterruptedException {
+        if (!this.isRunning()) {
+            return null;
+        }
+
         this.semaphore.acquire();
 
         return this.getNextTask();
@@ -50,8 +64,10 @@ class ChunkJobQueue {
     }
 
 
-    public Collection<ChunkJob> removeAll() {
+    public Collection<ChunkJob> shutdown() {
         var list = new ArrayDeque<ChunkJob>();
+
+        this.isRunning.set(false);
 
         while (this.semaphore.tryAcquire()) {
             var task = this.jobs.poll();
@@ -60,6 +76,9 @@ class ChunkJobQueue {
                 list.add(task);
             }
         }
+
+        // force the worker threads to wake up and exit
+        this.semaphore.release(Runtime.getRuntime().availableProcessors());
 
         return list;
     }
