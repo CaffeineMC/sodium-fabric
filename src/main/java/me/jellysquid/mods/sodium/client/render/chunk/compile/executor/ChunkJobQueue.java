@@ -36,6 +36,7 @@ class ChunkJobQueue {
     public ChunkJob waitForNextJob() throws InterruptedException {
         if(!this.isRunning())
             return null;
+
         this.semaphore.acquire();
 
         return this.getNextTask();
