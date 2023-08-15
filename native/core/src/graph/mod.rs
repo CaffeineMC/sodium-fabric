@@ -475,7 +475,6 @@ impl Graph {
             }
 
             read_queue.reset();
-            write_queue.reset();
             swap(&mut read_queue, &mut write_queue);
 
             self.bfs_cached_state.reset();
