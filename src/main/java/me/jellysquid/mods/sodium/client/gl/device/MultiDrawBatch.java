@@ -18,7 +18,6 @@ public final class MultiDrawBatch {
     private final int capacity;
 
     public int size;
-    public int maxElements;
 
     public MultiDrawBatch(int capacity) {
         this.pElementPointer = MemoryUtil.nmemAlignedAlloc(32, (long) capacity * Pointer.POINTER_SIZE);
@@ -40,7 +39,6 @@ public final class MultiDrawBatch {
 
     public void clear() {
         this.size = 0;
-        this.maxElements = 0;
     }
 
     public void delete() {
@@ -54,6 +52,12 @@ public final class MultiDrawBatch {
     }
 
     public int getIndexBufferSize() {
-        return maxElements;
+        int elements = 0;
+
+        for (var index = 0; index < this.size; index++) {
+            elements = Math.max(elements, MemoryUtil.memGetInt(this.pElementCount + ((long) index * Integer.BYTES)));
+        }
+
+        return elements;
     }
 }

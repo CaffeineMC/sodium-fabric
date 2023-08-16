@@ -138,18 +138,15 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         final var pElementCount = batch.pElementCount;
 
         int size = batch.size;
-        int maxIndex = batch.maxElements;
+
         for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
             MemoryUtil.memPutInt(pBaseVertex + (size << 2), SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing));
-            int elementCount = SectionRenderDataUnsafe.getElementCount(pMeshData, facing);
-            MemoryUtil.memPutInt(pElementCount + (size << 2), elementCount);
-            maxIndex = Math.max(maxIndex, elementCount);
+            MemoryUtil.memPutInt(pElementCount + (size << 2), SectionRenderDataUnsafe.getElementCount(pMeshData, facing));
 
             size += (mask >> facing) & 1;
         }
 
         batch.size = size;
-        batch.maxElements = maxIndex;
     }
 
     private static final int MODEL_UNASSIGNED = ModelQuadFacing.UNASSIGNED.ordinal();
