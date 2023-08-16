@@ -3,11 +3,11 @@ package me.jellysquid.mods.sodium.mixin.features.gui.hooks.debug;
 import com.google.common.collect.Lists;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
+import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.client.gui.hud.DebugHud;
 import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -17,17 +17,11 @@ import java.util.ArrayList;
 
 @Mixin(DebugHud.class)
 public abstract class DebugHudMixin {
-    @Shadow
-    private static long toMiB(long bytes) {
-        throw new UnsupportedOperationException();
-    }
-
     @Redirect(method = "getRightText", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/Lists;newArrayList([Ljava/lang/Object;)Ljava/util/ArrayList;", remap = false))
     private ArrayList<String> redirectRightTextEarly(Object[] elements) {
         ArrayList<String> strings = Lists.newArrayList((String[]) elements);
         strings.add("");
-        strings.add("Sodium Renderer");
-        strings.add(Formatting.UNDERLINE + getFormattedVersionText());
+        strings.add("%sSodium Renderer (%s)".formatted(getVersionColor(), SodiumClientMod.getVersion()));
 
         var renderer = SodiumWorldRenderer.instanceNullable();
 
@@ -49,24 +43,22 @@ public abstract class DebugHudMixin {
     }
 
     @Unique
-    private static String getFormattedVersionText() {
+    private static Formatting getVersionColor() {
         String version = SodiumClientMod.getVersion();
         Formatting color;
 
-        if (version.endsWith("-dirty")) {
+        if (version.contains("+git.")) {
             color = Formatting.RED;
-        } else if (version.contains("+rev.")) {
-            color = Formatting.LIGHT_PURPLE;
         } else {
             color = Formatting.GREEN;
         }
 
-        return color + version;
+        return color;
     }
 
     @Unique
     private static String getNativeMemoryString() {
-        return "Off-Heap: +" + toMiB(getNativeMemoryUsage()) + "MB";
+        return "Off-Heap: +" + MathUtil.toMib(getNativeMemoryUsage()) + "MB";
     }
 
     @Unique

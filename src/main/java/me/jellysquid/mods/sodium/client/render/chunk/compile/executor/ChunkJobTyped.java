@@ -13,6 +13,7 @@ public class ChunkJobTyped<TASK extends ChunkBuilderTask<OUTPUT>, OUTPUT extends
     private final Consumer<ChunkJobResult<OUTPUT>> consumer;
 
     private volatile boolean cancelled;
+    private volatile boolean started;
 
     ChunkJobTyped(TASK task, Consumer<ChunkJobResult<OUTPUT>> consumer) {
         this.task = task;
@@ -36,6 +37,8 @@ public class ChunkJobTyped<TASK extends ChunkBuilderTask<OUTPUT>, OUTPUT extends
             return;
         }
 
+        this.started = true;
+
         ChunkJobResult<OUTPUT> result;
 
         try {
@@ -57,5 +60,10 @@ public class ChunkJobTyped<TASK extends ChunkBuilderTask<OUTPUT>, OUTPUT extends
         } catch (Throwable throwable) {
             throw new RuntimeException("Exception while consuming result", throwable);
         }
+    }
+
+    @Override
+    public boolean isStarted() {
+        return this.started;
     }
 }

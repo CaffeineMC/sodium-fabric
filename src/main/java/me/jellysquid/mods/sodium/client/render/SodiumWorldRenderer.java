@@ -181,6 +181,10 @@ public class SodiumWorldRenderer {
         this.lastCameraYaw = yaw;
         this.lastFogDistance = fogDistance;
 
+        profiler.swap("chunk_update");
+
+        this.renderSectionManager.updateChunks(updateChunksImmediately);
+
         profiler.swap("chunk_upload");
 
         this.renderSectionManager.uploadChunks();
@@ -188,12 +192,8 @@ public class SodiumWorldRenderer {
         if (this.renderSectionManager.needsUpdate()) {
             profiler.swap("chunk_render_lists");
 
-            this.renderSectionManager.updateRenderLists(camera, viewport, frame, spectator);
+            this.renderSectionManager.update(camera, viewport, frame, spectator);
         }
-
-        profiler.swap("chunk_update");
-
-        this.renderSectionManager.updateChunks(updateChunksImmediately);
 
         if (cameraLocationChanged) {
             profiler.swap("gfni_query");
@@ -262,11 +262,11 @@ public class SodiumWorldRenderer {
         ChunkTracker.forEachChunk(tracker.getReadyChunks(), this.renderSectionManager::onChunkAdded);
     }
 
-    public void renderTileEntities(MatrixStack matrices,
-                                   BufferBuilderStorage bufferBuilders,
-                                   Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
-                                   Camera camera,
-                                   float tickDelta) {
+    public void renderBlockEntities(MatrixStack matrices,
+                                    BufferBuilderStorage bufferBuilders,
+                                    Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions,
+                                    Camera camera,
+                                    float tickDelta) {
         VertexConsumerProvider.Immediate immediate = bufferBuilders.getEntityVertexConsumers();
 
         Vec3d cameraPos = camera.getPos();
@@ -290,7 +290,7 @@ public class SodiumWorldRenderer {
                                      double z,
                                      BlockEntityRenderDispatcher blockEntityRenderer) {
         SortedRenderLists renderLists = this.renderSectionManager.getRenderLists();
-        Iterator<ChunkRenderList> renderListIterator = renderLists.sorted();
+        Iterator<ChunkRenderList> renderListIterator = renderLists.iterator();
 
         while (renderListIterator.hasNext()) {
             var renderList = renderListIterator.next();
@@ -303,7 +303,7 @@ public class SodiumWorldRenderer {
             }
 
             while (renderSectionIterator.hasNext()) {
-                var renderSectionId = renderSectionIterator.next();
+                var renderSectionId = renderSectionIterator.nextByteAsInt();
                 var renderSection = renderRegion.getSection(renderSectionId);
 
                 var blockEntities = renderSection.getCulledBlockEntities();

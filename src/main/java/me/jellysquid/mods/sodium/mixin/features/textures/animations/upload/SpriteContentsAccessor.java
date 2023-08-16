@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(SpriteContents.class)
-public interface SpriteInfoAccessor {
+public interface SpriteContentsAccessor {
     @Accessor("mipmapLevelsImages")
     NativeImage[] getImages();
 }

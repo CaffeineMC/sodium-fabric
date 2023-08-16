@@ -1,16 +1,10 @@
 package me.jellysquid.mods.sodium.client;
 
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
-import me.jellysquid.mods.sodium.client.gui.console.Console;
-import me.jellysquid.mods.sodium.client.gui.console.message.MessageLevel;
 import me.jellysquid.mods.sodium.client.util.FlawlessFrames;
-import me.jellysquid.mods.sodium.client.util.workarounds.PostLaunchChecks;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +29,7 @@ public class SodiumClientMod implements ClientModInitializer {
         LOGGER = LoggerFactory.getLogger("Sodium");
         CONFIG = loadConfig();
 
-        logStartupMessages();
-
         FlawlessFrames.onClientInitialization();
-
-        PostLaunchChecks.checkDrivers();
     }
 
     public static SodiumGameOptions options() {
@@ -88,26 +78,5 @@ public class SodiumClientMod implements ClientModInitializer {
         }
 
         return MOD_VERSION;
-    }
-
-    private static void logStartupMessages() {
-        var name = Text.literal("Sodium Renderer")
-                .setStyle(Style.EMPTY.withFormatting(Formatting.GREEN));
-
-        var version = Text.literal(" (version %s) loaded...".formatted(SodiumClientMod.getVersion()))
-                .setStyle(Style.EMPTY.withFormatting(Formatting.WHITE));
-
-        Console.instance()
-                .logMessage(MessageLevel.INFO, name.append(version), 9.0);
-
-        {
-            Console.instance()
-                    .logMessage(MessageLevel.INFO, Text.literal("* Official website: ").append(Text.literal("https://caffeinemc.net")
-                            .setStyle(Style.EMPTY.withFormatting(Formatting.AQUA))), 9.0);
-
-            Console.instance()
-                    .logMessage(MessageLevel.INFO, Text.literal("* Help support development: ").append(Text.literal("https://caffeinemc.net/donate")
-                            .setStyle(Style.EMPTY.withFormatting(Formatting.AQUA))), 9.0);
-        }
     }
 }

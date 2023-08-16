@@ -1,4 +1,4 @@
-package me.jellysquid.mods.sodium.client.render.chunk.graph;
+package me.jellysquid.mods.sodium.client.render.chunk.occlusion;
 
 import net.minecraft.util.math.Direction;
 
@@ -12,9 +12,6 @@ public class GraphDirection {
 
 
     public static final int COUNT   = 6;
-
-    public static final int NONE    = 0b000000;
-    public static final int ALL     = 0b111111;
 
     private static final Direction[] ENUMS;
     private static final int[] OPPOSITE;

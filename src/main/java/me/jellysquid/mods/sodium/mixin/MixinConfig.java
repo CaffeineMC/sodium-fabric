@@ -29,59 +29,61 @@ public class MixinConfig {
         this.addMixinRule("core", true); // TODO: Don't actually allow the user to disable this
 
         this.addMixinRule("features", true);
+
         this.addMixinRule("features.gui", true);
+
         this.addMixinRule("features.gui.hooks", true);
+        this.addMixinRule("features.gui.hooks.console", true);
         this.addMixinRule("features.gui.hooks.debug", true);
         this.addMixinRule("features.gui.hooks.settings", true);
+
         this.addMixinRule("features.gui.screen", true);
 
         this.addMixinRule("features.model", true);
 
-        this.addMixinRule("options", true);
+        this.addMixinRule("features.options", true);
+        this.addMixinRule("features.options.overlays", true);
+        this.addMixinRule("features.options.render_layers", true);
+        this.addMixinRule("features.options.weather", true);
 
-        this.addMixinRule("options.overlays", true);
-        this.addMixinRule("options.render_layers", true);
-        this.addMixinRule("options.weather", true);
+        this.addMixinRule("features.render", true);
 
-        this.addMixinRule("render", true);
+        this.addMixinRule("features.render.entity", true);
+        this.addMixinRule("features.render.entity.cull", true);
+        this.addMixinRule("features.render.entity.shadow", true);
 
-        this.addMixinRule("render.entity", true);
-        this.addMixinRule("render.entity.cull", true);
-        this.addMixinRule("render.entity.shadow", true);
+        this.addMixinRule("features.render.gui", true);
+        this.addMixinRule("features.render.gui.font", true);
+        this.addMixinRule("features.render.gui.outlines", true);
 
-        this.addMixinRule("render.gui", true);
-        this.addMixinRule("render.gui.font", true);
-        this.addMixinRule("render.gui.outlines", true);
+        this.addMixinRule("features.render.immediate", true);
+        this.addMixinRule("features.render.immediate.buffer_builder", true);
+        this.addMixinRule("features.render.immediate.matrix_stack", true);
 
-        this.addMixinRule("render.immediate", true);
-        this.addMixinRule("render.immediate.buffer_builder", true);
-        this.addMixinRule("render.immediate.matrix_stack", true);
+        this.addMixinRule("features.render.model", true);
+        this.addMixinRule("features.render.model.block", true);
+        this.addMixinRule("features.render.model.item", true);
 
-        this.addMixinRule("render.model", true);
-        this.addMixinRule("render.model.block", true);
-        this.addMixinRule("render.model.item", true);
+        this.addMixinRule("features.render.particle", true);
 
-        this.addMixinRule("render.particle", true);
+        this.addMixinRule("features.render.world", true);
+        this.addMixinRule("features.render.world.clouds", true);
+        this.addMixinRule("features.render.world.sky", true);
 
-        this.addMixinRule("render.world", true);
-        this.addMixinRule("render.world.clouds", true);
-        this.addMixinRule("render.world.sky", true);
+        this.addMixinRule("features.shader", true);
+        this.addMixinRule("features.shader.uniform", true);
 
-        this.addMixinRule("render.shader", true);
-        this.addMixinRule("render.shader.uniform", true);
+        this.addMixinRule("features.textures", true);
+        this.addMixinRule("features.textures.animations", true);
+        this.addMixinRule("features.textures.mipmaps", true);
 
-        this.addMixinRule("textures", true);
-        this.addMixinRule("textures.animations", true);
-        this.addMixinRule("textures.mipmaps", true);
-
-        this.addMixinRule("world", true);
-        this.addMixinRule("world.biome", true);
-        this.addMixinRule("world.storage", true);
+        this.addMixinRule("features.world", true);
+        this.addMixinRule("features.world.biome", true);
+        this.addMixinRule("features.world.storage", true);
 
         this.addMixinRule("workarounds", true);
         this.addMixinRule("workarounds.context_creation", true);
         this.addMixinRule("workarounds.event_loop", true);
-
     }
 
     /**

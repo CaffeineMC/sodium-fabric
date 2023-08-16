@@ -80,11 +80,11 @@ public class ChunkTracker implements ClientChunkEventListener {
         }
 
         if (flags == ChunkStatus.FLAG_ALL) {
-            if (this.chunkReady.add(key)) {
+            if (this.chunkReady.add(key) && !this.unloadQueue.remove(key)) {
                 this.loadQueue.add(key);
             }
         } else {
-            if (this.chunkReady.remove(key)) {
+            if (this.chunkReady.remove(key) && !this.loadQueue.remove(key)) {
                 this.unloadQueue.add(key);
             }
         }

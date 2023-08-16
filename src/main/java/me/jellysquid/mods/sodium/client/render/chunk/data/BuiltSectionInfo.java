@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.data;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionFlags;
-import me.jellysquid.mods.sodium.client.render.chunk.graph.VisibilityEncoding;
+import me.jellysquid.mods.sodium.client.render.chunk.occlusion.VisibilityEncoding;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import net.minecraft.block.entity.BlockEntity;

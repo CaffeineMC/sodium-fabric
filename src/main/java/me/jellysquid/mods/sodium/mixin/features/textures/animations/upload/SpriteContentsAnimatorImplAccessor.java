@@ -5,7 +5,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(SpriteContents.AnimatorImpl.class)
-public interface SpriteInfoAnimationAccessor {
+public interface SpriteContentsAnimatorImplAccessor {
     @Accessor
     SpriteContents.Animation getAnimation();
 

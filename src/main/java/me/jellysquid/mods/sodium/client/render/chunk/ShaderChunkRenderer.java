@@ -52,11 +52,8 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
             return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
                     .attachShader(vertShader)
                     .attachShader(fragShader)
-                    .bindAttribute("a_PosId", ChunkShaderBindingPoints.ATTRIBUTE_POSITION_ID)
-                    .bindAttribute("a_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
-                    .bindAttribute("a_TexCoord", ChunkShaderBindingPoints.ATTRIBUTE_BLOCK_TEXTURE)
-                    .bindAttribute("a_LightCoord", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
-                    .bindFragmentData("fragColor", ChunkShaderBindingPoints.FRAG_COLOR)
+                    .bindAttribute("in_VertexData", ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA)
+                    .bindFragmentData("out_FragColor", ChunkShaderBindingPoints.FRAG_COLOR)
                     .link((shader) -> new ChunkShaderInterface(shader, options));
         } finally {
             vertShader.delete();
@@ -67,7 +64,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     protected void begin(TerrainRenderPass pass) {
         pass.startDrawing();
 
-        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass, this.vertexType);
+        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass);
 
         this.activeProgram = this.compileProgram(options);
         this.activeProgram.bind();

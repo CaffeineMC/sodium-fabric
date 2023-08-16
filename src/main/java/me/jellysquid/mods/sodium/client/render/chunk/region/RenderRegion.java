@@ -8,6 +8,7 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
@@ -41,6 +42,8 @@ public class RenderRegion {
     private final StagingBuffer stagingBuffer;
     private final int x, y, z;
 
+    private final ChunkRenderList renderList;
+
     private final RenderSection[] sections = new RenderSection[RenderRegion.REGION_SIZE];
     private int sectionCount;
 
@@ -53,6 +56,7 @@ public class RenderRegion {
         this.z = z;
 
         this.stagingBuffer = stagingBuffer;
+        this.renderList = new ChunkRenderList(this);
     }
 
     public static long key(int x, int y, int z) {
@@ -177,6 +181,10 @@ public class RenderRegion {
             this.resources.delete(commandList);
             this.resources = null;
         }
+    }
+
+    public ChunkRenderList getRenderList() {
+        return this.renderList;
     }
 
     public static class DeviceResources {

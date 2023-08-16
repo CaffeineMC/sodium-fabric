@@ -6,7 +6,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.parameters
 
 public class Material {
     public final TerrainRenderPass pass;
-    public final byte packed;
+    public final int packed;
 
     public final AlphaCutoffParameter alphaCutoff;
     public final boolean mipped;
@@ -19,7 +19,7 @@ public class Material {
         this.mipped = mipped;
     }
 
-    public byte bits() {
+    public int bits() {
         return this.packed;
     }
 }

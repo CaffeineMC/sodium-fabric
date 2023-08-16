@@ -5,7 +5,7 @@ import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformFloat3v;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformInt;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformMatrix4f;
 import me.jellysquid.mods.sodium.client.util.TextureUtil;
-import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.lwjgl.opengl.GL32C;
 
 import java.util.EnumMap;
@@ -53,11 +53,11 @@ public class ChunkShaderInterface {
         uniform.setInt(slot.ordinal());
     }
 
-    public void setProjectionMatrix(Matrix4f matrix) {
+    public void setProjectionMatrix(Matrix4fc matrix) {
         this.uniformProjectionMatrix.set(matrix);
     }
 
-    public void setModelViewMatrix(Matrix4f matrix) {
+    public void setModelViewMatrix(Matrix4fc matrix) {
         this.uniformModelViewMatrix.set(matrix);
     }
 
