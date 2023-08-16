@@ -26,15 +26,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * lists are created (and possibly deleted) on demand, this would require a more
  * complex synchronization scheme.
  * 
- * Maximum add/update and remove durations are 0.4ms and 0.06ms respectively in
- * a 32rd world with around 230 normal lists.
- * 
- * It triggers 600 sections for normal (0, 1, 0) at distance
- * 62.88788890838623 in a 32rd world because of flooded caves that make the
- * ocean surface heuristic not work. The distance being triggered on is the
- * overworld water surface height. Flooded caves have water surfaces below solid
- * blocks above the water source blocks.
- * 
  * TODO:
  * - sort the triggered sections by camera distance and possibly also use number
  * of translucent faces as a heuristic for importance
@@ -45,6 +36,8 @@ import net.minecraft.util.math.ChunkSectionPos;
  * may result in many sections suddenly needing sorting when the camera moves.
  * Maybe it's better to schedule them to be sorted gradually even if not
  * visible, if there are idle threads.
+ * 
+ * @author douira
  */
 public class GFNI {
     /**
