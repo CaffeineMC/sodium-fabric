@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.executor;
 
-import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,17 +9,17 @@ import java.util.function.Consumer;
 
 public class ChunkJobCollector {
     private final Semaphore semaphore = new Semaphore(0);
-    private final Consumer<ChunkJobResult<ChunkBuildOutput>> collector;
+    private final Consumer<ChunkJobResult<? extends BuilderTaskOutput>> collector;
     private final List<ChunkJob> submitted = new ArrayList<>();
 
     private final int budget;
 
-    public ChunkJobCollector(int budget, Consumer<ChunkJobResult<ChunkBuildOutput>> collector) {
+    public ChunkJobCollector(int budget, Consumer<ChunkJobResult<? extends BuilderTaskOutput>> collector) {
         this.budget = budget;
         this.collector = collector;
     }
 
-    public void onJobFinished(ChunkJobResult<ChunkBuildOutput> result) {
+    public void onJobFinished(ChunkJobResult<? extends BuilderTaskOutput> result) {
         this.semaphore.release(1);
         this.collector.accept(result);
     }

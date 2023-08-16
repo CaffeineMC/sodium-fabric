@@ -77,7 +77,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         BlockPos.Mutable blockPos = new BlockPos.Mutable(minX, minY, minZ);
         BlockPos.Mutable modelOffset = new BlockPos.Mutable();
 
-        GroupBuilder groupBuilder = new GroupBuilder(render.getChunkPos());
+        GroupBuilder groupBuilder = new GroupBuilder(render.getPosition());
         BlockRenderContext context = new BlockRenderContext(slice, groupBuilder);
 
         try {
