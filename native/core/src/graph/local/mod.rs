@@ -17,7 +17,7 @@ pub struct LocalCoordContext {
     // 256x256x256 cube we hold the section data in.
     pub camera_coords: f32x3,
     pub camera_section_coords: u8x3,
-    pub camera_section_idx: LocalNodeIndex<1>,
+    pub camera_section_index: LocalNodeIndex<1>,
 
     fog_distance_squared: f32,
 
@@ -59,7 +59,7 @@ impl LocalCoordContext {
 
         // the cast to u8 puts it in the local coordinate space by effectively doing a mod 256
         let camera_section_coords = camera_section_global_coords.cast::<u8>();
-        let camera_section_idx = LocalNodeIndex::pack(camera_section_coords);
+        let camera_section_index = LocalNodeIndex::pack(camera_section_coords);
         let camera_coords = (world_pos % f64x3::splat(256.0)).cast::<f32>();
 
         let iter_section_origin_coords = simd_swizzle!(
@@ -94,7 +94,7 @@ impl LocalCoordContext {
         LocalCoordContext {
             frustum,
             camera_coords,
-            camera_section_idx,
+            camera_section_index,
             camera_section_coords,
             fog_distance_squared,
             world_bottom_section_y,

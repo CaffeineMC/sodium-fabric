@@ -1,6 +1,6 @@
 use core_simd::simd::*;
 
-use crate::graph::GraphDirection;
+use crate::graph::{GraphDirection, SECTIONS_IN_GRAPH};
 use crate::math::{u8x3, ToBitMaskExtended};
 
 #[derive(Clone, Copy)]
@@ -115,6 +115,20 @@ impl<const LEVEL: u8> LocalNodeIndex<LEVEL> {
     #[inline(always)]
     pub fn as_array_offset(&self) -> usize {
         self.0 as usize
+    }
+
+    #[inline(always)]
+    pub fn index_array_unchecked<T>(&self, array: [T; SECTIONS_IN_GRAPH]) -> &T {
+        // SAFETY: Using unsafe gets are okay because the internal representation will never have
+        // the top 8 bits set, and the arrays are exactly the length of what we can represent with
+        // 24 bits.
+        unsafe { array.get_unchecked(self.as_array_offset()) }
+    }
+
+    #[inline(always)]
+    pub fn index_array_unchecked_mut<T>(&self, array: [T; SECTIONS_IN_GRAPH]) -> &mut T {
+        // SAFETY: see documentation in fast_array_index
+        unsafe { array.get_unchecked_mut(self.as_array_offset()) }
     }
 
     #[inline(always)]

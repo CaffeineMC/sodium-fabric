@@ -22,45 +22,13 @@ pub mod local;
 mod octree;
 
 pub const REGION_COORD_MASK: u8x3 = u8x3::from_array([0b11111000, 0b11111100, 0b11111000]);
-pub const SECTIONS_IN_REGION: usize = 8 * 4 * 8;
 pub const SECTIONS_IN_GRAPH: usize = 256 * 256 * 256;
 
 pub const MAX_VIEW_DISTANCE: u8 = 127;
 pub const MAX_WORLD_HEIGHT: u8 = 254;
 pub const BFS_QUEUE_SIZE: usize =
-    get_bfs_queue_max_size(MAX_VIEW_DISTANCE, MAX_WORLD_HEIGHT, true) as usize;
+    get_bfs_queue_max_size(MAX_VIEW_DISTANCE, MAX_WORLD_HEIGHT) as usize;
 pub type BfsQueue = ArrayDeque<LocalNodeIndex<1>, BFS_QUEUE_SIZE>;
-
-#[derive(Clone, Copy)]
-#[repr(transparent)]
-pub struct RegionSectionIndex(u8);
-
-impl RegionSectionIndex {
-    const X_MASK_SINGLE: u8 = 0b00000111;
-    const Y_MASK_SINGLE: u8 = 0b00000011;
-    const Z_MASK_SINGLE: u8 = 0b00000111;
-
-    const X_MASK_SHIFT: u8 = 5;
-    const Y_MASK_SHIFT: u8 = 3;
-    const Z_MASK_SHIFT: u8 = 0;
-
-    #[inline(always)]
-    pub fn from_local(local_section_coord: u8x3) -> Self {
-        Self(
-            (local_section_coord
-                & u8x3::from_array([
-                    Self::X_MASK_SINGLE,
-                    Self::Y_MASK_SINGLE,
-                    Self::Z_MASK_SINGLE,
-                ]) << u8x3::from_array([
-                    Self::X_MASK_SHIFT,
-                    Self::Y_MASK_SHIFT,
-                    Self::Z_MASK_SHIFT,
-                ]))
-            .reduce_or(),
-        )
-    }
-}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -283,11 +251,7 @@ impl VisibilityData {
     }
 }
 
-pub const fn get_bfs_queue_max_size(
-    section_render_distance: u8,
-    world_height: u8,
-    frustum: bool,
-) -> u32 {
+pub const fn get_bfs_queue_max_size(section_render_distance: u8, world_height: u8) -> u32 {
     // for the worst case, we will assume the player is in the center of the render distance and
     // world height.
     // for traversal lengths, we don't include the chunk the player is in.
@@ -317,11 +281,14 @@ pub const fn get_bfs_queue_max_size(
     // add final, outer-most ring.
     count += (max_width_traversal * 4);
 
-    if frustum {
-        // divide by 2 because the player should never be able to see more than half of the world
-        // at once with frustum culling. This assumes an FOV maximum of 180 degrees.
-        count = count.div_ceil(2);
-    }
+    // TODO: i'm pretty sure this only holds true when we do checks on the nodes before enqueueing
+    //  them. however, this would result in a lot of excess checks when multiple nodes try to queue
+    //  the same section.
+    // if frustum {
+    //     // divide by 2 because the player should never be able to see more than half of the world
+    //     // at once with frustum culling. This assumes an FOV maximum of 180 degrees.
+    //     count = count.div_ceil(2);
+    // }
 
     count
 }
@@ -344,12 +311,29 @@ impl Default for BfsCachedState {
     }
 }
 
+pub struct FrustumFogCachedState {
+    section_is_visible_bits: LinearBitOctree,
+}
+
+impl FrustumFogCachedState {
+    pub fn reset(&mut self) {
+        self.section_is_visible_bits.clear();
+    }
+}
+
+impl Default for FrustumFogCachedState {
+    fn default() -> Self {
+        Self {
+            section_is_visible_bits: Default::default(),
+        }
+    }
+}
+
 pub struct Graph {
     section_has_geometry_bits: LinearBitOctree,
-    section_is_visible_bits: LinearBitOctree,
-
     section_visibility_bit_sets: [VisibilityData; SECTIONS_IN_GRAPH],
 
+    frustum_fog_cached_state: FrustumFogCachedState,
     bfs_cached_state: BfsCachedState,
 }
 
@@ -357,17 +341,25 @@ impl Graph {
     pub fn new() -> Self {
         Graph {
             section_has_geometry_bits: Default::default(),
-            section_is_visible_bits: Default::default(),
             section_visibility_bit_sets: [Default::default(); SECTIONS_IN_GRAPH],
+            frustum_fog_cached_state: Default::default(),
             bfs_cached_state: Default::default(),
         }
     }
 
-    pub fn cull(&mut self, coord_context: &LocalCoordContext, no_occlusion_cull: bool) {
-        self.section_is_visible_bits.clear();
-
+    pub fn cull(
+        &mut self,
+        coord_context: &LocalCoordContext,
+        no_occlusion_cull: bool,
+    ) -> CVec<RegionDrawBatch> {
         self.frustum_and_fog_cull(coord_context);
-        self.bfs_and_occlusion_cull(coord_context, no_occlusion_cull);
+        let draw_batches = self.bfs_and_occlusion_cull(coord_context, no_occlusion_cull);
+
+        // this will make sure nothing tries to use it after culling, and it should be clean for the
+        // next invocation of this method
+        self.frustum_fog_cached_state.reset();
+
+        draw_batches
     }
 
     fn frustum_and_fog_cull(&mut self, coord_context: &LocalCoordContext) {
@@ -397,7 +389,8 @@ impl Graph {
         match coord_context.test_node(index) {
             BoundsCheckResult::Outside => {}
             BoundsCheckResult::Inside => {
-                self.section_is_visible_bits
+                self.frustum_fog_cached_state
+                    .section_is_visible_bits
                     .copy_from(&self.section_has_geometry_bits, index);
             }
             BoundsCheckResult::Partial => match LEVEL {
@@ -417,7 +410,8 @@ impl Graph {
                     }
                 }
                 0 => {
-                    self.section_is_visible_bits
+                    self.frustum_fog_cached_state
+                        .section_is_visible_bits
                         .copy_from(&self.section_has_geometry_bits, index);
                 }
                 _ => panic!("Invalid node level: {}", LEVEL),
@@ -429,11 +423,15 @@ impl Graph {
         &mut self,
         coord_context: &LocalCoordContext,
         no_occlusion_cull: bool,
-    ) {
+    ) -> CVec<RegionDrawBatch> {
         let mut read_queue = BfsQueue::default();
         let mut write_queue = BfsQueue::default();
 
-        read_queue.push(coord_context.camera_section_idx);
+        let initial_node_index = coord_context.camera_section_index;
+        read_queue.push(initial_node_index);
+        initial_node_index
+            .index_array_unchecked_mut(self.bfs_cached_state.incoming_directions)
+            .add_all(GraphDirectionSet::all());
 
         let mut read_queue_ref = &mut read_queue;
         let mut write_queue_ref = &mut write_queue;
@@ -442,31 +440,48 @@ impl Graph {
         while !finished {
             finished = true;
 
-            while let Some(node_index) = read_queue.pop() {
+            'node: while let Some(node_index) = read_queue.pop() {
                 finished = false;
 
+                if !self
+                    .frustum_fog_cached_state
+                    .section_is_visible_bits
+                    .get(node_index)
+                {
+                    continue 'node;
+                }
+
                 let node_pos = node_index.unpack();
-                let outgoing_directions = coord_context.get_valid_directions(node_pos);
 
-                let neighbor_indices = node_index.get_all_neighbors();
+                // TODO: Somewhere around here, we need to start creating the region draw buffers
+                //  in order.
 
-                for direction in outgoing_directions {
-                    let neighbor = neighbor_indices.get(direction);
+                // use incoming directions to determine outgoing directions, given the visibility
+                // bits set
+                let node_incoming_directions =
+                    *node_index.index_array_unchecked(self.bfs_cached_state.incoming_directions);
+
+                let node_outgoing_directions = node_index
+                    .index_array_unchecked(self.section_visibility_bit_sets)
+                    .get_outgoing_directions(node_incoming_directions)
+                    & coord_context.get_valid_directions(node_pos);
+
+                // use the outgoing directions to get the neighbors that could possibly be enqueued
+                let node_neighbor_indices = node_index.get_all_neighbors();
+
+                for direction in node_outgoing_directions {
+                    let neighbor = node_neighbor_indices.get(direction);
 
                     // the outgoing direction for the current node is the incoming direction for the neighbor
-                    let incoming_direction = direction.opposite();
+                    let current_incoming_direction = direction.opposite();
 
-                    // SAFETY: LocalNodeIndex should never have the top 8 bits set, and the array is exactly
-                    // 2^24 elements long.
-                    let node_incoming_directions = unsafe {
-                        self.bfs_cached_state
-                            .incoming_directions
-                            .get_unchecked_mut(node_index.as_array_offset())
-                    };
+                    let neighbor_incoming_directions = node_index
+                        .index_array_unchecked_mut(self.bfs_cached_state.incoming_directions);
 
-                    let should_enqueue = node_incoming_directions.is_empty();
+                    // enqueue only if the node has not yet been enqueued, avoiding duplicates
+                    let should_enqueue = neighbor_incoming_directions.is_empty();
 
-                    node_incoming_directions.add(incoming_direction);
+                    neighbor_incoming_directions.add(current_incoming_direction);
 
                     unsafe {
                         write_queue.push_conditionally_unchecked(node_index, should_enqueue);
@@ -479,11 +494,7 @@ impl Graph {
 
             self.bfs_cached_state.reset();
         }
-    }
 
-    fn divide_graph_into_regions(&self) -> CVec<RegionDrawBatch> {
-        // let mut sorted_batches: Vec<RegionDrawBatch> = Vec::new();
-        // CVec::from_boxed_slice(sorted_batches.into_boxed_slice())
         todo!()
     }
 
@@ -504,24 +515,5 @@ impl Graph {
 
         self.section_has_geometry_bits.set(index, false);
         self.section_visibility_bit_sets[index.as_array_offset()] = Default::default();
-    }
-}
-
-#[repr(C)]
-pub struct RegionDrawBatch {
-    region_coord: (i32, i32, i32),
-    sections: CInlineVec<RegionSectionIndex, SECTIONS_IN_REGION>,
-}
-
-impl RegionDrawBatch {
-    pub fn new(region_coord: i32x3) -> Self {
-        RegionDrawBatch {
-            region_coord: region_coord.into_tuple(),
-            sections: CInlineVec::new(),
-        }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.sections.is_empty()
     }
 }

@@ -9,6 +9,7 @@ mod collections;
 mod ffi;
 mod graph;
 mod jni;
-mod math;
+pub(crate) mod math;
 mod mem;
 mod panic;
+mod region;

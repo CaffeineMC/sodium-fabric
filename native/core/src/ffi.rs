@@ -2,6 +2,7 @@
 
 use std::boxed::Box;
 use std::mem::MaybeUninit;
+use std::pin::Pin;
 use std::ptr;
 
 use crate::graph::local::LocalFrustum;
