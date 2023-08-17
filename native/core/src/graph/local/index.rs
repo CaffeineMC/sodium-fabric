@@ -118,7 +118,10 @@ impl<const LEVEL: u8> LocalNodeIndex<LEVEL> {
     }
 
     #[inline(always)]
-    pub fn index_array_unchecked<T>(&self, array: [T; SECTIONS_IN_GRAPH]) -> &T {
+    pub fn index_array_unchecked<'array, T>(
+        &self,
+        array: &'array [T; SECTIONS_IN_GRAPH],
+    ) -> &'array T {
         // SAFETY: Using unsafe gets are okay because the internal representation will never have
         // the top 8 bits set, and the arrays are exactly the length of what we can represent with
         // 24 bits.
@@ -126,7 +129,10 @@ impl<const LEVEL: u8> LocalNodeIndex<LEVEL> {
     }
 
     #[inline(always)]
-    pub fn index_array_unchecked_mut<T>(&self, array: [T; SECTIONS_IN_GRAPH]) -> &mut T {
+    pub fn index_array_unchecked_mut<'array, T>(
+        &self,
+        array: &'array mut [T; SECTIONS_IN_GRAPH],
+    ) -> &'array mut T {
         // SAFETY: see documentation in fast_array_index
         unsafe { array.get_unchecked_mut(self.as_array_offset()) }
     }

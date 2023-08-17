@@ -38,16 +38,6 @@ pub struct CInlineVec<T, const LEN: usize> {
 }
 
 impl<T, const LEN: usize> CInlineVec<T, LEN> {
-    pub fn new() -> Self
-    where
-        T: Copy,
-    {
-        CInlineVec {
-            count: 0,
-            data: [MaybeUninit::uninit(); LEN],
-        }
-    }
-
     pub fn push(&mut self, value: T) {
         self.data[self.count as usize] = MaybeUninit::new(value);
         self.count += 1;
@@ -66,7 +56,38 @@ impl<T, const LEN: usize> CInlineVec<T, LEN> {
     pub fn is_empty(&self) -> bool {
         self.count == 0
     }
+
+    pub fn get_slice(&self) -> &[T] {
+        // SAFETY: count shouldn't ever be able to be incremented past LEN, and the contents should
+        // be initialized
+        unsafe {
+            MaybeUninit::slice_assume_init_ref(self.data.get_unchecked(0..(self.count as usize)))
+        }
+    }
 }
+
+impl<T, const LEN: usize> Default for CInlineVec<T, LEN> {
+    fn default() -> Self {
+        CInlineVec {
+            count: 0,
+            data: unsafe { MaybeUninit::<[MaybeUninit<T>; LEN]>::uninit().assume_init() },
+        }
+    }
+}
+
+impl<T, const LEN: usize> Clone for CInlineVec<T, LEN>
+where
+    MaybeUninit<T>: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            count: self.count,
+            data: self.data.clone(),
+        }
+    }
+}
+
+impl<T, const LEN: usize> Copy for CInlineVec<T, LEN> where T: Copy {}
 
 // #[allow(non_snake_case)]
 // mod java {

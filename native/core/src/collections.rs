@@ -1,12 +1,12 @@
 use std::mem::MaybeUninit;
 
-pub struct ArrayDeque<T: Copy, const CAPACITY: usize> {
+pub struct ArrayDeque<T, const CAPACITY: usize> {
     head: usize,
     tail: usize,
     elements: [MaybeUninit<T>; CAPACITY],
 }
 
-impl<T: Copy, const CAPACITY: usize> ArrayDeque<T, CAPACITY> {
+impl<T, const CAPACITY: usize> ArrayDeque<T, CAPACITY> {
     pub fn push(&mut self, value: T) {
         self.elements[self.tail] = MaybeUninit::new(value);
         self.tail += 1;
@@ -19,14 +19,14 @@ impl<T: Copy, const CAPACITY: usize> ArrayDeque<T, CAPACITY> {
         self.tail += if cond { 1 } else { 0 };
     }
 
-    pub fn pop(&mut self) -> Option<T> {
+    pub fn pop(&mut self) -> Option<&T> {
         if self.head == self.tail {
             return None;
         }
 
         // the get_unchecked should be fine, because if we read past the array, it would've already
         // been a problem when we pushed an element past the array.
-        let value = unsafe { MaybeUninit::assume_init(*self.elements.get_unchecked(self.head)) };
+        let value = unsafe { MaybeUninit::assume_init_ref(self.elements.get_unchecked(self.head)) };
         self.head += 1;
 
         Some(value)
@@ -42,7 +42,7 @@ impl<T: Copy, const CAPACITY: usize> ArrayDeque<T, CAPACITY> {
     }
 }
 
-impl<T: Copy, const CAPACITY: usize> Default for ArrayDeque<T, CAPACITY> {
+impl<T, const CAPACITY: usize> Default for ArrayDeque<T, CAPACITY> {
     fn default() -> Self {
         Self {
             head: 0,
@@ -50,7 +50,7 @@ impl<T: Copy, const CAPACITY: usize> Default for ArrayDeque<T, CAPACITY> {
 
             // MaybeUninit::uninit_array::<CAPACITY>()
             // https://github.com/rust-lang/rust/issues/96097
-            elements: [MaybeUninit::uninit(); CAPACITY],
+            elements: unsafe { MaybeUninit::<[MaybeUninit<T>; CAPACITY]>::uninit().assume_init() },
         }
     }
 }

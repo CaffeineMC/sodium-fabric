@@ -9,6 +9,7 @@ use crate::graph::local::index::LocalNodeIndex;
 use crate::graph::octree::{LEVEL_3_COORD_LENGTH, LEVEL_3_COORD_MASK, LEVEL_3_COORD_SHIFT};
 use crate::graph::*;
 use crate::math::*;
+use crate::region::REGION_COORD_SHIFT;
 
 pub struct LocalCoordContext {
     frustum: LocalFrustum,
@@ -18,6 +19,8 @@ pub struct LocalCoordContext {
     pub camera_coords: f32x3,
     pub camera_section_coords: u8x3,
     pub camera_section_index: LocalNodeIndex<1>,
+
+    pub origin_region_coords: i32x3,
 
     fog_distance_squared: f32,
 
@@ -62,6 +65,11 @@ impl LocalCoordContext {
         let camera_section_index = LocalNodeIndex::pack(camera_section_coords);
         let camera_coords = (world_pos % f64x3::splat(256.0)).cast::<f32>();
 
+        let origin_region_coords = ((camera_section_global_coords
+            - camera_section_coords.cast::<i64>())
+            >> REGION_COORD_SHIFT.cast::<i64>())
+        .cast::<i32>();
+
         let iter_section_origin_coords = simd_swizzle!(
             camera_section_coords - Simd::splat(section_view_distance),
             Simd::splat(world_bottom_section_y as u8),
@@ -96,6 +104,7 @@ impl LocalCoordContext {
             camera_coords,
             camera_section_index,
             camera_section_coords,
+            origin_region_coords: Default::default(),
             fog_distance_squared,
             world_bottom_section_y,
             world_top_section_y,
