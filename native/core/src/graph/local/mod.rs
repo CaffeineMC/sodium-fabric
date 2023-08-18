@@ -33,11 +33,6 @@ pub struct LocalCoordContext {
     pub iter_node_origin_index: LocalNodeIndex<3>,
     pub iter_node_origin_coords: u8x3,
     pub level_3_node_iters: u8x3,
-
-    // similar to the previous, but truncated to the closest region coord and relative to the world
-    // origin, rather than the data structure origin.
-    pub iter_region_origin_coords: i32x3,
-    pub region_iters: u8x3,
 }
 
 impl LocalCoordContext {
@@ -80,8 +75,8 @@ impl LocalCoordContext {
         let iter_node_origin_index = LocalNodeIndex::pack(iter_node_origin_coords);
 
         let view_cube_length = (section_view_distance * 2) + 1;
-        // convert to i32 to avoid implicit wrapping, then explicitly wrap
-        // todo: should the +1 be here?
+        // convert to i32 to avoid implicit wrapping, then explicitly wrap.
+        // the +1 is necessary because the top and bottom sections are an inclusive range
         let world_height =
             ((world_top_section_y as i32) - (world_bottom_section_y as i32) + 1) as u8;
 
@@ -111,8 +106,6 @@ impl LocalCoordContext {
             iter_node_origin_index,
             iter_node_origin_coords,
             level_3_node_iters,
-            iter_region_origin_coords: todo!(),
-            region_iters: todo!(),
         }
     }
 
