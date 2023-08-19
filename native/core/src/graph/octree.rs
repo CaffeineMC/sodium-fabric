@@ -181,27 +181,27 @@ impl LinearBitOctree {
     }
 
     // inside of individual level 3 nodes, the cache locality is *extremely* good.
-    const INTRINSIC_LOCALITY_LEVEL: i32 = 3;
-
-    pub fn prefetch_top_node_read(&self, index: LocalNodeIndex<3>) {
-        unsafe {
-            let pointer = unsafe {
-                self.level_1
-                    .get_unchecked(index.as_array_offset() >> LEVEL_1_INDEX_SHIFT)
-            };
-
-            prefetch_read_data(pointer, Self::INTRINSIC_LOCALITY_LEVEL);
-        }
-    }
-
-    pub fn prefetch_top_node_write(&self, index: LocalNodeIndex<3>) {
-        unsafe {
-            let pointer = unsafe {
-                self.level_1
-                    .get_unchecked(index.as_array_offset() >> LEVEL_1_INDEX_SHIFT)
-            };
-
-            prefetch_write_data(pointer, Self::INTRINSIC_LOCALITY_LEVEL);
-        }
-    }
+    // const INTRINSIC_LOCALITY_LEVEL: i32 = 3;
+    //
+    // pub fn prefetch_top_node_read(&self, index: LocalNodeIndex<3>) {
+    //     unsafe {
+    //         let pointer = unsafe {
+    //             self.level_1
+    //                 .get_unchecked(index.as_array_offset() >> LEVEL_1_INDEX_SHIFT)
+    //         };
+    //
+    //         prefetch_read_data(pointer, Self::INTRINSIC_LOCALITY_LEVEL);
+    //     }
+    // }
+    //
+    // pub fn prefetch_top_node_write(&self, index: LocalNodeIndex<3>) {
+    //     unsafe {
+    //         let pointer = unsafe {
+    //             self.level_1
+    //                 .get_unchecked(index.as_array_offset() >> LEVEL_1_INDEX_SHIFT)
+    //         };
+    //
+    //         prefetch_write_data(pointer, Self::INTRINSIC_LOCALITY_LEVEL);
+    //     }
+    // }
 }

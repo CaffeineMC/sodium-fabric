@@ -4,6 +4,7 @@ use core_simd::simd::*;
 
 use crate::ffi::*;
 use crate::graph::local::LocalCoordContext;
+use crate::graph::SortedSearchResults;
 use crate::math::*;
 
 pub const SECTIONS_IN_REGION: usize = 8 * 4 * 8;
@@ -125,7 +126,7 @@ impl StagingRegionDrawBatches {
         self.ordered_batch_indices.push(local_region_index);
     }
 
-    pub fn get_sorted_batches(&self) -> CInlineVec<RegionDrawBatch, REGIONS_IN_GRAPH> {
+    pub fn get_sorted_batches(&self) -> SortedSearchResults {
         let mut sorted_batches = CInlineVec::<RegionDrawBatch, REGIONS_IN_GRAPH>::default();
 
         for &index in self.ordered_batch_indices.get_slice() {

@@ -39,10 +39,10 @@ impl LocalCoordContext {
     pub const NODE_HEIGHT_OFFSET: u8 = 128;
 
     pub fn new(
-        world_pos: f64x3,
-        planes: [f32x6; 4],
-        fog_distance: f32,
+        camera_world_pos: f64x3,
         section_view_distance: u8,
+        frustum_planes: [f32x6; 4],
+        fog_distance: f32,
         world_bottom_section_y: i8,
         world_top_section_y: i8,
     ) -> Self {
@@ -51,14 +51,15 @@ impl LocalCoordContext {
             "View distances above 127 are not supported"
         );
 
-        let frustum = LocalFrustum::new(planes);
+        let frustum = LocalFrustum::new(frustum_planes);
 
-        let camera_section_global_coords = world_pos.floor().cast::<i64>() >> i64x3::splat(4);
+        let camera_section_global_coords =
+            camera_world_pos.floor().cast::<i64>() >> i64x3::splat(4);
 
         // the cast to u8 puts it in the local coordinate space by effectively doing a mod 256
         let camera_section_coords = camera_section_global_coords.cast::<u8>();
         let camera_section_index = LocalNodeIndex::pack(camera_section_coords);
-        let camera_coords = (world_pos % f64x3::splat(256.0)).cast::<f32>();
+        let camera_coords = (camera_world_pos % f64x3::splat(256.0)).cast::<f32>();
 
         let origin_region_coords = ((camera_section_global_coords
             - camera_section_coords.cast::<i64>())

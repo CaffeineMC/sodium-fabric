@@ -1,6 +1,5 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
-use std::intrinsics::{prefetch_read_data, prefetch_write_data};
 use std::marker::PhantomData;
 use std::mem::{swap, transmute};
 use std::ops::*;
@@ -18,11 +17,11 @@ use crate::graph::local::*;
 use crate::graph::octree::LinearBitOctree;
 use crate::graph::visibility::*;
 use crate::math::*;
-use crate::region::{RegionDrawBatch, StagingRegionDrawBatches, REGIONS_IN_GRAPH};
+use crate::region::*;
 
 pub mod local;
 mod octree;
-mod visibility;
+pub mod visibility;
 
 pub const REGION_COORD_MASK: u8x3 = u8x3::from_array([0b11111000, 0b11111100, 0b11111000]);
 pub const SECTIONS_IN_GRAPH: usize = 256 * 256 * 256;
@@ -32,6 +31,7 @@ pub const MAX_WORLD_HEIGHT: u8 = 254;
 pub const BFS_QUEUE_SIZE: usize =
     get_bfs_queue_max_size(MAX_VIEW_DISTANCE, MAX_WORLD_HEIGHT) as usize;
 pub type BfsQueue = ArrayDeque<LocalNodeIndex<1>, BFS_QUEUE_SIZE>;
+pub type SortedSearchResults = CInlineVec<RegionDrawBatch, REGIONS_IN_GRAPH>;
 
 pub const fn get_bfs_queue_max_size(section_render_distance: u8, world_height: u8) -> u32 {
     // for the worst case, we will assume the player is in the center of the render distance and
@@ -124,14 +124,13 @@ impl Graph {
         }
     }
 
-    #[no_mangle]
     pub fn cull(
         &mut self,
         coord_context: &LocalCoordContext,
-        no_occlusion_cull: bool,
-    ) -> CInlineVec<RegionDrawBatch, REGIONS_IN_GRAPH> {
+        disable_occlusion_culling: bool,
+    ) -> SortedSearchResults {
         self.frustum_and_fog_cull(coord_context);
-        let draw_batches = self.bfs_and_occlusion_cull(coord_context, no_occlusion_cull);
+        let draw_batches = self.bfs_and_occlusion_cull(coord_context, disable_occlusion_culling);
 
         // this will make sure nothing tries to use it after culling, and it should be clean for the
         // next invocation of this method
@@ -201,8 +200,8 @@ impl Graph {
     fn bfs_and_occlusion_cull(
         &mut self,
         coord_context: &LocalCoordContext,
-        no_occlusion_cull: bool,
-    ) -> CInlineVec<RegionDrawBatch, REGIONS_IN_GRAPH> {
+        disable_occlusion_culling: bool,
+    ) -> SortedSearchResults {
         let mut read_queue = BfsQueue::default();
         let mut write_queue = BfsQueue::default();
 
@@ -282,18 +281,20 @@ impl Graph {
 
     pub fn add_section(
         &mut self,
-        section_coord: u8x3,
+        section_coord: i32x3,
         has_geometry: bool,
         visibility_data: VisibilityData,
     ) {
-        let index = LocalNodeIndex::<3>::pack(section_coord);
+        let local_coord = section_coord.cast::<u8>();
+        let index = LocalNodeIndex::<3>::pack(local_coord);
 
         self.section_has_geometry_bits.set(index, has_geometry);
         self.section_visibility_bit_sets[index.as_array_offset()] = visibility_data;
     }
 
-    pub fn remove_section(&mut self, section_coord: u8x3) {
-        let index = LocalNodeIndex::<1>::pack(section_coord);
+    pub fn remove_section(&mut self, section_coord: i32x3) {
+        let local_coord = section_coord.cast::<u8>();
+        let index = LocalNodeIndex::<1>::pack(local_coord);
 
         self.section_has_geometry_bits.set(index, false);
         self.section_visibility_bit_sets[index.as_array_offset()] = Default::default();
