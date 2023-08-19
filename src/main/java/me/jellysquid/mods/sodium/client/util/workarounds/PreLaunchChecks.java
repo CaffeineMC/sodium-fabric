@@ -52,7 +52,7 @@ public class PreLaunchChecks {
             try {
                 var version = WindowsDriverStoreVersion.parse(adapter.version());
 
-                if (version.equals(new WindowsDriverStoreVersion(10, 18, 10, 4538))) {
+                if (version.driverModel() == 10 && version.featureLevel() == 18 && version.major() == 10) {
                     return true;
                 }
             } catch (WindowsDriverStoreVersion.ParseException ignored) { }
