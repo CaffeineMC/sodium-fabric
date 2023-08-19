@@ -1,17 +1,11 @@
-use std::collections::VecDeque;
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use std::mem::{swap, transmute};
-use std::ops::*;
-use std::vec::Vec;
+use std::mem::swap;
 
 use core_simd::simd::Which::*;
 use core_simd::simd::*;
 use local::LocalCoordContext;
-use std_float::StdFloat;
 
 use crate::collections::ArrayDeque;
-use crate::ffi::{CInlineVec, CVec};
+use crate::ffi::CInlineVec;
 use crate::graph::local::index::LocalNodeIndex;
 use crate::graph::local::*;
 use crate::graph::octree::LinearBitOctree;
@@ -23,7 +17,6 @@ pub mod local;
 mod octree;
 pub mod visibility;
 
-pub const REGION_COORD_MASK: u8x3 = u8x3::from_array([0b11111000, 0b11111100, 0b11111000]);
 pub const SECTIONS_IN_GRAPH: usize = 256 * 256 * 256;
 
 pub const MAX_VIEW_DISTANCE: u8 = 127;
@@ -61,7 +54,7 @@ pub const fn get_bfs_queue_max_size(section_render_distance: u8, world_height: u
     count += 4 * (max_width_traversal - layer_index) * (max_width_traversal + layer_index - 1);
 
     // add final, outer-most ring.
-    count += (max_width_traversal * 4);
+    count += max_width_traversal * 4;
 
     // TODO: i'm pretty sure this only holds true when we do checks on the nodes before enqueueing
     //  them. however, this would result in a lot of excess checks when multiple nodes try to queue
@@ -82,7 +75,7 @@ pub struct BfsCachedState {
 
 impl BfsCachedState {
     pub fn reset(&mut self) {
-        self.incoming_directions.fill(GraphDirectionSet::none());
+        self.incoming_directions.fill(GraphDirectionSet::NONE);
     }
 }
 
@@ -197,11 +190,18 @@ impl Graph {
         }
     }
 
+    #[no_mangle]
     fn bfs_and_occlusion_cull(
         &mut self,
         coord_context: &LocalCoordContext,
         disable_occlusion_culling: bool,
     ) -> SortedSearchResults {
+        let directions_modifier = if disable_occlusion_culling {
+            GraphDirectionSet::ALL
+        } else {
+            GraphDirectionSet::NONE
+        };
+
         let mut read_queue = BfsQueue::default();
         let mut write_queue = BfsQueue::default();
 
@@ -209,7 +209,7 @@ impl Graph {
         read_queue.push(initial_node_index);
         initial_node_index
             .index_array_unchecked_mut(&mut self.bfs_cached_state.incoming_directions)
-            .add_all(GraphDirectionSet::all());
+            .add_all(GraphDirectionSet::ALL);
 
         let mut read_queue_ref = &mut read_queue;
         let mut write_queue_ref = &mut write_queue;
@@ -218,7 +218,7 @@ impl Graph {
         while !finished {
             finished = true;
 
-            'node: while let Some(&node_index) = read_queue.pop() {
+            'node: while let Some(&node_index) = read_queue_ref.pop() {
                 finished = false;
 
                 if !self
@@ -240,21 +240,22 @@ impl Graph {
                 let node_incoming_directions =
                     *node_index.index_array_unchecked(&self.bfs_cached_state.incoming_directions);
 
-                let node_outgoing_directions = node_index
+                let mut node_outgoing_directions = node_index
                     .index_array_unchecked(&self.section_visibility_bit_sets)
-                    .get_outgoing_directions(node_incoming_directions)
-                    & coord_context.get_valid_directions(node_pos);
+                    .get_outgoing_directions(node_incoming_directions);
+                node_outgoing_directions.add_all(directions_modifier);
+                node_outgoing_directions &= coord_context.get_valid_directions(node_pos);
 
                 // use the outgoing directions to get the neighbors that could possibly be enqueued
                 let node_neighbor_indices = node_index.get_all_neighbors();
 
                 for direction in node_outgoing_directions {
-                    let neighbor = node_neighbor_indices.get(direction);
+                    let neighbor_index = node_neighbor_indices.get(direction);
 
                     // the outgoing direction for the current node is the incoming direction for the neighbor
                     let current_incoming_direction = direction.opposite();
 
-                    let neighbor_incoming_directions = node_index
+                    let neighbor_incoming_directions = neighbor_index
                         .index_array_unchecked_mut(&mut self.bfs_cached_state.incoming_directions);
 
                     // enqueue only if the node has not yet been enqueued, avoiding duplicates
@@ -263,13 +264,14 @@ impl Graph {
                     neighbor_incoming_directions.add(current_incoming_direction);
 
                     unsafe {
-                        write_queue.push_conditionally_unchecked(node_index, should_enqueue);
+                        write_queue_ref
+                            .push_conditionally_unchecked(neighbor_index, should_enqueue);
                     }
                 }
             }
 
-            read_queue.reset();
-            swap(&mut read_queue, &mut write_queue);
+            read_queue_ref.reset();
+            swap(&mut read_queue_ref, &mut write_queue_ref);
 
             self.bfs_cached_state.reset();
         }

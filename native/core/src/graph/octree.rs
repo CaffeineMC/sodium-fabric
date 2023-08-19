@@ -2,7 +2,6 @@ use std::mem::size_of;
 
 use core_simd::simd::*;
 
-use crate::graph::local::*;
 use crate::graph::*;
 
 // operations on u8x64 are faster in some cases compared to u64x8

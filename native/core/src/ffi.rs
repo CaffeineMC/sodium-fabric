@@ -2,15 +2,11 @@
 
 use std::boxed::Box;
 use std::mem::MaybeUninit;
-use std::pin::Pin;
 use std::ptr;
 
-use crate::graph::local::LocalFrustum;
 use crate::graph::*;
 use crate::jni::types::*;
 use crate::math::*;
-use crate::mem::LibcAllocVtable;
-use crate::panic::PanicHandlerFn;
 
 #[repr(C)]
 pub struct CVec<T> {
@@ -92,18 +88,10 @@ impl<T, const LEN: usize> Copy for CInlineVec<T, LEN> where T: Copy {}
 #[allow(non_snake_case)]
 mod java {
     use std::boxed::Box;
-    use std::mem::MaybeUninit;
-    use std::ptr;
-
-    use core_simd::simd::f32x4;
 
     use crate::ffi::*;
-    use crate::graph::local::index::LocalNodeIndex;
     use crate::graph::local::LocalCoordContext;
     use crate::graph::visibility::VisibilityData;
-    use crate::graph::*;
-    use crate::jni::types::*;
-    use crate::math::*;
     use crate::mem::LibcAllocVtable;
     use crate::panic::PanicHandlerFn;
 

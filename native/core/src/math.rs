@@ -1,8 +1,6 @@
 #![allow(non_camel_case_types)]
 
-use std::cmp::Eq;
-use std::hash::Hash;
-use std::ops::*;
+use std::ops::{Add, Mul};
 
 use core_simd::simd::*;
 use std_float::StdFloat;
@@ -124,23 +122,12 @@ pub trait FastFma {
     fn fast_fma(self, a: Self, b: Self) -> Self;
 }
 
-impl<const LANES: usize> FastFma for Simd<f32, LANES>
+impl<const LANES: usize, T: SimdElement> FastFma for Simd<T, LANES>
 where
     LaneCount<LANES>: SupportedLaneCount,
-{
-    #[inline(always)]
-    fn fast_fma(self, a: Self, b: Self) -> Self {
-        if cfg!(target_feature = "fma") {
-            self.mul_add(a, b)
-        } else {
-            self * a + b
-        }
-    }
-}
-
-impl<const LANES: usize> FastFma for Simd<f64, LANES>
-where
-    LaneCount<LANES>: SupportedLaneCount,
+    Self: StdFloat,
+    Self: Mul<Output = Self>,
+    Self: Add<Output = Self>,
 {
     #[inline(always)]
     fn fast_fma(self, a: Self, b: Self) -> Self {
@@ -162,33 +149,33 @@ pub trait ToBitMaskExtended {
 macro_rules! bitmask_macro {
     ($t:ty, [$($len:expr),+]) => {
         $(
-            impl<T> ToBitMaskExtended for Mask<T, $len>
-            where
-                T: MaskElement,
-            {
-                type BitMask = $t;
+        impl<T> ToBitMaskExtended for Mask<T, $len>
+        where
+            T: MaskElement,
+        {
+            type BitMask = $t;
 
-                fn to_bitmask(self) -> Self::BitMask {
-                    const NEXT_PO2_LANES: usize = 1_usize << (u8::BITS - ($len - 1_u8).leading_zeros());
+            fn to_bitmask(self) -> Self::BitMask {
+                const NEXT_PO2_LANES: usize = 1_usize << (u8::BITS - ($len - 1_u8).leading_zeros());
 
-                    // This is safe because the alignment should match the next PO2 type, and we are masking off
-                    // the last value once converted.
-                    let larger_mask =
-                        unsafe { (&self as *const _ as *const Mask<T, { NEXT_PO2_LANES }>).read() };
+                // This is safe because the alignment should match the next PO2 type, and we are masking off
+                // the last value once converted.
+                let larger_mask =
+                    unsafe { (&self as *const _ as *const Mask<T, { NEXT_PO2_LANES }>).read() };
 
-                    larger_mask.to_bitmask() & !(<$t>::MAX << $len)
-                }
-
-                fn from_bitmask(bitmask: Self::BitMask) -> Self {
-                    const NEXT_PO2_LANES: usize = 1_usize << (u8::BITS - ($len - 1_u8).leading_zeros());
-
-                    let larger_mask = Mask::<T, { NEXT_PO2_LANES }>::from_bitmask(bitmask);
-
-                    // This is safe because the alignment should be correct for the next PO2 type, and we are
-                    // ignoring the last value.
-                    unsafe { (&larger_mask as *const _ as *const Mask<T, $len>).read() }
-                }
+                larger_mask.to_bitmask() & !(<$t>::MAX << $len)
             }
+
+            fn from_bitmask(bitmask: Self::BitMask) -> Self {
+                const NEXT_PO2_LANES: usize = 1_usize << (u8::BITS - ($len - 1_u8).leading_zeros());
+
+                let larger_mask = Mask::<T, { NEXT_PO2_LANES }>::from_bitmask(bitmask);
+
+                // This is safe because the alignment should be correct for the next PO2 type, and we are
+                // ignoring the last value.
+                unsafe { (&larger_mask as *const _ as *const Mask<T, $len>).read() }
+            }
+        }
         )+
     };
 }

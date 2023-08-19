@@ -2,7 +2,6 @@
 
 pub mod types {
     use std::marker::PhantomData;
-    use std::mem::forget;
 
     pub type JEnv = std::ffi::c_void;
     pub type JClass = std::ffi::c_void;

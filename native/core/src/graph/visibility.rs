@@ -1,5 +1,5 @@
 use std::mem::transmute;
-use std::ops::BitAnd;
+use std::ops::{BitAnd, BitAndAssign};
 
 use core_simd::simd::Which::*;
 use core_simd::simd::*;
@@ -50,32 +50,28 @@ impl GraphDirection {
 pub struct GraphDirectionSet(u8);
 
 impl GraphDirectionSet {
+    pub const NONE: Self = GraphDirectionSet(0);
+
+    pub const ALL: Self = {
+        let mut set = 0_u8;
+
+        let mut i = 0;
+        while i < GraphDirection::ORDERED.len() {
+            set |= 1 << GraphDirection::ORDERED[i] as u8;
+            i += 1;
+        }
+
+        GraphDirectionSet(set)
+    };
+
     #[inline(always)]
-    pub fn from(packed: u8) -> Self {
+    pub const fn from(packed: u8) -> Self {
         GraphDirectionSet(packed)
     }
 
     #[inline(always)]
-    pub fn none() -> GraphDirectionSet {
-        GraphDirectionSet(0)
-    }
-
-    #[inline(always)]
-    pub fn all() -> GraphDirectionSet {
-        let mut set = GraphDirectionSet::none();
-
-        for dir in GraphDirection::ORDERED {
-            set.add(dir);
-        }
-
-        set
-    }
-
-    #[inline(always)]
-    pub fn single(direction: GraphDirection) -> GraphDirectionSet {
-        let mut set = GraphDirectionSet::none();
-        set.add(direction);
-        set
+    pub const fn single(direction: GraphDirection) -> GraphDirectionSet {
+        GraphDirectionSet(1 << direction as u8)
     }
 
     #[inline(always)]
@@ -89,19 +85,19 @@ impl GraphDirectionSet {
     }
 
     #[inline(always)]
-    pub fn contains(&self, dir: GraphDirection) -> bool {
+    pub const fn contains(&self, dir: GraphDirection) -> bool {
         (self.0 & (1 << dir as u8)) != 0
     }
 
     #[inline(always)]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.0 == 0
     }
 }
 
 impl Default for GraphDirectionSet {
     fn default() -> Self {
-        GraphDirectionSet::none()
+        GraphDirectionSet::NONE
     }
 }
 
@@ -110,6 +106,12 @@ impl BitAnd for GraphDirectionSet {
 
     fn bitand(self, rhs: Self) -> Self::Output {
         GraphDirectionSet(self.0 & rhs.0)
+    }
+}
+
+impl BitAndAssign for GraphDirectionSet {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
     }
 }
 
@@ -136,7 +138,7 @@ impl Iterator for GraphDirectionSetIter {
             // SAFETY: the result from a valid GraphDirectionSet value should never be out of bounds
             let direction =
                 unsafe { GraphDirection::from_int_unchecked(self.0.trailing_zeros() as u8) };
-            self.0 &= (self.0 - 1);
+            self.0 &= self.0 - 1;
             Some(direction)
         } else {
             None

@@ -1,4 +1,3 @@
-#![allow(unused)]
 #![feature(portable_simd)]
 #![feature(cell_leak)]
 #![feature(maybe_uninit_slice)]

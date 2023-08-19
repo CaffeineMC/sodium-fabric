@@ -20,7 +20,7 @@ impl<T, const CAPACITY: usize> ArrayDeque<T, CAPACITY> {
     }
 
     pub fn pop(&mut self) -> Option<&T> {
-        if self.head == self.tail {
+        if self.is_empty() {
             return None;
         }
 

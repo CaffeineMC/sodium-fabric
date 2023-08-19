@@ -82,19 +82,6 @@ pub struct RegionDrawBatch {
     sections: CInlineVec<RegionSectionIndex, SECTIONS_IN_REGION>,
 }
 
-impl RegionDrawBatch {
-    fn set_region_coord(region_coord: i32x3) -> Self {
-        RegionDrawBatch {
-            region_coord: region_coord.into_tuple(),
-            sections: Default::default(),
-        }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.sections.is_empty()
-    }
-}
-
 impl Default for RegionDrawBatch {
     fn default() -> Self {
         Self {

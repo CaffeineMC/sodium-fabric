@@ -8,7 +8,6 @@ use std_float::StdFloat;
 use crate::graph::local::index::LocalNodeIndex;
 use crate::graph::octree::{LEVEL_3_COORD_LENGTH, LEVEL_3_COORD_MASK, LEVEL_3_COORD_SHIFT};
 use crate::graph::*;
-use crate::math::*;
 use crate::region::REGION_COORD_SHIFT;
 
 pub struct LocalCoordContext {
@@ -100,7 +99,7 @@ impl LocalCoordContext {
             camera_coords,
             camera_section_index,
             camera_section_coords,
-            origin_region_coords: Default::default(),
+            origin_region_coords,
             fog_distance_squared,
             world_bottom_section_y,
             world_top_section_y,
