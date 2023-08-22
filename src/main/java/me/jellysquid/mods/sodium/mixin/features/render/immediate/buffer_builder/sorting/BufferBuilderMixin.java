@@ -86,26 +86,23 @@ public abstract class BufferBuilderMixin {
     @Unique
     private void writePrimitiveIndices(VertexFormat.IndexType indexType, int[] indices) {
         long ptr = MemoryUtil.memAddress(this.buffer, this.elementOffset);
+        // using a switch statement causes hotswap to resign
+        if (indexType == VertexFormat.IndexType.SHORT){
+            for (int index : indices) {
+                int start = index * 4;
 
-        switch (indexType) {
-            case SHORT -> {
-                for (int index : indices) {
-                    int start = index * 4;
-
-                    for (int offset : VERTEX_ORDER) {
-                        MemoryUtil.memPutShort(ptr, (short) (start + offset));
-                        ptr += Short.BYTES;
-                    }
+                for (int offset : VERTEX_ORDER) {
+                    MemoryUtil.memPutShort(ptr, (short) (start + offset));
+                    ptr += Short.BYTES;
                 }
             }
-            case INT -> {
-                for (int index : indices) {
-                    int start = index * 4;
+        } else if (indexType == VertexFormat.IndexType.INT) {
+            for (int index : indices) {
+                int start = index * 4;
 
-                    for (int offset : VERTEX_ORDER) {
-                        MemoryUtil.memPutInt(ptr, (start + offset));
-                        ptr += Integer.BYTES;
-                    }
+                for (int offset : VERTEX_ORDER) {
+                    MemoryUtil.memPutInt(ptr, (start + offset));
+                    ptr += Integer.BYTES;
                 }
             }
         }
