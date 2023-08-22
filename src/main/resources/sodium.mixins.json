@@ -60,7 +60,6 @@
     "features.render.model.block.BlockModelRendererMixin",
     "features.render.model.item.ItemRendererMixin",
     "features.render.particle.BillboardParticleMixin",
-    "features.render.world.clouds.BackgroundRendererInvoker",
     "features.render.world.clouds.WorldRendererMixin",
     "features.render.world.sky.BackgroundRendererMixin",
     "features.render.world.sky.ClientWorldMixin",
@@ -84,8 +83,6 @@
     "features.textures.mipmaps.MipmapHelperMixin",
     "features.textures.mipmaps.SpriteContentsMixin",
     "features.world.biome.BiomeMixin",
-    "features.world.biome.FoliageColorsAccessor",
-    "features.world.biome.GrassColorsAccessor",
     "features.world.storage.ClientChunkMapMixin",
     "workarounds.context_creation.WindowMixin",
     "workarounds.event_loop.RenderSystemMixin"
