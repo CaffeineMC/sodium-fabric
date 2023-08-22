@@ -68,18 +68,19 @@ public class BlockRenderer {
             renderOffset = Vec3d.ZERO;
         }
 
+        List<BakedQuad> all = this.getGeometry(ctx, null);
+
+        // render non axis aligned faces first as blocks such as honey & slime have internal faces that should be rendered first.
+        if (!all.isEmpty()) {
+            this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, all, null);
+        }
+
         for (Direction face : DirectionUtil.ALL_DIRECTIONS) {
             List<BakedQuad> quads = this.getGeometry(ctx, face);
 
             if (!quads.isEmpty() && this.isFaceVisible(ctx, face)) {
                 this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, quads, face);
             }
-        }
-
-        List<BakedQuad> all = this.getGeometry(ctx, null);
-
-        if (!all.isEmpty()) {
-            this.renderQuadList(ctx, material, lighter, colorizer, renderOffset, meshBuilder, all, null);
         }
     }
 
