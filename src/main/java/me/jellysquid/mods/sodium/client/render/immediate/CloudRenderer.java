@@ -2,13 +2,12 @@ package me.jellysquid.mods.sodium.client.render.immediate;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.mixin.features.render.world.clouds.BackgroundRendererInvoker;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.ColorMixer;
-import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
@@ -214,7 +213,7 @@ public class CloudRenderer {
             fogData.fogEnd = Math.min((cloudDistance), 192.0f) * 0.5f;
         }
 
-        BackgroundRenderer.StatusEffectFogModifier fogModifier = BackgroundRendererInvoker.invokeGetFogModifier(player, tickDelta);
+        BackgroundRenderer.StatusEffectFogModifier fogModifier = BackgroundRenderer.getFogModifier(player, tickDelta);
         if (fogModifier != null) {
             StatusEffectInstance statusEffectInstance = player.getStatusEffect(fogModifier.getStatusEffect());
             if (statusEffectInstance != null) {
