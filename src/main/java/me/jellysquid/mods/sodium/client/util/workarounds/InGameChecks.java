@@ -42,7 +42,7 @@ public class InGameChecks {
 		
         for (String s : activeResourcePacks) {
 			
-            if (!s.equals("vanilla") && !s.equals("fabric")) {
+            if (s.startsWith("file/")) {
                 String resourcePackName = s.substring(5);
 				
                 try (ZipFile zip = new ZipFile(Paths.get(resourcePackDir + "\\" + resourcePackName).toFile())) {
