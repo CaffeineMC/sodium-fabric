@@ -39,38 +39,38 @@ public class InGameChecks {
      */
     public static void checkIfCoreShaderLoaded(ResourceManager manager) {
         HashMap<String, MessageLevel> detectedResourcePacks = new HashMap<>();
+        var customResourcePacks = manager.streamResourcePacks();
 
-        var customResourcePacks = manager.streamResourcePacks().filter(resourcePack -> {
-            // "file/" check ignores the vanilla resource pack and resource packs provided by other mods
-            return resourcePack.getName().startsWith("file/");
-        });
         customResourcePacks.forEach(resourcePack -> {
-            // Omit "file/" prefix
-            var resourcePackName = resourcePack.getName().substring(5);
+            // Omit 'vanilla' and 'fabric' resource packs
+            if (!resourcePack.getName().equals("vanilla") && !resourcePack.getName().equals("fabric")) {
+                var resourcePackName = resourcePack.getName();
 
-            resourcePack.findResources(ResourceType.CLIENT_RESOURCES, Identifier.DEFAULT_NAMESPACE, "shaders", (path, ignored) -> {
-                var shaderName = path.getPath().substring(path.getPath().lastIndexOf('/') + 1);
-                if (vshBlacklist.contains(shaderName)) {
+                resourcePack.findResources(ResourceType.CLIENT_RESOURCES, Identifier.DEFAULT_NAMESPACE, "shaders", (path, ignored) -> {
+                    // Trim full shader file path to only contain the filename
+                    var shaderName = path.getPath().substring(path.getPath().lastIndexOf('/') + 1);
+                    if (vshBlacklist.contains(shaderName)) {
 
-                    if (!detectedResourcePacks.containsKey(resourcePackName)) {
-                        detectedResourcePacks.put(resourcePackName, MessageLevel.SEVERE);
-                    } else if (detectedResourcePacks.get(resourcePackName) == MessageLevel.WARN) {
-                        detectedResourcePacks.replace(resourcePackName, MessageLevel.SEVERE);
+                        if (!detectedResourcePacks.containsKey(resourcePackName)) {
+                            detectedResourcePacks.put(resourcePackName, MessageLevel.SEVERE);
+                        } else if (detectedResourcePacks.get(resourcePackName) == MessageLevel.WARN) {
+                            detectedResourcePacks.replace(resourcePackName, MessageLevel.SEVERE);
+                        }
+
+                        LOGGER.error("Resource pack '" + resourcePackName + "' replaces core shader '" + shaderName + "'");
                     }
 
-                    logMessageError("Resource pack '" + resourcePackName + "' replaces core shader '" + shaderName + "'");
-                }
+                    if (glslBlacklist.contains(shaderName)) {
 
-                if (glslBlacklist.contains(shaderName)) {
+                        if (!detectedResourcePacks.containsKey(resourcePackName)) {
+                            detectedResourcePacks.put(resourcePackName, MessageLevel.WARN);
+                        }
 
-                    if (!detectedResourcePacks.containsKey(resourcePackName)) {
-                        detectedResourcePacks.put(resourcePackName, MessageLevel.WARN);
+                        LOGGER.warn("Resource pack '" + resourcePackName + "' replaces shader '" + shaderName + "'");
+
                     }
-
-                    logMessageWarn("Resource pack '" + resourcePackName + "' replaces shader '" + shaderName + "'");
-
-                }
-            });
+                });
+            }
         });
 
         if (detectedResourcePacks.containsValue(MessageLevel.SEVERE)) {
@@ -79,7 +79,8 @@ public class InGameChecks {
             for (Map.Entry<String, MessageLevel> entry : detectedResourcePacks.entrySet()) {
 
                 if (entry.getValue() == MessageLevel.SEVERE) {
-                    showConsoleMessage(Text.literal(entry.getKey()), MessageLevel.SEVERE);
+                    // Omit 'file/' prefix for the in-game message
+                    showConsoleMessage(Text.literal(entry.getKey().substring(5)), MessageLevel.SEVERE);
                 }
             }
         }
@@ -90,7 +91,8 @@ public class InGameChecks {
             for (Map.Entry<String, MessageLevel> entry : detectedResourcePacks.entrySet()) {
 
                 if (entry.getValue() == MessageLevel.WARN) {
-                    showConsoleMessage(Text.literal(entry.getKey()), MessageLevel.WARN);
+                    // Omit 'file/' prefix for the in-game message
+                    showConsoleMessage(Text.literal(entry.getKey().substring(5)), MessageLevel.WARN);
                 }
             }
         }
@@ -102,14 +104,6 @@ public class InGameChecks {
 
     private static void showConsoleMessage(MutableText message, MessageLevel messageLevel) {
         Console.instance().logMessage(messageLevel, message, 20.0);
-    }
-
-    private static void logMessageError(String message, Object... args) {
-        LOGGER.error(message, args);
-    }
-
-    private static void logMessageWarn(String message, Object... args) {
-        LOGGER.warn(message, args);
     }
 
 }
