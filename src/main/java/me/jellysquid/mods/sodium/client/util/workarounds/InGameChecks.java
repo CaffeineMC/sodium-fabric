@@ -28,7 +28,14 @@ public class InGameChecks {
             "light.glsl",
             "fog.glsl"
     ));
-    
+
+    /**
+     * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/1569">#1569</a>
+     * Iterate through all active resource packs, and detect resource packs which contain files matching the blacklist.
+     * An error message is shown for resource packs which replace terrain core shaders.
+     * A warning is shown for resource packs which modify the default light.glsl and fog.glsl shaders.
+     * Detailed information on shader files replaced or modified by resource packs is printed in the client log.
+     */
     public static void checkIfCoreShaderLoaded() {
         Collection<String> activeResourcePacks = MinecraftClient.getInstance().getResourcePackManager().getEnabledNames();
         HashMap<String, MessageLevel> detectedResourcePacks = new HashMap<>();
