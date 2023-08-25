@@ -18,11 +18,11 @@ public class InGameChecks {
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-InGameChecks");
     private static final Path resourcePackDir = MinecraftClient.getInstance().getResourcePackDir();
     private static final List<String> vshBlacklist = new ArrayList<>(Arrays.asList(
-            "rendertype_solid.vsh",
-            "rendertype_cutout_mipped.vsh",
-            "rendertype_cutout.vsh",
-            "rendertype_translucent.vsh",
-            "rendertype_tripwire.vsh"
+            "rendertype_solid.vsh", "rendertype_solid.fsh",
+            "rendertype_cutout_mipped.vsh", "rendertype_cutout_mipped.fsh",
+            "rendertype_cutout.vsh", "rendertype_cutout.fsh",
+            "rendertype_translucent.vsh", "rendertype_translucent.fsh",
+            "rendertype_tripwire.vsh", "rendertype_tripwire.fsh"
     ));
     private static final List<String> glslBlacklist = new ArrayList<>(Arrays.asList(
             "light.glsl",
@@ -33,8 +33,8 @@ public class InGameChecks {
      * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/1569">#1569</a>
      * Iterate through all active resource packs, and detect resource packs which contain files matching the blacklist.
      * An error message is shown for resource packs which replace terrain core shaders.
-     * A warning is shown for resource packs which modify the default light.glsl and fog.glsl shaders.
-     * Detailed information on shader files replaced or modified by resource packs is printed in the client log.
+     * A warning is shown for resource packs which replace the default light.glsl and fog.glsl shaders.
+     * Detailed information on shader files replaced by resource packs is printed in the client log.
      */
     public static void checkIfCoreShaderLoaded() {
         Collection<String> activeResourcePacks = MinecraftClient.getInstance().getResourcePackManager().getEnabledNames();
@@ -69,7 +69,7 @@ public class InGameChecks {
                                 detectedResourcePacks.put(resourcePackName, MessageLevel.WARN);
                             }
 							
-                            logMessageWarn("Resource pack '" + resourcePackName + "' modifies shader '" + fileName + "'");
+                            logMessageWarn("Resource pack '" + resourcePackName + "' replaces shader '" + fileName + "'");
                         }
                     }
 		
