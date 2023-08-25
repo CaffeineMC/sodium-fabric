@@ -74,8 +74,7 @@ public class InGameChecks {
                     }
 		
                 } catch (Exception e) {
-                    LOGGER.error("Could not read resource pack '" + resourcePackName + "'");
-                    e.printStackTrace();
+                    LOGGER.error("Could not read resource pack '" + resourcePackName + "'", e);
                 }
             }
         }
