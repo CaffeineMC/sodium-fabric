@@ -4,7 +4,7 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.*;
 
 public class LibC {
-    private static final SharedLibrary LIBRARY = Library.loadNative("me.jellysquid.mods.sodium", "libc.so.6");
+    private static final SharedLibrary LIBRARY = Library.loadNative("me.jellyquid.mods.sodium", "libc.so.6");
 
     private static final long PFN_setenv;
 

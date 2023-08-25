@@ -6,7 +6,7 @@ import org.lwjgl.system.*;
 import java.nio.ByteBuffer;
 
 public class Kernel32 {
-    private static final SharedLibrary LIBRARY = Library.loadNative("me.jellysquid.mods.sodium", "kernel32");
+    private static final SharedLibrary LIBRARY = Library.loadNative("me.jellyquid.mods.sodium", "kernel32");
 
     private static final long PFN_GetCommandLineW;
     private static final long PFN_SetEnvironmentVariableW;
