@@ -80,7 +80,8 @@ public class InGameChecks {
 
                 if (entry.getValue() == MessageLevel.SEVERE) {
                     // Omit 'file/' prefix for the in-game message
-                    showConsoleMessage(Text.literal(entry.getKey().substring(5)), MessageLevel.SEVERE);
+                    var message = entry.getKey().startsWith("file/") ? entry.getKey().substring(5) : entry.getKey();
+                    showConsoleMessage(Text.literal(message), MessageLevel.SEVERE);
                 }
             }
         }
@@ -92,7 +93,8 @@ public class InGameChecks {
 
                 if (entry.getValue() == MessageLevel.WARN) {
                     // Omit 'file/' prefix for the in-game message
-                    showConsoleMessage(Text.literal(entry.getKey().substring(5)), MessageLevel.WARN);
+                    var message = entry.getKey().startsWith("file/") ? entry.getKey().substring(5) : entry.getKey();
+                    showConsoleMessage(Text.literal(message), MessageLevel.WARN);
                 }
             }
         }
