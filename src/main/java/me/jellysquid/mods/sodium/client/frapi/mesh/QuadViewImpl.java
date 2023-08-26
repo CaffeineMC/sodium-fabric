@@ -164,6 +164,11 @@ public class QuadViewImpl implements QuadView, ModelQuadView {
         return normalFlags() != 0;
     }
 
+    /** True if all vertex normals have been set. */
+    public boolean hasAllVertexNormals() {
+        return (normalFlags() & 0b1111) == 0b1111;
+    }
+
     protected final int normalIndex(int vertexIndex) {
         return baseIndex + vertexIndex * VERTEX_STRIDE + VERTEX_NORMAL;
     }
