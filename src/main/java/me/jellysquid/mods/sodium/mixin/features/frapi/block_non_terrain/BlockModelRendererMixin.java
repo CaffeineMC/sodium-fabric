@@ -36,7 +36,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Entrypoint of the FRAPI pipeline for non-terrain block rendering, for the baked models that require it.
  */
 @Mixin(BlockModelRenderer.class)
-public abstract class MixinBlockModelRenderer implements BlockModelRendererExtended {
+public abstract class BlockModelRendererMixin implements BlockModelRendererExtended {
 	@Unique
 	private ThreadLocal<NonTerrainBlockRenderContext> sodium_contexts = ThreadLocal.withInitial(NonTerrainBlockRenderContext::new);
 

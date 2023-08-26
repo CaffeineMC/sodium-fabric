@@ -38,7 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Entrypoint of the FRAPI pipeline for item rendering, for the baked models that require it.
  */
 @Mixin(ItemRenderer.class)
-public abstract class MixinItemRenderer {
+public abstract class ItemRendererMixin {
     @Final
     @Shadow
     private ItemColors colors;

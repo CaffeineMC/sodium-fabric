@@ -6,7 +6,7 @@ import net.minecraft.world.BlockRenderView;
 import java.util.Arrays;
 
 /**
- * Adaption of {@link ArrayLightDataCache} that stores data for
+ * Adaptation of {@link ArrayLightDataCache} that stores data for
  * only one block and its neighbors.
  */
 public class SingleBlockLightDataCache extends LightDataAccess {
