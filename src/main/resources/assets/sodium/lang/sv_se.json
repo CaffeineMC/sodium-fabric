@@ -39,7 +39,7 @@
   "sodium.options.use_entity_culling.tooltip": "Om det är aktiverat kommer enheter som fastställts inte vara i några synliga bitar att hoppas över under renderingen. Detta kan bidra till att förbättra prestandan genom att undvika rendering av enheter som ligger under jord eller bakom väggar.",
   "sodium.options.animate_only_visible_textures.name": "Animera Endast Synliga Texturer",
   "sodium.options.animate_only_visible_textures.tooltip": "Om det är aktiverat kommer endast animerade texturer som fastställts vara synliga att uppdateras. Detta kan ge en betydande ökning av bildhastigheter på viss hårdvara, särskilt med tyngre resurspaket. Om du upplever problem med att vissa texturer inte är animerade, försök att inaktivera det här alternativet.",
-  "sodium.options.cpu_render_ahead_limit.name": "CPU Render-Ahead Limit",
+  "sodium.options.cpu_render_ahead_limit.name": "CPU Förrenderingsgräns",
   "sodium.options.cpu_render_ahead_limit.tooltip": "Anger det maximala antalet bildrutor som CPU:n kan vänta på att grafikprocessorn ska slutföra renderingen. Mycket låga eller höga värden kan skapa bildhastighetsinstabilitet.",
   "sodium.options.cpu_render_ahead_limit.value": "%s bildrutor",
   "sodium.options.performance_impact_string": "Prestandapåverkan: %s",
