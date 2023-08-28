@@ -9,7 +9,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -18,17 +17,17 @@ import java.util.Map;
 public class InGameChecks {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("Sodium-InGameChecks");
-    private static final List<String> vshBlacklist = new ArrayList<>(Arrays.asList(
+    private static final List<String> VSH_FSH_BLACKLIST = Arrays.asList(
             "rendertype_solid.vsh", "rendertype_solid.fsh",
             "rendertype_cutout_mipped.vsh", "rendertype_cutout_mipped.fsh",
             "rendertype_cutout.vsh", "rendertype_cutout.fsh",
             "rendertype_translucent.vsh", "rendertype_translucent.fsh",
             "rendertype_tripwire.vsh", "rendertype_tripwire.fsh"
-    ));
-    private static final List<String> glslBlacklist = new ArrayList<>(Arrays.asList(
+    );
+    private static final List<String> GLSL_BLACKLIST = Arrays.asList(
             "light.glsl",
             "fog.glsl"
-    ));
+    );
 
     /**
      * <a href="https://github.com/CaffeineMC/sodium-fabric/issues/1569">#1569</a>
@@ -49,7 +48,7 @@ public class InGameChecks {
                 resourcePack.findResources(ResourceType.CLIENT_RESOURCES, Identifier.DEFAULT_NAMESPACE, "shaders", (path, ignored) -> {
                     // Trim full shader file path to only contain the filename
                     var shaderName = path.getPath().substring(path.getPath().lastIndexOf('/') + 1);
-                    if (vshBlacklist.contains(shaderName)) {
+                    if (VSH_FSH_BLACKLIST.contains(shaderName)) {
 
                         if (!detectedResourcePacks.containsKey(resourcePackName)) {
                             detectedResourcePacks.put(resourcePackName, MessageLevel.SEVERE);
@@ -60,7 +59,7 @@ public class InGameChecks {
                         LOGGER.error("Resource pack '" + resourcePackName + "' replaces core shader '" + shaderName + "'");
                     }
 
-                    if (glslBlacklist.contains(shaderName)) {
+                    if (GLSL_BLACKLIST.contains(shaderName)) {
 
                         if (!detectedResourcePacks.containsKey(resourcePackName)) {
                             detectedResourcePacks.put(resourcePackName, MessageLevel.WARN);
