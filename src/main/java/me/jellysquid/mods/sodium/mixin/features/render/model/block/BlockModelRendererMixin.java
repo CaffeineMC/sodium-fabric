@@ -74,6 +74,11 @@ public class BlockModelRendererMixin {
     private static void renderQuads(MatrixStack.Entry matrices, VertexBufferWriter writer, int defaultColor, List<BakedQuad> quads, int light, int overlay) {
         for (int i = 0; i < quads.size(); i++) {
             BakedQuad bakedQuad = quads.get(i);
+
+            if (bakedQuad.getVertexData().length < 32) {
+                continue; // ignore bad quads
+            }
+
             BakedQuadView quad = (BakedQuadView) bakedQuad;
 
             int color = quad.hasColor() ? defaultColor : 0xFFFFFFFF;
