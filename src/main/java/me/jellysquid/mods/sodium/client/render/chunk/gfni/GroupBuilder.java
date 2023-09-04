@@ -421,12 +421,12 @@ public class GroupBuilder {
 
         // the set of quads that have no outgoing edges
         BitSet leafQuads = new BitSet(totalQuadCount);
+        leafQuads.set(0, totalQuadCount);
 
         for (int i = 0; i < totalQuadCount; i++) {
             for (int j = 0; j < ModelQuadFacing.DIRECTIONS; j++) {
                 graph[i][j] = -1;
             }
-            leafQuads.set(i);
         }
 
         // the stash of quads that have not yet been visible to the scanned quads
