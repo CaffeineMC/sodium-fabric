@@ -156,17 +156,18 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                 meshes.put(pass, mesh);
                 renderData.addRenderPass(pass);
 
-                if (isTranslucent) {
-                    // calculate the primitive centers and initialize indexes for sorting.
-                    // also does an initial sort
-                    translucentData = TranslucentData.fromMeshData(
-                        sortType, context.groupBuilder.quadCenters);
+                // TODO: re-enable
+                // if (isTranslucent) {
+                //     // calculate the primitive centers and initialize indexes for sorting.
+                //     // also does an initial sort
+                //     translucentData = TranslucentData.fromMeshData(
+                //         sortType, context.groupBuilder.quadCenters);
 
-                    // initial sort
-                    if (translucentData != null) {
-                        translucentData.sort(this.cameraPos);
-                    }
-                }
+                //     // initial sort
+                //     if (translucentData != null) {
+                //         translucentData.sort(this.cameraPos);
+                //     }
+                // }
             }
         }
 
