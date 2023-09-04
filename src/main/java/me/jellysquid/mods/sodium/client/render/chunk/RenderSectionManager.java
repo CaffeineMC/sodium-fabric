@@ -284,7 +284,8 @@ public class RenderSectionManager {
         this.submitRebuildTasks(blockingRebuilds, ChunkUpdateType.IMPORTANT_REBUILD);
         this.submitRebuildTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.REBUILD);
         this.submitRebuildTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.INITIAL_BUILD);
-        this.submitRebuildTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.TRANSLUCENT_SORT);
+        // TODO: re-enable once sort tasks are figured out
+        // this.submitRebuildTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.TRANSLUCENT_SORT);
         
         blockingRebuilds.awaitCompletion(this.builder);
     }
@@ -473,12 +474,13 @@ public class RenderSectionManager {
 
     public void scheduleSort(ChunkSectionPos pos) {
         // TODO: Does this need to invalidate the section cache?
+        // TODO: re-enable once sort tasks are figured out
 
-        RenderSection section = this.sectionByPosition.get(pos.asLong());
+        // RenderSection section = this.sectionByPosition.get(pos.asLong());
 
-        if (section != null && ChunkUpdateType.canPromote(section.getPendingUpdate(), ChunkUpdateType.TRANSLUCENT_SORT)) {
-            section.setPendingUpdate(ChunkUpdateType.TRANSLUCENT_SORT);
-        }
+        // if (section != null && ChunkUpdateType.canPromote(section.getPendingUpdate(), ChunkUpdateType.TRANSLUCENT_SORT)) {
+        //     section.setPendingUpdate(ChunkUpdateType.TRANSLUCENT_SORT);
+        // }
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
