@@ -24,7 +24,7 @@ class AccumulationGroup {
         this.groupBuilderKey = groupBuilderKey;
     }
 
-    boolean add(float vertexX, float vertexY, float vertexZ) {
+    boolean addPlaneMember(float vertexX, float vertexY, float vertexZ) {
         double distance = this.normal.dot(vertexX, vertexY, vertexZ);
 
         // add the distance to the set and update the min/max distances if necessary

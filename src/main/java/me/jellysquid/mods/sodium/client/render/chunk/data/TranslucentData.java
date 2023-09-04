@@ -14,15 +14,16 @@ import me.jellysquid.mods.sodium.client.render.chunk.gfni.SortType;
  */
 public interface TranslucentData {
     public static TranslucentData fromMeshData(SortType sortType, ReferenceArrayList<Vector3f>[] centers) {
+        // TODO: handle new sort types
         switch (sortType) {
             case NONE:
                 return null;
             case STATIC_NORMAL_RELATIVE:
                 return new StaticTranslucentData(centers);
-            case DYNAMIC:
+            case DYNAMIC_ALL:
                 return new DynamicTranslucentData(centers);
             default:
-                throw new UnsupportedOperationException("Unknown sort type: " + sortType);
+                throw new UnsupportedOperationException("Unhandled sort type: " + sortType);
         }
     }
 

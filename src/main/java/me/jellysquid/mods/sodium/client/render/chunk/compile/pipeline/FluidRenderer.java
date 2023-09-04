@@ -407,35 +407,11 @@ public class FluidRenderer {
         // if translucent, add this face to the GFNI group builder
         boolean isTranslucent = material == DefaultMaterials.TRANSLUCENT;
 
-        float xSum = 0.0F;
-        float ySum = 0.0F;
-        float zSum = 0.0F;
-
         for (int i = 0; i < 4; i++) {
             var out = vertices[flip ? 3 - i : i];
             out.x = offset.getX() + quad.getX(i);
             out.y = offset.getY() + quad.getY(i);
             out.z = offset.getZ() + quad.getZ(i);
-
-            if (isTranslucent) {
-                if (facing == ModelQuadFacing.UNASSIGNED) {
-                    if (i == 0) {
-                        // calculate the current GFNI normal but not the unit normal
-                        quad.calculateNormals(false);
-                        groupBuilder.addUnalignedFace(
-                            quad.getGFNINormX(), quad.getGFNINormY(), quad.getGFNINormZ(),
-                            out.x, out.y, out.z);
-                    }
-                } else if (i == 0) {
-                    groupBuilder.addAlignedFace(facing, out.x, out.y, out.z);
-                } else {
-                    groupBuilder.updateAlignedBounds(out.x, out.y, out.z);
-                }
-
-                xSum += out.x;
-                ySum += out.y;
-                zSum += out.z;
-            }
 
             out.color = this.quadColors[i];
             out.u = quad.getTexU(i);
@@ -449,7 +425,13 @@ public class FluidRenderer {
             builder.addSprite(sprite);
         }
 
-        groupBuilder.appendQuadCenter(facing, xSum, ySum, zSum);
+        if (isTranslucent) {
+            if (facing == ModelQuadFacing.UNASSIGNED) {
+                // calculate the current GFNI normal but not the unit normal
+                quad.calculateNormals(false);
+            }
+            groupBuilder.appendQuad(quad, vertices, facing);
+        }
 
         var vertexBuffer = builder.getVertexBuffer(facing);
         vertexBuffer.push(vertices, material);

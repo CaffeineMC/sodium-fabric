@@ -149,8 +149,9 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             // consolidate all translucent geometry into UNASSIGNED so that it's rendered
             // all together if GFNI's heuristic determines that it needs to be dynamically
             // sorted
-            boolean isTranslucent = pass == DefaultTerrainRenderPasses.TRANSLUCENT;
-            BuiltSectionMeshParts mesh = buffers.createMesh(pass, isTranslucent && sortType.needsDynamicSort);
+            // boolean isTranslucent = pass == DefaultTerrainRenderPasses.TRANSLUCENT;
+            // BuiltSectionMeshParts mesh = buffers.createMesh(pass, isTranslucent && sortType.needsDirectionMixing);
+            BuiltSectionMeshParts mesh = buffers.createMesh(pass, false);
 
             if (mesh != null) {
                 meshes.put(pass, mesh);

@@ -6,17 +6,10 @@ import com.mojang.blaze3d.systems.VertexSorter;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 
 public class StaticTranslucentData implements TranslucentData {
-    private static final VertexSorter[] SORTERS = new VertexSorter[ModelQuadFacing.DIRECTIONS];
-
-    static {
-        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
-            SORTERS[i] = VertexSorters.sortByAxis(ModelQuadFacing.VALUES[i]);
-        }
-    }
-
     private final IndexedPrimitives[] data = new IndexedPrimitives[ModelQuadFacing.DIRECTIONS];
     private static final Vector3f[] EMPTY_CENTERS = new Vector3f[0];
 
@@ -55,7 +48,7 @@ public class StaticTranslucentData implements TranslucentData {
         for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
             var dataForFacing = this.data[i];
             if (dataForFacing != null) {
-                dataForFacing.indexes = SORTERS[i].sort(dataForFacing.centers);
+                dataForFacing.indexes = GFNI.SORTERS[i].sort(dataForFacing.centers);
             }
         }
     }

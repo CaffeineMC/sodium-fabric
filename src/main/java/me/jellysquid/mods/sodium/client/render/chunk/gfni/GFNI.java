@@ -4,9 +4,13 @@ import java.util.function.Consumer;
 
 import org.joml.Vector3fc;
 
+import com.mojang.blaze3d.systems.VertexSorter;
+
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -61,6 +65,18 @@ public class GFNI {
      * normal lists' interval trees.
      */
     private Consumer<ChunkSectionPos> triggerSectionCallback;
+
+    /**
+     * The vertex sorter for each direction.
+     * TODO: is there a better place to put this
+     */
+    public static final VertexSorter[] SORTERS = new VertexSorter[ModelQuadFacing.DIRECTIONS];
+
+    static {
+        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
+            SORTERS[i] = VertexSorters.sortByAxis(ModelQuadFacing.VALUES[i]);
+        }
+    }
 
     // TODO: both of these are for debugging
     ObjectLinkedOpenHashSet<ChunkSectionPos> triggeredSections = new ObjectLinkedOpenHashSet<>(50);
@@ -161,8 +177,9 @@ public class GFNI {
         long chunkSectionLongPos = builder.sectionPos.asLong();
 
         // if the builder is irrelevant, remove it from the normal lists
+        // TODO: only do the heuristic and topo sort if the hashes are different?
         SortType sortType = builder.getSortType();
-        if (!sortType.needsDynamicSort) {
+        if (!sortType.needsPlaneTrigger) {
             removeSection(chunkSectionLongPos);
             return sortType;
         }

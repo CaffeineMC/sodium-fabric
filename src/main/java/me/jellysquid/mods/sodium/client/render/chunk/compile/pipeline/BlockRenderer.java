@@ -150,10 +150,6 @@ public class BlockRenderer {
         // if translucent, add this face to the GFNI group builder
         boolean isTranslucent = material == DefaultMaterials.TRANSLUCENT;
 
-        float xSum = 0.0F;
-        float ySum = 0.0F;
-        float zSum = 0.0F;
-
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
 
@@ -161,24 +157,6 @@ public class BlockRenderer {
             out.x = ctx.origin().x() + quad.getX(srcIndex) + (float) offset.getX();
             out.y = ctx.origin().y() + quad.getY(srcIndex) + (float) offset.getY();
             out.z = ctx.origin().z() + quad.getZ(srcIndex) + (float) offset.getZ();
-
-            if (isTranslucent) {
-                if (normalFace == ModelQuadFacing.UNASSIGNED) {
-                    if (dstIndex == 0) {
-                        ctx.groupBuilder.addUnalignedFace(
-                            quad.getGFNINormX(), quad.getGFNINormY(), quad.getGFNINormZ(),
-                            out.x, out.y, out.z);
-                    }
-                } else if (dstIndex == 0) {
-                    ctx.groupBuilder.addAlignedFace(normalFace, out.x, out.y, out.z);
-                } else {
-                    ctx.groupBuilder.updateAlignedBounds(out.x, out.y, out.z);
-                }
-
-                xSum += out.x;
-                ySum += out.y;
-                zSum += out.z;
-            }
 
             out.color = ColorABGR.withAlpha(colors != null ? colors[srcIndex] : 0xFFFFFFFF, light.br[srcIndex]);
 
@@ -188,7 +166,9 @@ public class BlockRenderer {
             out.light = light.lm[srcIndex];
         }
 
-        ctx.groupBuilder.appendQuadCenter(normalFace, xSum, ySum, zSum);
+        if (isTranslucent) {
+            ctx.groupBuilder.appendQuad(quad, vertices, normalFace);
+        }
 
         var vertexBuffer = builder.getVertexBuffer(normalFace);
         vertexBuffer.push(vertices, material);
