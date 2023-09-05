@@ -87,7 +87,7 @@ dependencies {
     // `fabricApi.module` does not work with deprecated modules, so add the module dependency manually.
     // This is planned to be fixed in Loom 1.4.
     // modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
-    modIncludeImplementation("net.fabricmc.fabric-api:fabric-rendering-data-attachment-v1:0.3.36+92a0d36777")
+    modIncludeImplementation("net.fabricmc.fabric-api:fabric-rendering-data-attachment-v1:0.3.38+73761d2e9a")
     modIncludeImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
 }
 
