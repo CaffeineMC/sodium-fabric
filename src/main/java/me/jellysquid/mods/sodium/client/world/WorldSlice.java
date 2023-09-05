@@ -15,10 +15,12 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.*;
 import net.minecraft.world.BlockRenderView;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.ColorResolver;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
@@ -39,7 +41,7 @@ import java.util.Objects;
  *
  * <p>Object pooling should be used to avoid huge allocations as this class contains many large arrays.</p>
  */
-public final class WorldSlice implements BlockRenderView, RenderAttachedBlockView, BiomeColorView {
+public final class WorldSlice implements BlockRenderView, BiomeColorView, RenderAttachedBlockView {
     private static final LightType[] LIGHT_TYPES = LightType.values();
 
     // The number of blocks in a section.
@@ -78,8 +80,8 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
     // (Local Section -> Block Entity) table.
     private final @Nullable Int2ReferenceMap<BlockEntity>[] blockEntityArrays;
 
-    // (Local Section -> Block Entity Attachment) table.
-    private final @Nullable Int2ReferenceMap<Object>[] blockEntityAttachmentArrays;
+    // (Local Section -> Block Entity Render Data) table.
+    private final @Nullable Int2ReferenceMap<Object>[] blockEntityRenderDataArrays;
 
     // The starting point from which this slice captures blocks
     private int originX, originY, originZ;
@@ -133,7 +135,7 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
         this.lightArrays = new ChunkNibbleArray[SECTION_ARRAY_SIZE][LIGHT_TYPES.length];
 
         this.blockEntityArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
-        this.blockEntityAttachmentArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
+        this.blockEntityRenderDataArrays = new Int2ReferenceMap[SECTION_ARRAY_SIZE];
 
         this.biomeSlice = new BiomeSlice();
         this.biomeColors = new BiomeColorCache(this.biomeSlice, MinecraftClient.getInstance().options.getBiomeBlendRadius().getValue());
@@ -167,7 +169,7 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
         this.lightArrays[sectionIndex][LightType.SKY.ordinal()] = section.getLightArray(LightType.SKY);
 
         this.blockEntityArrays[sectionIndex] = section.getBlockEntityMap();
-        this.blockEntityAttachmentArrays[sectionIndex] = section.getBlockEntityAttachmentMap();
+        this.blockEntityRenderDataArrays[sectionIndex] = section.getBlockEntityRenderDataMap();
     }
 
     private void unpackBlockData(BlockState[] blockArray, ChunkRenderContext context, ClonedChunkSection section) {
@@ -208,7 +210,7 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
             Arrays.fill(this.lightArrays[sectionIndex], null);
 
             this.blockEntityArrays[sectionIndex] = null;
-            this.blockEntityAttachmentArrays[sectionIndex] = null;
+            this.blockEntityRenderDataArrays[sectionIndex] = null;
         }
     }
 
@@ -315,23 +317,33 @@ public final class WorldSlice implements BlockRenderView, RenderAttachedBlockVie
     }
 
     @Override
-    public @Nullable Object getBlockEntityRenderAttachment(BlockPos pos) {
+    public int getColor(BiomeColorSource source, int x, int y, int z) {
+        return this.biomeColors.getColor(source, x, y, z);
+    }
+
+    @Override
+    public @Nullable Object getBlockEntityRenderData(BlockPos pos) {
         int relX = pos.getX() - this.originX;
         int relY = pos.getY() - this.originY;
         int relZ = pos.getZ() - this.originZ;
 
-        var blockEntityAttachments = this.blockEntityAttachmentArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)];
+        var blockEntityRenderDataMap = this.blockEntityRenderDataArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)];
 
-        if (blockEntityAttachments == null) {
+        if (blockEntityRenderDataMap == null) {
             return null;
         }
 
-        return blockEntityAttachments.get(getLocalBlockIndex(relX & 15, relY & 15, relZ & 15));
+        return blockEntityRenderDataMap.get(getLocalBlockIndex(relX & 15, relY & 15, relZ & 15));
     }
 
     @Override
-    public int getColor(BiomeColorSource source, int x, int y, int z) {
-        return this.biomeColors.getColor(source, x, y, z);
+    public boolean hasBiomes() {
+        return true;
+    }
+
+    @Override
+    public RegistryEntry<Biome> getBiomeFabric(BlockPos pos) {
+        return this.biomeSlice.getBiome(pos.getX(), pos.getY(), pos.getZ());
     }
 
     public static int getLocalBlockIndex(int x, int y, int z) {

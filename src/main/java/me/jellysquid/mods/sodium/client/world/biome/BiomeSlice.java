@@ -5,6 +5,7 @@ import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
@@ -16,7 +17,8 @@ public class BiomeSlice {
     private static final int SIZE = 3 * 4; // 3 chunks * 4 biomes per chunk
 
     // Arrays are in ZYX order
-    private final Biome[] biomes = new Biome[SIZE * SIZE * SIZE];
+    @SuppressWarnings("unchecked")
+    private final RegistryEntry<Biome>[] biomes = new RegistryEntry[SIZE * SIZE * SIZE];
     private final boolean[] uniform = new boolean[SIZE * SIZE * SIZE];
     private final BiasMap bias = new BiasMap();
 
@@ -40,8 +42,7 @@ public class BiomeSlice {
     private void copyBiomeData(World world, ChunkRenderContext context) {
         var defaultValue = world.getRegistryManager()
                 .get(RegistryKeys.BIOME)
-                .entryOf(BiomeKeys.PLAINS)
-                .value();
+                .entryOf(BiomeKeys.PLAINS);
 
         for (int sectionX = 0; sectionX < 3; sectionX++) {
             for (int sectionY = 0; sectionY < 3; sectionY++) {
@@ -52,7 +53,7 @@ public class BiomeSlice {
         }
     }
 
-    private void copySectionBiomeData(ChunkRenderContext context, int sectionX, int sectionY, int sectionZ, Biome defaultBiome) {
+    private void copySectionBiomeData(ChunkRenderContext context, int sectionX, int sectionY, int sectionZ, RegistryEntry<Biome> defaultBiome) {
         var section = context.getSections()[WorldSlice.getLocalSectionIndex(sectionX, sectionY, sectionZ)];
         var biomeData = section.getBiomeData();
 
@@ -68,7 +69,7 @@ public class BiomeSlice {
                     if (biomeData == null) {
                         this.biomes[idx] = defaultBiome;
                     } else {
-                        this.biomes[idx] = biomeData.get(x, y, z).value();
+                        this.biomes[idx] = biomeData.get(x, y, z);
                     }
                 }
             }
@@ -125,8 +126,8 @@ public class BiomeSlice {
     }
 
     private boolean hasUniformNeighbors(int x, int y, int z) {
-        Biome biome = this.biomes[dataArrayIndex(x, y, z)];
-        
+        Biome biome = this.biomes[dataArrayIndex(x, y, z)].value();
+
         int minX = x - 1, maxX = x + 1;
         int minY = y - 1, maxY = y + 1;
         int minZ = z - 1, maxZ = z + 1;
@@ -134,7 +135,7 @@ public class BiomeSlice {
         for (int adjX = minX; adjX <= maxX; adjX++) {
             for (int adjY = minY; adjY <= maxY; adjY++) {
                 for (int adjZ = minZ; adjZ <= maxZ; adjZ++) {
-                    if (this.biomes[dataArrayIndex(adjX, adjY, adjZ)] != biome) {
+                    if (this.biomes[dataArrayIndex(adjX, adjY, adjZ)].value() != biome) {
                         return false;
                     }
                 }
@@ -144,7 +145,7 @@ public class BiomeSlice {
         return true;
     }
 
-    public Biome getBiome(int x, int y, int z) {
+    public RegistryEntry<Biome> getBiome(int x, int y, int z) {
         int relX = x - this.worldX;
         int relY = y - this.worldY;
         int relZ = z - this.worldZ;
@@ -161,7 +162,7 @@ public class BiomeSlice {
         return this.getBiomeUsingVoronoi(relX, relY, relZ);
     }
 
-    private Biome getBiomeUsingVoronoi(int worldX, int worldY, int worldZ) {
+    private RegistryEntry<Biome> getBiomeUsingVoronoi(int worldX, int worldY, int worldZ) {
         int x = worldX - 2;
         int y = worldY - 2;
         int z = worldZ - 2;
