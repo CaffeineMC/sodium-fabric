@@ -73,7 +73,7 @@ public class BiomeColorCache {
 
         for (int worldZ = this.minZ; worldZ <= this.maxZ; worldZ++) {
             for (int worldX = this.minX; worldX <= this.maxX; worldX++) {
-                Biome biome = this.biomeData.getBiome(worldX, worldY, worldZ);
+                Biome biome = this.biomeData.getBiome(worldX, worldY, worldZ).value();
 
                 int relativeX = worldX - this.minX;
                 int relativeZ = worldZ - this.minZ;
