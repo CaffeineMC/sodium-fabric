@@ -53,6 +53,11 @@ public abstract class BufferBuilderMixin implements VertexBufferWriter {
     }
 
     @Override
+    public boolean isFullWriter() {
+        return true;
+    }
+
+    @Override
     public void push(MemoryStack stack, long src, int count, VertexFormatDescription format) {
         var length = count * this.stride;
 

@@ -15,7 +15,7 @@ public interface VertexBufferWriter {
      * @throws IllegalArgumentException If the vertex consumer does not implement the necessary interface
      */
     static VertexBufferWriter of(VertexConsumer consumer) {
-        if (consumer instanceof VertexBufferWriter writer) {
+        if (consumer instanceof VertexBufferWriter writer && writer.isFullWriter()) {
             return writer;
         }
 
@@ -31,7 +31,7 @@ public interface VertexBufferWriter {
      */
     @Nullable
     static VertexBufferWriter tryOf(VertexConsumer consumer) {
-        if (consumer instanceof VertexBufferWriter writer) {
+        if (consumer instanceof VertexBufferWriter writer && writer.isFullWriter()) {
             return writer;
         }
 
@@ -62,6 +62,8 @@ public interface VertexBufferWriter {
      * @param format The format of the vertices
      */
     void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format);
+
+    boolean isFullWriter();
 
     /**
      * Creates a copy of the source data and pushes it into the specified {@param writer}. This is useful for when

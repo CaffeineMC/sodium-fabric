@@ -20,6 +20,9 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(OverlayVertexConsumer.class)
 public class OverlayVertexConsumerMixin implements VertexBufferWriter {
@@ -38,6 +41,19 @@ public class OverlayVertexConsumerMixin implements VertexBufferWriter {
     @Shadow
     @Final
     private float textureScale;
+
+    @Unique
+    private boolean isFullWriter;
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void onInit(CallbackInfo ci) {
+        this.isFullWriter = VertexBufferWriter.tryOf(this.delegate) != null;
+    }
+
+    @Override
+    public boolean isFullWriter() {
+        return this.isFullWriter;
+    }
 
     @Override
     public void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format) {
