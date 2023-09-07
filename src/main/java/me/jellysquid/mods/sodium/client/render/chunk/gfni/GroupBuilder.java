@@ -450,7 +450,7 @@ public class GroupBuilder {
             for (int i = 0; i < totalQuadCount; i++) {
                 // get the extent in the opposite direction of the scan because quads that are
                 // visible from a scanning quad should be before it
-                keys[i] = quad.extents[oppositeDirection] * sign;
+                keys[i] = quads.get(i).extents[oppositeDirection] * sign;
             }
 
             int[] sortedQuads = MergeSort.mergeSort(keys);
