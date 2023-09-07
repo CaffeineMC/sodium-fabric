@@ -440,12 +440,17 @@ public class GroupBuilder {
             ModelQuadFacing facing = ModelQuadFacing.VALUES[direction];
             ModelQuadFacing oppositeFacing = facing.getOpposite();
             int oppositeDirection = oppositeFacing.ordinal();
+            int sign = switch (facing) {
+                case POS_X, POS_Y, POS_Z -> 1;
+                case NEG_X, NEG_Y, NEG_Z -> -1;
+                default -> throw new IllegalStateException("Unexpected value: " + facing);
+            };
 
             // generate keys for this direction
             for (int i = 0; i < totalQuadCount; i++) {
                 // get the extent in the opposite direction of the scan because quads that are
                 // visible from a scanning quad should be before it
-                keys[i] = this.quads.get(i).extents[oppositeDirection];
+                keys[i] = quad.extents[oppositeDirection] * sign;
             }
 
             int[] sortedQuads = MergeSort.mergeSort(keys);
