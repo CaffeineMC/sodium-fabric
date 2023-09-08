@@ -375,12 +375,17 @@ public class GroupBuilder {
 
     private static boolean orthogonalQuadVisible(Quad quad, Quad otherQuad) {
         var otherQuadDirection = otherQuad.facing.ordinal();
+        var sign = otherQuad.facing.getSign();
 
         // this only works because the quads are planar and the extent in the direction
         // of the quad's normal is the same as in the opposite direction
-        return quad.extents[otherQuadDirection] > otherQuad.extents[otherQuadDirection];
+        return sign * quad.extents[otherQuadDirection] > sign * otherQuad.extents[otherQuadDirection];
     }
 
+    /**
+     * The index in each node's array in the graph where the number of outgoing
+     * edges is stored.
+     */
     private static final int OUTGOING_EDGES = ModelQuadFacing.DIRECTIONS;
 
     private static void makeEdge(int[][] graph, BitSet leafQuads, int fromQuadIndex, int toQuadIndex, int direction) {
@@ -440,17 +445,14 @@ public class GroupBuilder {
             ModelQuadFacing facing = ModelQuadFacing.VALUES[direction];
             ModelQuadFacing oppositeFacing = facing.getOpposite();
             int oppositeDirection = oppositeFacing.ordinal();
-            int sign = switch (facing) {
-                case POS_X, POS_Y, POS_Z -> 1;
-                case NEG_X, NEG_Y, NEG_Z -> -1;
-                default -> throw new IllegalStateException("Unexpected value: " + facing);
-            };
+            int sign = facing.getSign();
 
             // generate keys for this direction
             for (int i = 0; i < totalQuadCount; i++) {
                 // get the extent in the opposite direction of the scan because quads that are
                 // visible from a scanning quad should be before it
-                keys[i] = quads.get(i).extents[oppositeDirection] * sign;
+                Quad quad = this.quads.get(i);
+                keys[i] = quad.extents[oppositeDirection] * sign * -1;
             }
 
             int[] sortedQuads = MergeSort.mergeSort(keys);
@@ -471,7 +473,7 @@ public class GroupBuilder {
 
                 // connect to the last scan quad if it exists
                 if (lastScanQuadPos != -1) {
-                    makeEdge(graph, leafQuads, sortedQuads[lastScanQuadPos], quadIndex, direction);
+                    makeEdge(graph, leafQuads, quadIndex, sortedQuads[lastScanQuadPos], direction);
                 }
 
                 // check if any of the stashed quads are now visible

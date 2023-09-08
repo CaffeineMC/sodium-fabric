@@ -42,6 +42,14 @@ public enum ModelQuadFacing {
         };
     }
 
+    public int getSign() {
+        return switch (this) {
+            case POS_Y, POS_X, POS_Z -> 1;
+            case NEG_Y, NEG_X, NEG_Z -> -1;
+            default -> 0;
+        };
+    }
+
     public Direction toDirection() {
         return switch (this) {
             case POS_Y -> Direction.UP;
