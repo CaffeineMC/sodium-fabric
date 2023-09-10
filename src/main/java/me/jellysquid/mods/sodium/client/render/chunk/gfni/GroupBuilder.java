@@ -1,7 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
-import java.util.BitSet;
-
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
@@ -10,6 +8,7 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
+import me.jellysquid.mods.sodium.client.util.collections.BitArray;
 import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -388,13 +387,13 @@ public class GroupBuilder {
      */
     private static final int OUTGOING_EDGES = ModelQuadFacing.DIRECTIONS;
 
-    private static void makeEdge(int[][] graph, BitSet leafQuads, int fromQuadIndex, int toQuadIndex, int direction) {
+    private static void makeEdge(int[][] graph, BitArray leafQuads, int fromQuadIndex, int toQuadIndex, int direction) {
         graph[toQuadIndex][direction] = fromQuadIndex;
 
         // increment outgoing edges and clear from the no outgoing edges set if it had
         // no outgoing edges beforehand
         if (graph[fromQuadIndex][OUTGOING_EDGES]++ == 0) {
-            leafQuads.clear(fromQuadIndex);
+            leafQuads.unset(fromQuadIndex);
         }
     }
 
@@ -425,7 +424,7 @@ public class GroupBuilder {
         int[][] graph = new int[totalQuadCount][ModelQuadFacing.DIRECTIONS + 1];
 
         // the set of quads that have no outgoing edges
-        BitSet leafQuads = new BitSet(totalQuadCount);
+        BitArray leafQuads = new BitArray(totalQuadCount);
         leafQuads.set(0, totalQuadCount);
 
         for (int i = 0; i < totalQuadCount; i++) {
@@ -435,7 +434,7 @@ public class GroupBuilder {
         }
 
         // the stash of quads that have not yet been visible to the scanned quads
-        BitSet stashedOrthoQuads = new BitSet(totalQuadCount);
+        BitArray stashedOrthoQuads = new BitArray(totalQuadCount);
 
         // keep around the allocation of the keys array
         float[] keys = new float[totalQuadCount];
@@ -463,7 +462,7 @@ public class GroupBuilder {
 
             // perform a scan by going through the sorted quads and making edges between the
             // scanning quads and the quads that precede them in the sort order
-            stashedOrthoQuads.clear();
+            stashedOrthoQuads.unset();
             for (int quadIndexPos = 0; quadIndexPos < totalQuadCount; quadIndexPos++) {
                 int quadIndex = sortedQuads[quadIndexPos];
                 Quad quad = this.quads.get(quadIndex);
@@ -484,7 +483,7 @@ public class GroupBuilder {
 
                     // if it's visible through the current quad, unstash and connect
                     if (orthogonalQuadVisible(quad, stashedOrthoQuad)) {
-                        stashedOrthoQuads.clear(stashedQuadIndex);
+                        stashedOrthoQuads.unset(stashedQuadIndex);
                         makeEdge(graph, leafQuads, quadIndex, stashedQuadIndex, direction);
                     }
                 }
@@ -536,7 +535,7 @@ public class GroupBuilder {
                 return SortType.DYNAMIC_TOPO_CYCLIC;
             }
 
-            leafQuads.clear(nextLeafQuadIndex);
+            leafQuads.unset(nextLeafQuadIndex);
 
             // add it to the topo sort result
             topoSortResult[topoSortPos] = nextLeafQuadIndex;
