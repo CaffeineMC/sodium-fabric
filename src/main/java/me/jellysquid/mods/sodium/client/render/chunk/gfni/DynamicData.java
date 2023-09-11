@@ -64,9 +64,5 @@ class DynamicData extends TranslucentData {
     public void sort(Vector3f cameraPos) {
         var intBuffer = this.buffer.getDirectBuffer().asIntBuffer();
         TranslucentData.writeVertexIndexes(intBuffer, VertexSorters.sortByDistance(cameraPos).sort(this.centers));
-
-        // TODO: flip the int buffer or the byte buffer? Is this even necessary?
-        // What does this do?
-        intBuffer.flip();
     }
 }

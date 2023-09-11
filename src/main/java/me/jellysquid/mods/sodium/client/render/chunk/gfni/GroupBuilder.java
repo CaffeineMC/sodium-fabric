@@ -339,7 +339,6 @@ public class GroupBuilder {
                 TranslucentData.writeVertexIndexes(bufferBuilder, GFNI.SORTERS[i].sort(centers[i]));
             }
         }
-        bufferBuilder.flip(); // TODO: flip the int buffer or the byte buffer?
 
         return new StaticNormalRelativeData(this.sectionPos, buffer, ranges);
     }
@@ -409,9 +408,6 @@ public class GroupBuilder {
                 if (topoSortAlignedAcyclic(indexBuffer)) {
                     topoSortHits++;
 
-                    // I don't understand what this does
-                    // TODO: flip the int buffer or the byte buffer?
-                    indexBuffer.flip();
                     return indexData;
                 } else {
                     // TODO: cyclic topo sort with cycle breaking
