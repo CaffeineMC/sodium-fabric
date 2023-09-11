@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
-import me.jellysquid.mods.sodium.client.render.chunk.data.TranslucentData;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.GraphDirection;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.GraphDirectionSet;
 import me.jellysquid.mods.sodium.client.render.chunk.occlusion.VisibilityEncoding;

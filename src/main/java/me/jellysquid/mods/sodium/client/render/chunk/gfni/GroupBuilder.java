@@ -1,13 +1,18 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
+import java.nio.IntBuffer;
+
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
+import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.collections.BitArray;
 import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -63,43 +68,13 @@ public class GroupBuilder {
      */
     public final ReferenceArrayList<Quad> quads = new ReferenceArrayList<>();
 
-    /**
-     * Indexes of the quads that is non-null if the sort is topological. Static
-     * normal-relative sorting is handled differently since the indexes aren't mixed
-     * between normals.
-     */
-    public int[] topoSortResult;
+    public SortType sortType;
 
     public GroupBuilder(ChunkSectionPos sectionPos) {
         this.sectionPos = sectionPos;
     }
 
-    record Quad(Vector3f[] vertices, ModelQuadFacing facing, Vector3fc normal, Vector3f center, float[] extents) {
-        private static float[] calculateExtents(Vector3f[] vertices, ModelQuadFacing facing) {
-            // initialize extents to positive or negative infinity
-            // POS_X, POS_Y, POS_Z, NEG_X, NEG_Y, NEG_Z
-            float[] extents = new float[] {
-                    Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY,
-                    Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY };
-
-            // TODO: given the facing, in two directions actually only one vertex needs to
-            // be used as the quad is assumed to be planar
-            for (int vertIndex = 0; vertIndex < 4; vertIndex++) {
-                Vector3f vertex = vertices[vertIndex];
-                extents[0] = Math.max(extents[0], vertex.x);
-                extents[1] = Math.max(extents[1], vertex.y);
-                extents[2] = Math.max(extents[2], vertex.z);
-                extents[3] = Math.min(extents[3], vertex.x);
-                extents[4] = Math.min(extents[4], vertex.y);
-                extents[5] = Math.min(extents[5], vertex.z);
-            }
-
-            return extents;
-        }
-
-        Quad(Vector3f[] vertices, ModelQuadFacing facing, Vector3fc normal, Vector3f center) {
-            this(vertices, facing, normal, center, calculateExtents(vertices, facing));
-        }
+    record Quad(ModelQuadFacing facing, Vector3fc normal, Vector3f center, float[] extents) {
     }
 
     public void appendQuad(ModelQuadView quadView, ChunkVertexEncoder.Vertex[] vertices, ModelQuadFacing facing) {
@@ -107,7 +82,12 @@ public class GroupBuilder {
         float ySum = 0;
         float zSum = 0;
 
-        var vertexArray = new Vector3f[4];
+        // initialize extents to positive or negative infinity
+        // POS_X, POS_Y, POS_Z, NEG_X, NEG_Y, NEG_Z
+        float[] extents = new float[] {
+                Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY,
+                Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY };
+
         for (int i = 0; i < 4; i++) {
             var x = vertices[i].x;
             var y = vertices[i].y;
@@ -123,17 +103,19 @@ public class GroupBuilder {
                 maxBounds.z = Math.max(maxBounds.z, z);
             }
 
+            extents[0] = Math.max(extents[0], x);
+            extents[1] = Math.max(extents[1], y);
+            extents[2] = Math.max(extents[2], z);
+            extents[3] = Math.min(extents[3], x);
+            extents[4] = Math.min(extents[4], y);
+            extents[5] = Math.min(extents[5], z);
+
             xSum += x;
             ySum += y;
             zSum += z;
-
-            vertexArray[i] = new Vector3f(x, y, z);
         }
 
-        Vector3f firstVertex = vertexArray[0];
-        float vertexX = firstVertex.x;
-        float vertexY = firstVertex.y;
-        float vertexZ = firstVertex.z;
+        var center = new Vector3f(xSum * 0.25f, ySum * 0.25f, zSum * 0.25f);
 
         AccumulationGroup accGroup;
         if (facing == ModelQuadFacing.UNASSIGNED) {
@@ -159,9 +141,7 @@ public class GroupBuilder {
                 accGroup = new AccumulationGroup(sectionPos, normal, normalKey);
                 this.unalignedDistances.put(normalKey, accGroup);
             }
-            this.quads.add(new Quad(vertexArray, facing,
-                    accGroup.normal,
-                    new Vector3f(xSum * 0.25f, ySum * 0.25f, zSum * 0.25f)));
+            this.quads.add(new Quad(facing, accGroup.normal, center, extents));
             this.unalignedQuadCount++;
         } else {
             if (this.axisAlignedDistances == null) {
@@ -177,27 +157,12 @@ public class GroupBuilder {
                 this.alignedNormalBitmap |= 1 << quadDirection;
             }
 
-            this.quads.add(new Quad(vertexArray, facing, accGroup.normal,
-                    new Vector3f(xSum * 0.25f, ySum * 0.25f, zSum * 0.25f)));
+            this.quads.add(new Quad(facing, accGroup.normal, center, extents));
         }
 
-        if (accGroup.addPlaneMember(vertexX, vertexY, vertexZ)) {
+        var firstVertex = vertices[0];
+        if (accGroup.addPlaneMember(firstVertex.x, firstVertex.y, firstVertex.z)) {
             this.facePlaneCount++;
-        }
-    }
-
-    AccumulationGroup getGroupForNormal(NormalList normalList) {
-        int groupBuilderKey = normalList.getGroupBuilderKey();
-        if (groupBuilderKey < 0xFF) {
-            if (this.axisAlignedDistances == null) {
-                return null;
-            }
-            return this.axisAlignedDistances[groupBuilderKey];
-        } else {
-            if (this.unalignedDistances == null) {
-                return null;
-            }
-            return this.unalignedDistances.get(groupBuilderKey);
         }
     }
 
@@ -341,27 +306,118 @@ public class GroupBuilder {
         return SortType.DYNAMIC_ALL;
     }
 
-    SortType getSortType() {
-        var sortType = sortTypeHeuristic();
+    public SortType estimateSortType() {
+        this.sortType = sortTypeHeuristic();
+        return this.sortType;
+    }
 
-        // downgrade to cyclic or dynamic if the sorting fails, upgrade from cyclic to
-        // acyclic if there is no cycle.
-        if (sortType == SortType.STATIC_TOPO_ACYCLIC
-                || sortType == SortType.DYNAMIC_TOPO_CYCLIC
-                || sortType == SortType.DYNAMIC_ALL) {
+    private StaticNormalRelativeData constructStaticNormalRelativeData(BuiltSectionMeshParts translucentMesh) {
+        int vertexCount = 0;
+        VertexRange[] ranges = translucentMesh.getVertexRanges();
+        Vector3f[][] centers = new Vector3f[ModelQuadFacing.COUNT][];
+        int[] centerCounters = new int[ModelQuadFacing.COUNT];
+
+        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
+            VertexRange range = ranges[i];
+            if (range != null) {
+                vertexCount += range.vertexCount();
+                centers[i] = new Vector3f[range.vertexCount() / TranslucentData.VERTICES_PER_PRIMITIVE];
+            }
+        }
+
+        for (Quad quad : this.quads) {
+            var direction = quad.facing.ordinal();
+            centers[direction][centerCounters[direction]++] = quad.center;
+        }
+
+        var buffer = new NativeBuffer(vertexCount * TranslucentData.BYTES_PER_INDEX);
+        IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
+
+        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
+            VertexRange range = ranges[i];
+            if (range != null) {
+                TranslucentData.writeVertexIndexes(bufferBuilder, GFNI.SORTERS[i].sort(centers[i]));
+            }
+        }
+        bufferBuilder.flip(); // TODO: flip the int buffer or the byte buffer?
+
+        return new StaticNormalRelativeData(this.sectionPos, buffer, ranges);
+    }
+
+    private static VertexRange getUnassignedVertexRange(BuiltSectionMeshParts translucentMesh) {
+        VertexRange range = translucentMesh.getVertexRanges()[ModelQuadFacing.UNASSIGNED.ordinal()];
+
+        if (range == null) {
+            throw new IllegalStateException("No unassigned data in mesh");
+        }
+
+        return range;
+    }
+
+    // NOTE: requires filling the contained buffer afterwards
+    private StaticTopoAcyclicData constructStaticTopoAcyclicData(BuiltSectionMeshParts translucentMesh) {
+        VertexRange range = GroupBuilder.getUnassignedVertexRange(translucentMesh);
+        var buffer = new NativeBuffer(range.vertexCount() * TranslucentData.BYTES_PER_INDEX);
+
+        return new StaticTopoAcyclicData(this.sectionPos, buffer, range);
+    }
+
+    private DynamicData constructDynamicData(BuiltSectionMeshParts translucentMesh, NativeBuffer reuseBuffer,
+            Vector3f cameraPos) {
+        VertexRange range = GroupBuilder.getUnassignedVertexRange(translucentMesh);
+        int vertexCount = range.vertexCount();
+
+        if (reuseBuffer == null) {
+            reuseBuffer = new NativeBuffer(vertexCount * TranslucentData.BYTES_PER_INDEX);
+        }
+
+        Vector3f[] centers = new Vector3f[vertexCount / TranslucentData.VERTICES_PER_PRIMITIVE];
+
+        var dynamicData = new DynamicData(this.sectionPos,
+                centers, reuseBuffer, range, axisAlignedDistances, unalignedDistances);
+        dynamicData.sort(cameraPos);
+        return dynamicData;
+    }
+
+    public TranslucentData getTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3f cameraPos) {
+        if (this.sortType == SortType.NONE || translucentMesh == null) {
+            return new NoneData(this.sectionPos);
+        }
+
+        if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
+            return constructStaticNormalRelativeData(translucentMesh);
+        }
+
+        // from this point on we know the estimated sort type requires direction mixing
+        // (no backface culling) and all vertices are in the UNASSIGNED direction.
+        NativeBuffer buffer = null;
+        if (this.sortType == SortType.STATIC_TOPO_ACYCLIC
+                || this.sortType == SortType.DYNAMIC_TOPO_CYCLIC
+                || this.sortType == SortType.DYNAMIC_ALL) {
             // TODO: implement topo sort with unaligned quads
             if (this.unalignedQuadCount > 0) {
                 unalignedDynamicHits++;
-                sortType = SortType.DYNAMIC_ALL;
+                this.sortType = SortType.DYNAMIC_ALL;
             } else {
                 // it can only perform topo sort on acyclic graphs since it has no cycle
                 // breaking, but it will detect cycles and bail to DYNAMIC_ALL
                 // DYNAMIC_TOPO_CYCLIC if there is a cycle
-                sortType = topoSortAlignedAcyclic();
+                var indexData = constructStaticTopoAcyclicData(translucentMesh);
+                buffer = indexData.buffer;
+                IntBuffer indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
-                // TODO: cyclic topo sort with cycle breaking
-                if (sortType == SortType.DYNAMIC_TOPO_CYCLIC) {
-                    sortType = SortType.DYNAMIC_ALL;
+                if (topoSortAlignedAcyclic(indexBuffer)) {
+                    topoSortHits++;
+
+                    // I don't understand what this does
+                    // TODO: flip the int buffer or the byte buffer?
+                    indexBuffer.flip();
+                    return indexData;
+                } else {
+                    // TODO: cyclic topo sort with cycle breaking
+                    cyclicGraphHits++;
+
+                    this.sortType = SortType.DYNAMIC_ALL;
                 }
             }
 
@@ -369,7 +425,11 @@ public class GroupBuilder {
                     + ", unaligned dynamic hits: " + unalignedDynamicHits);
         }
 
-        return sortType;
+        if (this.sortType == SortType.DYNAMIC_ALL) {
+            return constructDynamicData(translucentMesh, buffer, cameraPos);
+        }
+
+        throw new IllegalStateException("Unknown sort type: " + this.sortType);
     }
 
     private static boolean orthogonalQuadVisible(Quad quad, Quad otherQuad) {
@@ -408,9 +468,9 @@ public class GroupBuilder {
      * {@link #topoSortResult} and returns {@link SortType#STATIC_TOPO_ACYCLIC}. If
      * it fails to find a topo sort it returns {@link SortType#DYNAMIC_TOPO_CYCLIC}.
      * 
-     * @return the sort type after the topo sort
+     * @return if the sort was successful
      */
-    private SortType topoSortAlignedAcyclic() {
+    private boolean topoSortAlignedAcyclic(IntBuffer indexBuffer) {
         var totalQuadCount = this.quads.size();
 
         /**
@@ -519,7 +579,6 @@ public class GroupBuilder {
         // how topo sort is usually defined, in that the first index points to the quad
         // that should be rendered first since it has no outgoing edges (and thus no
         // other quads are visible through it).
-        topoSortResult = new int[totalQuadCount];
 
         // iterate through the set of quads with no outgoing edges until there are none
         // left.
@@ -531,14 +590,13 @@ public class GroupBuilder {
             if (nextLeafQuadIndex == -1) {
                 // since this method may be called if it's known that there are no cycles, when
                 // they are found it's downgraded to DYNAMIC_TOPO_CYCLIC
-                cyclicGraphHits++;
-                return SortType.DYNAMIC_TOPO_CYCLIC;
+                return false;
             }
 
             leafQuads.unset(nextLeafQuadIndex);
 
             // add it to the topo sort result
-            topoSortResult[topoSortPos] = nextLeafQuadIndex;
+            TranslucentData.putQuadVertexIndexes(indexBuffer, nextLeafQuadIndex);
 
             // remove the edges to this quad and mark them as leaves if that was the last
             // outgoing edge they had
@@ -550,7 +608,6 @@ public class GroupBuilder {
             }
         }
 
-        topoSortHits++;
-        return SortType.STATIC_TOPO_ACYCLIC;
+        return true;
     }
 }

@@ -313,6 +313,8 @@ public class RenderSectionManager {
 
         for (var result : filtered) {
             this.updateSectionInfo(result.render, result.info);
+            result.render.setTranslucentData(result.translucentData);
+            this.gfni.integrateTranslucentData(result.translucentData);
 
             var job = result.render.getBuildCancellationToken();
 
@@ -409,7 +411,7 @@ public class RenderSectionManager {
             return null;
         }
 
-        return new ChunkBuilderMeshingTask(render, frame, this.cameraPos, context, this.gfni);
+        return new ChunkBuilderMeshingTask(render, frame, this.cameraPos, context);
     }
 
     public ChunkBuilderSortingTask createSortTask(RenderSection render, int frame) {

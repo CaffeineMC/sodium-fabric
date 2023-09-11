@@ -9,10 +9,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRende
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
-import me.jellysquid.mods.sodium.client.render.chunk.data.TranslucentData;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.GroupBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.SortType;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
@@ -44,12 +43,10 @@ import org.joml.Vector3f;
  */
 public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> {
     private final ChunkRenderContext renderContext;
-    private final GFNI gfni;
 
-    public ChunkBuilderMeshingTask(RenderSection render, int buildTime, Vector3f cameraPos, ChunkRenderContext renderContext, GFNI gfni) {
+    public ChunkBuilderMeshingTask(RenderSection render, int buildTime, Vector3f cameraPos, ChunkRenderContext renderContext) {
         super(render, buildTime, cameraPos);
         this.renderContext = renderContext;
-        this.gfni = gfni;
     }
 
     @Override
@@ -140,37 +137,24 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             throw fillCrashInfo(CrashReport.create(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
 
-        SortType sortType = this.gfni.integrateGroupBuilder(context.groupBuilder);
-        TranslucentData translucentData = null;
+        SortType sortType = groupBuilder.estimateSortType();
 
         Map<TerrainRenderPass, BuiltSectionMeshParts> meshes = new Reference2ReferenceOpenHashMap<>();
 
         for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
             // consolidate all translucent geometry into UNASSIGNED so that it's rendered
-            // all together if GFNI's heuristic determines that it needs to be dynamically
-            // sorted
-            // boolean isTranslucent = pass == DefaultTerrainRenderPasses.TRANSLUCENT;
-            // BuiltSectionMeshParts mesh = buffers.createMesh(pass, isTranslucent && sortType.needsDirectionMixing);
-            BuiltSectionMeshParts mesh = buffers.createMesh(pass, false);
+            // all together if it needs to share an index buffer between the directions
+            boolean isTranslucent = pass == DefaultTerrainRenderPasses.TRANSLUCENT;
+            BuiltSectionMeshParts mesh = buffers.createMesh(pass, isTranslucent && sortType.needsDirectionMixing);
 
             if (mesh != null) {
                 meshes.put(pass, mesh);
                 renderData.addRenderPass(pass);
-
-                // TODO: re-enable
-                // if (isTranslucent) {
-                //     // calculate the primitive centers and initialize indexes for sorting.
-                //     // also does an initial sort
-                //     translucentData = TranslucentData.fromMeshData(
-                //         sortType, context.groupBuilder.quadCenters);
-
-                //     // initial sort
-                //     if (translucentData != null) {
-                //         translucentData.sort(this.cameraPos);
-                //     }
-                // }
             }
         }
+
+        TranslucentData translucentData = groupBuilder.getTranslucentData(
+                meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), cameraPos);
 
         renderData.setOcclusionData(occluder.build());
 

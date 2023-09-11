@@ -5,6 +5,8 @@ import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 
 /**
  * Helper type for tagging the vertex format alongside the raw buffer data.
+ * 
+ * TODO: this file is unused?
  */
 public record IndexedVertexData(GlVertexFormat<?> vertexFormat,
                                 NativeBuffer vertexBuffer,

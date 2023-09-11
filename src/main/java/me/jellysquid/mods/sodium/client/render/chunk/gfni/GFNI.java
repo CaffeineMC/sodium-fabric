@@ -19,17 +19,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * 
  * Distances are stored as doubles and normals are stored as float vectors.
  * 
- * TODO: synchronization is used for integrating group builders submitted from
- * chunk build threads. It is assumed that integrating a group builder is fast
- * and thus synchronization is not a big problem. However, if it is, it might be
- * better to put the group builder in the ChunkSortOutput and have the main
- * thread integrate it. The distadvantage is that the main thread would be busy
- * with group integration while actually the chunk build thread could be doing
- * it itself. If fine grained synchronization is needed, threads could also work
- * on integrating individual normal lists in parallel. However, since normal
- * lists are created (and possibly deleted) on demand, this would require a more
- * complex synchronization scheme.
- * 
  * TODO:
  * - sort the triggered sections by camera distance and possibly also use number
  * of translucent faces as a heuristic for importance
@@ -173,17 +162,25 @@ public class GFNI {
      * @param builder the group builder to integrate
      * @return the sort type that the group builder's relevance heuristic determined
      */
-    public synchronized SortType integrateGroupBuilder(GroupBuilder builder) {
-        long chunkSectionLongPos = builder.sectionPos.asLong();
+    public void integrateTranslucentData(TranslucentData translucentData) {
+        if (translucentData == null) {
+            return; // TODO: when does this even happen?
+        }
+        long chunkSectionLongPos = translucentData.sectionPos.asLong();
 
-        // if the builder is irrelevant, remove it from the normal lists
+        // remove the section if the data doesn't need to trigger on face planes
         // TODO: only do the heuristic and topo sort if the hashes are different?
-        SortType sortType = builder.getSortType();
+        SortType sortType = translucentData.getSortType();
         if (!sortType.needsPlaneTrigger) {
             removeSection(chunkSectionLongPos);
-            return sortType;
+            return;
         }
 
+        // TODO: implement cycle breaking and multiple sort orders
+        if (!(translucentData instanceof DynamicData)) {
+            throw new RuntimeException("TranslucentData other than DynamicData passed to GFNI");
+        }
+        var dynamicData = (DynamicData) translucentData;
         int normalListCount = this.normalLists.size();
 
         // go through all normal lists and check against the normals that the group
@@ -191,7 +188,7 @@ public class GFNI {
         // builder doesn't, the group is removed. otherwise, the group is updated.
         for (var normalList : this.normalLists.values()) {
             // check if the group builder includes data for this normal.
-            var accGroup = builder.getGroupForNormal(normalList);
+            var accGroup = dynamicData.getGroupForNormal(normalList);
             if (normalList.hasSection(chunkSectionLongPos)) {
                 if (accGroup == null) {
                     removeSectionFromList(normalList, chunkSectionLongPos);
@@ -206,15 +203,15 @@ public class GFNI {
         // go through the data of the group builder to check for data of new normals
         // for which there are no normal lists yet. This only checks for new normal
         // lists since new data for existing normal lists is handled above.
-        if (builder.axisAlignedDistances != null) {
-            for (var accGroup : builder.axisAlignedDistances) {
+        if (dynamicData.getAxisAlignedDistances() != null) {
+            for (var accGroup : dynamicData.getAxisAlignedDistances()) {
                 if (accGroup != null) {
                     addSectionInNewNormalLists(accGroup);
                 }
             }
         }
-        if (builder.unalignedDistances != null) {
-            for (var accGroup : builder.unalignedDistances.values()) {
+        if (dynamicData.getUnalignedDistances() != null) {
+            for (var accGroup : dynamicData.getUnalignedDistances().values()) {
                 addSectionInNewNormalLists(accGroup);
             }
         }
@@ -223,7 +220,5 @@ public class GFNI {
         if (normalListCount != this.normalLists.size()) {
             System.out.println(normalLists.size() + " normal lists");
         }
-
-        return sortType;
     }
 }

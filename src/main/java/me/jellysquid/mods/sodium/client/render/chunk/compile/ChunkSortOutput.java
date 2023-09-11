@@ -1,8 +1,12 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile;
 
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
-import me.jellysquid.mods.sodium.client.render.chunk.data.TranslucentData;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 
+/**
+ * TODO: translucent data can also be for non-dynamic sort types, so this might
+ * not make a lot of sense as it is.
+ */
 public class ChunkSortOutput extends BuilderTaskOutput {
     public final TranslucentData translucentData;
 
@@ -14,6 +18,6 @@ public class ChunkSortOutput extends BuilderTaskOutput {
 
     @Override
     public void setDataOn(RenderSection render) {
-        render.setTranslucentData(translucentData);;
+        render.setTranslucentData(translucentData);
     }
 }

@@ -13,7 +13,7 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
-import me.jellysquid.mods.sodium.client.render.chunk.data.TranslucentData;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import org.jetbrains.annotations.NotNull;
