@@ -321,7 +321,7 @@ public class GroupBuilder {
             VertexRange range = ranges[i];
             if (range != null) {
                 vertexCount += range.vertexCount();
-                centers[i] = new Vector3f[range.vertexCount() / TranslucentData.VERTICES_PER_PRIMITIVE];
+                centers[i] = new Vector3f[range.vertexCount() / TranslucentData.VERTICES_PER_QUAD];
             }
         }
 
@@ -330,7 +330,7 @@ public class GroupBuilder {
             centers[direction][centerCounters[direction]++] = quad.center;
         }
 
-        var buffer = new NativeBuffer(vertexCount * TranslucentData.BYTES_PER_INDEX);
+        var buffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(vertexCount));
         IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
 
         for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
@@ -356,7 +356,7 @@ public class GroupBuilder {
     // NOTE: requires filling the contained buffer afterwards
     private StaticTopoAcyclicData constructStaticTopoAcyclicData(BuiltSectionMeshParts translucentMesh) {
         VertexRange range = GroupBuilder.getUnassignedVertexRange(translucentMesh);
-        var buffer = new NativeBuffer(range.vertexCount() * TranslucentData.BYTES_PER_INDEX);
+        var buffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(range.vertexCount()));
 
         return new StaticTopoAcyclicData(this.sectionPos, buffer, range);
     }
@@ -367,13 +367,17 @@ public class GroupBuilder {
         int vertexCount = range.vertexCount();
 
         if (reuseBuffer == null) {
-            reuseBuffer = new NativeBuffer(vertexCount * TranslucentData.BYTES_PER_INDEX);
+            reuseBuffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(vertexCount));
         }
 
-        Vector3f[] centers = new Vector3f[vertexCount / TranslucentData.VERTICES_PER_PRIMITIVE];
+        Vector3f[] centers = new Vector3f[vertexCount / TranslucentData.VERTICES_PER_QUAD];
+
+        for (int i = 0; i < this.quads.size(); i++) {
+            centers[i] = this.quads.get(i).center;
+        }
 
         var dynamicData = new DynamicData(this.sectionPos,
-                centers, reuseBuffer, range, axisAlignedDistances, unalignedDistances);
+                reuseBuffer, range, centers, axisAlignedDistances, unalignedDistances);
         dynamicData.sort(cameraPos);
         return dynamicData;
     }

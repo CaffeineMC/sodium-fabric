@@ -7,8 +7,7 @@ import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
-class DynamicTopoCyclicData extends TranslucentData {
-    public final NativeBuffer buffer;
+public class DynamicTopoCyclicData extends PresentTranslucentData {
     public final ReferenceArrayList<SortOrder> orders;
 
     public static record SortOrder(VertexRange range, Vector3fc normal, double distance) {
@@ -16,8 +15,7 @@ class DynamicTopoCyclicData extends TranslucentData {
 
     public DynamicTopoCyclicData(ChunkSectionPos sectionPos,
             NativeBuffer buffer, ReferenceArrayList<SortOrder> orders) {
-        super(sectionPos);
-        this.buffer = buffer;
+        super(sectionPos, buffer);
         this.orders = orders;
     }
 

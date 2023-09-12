@@ -8,21 +8,17 @@ import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 import net.minecraft.util.math.ChunkSectionPos;
 
-class DynamicData extends TranslucentData {
+public class DynamicData extends MixedDirectionData {
     public final Vector3f[] centers;
-    public final NativeBuffer buffer;
-    public final VertexRange range;
     private AccumulationGroup[] axisAlignedDistances;
     private Int2ReferenceLinkedOpenHashMap<AccumulationGroup> unalignedDistances;
 
     public DynamicData(ChunkSectionPos sectionPos,
-            Vector3f[] centers, NativeBuffer buffer, VertexRange range,
+            NativeBuffer buffer, VertexRange range, Vector3f[] centers, 
             AccumulationGroup[] axisAlignedDistances,
             Int2ReferenceLinkedOpenHashMap<AccumulationGroup> unalignedDistances) {
-        super(sectionPos);
+        super(sectionPos, buffer, range);
         this.centers = centers;
-        this.buffer = buffer;
-        this.range = range;
         this.axisAlignedDistances = axisAlignedDistances;
         this.unalignedDistances = unalignedDistances;
     }
