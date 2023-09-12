@@ -8,6 +8,7 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
@@ -48,6 +49,7 @@ public class RenderRegion {
     private int sectionCount;
 
     private final Map<TerrainRenderPass, SectionRenderDataStorage> sectionRenderData = new Reference2ReferenceOpenHashMap<>();
+    private SectionRenderDataStorage translucentIndexData = null;
     private DeviceResources resources;
 
     public RenderRegion(int x, int y, int z, StagingBuffer stagingBuffer) {
@@ -91,6 +93,9 @@ public class RenderRegion {
         for (var storage : this.sectionRenderData.values()) {
             storage.delete();
         }
+        if (this.translucentIndexData != null) {
+            this.translucentIndexData.delete();
+        }
 
         this.sectionRenderData.clear();
 
@@ -110,6 +115,10 @@ public class RenderRegion {
         return this.sectionRenderData.get(pass);
     }
 
+    public SectionRenderDataStorage getTranslucentStorage() {
+        return this.translucentIndexData;
+    }
+
     public SectionRenderDataStorage createStorage(TerrainRenderPass pass) {
         var storage = this.sectionRenderData.get(pass);
 
@@ -120,6 +129,14 @@ public class RenderRegion {
         return storage;
     }
 
+    public SectionRenderDataStorage createTranslucentStorage() {
+        if (this.translucentIndexData == null) {
+            return this.translucentIndexData = new SectionRenderDataStorage();
+        }
+
+        return this.translucentIndexData;
+    }
+
     public void refresh(CommandList commandList) {
         if (this.resources != null) {
             this.resources.deleteTessellations(commandList);
@@ -127,6 +144,16 @@ public class RenderRegion {
 
         for (var storage : this.sectionRenderData.values()) {
             storage.onBufferResized();
+        }
+    }
+
+    public void refreshTranslucent(CommandList commandList) {
+        if (this.resources != null) {
+            this.resources.deleteTessellations(commandList);
+        }
+
+        if (this.translucentIndexData != null) {
+            this.translucentIndexData.onBufferResized();
         }
     }
 
@@ -154,6 +181,9 @@ public class RenderRegion {
 
         for (var storage : this.sectionRenderData.values()) {
             storage.removeMeshes(sectionIndex);
+        }
+        if (this.translucentIndexData != null) {
+            this.translucentIndexData.removeMeshes(sectionIndex);
         }
 
         this.sections[sectionIndex] = null;
@@ -189,11 +219,15 @@ public class RenderRegion {
 
     public static class DeviceResources {
         private final GlBufferArena geometryArena;
+        private final GlBufferArena indexArena;
         private GlTessellation tessellation;
 
         public DeviceResources(CommandList commandList, StagingBuffer stagingBuffer) {
             int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
             this.geometryArena = new GlBufferArena(commandList, REGION_SIZE * 756, stride, stagingBuffer);
+
+            // TODO: what size should this be intially? Should this be using the same staging buffer?
+            this.indexArena = new GlBufferArena(commandList, REGION_SIZE * 756, TranslucentData.BYTES_PER_INDEX, stagingBuffer);
         }
 
         public void updateTessellation(CommandList commandList, GlTessellation tessellation) {
@@ -219,17 +253,26 @@ public class RenderRegion {
             return this.geometryArena.getBufferObject();
         }
 
+        public GlBuffer getIndexBuffer() {
+            return this.indexArena.getBufferObject();
+        }
+
         public void delete(CommandList commandList) {
             this.deleteTessellations(commandList);
             this.geometryArena.delete(commandList);
+            this.indexArena.delete(commandList);
         }
 
         public GlBufferArena getGeometryArena() {
             return this.geometryArena;
         }
 
+        public GlBufferArena getIndexArena() {
+            return this.indexArena;
+        }
+
         public boolean shouldDelete() {
-            return this.geometryArena.isEmpty();
+            return this.geometryArena.isEmpty() && this.indexArena.isEmpty(); // TODO: correct?
         }
     }
 }
