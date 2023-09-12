@@ -110,6 +110,7 @@ public class GroupBuilder {
             extents[4] = Math.min(extents[4], y);
             extents[5] = Math.min(extents[5], z);
 
+            // TODO: can we also just use two vertices at opposite corners of the quad?
             xSum += x;
             ySum += y;
             zSum += z;
@@ -117,6 +118,8 @@ public class GroupBuilder {
 
         var center = new Vector3f(xSum * 0.25f, ySum * 0.25f, zSum * 0.25f);
 
+        // TODO: some of these things should probably only be computed on demand, and an
+        // allocation of a Quad object should be avoided
         AccumulationGroup accGroup;
         if (facing == ModelQuadFacing.UNASSIGNED) {
             int normalX = quadView.getGFNINormX();
@@ -334,8 +337,7 @@ public class GroupBuilder {
         IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
 
         for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
-            VertexRange range = ranges[i];
-            if (range != null) {
+            if (ranges[i] != null) {
                 TranslucentData.writeVertexIndexes(bufferBuilder, GFNI.SORTERS[i].sort(centers[i]));
             }
         }

@@ -110,7 +110,6 @@ public class RenderRegionManager {
                 region.refresh(commandList);
             }
 
-
             // Collect the upload results
             for (PendingSectionMeshUpload upload : uploads) {
                 var storage = region.createStorage(upload.pass);
