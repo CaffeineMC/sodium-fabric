@@ -30,6 +30,10 @@ public class VertexSorters {
         }
     }
 
+    public static VertexSorter sortByNormalRelative(Vector3f normal) {
+        return new SortNormalRelative(normal);
+    }
+
     private static class SortByDistance extends AbstractVertexSorter {
         private final Vector3f origin;
 
@@ -58,6 +62,19 @@ public class VertexSorters {
         @Override
         protected float getKey(Vector3f position) {
             return sign * position.get(this.axis);
+        }
+    }
+
+    private static class SortNormalRelative extends AbstractVertexSorter {
+        private final Vector3f normal;
+
+        private SortNormalRelative(Vector3f normal) {
+            this.normal = normal;
+        }
+
+        @Override
+        protected float getKey(Vector3f position) {
+            return this.normal.dot(position);
         }
     }
 

@@ -58,7 +58,7 @@ public class GroupBuilder {
 
     private final ChunkSectionPos sectionPos;
     private int facePlaneCount = 0;
-    private int alignedNormalBitmap = 0;
+    int alignedNormalBitmap = 0;
     private Vector3f minBounds = new Vector3f(16, 16, 16);
     private Vector3f maxBounds = new Vector3f(0, 0, 0);
 
@@ -337,7 +337,7 @@ public class GroupBuilder {
         }
 
         if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
-            return StaticNormalRelativeData.fromMesh(translucentMesh, quads, sectionPos);
+            return StaticNormalRelativeData.fromMesh(translucentMesh, quads, sectionPos, this);
         }
 
         if (SodiumClientMod.options().performance.sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
