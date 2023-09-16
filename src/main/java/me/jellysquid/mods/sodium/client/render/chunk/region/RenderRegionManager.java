@@ -138,6 +138,8 @@ public class RenderRegionManager {
                 } else if (translucentData instanceof MixedDirectionData data) {
                     vertexRanges = new VertexRange[ModelQuadFacing.COUNT];
                     vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = data.range;
+                } else {
+                    throw new UnsupportedOperationException("Unsupported translucent data type: " + translucentData.getClass());
                 }
                 if (vertexRanges != null) {
                     storage.setMeshes(upload.section.getSectionIndex(),

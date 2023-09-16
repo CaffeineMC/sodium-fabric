@@ -150,10 +150,10 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         for (int facing = 0; facing < ModelQuadFacing.COUNT; facing++) {
             MemoryUtil.memPutInt(pBaseVertex + (size << 2), SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing));
             MemoryUtil.memPutInt(pElementCount + (size << 2), SectionRenderDataUnsafe.getElementCount(pMeshData, facing));
-            if (pIndexData != -1) {
-                // TODO: I don't think this is correct
-                MemoryUtil.memPutAddress(pElementPointer + (size << 2), pIndexData);
-            }
+            // if (pIndexData != -1) {
+            //     // TODO: I don't think this is correct
+            //     MemoryUtil.memPutAddress(pElementPointer + size * 8L, 0);
+            // }
 
             size += (mask >> facing) & 1;
         }
@@ -226,15 +226,20 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private GlTessellation prepareTessellation(CommandList commandList, RenderRegion region, boolean translucent) {
         var resources = region.getResources();
-        var tessellation = resources.getTessellation();
 
-        if (tessellation == null) {
-            if (translucent) {
+        GlTessellation tessellation;
+        if (translucent) {
+            tessellation = resources.getIndexedTessellation();
+            if (tessellation == null) {
                 tessellation = this.createIndexedRegionTessellation(commandList, resources);
-            } else {
-                tessellation = this.createRegionTessellation(commandList, resources);
+                resources.updateIndexedTessellation(commandList, tessellation);
             }
-            resources.updateTessellation(commandList, tessellation);
+        } else {
+            tessellation = resources.getTessellation();
+            if (tessellation == null) {
+                tessellation = this.createRegionTessellation(commandList, resources);
+                resources.updateTessellation(commandList, tessellation);
+            }
         }
 
         return tessellation;

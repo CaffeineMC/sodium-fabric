@@ -221,6 +221,7 @@ public class RenderRegion {
         private final GlBufferArena geometryArena;
         private final GlBufferArena indexArena;
         private GlTessellation tessellation;
+        private GlTessellation indexedTessellation;
 
         public DeviceResources(CommandList commandList, StagingBuffer stagingBuffer) {
             int stride = ChunkMeshFormats.COMPACT.getVertexFormat().getStride();
@@ -238,14 +239,30 @@ public class RenderRegion {
             this.tessellation = tessellation;
         }
 
+        public void updateIndexedTessellation(CommandList commandList, GlTessellation tessellation) {
+            if (this.indexedTessellation != null) {
+                this.indexedTessellation.delete(commandList);
+            }
+
+            this.indexedTessellation = tessellation;
+        }
+
         public GlTessellation getTessellation() {
             return this.tessellation;
+        }
+
+        public GlTessellation getIndexedTessellation() {
+            return this.indexedTessellation;
         }
 
         public void deleteTessellations(CommandList commandList) {
             if (this.tessellation != null) {
                 this.tessellation.delete(commandList);
                 this.tessellation = null;
+            }
+            if (this.indexedTessellation != null) {
+                this.indexedTessellation.delete(commandList);
+                this.indexedTessellation = null;
             }
         }
 
