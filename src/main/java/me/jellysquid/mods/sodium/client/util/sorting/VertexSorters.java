@@ -39,7 +39,10 @@ public class VertexSorters {
 
         @Override
         protected float getKey(Vector3f position) {
-            return this.origin.distanceSquared(position);
+            float distance = Math.abs(position.x - this.origin.x);
+            distance += Math.abs(position.y - this.origin.y);
+            distance += Math.abs(position.z - this.origin.z);
+            return distance;
         }
     }
 
