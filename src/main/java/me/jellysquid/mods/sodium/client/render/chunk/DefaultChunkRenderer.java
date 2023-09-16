@@ -13,6 +13,7 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataUnsafe;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterable;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
@@ -77,11 +78,13 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                 continue;
             }
 
-            if (!isTranslucent) {
+            GlTessellation tessellation;
+            if (isTranslucent) {
+                tessellation = this.prepareIndexedTessellation(commandList, region);
+            } else {
                 this.sharedIndexBuffer.ensureCapacity(commandList, this.batch.getIndexBufferSize());
+                tessellation = this.prepareTessellation(commandList, region);
             }
-
-            var tessellation = this.prepareTessellation(commandList, region, isTranslucent);
 
             setModelMatrixUniforms(shader, region, camera);
             executeDrawBatch(commandList, tessellation, this.batch);
@@ -151,7 +154,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             MemoryUtil.memPutInt(pBaseVertex + (size << 2), SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing));
             MemoryUtil.memPutInt(pElementCount + (size << 2), SectionRenderDataUnsafe.getElementCount(pMeshData, facing));
             if (pIndexData != -1) {
-                MemoryUtil.memPutAddress(pElementPointer + (size << 3), SectionRenderDataUnsafe.getVertexOffset(pIndexData, facing) * 4);
+                MemoryUtil.memPutAddress(pElementPointer + (size << 3), SectionRenderDataUnsafe.getVertexOffset(pIndexData, facing) * TranslucentData.VERTICES_PER_QUAD);
             } else {
                 MemoryUtil.memPutAddress(pElementPointer + (size << 3), 0);
             }
@@ -225,22 +228,25 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         return (chunkBlockPos - cameraBlockPos) - cameraPos;
     }
 
-    private GlTessellation prepareTessellation(CommandList commandList, RenderRegion region, boolean translucent) {
+    private GlTessellation prepareTessellation(CommandList commandList, RenderRegion region) {
         var resources = region.getResources();
 
-        GlTessellation tessellation;
-        if (translucent) {
-            tessellation = resources.getIndexedTessellation();
-            if (tessellation == null) {
-                tessellation = this.createIndexedRegionTessellation(commandList, resources);
-                resources.updateIndexedTessellation(commandList, tessellation);
-            }
-        } else {
-            tessellation = resources.getTessellation();
-            if (tessellation == null) {
-                tessellation = this.createRegionTessellation(commandList, resources);
-                resources.updateTessellation(commandList, tessellation);
-            }
+        GlTessellation tessellation = resources.getTessellation();
+        if (tessellation == null) {
+            tessellation = this.createRegionTessellation(commandList, resources);
+            resources.updateTessellation(commandList, tessellation);
+        }
+
+        return tessellation;
+    }
+
+    private GlTessellation prepareIndexedTessellation(CommandList commandList, RenderRegion region) {
+        var resources = region.getResources();
+
+        GlTessellation tessellation = resources.getIndexedTessellation();
+        if (tessellation == null) {
+            tessellation = this.createIndexedRegionTessellation(commandList, resources);
+            resources.updateIndexedTessellation(commandList, tessellation);
         }
 
         return tessellation;
