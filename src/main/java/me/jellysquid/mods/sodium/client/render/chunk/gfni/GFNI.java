@@ -1,14 +1,15 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.joml.Vector3fc;
 
 import com.mojang.blaze3d.systems.VertexSorter;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -67,9 +68,26 @@ public class GFNI {
         }
     }
 
-    // TODO: both of these are for debugging
-    ObjectLinkedOpenHashSet<ChunkSectionPos> triggeredSections = new ObjectLinkedOpenHashSet<>(50);
-    ObjectOpenHashSet<Vector3fc> triggeredNormals = new ObjectOpenHashSet<>(50);
+    /**
+     * A set of all the sections that were triggered the last time something was
+     * triggered.
+     * 
+     * TODO: only count the sections and not their whole position
+     */
+    private final LongOpenHashSet triggeredSections = new LongOpenHashSet(50);
+    private int triggeredSectionCount = 0;
+
+    /**
+     * A set of all the normals that were triggered the last time something was
+     * triggered.
+     */
+    private final IntOpenHashSet triggeredNormals = new IntOpenHashSet(50);
+    private int triggeredNormalCount = 0;
+
+    /**
+     * A map of the number of times each sort type is currently in use.
+     */
+    private final int[] sortTypeCounters = new int[SortType.values().length];
 
     /**
      * Triggers the sections that the given camera movement crosses face planes of.
@@ -94,21 +112,29 @@ public class GFNI {
             normalList.processMovement(this, lastCameraX, lastCameraY, lastCameraZ, cameraX, cameraY, cameraZ);
         }
 
+        var newTriggeredSectionsCount = this.triggeredSections.size();
+        var newTriggeredNormalCount = this.triggeredNormals.size();
+        if (newTriggeredSectionsCount > 0) {
+            this.triggeredSectionCount = newTriggeredSectionsCount;
+            this.triggeredNormalCount = newTriggeredNormalCount;
+        }
+
         // TODO: the collections for tracking sections are only used for debugging
         int triggerCount = this.triggeredSections.size();
         if (triggerCount > 0) {
             System.out.println("Triggered " + triggerCount + " sections");
-            for (ChunkSectionPos section : this.triggeredSections) {
-                System.out.println(section.getX() + " " + section.getY() + " " + section.getZ());
+            for (long section : this.triggeredSections) {
+                ChunkSectionPos sectionPos = ChunkSectionPos.from(section);
+                System.out.println(sectionPos.getX() + " " + sectionPos.getY() + " " + sectionPos.getZ());
             }
         }
 
         triggerSectionCallback = null;
     }
 
-    void triggerSection(ChunkSectionPos section, Vector3fc normal) {
-        this.triggeredSections.add(section);
-        this.triggeredNormals.add(normal);
+    void triggerSection(ChunkSectionPos section, int groupBuilderKey) {
+        this.triggeredSections.add(section.asLong());
+        this.triggeredNormals.add(groupBuilderKey);
 
         // by simply setting a chunk update type on the section, it naturally only gets
         // updated once the section becomes visible.
@@ -126,18 +152,16 @@ public class GFNI {
     /**
      * Removes a section from GFNI. This removes all its face planes.
      * 
+     * @param oldTranslucentData the data of the section to remove
      * @param chunkSectionLongPos the section to remove
      */
-    public void removeSection(long chunkSectionLongPos) {
-        int normalListCount = this.normalLists.size();
-
+    public void removeSection(TranslucentData oldTranslucentData, long chunkSectionLongPos) {
         for (var normalList : this.normalLists.values()) {
             removeSectionFromList(normalList, chunkSectionLongPos);
         }
 
-        // TODO: remove
-        if (normalListCount != this.normalLists.size()) {
-            System.out.println(normalLists.size() + " normal lists");
+        if (oldTranslucentData != null) {
+            this.sortTypeCounters[oldTranslucentData.getSortType().ordinal()]--;
         }
     }
 
@@ -156,20 +180,17 @@ public class GFNI {
      * contains the translucent face planes of a single section. This method may
      * also remove the section if it has become irrelevant.
      * 
-     * TODO: marked as synchronized because it's expected to be fast, see class
-     * comment
-     * 
      * @param builder the group builder to integrate
      * @return the sort type that the group builder's relevance heuristic determined
      */
-    public void integrateTranslucentData(TranslucentData translucentData) {
+    public void integrateTranslucentData(TranslucentData oldTranslucentData, TranslucentData translucentData) {
         long chunkSectionLongPos = translucentData.sectionPos.asLong();
 
         // remove the section if the data doesn't need to trigger on face planes
         // TODO: only do the heuristic and topo sort if the hashes are different?
         SortType sortType = translucentData.getSortType();
         if (!sortType.needsPlaneTrigger) {
-            removeSection(chunkSectionLongPos);
+            removeSection(oldTranslucentData, chunkSectionLongPos);
             return;
         }
 
@@ -178,7 +199,6 @@ public class GFNI {
             throw new RuntimeException("TranslucentData other than DynamicData passed to GFNI");
         }
         var dynamicData = (DynamicData) translucentData;
-        int normalListCount = this.normalLists.size();
 
         // go through all normal lists and check against the normals that the group
         // builder has. if the normal list has data for the section, but the group
@@ -213,9 +233,19 @@ public class GFNI {
             }
         }
 
-        // TODO: remove
-        if (normalListCount != this.normalLists.size()) {
-            System.out.println(normalLists.size() + " normal lists");
+        if (oldTranslucentData != null) {
+            this.sortTypeCounters[oldTranslucentData.getSortType().ordinal()]--;
         }
+        this.sortTypeCounters[sortType.ordinal()]++;
+    }
+
+    public void addDebugStrings(List<String> list) {
+        list.add("GFNI NL=" + this.normalLists.size()
+                + " TrS=" + this.triggeredSectionCount
+                + " TrN=" + this.triggeredNormalCount);
+        list.add("N=" + this.sortTypeCounters[SortType.NONE.ordinal()]
+                + " SNR=" + this.sortTypeCounters[SortType.STATIC_NORMAL_RELATIVE.ordinal()]
+                + " STA=" + this.sortTypeCounters[SortType.STATIC_TOPO_ACYCLIC.ordinal()]
+                + " DYN=" + this.sortTypeCounters[SortType.DYNAMIC_ALL.ordinal()]);
     }
 }

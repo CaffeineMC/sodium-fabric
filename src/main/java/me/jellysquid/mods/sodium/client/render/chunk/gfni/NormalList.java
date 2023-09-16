@@ -104,7 +104,7 @@ class NormalList {
         var interval = new DoubleInterval(start, end, Bounded.CLOSED);
         for (Interval<Double> groupInterval : groupIntervals.query(interval)) {
             for (Group group : groupsByInterval.get(groupInterval)) {
-                group.triggerRange(gfni, start, end, this.normalf);
+                group.triggerRange(gfni, start, end, this.groupBuilderKey);
             }
         }
     }

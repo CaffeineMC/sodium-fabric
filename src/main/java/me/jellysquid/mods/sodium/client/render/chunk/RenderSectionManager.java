@@ -22,6 +22,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderS
 import me.jellysquid.mods.sodium.client.render.chunk.compile.tasks.ChunkBuilderTask;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.GFNI;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.VisibleChunkCollector;
@@ -222,7 +223,7 @@ public class RenderSectionManager {
         section.delete();
 
         if (this.gfni != null) {
-            this.gfni.removeSection(chunkSectionLongPos);
+            this.gfni.removeSection(section.getTranslucentData(), chunkSectionLongPos);
         }
 
         this.needsUpdate = true;
@@ -321,9 +322,10 @@ public class RenderSectionManager {
                 this.updateSectionInfo(result.render, chunkBuildOutput.info);
             }
             if (result instanceof ChunkSortOutput chunkSortOutput && chunkSortOutput.translucentData != null) {
+                TranslucentData oldData = result.render.getTranslucentData();
                 result.render.setTranslucentData(chunkSortOutput.translucentData);
                 if (this.gfni != null) {
-                    this.gfni.integrateTranslucentData(chunkSortOutput.translucentData);
+                    this.gfni.integrateTranslucentData(oldData, chunkSortOutput.translucentData);
                 }
             }
 
@@ -606,6 +608,10 @@ public class RenderSectionManager {
                 this.taskLists.get(ChunkUpdateType.REBUILD).size(),
                 this.taskLists.get(ChunkUpdateType.INITIAL_BUILD).size())
         );
+
+        if (this.gfni != null) {
+            this.gfni.addDebugStrings(list);
+        }
 
         return list;
     }
