@@ -216,12 +216,6 @@ public class GroupBuilder {
      * @return the required sort type to ensure this section always looks correct
      */
     private SortType sortTypeHeuristic() {
-        if (this.quads.isEmpty()) {
-            return SortType.NONE;
-        }
-        if (true) {
-            return SortType.DYNAMIC_ALL;
-        }
         // special case A
         if (this.facePlaneCount <= 1) {
             return SortType.NONE;
@@ -395,49 +389,49 @@ public class GroupBuilder {
             return new NoneData(this.sectionPos);
         }
 
-        // if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
-        //     return constructStaticNormalRelativeData(translucentMesh);
-        // }
+        if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
+            return constructStaticNormalRelativeData(translucentMesh);
+        }
 
         // from this point on we know the estimated sort type requires direction mixing
         // (no backface culling) and all vertices are in the UNASSIGNED direction.
         NativeBuffer buffer = null;
-        // if (this.sortType == SortType.STATIC_TOPO_ACYCLIC
-        //         || this.sortType == SortType.DYNAMIC_TOPO_CYCLIC
-        //         || this.sortType == SortType.DYNAMIC_ALL) {
-        //     // TODO: implement topo sort with unaligned quads
-        //     if (this.unalignedQuadCount > 0) {
-        //         unalignedDynamicHits++;
-        //         this.sortType = SortType.DYNAMIC_ALL;
-        //     } else {
-        //         // it can only perform topo sort on acyclic graphs since it has no cycle
-        //         // breaking, but it will detect cycles and bail to DYNAMIC_ALL
-        //         // DYNAMIC_TOPO_CYCLIC if there is a cycle
-        //         var indexData = constructStaticTopoAcyclicData(translucentMesh);
-        //         buffer = indexData.buffer;
-        //         IntBuffer indexBuffer = buffer.getDirectBuffer().asIntBuffer();
+        if (this.sortType == SortType.STATIC_TOPO_ACYCLIC
+                || this.sortType == SortType.DYNAMIC_TOPO_CYCLIC
+                || this.sortType == SortType.DYNAMIC_ALL) {
+            // TODO: implement topo sort with unaligned quads
+            if (this.unalignedQuadCount > 0) {
+                unalignedDynamicHits++;
+                this.sortType = SortType.DYNAMIC_ALL;
+            } else {
+                // it can only perform topo sort on acyclic graphs since it has no cycle
+                // breaking, but it will detect cycles and bail to DYNAMIC_ALL
+                // DYNAMIC_TOPO_CYCLIC if there is a cycle
+                var indexData = constructStaticTopoAcyclicData(translucentMesh);
+                buffer = indexData.buffer;
+                IntBuffer indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
-        //         if (topoSortAlignedAcyclic(indexBuffer)) {
-        //             topoSortHits++;
+                if (topoSortAlignedAcyclic(indexBuffer)) {
+                    topoSortHits++;
 
-        //             return indexData;
-        //         } else {
-        //             // TODO: cyclic topo sort with cycle breaking
-        //             cyclicGraphHits++;
+                    return indexData;
+                } else {
+                    // TODO: cyclic topo sort with cycle breaking
+                    cyclicGraphHits++;
 
-        //             this.sortType = SortType.DYNAMIC_ALL;
-        //         }
-        //     }
+                    this.sortType = SortType.DYNAMIC_ALL;
+                }
+            }
 
-        //     System.out.println("topo sort hits: " + topoSortHits + ", cyclic graph hits: " + cyclicGraphHits
-        //             + ", unaligned dynamic hits: " + unalignedDynamicHits);
-        // }
+            System.out.println("topo sort hits: " + topoSortHits + ", cyclic graph hits: " + cyclicGraphHits
+                    + ", unaligned dynamic hits: " + unalignedDynamicHits);
+        }
 
-        // if (this.sortType == SortType.DYNAMIC_ALL) {
+        if (this.sortType == SortType.DYNAMIC_ALL) {
             return constructDynamicData(translucentMesh, buffer, cameraPos);
-        // }
+        }
 
-        // throw new IllegalStateException("Unknown sort type: " + this.sortType);
+        throw new IllegalStateException("Unknown sort type: " + this.sortType);
     }
 
     private static boolean orthogonalQuadVisible(Quad quad, Quad otherQuad) {
