@@ -49,7 +49,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                        CameraTransform camera) {
         super.begin(renderPass);
 
-        boolean isTranslucent = renderPass == DefaultTerrainRenderPasses.TRANSLUCENT;
+        boolean isTranslucent = renderPass == DefaultTerrainRenderPasses.TRANSLUCENT 
+                && SodiumClientMod.options().performance.sortBehavior.needsIndexBuffer;
         boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();

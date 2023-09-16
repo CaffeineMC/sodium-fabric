@@ -68,13 +68,14 @@ public class RenderSectionManager {
     private final ChunkRenderer chunkRenderer;
 
     private final ClientWorld world;
-    private final GFNI gfni;
 
     private final ReferenceSet<RenderSection> sectionsWithGlobalEntities = new ReferenceOpenHashSet<>();
 
     private final OcclusionCuller occlusionCuller;
 
     private final int renderDistance;
+
+    private @Nullable GFNI gfni = null;
 
     @NotNull
     private SortedRenderLists renderLists;
@@ -93,7 +94,9 @@ public class RenderSectionManager {
         this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
         this.world = world;
-        this.gfni = new GFNI();
+        if (SodiumClientMod.options().performance.sortBehavior.needsPlaneTrigger) {
+            this.gfni = new GFNI();
+        }
 
         this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
 
@@ -218,7 +221,9 @@ public class RenderSectionManager {
 
         section.delete();
 
-        this.gfni.removeSection(chunkSectionLongPos);
+        if (this.gfni != null) {
+            this.gfni.removeSection(chunkSectionLongPos);
+        }
 
         this.needsUpdate = true;
     }
@@ -315,9 +320,11 @@ public class RenderSectionManager {
             if (result instanceof ChunkBuildOutput chunkBuildOutput) {
                 this.updateSectionInfo(result.render, chunkBuildOutput.info);
             }
-            if (result instanceof ChunkSortOutput chunkSortOutput) {
+            if (result instanceof ChunkSortOutput chunkSortOutput && chunkSortOutput.translucentData != null) {
                 result.render.setTranslucentData(chunkSortOutput.translucentData);
-                this.gfni.integrateTranslucentData(chunkSortOutput.translucentData);
+                if (this.gfni != null) {
+                    this.gfni.integrateTranslucentData(chunkSortOutput.translucentData);
+                }
             }
 
             var job = result.render.getTaskCancellationToken();
@@ -424,9 +431,11 @@ public class RenderSectionManager {
     public void processGFNIMovement(
         double lastCameraX, double lastCameraY, double lastCameraZ,
         double cameraX, double cameraY, double cameraZ) {
-        this.gfni.triggerSections(this::scheduleSort,
+        if (this.gfni != null) {
+            this.gfni.triggerSections(this::scheduleSort,
             lastCameraX, lastCameraY, lastCameraZ,
             cameraX, cameraY, cameraZ);
+        }
     }
 
     public void markGraphDirty() {

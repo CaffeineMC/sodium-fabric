@@ -7,7 +7,9 @@ import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
@@ -169,6 +171,17 @@ public class GroupBuilder {
         }
     }
 
+    private static SortType filterSortType(SortType sortType) {
+        // SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
+        // if (!sortBehavior.sortTypes.contains(sortType)) {
+        //     return SortType.NONE;
+        // }
+        // if (sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
+        //     return SortType.DYNAMIC_ALL;
+        // }
+        return sortType;
+    }
+
     /**
      * Checks if this group builder is relevant for translucency sort triggering. It
      * determines a sort type, which is either no sorting, a static sort or a
@@ -216,8 +229,13 @@ public class GroupBuilder {
      * @return the required sort type to ensure this section always looks correct
      */
     private SortType sortTypeHeuristic() {
+        SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
+        if (sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
+            return SortType.DYNAMIC_ALL;
+        }
+
         // special case A
-        if (this.facePlaneCount <= 1) {
+        if (sortBehavior == SortBehavior.ONLY_TRIVIAL || this.facePlaneCount <= 1) {
             return SortType.NONE;
         }
 
@@ -302,7 +320,7 @@ public class GroupBuilder {
         // heuristically determine if a topo sort should be attempted, if the attempt
         // fails the sort type is downgraded to DYNAMIC_ALL. If there are no cycles,
         // it's upgraded to acyclic.
-        if (this.unalignedQuadCount <= 2 && this.quads.size() <= 100) {
+        if (this.unalignedQuadCount <= 2 && this.quads.size() <= 400) {
             return SortType.DYNAMIC_TOPO_CYCLIC;
         }
 
@@ -310,7 +328,7 @@ public class GroupBuilder {
     }
 
     public SortType estimateSortType() {
-        this.sortType = sortTypeHeuristic();
+        this.sortType = filterSortType(sortTypeHeuristic());
         return this.sortType;
     }
 
@@ -381,7 +399,8 @@ public class GroupBuilder {
         }
 
         if (reuseBuffer == null) {
-            reuseBuffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(quadCount * TranslucentData.VERTICES_PER_QUAD));
+            reuseBuffer = new NativeBuffer(
+                    TranslucentData.vertexCountToIndexBytes(quadCount * TranslucentData.VERTICES_PER_QUAD));
         }
 
         Vector3f[] centers = new Vector3f[quadCount];
@@ -404,6 +423,10 @@ public class GroupBuilder {
 
         if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
             return constructStaticNormalRelativeData(translucentMesh);
+        }
+
+        if (SodiumClientMod.options().performance.sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
+            return constructDynamicData(translucentMesh, null, cameraPos);
         }
 
         // from this point on we know the estimated sort type requires direction mixing
@@ -438,6 +461,13 @@ public class GroupBuilder {
 
             System.out.println("topo sort hits: " + topoSortHits + ", cyclic graph hits: " + cyclicGraphHits
                     + ", unaligned dynamic hits: " + unalignedDynamicHits);
+        }
+
+        // filter the sort type with the user setting and re-evaluate
+        this.sortType = filterSortType(this.sortType);
+
+        if (this.sortType == SortType.NONE) {
+            return new NoneData(this.sectionPos);
         }
 
         if (this.sortType == SortType.DYNAMIC_ALL) {

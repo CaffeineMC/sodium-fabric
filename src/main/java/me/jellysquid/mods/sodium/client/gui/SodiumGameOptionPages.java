@@ -260,8 +260,7 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.performance.alwaysDeferChunkUpdates = value, opts -> opts.performance.alwaysDeferChunkUpdates)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_UPDATE)
                         .build())
-                .build()
-        );
+                .build());
 
         groups.add(OptionGroup.createBuilder()
                 .add(OptionImpl.createBuilder(boolean.class, sodiumOpts)
@@ -307,6 +306,17 @@ public class SodiumGameOptionPages {
                         .setBinding((opts, value) -> opts.performance.useNoErrorGLContext = value, opts -> opts.performance.useNoErrorGLContext)
                         .setEnabled(supportsNoErrorContext())
                         .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
+                        .build())
+                .build());
+
+        groups.add(OptionGroup.createBuilder()
+                .add(OptionImpl.createBuilder(SodiumGameOptions.SortBehavior.class, sodiumOpts)
+                        .setName(Text.translatable("sodium.options.sort_behavior.name"))
+                        .setTooltip(Text.translatable("sodium.options.sort_behavior.tooltip"))
+                        .setControl(option -> new CyclingControl<>(option, SodiumGameOptions.SortBehavior.class))
+                        .setBinding((opts, value) -> opts.performance.sortBehavior = value, opts -> opts.performance.sortBehavior)
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .build());
 

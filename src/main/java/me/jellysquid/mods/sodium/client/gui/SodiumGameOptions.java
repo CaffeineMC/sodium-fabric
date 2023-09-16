@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.SortType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.option.GraphicsMode;
 import net.minecraft.text.Text;
@@ -15,6 +16,8 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Set;
+import java.util.EnumSet;
 
 public class SodiumGameOptions {
     private static final String DEFAULT_FILE_NAME = "sodium-options.json";
@@ -45,6 +48,46 @@ public class SodiumGameOptions {
         public boolean useFogOcclusion = true;
         public boolean useBlockFaceCulling = true;
         public boolean useNoErrorGLContext = true;
+
+        public SortBehavior sortBehavior = SortBehavior.DYNAMIC_ALL;
+    }
+
+    public enum SortBehavior implements TextProvider {
+        ONLY_TRIVIAL("options.sort_behavior.only_trivial", Set.of(SortType.NONE)),
+        STATIC_NORMAL_RELATIVE("options.sort_behavior.static_normal_relative", getUpTo(SortType.STATIC_NORMAL_RELATIVE)),
+        STATIC_TOPO_ACYCLIC("options.sort_behavior.static_topo_acyclic", getUpTo(SortType.STATIC_TOPO_ACYCLIC)),
+        // TODO: enable when implemented
+        // DYNAMIC_TOPO_CYCLIC("options.sort_behavior.dynamic_topo_cyclic", getUpTo(SortType.DYNAMIC_TOPO_CYCLIC)),
+        DYNAMIC_ALL("options.sort_behavior.dynamic_all", getUpTo(SortType.DYNAMIC_ALL)),
+        ONLY_DYNAMIC_ALL("options.sort_behavior.only_dynamic_all", Set.of(SortType.DYNAMIC_ALL));
+
+        private final Text name;
+        public final Set<SortType> sortTypes;
+        public final boolean needsPlaneTrigger;
+        public final boolean needsIndexBuffer;
+
+        SortBehavior(String name, Set<SortType> sortTypes) {
+            this.name = Text.translatable(name);
+            this.sortTypes = sortTypes;
+            this.needsPlaneTrigger = sortTypes.stream().anyMatch(type -> type.needsPlaneTrigger);
+            this.needsIndexBuffer = sortTypes.stream().anyMatch(type -> type.needsIndexBuffer);
+        }
+
+        @Override
+        public Text getLocalizedName() {
+            return this.name;
+        }
+
+        private static final Set<SortType> getUpTo(SortType sortType) {
+            var set = EnumSet.noneOf(SortType.class);
+            for (var type : SortType.values()) {
+                set.add(type);
+                if (type == sortType) {
+                    break;
+                }
+            }
+            return set;
+        }
     }
 
     public static class AdvancedSettings {

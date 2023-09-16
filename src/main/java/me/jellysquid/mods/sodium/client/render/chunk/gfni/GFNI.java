@@ -163,9 +163,6 @@ public class GFNI {
      * @return the sort type that the group builder's relevance heuristic determined
      */
     public void integrateTranslucentData(TranslucentData translucentData) {
-        if (translucentData == null) {
-            return; // TODO: when does this even happen?
-        }
         long chunkSectionLongPos = translucentData.sectionPos.asLong();
 
         // remove the section if the data doesn't need to trigger on face planes
