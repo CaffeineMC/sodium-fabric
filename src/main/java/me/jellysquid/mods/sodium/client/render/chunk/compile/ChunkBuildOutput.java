@@ -29,10 +29,11 @@ public class ChunkBuildOutput extends ChunkSortOutput {
         return this.meshes.get(pass);
     }
 
+    @Override
     public void delete() {
+        super.delete();
         for (BuiltSectionMeshParts data : this.meshes.values()) {
-            data.getVertexData()
-                    .free();
+            data.getVertexData().free();
         }
     }
 
