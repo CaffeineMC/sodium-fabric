@@ -30,7 +30,7 @@ public abstract class TranslucentData {
     }
 
     public static void putQuadVertexIndexes(IntBuffer intBuffer, int quadIndex) {
-        int vertexOffset = quadIndex * INDICES_PER_QUAD;
+        int vertexOffset = quadIndex * VERTICES_PER_QUAD;
 
         intBuffer.put(vertexOffset + 0);
         intBuffer.put(vertexOffset + 1);
