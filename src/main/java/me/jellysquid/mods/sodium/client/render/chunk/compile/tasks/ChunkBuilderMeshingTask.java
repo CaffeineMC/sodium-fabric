@@ -158,7 +158,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
         renderData.setOcclusionData(occluder.build());
 
-        return new ChunkBuildOutput(this.render, this.buildTime, translucentData, renderData.build(), meshes);
+        return new ChunkBuildOutput(this.render, this.submitTime, translucentData, renderData.build(), meshes);
     }
 
     private CrashException fillCrashInfo(CrashReport report, WorldSlice slice, BlockPos pos) {

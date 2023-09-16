@@ -34,7 +34,7 @@ public class VisibleChunkCollector implements Consumer<RenderSection> {
     private void addToRebuildLists(RenderSection section) {
         ChunkUpdateType type = section.getPendingUpdate();
 
-        if (type != null && section.getBuildCancellationToken() == null) {
+        if (type != null && section.getTaskCancellationToken() == null) {
             Queue<RenderSection> queue = this.sortedRebuildLists.get(type);
 
             if (queue.size() < type.getMaximumQueueSize()) {

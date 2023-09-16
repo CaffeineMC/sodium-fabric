@@ -13,7 +13,9 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.MixedDirectionData;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.PresentTranslucentData;
@@ -53,42 +55,47 @@ public class RenderRegionManager {
         }
     }
 
-    public void uploadMeshes(CommandList commandList, Collection<ChunkBuildOutput> results) {
+    public void uploadResults(CommandList commandList, Collection<BuilderTaskOutput> results) {
         for (var entry : this.createMeshUploadQueues(results)) {
-            this.uploadMeshes(commandList, entry.getKey(), entry.getValue());
+            this.uploadResults(commandList, entry.getKey(), entry.getValue());
         }
     }
 
-    private void uploadMeshes(CommandList commandList, RenderRegion region, Collection<ChunkBuildOutput> results) {
+    private void uploadResults(CommandList commandList, RenderRegion region, Collection<BuilderTaskOutput> results) {
         var uploads = new ArrayList<PendingSectionMeshUpload>();
         var indexUploads = new ArrayList<PendingSectionIndexBufferUpload>();
 
-        for (ChunkBuildOutput result : results) {
+        for (BuilderTaskOutput result : results) {
             int renderSectionIndex = result.render.getSectionIndex();
-            for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
-                var storage = region.getStorage(pass);
 
-                if (storage != null) {
-                    storage.removeMeshes(renderSectionIndex);
-                }
+            if (result instanceof ChunkBuildOutput chunkBuildOutput) {
+                for (TerrainRenderPass pass : DefaultTerrainRenderPasses.ALL) {
+                    var storage = region.getStorage(pass);
 
-                BuiltSectionMeshParts mesh = result.getMesh(pass);
+                    if (storage != null) {
+                        storage.removeMeshes(renderSectionIndex);
+                    }
 
-                if (mesh != null) {
-                    uploads.add(new PendingSectionMeshUpload(result.render, mesh, pass,
-                    new PendingUpload(mesh.getVertexData())));
+                    BuiltSectionMeshParts mesh = chunkBuildOutput.getMesh(pass);
+
+                    if (mesh != null) {
+                        uploads.add(new PendingSectionMeshUpload(result.render, mesh, pass,
+                        new PendingUpload(mesh.getVertexData())));
+                    }
                 }
             }
 
-            var translucentStorage = region.getTranslucentStorage();
-            if (translucentStorage != null) {
-                translucentStorage.removeMeshes(renderSectionIndex);
-            }
+            if (result instanceof ChunkSortOutput chunkSortOutput) {
+                var translucentStorage = region.getTranslucentStorage();
+                if (translucentStorage != null) {
+                    translucentStorage.removeMeshes(renderSectionIndex);
+                }
 
-            var translucentData = result.translucentData;
-            if (translucentData != null && translucentData instanceof PresentTranslucentData presentTranslucentData) {
-                indexUploads.add(new PendingSectionIndexBufferUpload(result.render, presentTranslucentData,
+                var translucentData = chunkSortOutput.translucentData;
+                if (translucentData != null && translucentData instanceof PresentTranslucentData presentTranslucentData) {
+                    indexUploads.add(new PendingSectionIndexBufferUpload(result.render, presentTranslucentData,
                     new PendingUpload(presentTranslucentData.buffer)));
+                }
             }
         }
 
@@ -149,8 +156,8 @@ public class RenderRegionManager {
         }
     }
 
-    private Reference2ReferenceMap.FastEntrySet<RenderRegion, List<ChunkBuildOutput>> createMeshUploadQueues(Collection<ChunkBuildOutput> results) {
-        var map = new Reference2ReferenceOpenHashMap<RenderRegion, List<ChunkBuildOutput>>();
+    private Reference2ReferenceMap.FastEntrySet<RenderRegion, List<BuilderTaskOutput>> createMeshUploadQueues(Collection<BuilderTaskOutput> results) {
+        var map = new Reference2ReferenceOpenHashMap<RenderRegion, List<BuilderTaskOutput>>();
 
         for (var result : results) {
             var queue = map.computeIfAbsent(result.render.getRegion(), k -> new ArrayList<>());

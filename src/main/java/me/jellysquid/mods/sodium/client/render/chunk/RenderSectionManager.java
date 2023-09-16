@@ -13,6 +13,7 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.executor.ChunkJobCollector;
@@ -79,7 +80,7 @@ public class RenderSectionManager {
     private SortedRenderLists renderLists;
 
     @NotNull
-    private Map<ChunkUpdateType, ArrayDeque<RenderSection>> rebuildLists;
+    private Map<ChunkUpdateType, ArrayDeque<RenderSection>> taskLists;
 
     private int lastUpdatedFrame;
 
@@ -105,10 +106,10 @@ public class RenderSectionManager {
         this.renderLists = SortedRenderLists.empty();
         this.occlusionCuller = new OcclusionCuller(Long2ReferenceMaps.unmodifiable(this.sectionByPosition), this.world);
 
-        this.rebuildLists = new EnumMap<>(ChunkUpdateType.class);
+        this.taskLists = new EnumMap<>(ChunkUpdateType.class);
 
         for (var type : ChunkUpdateType.values()) {
-            this.rebuildLists.put(type, new ArrayDeque<>());
+            this.taskLists.put(type, new ArrayDeque<>());
         }
     }
 
@@ -133,7 +134,7 @@ public class RenderSectionManager {
         this.occlusionCuller.findVisible(visitor, viewport, searchDistance, useOcclusionCulling, frame);
 
         this.renderLists = visitor.createRenderLists();
-        this.rebuildLists = visitor.getRebuildLists();
+        this.taskLists = visitor.getRebuildLists();
     }
 
     private float getSearchDistance() {
@@ -165,7 +166,7 @@ public class RenderSectionManager {
     private void resetRenderLists() {
         this.renderLists = SortedRenderLists.empty();
 
-        for (var list : this.rebuildLists.values()) {
+        for (var list : this.taskLists.values()) {
             list.clear();
         }
     }
@@ -281,12 +282,11 @@ public class RenderSectionManager {
         var blockingRebuilds = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
         var deferredRebuilds = new ChunkJobCollector(this.builder.getSchedulingBudget(), this.buildResults::add);
 
-        this.submitRebuildTasks(blockingRebuilds, ChunkUpdateType.IMPORTANT_REBUILD);
-        this.submitRebuildTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.REBUILD);
-        this.submitRebuildTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.INITIAL_BUILD);
-        // TODO: re-enable once sort tasks are figured out
-        // this.submitRebuildTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.TRANSLUCENT_SORT);
-        
+        this.submitSectionTasks(blockingRebuilds, ChunkUpdateType.IMPORTANT_REBUILD);
+        this.submitSectionTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.REBUILD);
+        this.submitSectionTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.INITIAL_BUILD);
+        this.submitSectionTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.TRANSLUCENT_SORT);
+
         blockingRebuilds.awaitCompletion(this.builder);
     }
 
@@ -309,20 +309,24 @@ public class RenderSectionManager {
     private void processChunkBuildResults(ArrayList<BuilderTaskOutput> results) {
         var filtered = filterChunkBuildResults(results);
 
-        this.regions.uploadMeshes(RenderDevice.INSTANCE.createCommandList(), filtered);
+        this.regions.uploadResults(RenderDevice.INSTANCE.createCommandList(), filtered);
 
         for (var result : filtered) {
-            this.updateSectionInfo(result.render, result.info);
-            result.render.setTranslucentData(result.translucentData);
-            this.gfni.integrateTranslucentData(result.translucentData);
-
-            var job = result.render.getBuildCancellationToken();
-
-            if (job != null && result.buildTime >= result.render.getLastSubmittedFrame()) {
-                result.render.setBuildCancellationToken(null);
+            if (result instanceof ChunkBuildOutput chunkBuildOutput) {
+                this.updateSectionInfo(result.render, chunkBuildOutput.info);
+            }
+            if (result instanceof ChunkSortOutput chunkSortOutput) {
+                result.render.setTranslucentData(chunkSortOutput.translucentData);
+                this.gfni.integrateTranslucentData(chunkSortOutput.translucentData);
             }
 
-            result.render.setLastBuiltFrame(result.buildTime);
+            var job = result.render.getTaskCancellationToken();
+
+            if (job != null && result.submitTime >= result.render.getLastSubmittedFrame()) {
+                result.render.setTaskCancellationToken(null);
+            }
+
+            result.render.setLastTaskFrame(result.submitTime);
         }
     }
 
@@ -337,20 +341,19 @@ public class RenderSectionManager {
         }
     }
 
-    private static List<ChunkBuildOutput> filterChunkBuildResults(ArrayList<BuilderTaskOutput> outputs) {
-        // TODO: handle sort results in this method. the types should be split into two lists
-        var map = new Reference2ReferenceLinkedOpenHashMap<RenderSection, ChunkBuildOutput>();
+    private static List<BuilderTaskOutput> filterChunkBuildResults(ArrayList<BuilderTaskOutput> outputs) {
+        var map = new Reference2ReferenceLinkedOpenHashMap<RenderSection, BuilderTaskOutput>();
 
         for (var output : outputs) {
-            if (!(output instanceof ChunkBuildOutput) && output.render.isDisposed() || output.render.getLastBuiltFrame() > output.buildTime) {
+            if (output.render.isDisposed() || output.render.getLastTaskFrame() > output.submitTime) {
                 continue;
             }
 
             var render = output.render;
             var previous = map.get(render);
 
-            if (previous == null || previous.buildTime < output.buildTime) {
-                map.put(render, (ChunkBuildOutput) output);
+            if (previous == null || previous.submitTime < output.submitTime) {
+                map.put(render, output);
             }
         }
 
@@ -368,8 +371,8 @@ public class RenderSectionManager {
         return results;
     }
 
-    private void submitRebuildTasks(ChunkJobCollector collector, ChunkUpdateType type) {
-        var queue = this.rebuildLists.get(type);
+    private void submitSectionTasks(ChunkJobCollector collector, ChunkUpdateType type) {
+        var queue = this.taskLists.get(type);
 
         while (!queue.isEmpty() && collector.canOffer()) {
             RenderSection section = queue.remove();
@@ -390,13 +393,13 @@ public class RenderSectionManager {
                 var job = this.builder.scheduleTask(task, type.isImportant(), collector::onJobFinished);
                 collector.addSubmittedJob(job);
 
-                section.setBuildCancellationToken(job);
+                section.setTaskCancellationToken(job);
             } else {
                 // TODO: why does this exist and where is this data read? is null translucent data ok?
                 var result = ChunkJobResult.successfully(new ChunkBuildOutput(section, frame, null, BuiltSectionInfo.EMPTY, Collections.emptyMap()));
                 this.buildResults.add(result);
 
-                section.setBuildCancellationToken(null);
+                section.setTaskCancellationToken(null);
             }
 
             section.setLastSubmittedFrame(frame);
@@ -415,11 +418,6 @@ public class RenderSectionManager {
     }
 
     public ChunkBuilderSortingTask createSortTask(RenderSection render, int frame) {
-        if (render.getTranslucentData() == null) {
-            // TODO: this should never happen since sections are triggered by GFNI only if they have translucent data. However, the data may have been deleted in the mean time? or would it be removed from GFNI when that happens?
-            return null;
-        }
-
         return new ChunkBuilderSortingTask(render, frame, this.cameraPosition);
     }
 
@@ -477,13 +475,12 @@ public class RenderSectionManager {
 
     public void scheduleSort(ChunkSectionPos pos) {
         // TODO: Does this need to invalidate the section cache?
-        // TODO: re-enable once sort tasks are figured out
 
-        // RenderSection section = this.sectionByPosition.get(pos.asLong());
+        RenderSection section = this.sectionByPosition.get(pos.asLong());
 
-        // if (section != null && ChunkUpdateType.canPromote(section.getPendingUpdate(), ChunkUpdateType.TRANSLUCENT_SORT)) {
-        //     section.setPendingUpdate(ChunkUpdateType.TRANSLUCENT_SORT);
-        // }
+        if (section != null && ChunkUpdateType.canPromote(section.getPendingUpdate(), ChunkUpdateType.TRANSLUCENT_SORT)) {
+            section.setPendingUpdate(ChunkUpdateType.TRANSLUCENT_SORT);
+        }
     }
 
     public void scheduleRebuild(int x, int y, int z, boolean important) {
@@ -596,9 +593,9 @@ public class RenderSectionManager {
 
         list.add(String.format("Chunk Queues: U=%02d (P0=%03d | P1=%03d | P2=%03d)",
                 this.buildResults.size(),
-                this.rebuildLists.get(ChunkUpdateType.IMPORTANT_REBUILD).size(),
-                this.rebuildLists.get(ChunkUpdateType.REBUILD).size(),
-                this.rebuildLists.get(ChunkUpdateType.INITIAL_BUILD).size())
+                this.taskLists.get(ChunkUpdateType.IMPORTANT_REBUILD).size(),
+                this.taskLists.get(ChunkUpdateType.REBUILD).size(),
+                this.taskLists.get(ChunkUpdateType.INITIAL_BUILD).size())
         );
 
         return list;

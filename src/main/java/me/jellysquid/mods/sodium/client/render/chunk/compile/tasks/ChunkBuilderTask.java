@@ -20,12 +20,12 @@ import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
  */
 public abstract class ChunkBuilderTask<OUTPUT extends BuilderTaskOutput> {
     protected final RenderSection render;
-    protected final int buildTime;
+    protected final int submitTime;
     protected final Vector3fc cameraPos;
 
     public ChunkBuilderTask(RenderSection render, int time, Vector3fc cameraPos) {
         this.render = render;
-        this.buildTime = time;
+        this.submitTime = time;
         this.cameraPos = new Vector3f(
                 cameraPos.x() - (float) render.getOriginX(),
                 cameraPos.y() - (float) render.getOriginY(),
