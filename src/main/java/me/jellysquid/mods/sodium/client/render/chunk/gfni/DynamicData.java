@@ -1,10 +1,15 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
+import java.util.List;
+
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.GroupBuilder.Quad;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -62,5 +67,40 @@ public class DynamicData extends MixedDirectionData {
         var intBuffer = this.buffer.getDirectBuffer().asIntBuffer();
         TranslucentData.writeVertexIndexes(intBuffer,
                 VertexSorters.sortByDistance(new Vector3f(cameraPos)).sort(this.centers));
+    }
+
+    static DynamicData fromMesh(BuiltSectionMeshParts translucentMesh, NativeBuffer reuseBuffer,
+            Vector3fc cameraPos, List<Quad> quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
+        VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
+        int[] centerCounters = new int[ModelQuadFacing.COUNT];
+
+        for (Quad quad : quads) {
+            centerCounters[quad.facing().ordinal()]++;
+        }
+
+        // do a prefix sum to determine the offsets of where to write the centers
+        int quadCount = 0;
+        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
+            var newCount = centerCounters[i] + quadCount;
+            centerCounters[i] = quadCount;
+            quadCount = newCount;
+        }
+
+        if (reuseBuffer == null) {
+            reuseBuffer = new NativeBuffer(
+                    TranslucentData.vertexCountToIndexBytes(quadCount * TranslucentData.VERTICES_PER_QUAD));
+        }
+
+        Vector3f[] centers = new Vector3f[quadCount];
+
+        for (int i = 0; i < quads.size(); i++) {
+            Quad quad = quads.get(i);
+            centers[centerCounters[quad.facing().ordinal()]++] = quad.center();
+        }
+
+        var dynamicData = new DynamicData(sectionPos,
+                reuseBuffer, range, centers, groupBuilder.axisAlignedDistances, groupBuilder.unalignedDistances);
+        dynamicData.sort(cameraPos);
+        return dynamicData;
     }
 }

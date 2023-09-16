@@ -4,6 +4,9 @@ import java.nio.IntBuffer;
 
 import org.joml.Vector3fc;
 
+import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
+import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public abstract class TranslucentData {
@@ -24,12 +27,12 @@ public abstract class TranslucentData {
         throw new UnsupportedOperationException();
     }
 
-    public static int vertexCountToIndexBytes(int vertexCount) {
+    static int vertexCountToIndexBytes(int vertexCount) {
         // convert vertex count to quads, and then to indices, and then to bytes
         return vertexCount / VERTICES_PER_QUAD * INDICES_PER_QUAD * BYTES_PER_INDEX;
     }
 
-    public static void putQuadVertexIndexes(IntBuffer intBuffer, int quadIndex) {
+    static void putQuadVertexIndexes(IntBuffer intBuffer, int quadIndex) {
         int vertexOffset = quadIndex * VERTICES_PER_QUAD;
 
         intBuffer.put(vertexOffset + 0);
@@ -41,9 +44,19 @@ public abstract class TranslucentData {
         intBuffer.put(vertexOffset + 0);
     }
 
-    public static void writeVertexIndexes(IntBuffer intBuffer, int[] quadIndexes) {
+    static void writeVertexIndexes(IntBuffer intBuffer, int[] quadIndexes) {
         for (int quadIndexPos = 0; quadIndexPos < quadIndexes.length; quadIndexPos++) {
             putQuadVertexIndexes(intBuffer, quadIndexes[quadIndexPos]);
         }
+    }
+
+    static VertexRange getUnassignedVertexRange(BuiltSectionMeshParts translucentMesh) {
+        VertexRange range = translucentMesh.getVertexRanges()[ModelQuadFacing.UNASSIGNED.ordinal()];
+
+        if (range == null) {
+            throw new IllegalStateException("No unassigned data in mesh");
+        }
+
+        return range;
     }
 }

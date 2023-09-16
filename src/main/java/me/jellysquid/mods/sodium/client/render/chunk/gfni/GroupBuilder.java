@@ -8,7 +8,6 @@ import org.joml.Vector3fc;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
-import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
 import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
@@ -42,7 +41,7 @@ public class GroupBuilder {
     private static int cyclicGraphHits = 0;
     private static int unalignedDynamicHits = 0;
 
-    public static final Vector3fc[] ALIGNED_NORMALS = new Vector3fc[ModelQuadFacing.DIRECTIONS];
+    private static final Vector3fc[] ALIGNED_NORMALS = new Vector3fc[ModelQuadFacing.DIRECTIONS];
 
     private static final int OPPOSING_X = 1 << ModelQuadFacing.POS_X.ordinal() | 1 << ModelQuadFacing.NEG_X.ordinal();
     private static final int OPPOSING_Y = 1 << ModelQuadFacing.POS_Y.ordinal() | 1 << ModelQuadFacing.NEG_Y.ordinal();
@@ -57,7 +56,7 @@ public class GroupBuilder {
     AccumulationGroup[] axisAlignedDistances;
     Int2ReferenceLinkedOpenHashMap<AccumulationGroup> unalignedDistances;
 
-    final ChunkSectionPos sectionPos;
+    private final ChunkSectionPos sectionPos;
     private int facePlaneCount = 0;
     private int alignedNormalBitmap = 0;
     private Vector3f minBounds = new Vector3f(16, 16, 16);
@@ -68,9 +67,9 @@ public class GroupBuilder {
     /**
      * List of translucent quads being rendered.
      */
-    public final ReferenceArrayList<Quad> quads = new ReferenceArrayList<>();
+    private final ReferenceArrayList<Quad> quads = new ReferenceArrayList<>();
 
-    public SortType sortType;
+    private SortType sortType;
 
     public GroupBuilder(ChunkSectionPos sectionPos) {
         this.sectionPos = sectionPos;
@@ -172,13 +171,13 @@ public class GroupBuilder {
     }
 
     private static SortType filterSortType(SortType sortType) {
-        // SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
-        // if (!sortBehavior.sortTypes.contains(sortType)) {
-        //     return SortType.NONE;
-        // }
-        // if (sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
-        //     return SortType.DYNAMIC_ALL;
-        // }
+        SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
+        if (!sortBehavior.sortTypes.contains(sortType)) {
+            return SortType.NONE;
+        }
+        if (sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
+            return SortType.DYNAMIC_ALL;
+        }
         return sortType;
     }
 
@@ -332,101 +331,17 @@ public class GroupBuilder {
         return this.sortType;
     }
 
-    private StaticNormalRelativeData constructStaticNormalRelativeData(BuiltSectionMeshParts translucentMesh) {
-        int vertexCount = 0;
-        VertexRange[] ranges = translucentMesh.getVertexRanges();
-        Vector3f[][] centers = new Vector3f[ModelQuadFacing.COUNT][];
-        int[] centerCounters = new int[ModelQuadFacing.COUNT];
-
-        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
-            VertexRange range = ranges[i];
-            if (range != null) {
-                vertexCount += range.vertexCount();
-                centers[i] = new Vector3f[range.vertexCount() / TranslucentData.VERTICES_PER_QUAD];
-            }
-        }
-
-        for (Quad quad : this.quads) {
-            var direction = quad.facing.ordinal();
-            centers[direction][centerCounters[direction]++] = quad.center;
-        }
-
-        var buffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(vertexCount));
-        IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
-
-        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
-            if (ranges[i] != null) {
-                TranslucentData.writeVertexIndexes(bufferBuilder, GFNI.SORTERS[i].sort(centers[i]));
-            }
-        }
-
-        return new StaticNormalRelativeData(this.sectionPos, buffer, ranges);
-    }
-
-    private static VertexRange getUnassignedVertexRange(BuiltSectionMeshParts translucentMesh) {
-        VertexRange range = translucentMesh.getVertexRanges()[ModelQuadFacing.UNASSIGNED.ordinal()];
-
-        if (range == null) {
-            throw new IllegalStateException("No unassigned data in mesh");
-        }
-
-        return range;
-    }
-
-    // NOTE: requires filling the contained buffer afterwards
-    private StaticTopoAcyclicData constructStaticTopoAcyclicData(BuiltSectionMeshParts translucentMesh) {
-        VertexRange range = GroupBuilder.getUnassignedVertexRange(translucentMesh);
-        var buffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(range.vertexCount()));
-
-        return new StaticTopoAcyclicData(this.sectionPos, buffer, range);
-    }
-
-    private DynamicData constructDynamicData(BuiltSectionMeshParts translucentMesh, NativeBuffer reuseBuffer,
-            Vector3fc cameraPos) {
-        VertexRange range = GroupBuilder.getUnassignedVertexRange(translucentMesh);
-        int[] centerCounters = new int[ModelQuadFacing.COUNT];
-
-        for (Quad quad : this.quads) {
-            centerCounters[quad.facing.ordinal()]++;
-        }
-
-        // do a prefix sum to determine the offsets of where to write the centers
-        int quadCount = 0;
-        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
-            var newCount = centerCounters[i] + quadCount;
-            centerCounters[i] = quadCount;
-            quadCount = newCount;
-        }
-
-        if (reuseBuffer == null) {
-            reuseBuffer = new NativeBuffer(
-                    TranslucentData.vertexCountToIndexBytes(quadCount * TranslucentData.VERTICES_PER_QUAD));
-        }
-
-        Vector3f[] centers = new Vector3f[quadCount];
-
-        for (int i = 0; i < this.quads.size(); i++) {
-            Quad quad = this.quads.get(i);
-            centers[centerCounters[quad.facing.ordinal()]++] = quad.center;
-        }
-
-        var dynamicData = new DynamicData(this.sectionPos,
-                reuseBuffer, range, centers, axisAlignedDistances, unalignedDistances);
-        dynamicData.sort(cameraPos);
-        return dynamicData;
-    }
-
     public TranslucentData getTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos) {
         if (this.sortType == SortType.NONE || translucentMesh == null) {
             return new NoneData(this.sectionPos);
         }
 
         if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
-            return constructStaticNormalRelativeData(translucentMesh);
+            return StaticNormalRelativeData.fromMesh(translucentMesh, quads, sectionPos);
         }
 
         if (SodiumClientMod.options().performance.sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
-            return constructDynamicData(translucentMesh, null, cameraPos);
+            return DynamicData.fromMesh(translucentMesh, null, cameraPos, quads, sectionPos, this);
         }
 
         // from this point on we know the estimated sort type requires direction mixing
@@ -443,7 +358,7 @@ public class GroupBuilder {
                 // it can only perform topo sort on acyclic graphs since it has no cycle
                 // breaking, but it will detect cycles and bail to DYNAMIC_ALL
                 // DYNAMIC_TOPO_CYCLIC if there is a cycle
-                var indexData = constructStaticTopoAcyclicData(translucentMesh);
+                var indexData = StaticTopoAcyclicData.fromMesh(translucentMesh, sectionPos);
                 buffer = indexData.buffer;
                 IntBuffer indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
@@ -467,11 +382,14 @@ public class GroupBuilder {
         this.sortType = filterSortType(this.sortType);
 
         if (this.sortType == SortType.NONE) {
+            if (buffer != null) {
+                buffer.free();
+            }
             return new NoneData(this.sectionPos);
         }
 
         if (this.sortType == SortType.DYNAMIC_ALL) {
-            return constructDynamicData(translucentMesh, buffer, cameraPos);
+            return DynamicData.fromMesh(translucentMesh, buffer, cameraPos, quads, sectionPos, this);
         }
 
         throw new IllegalStateException("Unknown sort type: " + this.sortType);

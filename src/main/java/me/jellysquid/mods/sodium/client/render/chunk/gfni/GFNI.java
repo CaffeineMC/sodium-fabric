@@ -5,13 +5,9 @@ import java.util.function.Consumer;
 
 import org.joml.Vector3fc;
 
-import com.mojang.blaze3d.systems.VertexSorter;
-
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
-import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -55,19 +51,7 @@ public class GFNI {
      * normal lists' interval trees.
      */
     private Consumer<ChunkSectionPos> triggerSectionCallback;
-
-    /**
-     * The vertex sorter for each direction.
-     * TODO: is there a better place to put this
-     */
-    public static final VertexSorter[] SORTERS = new VertexSorter[ModelQuadFacing.DIRECTIONS];
-
-    static {
-        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
-            SORTERS[i] = VertexSorters.sortByAxis(ModelQuadFacing.VALUES[i]);
-        }
-    }
-
+    
     /**
      * A set of all the sections that were triggered the last time something was
      * triggered.
