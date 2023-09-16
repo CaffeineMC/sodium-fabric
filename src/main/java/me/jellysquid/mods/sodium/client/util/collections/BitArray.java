@@ -240,6 +240,9 @@ public class BitArray {
     public int nextSetBit(int fromIndex) {
         int u = wordIndex(fromIndex);
 
+        if (u >= this.words.length) {
+            return -1;
+        }
         long word = this.words[u] & (WORD_MASK << fromIndex);
 
         while (true) {
