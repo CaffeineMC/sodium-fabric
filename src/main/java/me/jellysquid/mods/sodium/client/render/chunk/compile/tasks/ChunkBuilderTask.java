@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.tasks;
 
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
@@ -20,12 +21,15 @@ import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 public abstract class ChunkBuilderTask<OUTPUT extends BuilderTaskOutput> {
     protected final RenderSection render;
     protected final int buildTime;
-    protected final Vector3f cameraPos;
+    protected final Vector3fc cameraPos;
 
-    public ChunkBuilderTask(RenderSection render, int time, Vector3f cameraPos) {
+    public ChunkBuilderTask(RenderSection render, int time, Vector3fc cameraPos) {
         this.render = render;
         this.buildTime = time;
-        this.cameraPos = cameraPos;
+        this.cameraPos = new Vector3f(
+                cameraPos.x() - (float) render.getOriginX(),
+                cameraPos.y() - (float) render.getOriginY(),
+                cameraPos.z() - (float) render.getOriginZ());
     }
 
     /**

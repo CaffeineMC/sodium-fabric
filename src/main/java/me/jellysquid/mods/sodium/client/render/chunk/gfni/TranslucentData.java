@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
 import java.nio.IntBuffer;
 
-import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -19,7 +19,7 @@ public abstract class TranslucentData {
 
     public abstract SortType getSortType();
 
-    public void sort(Vector3f cameraPos) {
+    public void sort(Vector3fc cameraPos) {
         // there should be no sort calls to data that doesn't need sorting
         throw new UnsupportedOperationException();
     }

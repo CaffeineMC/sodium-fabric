@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
 import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceLinkedOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
@@ -14,7 +15,7 @@ public class DynamicData extends MixedDirectionData {
     private Int2ReferenceLinkedOpenHashMap<AccumulationGroup> unalignedDistances;
 
     public DynamicData(ChunkSectionPos sectionPos,
-            NativeBuffer buffer, VertexRange range, Vector3f[] centers, 
+            NativeBuffer buffer, VertexRange range, Vector3f[] centers,
             AccumulationGroup[] axisAlignedDistances,
             Int2ReferenceLinkedOpenHashMap<AccumulationGroup> unalignedDistances) {
         super(sectionPos, buffer, range);
@@ -57,8 +58,9 @@ public class DynamicData extends MixedDirectionData {
     }
 
     @Override
-    public void sort(Vector3f cameraPos) {
+    public void sort(Vector3fc cameraPos) {
         var intBuffer = this.buffer.getDirectBuffer().asIntBuffer();
-        TranslucentData.writeVertexIndexes(intBuffer, VertexSorters.sortByDistance(cameraPos).sort(this.centers));
+        TranslucentData.writeVertexIndexes(intBuffer,
+                VertexSorters.sortByDistance(new Vector3f(cameraPos)).sort(this.centers));
     }
 }

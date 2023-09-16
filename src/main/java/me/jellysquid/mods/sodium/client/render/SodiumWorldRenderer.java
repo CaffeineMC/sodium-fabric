@@ -192,7 +192,7 @@ public class SodiumWorldRenderer {
         if (this.renderSectionManager.needsUpdate()) {
             profiler.swap("chunk_render_lists");
 
-            this.renderSectionManager.update(camera, viewport, frame, spectator);
+            this.renderSectionManager.update(pos.toVector3f(), camera, viewport, frame, spectator);
         }
 
         if (cameraLocationChanged) {

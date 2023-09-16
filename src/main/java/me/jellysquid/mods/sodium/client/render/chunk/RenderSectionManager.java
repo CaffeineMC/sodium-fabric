@@ -49,7 +49,7 @@ import net.minecraft.world.chunk.ChunkSection;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3f;
+import org.joml.Vector3fc;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -75,8 +75,6 @@ public class RenderSectionManager {
 
     private final int renderDistance;
 
-    private Vector3f cameraPos = new Vector3f();
-
     @NotNull
     private SortedRenderLists renderLists;
 
@@ -87,7 +85,8 @@ public class RenderSectionManager {
 
     private boolean needsUpdate;
 
-    private @Nullable BlockPos lastCameraPosition;
+    private @Nullable BlockPos cameraBlockPos;
+    private @Nullable Vector3fc cameraPosition;
 
     public RenderSectionManager(ClientWorld world, int renderDistance, CommandList commandList) {
         this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
@@ -113,8 +112,9 @@ public class RenderSectionManager {
         }
     }
 
-    public void update(Camera camera, Viewport viewport, int frame, boolean spectator) {
-        this.lastCameraPosition = camera.getBlockPos();
+    public void update(Vector3fc cameraPosition, Camera camera, Viewport viewport, int frame, boolean spectator) {
+        this.cameraBlockPos = camera.getBlockPos();
+        this.cameraPosition = cameraPosition;
 
         this.createTerrainRenderList(camera, viewport, frame, spectator);
 
@@ -411,15 +411,16 @@ public class RenderSectionManager {
             return null;
         }
 
-        return new ChunkBuilderMeshingTask(render, frame, this.cameraPos, context);
+        return new ChunkBuilderMeshingTask(render, frame, this.cameraPosition, context);
     }
 
     public ChunkBuilderSortingTask createSortTask(RenderSection render, int frame) {
         if (render.getTranslucentData() == null) {
+            // TODO: this should never happen since sections are triggered by GFNI only if they have translucent data. However, the data may have been deleted in the mean time? or would it be removed from GFNI when that happens?
             return null;
         }
 
-        return new ChunkBuilderSortingTask(render, frame, this.cameraPos);
+        return new ChunkBuilderSortingTask(render, frame, this.cameraPosition);
     }
 
     public void processGFNIMovement(
@@ -510,7 +511,7 @@ public class RenderSectionManager {
     private static final float NEARBY_REBUILD_DISTANCE = MathHelper.square(16.0f);
 
     private boolean shouldPrioritizeRebuild(RenderSection section) {
-        return this.lastCameraPosition != null && section.getSquaredDistance(this.lastCameraPosition) < NEARBY_REBUILD_DISTANCE;
+        return this.cameraPosition != null && section.getSquaredDistance(this.cameraBlockPos) < NEARBY_REBUILD_DISTANCE;
     }
 
     private static boolean allowImportantRebuilds() {

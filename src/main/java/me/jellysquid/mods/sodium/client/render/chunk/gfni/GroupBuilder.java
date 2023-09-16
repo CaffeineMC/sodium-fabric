@@ -364,18 +364,31 @@ public class GroupBuilder {
     }
 
     private DynamicData constructDynamicData(BuiltSectionMeshParts translucentMesh, NativeBuffer reuseBuffer,
-            Vector3f cameraPos) {
+            Vector3fc cameraPos) {
         VertexRange range = GroupBuilder.getUnassignedVertexRange(translucentMesh);
-        int vertexCount = range.vertexCount();
+        int[] centerCounters = new int[ModelQuadFacing.COUNT];
 
-        if (reuseBuffer == null) {
-            reuseBuffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(vertexCount));
+        for (Quad quad : this.quads) {
+            centerCounters[quad.facing.ordinal()]++;
         }
 
-        Vector3f[] centers = new Vector3f[vertexCount / TranslucentData.VERTICES_PER_QUAD];
+        // do a prefix sum to determine the offsets of where to write the centers
+        int quadCount = 0;
+        for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
+            var newCount = centerCounters[i] + quadCount;
+            centerCounters[i] = quadCount;
+            quadCount = newCount;
+        }
+
+        if (reuseBuffer == null) {
+            reuseBuffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(quadCount * TranslucentData.VERTICES_PER_QUAD));
+        }
+
+        Vector3f[] centers = new Vector3f[quadCount];
 
         for (int i = 0; i < this.quads.size(); i++) {
-            centers[i] = this.quads.get(i).center;
+            Quad quad = this.quads.get(i);
+            centers[centerCounters[quad.facing.ordinal()]++] = quad.center;
         }
 
         var dynamicData = new DynamicData(this.sectionPos,
@@ -384,7 +397,7 @@ public class GroupBuilder {
         return dynamicData;
     }
 
-    public TranslucentData getTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3f cameraPos) {
+    public TranslucentData getTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos) {
         if (this.sortType == SortType.NONE || translucentMesh == null) {
             return new NoneData(this.sectionPos);
         }
