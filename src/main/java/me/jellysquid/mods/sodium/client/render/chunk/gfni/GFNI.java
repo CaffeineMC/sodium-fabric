@@ -149,10 +149,16 @@ public class GFNI {
         }
     }
 
+    private void decrementSortTypeCounter(TranslucentData oldTranslucentData) {
+        if (oldTranslucentData != null) {
+            this.sortTypeCounters[oldTranslucentData.getSortType().ordinal()]--;
+        }
+    }
+
     /**
      * Removes a section from GFNI. This removes all its face planes.
      * 
-     * @param oldTranslucentData the data of the section to remove
+     * @param oldTranslucentData  the data of the section to remove
      * @param chunkSectionLongPos the section to remove
      */
     public void removeSection(TranslucentData oldTranslucentData, long chunkSectionLongPos) {
@@ -160,9 +166,7 @@ public class GFNI {
             removeSectionFromList(normalList, chunkSectionLongPos);
         }
 
-        if (oldTranslucentData != null) {
-            this.sortTypeCounters[oldTranslucentData.getSortType().ordinal()]--;
-        }
+        decrementSortTypeCounter(oldTranslucentData);
     }
 
     private void addSectionInNewNormalLists(AccumulationGroup accGroup) {
@@ -189,14 +193,17 @@ public class GFNI {
         // remove the section if the data doesn't need to trigger on face planes
         // TODO: only do the heuristic and topo sort if the hashes are different?
         SortType sortType = translucentData.getSortType();
+        this.sortTypeCounters[sortType.ordinal()]++;
         if (!sortType.needsPlaneTrigger) {
             removeSection(oldTranslucentData, chunkSectionLongPos);
             return;
         }
 
+        decrementSortTypeCounter(oldTranslucentData);
+
         // TODO: implement cycle breaking and multiple sort orders
         if (!(translucentData instanceof DynamicData)) {
-            throw new RuntimeException("TranslucentData other than DynamicData passed to GFNI");
+            throw new RuntimeException("Dynamic topo sort not implemented yet");
         }
         var dynamicData = (DynamicData) translucentData;
 
@@ -232,11 +239,6 @@ public class GFNI {
                 addSectionInNewNormalLists(accGroup);
             }
         }
-
-        if (oldTranslucentData != null) {
-            this.sortTypeCounters[oldTranslucentData.getSortType().ordinal()]--;
-        }
-        this.sortTypeCounters[sortType.ordinal()]++;
     }
 
     public void addDebugStrings(List<String> list) {
