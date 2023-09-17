@@ -76,7 +76,7 @@ public class RenderSectionManager {
 
     private final int renderDistance;
 
-    private @Nullable GFNI gfni = null;
+    private final GFNI gfni;
 
     @NotNull
     private SortedRenderLists renderLists;
@@ -95,9 +95,7 @@ public class RenderSectionManager {
         this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
 
         this.world = world;
-        if (SodiumClientMod.options().performance.sortBehavior.needsPlaneTrigger) {
-            this.gfni = new GFNI();
-        }
+        this.gfni = new GFNI();
 
         this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
 
@@ -222,9 +220,7 @@ public class RenderSectionManager {
 
         section.delete();
 
-        if (this.gfni != null) {
-            this.gfni.removeSection(section.getTranslucentData(), chunkSectionLongPos);
-        }
+        this.gfni.removeSection(section.getTranslucentData(), chunkSectionLongPos);
 
         this.needsUpdate = true;
     }
@@ -324,9 +320,7 @@ public class RenderSectionManager {
             if (result instanceof ChunkSortOutput chunkSortOutput && chunkSortOutput.translucentData != null) {
                 TranslucentData oldData = result.render.getTranslucentData();
                 result.render.setTranslucentData(chunkSortOutput.translucentData);
-                if (this.gfni != null) {
-                    this.gfni.integrateTranslucentData(oldData, chunkSortOutput.translucentData);
-                }
+                this.gfni.integrateTranslucentData(oldData, chunkSortOutput.translucentData);
             }
 
             var job = result.render.getTaskCancellationToken();
@@ -433,11 +427,9 @@ public class RenderSectionManager {
     public void processGFNIMovement(
         double lastCameraX, double lastCameraY, double lastCameraZ,
         double cameraX, double cameraY, double cameraZ) {
-        if (this.gfni != null) {
-            this.gfni.triggerSections(this::scheduleSort,
-            lastCameraX, lastCameraY, lastCameraZ,
-            cameraX, cameraY, cameraZ);
-        }
+        this.gfni.triggerSections(this::scheduleSort,
+        lastCameraX, lastCameraY, lastCameraZ,
+        cameraX, cameraY, cameraZ);
     }
 
     public void markGraphDirty() {
@@ -613,9 +605,7 @@ public class RenderSectionManager {
                 this.taskLists.get(ChunkUpdateType.INITIAL_BUILD).size())
         );
 
-        if (this.gfni != null) {
-            this.gfni.addDebugStrings(list);
-        }
+        this.gfni.addDebugStrings(list);
 
         return list;
     }

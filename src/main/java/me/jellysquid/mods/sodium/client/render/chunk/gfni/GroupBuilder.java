@@ -170,9 +170,10 @@ public class GroupBuilder {
         }
     }
 
-    private static SortType filterSortType(SortType sortType) {
+    private static SortType filterSortType(SortType sortType, boolean allowDynamicInStatic) {
         SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
-        if (!sortBehavior.sortTypes.contains(sortType)) {
+        if (!sortBehavior.sortTypes.contains(sortType)
+                && !(allowDynamicInStatic && sortBehavior == SortBehavior.STATIC_TOPO_ACYCLIC)) {
             return SortType.NONE;
         }
         if (sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
@@ -327,7 +328,7 @@ public class GroupBuilder {
     }
 
     public SortType estimateSortType() {
-        this.sortType = filterSortType(sortTypeHeuristic());
+        this.sortType = filterSortType(sortTypeHeuristic(), true);
         return this.sortType;
     }
 
@@ -374,12 +375,13 @@ public class GroupBuilder {
                 }
             }
 
-            // System.out.println("topo sort hits: " + topoSortHits + ", cyclic graph hits: " + cyclicGraphHits
-            //         + ", unaligned dynamic hits: " + unalignedDynamicHits);
+            // System.out.println("topo sort hits: " + topoSortHits + ", cyclic graph hits:
+            // " + cyclicGraphHits
+            // + ", unaligned dynamic hits: " + unalignedDynamicHits);
         }
 
         // filter the sort type with the user setting and re-evaluate
-        this.sortType = filterSortType(this.sortType);
+        this.sortType = filterSortType(this.sortType, false);
 
         if (this.sortType == SortType.NONE) {
             if (buffer != null) {
