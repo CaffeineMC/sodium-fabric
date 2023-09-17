@@ -431,6 +431,7 @@ public class GroupBuilder {
      * {@link #topoSortResult} and returns {@link SortType#STATIC_TOPO_ACYCLIC}. If
      * it fails to find a topo sort it returns {@link SortType#DYNAMIC_TOPO_CYCLIC}.
      * 
+     * @param indexBuffer the buffer to write the topo sort result to
      * @return if the sort was successful
      */
     private boolean topoSortAlignedAcyclic(IntBuffer indexBuffer) {
