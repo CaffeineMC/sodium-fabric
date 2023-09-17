@@ -1,3 +1,11 @@
+### :warning: Maintenance Status
+
+Sodium is no longer actively maintained by the original author. Future updates are not guaranteed, and it is unlikely that any new features or
+enhancements will be implemented going forward. If you are interested in taking over maintainership of the project, and are familiar enough
+with the code, then consider [reaching out to me](https://jellysquid.me/contact).
+
+---
+
 <img src="src/main/resources/assets/sodium/icon.png" width="128">
 
 # Sodium (for Fabric)
