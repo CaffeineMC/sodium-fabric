@@ -80,7 +80,7 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    implementation "com.lodborg:interval-tree:1.0.0"
+    modIncludeImplementation "com.lodborg:interval-tree:1.0.0"
 
     // Fabric API
     modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
