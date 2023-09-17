@@ -30,8 +30,8 @@ public class ChunkBuildOutput extends ChunkSortOutput {
     }
 
     @Override
-    public void delete() {
-        super.delete();
+    public void deleteAfterUpload() {
+        super.deleteAfterUpload();
         for (BuiltSectionMeshParts data : this.meshes.values()) {
             data.getVertexData().free();
         }

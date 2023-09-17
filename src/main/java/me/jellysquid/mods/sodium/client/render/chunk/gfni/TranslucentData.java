@@ -22,6 +22,9 @@ public abstract class TranslucentData {
 
     public abstract SortType getSortType();
 
+    public void delete() {
+    }
+
     public void sort(Vector3fc cameraPos) {
         // there should be no sort calls to data that doesn't need sorting
         throw new UnsupportedOperationException();

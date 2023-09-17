@@ -118,6 +118,9 @@ public class RenderSection {
     }
 
     public void setTranslucentData(TranslucentData translucentData) {
+        if (this.translucentData != null && this.translucentData != translucentData) {
+            this.translucentData.delete();
+        }
         this.translucentData = translucentData;
     }
 
@@ -130,6 +133,9 @@ public class RenderSection {
         if (this.taskCancellationToken != null) {
             this.taskCancellationToken.setCancelled();
             this.taskCancellationToken = null;
+        }
+        if (this.translucentData != null) {
+            this.translucentData.delete();
         }
 
         this.clearRenderState();

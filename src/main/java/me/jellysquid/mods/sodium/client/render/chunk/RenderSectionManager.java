@@ -306,7 +306,7 @@ public class RenderSectionManager {
         this.processChunkBuildResults(results);
 
         for (var result : results) {
-            result.delete();
+            result.deleteAfterUpload();
         }
 
         this.needsUpdate = true;
@@ -456,7 +456,11 @@ public class RenderSectionManager {
         this.builder.shutdown(); // stop all the workers, and cancel any tasks
 
         for (var result : this.collectChunkBuildResults()) {
-            result.delete(); // delete resources for any pending tasks (including those that were cancelled)
+            result.deleteFully(); // delete resources for any pending tasks (including those that were cancelled)
+        }
+
+        for (var section : sectionByPosition.values()) {
+            section.delete();
         }
 
         this.sectionsWithGlobalEntities.clear();

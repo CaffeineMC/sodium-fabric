@@ -15,4 +15,23 @@ public class ChunkSortOutput extends BuilderTaskOutput {
 
         this.translucentData = translucentData;
     }
+
+
+    @Override
+    public void deleteAfterUpload() {
+        super.deleteAfterUpload();
+
+        // delete translucent data if it's not persisted for dynamic sorting
+        if (this.translucentData != null && !translucentData.getSortType().needsPlaneTrigger) {
+            this.translucentData.delete();
+        }
+    }
+
+    @Override
+    public void deleteFully() {
+        super.deleteFully();
+        if (this.translucentData != null) {
+            this.translucentData.delete();
+        }
+    }
 }

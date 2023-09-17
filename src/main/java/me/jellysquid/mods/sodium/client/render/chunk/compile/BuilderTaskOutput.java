@@ -11,6 +11,10 @@ public abstract class BuilderTaskOutput {
         this.submitTime = buildTime;
     }
 
-    public void delete() {
+    public void deleteFully() {
+        deleteAfterUpload();
+    }
+
+    public void deleteAfterUpload() {
     }
 }

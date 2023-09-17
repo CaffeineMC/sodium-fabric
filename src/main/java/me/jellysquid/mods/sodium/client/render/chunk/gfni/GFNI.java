@@ -26,6 +26,10 @@ import net.minecraft.util.math.ChunkSectionPos;
  * may result in many sections suddenly needing sorting when the camera moves.
  * Maybe it's better to schedule them to be sorted gradually even if not
  * visible, if there are idle threads.
+ * - problem: when there are two parallel planes made up of many quads each,
+ * sorting the whole thing from one perspective means the sorting is wrong when
+ * we look at it from another perspective. This happens because there is no
+ * trigger in the plane. Sorting as if the entire thing was one quad would fix it.
  * 
  * @author douira
  */
@@ -51,7 +55,7 @@ public class GFNI {
      * normal lists' interval trees.
      */
     private Consumer<ChunkSectionPos> triggerSectionCallback;
-    
+
     /**
      * A set of all the sections that were triggered the last time something was
      * triggered.
@@ -103,15 +107,14 @@ public class GFNI {
             this.triggeredNormalCount = newTriggeredNormalCount;
         }
 
-        // TODO: the collections for tracking sections are only used for debugging
-        int triggerCount = this.triggeredSections.size();
-        if (triggerCount > 0) {
-            System.out.println("Triggered " + triggerCount + " sections");
-            for (long section : this.triggeredSections) {
-                ChunkSectionPos sectionPos = ChunkSectionPos.from(section);
-                System.out.println(sectionPos.getX() + " " + sectionPos.getY() + " " + sectionPos.getZ());
-            }
-        }
+        // int triggerCount = this.triggeredSections.size();
+        // if (triggerCount > 0) {
+        //     System.out.println("Triggered " + triggerCount + " sections");
+        //     for (long section : this.triggeredSections) {
+        //         ChunkSectionPos sectionPos = ChunkSectionPos.from(section);
+        //         System.out.println(sectionPos.getX() + " " + sectionPos.getY() + " " + sectionPos.getZ());
+        //     }
+        // }
 
         triggerSectionCallback = null;
     }

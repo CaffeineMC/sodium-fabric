@@ -374,8 +374,8 @@ public class GroupBuilder {
                 }
             }
 
-            System.out.println("topo sort hits: " + topoSortHits + ", cyclic graph hits: " + cyclicGraphHits
-                    + ", unaligned dynamic hits: " + unalignedDynamicHits);
+            // System.out.println("topo sort hits: " + topoSortHits + ", cyclic graph hits: " + cyclicGraphHits
+            //         + ", unaligned dynamic hits: " + unalignedDynamicHits);
         }
 
         // filter the sort type with the user setting and re-evaluate
