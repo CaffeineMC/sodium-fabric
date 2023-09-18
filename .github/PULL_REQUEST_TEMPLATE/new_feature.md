@@ -9,14 +9,16 @@ assignees: ''
 
 ### Preface
 
-Please read our [Contributor Guidelines](https://github.com/CaffeineMC/sodium-fabric/blob/1.15.x/CONTRIBUTING.md) before
-submitting any pull requests to this repository.
+Make sure you have read our [Contributor Guidelines](https://github.com/CaffeineMC/sodium-fabric/blob/1.15.x/CONTRIBUTING.md)
+before submitting any pull requests to this repository.
 
-By submitting a pull request, you are indicating that you agree to the [Contributor License Agreement](https://github.com/CaffeineMC/sodium-fabric/blob/1.15.x/CONTRIBUTING.md#contributor-license-agreement-cla)
-and that your code will be licensed irrecoverably under the GNU LGPLv3. If you do not agree to these terms, do not open
-a pull request.
+By submitting a pull request, you are indicating that you agree to have your code be licensed irrecoverably under the
+[GNU LGPLv3](https://github.com/CaffeineMC/sodium-fabric/blob/dev/LICENSE.txt). If you do not agree to these terms,
+please do not open a pull request.
 
-Please remove this section before submitting your pull request. Doing so indicates that you have read and acknowledged it.
+This section should be removed before submitting your pull request. Doing so indicates that you have read and
+acknowledged it.
 
 ### Proposed Changes
+
 Provide a detailed description of what your pull request changes.
