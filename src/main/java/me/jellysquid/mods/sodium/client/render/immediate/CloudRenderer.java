@@ -3,7 +3,6 @@ package me.jellysquid.mods.sodium.client.render.immediate;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
-import me.jellysquid.mods.sodium.mixin.features.render.world.clouds.BackgroundRendererInvoker;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.ColorMixer;
