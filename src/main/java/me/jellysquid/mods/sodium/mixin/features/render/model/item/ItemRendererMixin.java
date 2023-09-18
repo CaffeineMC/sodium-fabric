@@ -80,6 +80,11 @@ public class ItemRendererMixin {
     private void renderBakedItemQuads(MatrixStack.Entry matrices, VertexBufferWriter writer, List<BakedQuad> quads, ItemStack itemStack, ItemColorProvider colorProvider, int light, int overlay) {
         for (int i = 0; i < quads.size(); i++) {
             BakedQuad bakedQuad = quads.get(i);
+
+            if (bakedQuad.getVertexData().length < 32) {
+                continue; // ignore bad quads
+            }
+
             BakedQuadView quad = (BakedQuadView) bakedQuad;
 
             int color = 0xFFFFFFFF;
