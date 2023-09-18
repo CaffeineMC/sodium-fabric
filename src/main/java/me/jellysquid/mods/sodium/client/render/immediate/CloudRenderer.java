@@ -2,12 +2,13 @@ package me.jellysquid.mods.sodium.client.render.immediate;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
-import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import me.jellysquid.mods.sodium.client.util.MathUtil;
+import me.jellysquid.mods.sodium.mixin.features.render.world.clouds.BackgroundRendererInvoker;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.ColorMixer;
+import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
+import net.caffeinemc.mods.sodium.api.vertex.format.common.ColorVertex;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.gl.VertexBuffer;
@@ -52,7 +53,7 @@ public class CloudRenderer {
 
     private VertexBuffer vertexBuffer;
     private CloudEdges edges;
-    private ShaderProgram clouds;
+    private ShaderProgram shader;
     private final BackgroundRenderer.FogData fogData = new BackgroundRenderer.FogData(BackgroundRenderer.FogType.FOG_TERRAIN);
 
     private int prevCenterCellX, prevCenterCellY, cachedRenderDistance;
@@ -138,7 +139,7 @@ public class CloudRenderer {
         RenderSystem.depthMask(true);
         RenderSystem.colorMask(false, false, false, false);
 
-        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.clouds);
+        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.shader);
 
         // PASS 2: Render geometry
         RenderSystem.enableBlend();
@@ -148,7 +149,7 @@ public class CloudRenderer {
         RenderSystem.depthFunc(GL30C.GL_EQUAL);
         RenderSystem.colorMask(true, true, true, true);
 
-        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.clouds);
+        this.vertexBuffer.draw(modelViewMatrix, projectionMatrix, this.shader);
 
         matrices.pop();
 
@@ -320,26 +321,22 @@ public class CloudRenderer {
     }
 
     public void reloadTextures(ResourceFactory factory) {
+        this.destroy();
+
         this.edges = createCloudEdges();
 
-        if (this.clouds != null) {
-            this.clouds.close();
-        }
-
         try {
-            this.clouds = new ShaderProgram(factory, "clouds", VertexFormats.POSITION_COLOR);
+            this.shader = new ShaderProgram(factory, "clouds", VertexFormats.POSITION_COLOR);
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
-
-        if (this.vertexBuffer != null) {
-            this.vertexBuffer.close();
-            this.vertexBuffer = null;
         }
     }
 
     public void destroy() {
-        this.clouds.close();
+        if (this.shader != null) {
+            this.shader.close();
+            this.shader = null;
+        }
 
         if (this.vertexBuffer != null) {
             this.vertexBuffer.close();
@@ -348,19 +345,17 @@ public class CloudRenderer {
     }
 
     private static CloudEdges createCloudEdges() {
-        NativeImage nativeImage;
-
         ResourceManager resourceManager = MinecraftClient.getInstance().getResourceManager();
         Resource resource = resourceManager.getResource(CLOUDS_TEXTURE_ID)
                 .orElseThrow();
 
         try (InputStream inputStream = resource.getInputStream()){
-            nativeImage = NativeImage.read(inputStream);
+            try (NativeImage nativeImage = NativeImage.read(inputStream)) {
+                return new CloudEdges(nativeImage);
+            }
         } catch (IOException ex) {
             throw new RuntimeException("Failed to load texture data", ex);
         }
-
-        return new CloudEdges(nativeImage);
     }
 
     private static class CloudEdges {
