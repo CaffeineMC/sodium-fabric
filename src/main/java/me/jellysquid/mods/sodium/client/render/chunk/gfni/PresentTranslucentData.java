@@ -6,7 +6,7 @@ import net.minecraft.util.math.ChunkSectionPos;
 public abstract class PresentTranslucentData extends TranslucentData {
     public NativeBuffer buffer;
 
-    public PresentTranslucentData(ChunkSectionPos sectionPos, NativeBuffer buffer) {
+    PresentTranslucentData(ChunkSectionPos sectionPos, NativeBuffer buffer) {
         super(sectionPos);
         this.buffer = buffer;
     }

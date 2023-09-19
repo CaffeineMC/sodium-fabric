@@ -6,7 +6,7 @@ import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public class StaticTopoAcyclicData extends MixedDirectionData {
-    public StaticTopoAcyclicData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange range) {
+    StaticTopoAcyclicData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange range) {
         super(sectionPos, buffer, range);
     }
 

@@ -1,7 +1,6 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
 import java.nio.IntBuffer;
-import java.util.List;
 
 import org.joml.Vector3f;
 
@@ -42,12 +41,12 @@ public class StaticNormalRelativeData extends PresentTranslucentData {
     }
 
     private static StaticNormalRelativeData fromDoubleUnaligned(BuiltSectionMeshParts translucentMesh,
-            List<Quad> quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
+            Quad[] quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
         VertexRange[] ranges = translucentMesh.getVertexRanges();
-        float[] keys = new float[quads.size()];
+        float[] keys = new float[quads.length];
 
-        for (int i = 0; i < quads.size(); i++) {
-            Quad quad = quads.get(i);
+        for (int i = 0; i < quads.length; i++) {
+            Quad quad = quads[i];
             keys[i] = quad.center().dot(quad.normal());
         }
 
@@ -61,32 +60,34 @@ public class StaticNormalRelativeData extends PresentTranslucentData {
     }
 
     private static StaticNormalRelativeData fromAligned(BuiltSectionMeshParts translucentMesh,
-            List<Quad> quads, ChunkSectionPos sectionPos) {
-        int vertexCount = 0;
+            Quad[] quads, ChunkSectionPos sectionPos) {
         VertexRange[] ranges = translucentMesh.getVertexRanges();
         Vector3f[][] centers = new Vector3f[ModelQuadFacing.COUNT][];
-        int[] centerCounters = new int[ModelQuadFacing.COUNT];
 
         for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
             VertexRange range = ranges[i];
             if (range != null) {
-                vertexCount += range.vertexCount();
                 centers[i] = new Vector3f[range.vertexCount() / TranslucentData.VERTICES_PER_QUAD];
             }
         }
 
-        // in this case there can only be up to one unaligned normal
-        Vector3f unalignedNormal = null;
+        int centerCounter = 0;
         for (Quad quad : quads) {
-            var direction = quad.facing().ordinal();
-            centers[direction][centerCounters[direction]++] = quad.center();
-            if (direction == ModelQuadFacing.UNASSIGNED.ordinal()) {
-                unalignedNormal = new Vector3f(quad.normal());
+            var directionCenters = centers[quad.facing().ordinal()];
+            directionCenters[centerCounter++] = quad.center();
+
+            if (centerCounter == directionCenters.length) {
+                centerCounter = 0;
             }
         }
 
-        var buffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(vertexCount));
+        var buffer = new NativeBuffer(
+                TranslucentData.vertexCountToIndexBytes(quads.length * TranslucentData.VERTICES_PER_QUAD));
         IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
+
+        // in this case there can only be up to one unaligned normal.
+        // since the quads are sorted by facing, it will be at the end if it exists
+        Vector3f unalignedNormal = new Vector3f(quads[quads.length - 1].normal());
 
         for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
             if (ranges[i] != null) {
@@ -104,7 +105,7 @@ public class StaticNormalRelativeData extends PresentTranslucentData {
     }
 
     static StaticNormalRelativeData fromMesh(BuiltSectionMeshParts translucentMesh,
-            List<Quad> quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
+            Quad[] quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
         if (groupBuilder.alignedNormalBitmap == 0) {
             return fromDoubleUnaligned(translucentMesh, quads, sectionPos, groupBuilder);
         } else {

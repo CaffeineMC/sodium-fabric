@@ -7,7 +7,7 @@ import net.minecraft.util.math.ChunkSectionPos;
 public abstract class MixedDirectionData extends PresentTranslucentData {
     public final VertexRange range;
 
-    public MixedDirectionData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange range) {
+    MixedDirectionData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange range) {
         super(sectionPos, buffer);
         this.range = range;
     }

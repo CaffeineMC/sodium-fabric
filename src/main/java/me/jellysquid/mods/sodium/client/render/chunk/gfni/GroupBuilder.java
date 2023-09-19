@@ -1,6 +1,7 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
 import java.nio.IntBuffer;
+import java.util.List;
 
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
@@ -64,10 +65,9 @@ public class GroupBuilder {
 
     private int unalignedQuadCount = 0;
 
-    /**
-     * List of translucent quads being rendered.
-     */
-    private final ReferenceArrayList<Quad> quads = new ReferenceArrayList<>();
+    @SuppressWarnings("unchecked")
+    private ReferenceArrayList<Quad>[] quadLists = new ReferenceArrayList[ModelQuadFacing.COUNT];
+    private Quad[] quads;
 
     private SortType sortType;
 
@@ -122,6 +122,12 @@ public class GroupBuilder {
         // TODO: some of these things should probably only be computed on demand, and an
         // allocation of a Quad object should be avoided
         AccumulationGroup accGroup;
+        var quadList = this.quadLists[facing.ordinal()];
+        if (quadList == null) {
+            quadList = new ReferenceArrayList<>();
+            this.quadLists[facing.ordinal()] = quadList;
+        }
+
         if (facing == ModelQuadFacing.UNASSIGNED) {
             int normalX = quadView.getGFNINormX();
             int normalY = quadView.getGFNINormY();
@@ -145,7 +151,8 @@ public class GroupBuilder {
                 accGroup = new AccumulationGroup(sectionPos, normal, normalKey);
                 this.unalignedDistances.put(normalKey, accGroup);
             }
-            this.quads.add(new Quad(facing, accGroup.normal, center, extents));
+
+            quadList.add(new Quad(facing, accGroup.normal, center, extents));
             this.unalignedQuadCount++;
         } else {
             if (this.axisAlignedDistances == null) {
@@ -161,7 +168,7 @@ public class GroupBuilder {
                 this.alignedNormalBitmap |= 1 << quadDirection;
             }
 
-            this.quads.add(new Quad(facing, accGroup.normal, center, extents));
+            quadList.add(new Quad(facing, accGroup.normal, center, extents));
         }
 
         var firstVertex = vertices[0];
@@ -320,14 +327,32 @@ public class GroupBuilder {
         // heuristically determine if a topo sort should be attempted, if the attempt
         // fails the sort type is downgraded to DYNAMIC_ALL. If there are no cycles,
         // it's upgraded to acyclic.
-        if (this.unalignedQuadCount <= 2 && this.quads.size() <= 400) {
+        if (this.unalignedQuadCount <= 2 && this.quads.length <= 400) {
             return SortType.DYNAMIC_TOPO_CYCLIC;
         }
 
         return SortType.DYNAMIC_ALL;
     }
 
-    public SortType estimateSortType() {
+    public SortType finishRendering() {
+        // combine the quads into one array
+        int totalQuadCount = 0;
+        for (var quadList : this.quadLists) {
+            if (quadList != null) {
+                totalQuadCount += quadList.size();
+            }
+        }
+        this.quads = new Quad[totalQuadCount];
+        int quadIndex = 0;
+        for (var quadList : this.quadLists) {
+            if (quadList != null) {
+                for (var quad : quadList) {
+                    this.quads[quadIndex++] = quad;
+                }
+            }
+        }
+        this.quadLists = null;
+
         this.sortType = filterSortType(sortTypeHeuristic(), true);
         return this.sortType;
     }
@@ -338,11 +363,11 @@ public class GroupBuilder {
         }
 
         if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
-            return StaticNormalRelativeData.fromMesh(translucentMesh, quads, sectionPos, this);
+            return StaticNormalRelativeData.fromMesh(translucentMesh, this.quads, sectionPos, this);
         }
 
         if (SodiumClientMod.options().performance.sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
-            return DynamicData.fromMesh(translucentMesh, null, cameraPos, quads, sectionPos, this);
+            return DynamicData.fromMesh(translucentMesh, null, cameraPos, this.quads, sectionPos, this);
         }
 
         // from this point on we know the estimated sort type requires direction mixing
@@ -437,7 +462,7 @@ public class GroupBuilder {
      * @return if the sort was successful
      */
     private boolean topoSortAlignedAcyclic(IntBuffer indexBuffer) {
-        var totalQuadCount = this.quads.size();
+
 
         /**
          * The translucent quad visibility graph is stored as an array for each quad.
@@ -447,23 +472,23 @@ public class GroupBuilder {
          * 
          * The last entry stores the number of *outgoing* edges.
          */
-        int[][] graph = new int[totalQuadCount][ModelQuadFacing.DIRECTIONS + 1];
+        int[][] graph = new int[this.quads.length][ModelQuadFacing.DIRECTIONS + 1];
 
         // the set of quads that have no outgoing edges
-        BitArray leafQuads = new BitArray(totalQuadCount);
-        leafQuads.set(0, totalQuadCount);
+        BitArray leafQuads = new BitArray(this.quads.length);
+        leafQuads.set(0, this.quads.length);
 
-        for (int i = 0; i < totalQuadCount; i++) {
+        for (int i = 0; i < this.quads.length; i++) {
             for (int j = 0; j < ModelQuadFacing.DIRECTIONS; j++) {
                 graph[i][j] = -1;
             }
         }
 
         // the stash of quads that have not yet been visible to the scanned quads
-        BitArray stashedOrthoQuads = new BitArray(totalQuadCount);
+        BitArray stashedOrthoQuads = new BitArray(this.quads.length);
 
         // keep around the allocation of the keys array
-        float[] keys = new float[totalQuadCount];
+        float[] keys = new float[this.quads.length];
 
         // to build the graph, perform scans for each direction
         for (int direction = 0; direction < ModelQuadFacing.DIRECTIONS; direction++) {
@@ -473,10 +498,10 @@ public class GroupBuilder {
             int sign = facing.getSign();
 
             // generate keys for this direction
-            for (int i = 0; i < totalQuadCount; i++) {
+            for (int i = 0; i < this.quads.length; i++) {
                 // get the extent in the opposite direction of the scan because quads that are
                 // visible from a scanning quad should be before it
-                Quad quad = this.quads.get(i);
+                Quad quad = this.quads[i];
                 keys[i] = quad.extents[oppositeDirection] * sign * -1;
             }
 
@@ -489,9 +514,9 @@ public class GroupBuilder {
             // perform a scan by going through the sorted quads and making edges between the
             // scanning quads and the quads that precede them in the sort order
             stashedOrthoQuads.unset();
-            for (int quadIndexPos = 0; quadIndexPos < totalQuadCount; quadIndexPos++) {
+            for (int quadIndexPos = 0; quadIndexPos < this.quads.length; quadIndexPos++) {
                 int quadIndex = sortedQuads[quadIndexPos];
-                Quad quad = this.quads.get(quadIndex);
+                Quad quad = this.quads[quadIndex];
                 if (quad.facing != facing) {
                     continue;
                 }
@@ -505,7 +530,7 @@ public class GroupBuilder {
                 for (int stashedQuadIndex = stashedOrthoQuads
                         .nextSetBit(0); stashedQuadIndex != -1; stashedQuadIndex = stashedOrthoQuads
                                 .nextSetBit(stashedQuadIndex + 1)) {
-                    Quad stashedOrthoQuad = this.quads.get(stashedQuadIndex);
+                    Quad stashedOrthoQuad = this.quads[stashedQuadIndex];
 
                     // if it's visible through the current quad, unstash and connect
                     if (orthogonalQuadVisible(quad, stashedOrthoQuad)) {
@@ -518,7 +543,7 @@ public class GroupBuilder {
                 // initially increment to skip the last scan quad.
                 for (++lastScanQuadPos; lastScanQuadPos < quadIndexPos; lastScanQuadPos++) {
                     int otherQuadIndex = sortedQuads[lastScanQuadPos];
-                    Quad otherQuad = this.quads.get(otherQuadIndex);
+                    Quad otherQuad = this.quads[otherQuadIndex];
 
                     // discard quads that face in the opposite direction, they are never visible
                     if (otherQuad.facing == oppositeFacing) {
@@ -548,7 +573,10 @@ public class GroupBuilder {
 
         // iterate through the set of quads with no outgoing edges until there are none
         // left.
-        for (int topoSortPos = 0; topoSortPos < totalQuadCount; topoSortPos++) {
+        // TODO: debug topo sort with the arrangement of blocks I wrote the indices down
+        // in miro
+        List<Integer> topoSortResult = new ReferenceArrayList<>();
+        for (int topoSortPos = 0; topoSortPos < this.quads.length; topoSortPos++) {
             int nextLeafQuadIndex = leafQuads.nextSetBit(0);
 
             // if there are no leaf quads but not yet all quads have been processed,
@@ -563,6 +591,7 @@ public class GroupBuilder {
 
             // add it to the topo sort result
             TranslucentData.putQuadVertexIndexes(indexBuffer, nextLeafQuadIndex);
+            topoSortResult.add(nextLeafQuadIndex);
 
             // remove the edges to this quad and mark them as leaves if that was the last
             // outgoing edge they had

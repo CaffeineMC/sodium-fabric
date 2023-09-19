@@ -137,7 +137,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             throw fillCrashInfo(CrashReport.create(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
 
-        SortType sortType = groupBuilder.estimateSortType();
+        SortType sortType = groupBuilder.finishRendering();
 
         Map<TerrainRenderPass, BuiltSectionMeshParts> meshes = new Reference2ReferenceOpenHashMap<>();
 

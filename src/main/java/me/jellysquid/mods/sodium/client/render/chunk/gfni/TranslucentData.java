@@ -16,7 +16,7 @@ public abstract class TranslucentData {
 
     public final ChunkSectionPos sectionPos;
 
-    public TranslucentData(ChunkSectionPos sectionPos) {
+    TranslucentData(ChunkSectionPos sectionPos) {
         this.sectionPos = sectionPos;
     }
 
