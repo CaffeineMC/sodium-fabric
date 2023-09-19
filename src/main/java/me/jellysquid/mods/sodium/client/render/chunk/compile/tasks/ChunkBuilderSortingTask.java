@@ -8,8 +8,8 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
 import me.jellysquid.mods.sodium.client.util.task.CancellationToken;
 
 public class ChunkBuilderSortingTask extends ChunkBuilderTask<ChunkSortOutput> {
-    public ChunkBuilderSortingTask(RenderSection render, int frame, Vector3fc cameraPos) {
-        super(render, frame, cameraPos);
+    public ChunkBuilderSortingTask(RenderSection render, int frame, Vector3fc absoluteCameraPos) {
+        super(render, frame, absoluteCameraPos);
     }
 
     @Override

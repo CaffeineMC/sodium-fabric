@@ -23,13 +23,13 @@ public abstract class ChunkBuilderTask<OUTPUT extends BuilderTaskOutput> {
     protected final int submitTime;
     protected final Vector3fc cameraPos;
 
-    public ChunkBuilderTask(RenderSection render, int time, Vector3fc cameraPos) {
+    public ChunkBuilderTask(RenderSection render, int time, Vector3fc absoluteCameraPos) {
         this.render = render;
         this.submitTime = time;
         this.cameraPos = new Vector3f(
-                cameraPos.x() - (float) render.getOriginX(),
-                cameraPos.y() - (float) render.getOriginY(),
-                cameraPos.z() - (float) render.getOriginZ());
+                absoluteCameraPos.x() - (float) render.getOriginX(),
+                absoluteCameraPos.y() - (float) render.getOriginY(),
+                absoluteCameraPos.z() - (float) render.getOriginZ());
     }
 
     /**
