@@ -62,6 +62,14 @@ public class CompactChunkVertex implements ChunkVertexType {
         int block = (light >> 4) & 0xF;
         int sky = (light >> 20) & 0xF;
 
+        // Some mods/parts of vanilla use the lower 4 bits, so round if needed.
+        if(((light >> 0) & 0xF) > 0x7 && block < 0xF) {
+            block++;
+        }
+        if(((light >> 16) & 0xF) > 0x7 && sky < 0xF) {
+            sky++;
+        }
+
         return ((block << 0) | (sky << 4));
     }
 
