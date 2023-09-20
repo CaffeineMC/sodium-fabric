@@ -135,8 +135,7 @@ public class DynamicData extends MixedDirectionData {
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
 
         if (reuseBuffer == null) {
-            reuseBuffer = new NativeBuffer(
-                    TranslucentData.vertexCountToIndexBytes(quads.length * TranslucentData.VERTICES_PER_QUAD));
+            reuseBuffer = new NativeBuffer(TranslucentData.quadCountToIndexBytes(quads.length));
         }
 
         var dynamicData = new DynamicData(sectionPos,

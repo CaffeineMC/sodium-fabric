@@ -81,8 +81,7 @@ public class StaticNormalRelativeData extends PresentTranslucentData {
             }
         }
 
-        var buffer = new NativeBuffer(
-                TranslucentData.vertexCountToIndexBytes(quads.length * TranslucentData.VERTICES_PER_QUAD));
+        var buffer = new NativeBuffer(TranslucentData.quadCountToIndexBytes(quads.length));
         IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
 
         // in this case there can only be up to one unaligned normal.
