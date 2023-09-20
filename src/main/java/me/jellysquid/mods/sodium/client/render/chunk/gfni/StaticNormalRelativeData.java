@@ -89,14 +89,19 @@ public class StaticNormalRelativeData extends PresentTranslucentData {
         Vector3f unalignedNormal = new Vector3f(quads[quads.length - 1].normal());
 
         for (int i = 0; i < ModelQuadFacing.COUNT; i++) {
-            if (ranges[i] != null) {
+            var range = ranges[i];
+            if (range != null) {
                 VertexSorter sorter;
                 if (i == ModelQuadFacing.UNASSIGNED.ordinal()) {
                     sorter = VertexSorters.sortByNormalRelative(unalignedNormal);
                 } else {
                     sorter = SORTERS[i];
                 }
-                TranslucentData.writeVertexIndexes(bufferBuilder, sorter.sort(centers[i]));
+
+                // add the vertex start converted to quads to the offset to get the real quad
+                // index and not just the index local to the direction's set of quads
+                TranslucentData.writeVertexIndexesOffset(bufferBuilder, sorter.sort(centers[i]),
+                        range.vertexStart() / TranslucentData.VERTICES_PER_QUAD);
             }
         }
 

@@ -57,6 +57,12 @@ public abstract class TranslucentData {
         }
     }
 
+    static void writeVertexIndexesOffset(IntBuffer intBuffer, int[] quadIndexes, int offset) {
+        for (int quadIndexPos = 0; quadIndexPos < quadIndexes.length; quadIndexPos++) {
+            putQuadVertexIndexes(intBuffer, quadIndexes[quadIndexPos] + offset);
+        }
+    }
+
     static VertexRange getUnassignedVertexRange(BuiltSectionMeshParts translucentMesh) {
         VertexRange range = translucentMesh.getVertexRanges()[ModelQuadFacing.UNASSIGNED.ordinal()];
 
