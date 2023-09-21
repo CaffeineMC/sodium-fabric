@@ -557,15 +557,8 @@ public class GroupBuilder {
             }
         }
 
-        // the topological sort result of the graph. The order is reversed comapred to
-        // how topo sort is usually defined, in that the first index points to the quad
-        // that should be rendered first since it has no outgoing edges (and thus no
-        // other quads are visible through it).
-
         // iterate through the set of quads with no outgoing edges until there are none
-        // left.
-        // TODO: debug topo sort with the arrangement of blocks I wrote the indices down
-        // in miro
+        // left to produce a topological sort of the graph
         List<Integer> topoSortResult = new ReferenceArrayList<>();
         for (int topoSortPos = 0; topoSortPos < this.quads.length; topoSortPos++) {
             int nextLeafQuadIndex = leafQuads.nextSetBit(0);
@@ -573,8 +566,7 @@ public class GroupBuilder {
             // if there are no leaf quads but not yet all quads have been processed,
             // there must be a cycle!
             if (nextLeafQuadIndex == -1) {
-                // since this method may be called if it's known that there are no cycles, when
-                // they are found it's downgraded to DYNAMIC_TOPO_CYCLIC
+                // abort, there are cycles
                 return false;
             }
 
