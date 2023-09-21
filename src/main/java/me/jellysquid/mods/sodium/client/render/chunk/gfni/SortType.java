@@ -36,7 +36,7 @@ public enum SortType {
      * in the graph. They are swapped out when the cycle-breaking planes are
      * triggered in GFNI.
      */
-    DYNAMIC_TOPO_CYCLIC(true, true, true, false),
+    // DYNAMIC_TOPO_CYCLIC(true, true, true, false),
 
     /**
      * There are multiple sort orders. Sorting is required every time GFNI triggers

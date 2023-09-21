@@ -7,6 +7,9 @@ import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import net.minecraft.util.math.ChunkSectionPos;
 
+/**
+ * TODO: implement
+ */
 public class DynamicTopoCyclicData extends PresentTranslucentData {
     public final ReferenceArrayList<SortOrder> orders;
 
@@ -21,6 +24,6 @@ public class DynamicTopoCyclicData extends PresentTranslucentData {
 
     @Override
     public SortType getSortType() {
-        return SortType.DYNAMIC_TOPO_CYCLIC;
+        throw new UnsupportedOperationException();
     }
 }

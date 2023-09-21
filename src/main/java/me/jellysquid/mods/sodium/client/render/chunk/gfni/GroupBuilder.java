@@ -177,14 +177,21 @@ public class GroupBuilder {
         }
     }
 
+    /**
+     * Filters the given sort type to fit within the selected sorting mode. If it
+     * doesn't match, then it's set to the NONE sort type.
+     * 
+     * @param sortType             the sort type to filter
+     * @param allowDynamicInStatic if true, then the DYNAMIC_ALL is allowed even if
+     *                             the sort behavior is STATIC. This is to allow a
+     *                             topo sort to be attempted even if the heuristic
+     *                             can't determine that it's acyclic.
+     */
     private static SortType filterSortType(SortType sortType, boolean allowDynamicInStatic) {
         SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
         if (!sortBehavior.sortTypes.contains(sortType)
-                && !(allowDynamicInStatic && sortBehavior == SortBehavior.STATIC_TOPO_ACYCLIC)) {
+                && !(allowDynamicInStatic && sortBehavior == SortBehavior.STATIC)) {
             return SortType.NONE;
-        }
-        if (sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
-            return SortType.DYNAMIC_ALL;
         }
         return sortType;
     }
@@ -237,12 +244,9 @@ public class GroupBuilder {
      */
     private SortType sortTypeHeuristic() {
         SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
-        if (sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
-            return SortType.DYNAMIC_ALL;
-        }
 
         // special case A
-        if (sortBehavior == SortBehavior.ONLY_TRIVIAL || this.facePlaneCount <= 1) {
+        if (sortBehavior == SortBehavior.NONE || this.facePlaneCount <= 1) {
             return SortType.NONE;
         }
 
@@ -324,13 +328,6 @@ public class GroupBuilder {
             return SortType.STATIC_TOPO_ACYCLIC;
         }
 
-        // heuristically determine if a topo sort should be attempted, if the attempt
-        // fails the sort type is downgraded to DYNAMIC_ALL. If there are no cycles,
-        // it's upgraded to acyclic.
-        if (this.unalignedQuadCount <= 2 && this.quads.length <= 400) {
-            return SortType.DYNAMIC_TOPO_CYCLIC;
-        }
-
         return SortType.DYNAMIC_ALL;
     }
 
@@ -366,15 +363,11 @@ public class GroupBuilder {
             return StaticNormalRelativeData.fromMesh(translucentMesh, this.quads, sectionPos, this);
         }
 
-        if (SodiumClientMod.options().performance.sortBehavior == SortBehavior.ONLY_DYNAMIC_ALL) {
-            return DynamicData.fromMesh(translucentMesh, null, cameraPos, this.quads, sectionPos, this);
-        }
-
         // from this point on we know the estimated sort type requires direction mixing
         // (no backface culling) and all vertices are in the UNASSIGNED direction.
         NativeBuffer buffer = null;
         if (this.sortType == SortType.STATIC_TOPO_ACYCLIC
-                || this.sortType == SortType.DYNAMIC_TOPO_CYCLIC
+                // || this.sortType == SortType.DYNAMIC_TOPO_CYCLIC
                 || this.sortType == SortType.DYNAMIC_ALL) {
             // TODO: implement topo sort with unaligned quads
             if (this.unalignedQuadCount > 0) {
@@ -462,7 +455,6 @@ public class GroupBuilder {
      * @return if the sort was successful
      */
     private boolean topoSortAlignedAcyclic(IntBuffer indexBuffer) {
-
 
         /**
          * The translucent quad visibility graph is stored as an array for each quad.

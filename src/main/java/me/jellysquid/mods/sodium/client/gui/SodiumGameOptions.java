@@ -49,17 +49,13 @@ public class SodiumGameOptions {
         public boolean useBlockFaceCulling = true;
         public boolean useNoErrorGLContext = true;
 
-        public SortBehavior sortBehavior = SortBehavior.DYNAMIC_ALL;
+        public SortBehavior sortBehavior = SortBehavior.DYNAMIC;
     }
 
     public enum SortBehavior implements TextProvider {
-        ONLY_TRIVIAL("options.sort_behavior.only_trivial", Set.of(SortType.NONE)),
-        STATIC_NORMAL_RELATIVE("options.sort_behavior.static_normal_relative", getUpTo(SortType.STATIC_NORMAL_RELATIVE)),
-        STATIC_TOPO_ACYCLIC("options.sort_behavior.static_topo_acyclic", getUpTo(SortType.STATIC_TOPO_ACYCLIC)),
-        // TODO: enable when implemented
-        // DYNAMIC_TOPO_CYCLIC("options.sort_behavior.dynamic_topo_cyclic", getUpTo(SortType.DYNAMIC_TOPO_CYCLIC)),
-        DYNAMIC_ALL("options.sort_behavior.dynamic_all", getUpTo(SortType.DYNAMIC_ALL)),
-        ONLY_DYNAMIC_ALL("options.sort_behavior.only_dynamic_all", Set.of(SortType.DYNAMIC_ALL));
+        NONE("options.off", Set.of(SortType.NONE)),
+        STATIC("options.clouds.fast", getUpTo(SortType.STATIC_TOPO_ACYCLIC)),
+        DYNAMIC("options.clouds.fancy", getUpTo(SortType.DYNAMIC_ALL));
 
         private final Text name;
         public final Set<SortType> sortTypes;
