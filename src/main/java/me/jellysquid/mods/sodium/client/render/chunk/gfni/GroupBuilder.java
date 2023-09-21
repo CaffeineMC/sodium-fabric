@@ -446,16 +446,15 @@ public class GroupBuilder {
      * - quads are planar and actually have the normal of their facing
      * - quads don't intersect
      * - quads aren't shaped weirdly
+     * - quads are axis-aligned
      * 
-     * If it manages to find a topological sort, it populates
-     * {@link #topoSortResult} and returns {@link SortType#STATIC_TOPO_ACYCLIC}. If
-     * it fails to find a topo sort it returns {@link SortType#DYNAMIC_TOPO_CYCLIC}.
+     * If the sort was successful, the index buffer will be populated with the index
+     * data and {@code true} will be returned. Otherwise, {@code false} is returned.
      * 
      * @param indexBuffer the buffer to write the topo sort result to
      * @return if the sort was successful
      */
     private boolean topoSortAlignedAcyclic(IntBuffer indexBuffer) {
-
         /**
          * The translucent quad visibility graph is stored as an array for each quad.
          * Each quad's array stores the indexes of the quads that can see this quad
