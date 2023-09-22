@@ -58,5 +58,5 @@
   "sodium.console.broken_nvidia_driver": "Your NVIDIA graphics drivers are out of date!\n  * This will cause severe performance issues and crashes when Sodium is installed.\n  * Please update your graphics drivers to the latest version (version 536.23 or newer.)",
   "sodium.console.pojav_launcher": "PojavLauncher is not supported when using Sodium.\n  * You are very likely to run into extreme performance issues, graphical bugs, and crashes.\n  * You will be on your own if you decide to continue -- we will not help you with any bugs or crashes!",
   "sodium.options.sort_behavior.name": "Translucency Sorting",
-  "sodium.options.sort_behavior.tooltip": "Controls when and with how much effort translucency sorting is performed. Dynamic and adaptive sorting will sort geometry as you move around. Lesser sort types perform sorting on an best-effort basis. The more sorting is performed the higher the performance impact."
+  "sodium.options.sort_behavior.tooltip": "Controls when and with how much effort translucency sorting is performed. Fast only performs sorting when the chunk it loaded. Only Fancy sorting ensures correct sorting all the time and you may see glitches otherwise. More sorting has a performance impact on chunk loading speeds, but usually not frame rates."
 }
