@@ -187,8 +187,13 @@ public class ComplexSorting {
         BitArray leafQuads = new BitArray(activeQuads);
         leafQuads.set(0, activeQuads);
 
+        // a bitfield of the directions that have quads
+        int activeDirections = 0;
+
         // initialize the graph with -1 to represent no edge
         for (int i = 0; i < activeQuads; i++) {
+            activeDirections |= 1 << quads[i].facing().ordinal();
+
             for (int j = 0; j < ModelQuadFacing.DIRECTIONS; j++) {
                 graph[i][j] = -1;
             }
@@ -202,6 +207,11 @@ public class ComplexSorting {
 
         // to build the graph, perform scans for each direction
         for (int direction = 0; direction < ModelQuadFacing.DIRECTIONS; direction++) {
+            // skip directions that have no quads
+            if ((activeDirections & (1 << direction)) == 0) {
+                continue;
+            }
+
             ModelQuadFacing facing = ModelQuadFacing.VALUES[direction];
             ModelQuadFacing oppositeFacing = facing.getOpposite();
             int oppositeDirection = oppositeFacing.ordinal();
