@@ -5,6 +5,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.platform.GlConst;
 import com.mojang.blaze3d.systems.RenderSystem;
+import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
+import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.particle.ShaderBillboardParticleRenderer;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleVertex;
 import me.jellysquid.mods.sodium.client.render.particle.shader.ParticleShaderInterface;
@@ -58,7 +60,7 @@ public abstract class ParticleManagerMixin {
     private final ShaderBillboardParticleRenderer particleRenderer = new ShaderBillboardParticleRenderer();
 
     @Unique
-    private static final Map<Class<? extends BillboardParticle>, Boolean> classOverridesBuild = Maps.newIdentityHashMap();
+    private static final Object2BooleanMap<Class<? extends BillboardParticle>> classOverridesBuild = new Object2BooleanOpenHashMap<>();
 
     @Unique
     private static final String BUILD_GEOMETRY_METHOD = FabricLoader.getInstance().getMappingResolver().mapMethodName(
@@ -141,48 +143,40 @@ public abstract class ParticleManagerMixin {
         this.billboardParticles.clear();
     }
 
-    @Inject(method = "renderParticles", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;applyModelViewMatrix()V", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true)
+    @Inject(method = "renderParticles", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;pop()V"), locals = LocalCapture.CAPTURE_FAILHARD)
     public void renderParticles(
             MatrixStack matrices, VertexConsumerProvider.Immediate vertexConsumers,
             LightmapTextureManager lightmapTextureManager, Camera camera, float tickDelta,
             CallbackInfo ci, MatrixStack matrixStack
     ) {
-        ci.cancel();
-        for(ParticleTextureSheet particleTextureSheet : PARTICLE_TEXTURE_SHEETS) {
+
+        RenderSystem.depthMask(true);
+        RenderSystem.disableBlend();
+
+        particleRenderer.begin();
+        ParticleShaderInterface shader = this.particleRenderer.getActiveProgram().getInterface();
+        shader.setProjectionMatrix(RenderSystem.getProjectionMatrix());
+        shader.setModelViewMatrix(RenderSystem.getModelViewMatrix());
+
+        for (ParticleTextureSheet particleTextureSheet : PARTICLE_TEXTURE_SHEETS) {
+            if (particleTextureSheet == ParticleTextureSheet.NO_RENDER) continue;
+
             Queue<BillboardParticle> iterable = this.billboardParticles.get(particleTextureSheet);
             if (iterable != null && !iterable.isEmpty()) {
                 bindParticleTextureSheet(particleTextureSheet);
+
                 bufferBuilder.begin(VertexFormat.DrawMode.QUADS, BillboardParticleVertex.MC_VERTEX_FORMAT);
 
-                particleRenderer.begin();
-                ParticleShaderInterface shader = this.particleRenderer.getActiveProgram().getInterface();
-                shader.setProjectionMatrix(RenderSystem.getProjectionMatrix());
-                shader.setModelViewMatrix(RenderSystem.getModelViewMatrix());
-
-                for(BillboardParticle particle : iterable) {
+                for (BillboardParticle particle : iterable) {
                     particle.buildGeometry(bufferBuilder, camera, tickDelta);
                 }
 
-                BufferBuilder.BuiltBuffer built = bufferBuilder.end();
-                VertexBuffer buffer = built.getParameters().format().getBuffer();
+                drawParticleTextureSheet(particleTextureSheet, bufferBuilder, iterable.size());
 
-                buffer.bind();
-                buffer.upload(built);
-                BillboardParticleVertex.bindVertexFormat();
-
-                int numParticles = iterable.size();
-                int indexType = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS).getIndexType().glType;
-                RenderSystem.drawElements(4, numParticles * 6, indexType);
-
-                particleRenderer.end();
             }
         }
 
-        matrixStack.pop();
-        RenderSystem.applyModelViewMatrix();
-        RenderSystem.depthMask(true);
-        RenderSystem.disableBlend();
-        lightmapTextureManager.disable();
+        particleRenderer.end();
     }
 
     @Unique
@@ -198,6 +192,24 @@ public abstract class ParticleManagerMixin {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShaderTexture(0, SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
+        } else if (sheet == ParticleTextureSheet.CUSTOM) {
+            RenderSystem.depthMask(true);
+            RenderSystem.disableBlend();
+        }
+    }
+
+    @Unique
+    private static void drawParticleTextureSheet(ParticleTextureSheet sheet, BufferBuilder builder, int numParticles) {
+        if (sheet == ParticleTextureSheet.TERRAIN_SHEET || sheet == ParticleTextureSheet.PARTICLE_SHEET_LIT || sheet == ParticleTextureSheet.PARTICLE_SHEET_OPAQUE || sheet == ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT) {
+            BufferBuilder.BuiltBuffer built = builder.end();
+            VertexBuffer buffer = built.getParameters().format().getBuffer();
+
+            buffer.bind();
+            buffer.upload(built);
+            BillboardParticleVertex.bindVertexFormat();
+
+            int indexType = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS).getIndexType().glType;
+            RenderSystem.drawElements(4, numParticles * 6, indexType);
         }
     }
 }
