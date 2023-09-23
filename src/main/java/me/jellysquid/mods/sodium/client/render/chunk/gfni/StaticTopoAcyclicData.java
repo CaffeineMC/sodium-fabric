@@ -15,10 +15,13 @@ public class StaticTopoAcyclicData extends MixedDirectionData {
         return SortType.STATIC_TOPO_ACYCLIC;
     }
 
-    // NOTE: requires filling the contained buffer with data afterwards
-    static StaticTopoAcyclicData fromMesh(BuiltSectionMeshParts translucentMesh, ChunkSectionPos sectionPos) {
+    static StaticTopoAcyclicData fromMesh(BuiltSectionMeshParts translucentMesh,
+            TQuad[] quads, ChunkSectionPos sectionPos) {
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
         var buffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(range.vertexCount()));
+        var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
+
+        ComplexSorting.topoSortAlignedAcyclicSafe(indexBuffer, quads, null);
 
         return new StaticTopoAcyclicData(sectionPos, buffer, range);
     }

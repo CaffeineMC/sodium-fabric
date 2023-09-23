@@ -1,8 +1,5 @@
 package me.jellysquid.mods.sodium.client.render.chunk.gfni;
 
-import java.nio.IntBuffer;
-import java.util.List;
-
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
@@ -14,9 +11,6 @@ import me.jellysquid.mods.sodium.client.model.quad.ModelQuadView;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
-import me.jellysquid.mods.sodium.client.util.NativeBuffer;
-import me.jellysquid.mods.sodium.client.util.collections.BitArray;
-import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
@@ -32,16 +26,13 @@ import net.minecraft.util.math.ChunkSectionPos;
  * unaligned faces at all?
  * - bail early during rendering if we decide not to topo sort, then we don't
  * need to gather all of the data
- * - do normal-relative sorting here too? or keep it in StaticTranslucentData?
  * - detail how the graph construction and the topo sort works in the GFNI doc
- * - make the resulting static index buffer actually available to the renderer
+ * - optionally add a way to attempt full acyclic topo sort even if the
+ * heuristic doesn't expect it to be possible. The caveat is that this costs
+ * doing it once without invisible quad exclusion and once with if the first
+ * attempt fails.
  */
 public class GroupBuilder {
-    // TODO: debugging
-    private static int topoSortHits = 0;
-    private static int cyclicGraphHits = 0;
-    private static int unalignedDynamicHits = 0;
-
     private static final Vector3fc[] ALIGNED_NORMALS = new Vector3fc[ModelQuadFacing.DIRECTIONS];
 
     private static final int OPPOSING_X = 1 << ModelQuadFacing.POS_X.ordinal() | 1 << ModelQuadFacing.NEG_X.ordinal();
@@ -66,16 +57,13 @@ public class GroupBuilder {
     private int unalignedQuadCount = 0;
 
     @SuppressWarnings("unchecked")
-    private ReferenceArrayList<Quad>[] quadLists = new ReferenceArrayList[ModelQuadFacing.COUNT];
-    private Quad[] quads;
+    private ReferenceArrayList<TQuad>[] quadLists = new ReferenceArrayList[ModelQuadFacing.COUNT];
+    private TQuad[] quads;
 
     private SortType sortType;
 
     public GroupBuilder(ChunkSectionPos sectionPos) {
         this.sectionPos = sectionPos;
-    }
-
-    record Quad(ModelQuadFacing facing, Vector3fc normal, Vector3f center, float[] extents) {
     }
 
     public void appendQuad(ModelQuadView quadView, ChunkVertexEncoder.Vertex[] vertices, ModelQuadFacing facing) {
@@ -152,7 +140,7 @@ public class GroupBuilder {
                 this.unalignedDistances.put(normalKey, accGroup);
             }
 
-            quadList.add(new Quad(facing, accGroup.normal, center, extents));
+            quadList.add(new TQuad(facing, accGroup.normal, center, extents));
             this.unalignedQuadCount++;
         } else {
             if (this.axisAlignedDistances == null) {
@@ -168,7 +156,7 @@ public class GroupBuilder {
                 this.alignedNormalBitmap |= 1 << quadDirection;
             }
 
-            quadList.add(new Quad(facing, accGroup.normal, center, extents));
+            quadList.add(new TQuad(facing, accGroup.normal, center, extents));
         }
 
         var firstVertex = vertices[0];
@@ -182,15 +170,10 @@ public class GroupBuilder {
      * doesn't match, then it's set to the NONE sort type.
      * 
      * @param sortType             the sort type to filter
-     * @param allowDynamicInStatic if true, then the DYNAMIC_ALL is allowed even if
-     *                             the sort behavior is STATIC. This is to allow a
-     *                             topo sort to be attempted even if the heuristic
-     *                             can't determine that it's acyclic.
      */
-    private static SortType filterSortType(SortType sortType, boolean allowDynamicInStatic) {
+    private static SortType filterSortType(SortType sortType) {
         SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
-        if (!sortBehavior.sortTypes.contains(sortType)
-                && !(allowDynamicInStatic && sortBehavior == SortBehavior.STATIC)) {
+        if (!sortBehavior.sortTypes.contains(sortType)) {
             return SortType.NONE;
         }
         return sortType;
@@ -339,7 +322,7 @@ public class GroupBuilder {
                 totalQuadCount += quadList.size();
             }
         }
-        this.quads = new Quad[totalQuadCount];
+        this.quads = new TQuad[totalQuadCount];
         int quadIndex = 0;
         for (var quadList : this.quadLists) {
             if (quadList != null) {
@@ -350,7 +333,7 @@ public class GroupBuilder {
         }
         this.quadLists = null;
 
-        this.sortType = filterSortType(sortTypeHeuristic(), true);
+        this.sortType = filterSortType(sortTypeHeuristic());
         return this.sortType;
     }
 
@@ -365,227 +348,26 @@ public class GroupBuilder {
 
         // from this point on we know the estimated sort type requires direction mixing
         // (no backface culling) and all vertices are in the UNASSIGNED direction.
-        NativeBuffer buffer = null;
-        if (this.sortType == SortType.STATIC_TOPO_ACYCLIC
-                // || this.sortType == SortType.DYNAMIC_TOPO_CYCLIC
-                || this.sortType == SortType.DYNAMIC_ALL) {
-            // TODO: implement topo sort with unaligned quads
+        if (this.sortType == SortType.STATIC_TOPO_ACYCLIC) {
             if (this.unalignedQuadCount > 0) {
-                unalignedDynamicHits++;
+                // TODO: implement topo sort with unaligned quads
                 this.sortType = SortType.DYNAMIC_ALL;
             } else {
-                // it can only perform topo sort on acyclic graphs since it has no cycle
-                // breaking, but it will detect cycles and bail to DYNAMIC_ALL
-                // DYNAMIC_TOPO_CYCLIC if there is a cycle
-                var indexData = StaticTopoAcyclicData.fromMesh(translucentMesh, sectionPos);
-                buffer = indexData.buffer;
-                IntBuffer indexBuffer = buffer.getDirectBuffer().asIntBuffer();
-
-                if (topoSortAlignedAcyclic(indexBuffer)) {
-                    topoSortHits++;
-
-                    return indexData;
-                } else {
-                    // TODO: cyclic topo sort with cycle breaking
-                    cyclicGraphHits++;
-
-                    this.sortType = SortType.DYNAMIC_ALL;
-                }
+                return StaticTopoAcyclicData.fromMesh(translucentMesh, this.quads, sectionPos);
             }
-
-            // System.out.println("topo sort hits: " + topoSortHits + ", cyclic graph hits:
-            // " + cyclicGraphHits
-            // + ", unaligned dynamic hits: " + unalignedDynamicHits);
         }
 
         // filter the sort type with the user setting and re-evaluate
-        this.sortType = filterSortType(this.sortType, false);
+        this.sortType = filterSortType(this.sortType);
 
         if (this.sortType == SortType.NONE) {
-            if (buffer != null) {
-                buffer.free();
-            }
             return new NoneData(this.sectionPos);
         }
 
         if (this.sortType == SortType.DYNAMIC_ALL) {
-            return DynamicData.fromMesh(translucentMesh, buffer, cameraPos, quads, sectionPos, this);
+            return DynamicData.fromMesh(translucentMesh, cameraPos, quads, sectionPos, this);
         }
 
         throw new IllegalStateException("Unknown sort type: " + this.sortType);
-    }
-
-    private static boolean orthogonalQuadVisible(Quad quad, Quad otherQuad) {
-        var otherQuadDirection = otherQuad.facing.ordinal();
-        var sign = otherQuad.facing.getSign();
-
-        // this only works because the quads are planar and the extent in the direction
-        // of the quad's normal is the same as in the opposite direction
-        return sign * quad.extents[otherQuadDirection] > sign * otherQuad.extents[otherQuadDirection];
-    }
-
-    /**
-     * The index in each node's array in the graph where the number of outgoing
-     * edges is stored.
-     */
-    private static final int OUTGOING_EDGES = ModelQuadFacing.DIRECTIONS;
-
-    private static void makeEdge(int[][] graph, BitArray leafQuads, int fromQuadIndex, int toQuadIndex, int direction) {
-        graph[toQuadIndex][direction] = fromQuadIndex;
-
-        // increment outgoing edges and clear from the no outgoing edges set if it had
-        // no outgoing edges beforehand
-        if (graph[fromQuadIndex][OUTGOING_EDGES]++ == 0) {
-            leafQuads.unset(fromQuadIndex);
-        }
-    }
-
-    /**
-     * This scanning topo sort algorithm assumes that a number of invariants about
-     * the quads hold:
-     * - quads are planar and actually have the normal of their facing
-     * - quads don't intersect
-     * - quads aren't shaped weirdly
-     * - quads are axis-aligned
-     * 
-     * If the sort was successful, the index buffer will be populated with the index
-     * data and {@code true} will be returned. Otherwise, {@code false} is returned.
-     * 
-     * @param indexBuffer the buffer to write the topo sort result to
-     * @return if the sort was successful
-     */
-    private boolean topoSortAlignedAcyclic(IntBuffer indexBuffer) {
-        /**
-         * The translucent quad visibility graph is stored as an array for each quad.
-         * Each quad's array stores the indexes of the quads that can see this quad
-         * through them. The edges are stored backwards to avoid using dynamically
-         * sized-lists for outgoing edges.
-         * 
-         * The last entry stores the number of *outgoing* edges.
-         */
-        int[][] graph = new int[this.quads.length][ModelQuadFacing.DIRECTIONS + 1];
-
-        // the set of quads that have no outgoing edges
-        BitArray leafQuads = new BitArray(this.quads.length);
-        leafQuads.set(0, this.quads.length);
-
-        for (int i = 0; i < this.quads.length; i++) {
-            for (int j = 0; j < ModelQuadFacing.DIRECTIONS; j++) {
-                graph[i][j] = -1;
-            }
-        }
-
-        // the stash of quads that have not yet been visible to the scanned quads
-        BitArray stashedOrthoQuads = new BitArray(this.quads.length);
-
-        // keep around the allocation of the keys array
-        float[] keys = new float[this.quads.length];
-
-        // to build the graph, perform scans for each direction
-        for (int direction = 0; direction < ModelQuadFacing.DIRECTIONS; direction++) {
-            ModelQuadFacing facing = ModelQuadFacing.VALUES[direction];
-            ModelQuadFacing oppositeFacing = facing.getOpposite();
-            int oppositeDirection = oppositeFacing.ordinal();
-            int sign = facing.getSign();
-
-            // generate keys for this direction
-            for (int i = 0; i < this.quads.length; i++) {
-                // get the extent in the opposite direction of the scan because quads that are
-                // visible from a scanning quad should be before it
-                Quad quad = this.quads[i];
-                keys[i] = quad.extents[oppositeDirection] * sign * -1;
-            }
-
-            int[] sortedQuads = MergeSort.mergeSort(keys);
-
-            // the index of the last quad facing in scan direction (scanning quad) in the
-            // sorted quad array
-            int lastScanQuadPos = -1;
-
-            // perform a scan by going through the sorted quads and making edges between the
-            // scanning quads and the quads that precede them in the sort order
-            stashedOrthoQuads.unset();
-            for (int quadIndexPos = 0; quadIndexPos < this.quads.length; quadIndexPos++) {
-                int quadIndex = sortedQuads[quadIndexPos];
-                Quad quad = this.quads[quadIndex];
-                if (quad.facing != facing) {
-                    continue;
-                }
-
-                // connect to the last scan quad if it exists
-                if (lastScanQuadPos != -1) {
-                    makeEdge(graph, leafQuads, quadIndex, sortedQuads[lastScanQuadPos], direction);
-                }
-
-                // check if any of the stashed quads are now visible
-                for (int stashedQuadIndex = stashedOrthoQuads
-                        .nextSetBit(0); stashedQuadIndex != -1; stashedQuadIndex = stashedOrthoQuads
-                                .nextSetBit(stashedQuadIndex + 1)) {
-                    Quad stashedOrthoQuad = this.quads[stashedQuadIndex];
-
-                    // if it's visible through the current quad, unstash and connect
-                    if (orthogonalQuadVisible(quad, stashedOrthoQuad)) {
-                        stashedOrthoQuads.unset(stashedQuadIndex);
-                        makeEdge(graph, leafQuads, quadIndex, stashedQuadIndex, direction);
-                    }
-                }
-
-                // check the quads facing in other directions than the scan facing.
-                // initially increment to skip the last scan quad.
-                for (++lastScanQuadPos; lastScanQuadPos < quadIndexPos; lastScanQuadPos++) {
-                    int otherQuadIndex = sortedQuads[lastScanQuadPos];
-                    Quad otherQuad = this.quads[otherQuadIndex];
-
-                    // discard quads that face in the opposite direction, they are never visible
-                    if (otherQuad.facing == oppositeFacing) {
-                        continue;
-                    }
-
-                    // if it's visible through the current quad, add an edge.
-                    // the quad has a direction that is orthogonal to the scan direction, since
-                    // opposite quads were just ruled out and same facing quads are handled by the
-                    // scan.
-                    if (orthogonalQuadVisible(quad, otherQuad)) {
-                        makeEdge(graph, leafQuads, quadIndex, otherQuadIndex, direction);
-                    } else {
-                        // otherwise stash it to check if it's visible by later quads in the scan
-                        stashedOrthoQuads.set(otherQuadIndex);
-                    }
-                }
-
-                // lastScanQuad is now at quadIndexPos
-            }
-        }
-
-        // iterate through the set of quads with no outgoing edges until there are none
-        // left to produce a topological sort of the graph
-        List<Integer> topoSortResult = new ReferenceArrayList<>();
-        for (int topoSortPos = 0; topoSortPos < this.quads.length; topoSortPos++) {
-            int nextLeafQuadIndex = leafQuads.nextSetBit(0);
-
-            // if there are no leaf quads but not yet all quads have been processed,
-            // there must be a cycle!
-            if (nextLeafQuadIndex == -1) {
-                // abort, there are cycles
-                return false;
-            }
-
-            leafQuads.unset(nextLeafQuadIndex);
-
-            // add it to the topo sort result
-            TranslucentData.putQuadVertexIndexes(indexBuffer, nextLeafQuadIndex);
-            topoSortResult.add(nextLeafQuadIndex);
-
-            // remove the edges to this quad and mark them as leaves if that was the last
-            // outgoing edge they had
-            for (int direction = 0; direction < ModelQuadFacing.DIRECTIONS; direction++) {
-                int otherQuadIndex = graph[nextLeafQuadIndex][direction];
-                if (otherQuadIndex != -1 && --graph[otherQuadIndex][OUTGOING_EDGES] == 0) {
-                    leafQuads.set(otherQuadIndex);
-                }
-            }
-        }
-
-        return true;
     }
 }

@@ -9,7 +9,6 @@ import com.mojang.blaze3d.systems.VertexSorter;
 import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.GroupBuilder.Quad;
 import me.jellysquid.mods.sodium.client.util.NativeBuffer;
 import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
@@ -41,12 +40,12 @@ public class StaticNormalRelativeData extends PresentTranslucentData {
     }
 
     private static StaticNormalRelativeData fromDoubleUnaligned(BuiltSectionMeshParts translucentMesh,
-            Quad[] quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
+            TQuad[] quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
         VertexRange[] ranges = translucentMesh.getVertexRanges();
         float[] keys = new float[quads.length];
 
         for (int i = 0; i < quads.length; i++) {
-            Quad quad = quads[i];
+            TQuad quad = quads[i];
             keys[i] = quad.center().dot(quad.normal());
         }
 
@@ -60,7 +59,7 @@ public class StaticNormalRelativeData extends PresentTranslucentData {
     }
 
     private static StaticNormalRelativeData fromAligned(BuiltSectionMeshParts translucentMesh,
-            Quad[] quads, ChunkSectionPos sectionPos) {
+            TQuad[] quads, ChunkSectionPos sectionPos) {
         VertexRange[] ranges = translucentMesh.getVertexRanges();
         Vector3f[][] centers = new Vector3f[ModelQuadFacing.COUNT][];
 
@@ -72,7 +71,7 @@ public class StaticNormalRelativeData extends PresentTranslucentData {
         }
 
         int centerCounter = 0;
-        for (Quad quad : quads) {
+        for (TQuad quad : quads) {
             var directionCenters = centers[quad.facing().ordinal()];
             directionCenters[centerCounter++] = quad.center();
 
@@ -109,7 +108,7 @@ public class StaticNormalRelativeData extends PresentTranslucentData {
     }
 
     static StaticNormalRelativeData fromMesh(BuiltSectionMeshParts translucentMesh,
-            Quad[] quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
+            TQuad[] quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
         if (groupBuilder.alignedNormalBitmap == 0) {
             return fromDoubleUnaligned(translucentMesh, quads, sectionPos, groupBuilder);
         } else {
