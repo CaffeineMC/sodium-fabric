@@ -141,12 +141,13 @@ public abstract class ParticleManagerMixin {
         this.billboardParticles.clear();
     }
 
-    @Inject(method = "renderParticles", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;pop()V"), locals = LocalCapture.CAPTURE_FAILHARD)
+    @Inject(method = "renderParticles", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;applyModelViewMatrix()V", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true)
     public void renderParticles(
             MatrixStack matrices, VertexConsumerProvider.Immediate vertexConsumers,
             LightmapTextureManager lightmapTextureManager, Camera camera, float tickDelta,
             CallbackInfo ci, MatrixStack matrixStack
     ) {
+        ci.cancel();
         for(ParticleTextureSheet particleTextureSheet : PARTICLE_TEXTURE_SHEETS) {
             Queue<BillboardParticle> iterable = this.billboardParticles.get(particleTextureSheet);
             if (iterable != null && !iterable.isEmpty()) {
@@ -157,7 +158,6 @@ public abstract class ParticleManagerMixin {
                 ParticleShaderInterface shader = this.particleRenderer.getActiveProgram().getInterface();
                 shader.setProjectionMatrix(RenderSystem.getProjectionMatrix());
                 shader.setModelViewMatrix(RenderSystem.getModelViewMatrix());
-                shader.setCameraRotation(camera.getRotation());
 
                 for(BillboardParticle particle : iterable) {
                     particle.buildGeometry(bufferBuilder, camera, tickDelta);
@@ -177,16 +177,26 @@ public abstract class ParticleManagerMixin {
                 particleRenderer.end();
             }
         }
+
+        matrixStack.pop();
+        RenderSystem.applyModelViewMatrix();
+        RenderSystem.depthMask(true);
+        RenderSystem.disableBlend();
+        lightmapTextureManager.disable();
     }
 
     @Unique
     private static void bindParticleTextureSheet(ParticleTextureSheet sheet) {
-        if (sheet == ParticleTextureSheet.PARTICLE_SHEET_LIT ||
-                sheet == ParticleTextureSheet.PARTICLE_SHEET_OPAQUE ||
-                sheet == ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT
-        ) {
+        RenderSystem.depthMask(true);
+        if (sheet == ParticleTextureSheet.PARTICLE_SHEET_LIT || sheet == ParticleTextureSheet.PARTICLE_SHEET_OPAQUE) {
+            RenderSystem.disableBlend();
+            RenderSystem.setShaderTexture(0, SpriteAtlasTexture.PARTICLE_ATLAS_TEXTURE);
+        } else if (sheet == ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT) {
+            RenderSystem.enableBlend();
             RenderSystem.setShaderTexture(0, SpriteAtlasTexture.PARTICLE_ATLAS_TEXTURE);
         } else if (sheet == ParticleTextureSheet.TERRAIN_SHEET) {
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
             RenderSystem.setShaderTexture(0, SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
         }
     }
