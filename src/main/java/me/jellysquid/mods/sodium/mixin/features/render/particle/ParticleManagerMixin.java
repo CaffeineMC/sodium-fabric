@@ -3,24 +3,21 @@ package me.jellysquid.mods.sodium.mixin.features.render.particle;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.mojang.blaze3d.platform.GlConst;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
+import me.jellysquid.mods.sodium.client.render.particle.ExtendedParticle;
 import me.jellysquid.mods.sodium.client.render.particle.ShaderBillboardParticleRenderer;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleVertex;
 import me.jellysquid.mods.sodium.client.render.particle.shader.ParticleShaderInterface;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.particle.*;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.SpriteAtlasTexture;
-import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.crash.CrashException;
-import net.minecraft.util.crash.CrashReport;
-import net.minecraft.util.crash.CrashReportSection;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -33,6 +30,9 @@ import java.util.*;
 public abstract class ParticleManagerMixin {
     @Unique
     private final BufferBuilder bufferBuilder = new BufferBuilder(1);
+
+    @Unique
+    private final BufferBuilder testBuffer = new BufferBuilder(1);
 
     @Shadow
     protected ClientWorld world;
@@ -79,6 +79,7 @@ public abstract class ParticleManagerMixin {
      */
     @Overwrite
     public void tick() {
+        testBuffer.begin(VertexFormat.DrawMode.QUADS, BillboardParticleVertex.MC_VERTEX_FORMAT);
         this.particles.forEach((sheet, queue) -> {
             this.world.getProfiler().push(sheet.toString());
             this.tickParticles(queue);
@@ -110,7 +111,7 @@ public abstract class ParticleManagerMixin {
             while((particle = this.newParticles.poll()) != null) {
                 if (particle instanceof BillboardParticle bParticle && !classOverridesBuild.computeIfAbsent(
                         bParticle.getClass(),
-                        (pClass) -> this.testClassOverrides(bParticle.getClass())
+                        (pClass) -> this.testClassOverrides(bParticle)
                 )) {
                     this.billboardParticles
                             .computeIfAbsent(particle.getType(), sheet -> EvictingQueue.create(16384))
@@ -122,20 +123,14 @@ public abstract class ParticleManagerMixin {
                 }
             }
         }
+
+        testBuffer.end().release();
     }
 
     @Unique
-    private boolean testClassOverrides(Class<? extends BillboardParticle> particleClass) {
-        try {
-            return particleClass.getDeclaredMethod(
-                    BUILD_GEOMETRY_METHOD,
-                    VertexConsumer.class,
-                    Camera.class,
-                    float.class
-            ).getDeclaringClass() != BillboardParticle.class;
-        } catch (NoSuchMethodException e) {
-            return false;
-        }
+    private boolean testClassOverrides(BillboardParticle particle) {
+        particle.buildGeometry(testBuffer, MinecraftClient.getInstance().gameRenderer.getCamera(), 0);
+        return !((ExtendedParticle) particle).sodium$reachedBillboardDraw();
     }
 
     @Inject(method = "clearParticles", at = @At("TAIL"))
@@ -155,8 +150,6 @@ public abstract class ParticleManagerMixin {
         shader.setModelViewMatrix(RenderSystem.getModelViewMatrix());
 
         for (ParticleTextureSheet particleTextureSheet : PARTICLE_TEXTURE_SHEETS) {
-            if (particleTextureSheet == ParticleTextureSheet.NO_RENDER) continue;
-
             Queue<BillboardParticle> iterable = this.billboardParticles.get(particleTextureSheet);
             if (iterable != null && !iterable.isEmpty()) {
                 bindParticleTextureSheet(particleTextureSheet);
