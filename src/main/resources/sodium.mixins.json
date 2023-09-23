@@ -1,15 +1,15 @@
 {
-  "package" : "me.jellysquid.mods.sodium.mixin",
-  "required" : true,
-  "compatibilityLevel" : "JAVA_17",
-  "plugin" : "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
-  "injectors" : {
-    "defaultRequire" : 1
+  "package": "me.jellysquid.mods.sodium.mixin",
+  "required": true,
+  "compatibilityLevel": "JAVA_17",
+  "plugin": "me.jellysquid.mods.sodium.mixin.SodiumMixinPlugin",
+  "injectors": {
+    "defaultRequire": 1
   },
-  "overwrites" : {
-    "conformVisibility" : true
+  "overwrites": {
+    "conformVisibility": true
   },
-  "client" : [
+  "client": [
     "core.MinecraftClientMixin",
     "core.WindowMixin",
     "core.model.colors.BlockColorsMixin",
@@ -59,6 +59,7 @@
     "features.render.model.block.BlockModelRendererMixin",
     "features.render.model.item.ItemRendererMixin",
     "features.render.particle.BillboardParticleMixin",
+    "features.render.particle.ParticleManagerMixin",
     "features.render.world.clouds.BackgroundRendererInvoker",
     "features.render.world.clouds.WorldRendererMixin",
     "features.render.world.sky.BackgroundRendererMixin",

@@ -2,7 +2,7 @@
 
 #import <sodium:include/fog.glsl>
 #import <sodium:include/chunk_vertex.glsl>
-#import <sodium:include/chunk_matrices.glsl>
+#import <sodium:include/matrices.glsl>
 #import <sodium:include/chunk_material.glsl>
 
 out vec3 v_ColorModulator;
