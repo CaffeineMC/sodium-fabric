@@ -47,6 +47,9 @@ public class ShaderBillboardParticleRenderer {
         // pass.startDrawing(); .. Do I need a pass?
 
         this.activeProgram.bind();
+    }
+
+    public void setupState() {
         this.activeProgram.getInterface().setupState();
     }
 

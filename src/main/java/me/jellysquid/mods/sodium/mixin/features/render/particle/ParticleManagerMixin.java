@@ -110,7 +110,7 @@ public abstract class ParticleManagerMixin {
             while((particle = this.newParticles.poll()) != null) {
                 if (particle instanceof BillboardParticle bParticle && !classOverridesBuild.computeIfAbsent(
                         bParticle.getClass(),
-                        this::testClassOverrides
+                        (pClass) -> this.testClassOverrides(bParticle.getClass())
                 )) {
                     this.billboardParticles
                             .computeIfAbsent(particle.getType(), sheet -> EvictingQueue.create(16384))
@@ -143,16 +143,12 @@ public abstract class ParticleManagerMixin {
         this.billboardParticles.clear();
     }
 
-    @Inject(method = "renderParticles", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;pop()V"), locals = LocalCapture.CAPTURE_FAILHARD)
+    @Inject(method = "renderParticles", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;applyModelViewMatrix()V", ordinal = 0, shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD)
     public void renderParticles(
             MatrixStack matrices, VertexConsumerProvider.Immediate vertexConsumers,
             LightmapTextureManager lightmapTextureManager, Camera camera, float tickDelta,
             CallbackInfo ci, MatrixStack matrixStack
     ) {
-
-        RenderSystem.depthMask(true);
-        RenderSystem.disableBlend();
-
         particleRenderer.begin();
         ParticleShaderInterface shader = this.particleRenderer.getActiveProgram().getInterface();
         shader.setProjectionMatrix(RenderSystem.getProjectionMatrix());
@@ -164,7 +160,7 @@ public abstract class ParticleManagerMixin {
             Queue<BillboardParticle> iterable = this.billboardParticles.get(particleTextureSheet);
             if (iterable != null && !iterable.isEmpty()) {
                 bindParticleTextureSheet(particleTextureSheet);
-
+                particleRenderer.setupState();
                 bufferBuilder.begin(VertexFormat.DrawMode.QUADS, BillboardParticleVertex.MC_VERTEX_FORMAT);
 
                 for (BillboardParticle particle : iterable) {
@@ -208,8 +204,7 @@ public abstract class ParticleManagerMixin {
             buffer.upload(built);
             BillboardParticleVertex.bindVertexFormat();
 
-            int indexType = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS).getIndexType().glType;
-            RenderSystem.drawElements(4, numParticles * 6, indexType);
+            buffer.draw();
         }
     }
 }
