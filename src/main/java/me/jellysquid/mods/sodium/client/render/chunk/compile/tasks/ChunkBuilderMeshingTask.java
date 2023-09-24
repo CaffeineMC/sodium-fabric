@@ -1,6 +1,8 @@
 package me.jellysquid.mods.sodium.client.render.chunk.compile.tasks;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import me.jellysquid.mods.sodium.client.SodiumClientMod;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildContext;
@@ -74,7 +76,10 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         BlockPos.Mutable blockPos = new BlockPos.Mutable(minX, minY, minZ);
         BlockPos.Mutable modelOffset = new BlockPos.Mutable();
 
-        GroupBuilder groupBuilder = new GroupBuilder(render.getPosition());
+        GroupBuilder groupBuilder = null;
+        if (SodiumClientMod.options().performance.sortBehavior != SortBehavior.NONE) {
+            groupBuilder = new GroupBuilder(render.getPosition());
+        }
         BlockRenderContext context = new BlockRenderContext(slice, groupBuilder);
 
         try {
@@ -137,7 +142,10 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             throw fillCrashInfo(CrashReport.create(ex, "Encountered exception while building chunk meshes"), slice, blockPos);
         }
 
-        SortType sortType = groupBuilder.finishRendering();
+        SortType sortType = SortType.NONE;
+        if (groupBuilder != null) {
+            sortType = groupBuilder.finishRendering();
+        }
 
         Map<TerrainRenderPass, BuiltSectionMeshParts> meshes = new Reference2ReferenceOpenHashMap<>();
 
@@ -153,8 +161,10 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
             }
         }
 
-        TranslucentData translucentData = groupBuilder.getTranslucentData(
-                meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), cameraPos);
+        TranslucentData translucentData = null;
+        if (groupBuilder != null) {
+            groupBuilder.getTranslucentData(meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), cameraPos);
+        }
 
         renderData.setOcclusionData(occluder.build());
 

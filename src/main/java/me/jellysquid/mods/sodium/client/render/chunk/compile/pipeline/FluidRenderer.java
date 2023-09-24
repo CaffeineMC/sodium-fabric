@@ -404,9 +404,6 @@ public class FluidRenderer {
                            ModelQuadFacing facing, boolean flip) {
         var vertices = this.vertices;
 
-        // if translucent, add this face to the GFNI group builder
-        boolean isTranslucent = material == DefaultMaterials.TRANSLUCENT;
-
         for (int i = 0; i < 4; i++) {
             var out = vertices[flip ? 3 - i : i];
             out.x = offset.getX() + quad.getX(i);
@@ -425,7 +422,7 @@ public class FluidRenderer {
             builder.addSprite(sprite);
         }
 
-        if (isTranslucent) {
+        if (material == DefaultMaterials.TRANSLUCENT && groupBuilder != null) {
             if (facing == ModelQuadFacing.UNASSIGNED) {
                 // calculate the current GFNI normal but not the unit normal
                 quad.calculateNormals(false);

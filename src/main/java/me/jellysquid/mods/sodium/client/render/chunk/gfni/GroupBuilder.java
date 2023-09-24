@@ -31,6 +31,8 @@ import net.minecraft.util.math.ChunkSectionPos;
  * heuristic doesn't expect it to be possible. The caveat is that this costs
  * doing it once without invisible quad exclusion and once with if the first
  * attempt fails.
+ * - disable translucent data collection when setting is set to OFF to prevent
+ * overhead if no sorting is wanted.
  */
 public class GroupBuilder {
     private static final Vector3fc[] ALIGNED_NORMALS = new Vector3fc[ModelQuadFacing.DIRECTIONS];
@@ -169,7 +171,7 @@ public class GroupBuilder {
      * Filters the given sort type to fit within the selected sorting mode. If it
      * doesn't match, then it's set to the NONE sort type.
      * 
-     * @param sortType             the sort type to filter
+     * @param sortType the sort type to filter
      */
     private static SortType filterSortType(SortType sortType) {
         SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;

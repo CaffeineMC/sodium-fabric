@@ -147,9 +147,6 @@ public class BlockRenderer {
 
         ModelQuadFacing normalFace = quad.getNormalFace();
 
-        // if translucent, add this face to the GFNI group builder
-        boolean isTranslucent = material == DefaultMaterials.TRANSLUCENT;
-
         for (int dstIndex = 0; dstIndex < 4; dstIndex++) {
             int srcIndex = orientation.getVertexIndex(dstIndex);
 
@@ -166,7 +163,7 @@ public class BlockRenderer {
             out.light = light.lm[srcIndex];
         }
 
-        if (isTranslucent) {
+        if (material == DefaultMaterials.TRANSLUCENT && ctx.groupBuilder != null) {
             ctx.groupBuilder.appendQuad(quad, vertices, normalFace);
         }
 
