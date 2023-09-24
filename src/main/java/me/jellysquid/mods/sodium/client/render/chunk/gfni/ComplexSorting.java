@@ -407,6 +407,28 @@ public class ComplexSorting {
             activeQuads = allQuads.length;
         }
 
+        // special case for 0 or 1 quads because the algorithm below doesn't work for
+        // those cases (and it's just faster to skip it)
+        if (activeQuads == 0) {
+            return true;
+        }
+        if (activeQuads == 1) {
+            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, 0, activeToRealIndex);
+            return true;
+        }
+
+        // special case 2 quads for performance
+        if (activeQuads == 2) {
+            var a = 0;
+            var b = 1;
+            if (quadVisibleThrough(quads[a], quads[b])) {
+                a = 1;
+                b = 0;
+            }
+            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, a, activeToRealIndex);
+            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, b, activeToRealIndex);
+        }
+
         // int-based doubly linked list of active quad indexes
         int[] forwards = new int[activeQuads];
         int[] backwards = new int[activeQuads];
