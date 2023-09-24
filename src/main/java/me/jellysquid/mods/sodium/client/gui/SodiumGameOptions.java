@@ -60,13 +60,11 @@ public class SodiumGameOptions {
         private final Text name;
         public final Set<SortType> sortTypes;
         public final boolean needsPlaneTrigger;
-        public final boolean needsIndexBuffer;
 
         SortBehavior(String name, Set<SortType> sortTypes) {
             this.name = Text.translatable(name);
             this.sortTypes = sortTypes;
             this.needsPlaneTrigger = sortTypes.stream().anyMatch(type -> type.needsPlaneTrigger);
-            this.needsIndexBuffer = sortTypes.stream().anyMatch(type -> type.needsIndexBuffer);
         }
 
         @Override

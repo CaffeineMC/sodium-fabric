@@ -10,6 +10,7 @@ import me.jellysquid.mods.sodium.client.gl.tessellation.GlIndexType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlPrimitiveType;
 import me.jellysquid.mods.sodium.client.gl.tessellation.GlTessellation;
 import me.jellysquid.mods.sodium.client.gl.tessellation.TessellationBinding;
+import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataUnsafe;
@@ -51,7 +52,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         // TODO: also disable this if there is only NONE-type sorting or no translucent geometry in the region
         boolean isTranslucent = renderPass == DefaultTerrainRenderPasses.TRANSLUCENT 
-                && SodiumClientMod.options().performance.sortBehavior.needsIndexBuffer;
+                && SodiumClientMod.options().performance.sortBehavior != SortBehavior.NONE;
         boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();
