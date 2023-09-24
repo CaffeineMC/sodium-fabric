@@ -163,7 +163,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
         TranslucentData translucentData = null;
         if (groupBuilder != null) {
-            groupBuilder.getTranslucentData(meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), cameraPos);
+            translucentData = groupBuilder.getTranslucentData(meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), cameraPos);
         }
 
         renderData.setOcclusionData(occluder.build());

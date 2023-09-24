@@ -283,11 +283,12 @@ public class RenderSectionManager {
 
         var blockingRebuilds = new ChunkJobCollector(Integer.MAX_VALUE, this.buildResults::add);
         var deferredRebuilds = new ChunkJobCollector(this.builder.getSchedulingBudget(), this.buildResults::add);
+        var optionallyBlockingCollector = updateImmediately ? blockingRebuilds : deferredRebuilds;
 
         this.submitSectionTasks(blockingRebuilds, ChunkUpdateType.IMPORTANT_REBUILD);
-        this.submitSectionTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.REBUILD);
-        this.submitSectionTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.INITIAL_BUILD);
-        this.submitSectionTasks(updateImmediately ? blockingRebuilds : deferredRebuilds, ChunkUpdateType.TRANSLUCENT_SORT);
+        this.submitSectionTasks(optionallyBlockingCollector, ChunkUpdateType.REBUILD);
+        this.submitSectionTasks(optionallyBlockingCollector, ChunkUpdateType.INITIAL_BUILD);
+        this.submitSectionTasks(optionallyBlockingCollector, ChunkUpdateType.TRANSLUCENT_SORT);
 
         blockingRebuilds.awaitCompletion(this.builder);
     }
