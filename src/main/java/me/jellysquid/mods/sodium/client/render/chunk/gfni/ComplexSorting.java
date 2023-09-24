@@ -427,6 +427,7 @@ public class ComplexSorting {
             }
             TranslucentData.putMappedQuadVertexIndexes(indexBuffer, a, activeToRealIndex);
             TranslucentData.putMappedQuadVertexIndexes(indexBuffer, b, activeToRealIndex);
+            return true;
         }
 
         // int-based doubly linked list of active quad indexes
