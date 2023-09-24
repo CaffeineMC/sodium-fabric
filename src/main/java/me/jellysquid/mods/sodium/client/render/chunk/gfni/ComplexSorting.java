@@ -433,7 +433,6 @@ public class ComplexSorting {
         int[] forwards = new int[activeQuads];
         int[] backwards = new int[activeQuads];
         int start = 0;
-        int end = activeQuads - 1; // TODO: this is not used, remove?
         for (int i = 0; i < activeQuads - 1; i++) {
             forwards[i] = i + 1;
             backwards[i + 1] = i;
@@ -462,8 +461,6 @@ public class ComplexSorting {
             int currentBackward = backwards[quadIndex];
             if (currentForward != -1) {
                 backwards[currentForward] = currentBackward;
-            } else {
-                end = currentBackward;
             }
             if (currentBackward != -1) {
                 forwards[currentBackward] = currentForward;
@@ -485,8 +482,6 @@ public class ComplexSorting {
                 forwards[insertAfter] = quadIndex;
                 if (forwards[quadIndex] != -1) {
                     backwards[forwards[quadIndex]] = quadIndex;
-                } else {
-                    end = quadIndex;
                 }
             }
         }
