@@ -21,7 +21,9 @@ public class StaticTopoAcyclicData extends MixedDirectionData {
         var buffer = new NativeBuffer(TranslucentData.vertexCountToIndexBytes(range.vertexCount()));
         var indexBuffer = buffer.getDirectBuffer().asIntBuffer();
 
-        ComplexSorting.topoSortAlignedAcyclicSafe(indexBuffer, quads, null);
+        if (!ComplexSorting.topoSortFullGraphAcyclic(indexBuffer, quads, null)) {
+            System.out.println("Failed to sort topo static because there was a cycle");
+        }
 
         return new StaticTopoAcyclicData(sectionPos, buffer, range);
     }

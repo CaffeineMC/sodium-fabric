@@ -65,12 +65,9 @@ public class DynamicData extends MixedDirectionData {
     public void sort(Vector3fc cameraPos) {
         IntBuffer indexBuffer = this.buffer.getDirectBuffer().asIntBuffer();
 
-        if (this.unalignedDistances == null || this.unalignedDistances.isEmpty()) {
-            // TODO: this throws because something is breaking it, either a mistake in the
-            // algorithm or a violation of the assumptions
-            ComplexSorting.topoSortAlignedAcyclicSafe(indexBuffer, this.quads, cameraPos);
-        } else {
-            ComplexSorting.distanceSortModified(indexBuffer, this.quads, cameraPos);
+        if (!ComplexSorting.topoSortFullGraphAcyclic(indexBuffer, this.quads, cameraPos)) {
+            // if a camera position is given, no cycle should be possible
+            throw new IllegalStateException("Failed to sort");
         }
     }
 

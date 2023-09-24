@@ -39,6 +39,14 @@ public abstract class TranslucentData {
         return quadCount * INDICES_PER_QUAD * BYTES_PER_INDEX;
     }
 
+    static void putMappedQuadVertexIndexes(IntBuffer intBuffer, int quadIndex, int[] indexMapping) {
+        if (indexMapping == null) {
+            putQuadVertexIndexes(intBuffer, quadIndex);
+        } else {
+            putQuadVertexIndexes(intBuffer, indexMapping[quadIndex]);
+        }
+    }
+
     static void putQuadVertexIndexes(IntBuffer intBuffer, int quadIndex) {
         int vertexOffset = quadIndex * VERTICES_PER_QUAD;
 

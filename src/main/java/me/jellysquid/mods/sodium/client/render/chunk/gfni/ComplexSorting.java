@@ -92,7 +92,21 @@ public class ComplexSorting {
         TranslucentData.writeVertexIndexes(indexBuffer, indexes);
     }
 
-    private static boolean extentWithinHalfspace(TQuad halfspace, TQuad otherQuad) {
+    private static int[] distanceSortIndexes(TQuad[] quads, Vector3fc cameraPos) {
+        float[] keys = new float[quads.length];
+        for (int i = 0; i < quads.length; i++) {
+            keys[i] = cameraPos.distanceSquared(quads[i].center());
+        }
+
+        return MergeSort.mergeSort(keys);
+    }
+
+    public static void distanceSortDirect(IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
+        var indexes = distanceSortIndexes(quads, cameraPos);
+        TranslucentData.writeVertexIndexes(indexBuffer, indexes);
+    }
+
+    private static boolean orthoExtentWithinHalfspace(TQuad halfspace, TQuad otherQuad) {
         var halfspaceDirection = halfspace.facing().ordinal();
         var otherQuadOppositeDirection = halfspace.facing().getOpposite().ordinal();
         var sign = halfspace.facing().getSign();
@@ -103,7 +117,7 @@ public class ComplexSorting {
     private static boolean orthogonalQuadVisibleThrough(TQuad quad, TQuad otherQuad) {
         // A: test that the other quad has an extent within this quad's halfspace
         // B: test that this quad has an extent outside the other quad's halfspace
-        return extentWithinHalfspace(quad, otherQuad) && !extentWithinHalfspace(otherQuad, quad);
+        return orthoExtentWithinHalfspace(quad, otherQuad) && !orthoExtentWithinHalfspace(otherQuad, quad);
     }
 
     /**
@@ -123,12 +137,6 @@ public class ComplexSorting {
         }
     }
 
-    public static void topoSortAlignedAcyclicSafe(IntBuffer indexBuffer, TQuad[] allQuads, Vector3fc cameraPos) {
-        if (!topoSortAlignedAcyclic(indexBuffer, allQuads, cameraPos)) {
-            throw new IllegalStateException("Cyclic quad visibility graph!");
-        }
-    }
-
     /**
      * This scanning topo sort algorithm assumes that a number of invariants about
      * the quads hold:
@@ -140,8 +148,11 @@ public class ComplexSorting {
      * If a camera position is provided, the algorithm will only sort visible quads
      * and just render the other quads first without any particular ordering.
      * 
+     * Sometimes this algorithm will fail even if a topological sort is possible due
+     * to how it compresses the graph.
+     * 
      * @param indexBuffer the buffer to write the topo sort result to
-     * @param quads       the quads to sort
+     * @param allQuads    the quads to sort
      * @param cameraPos   the camera position, or null if not visibility check
      *                    should be performed
      * @return true if the quads were sorted, false if there was a cycle
@@ -300,11 +311,7 @@ public class ComplexSorting {
             leafQuads.unset(nextLeafQuadIndex);
 
             // add it to the topo sort result
-            if (cameraPos != null) {
-                TranslucentData.putQuadVertexIndexes(indexBuffer, activeToRealIndex[nextLeafQuadIndex]);
-            } else {
-                TranslucentData.putQuadVertexIndexes(indexBuffer, nextLeafQuadIndex);
-            }
+            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, nextLeafQuadIndex, activeToRealIndex);
 
             // remove the edges to this quad and mark them as leaves if that was the last
             // outgoing edge they had
@@ -314,6 +321,163 @@ public class ComplexSorting {
                     leafQuads.set(otherQuadIndex);
                 }
             }
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if one quad is visible through the other quad. This accepts arbitrary
+     * quads, even unaligned ones.
+     * 
+     * @param quad  the quad through which the other quad is being tested
+     * @param other the quad being tested
+     * @return true if the other quad is visible through the first quad
+     */
+    private static boolean quadVisibleThrough(TQuad quad, TQuad other) {
+        if (quad == other) {
+            return false;
+        }
+
+        // aligned quads
+        var quadFacing = quad.facing();
+        var otherFacing = other.facing();
+        if (quadFacing != ModelQuadFacing.UNASSIGNED && otherFacing != ModelQuadFacing.UNASSIGNED) {
+            // opposites never see eachother
+            if (quadFacing.getOpposite() == otherFacing) {
+                return false;
+            }
+
+            // parallel quads, coplanar quads are not visible to eachother
+            if (quadFacing == otherFacing) {
+                var sign = quadFacing.getSign();
+                var direction = quadFacing.ordinal();
+                return sign * quad.extents()[direction] > sign * other.extents()[direction];
+            }
+
+            // orthogonal quads
+            return orthogonalQuadVisibleThrough(quad, other);
+        }
+
+        // at least one unaligned quad
+        // this is an approximation since our quads don't store all their vertices.
+        // check that other center is within the halfspace of quad and that the normals
+        // are more than 90 degrees apart
+        return halfspace(quad.center(), quad.normal(), other.center()) < 0
+                && quad.normal().dot(other.normal()) < 0;
+    }
+
+    /**
+     * Performs a topological sort but constructs the full forward graph without
+     * using a compression technique like
+     * {@link #topoSortAlignedAcyclic(IntBuffer, TQuad[], Vector3fc)} does. Only
+     * sort visible quads if a camera position is provided.
+     * 
+     * @param indexBuffer the buffer to write the topo sort result to
+     * @param allQuads    the quads to sort
+     * @param cameraPos   the camera position, or null to disable the visibility
+     *                    check
+     * @return true if the quads were sorted, false if there was a cycle
+     */
+    public static boolean topoSortFullGraphAcyclic(IntBuffer indexBuffer, TQuad[] allQuads, Vector3fc cameraPos) {
+        // TODO: quads visibility filter copy-pasted from topoSortAlignedAcyclic
+        // if enabled, check for visibility and produce a mapping of indices
+        TQuad[] quads = null;
+        int[] activeToRealIndex = null;
+        int activeQuads = 0;
+        if (cameraPos != null) {
+            // allocate the working quads and index map at the full size to avoid needing to
+            // iterate the quads again after checking visibility
+            quads = new TQuad[allQuads.length];
+            activeToRealIndex = new int[allQuads.length];
+
+            for (int i = 0; i < allQuads.length; i++) {
+                TQuad quad = allQuads[i];
+                if (pointOutsideHalfspace(quad.center(), quad.normal(), cameraPos)) {
+                    activeToRealIndex[activeQuads] = i;
+                    quads[activeQuads] = quad;
+                    activeQuads++;
+                } else {
+                    // write the invisible quads right away
+                    TranslucentData.putQuadVertexIndexes(indexBuffer, i);
+                }
+            }
+        } else {
+            quads = allQuads;
+            activeQuads = allQuads.length;
+        }
+
+        // int-based doubly linked list of active quad indexes
+        int[] forwards = new int[activeQuads];
+        int[] backwards = new int[activeQuads];
+        int start = 0;
+        int end = activeQuads - 1; // TODO: this is not used, remove?
+        for (int i = 0; i < activeQuads - 1; i++) {
+            forwards[i] = i + 1;
+            backwards[i + 1] = i;
+        }
+        forwards[activeQuads - 1] = -1;
+        backwards[0] = -1;
+
+        // go through all the active quads and insert them into the list at the point
+        // where they are after all the quads that are visible through them
+        for (int quadIndex = 0; quadIndex < activeQuads; quadIndex++) {
+            TQuad quad = quads[quadIndex];
+
+            // test all other quads
+            int insertAfter = -1;
+            int otherQuadIndex = start;
+            while (otherQuadIndex != -1) {
+                TQuad otherQuad = quads[otherQuadIndex];
+                if (quadVisibleThrough(quad, otherQuad)) {
+                    insertAfter = otherQuadIndex;
+                }
+                otherQuadIndex = forwards[otherQuadIndex];
+            }
+
+            // remove from current location
+            int currentForward = forwards[quadIndex];
+            int currentBackward = backwards[quadIndex];
+            if (currentForward != -1) {
+                backwards[currentForward] = currentBackward;
+            } else {
+                end = currentBackward;
+            }
+            if (currentBackward != -1) {
+                forwards[currentBackward] = currentForward;
+            } else {
+                start = currentForward;
+            }
+
+            // insert after the identified last quad that this quad needs to be after
+            if (insertAfter == -1) {
+                // insert at the start
+                forwards[quadIndex] = start;
+                backwards[quadIndex] = -1;
+                backwards[start] = quadIndex;
+                start = quadIndex;
+            } else {
+                // insert after the identified quad
+                forwards[quadIndex] = forwards[insertAfter];
+                backwards[quadIndex] = insertAfter;
+                forwards[insertAfter] = quadIndex;
+                if (forwards[quadIndex] != -1) {
+                    backwards[forwards[quadIndex]] = quadIndex;
+                } else {
+                    end = quadIndex;
+                }
+            }
+        }
+
+        // write the sorted quads to the buffer
+        for (int i = 0; i < activeQuads; i++) {
+            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, start, activeToRealIndex);
+            start = forwards[start];
+        }
+
+        // detect cycles
+        if (start != -1) {
+            return false;
         }
 
         return true;
