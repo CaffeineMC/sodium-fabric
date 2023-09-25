@@ -22,7 +22,6 @@ public abstract class TranslucentData {
 
     public abstract SortType getSortType();
 
-
     public void delete() {
     }
 
