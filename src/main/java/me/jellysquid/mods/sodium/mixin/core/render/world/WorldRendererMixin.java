@@ -33,9 +33,6 @@ public abstract class WorldRendererMixin implements WorldRendererExtended {
     @Final
     private Long2ObjectMap<SortedSet<BlockBreakingInfo>> blockBreakingProgressions;
 
-    @Shadow
-    private boolean shouldUpdate;
-
     @Unique
     private SodiumWorldRenderer renderer;
 
@@ -124,8 +121,6 @@ public abstract class WorldRendererMixin implements WorldRendererExtended {
         } finally {
             RenderDevice.exitManagedCode();
         }
-
-        this.shouldUpdate = false; // We set this because third-party mods may use it (to loop themselves), even if Vanilla does not.
     }
 
     /**

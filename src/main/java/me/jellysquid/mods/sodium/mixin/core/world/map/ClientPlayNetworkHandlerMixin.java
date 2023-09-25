@@ -29,6 +29,6 @@ public class ClientPlayNetworkHandlerMixin {
     @Inject(method = "onUnloadChunk", at = @At("RETURN"))
     private void onChunkUnloadPacket(UnloadChunkS2CPacket packet, CallbackInfo ci) {
         ChunkTrackerHolder.get(this.world)
-                .onChunkStatusRemoved(packet.getX(), packet.getZ(), ChunkStatus.FLAG_ALL);
+                .onChunkStatusRemoved(packet.pos().x, packet.pos().z, ChunkStatus.FLAG_ALL);
     }
 }
