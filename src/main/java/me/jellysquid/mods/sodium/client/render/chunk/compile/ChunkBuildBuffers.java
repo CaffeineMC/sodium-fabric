@@ -95,7 +95,7 @@ public class ChunkBuildBuffers {
             mergedBufferBuilder.put(buffer);
         }
 
-        mergedBufferBuilder.flip();
+        mergedBufferBuilder.flip(); // TODO: necessary?
 
         return new BuiltSectionMeshParts(mergedBuffer, vertexRanges);
     }
