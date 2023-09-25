@@ -340,8 +340,13 @@ public class GroupBuilder {
     }
 
     public TranslucentData getTranslucentData(BuiltSectionMeshParts translucentMesh, Vector3fc cameraPos) {
-        if (this.sortType == SortType.NONE || translucentMesh == null) {
-            return new NoneData(this.sectionPos);
+        // means there is no translucent geometry
+        if (translucentMesh == null) {
+            return new NoData(sectionPos);
+        }
+
+        if (this.sortType == SortType.NONE) {
+            return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos);
         }
 
         if (this.sortType == SortType.STATIC_NORMAL_RELATIVE) {
@@ -363,7 +368,7 @@ public class GroupBuilder {
         this.sortType = filterSortType(this.sortType);
 
         if (this.sortType == SortType.NONE) {
-            return new NoneData(this.sectionPos);
+            return AnyOrderData.fromMesh(translucentMesh, quads, sectionPos);
         }
 
         if (this.sortType == SortType.DYNAMIC_ALL) {

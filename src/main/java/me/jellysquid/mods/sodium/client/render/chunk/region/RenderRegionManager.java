@@ -10,16 +10,12 @@ import me.jellysquid.mods.sodium.client.gl.arena.staging.MappedStagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.arena.staging.StagingBuffer;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
-import me.jellysquid.mods.sodium.client.gl.util.VertexRange;
-import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.BuilderTaskOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkSortOutput;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.MixedDirectionData;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.PresentTranslucentData;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.StaticNormalRelativeData;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import org.jetbrains.annotations.NotNull;
@@ -136,22 +132,8 @@ public class RenderRegionManager {
 
             for (PendingSectionIndexBufferUpload upload : indexUploads) {
                 var storage = region.createTranslucentStorage();
-
-                // TODO: doesn't support DynamicTopoCyclicData yet because of SectionRenderDataStorage's internals
-                VertexRange[] vertexRanges = null;
-                var translucentData = upload.translucentData;
-                if (translucentData instanceof StaticNormalRelativeData data) {
-                    vertexRanges = data.ranges;
-                } else if (translucentData instanceof MixedDirectionData data) {
-                    vertexRanges = new VertexRange[ModelQuadFacing.COUNT];
-                    vertexRanges[ModelQuadFacing.UNASSIGNED.ordinal()] = data.range;
-                } else {
-                    throw new UnsupportedOperationException("Unsupported translucent data type: " + translucentData.getClass());
-                }
-                if (vertexRanges != null) {
-                    storage.setMeshes(upload.section.getSectionIndex(),
-                    upload.indexBufferUpload.getResult(), vertexRanges);
-                }
+                storage.setMeshes(upload.section.getSectionIndex(),
+                upload.indexBufferUpload.getResult(), upload.translucentData.getVertexRanges());
             }
         }
     }

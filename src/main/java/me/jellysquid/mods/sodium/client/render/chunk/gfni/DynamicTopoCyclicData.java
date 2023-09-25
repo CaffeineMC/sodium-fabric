@@ -10,15 +10,15 @@ import net.minecraft.util.math.ChunkSectionPos;
 /**
  * TODO: implement
  */
-public class DynamicTopoCyclicData extends PresentTranslucentData {
+public class DynamicTopoCyclicData extends MixedDirectionData {
     public final ReferenceArrayList<SortOrder> orders;
 
     public static record SortOrder(VertexRange range, Vector3fc normal, double distance) {
     }
 
     public DynamicTopoCyclicData(ChunkSectionPos sectionPos,
-            NativeBuffer buffer, ReferenceArrayList<SortOrder> orders) {
-        super(sectionPos, buffer);
+            NativeBuffer buffer, VertexRange range, ReferenceArrayList<SortOrder> orders) {
+        super(sectionPos, buffer, range);
         this.orders = orders;
     }
 

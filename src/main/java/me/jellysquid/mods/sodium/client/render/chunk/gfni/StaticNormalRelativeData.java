@@ -14,12 +14,9 @@ import me.jellysquid.mods.sodium.client.util.sorting.MergeSort;
 import me.jellysquid.mods.sodium.client.util.sorting.VertexSorters;
 import net.minecraft.util.math.ChunkSectionPos;
 
-public class StaticNormalRelativeData extends PresentTranslucentData {
-    public final VertexRange[] ranges;
-
+public class StaticNormalRelativeData extends SplitDirectionData {
     public StaticNormalRelativeData(ChunkSectionPos sectionPos, NativeBuffer buffer, VertexRange[] ranges) {
-        super(sectionPos, buffer);
-        this.ranges = ranges;
+        super(sectionPos, buffer, ranges);
     }
 
     @Override
