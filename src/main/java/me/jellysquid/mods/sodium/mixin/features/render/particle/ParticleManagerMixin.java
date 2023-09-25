@@ -7,6 +7,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import me.jellysquid.mods.sodium.client.render.particle.ExtendedParticle;
+import me.jellysquid.mods.sodium.client.render.particle.ParticleExtended;
+import me.jellysquid.mods.sodium.client.render.particle.ParticleRenderView;
 import me.jellysquid.mods.sodium.client.render.particle.ShaderBillboardParticleRenderer;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleVertex;
 import me.jellysquid.mods.sodium.client.render.particle.shader.ParticleShaderInterface;
@@ -16,12 +18,16 @@ import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.particle.*;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.particle.ParticleEffect;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.*;
@@ -198,6 +204,45 @@ public abstract class ParticleManagerMixin {
             BillboardParticleVertex.bindVertexFormat();
 
             buffer.draw();
+        }
+    }
+
+    @Unique
+    private ParticleRenderView renderView;
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void postInit(ClientWorld world, TextureManager textureManager, CallbackInfo ci) {
+        this.renderView = new ParticleRenderView(world);
+    }
+
+    @Inject(method = "setWorld", at = @At("RETURN"))
+    private void postSetWorld(ClientWorld world, CallbackInfo ci) {
+        this.renderView = new ParticleRenderView(world);
+    }
+
+    @Inject(method = "renderParticles", at = @At("HEAD"))
+    private void preRenderParticles(MatrixStack matrices,
+                                   VertexConsumerProvider.Immediate vertexConsumers,
+                                   LightmapTextureManager lightmapTextureManager,
+                                   Camera camera,
+                                   float tickDelta,
+                                   CallbackInfo ci) {
+        this.renderView.resetCache();
+    }
+
+    @Inject(method = "createParticle", at = @At("RETURN"))
+    private <T extends ParticleEffect> void postCreateParticle(T parameters,
+                                                               double x,
+                                                               double y,
+                                                               double z,
+                                                               double velocityX,
+                                                               double velocityY,
+                                                               double velocityZ,
+                                                               CallbackInfoReturnable<@Nullable Particle> cir) {
+        var particle = cir.getReturnValue();
+
+        if (particle instanceof ParticleExtended extension) {
+            extension.sodium$configure(this.renderView);
         }
     }
 }
