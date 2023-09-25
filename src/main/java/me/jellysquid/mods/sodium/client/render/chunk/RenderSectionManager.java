@@ -454,7 +454,7 @@ public class RenderSectionManager {
                 this.needsUpdate = true;
 
                 CancellationToken token = section.getBuildCancellationToken();
-                if(token != null) {
+                if (token != null) {
                     token.setCancelled();
                     section.setBuildCancellationToken(null); // to allow queuing it again
                 }
