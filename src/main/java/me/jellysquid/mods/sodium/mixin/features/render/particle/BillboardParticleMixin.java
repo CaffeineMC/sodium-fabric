@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.render.particle;
 
+import me.jellysquid.mods.sodium.client.render.particle.ExtendedParticle;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleVertex;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
@@ -17,7 +18,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(BillboardParticle.class)
-public abstract class BillboardParticleMixin extends Particle {
+public abstract class BillboardParticleMixin extends Particle implements ExtendedParticle {
     @Shadow
     public abstract float getSize(float tickDelta);
 
@@ -33,6 +34,14 @@ public abstract class BillboardParticleMixin extends Particle {
     @Shadow
     protected abstract float getMaxV();
 
+    @Unique
+    private boolean reachedBillboardDraw;
+
+    @Override
+    public boolean sodium$reachedBillboardDraw() {
+        return reachedBillboardDraw;
+    }
+
     protected BillboardParticleMixin(ClientWorld world, double x, double y, double z) {
         super(world, x, y, z);
     }
@@ -43,6 +52,11 @@ public abstract class BillboardParticleMixin extends Particle {
      */
     @Overwrite
     public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
+        if (!reachedBillboardDraw) {
+            reachedBillboardDraw = true;
+            return;
+        }
+
         Vec3d vec3d = camera.getPos();
 
         float x = (float) (MathHelper.lerp(tickDelta, this.prevPosX, this.x) - vec3d.getX());

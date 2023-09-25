@@ -15,14 +15,12 @@ public class ParticleShaderInterface {
     private final GlUniformInt uniformLightTexture;
     private final GlUniformMatrix4f uniformModelViewMatrix;
     private final GlUniformMatrix4f uniformProjectionMatrix;
-    private final GlUniformFloat4v uniformCameraRotation;
 
     public ParticleShaderInterface(ShaderBindingContext context) {
         this.uniformParticleTexture = context.bindUniform("u_ParticleTex", GlUniformInt::new);
         this.uniformLightTexture = context.bindUniform("u_LightTex", GlUniformInt::new);
         this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new);
         this.uniformProjectionMatrix = context.bindUniform("u_ProjectionMatrix", GlUniformMatrix4f::new);
-        this.uniformCameraRotation = context.bindUniform("u_CameraRotation", GlUniformFloat4v::new);
     }
 
     public void setProjectionMatrix(Matrix4fc matrix) {
@@ -31,14 +29,6 @@ public class ParticleShaderInterface {
 
     public void setModelViewMatrix(Matrix4fc matrix) {
         this.uniformModelViewMatrix.set(matrix);
-    }
-    public void setCameraRotation(Quaternionfc quaternion) {
-        this.uniformCameraRotation.set(new float[] {
-                quaternion.x(),
-                quaternion.y(),
-                quaternion.z(),
-                quaternion.w(),
-        });
     }
 
     public void setupState() {
