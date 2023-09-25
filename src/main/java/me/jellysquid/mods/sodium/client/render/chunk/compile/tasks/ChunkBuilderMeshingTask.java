@@ -11,7 +11,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRende
 import me.jellysquid.mods.sodium.client.render.chunk.compile.pipeline.BlockRenderContext;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionInfo;
 import me.jellysquid.mods.sodium.client.render.chunk.data.BuiltSectionMeshParts;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.GroupBuilder;
+import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentGeometryCollector;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.SortType;
 import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
@@ -76,11 +76,11 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         BlockPos.Mutable blockPos = new BlockPos.Mutable(minX, minY, minZ);
         BlockPos.Mutable modelOffset = new BlockPos.Mutable();
 
-        GroupBuilder groupBuilder = null;
+        TranslucentGeometryCollector collector = null;
         if (SodiumClientMod.options().performance.sortBehavior != SortBehavior.NONE) {
-            groupBuilder = new GroupBuilder(render.getPosition());
+            collector = new TranslucentGeometryCollector(render.getPosition());
         }
-        BlockRenderContext context = new BlockRenderContext(slice, groupBuilder);
+        BlockRenderContext context = new BlockRenderContext(slice, collector);
 
         try {
             for (int y = minY; y < maxY; y++) {
@@ -113,7 +113,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                         FluidState fluidState = blockState.getFluidState();
 
                         if (!fluidState.isEmpty()) {
-                            cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, groupBuilder, buffers);
+                            cache.getFluidRenderer().render(slice, fluidState, blockPos, modelOffset, collector, buffers);
                         }
 
                         if (blockState.hasBlockEntity()) {
@@ -143,8 +143,8 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         }
 
         SortType sortType = SortType.NONE;
-        if (groupBuilder != null) {
-            sortType = groupBuilder.finishRendering();
+        if (collector != null) {
+            sortType = collector.finishRendering();
         }
 
         Map<TerrainRenderPass, BuiltSectionMeshParts> meshes = new Reference2ReferenceOpenHashMap<>();
@@ -162,8 +162,8 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
         }
 
         TranslucentData translucentData = null;
-        if (groupBuilder != null) {
-            translucentData = groupBuilder.getTranslucentData(meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), cameraPos);
+        if (collector != null) {
+            translucentData = collector.getTranslucentData(meshes.get(DefaultTerrainRenderPasses.TRANSLUCENT), cameraPos);
         }
 
         renderData.setOcclusionData(occluder.build());

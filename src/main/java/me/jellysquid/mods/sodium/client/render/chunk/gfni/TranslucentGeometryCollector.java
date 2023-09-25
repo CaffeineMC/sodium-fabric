@@ -14,10 +14,11 @@ import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEn
 import net.minecraft.util.math.ChunkSectionPos;
 
 /**
- * The group builder collects the data from the renderers and builds data
- * structures for either dynamic triggering or static sorting. It determines the
- * best sort type for the section and performs translucency visibility graph
- * sorting with a topological sort algorithm if necessary.
+ * The translucent geometry collector collects the data from the renderers and
+ * builds data structures for either dynamic triggering or static sorting. It
+ * determines the best sort type for the section and constructs various types of
+ * translucent data objects that then perform sorting and get registered with
+ * GFNI for triggering.
  * 
  * TODO: can use a bunch more optimizations, this is a prototype.
  * TODO list:
@@ -34,7 +35,7 @@ import net.minecraft.util.math.ChunkSectionPos;
  * - disable translucent data collection when setting is set to OFF to prevent
  * overhead if no sorting is wanted.
  */
-public class GroupBuilder {
+public class TranslucentGeometryCollector {
     private static final Vector3fc[] ALIGNED_NORMALS = new Vector3fc[ModelQuadFacing.DIRECTIONS];
 
     private static final int OPPOSING_X = 1 << ModelQuadFacing.POS_X.ordinal() | 1 << ModelQuadFacing.NEG_X.ordinal();
@@ -64,7 +65,7 @@ public class GroupBuilder {
 
     private SortType sortType;
 
-    public GroupBuilder(ChunkSectionPos sectionPos) {
+    public TranslucentGeometryCollector(ChunkSectionPos sectionPos) {
         this.sectionPos = sectionPos;
     }
 
@@ -182,7 +183,7 @@ public class GroupBuilder {
     }
 
     /**
-     * Checks if this group builder is relevant for translucency sort triggering. It
+     * Determines the sort type for the collected geometry from the section. It
      * determines a sort type, which is either no sorting, a static sort or a
      * dynamic sort (section in GFNI only in this case).
      * 

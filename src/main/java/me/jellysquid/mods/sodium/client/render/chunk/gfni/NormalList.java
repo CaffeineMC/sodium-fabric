@@ -41,12 +41,12 @@ class NormalList {
 
     /**
      * If this normal list is for an axis-aligned normal, this is the index of it
-     * for querying in {@link GroupBuilder#getGroupForNormal(Vector3fc)}.
+     * for querying in {@link TranslucentGeometryCollector#getGroupForNormal(Vector3fc)}.
      * 
      * If this normal list is for an unaligned normal, this is the key for the
      * hash map of quantized normals.
      */
-    private final int groupBuilderKey;
+    private final int collectorKey;
 
     /**
      * An interval tree of group intervals. Since this only stores intervals, the
@@ -71,20 +71,20 @@ class NormalList {
      * normal index.
      * 
      * @param normal          The unit normal vector
-     * @param groupBuilderKey The group builder index
+     * @param collectorKey The geometry collector index
      */
-    NormalList(Vector3fc normal, int groupBuilderKey) {
+    NormalList(Vector3fc normal, int collectorKey) {
         this.normalf = normal;
         this.normal = new Vector3d(normal);
-        this.groupBuilderKey = groupBuilderKey;
+        this.collectorKey = collectorKey;
     }
 
     Vector3fc getNormal() {
         return normalf;
     }
 
-    int getGroupBuilderKey() {
-        return groupBuilderKey;
+    int getCollectorKey() {
+        return collectorKey;
     }
 
     void processMovement(GFNI gfni, double lastCameraX, double lastCameraY, double lastCameraZ,
@@ -104,7 +104,7 @@ class NormalList {
         var interval = new DoubleInterval(start, end, Bounded.CLOSED);
         for (Interval<Double> groupInterval : groupIntervals.query(interval)) {
             for (Group group : groupsByInterval.get(groupInterval)) {
-                group.triggerRange(gfni, start, end, this.groupBuilderKey);
+                group.triggerRange(gfni, start, end, this.collectorKey);
             }
         }
     }

@@ -37,7 +37,7 @@ public class StaticNormalRelativeData extends SplitDirectionData {
     }
 
     private static StaticNormalRelativeData fromDoubleUnaligned(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
+            TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector) {
         VertexRange[] ranges = translucentMesh.getVertexRanges();
         float[] keys = new float[quads.length];
 
@@ -105,9 +105,9 @@ public class StaticNormalRelativeData extends SplitDirectionData {
     }
 
     static StaticNormalRelativeData fromMesh(BuiltSectionMeshParts translucentMesh,
-            TQuad[] quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
-        if (groupBuilder.alignedNormalBitmap == 0) {
-            return fromDoubleUnaligned(translucentMesh, quads, sectionPos, groupBuilder);
+            TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector) {
+        if (collector.alignedNormalBitmap == 0) {
+            return fromDoubleUnaligned(translucentMesh, quads, sectionPos, collector);
         } else {
             return fromAligned(translucentMesh, quads, sectionPos);
         }

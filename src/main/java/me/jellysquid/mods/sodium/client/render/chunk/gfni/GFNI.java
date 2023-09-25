@@ -119,9 +119,9 @@ public class GFNI {
         triggerSectionCallback = null;
     }
 
-    void triggerSection(ChunkSectionPos section, int groupBuilderKey) {
+    void triggerSection(ChunkSectionPos section, int collectorKey) {
         this.triggeredSections.add(section.asLong());
-        this.triggeredNormals.add(groupBuilderKey);
+        this.triggeredNormals.add(collectorKey);
 
         // by simply setting a chunk update type on the section, it naturally only gets
         // updated once the section becomes visible.
@@ -160,19 +160,19 @@ public class GFNI {
         var normal = accGroup.normal;
         var normalList = this.normalLists.get(normal);
         if (normalList == null) {
-            normalList = new NormalList(normal, accGroup.groupBuilderKey);
+            normalList = new NormalList(normal, accGroup.collectorKey);
             this.normalLists.put(normal, normalList);
             normalList.addSection(accGroup, accGroup.sectionPos.asLong());
         }
     }
 
     /**
-     * Integrates the data from a group builder into GFNI. The group builder
+     * Integrates the data from a geometry collector into GFNI. The geometry collector
      * contains the translucent face planes of a single section. This method may
      * also remove the section if it has become irrelevant.
      * 
-     * @param builder the group builder to integrate
-     * @return the sort type that the group builder's relevance heuristic determined
+     * @param builder the geometry collector to integrate
+     * @return the sort type that the geometry collector's relevance heuristic determined
      */
     public void integrateTranslucentData(TranslucentData oldTranslucentData, TranslucentData translucentData) {
         long chunkSectionLongPos = translucentData.sectionPos.asLong();
@@ -198,7 +198,7 @@ public class GFNI {
         // builder has. if the normal list has data for the section, but the group
         // builder doesn't, the group is removed. otherwise, the group is updated.
         for (var normalList : this.normalLists.values()) {
-            // check if the group builder includes data for this normal.
+            // check if the geometry collector includes data for this normal.
             var accGroup = dynamicData.getGroupForNormal(normalList);
             if (normalList.hasSection(chunkSectionLongPos)) {
                 if (accGroup == null) {
@@ -211,7 +211,7 @@ public class GFNI {
             }
         }
 
-        // go through the data of the group builder to check for data of new normals
+        // go through the data of the geometry collector to check for data of new normals
         // for which there are no normal lists yet. This only checks for new normal
         // lists since new data for existing normal lists is handled above.
         if (dynamicData.getAxisAlignedDistances() != null) {

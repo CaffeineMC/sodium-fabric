@@ -39,17 +39,17 @@ public class DynamicData extends MixedDirectionData {
     }
 
     AccumulationGroup getGroupForNormal(NormalList normalList) {
-        int groupBuilderKey = normalList.getGroupBuilderKey();
-        if (groupBuilderKey < 0xFF) {
+        int collectorKey = normalList.getCollectorKey();
+        if (collectorKey < 0xFF) {
             if (this.axisAlignedDistances == null) {
                 return null;
             }
-            return this.axisAlignedDistances[groupBuilderKey];
+            return this.axisAlignedDistances[collectorKey];
         } else {
             if (this.unalignedDistances == null) {
                 return null;
             }
-            return this.unalignedDistances.get(groupBuilderKey);
+            return this.unalignedDistances.get(collectorKey);
         }
     }
 
@@ -72,13 +72,13 @@ public class DynamicData extends MixedDirectionData {
     }
 
     static DynamicData fromMesh(BuiltSectionMeshParts translucentMesh,
-            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, GroupBuilder groupBuilder) {
+            Vector3fc cameraPos, TQuad[] quads, ChunkSectionPos sectionPos, TranslucentGeometryCollector collector) {
         VertexRange range = TranslucentData.getUnassignedVertexRange(translucentMesh);
         var buffer = new NativeBuffer(TranslucentData.quadCountToIndexBytes(quads.length));
 
         var dynamicData = new DynamicData(sectionPos,
                 buffer, range, quads,
-                groupBuilder.axisAlignedDistances, groupBuilder.unalignedDistances);
+                collector.axisAlignedDistances, collector.unalignedDistances);
 
         dynamicData.sort(cameraPos);
 

@@ -163,8 +163,8 @@ public class BlockRenderer {
             out.light = light.lm[srcIndex];
         }
 
-        if (material == DefaultMaterials.TRANSLUCENT && ctx.groupBuilder != null) {
-            ctx.groupBuilder.appendQuad(quad, vertices, normalFace);
+        if (material == DefaultMaterials.TRANSLUCENT && ctx.collector != null) {
+            ctx.collector.appendQuad(quad, vertices, normalFace);
         }
 
         var vertexBuffer = builder.getVertexBuffer(normalFace);

@@ -11,17 +11,17 @@ import net.minecraft.util.math.ChunkSectionPos;
 class AccumulationGroup {
     final DoubleOpenHashSet relativeDistances = new DoubleOpenHashSet(16);
     final Vector3fc normal;
-    final int groupBuilderKey;
+    final int collectorKey;
     final ChunkSectionPos sectionPos;
     long relDistanceHash = 0;
 
     private double relMinDistance = Double.POSITIVE_INFINITY;
     private double relMaxDistance = Double.NEGATIVE_INFINITY;
 
-    AccumulationGroup(ChunkSectionPos sectionPos, Vector3fc normal, int groupBuilderKey) {
+    AccumulationGroup(ChunkSectionPos sectionPos, Vector3fc normal, int collectorKey) {
         this.sectionPos = sectionPos;
         this.normal = normal;
-        this.groupBuilderKey = groupBuilderKey;
+        this.collectorKey = collectorKey;
     }
 
     boolean addPlaneMember(float vertexX, float vertexY, float vertexZ) {

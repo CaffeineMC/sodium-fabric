@@ -50,11 +50,11 @@ class Group {
         }
     }
 
-    void triggerRange(GFNI gfni, double start, double end, int groupBuilderKey) {
+    void triggerRange(GFNI gfni, double start, double end, int collectorKey) {
         // trigger self on the section if the query range overlaps with the group
         if (start < this.distances.getEnd() && end > this.distances.getStart()
                 && !this.facePlaneDistances.subSet(start, end).isEmpty()) {
-            gfni.triggerSection(this.sectionPos, groupBuilderKey);
+            gfni.triggerSection(this.sectionPos, collectorKey);
         }
     }
 }
