@@ -14,7 +14,6 @@ import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions.SortBehavior;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataStorage;
 import me.jellysquid.mods.sodium.client.render.chunk.data.SectionRenderDataUnsafe;
-import me.jellysquid.mods.sodium.client.render.chunk.gfni.TranslucentData;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterable;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderList;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
@@ -52,7 +51,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         // TODO: also disable this if there is only NONE-type sorting or no translucent geometry in the region
         boolean isTranslucent = renderPass == DefaultTerrainRenderPasses.TRANSLUCENT 
-                && SodiumClientMod.options().performance.sortBehavior != SortBehavior.NONE;
+                && SodiumClientMod.options().performance.sortBehavior != SortBehavior.OFF;
         boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
 
         ChunkShaderInterface shader = this.activeProgram.getInterface();

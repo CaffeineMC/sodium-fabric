@@ -53,7 +53,7 @@ public class SodiumGameOptions {
     }
 
     public enum SortBehavior implements TextProvider {
-        NONE("options.off", Set.of(SortType.NONE)),
+        OFF("options.off", Set.of(SortType.NONE)),
         STATIC("options.clouds.fast", getUpTo(SortType.STATIC_TOPO_ACYCLIC)),
         DYNAMIC("options.clouds.fancy", getUpTo(SortType.DYNAMIC_ALL));
 

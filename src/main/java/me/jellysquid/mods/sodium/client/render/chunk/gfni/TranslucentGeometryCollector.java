@@ -232,7 +232,7 @@ public class TranslucentGeometryCollector {
         SortBehavior sortBehavior = SodiumClientMod.options().performance.sortBehavior;
 
         // special case A
-        if (sortBehavior == SortBehavior.NONE || this.facePlaneCount <= 1) {
+        if (sortBehavior == SortBehavior.OFF || this.facePlaneCount <= 1) {
             return SortType.NONE;
         }
 
