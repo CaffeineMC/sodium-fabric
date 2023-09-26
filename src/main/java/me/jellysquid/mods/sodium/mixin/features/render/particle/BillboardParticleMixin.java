@@ -1,7 +1,9 @@
 package me.jellysquid.mods.sodium.mixin.features.render.particle;
 
-import me.jellysquid.mods.sodium.client.render.particle.ExtendedParticle;
+import me.jellysquid.mods.sodium.client.render.particle.BillboardExtended;
+import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleData;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleVertex;
+import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.minecraft.client.particle.BillboardParticle;
@@ -18,7 +20,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(BillboardParticle.class)
-public abstract class BillboardParticleMixin extends Particle implements ExtendedParticle {
+public abstract class BillboardParticleMixin extends Particle implements BillboardExtended {
     @Shadow
     public abstract float getSize(float tickDelta);
 
@@ -34,29 +36,12 @@ public abstract class BillboardParticleMixin extends Particle implements Extende
     @Shadow
     protected abstract float getMaxV();
 
-    @Unique
-    private boolean reachedBillboardDraw;
-
-    @Override
-    public boolean sodium$reachedBillboardDraw() {
-        return reachedBillboardDraw;
-    }
-
     protected BillboardParticleMixin(ClientWorld world, double x, double y, double z) {
         super(world, x, y, z);
     }
 
-    /**
-     * @reason Optimize function
-     * @author JellySquid
-     */
-    @Overwrite
-    public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
-        if (!reachedBillboardDraw) {
-            reachedBillboardDraw = true;
-            return;
-        }
-
+    @Override
+    public void sodium$buildParticleData(UnmanagedBufferBuilder builder, Camera camera, float tickDelta) {
         Vec3d vec3d = camera.getPos();
 
         float x = (float) (MathHelper.lerp(tickDelta, this.prevPosX, this.x) - vec3d.getX());
@@ -66,14 +51,27 @@ public abstract class BillboardParticleMixin extends Particle implements Extende
         float size = this.getSize(tickDelta);
         int light = this.getBrightness(tickDelta);
 
+        int color = ColorABGR.pack(this.red , this.green, this.blue, this.alpha);
+
+        float angle = MathHelper.lerp(tickDelta, this.prevAngle, this.angle);
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            long ptr = stack.nmalloc(BillboardParticleData.STRIDE);
+            BillboardParticleData.put(ptr, x, y, z, color, light, size, angle);
+            builder.push(stack, ptr, BillboardParticleData.STRIDE);
+        }
+    }
+
+    /**
+     * @reason Optimize function
+     * @author JellySquid
+     */
+    @Overwrite
+    public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
         float minU = this.getMinU();
         float maxU = this.getMaxU();
         float minV = this.getMinV();
         float maxV = this.getMaxV();
-
-        int color = ColorABGR.pack(this.red , this.green, this.blue, this.alpha);
-
-        float angle = MathHelper.lerp(tickDelta, this.prevAngle, this.angle);
 
         var writer = VertexBufferWriter.of(vertexConsumer);
 
@@ -81,16 +79,16 @@ public abstract class BillboardParticleMixin extends Particle implements Extende
             long buffer = stack.nmalloc(4 * BillboardParticleVertex.STRIDE);
             long ptr = buffer;
 
-            writeVertex(ptr, x, y, z, maxU, maxV, color, light, size, angle);
+            writeVertex(ptr, maxU, maxV);
             ptr += BillboardParticleVertex.STRIDE;
 
-            writeVertex(ptr, x, y, z, maxU, minV, color, light, size, angle);
+            writeVertex(ptr, maxU, minV);
             ptr += BillboardParticleVertex.STRIDE;
 
-            writeVertex(ptr, x, y, z, minU, minV, color, light, size, angle);
+            writeVertex(ptr, minU, minV);
             ptr += BillboardParticleVertex.STRIDE;
 
-            writeVertex(ptr, x, y, z, minU, maxV, color, light, size, angle);
+            writeVertex(ptr, minU, maxV);
             ptr += BillboardParticleVertex.STRIDE;
 
             writer.push(stack, buffer, 4, BillboardParticleVertex.VERTEX_FORMAT_DESCRIPTION);
@@ -98,9 +96,7 @@ public abstract class BillboardParticleMixin extends Particle implements Extende
     }
 
     @Unique
-    private static void writeVertex(long buffer, float originX, float originY, float originZ,
-                                    float u, float v, int color, int light, float size, float angle) {
-
-        BillboardParticleVertex.put(buffer, originX, originY, originZ, u, v, color, light, size, angle);
+    private static void writeVertex(long buffer, float u, float v) {
+        BillboardParticleVertex.put(buffer, u, v);
     }
 }

@@ -29,28 +29,28 @@ float angle;
 
 // Returns a collection of 4 bytes
 // ptr is essentially multiplied by 4 since u_BufferTexture is R_32UI
-uint readBuffer(uint ptr) {
+uint readBuffer(int ptr) {
     return texelFetch(u_BufferTexture, ptr).x;
 }
 
-float readBufferF(uint ptr) {
+float readBufferF(int ptr) {
     return uintBitsToFloat(readBuffer(ptr));
 }
 
-vec3 readBufferPos(uint ptr) {
+vec3 readBufferPos(int ptr) {
     return uintBitsToFloat(uvec3(readBuffer(ptr), readBuffer(ptr + 1), readBuffer(ptr + 2)));
 }
 
-vec4 readBufferColor(uint ptr) {
+vec4 readBufferColor(int ptr) {
     return vec4((uvec4(readBuffer(ptr)) >> uvec4(0, 8, 16, 24)) & uvec4(0xFFu)) * COLOR_SCALE;
 }
 
-ivec2 readBufferLight(uint ptr) {
+ivec2 readBufferLight(int ptr) {
     return ivec2((uvec2(readBuffer(ptr)) >> uvec2(0, 16)) & uvec2(0xFFFFu));
 }
 
 void init() {
-    uint base = PARTICLE_STRIDE * (gl_VertexID >> 2);
+    int base = PARTICLE_STRIDE * (gl_VertexID >> 2);
 
     position = readBufferPos(base);
     size = readBufferF(base + 3);

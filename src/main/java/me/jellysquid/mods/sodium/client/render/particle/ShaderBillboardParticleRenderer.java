@@ -29,12 +29,7 @@ public class ShaderBillboardParticleRenderer {
             return GlProgram.builder(new Identifier("sodium", "billboard_particle_shader"))
                     .attachShader(vertShader)
                     .attachShader(fragShader)
-                    .bindAttribute("in_Position", ParticleShaderBindingPoints.ATTRIBUTE_POSITION)
-                    .bindAttribute("in_Size", ParticleShaderBindingPoints.ATTRIBUTE_SIZE)
                     .bindAttribute("in_TexCoord", ParticleShaderBindingPoints.ATTRIBUTE_TEXTURE)
-                    .bindAttribute("in_Color", ParticleShaderBindingPoints.ATTRIBUTE_COLOR)
-                    .bindAttribute("in_Light", ParticleShaderBindingPoints.ATTRIBUTE_LIGHT_TEXTURE)
-                    .bindAttribute("in_Angle", ParticleShaderBindingPoints.ATTRIBUTE_ANGLE)
                     .bindFragmentData("out_FragColor", ParticleShaderBindingPoints.FRAG_COLOR)
                     .link(ParticleShaderInterface::new);
         } finally {
@@ -44,8 +39,6 @@ public class ShaderBillboardParticleRenderer {
     }
 
     public void begin() {
-        // pass.startDrawing(); .. Do I need a pass?
-
         this.activeProgram.bind();
     }
 

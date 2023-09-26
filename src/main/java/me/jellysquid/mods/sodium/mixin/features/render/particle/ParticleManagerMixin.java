@@ -8,11 +8,14 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
+import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTexture;
+import me.jellysquid.mods.sodium.client.render.particle.BillboardExtended;
 import me.jellysquid.mods.sodium.client.render.particle.ParticleExtended;
 import me.jellysquid.mods.sodium.client.render.particle.ParticleRenderView;
 import me.jellysquid.mods.sodium.client.render.particle.ShaderBillboardParticleRenderer;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleVertex;
 import me.jellysquid.mods.sodium.client.render.particle.shader.ParticleShaderInterface;
+import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.particle.*;
 import net.minecraft.client.render.*;
@@ -94,6 +97,12 @@ public abstract class ParticleManagerMixin {
     private int glVertexArray;
 
     @Unique
+    private UnmanagedBufferBuilder particleBuffer;
+
+    @Unique
+    private GlBufferTexture bufferTexture;
+
+    @Unique
     private RenderSystem.ShapeIndexBuffer sharedSequentialIndexBuffer;
 
     @Unique
@@ -103,6 +112,8 @@ public abstract class ParticleManagerMixin {
     private void postInit(ClientWorld world, TextureManager textureManager, CallbackInfo ci) {
         this.glVertexBuffer = GlStateManager._glGenBuffers();
         this.glVertexArray = GlStateManager._glGenVertexArrays();
+        this.particleBuffer = new UnmanagedBufferBuilder(1);
+        this.bufferTexture = new GlBufferTexture();
         this.renderView = new ParticleRenderView(world);
     }
 
@@ -192,7 +203,11 @@ public abstract class ParticleManagerMixin {
         this.renderView.resetCache();
     }
 
-    @Inject(method = "renderParticles", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;applyModelViewMatrix()V", ordinal = 0, shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD)
+    @Inject(
+            method = "renderParticles",
+            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;applyModelViewMatrix()V", ordinal = 0, shift = At.Shift.AFTER),
+            locals = LocalCapture.CAPTURE_FAILHARD
+    )
     public void renderParticles(
             MatrixStack matrices, VertexConsumerProvider.Immediate vertexConsumers,
             LightmapTextureManager lightmapTextureManager, Camera camera, float tickDelta,
@@ -208,11 +223,13 @@ public abstract class ParticleManagerMixin {
             if (iterable != null && !iterable.isEmpty()) {
                 int numParticles = iterable.size();
                 bindParticleTextureSheet(particleTextureSheet);
+                this.bufferTexture.bind();
                 particleRenderer.setupState();
                 bufferBuilder.begin(VertexFormat.DrawMode.QUADS, BillboardParticleVertex.MC_VERTEX_FORMAT);
 
                 for (BillboardParticle particle : iterable) {
                     particle.buildGeometry(bufferBuilder, camera, tickDelta);
+                    ((BillboardExtended) particle).sodium$buildParticleData(particleBuffer, camera, tickDelta);
                 }
 
                 drawParticleTextureSheet(particleTextureSheet, bufferBuilder, numParticles);
@@ -225,6 +242,7 @@ public abstract class ParticleManagerMixin {
     }
 
     @Unique
+    @SuppressWarnings("deprecation")
     private void bindParticleTextureSheet(ParticleTextureSheet sheet) {
         RenderSystem.depthMask(true);
         Identifier texture = null;
@@ -268,6 +286,7 @@ public abstract class ParticleManagerMixin {
 
             BillboardParticleVertex.bindVertexFormat();
             uploadIndexBuffer(parameters);
+            uploadParticleBuffer();
             int indexType = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS).getIndexType().glType;
             RenderSystem.drawElements(VertexFormat.DrawMode.QUADS.glMode, parameters.indexCount(), indexType);
             built.release();
@@ -281,6 +300,12 @@ public abstract class ParticleManagerMixin {
             shapeIndexBuffer.bindAndGrow(parameters.indexCount());
             this.sharedSequentialIndexBuffer = shapeIndexBuffer;
         }
+    }
+
+    @Unique
+    private void uploadParticleBuffer() {
+        UnmanagedBufferBuilder.Built particleData = this.particleBuffer.end();
+        this.bufferTexture.uploadData(particleData.buffer, particleData.size);
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))
