@@ -157,7 +157,7 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             MemoryUtil.memPutInt(pBaseVertex + (size << 2), SectionRenderDataUnsafe.getVertexOffset(pMeshData, facing));
             MemoryUtil.memPutInt(pElementCount + (size << 2), SectionRenderDataUnsafe.getElementCount(pMeshData, facing));
             if (pIndexData != -1) {
-                MemoryUtil.memPutAddress(pElementPointer + (size << 3), SectionRenderDataUnsafe.getVertexOffset(pIndexData, facing) * TranslucentData.VERTICES_PER_QUAD);
+                MemoryUtil.memPutAddress(pElementPointer + (size << 3), SectionRenderDataUnsafe.getVertexOffset(pIndexData, facing) << 2);
             } else {
                 MemoryUtil.memPutAddress(pElementPointer + (size << 3), 0);
             }
