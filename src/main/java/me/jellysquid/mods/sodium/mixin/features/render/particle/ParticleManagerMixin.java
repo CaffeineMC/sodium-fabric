@@ -8,12 +8,13 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTexture;
 import me.jellysquid.mods.sodium.client.render.particle.BillboardExtended;
 import me.jellysquid.mods.sodium.client.render.particle.ParticleExtended;
 import me.jellysquid.mods.sodium.client.render.particle.ParticleRenderView;
 import me.jellysquid.mods.sodium.client.render.particle.ShaderBillboardParticleRenderer;
-import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleVertex;
 import me.jellysquid.mods.sodium.client.render.particle.shader.ParticleShaderInterface;
 import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
 import net.fabricmc.loader.api.FabricLoader;
@@ -26,7 +27,8 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20C;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -34,7 +36,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -42,12 +43,6 @@ import java.util.Queue;
 
 @Mixin(ParticleManager.class)
 public abstract class ParticleManagerMixin {
-    @Unique
-    private final BufferBuilder bufferBuilder = new BufferBuilder(1);
-
-    @Unique
-    private final BufferBuilder testBuffer = new BufferBuilder(1);
-
     @Shadow
     protected ClientWorld world;
 
@@ -88,9 +83,6 @@ public abstract class ParticleManagerMixin {
     );
 
     @Unique
-    private int bufferSize = 0;
-
-    @Unique
     private int glVertexBuffer;
 
     @Unique
@@ -101,9 +93,6 @@ public abstract class ParticleManagerMixin {
 
     @Unique
     private GlBufferTexture bufferTexture;
-
-    @Unique
-    private RenderSystem.ShapeIndexBuffer sharedSequentialIndexBuffer;
 
     @Unique
     private Identifier prevTexture = null;
@@ -126,7 +115,6 @@ public abstract class ParticleManagerMixin {
      */
     @Overwrite
     public void tick() {
-        testBuffer.begin(VertexFormat.DrawMode.QUADS, BillboardParticleVertex.MC_VERTEX_FORMAT);
         this.particles.forEach((sheet, queue) -> {
             this.world.getProfiler().push(sheet.toString());
             this.tickParticles(queue);
@@ -170,8 +158,6 @@ public abstract class ParticleManagerMixin {
                 }
             }
         }
-
-        testBuffer.end().release();
     }
 
     @Unique
@@ -225,15 +211,12 @@ public abstract class ParticleManagerMixin {
                 bindParticleTextureSheet(particleTextureSheet);
                 this.bufferTexture.bind();
                 particleRenderer.setupState();
-                bufferBuilder.begin(VertexFormat.DrawMode.QUADS, BillboardParticleVertex.MC_VERTEX_FORMAT);
 
                 for (BillboardParticle particle : iterable) {
-                    particle.buildGeometry(bufferBuilder, camera, tickDelta);
                     ((BillboardExtended) particle).sodium$buildParticleData(particleBuffer, camera, tickDelta);
                 }
 
-                drawParticleTextureSheet(particleTextureSheet, bufferBuilder, numParticles);
-                bufferBuilder.clear();
+                drawParticleTextureSheet(particleTextureSheet, numParticles);
             }
         }
 
@@ -268,38 +251,19 @@ public abstract class ParticleManagerMixin {
     }
 
     @Unique
-    private void drawParticleTextureSheet(ParticleTextureSheet sheet, BufferBuilder builder, int numParticles) {
+    private void drawParticleTextureSheet(ParticleTextureSheet sheet, int numParticles) {
         if (sheet == ParticleTextureSheet.TERRAIN_SHEET || sheet == ParticleTextureSheet.PARTICLE_SHEET_LIT || sheet == ParticleTextureSheet.PARTICLE_SHEET_OPAQUE || sheet == ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT) {
-            BufferBuilder.BuiltBuffer built = builder.end();
-            BufferBuilder.DrawParameters parameters = built.getParameters();
-            ByteBuffer vertexBuffer = built.getVertexBuffer();
-            int neededSize = parameters.vertexCount() * BillboardParticleVertex.STRIDE;
-
-            GlStateManager._glBindVertexArray(this.glVertexArray);
-            GlStateManager._glBindBuffer(GlConst.GL_ARRAY_BUFFER, this.glVertexBuffer);
-            if (neededSize > this.bufferSize) {
-                RenderSystem.glBufferData(GlConst.GL_ARRAY_BUFFER, vertexBuffer, GlConst.GL_DYNAMIC_DRAW);
-                this.bufferSize = neededSize;
-            } else {
-                GL20.glBufferSubData(GlConst.GL_ARRAY_BUFFER, 0, vertexBuffer);
-            }
-
-            BillboardParticleVertex.bindVertexFormat();
-            uploadIndexBuffer(parameters);
             uploadParticleBuffer();
-            int indexType = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS).getIndexType().glType;
-            RenderSystem.drawElements(VertexFormat.DrawMode.QUADS.glMode, parameters.indexCount(), indexType);
-            built.release();
+            bindDummyVao();
+            GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, numParticles * 6);
         }
     }
 
     @Unique
-    private void uploadIndexBuffer(BufferBuilder.DrawParameters parameters) {
-        RenderSystem.ShapeIndexBuffer shapeIndexBuffer = RenderSystem.getSequentialBuffer(parameters.mode());
-        if (shapeIndexBuffer != this.sharedSequentialIndexBuffer || !shapeIndexBuffer.isLargeEnough(parameters.indexCount())) {
-            shapeIndexBuffer.bindAndGrow(parameters.indexCount());
-            this.sharedSequentialIndexBuffer = shapeIndexBuffer;
-        }
+    private void bindDummyVao() {
+        GlStateManager._glBindVertexArray(this.glVertexArray);
+        GL20C.glVertexAttribPointer(0, 1, GlVertexAttributeFormat.UNSIGNED_BYTE.typeId(), false, 1, 0);
+        GL20C.glEnableVertexAttribArray(0);
     }
 
     @Unique

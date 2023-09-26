@@ -29,7 +29,6 @@ public class ShaderBillboardParticleRenderer {
             return GlProgram.builder(new Identifier("sodium", "billboard_particle_shader"))
                     .attachShader(vertShader)
                     .attachShader(fragShader)
-                    .bindAttribute("in_TexCoord", ParticleShaderBindingPoints.ATTRIBUTE_TEXTURE)
                     .bindFragmentData("out_FragColor", ParticleShaderBindingPoints.FRAG_COLOR)
                     .link(ParticleShaderInterface::new);
         } finally {

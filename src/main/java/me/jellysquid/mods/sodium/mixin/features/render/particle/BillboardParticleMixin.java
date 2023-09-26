@@ -2,9 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.render.particle;
 
 import me.jellysquid.mods.sodium.client.render.particle.BillboardExtended;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleData;
-import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleVertex;
 import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
-import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
@@ -17,7 +15,6 @@ import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(BillboardParticle.class)
 public abstract class BillboardParticleMixin extends Particle implements BillboardExtended {
@@ -44,6 +41,11 @@ public abstract class BillboardParticleMixin extends Particle implements Billboa
     public void sodium$buildParticleData(UnmanagedBufferBuilder builder, Camera camera, float tickDelta) {
         Vec3d vec3d = camera.getPos();
 
+        float minU = this.getMinU();
+        float maxU = this.getMaxU();
+        float minV = this.getMinV();
+        float maxV = this.getMaxV();
+
         float x = (float) (MathHelper.lerp(tickDelta, this.prevPosX, this.x) - vec3d.getX());
         float y = (float) (MathHelper.lerp(tickDelta, this.prevPosY, this.y) - vec3d.getY());
         float z = (float) (MathHelper.lerp(tickDelta, this.prevPosZ, this.z) - vec3d.getZ());
@@ -57,46 +59,18 @@ public abstract class BillboardParticleMixin extends Particle implements Billboa
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             long ptr = stack.nmalloc(BillboardParticleData.STRIDE);
-            BillboardParticleData.put(ptr, x, y, z, color, light, size, angle);
+            BillboardParticleData.put(
+                    ptr, x, y, z, color, light, size, angle,
+                    minU, minV, maxU, maxV
+            );
             builder.push(stack, ptr, BillboardParticleData.STRIDE);
         }
     }
 
     /**
-     * @reason Optimize function
-     * @author JellySquid
+     * @reason Remove function
+     * @author BeljihnWahfl
      */
     @Overwrite
-    public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
-        float minU = this.getMinU();
-        float maxU = this.getMaxU();
-        float minV = this.getMinV();
-        float maxV = this.getMaxV();
-
-        var writer = VertexBufferWriter.of(vertexConsumer);
-
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            long buffer = stack.nmalloc(4 * BillboardParticleVertex.STRIDE);
-            long ptr = buffer;
-
-            writeVertex(ptr, maxU, maxV);
-            ptr += BillboardParticleVertex.STRIDE;
-
-            writeVertex(ptr, maxU, minV);
-            ptr += BillboardParticleVertex.STRIDE;
-
-            writeVertex(ptr, minU, minV);
-            ptr += BillboardParticleVertex.STRIDE;
-
-            writeVertex(ptr, minU, maxV);
-            ptr += BillboardParticleVertex.STRIDE;
-
-            writer.push(stack, buffer, 4, BillboardParticleVertex.VERTEX_FORMAT_DESCRIPTION);
-        }
-    }
-
-    @Unique
-    private static void writeVertex(long buffer, float u, float v) {
-        BillboardParticleVertex.put(buffer, u, v);
-    }
+    public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float tickDelta) {}
 }
