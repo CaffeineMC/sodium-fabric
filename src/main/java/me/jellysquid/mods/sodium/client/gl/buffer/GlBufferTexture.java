@@ -21,13 +21,15 @@ public class GlBufferTexture {
         this.glBufferHandle = GlStateManager._glGenBuffers();
     }
 
-    public void uploadData(ByteBuffer data, int size) {
+    public void putData(ByteBuffer data, int offset, int size) {
+        int neededSize = offset + size;
         GL31.glBindBuffer(GL31.GL_TEXTURE_BUFFER, this.glBufferHandle);
-        if (size > this.bufferSize) {
+
+        if (neededSize > this.bufferSize) {
             RenderSystem.glBufferData(GL31.GL_TEXTURE_BUFFER, data, GlConst.GL_DYNAMIC_DRAW);
-            this.bufferSize = size;
+            this.bufferSize = neededSize;
         } else {
-            GL15.glBufferSubData(GL31.GL_TEXTURE_BUFFER, 0, data);
+            GL15.glBufferSubData(GL31.GL_TEXTURE_BUFFER, offset, data);
         }
     }
 

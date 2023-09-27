@@ -89,6 +89,9 @@ public abstract class ParticleManagerMixin {
     private UnmanagedBufferBuilder particleBuffer;
 
     @Unique
+    private UnmanagedBufferBuilder particleTextureBuffer;
+
+    @Unique
     private GlBufferTexture bufferTexture;
 
     @Unique
@@ -98,6 +101,7 @@ public abstract class ParticleManagerMixin {
     private void postInit(ClientWorld world, TextureManager textureManager, CallbackInfo ci) {
         this.glVertexArray = GlStateManager._glGenVertexArrays();
         this.particleBuffer = new UnmanagedBufferBuilder(1);
+        this.particleTextureBuffer = new UnmanagedBufferBuilder(1);
         this.bufferTexture = new GlBufferTexture();
         this.renderView = new ParticleRenderView(world);
     }
@@ -265,7 +269,7 @@ public abstract class ParticleManagerMixin {
     @Unique
     private void uploadParticleBuffer() {
         UnmanagedBufferBuilder.Built particleData = this.particleBuffer.end();
-        this.bufferTexture.uploadData(particleData.buffer, particleData.size);
+        this.bufferTexture.putData(particleData.buffer, 0, particleData.size);
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))

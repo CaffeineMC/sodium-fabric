@@ -38,8 +38,16 @@ public class UnmanagedBufferBuilder {
         byteOffset += size;
     }
 
+    public Built build() {
+        return new Built(this.byteOffset, MemoryUtil.memSlice(this.buffer, 0, this.byteOffset));
+    }
+
+    public void reset() {
+        this.byteOffset = 0;
+    }
+
     /**
-     * Resets this builder.
+     * Builds and resets this builder.
      * Make sure to use/upload the return value before pushing more data.
      * @return a ByteBuffer containing all the data pushed to this builder
      */
