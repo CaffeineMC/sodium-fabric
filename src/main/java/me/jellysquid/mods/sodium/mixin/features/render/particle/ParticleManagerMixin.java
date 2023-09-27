@@ -83,9 +83,6 @@ public abstract class ParticleManagerMixin {
     );
 
     @Unique
-    private int glVertexBuffer;
-
-    @Unique
     private int glVertexArray;
 
     @Unique
@@ -99,7 +96,6 @@ public abstract class ParticleManagerMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void postInit(ClientWorld world, TextureManager textureManager, CallbackInfo ci) {
-        this.glVertexBuffer = GlStateManager._glGenBuffers();
         this.glVertexArray = GlStateManager._glGenVertexArrays();
         this.particleBuffer = new UnmanagedBufferBuilder(1);
         this.bufferTexture = new GlBufferTexture();
@@ -277,17 +273,8 @@ public abstract class ParticleManagerMixin {
         this.renderView = new ParticleRenderView(world);
     }
 
-    @Inject(method = "createParticle", at = @At("RETURN"))
-    private <T extends ParticleEffect> void postCreateParticle(T parameters,
-                                                               double x,
-                                                               double y,
-                                                               double z,
-                                                               double velocityX,
-                                                               double velocityY,
-                                                               double velocityZ,
-                                                               CallbackInfoReturnable<@Nullable Particle> cir) {
-        var particle = cir.getReturnValue();
-
+    @Inject(method = "addParticle(Lnet/minecraft/client/particle/Particle;)V", at = @At("HEAD"))
+    private void preAddParticle(Particle particle, CallbackInfo ci) {
         if (particle instanceof ParticleExtended extension) {
             extension.sodium$configure(this.renderView);
         }
