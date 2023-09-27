@@ -23,7 +23,7 @@ uniform usamplerBuffer u_BufferTexture; // R_32UI
 out vec2 texCoord0;
 out vec4 vertexColor;
 
-// 7 x 4 = 28 bytes stride
+// 11 x 4 = 44 bytes stride
 vec3 position;
 float size;
 vec4 color;
