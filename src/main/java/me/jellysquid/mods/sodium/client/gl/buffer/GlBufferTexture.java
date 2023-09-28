@@ -26,6 +26,8 @@ public class GlBufferTexture {
         GL31.glBindBuffer(GL31.GL_TEXTURE_BUFFER, this.glBufferHandle);
 
         if (neededSize > this.bufferSize) {
+            // This is flawed since it can reallocate and lose information
+            // if the entire buffer is not overwritten... opting to not fix it for now
             RenderSystem.glBufferData(GL31.GL_TEXTURE_BUFFER, data, GlConst.GL_DYNAMIC_DRAW);
             this.bufferSize = neededSize;
         } else {
