@@ -2,8 +2,10 @@ package me.jellysquid.mods.sodium.mixin.features.render.particle;
 
 import me.jellysquid.mods.sodium.client.render.particle.BillboardExtended;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleData;
+import me.jellysquid.mods.sodium.client.render.texture.ParticleTextureRegistry;
 import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
+import net.caffeinemc.mods.sodium.api.util.RawUVs;
 import net.minecraft.client.particle.BillboardParticle;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.render.Camera;
@@ -38,13 +40,14 @@ public abstract class BillboardParticleMixin extends Particle implements Billboa
     }
 
     @Override
-    public void sodium$buildParticleData(UnmanagedBufferBuilder builder, Camera camera, float tickDelta) {
+    public void sodium$buildParticleData(
+            UnmanagedBufferBuilder builder,
+            ParticleTextureRegistry registry,
+            Camera camera, float tickDelta
+    ) {
         Vec3d vec3d = camera.getPos();
-
-        float minU = this.getMinU();
-        float maxU = this.getMaxU();
-        float minV = this.getMinV();
-        float maxV = this.getMaxV();
+        RawUVs uvs = new RawUVs(getMinU(), getMinV(), getMaxU(), getMaxV());
+        int textureIndex = registry.get(uvs);
 
         float x = (float) (MathHelper.lerp(tickDelta, this.prevPosX, this.x) - vec3d.getX());
         float y = (float) (MathHelper.lerp(tickDelta, this.prevPosY, this.y) - vec3d.getY());
@@ -59,10 +62,7 @@ public abstract class BillboardParticleMixin extends Particle implements Billboa
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             long ptr = stack.nmalloc(BillboardParticleData.STRIDE);
-            BillboardParticleData.put(
-                    ptr, x, y, z, color, light, size, angle,
-                    minU, minV, maxU, maxV
-            );
+            BillboardParticleData.put(ptr, x, y, z, color, light, size, angle, textureIndex);
             builder.push(stack, ptr, BillboardParticleData.STRIDE);
         }
     }

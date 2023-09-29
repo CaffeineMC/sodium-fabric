@@ -3,12 +3,10 @@ package me.jellysquid.mods.sodium.mixin.features.render.particle;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.mojang.blaze3d.platform.GlConst;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
-import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTexture;
 import me.jellysquid.mods.sodium.client.render.particle.BillboardExtended;
@@ -16,24 +14,27 @@ import me.jellysquid.mods.sodium.client.render.particle.ParticleExtended;
 import me.jellysquid.mods.sodium.client.render.particle.ParticleRenderView;
 import me.jellysquid.mods.sodium.client.render.particle.ShaderBillboardParticleRenderer;
 import me.jellysquid.mods.sodium.client.render.particle.shader.ParticleShaderInterface;
+import me.jellysquid.mods.sodium.client.render.texture.ParticleTextureRegistry;
 import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
+import net.caffeinemc.mods.sodium.api.util.RawUVs;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.particle.*;
-import net.minecraft.client.render.*;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.particle.ParticleEffect;
 import net.minecraft.util.Identifier;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20C;
+import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.Collection;
@@ -67,6 +68,9 @@ public abstract class ParticleManagerMixin {
 
     @Unique
     private final ShaderBillboardParticleRenderer particleRenderer = new ShaderBillboardParticleRenderer();
+
+    @Unique
+    private final ParticleTextureRegistry particleTexRegistry = new ParticleTextureRegistry();
 
     @Unique
     private static final Object2BooleanMap<Class<? extends BillboardParticle>> classOverridesBuild = new Object2BooleanOpenHashMap<>();
@@ -213,7 +217,11 @@ public abstract class ParticleManagerMixin {
                 particleRenderer.setupState();
 
                 for (BillboardParticle particle : iterable) {
-                    ((BillboardExtended) particle).sodium$buildParticleData(particleBuffer, camera, tickDelta);
+                    ((BillboardExtended) particle).sodium$buildParticleData(
+                            particleBuffer,
+                            particleTexRegistry,
+                            camera, tickDelta
+                    );
                 }
 
                 drawParticleTextureSheet(particleTextureSheet, numParticles);
@@ -268,8 +276,25 @@ public abstract class ParticleManagerMixin {
 
     @Unique
     private void uploadParticleBuffer() {
+        if (this.particleTexRegistry.isDirty()) {
+            List<RawUVs> updates = this.particleTexRegistry.drainUpdates();
+            int size = RawUVs.STRIDE * updates.size();
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                long buffer = stack.nmalloc(size);
+                long ptr = buffer;
+                for (RawUVs uvs : updates) {
+                    uvs.put(ptr);
+                    ptr += RawUVs.STRIDE;
+                }
+                particleTextureBuffer.push(stack, buffer, size);
+            }
+        }
+
+        UnmanagedBufferBuilder.Built registry = this.particleTextureBuffer.build();
         UnmanagedBufferBuilder.Built particleData = this.particleBuffer.end();
-        this.bufferTexture.putData(particleData.buffer, 0, particleData.size);
+
+        this.bufferTexture.putData(particleData.buffer, registry.size, particleData.size);
+        this.bufferTexture.putData(registry.buffer, 0, registry.size);
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))

@@ -15,6 +15,7 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL32C;
 
 public class ParticleShaderInterface {
+    private final GlUniformInt uniformDataOffset;
     private final GlUniformInt uniformParticleTexture;
     private final GlUniformInt uniformLightTexture;
     private final GlUniformMatrix4f uniformModelViewMatrix;
@@ -22,6 +23,7 @@ public class ParticleShaderInterface {
     private final GlUniformInt uniformBufferTexture;
 
     public ParticleShaderInterface(ShaderBindingContext context) {
+        this.uniformDataOffset = context.bindUniform("u_DataOffset", GlUniformInt::new);
         this.uniformParticleTexture = context.bindUniform("u_ParticleTex", GlUniformInt::new);
         this.uniformLightTexture = context.bindUniform("u_LightTex", GlUniformInt::new);
         this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new);

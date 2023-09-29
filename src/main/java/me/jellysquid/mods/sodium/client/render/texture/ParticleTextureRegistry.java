@@ -1,24 +1,21 @@
 package me.jellysquid.mods.sodium.client.render.texture;
 
-import it.unimi.dsi.fastutil.floats.FloatFloatImmutablePair;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import net.caffeinemc.mods.sodium.api.util.RawUVs;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 public class ParticleTextureRegistry {
-    private final Object2IntOpenHashMap<FloatFloatImmutablePair> uvToIndex = new Object2IntOpenHashMap<>();
+    private final Object2IntOpenHashMap<RawUVs> uvToIndex = new Object2IntOpenHashMap<>();
 
-    private ArrayList<FloatFloatImmutablePair> toAdd = new ArrayList<>();
+    private ArrayList<RawUVs> toAdd = new ArrayList<>();
 
     private int currentIndex = 0;
 
-    public int get(float u, float v) {
-        FloatFloatImmutablePair key = new FloatFloatImmutablePair(u, v);
-        return uvToIndex.computeIfAbsent(key, pairKey -> {
-            toAdd.add((FloatFloatImmutablePair) pairKey);
+    public int get(RawUVs uvs) {
+        return uvToIndex.computeIfAbsent(uvs, pairKey -> {
+            toAdd.add((RawUVs) pairKey);
             return currentIndex++;
         });
     }
@@ -27,7 +24,7 @@ public class ParticleTextureRegistry {
         return !toAdd.isEmpty();
     }
 
-    public List<FloatFloatImmutablePair> drainUpdates() {
+    public List<RawUVs> drainUpdates() {
         var ret = this.toAdd;
         this.toAdd = new ArrayList<>();
         return ret;
