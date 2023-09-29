@@ -39,6 +39,10 @@ public class ParticleShaderInterface {
         this.uniformModelViewMatrix.set(matrix);
     }
 
+    public void setDataOffset(int dataOffset) {
+        this.uniformDataOffset.setInt(dataOffset);
+    }
+
     public void setupState() {
         // "BlockTexture" should represent the particle textures if bound correctly
         this.bindParticleTexture(ParticleShaderTextureSlot.TEXTURE, TextureUtil.getBlockTextureId());

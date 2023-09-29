@@ -12,6 +12,13 @@ public record RawUVs(float minU, float minV, float maxU, float maxV) {
         MemoryUtil.memPutFloat(ptr + 12, maxV);
     }
 
+    public static void putNull(long ptr) {
+        MemoryUtil.memPutFloat(ptr + 0, Float.NaN);
+        MemoryUtil.memPutFloat(ptr + 4, Float.NaN);
+        MemoryUtil.memPutFloat(ptr + 8, Float.NaN);
+        MemoryUtil.memPutFloat(ptr + 12, Float.NaN);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

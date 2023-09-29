@@ -2,7 +2,7 @@ package me.jellysquid.mods.sodium.mixin.features.render.particle;
 
 import me.jellysquid.mods.sodium.client.render.particle.BillboardExtended;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleData;
-import me.jellysquid.mods.sodium.client.render.texture.ParticleTextureRegistry;
+import me.jellysquid.mods.sodium.client.render.particle.cache.ParticleTextureCache;
 import net.caffeinemc.mods.sodium.api.buffer.UnmanagedBufferBuilder;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.RawUVs;
@@ -42,12 +42,12 @@ public abstract class BillboardParticleMixin extends Particle implements Billboa
     @Override
     public void sodium$buildParticleData(
             UnmanagedBufferBuilder builder,
-            ParticleTextureRegistry registry,
+            ParticleTextureCache registry,
             Camera camera, float tickDelta
     ) {
         Vec3d vec3d = camera.getPos();
         RawUVs uvs = new RawUVs(getMinU(), getMinV(), getMaxU(), getMaxV());
-        int textureIndex = registry.get(uvs);
+        int textureIndex = registry.getUvIndex(uvs);
 
         float x = (float) (MathHelper.lerp(tickDelta, this.prevPosX, this.x) - vec3d.getX());
         float y = (float) (MathHelper.lerp(tickDelta, this.prevPosY, this.y) - vec3d.getY());
