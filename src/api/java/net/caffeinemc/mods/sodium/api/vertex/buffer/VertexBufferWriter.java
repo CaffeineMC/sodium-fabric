@@ -63,7 +63,9 @@ public interface VertexBufferWriter {
      */
     void push(MemoryStack stack, long ptr, int count, VertexFormatDescription format);
 
-    boolean isFullWriter();
+    default boolean isFullWriter() {
+        return true;
+    }
 
     /**
      * Creates a copy of the source data and pushes it into the specified {@param writer}. This is useful for when
