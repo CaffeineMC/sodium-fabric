@@ -2,20 +2,17 @@ package me.jellysquid.mods.sodium.client.render.particle.shader;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformFloat4v;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformInt;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniformMatrix4f;
-import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderTextureSlot;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ShaderBindingContext;
 import me.jellysquid.mods.sodium.client.util.TextureUtil;
-import org.joml.*;
+import org.joml.Matrix4fc;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL31;
-import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL32C;
 
 public class ParticleShaderInterface {
-    private final GlUniformInt uniformDataOffset;
+    private final GlUniformInt uniformTextureOffset;
     private final GlUniformInt uniformParticleTexture;
     private final GlUniformInt uniformLightTexture;
     private final GlUniformMatrix4f uniformModelViewMatrix;
@@ -23,7 +20,7 @@ public class ParticleShaderInterface {
     private final GlUniformInt uniformBufferTexture;
 
     public ParticleShaderInterface(ShaderBindingContext context) {
-        this.uniformDataOffset = context.bindUniform("u_DataOffset", GlUniformInt::new);
+        this.uniformTextureOffset = context.bindUniform("u_TextureOffset", GlUniformInt::new);
         this.uniformParticleTexture = context.bindUniform("u_ParticleTex", GlUniformInt::new);
         this.uniformLightTexture = context.bindUniform("u_LightTex", GlUniformInt::new);
         this.uniformModelViewMatrix = context.bindUniform("u_ModelViewMatrix", GlUniformMatrix4f::new);
@@ -39,8 +36,8 @@ public class ParticleShaderInterface {
         this.uniformModelViewMatrix.set(matrix);
     }
 
-    public void setDataOffset(int dataOffset) {
-        this.uniformDataOffset.setInt(dataOffset);
+    public void setTextureOffset(int dataOffset) {
+        this.uniformTextureOffset.setInt(dataOffset);
     }
 
     public void setupState() {

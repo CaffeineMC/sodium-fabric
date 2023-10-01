@@ -18,7 +18,7 @@ const int INDICES[] = int[](
     0, 2, 3
 );
 
-uniform int u_DataOffset;
+uniform int u_TextureOffset;
 uniform sampler2D u_LightTex;
 uniform usamplerBuffer u_BufferTexture; // R_32UI
 
@@ -63,7 +63,7 @@ vec2 readBufferTex(int ptr) {
 }
 
 void init() {
-    int base = (PARTICLE_STRIDE * (gl_VertexID / 6)) + u_DataOffset;
+    int base = PARTICLE_STRIDE * (gl_VertexID / 6);
 
     position = readBufferPos(base);
     size = readBufferF(base + 3);
@@ -72,7 +72,7 @@ void init() {
     angle = readBufferF(base + 6);
     int textureIndex = int(readBuffer(base + 7));
 
-    int texturePtr = textureIndex * TEX_STRIDE;
+    int texturePtr = (textureIndex * TEX_STRIDE) + u_TextureOffset;
     minTexUV = readBufferTex(texturePtr);
     maxTexUV = readBufferTex(texturePtr + 2);
 }
