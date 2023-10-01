@@ -8,6 +8,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
+import me.jellysquid.mods.sodium.client.gl.device.CommandList;
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.particle.*;
 import me.jellysquid.mods.sodium.client.render.particle.cache.ParticleTextureCache;
 import me.jellysquid.mods.sodium.client.render.particle.shader.BillboardParticleData;
@@ -90,7 +92,7 @@ public abstract class ParticleManagerMixin {
     private UnmanagedBufferBuilder dataBufferBuilder;
 
     @Unique
-    private ParticleDataBuffer dataBuffer;
+    private ParticleDataBuffer dataBuffer = null;
 
     @Unique
     private Identifier prevTexture = null;
@@ -99,7 +101,6 @@ public abstract class ParticleManagerMixin {
     private void postInit(ClientWorld world, TextureManager textureManager, CallbackInfo ci) {
         this.glVertexArray = GlStateManager._glGenVertexArrays();
         this.dataBufferBuilder = new UnmanagedBufferBuilder(1);
-        this.dataBuffer = new ParticleDataBuffer();
         this.renderView = new ParticleRenderView(world);
     }
 
@@ -196,33 +197,41 @@ public abstract class ParticleManagerMixin {
             LightmapTextureManager lightmapTextureManager, Camera camera, float tickDelta,
             CallbackInfo ci, MatrixStack matrixStack
     ) {
-        particleRenderer.begin();
-        ParticleShaderInterface shader = this.particleRenderer.getActiveProgram().getInterface();
-        shader.setProjectionMatrix(RenderSystem.getProjectionMatrix());
-        shader.setModelViewMatrix(RenderSystem.getModelViewMatrix());
-
-        for (ParticleTextureSheet particleTextureSheet : PARTICLE_TEXTURE_SHEETS) {
-            Queue<BillboardParticle> iterable = this.billboardParticles.get(particleTextureSheet);
-            if (iterable != null && !iterable.isEmpty()) {
-                int numParticles = iterable.size();
-                bindParticleTextureSheet(particleTextureSheet);
-                this.dataBuffer.bind();
-                particleRenderer.setupState();
-
-                for (BillboardParticle particle : iterable) {
-                    ((BillboardExtended) particle).sodium$buildParticleData(
-                            dataBufferBuilder,
-                            particleTexCache,
-                            camera, tickDelta
-                    );
-                }
-
-                drawParticleTextureSheet(particleTextureSheet, numParticles);
+        RenderDevice.enterManagedCode();
+        try (CommandList commands = RenderDevice.INSTANCE.createCommandList()) {
+            if (this.dataBuffer == null) {
+                this.dataBuffer = new ParticleDataBuffer(commands);
             }
-        }
 
-        prevTexture = null;
-        particleRenderer.end();
+            particleRenderer.begin();
+            ParticleShaderInterface shader = this.particleRenderer.getActiveProgram().getInterface();
+            shader.setProjectionMatrix(RenderSystem.getProjectionMatrix());
+            shader.setModelViewMatrix(RenderSystem.getModelViewMatrix());
+
+            for (ParticleTextureSheet particleTextureSheet : PARTICLE_TEXTURE_SHEETS) {
+                Queue<BillboardParticle> iterable = this.billboardParticles.get(particleTextureSheet);
+                if (iterable != null && !iterable.isEmpty()) {
+                    int numParticles = iterable.size();
+                    bindParticleTextureSheet(particleTextureSheet);
+                    this.dataBuffer.bind();
+                    particleRenderer.setupState();
+
+                    for (BillboardParticle particle : iterable) {
+                        ((BillboardExtended) particle).sodium$buildParticleData(
+                                dataBufferBuilder,
+                                particleTexCache,
+                                camera, tickDelta
+                        );
+                    }
+
+                    drawParticleTextureSheet(commands, particleTextureSheet, numParticles);
+                }
+            }
+        } finally {
+            prevTexture = null;
+            particleRenderer.end();
+            RenderDevice.exitManagedCode();
+        }
     }
 
     @Unique
@@ -252,9 +261,9 @@ public abstract class ParticleManagerMixin {
     }
 
     @Unique
-    private void drawParticleTextureSheet(ParticleTextureSheet sheet, int numParticles) {
+    private void drawParticleTextureSheet(CommandList commands, ParticleTextureSheet sheet, int numParticles) {
         if (sheet == ParticleTextureSheet.TERRAIN_SHEET || sheet == ParticleTextureSheet.PARTICLE_SHEET_LIT || sheet == ParticleTextureSheet.PARTICLE_SHEET_OPAQUE || sheet == ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT) {
-            uploadParticleBuffer(numParticles);
+            uploadParticleBuffer(commands, numParticles);
             bindDummyVao();
             GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, numParticles * 6);
         }
@@ -268,7 +277,7 @@ public abstract class ParticleManagerMixin {
     }
 
     @Unique
-    private void uploadParticleBuffer(int numParticles) {
+    private void uploadParticleBuffer(CommandList commands, int numParticles) {
         RawUVs[] toUpload = this.particleTexCache.update();
         int maxUploadIndex = this.particleTexCache.getTopIndex();
 
@@ -294,7 +303,7 @@ public abstract class ParticleManagerMixin {
                 .setTextureOffset((numParticles * BillboardParticleData.STRIDE) / 4);
 
         UnmanagedBufferBuilder.Built data = dataBufferBuilder.end();
-        this.dataBuffer.uploadParticleData(data);
+        this.dataBuffer.uploadParticleData(commands, data);
     }
 
     @Inject(method = "setWorld", at = @At("RETURN"))
