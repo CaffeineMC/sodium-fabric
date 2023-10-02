@@ -23,10 +23,10 @@ public record RawUVs(float minU, float minV, float maxU, float maxV) {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o instanceof RawUVs other) {
-            return minU == other.minU() &&
-                    minV == other.minV() &&
-                    maxU == other.maxU() &&
-                    maxV == other.maxV();
+            return Float.floatToRawIntBits(minU) == Float.floatToRawIntBits(other.minU()) &&
+                   Float.floatToRawIntBits(minV) == Float.floatToRawIntBits(other.minV()) &&
+                   Float.floatToRawIntBits(maxU) == Float.floatToRawIntBits(other.maxU()) &&
+                   Float.floatToRawIntBits(maxV) == Float.floatToRawIntBits(other.maxV());
         } else {
             return false;
         }
