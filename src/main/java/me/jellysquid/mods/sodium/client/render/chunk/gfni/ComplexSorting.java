@@ -451,7 +451,7 @@ public class ComplexSorting {
             int otherQuadIndex = start;
             while (otherQuadIndex != -1) {
                 TQuad otherQuad = quads[otherQuadIndex];
-                if (quadVisibleThrough(quad, otherQuad)) {
+                if (quadIndex != otherQuadIndex && quadVisibleThrough(quad, otherQuad)) {
                     insertAfter = otherQuadIndex;
                 }
                 otherQuadIndex = forwards[otherQuadIndex];
