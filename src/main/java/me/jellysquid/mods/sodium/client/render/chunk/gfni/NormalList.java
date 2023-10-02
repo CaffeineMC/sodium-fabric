@@ -177,7 +177,7 @@ class NormalList {
         // from the map for the right position.
         // TODO: how common are collisions and are they bad?
         // If they are common, use second hash
-        if (group.facePlaneDistances.size() == accGroup.relativeDistances.size()
+        if (group.facePlaneDistances.length == accGroup.relativeDistances.size()
                 && group.distances.equals(accGroupDistances)
                 && group.relDistanceHash == accGroup.relDistanceHash) {
             // don't update if they are the same
