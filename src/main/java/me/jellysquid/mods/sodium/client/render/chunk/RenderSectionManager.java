@@ -315,13 +315,15 @@ public class RenderSectionManager {
         this.regions.uploadResults(RenderDevice.INSTANCE.createCommandList(), filtered);
 
         for (var result : filtered) {
+            TranslucentData oldData = result.render.getTranslucentData();
             if (result instanceof ChunkBuildOutput chunkBuildOutput) {
                 this.updateSectionInfo(result.render, chunkBuildOutput.info);
+                if (chunkBuildOutput.translucentData != null) {
+                    this.gfni.integrateTranslucentData(oldData, chunkBuildOutput.translucentData);
+                }
             }
             if (result instanceof ChunkSortOutput chunkSortOutput && chunkSortOutput.translucentData != null) {
-                TranslucentData oldData = result.render.getTranslucentData();
                 result.render.setTranslucentData(chunkSortOutput.translucentData);
-                this.gfni.integrateTranslucentData(oldData, chunkSortOutput.translucentData);
             }
 
             var job = result.render.getTaskCancellationToken();

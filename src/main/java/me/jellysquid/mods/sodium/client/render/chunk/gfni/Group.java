@@ -18,7 +18,8 @@ class Group {
     ChunkSectionPos sectionPos;
 
     /**
-     * A sorted list of all the face plane distances in this group.
+     * A sorted list of all the face plane distances in this group. Relative to the
+     * base distance.
      */
     double[] facePlaneDistances;
 
@@ -26,31 +27,26 @@ class Group {
      * A hash of all the face plane distances in this group (before adding the base
      * distance)
      */
-    long relDistanceHash = 0;
+    long relDistanceHash;
 
     /**
      * The closed (inclusive of both boundaries) minimum and maximum distances.
+     * Absolute values, not relative to the base distance.
      */
     DoubleInterval distances;
 
-    Group(AccumulationGroup accGroup, DoubleInterval accGroupDistances, double baseDistance) {
-        replaceWith(accGroup, accGroupDistances, baseDistance);
+    double baseDistance;
+
+    Group(AccumulationGroup accGroup) {
+        replaceWith(accGroup);
     }
 
-    void replaceWith(AccumulationGroup accGroup, DoubleInterval accGroupDistances, double baseDistance) {
+    void replaceWith(AccumulationGroup accGroup) {
         this.sectionPos = accGroup.sectionPos;
-        this.distances = accGroupDistances;
+        this.distances = accGroup.distances;
         this.relDistanceHash = accGroup.relDistanceHash;
-
-        // store the absolute face plane distances in an array
-        this.facePlaneDistances = new double[accGroup.relativeDistances.size()];
-        int i = 0;
-        for (double relDistance : accGroup.relativeDistances) {
-            this.facePlaneDistances[i++] = relDistance + baseDistance;
-        }
-
-        // sort the array ascending
-        DoubleArrays.quickSort(facePlaneDistances);
+        this.facePlaneDistances = accGroup.facePlaneDistances;
+        this.baseDistance = accGroup.baseDistance;
     }
 
     public static boolean queryRange(double[] sortedDistances, double start, double end) {
@@ -82,8 +78,25 @@ class Group {
         // testing for strict inequality because if the two intervals just touch at the
         // start/end, there can be no overlap
         if (start < this.distances.getEnd() && end > this.distances.getStart()
-                && queryRange(this.facePlaneDistances, start, end)) {
+                && queryRange(this.facePlaneDistances,
+                        start - this.baseDistance, end - this.baseDistance)) {
             gfni.triggerSection(this.sectionPos, collectorKey);
         }
+    }
+
+    /**
+     * A pretty good heuristic for equality of captured translucent geometry data.
+     * 
+     * It assumes that if the size, bounds, and hash are equal, they are most likely
+     * the same. We also know that the existing and new data is for the same section
+     * position since the group was retrieved from the map for the right position.
+     * 
+     * TODO: how common are collisions and are they bad?
+     * If they are common, use second hash
+     */
+    boolean equalsAccGroup(AccumulationGroup accGroup) {
+        return this.facePlaneDistances.length == accGroup.relativeDistances.size()
+                && this.distances.equals(accGroup.distances)
+                && this.relDistanceHash == accGroup.relDistanceHash;
     }
 }

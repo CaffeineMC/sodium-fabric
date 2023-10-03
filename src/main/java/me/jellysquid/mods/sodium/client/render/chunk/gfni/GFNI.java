@@ -29,7 +29,8 @@ import net.minecraft.util.math.ChunkSectionPos;
  * - problem: when there are two parallel planes made up of many quads each,
  * sorting the whole thing from one perspective means the sorting is wrong when
  * we look at it from another perspective. This happens because there is no
- * trigger in the plane. Sorting as if the entire thing was one quad would fix it.
+ * trigger in the plane. Sorting as if the entire thing was one quad would fix
+ * it.
  * 
  * @author douira
  */
@@ -109,11 +110,12 @@ public class GFNI {
 
         // int triggerCount = this.triggeredSections.size();
         // if (triggerCount > 0) {
-        //     System.out.println("Triggered " + triggerCount + " sections");
-        //     for (long section : this.triggeredSections) {
-        //         ChunkSectionPos sectionPos = ChunkSectionPos.from(section);
-        //         System.out.println(sectionPos.getX() + " " + sectionPos.getY() + " " + sectionPos.getZ());
-        //     }
+        // System.out.println("Triggered " + triggerCount + " sections");
+        // for (long section : this.triggeredSections) {
+        // ChunkSectionPos sectionPos = ChunkSectionPos.from(section);
+        // System.out.println(sectionPos.getX() + " " + sectionPos.getY() + " " +
+        // sectionPos.getZ());
+        // }
         // }
 
         triggerSectionCallback = null;
@@ -156,7 +158,7 @@ public class GFNI {
         decrementSortTypeCounter(oldTranslucentData);
     }
 
-    private void addSectionInNewNormalLists(AccumulationGroup accGroup) {
+    private void addSectionInNewNormalLists(DynamicData dynamicData, AccumulationGroup accGroup) {
         var normal = accGroup.normal;
         var normalList = this.normalLists.get(normal);
         if (normalList == null) {
@@ -167,12 +169,14 @@ public class GFNI {
     }
 
     /**
-     * Integrates the data from a geometry collector into GFNI. The geometry collector
+     * Integrates the data from a geometry collector into GFNI. The geometry
+     * collector
      * contains the translucent face planes of a single section. This method may
      * also remove the section if it has become irrelevant.
      * 
      * @param builder the geometry collector to integrate
-     * @return the sort type that the geometry collector's relevance heuristic determined
+     * @return the sort type that the geometry collector's relevance heuristic
+     *         determined
      */
     public void integrateTranslucentData(TranslucentData oldTranslucentData, TranslucentData translucentData) {
         long chunkSectionLongPos = translucentData.sectionPos.asLong();
@@ -188,18 +192,15 @@ public class GFNI {
 
         decrementSortTypeCounter(oldTranslucentData);
 
-        // TODO: implement cycle breaking and multiple sort orders
-        if (!(translucentData instanceof DynamicData)) {
-            throw new RuntimeException("Dynamic topo sort not implemented yet");
-        }
         var dynamicData = (DynamicData) translucentData;
+        var collector = dynamicData.getCollector();
 
         // go through all normal lists and check against the normals that the group
         // builder has. if the normal list has data for the section, but the group
         // builder doesn't, the group is removed. otherwise, the group is updated.
         for (var normalList : this.normalLists.values()) {
             // check if the geometry collector includes data for this normal.
-            var accGroup = dynamicData.getGroupForNormal(normalList);
+            var accGroup = collector.getGroupForNormal(normalList);
             if (normalList.hasSection(chunkSectionLongPos)) {
                 if (accGroup == null) {
                     removeSectionFromList(normalList, chunkSectionLongPos);
@@ -211,21 +212,24 @@ public class GFNI {
             }
         }
 
-        // go through the data of the geometry collector to check for data of new normals
+        // go through the data of the geometry collector to check for data of new
+        // normals
         // for which there are no normal lists yet. This only checks for new normal
         // lists since new data for existing normal lists is handled above.
-        if (dynamicData.getAxisAlignedDistances() != null) {
-            for (var accGroup : dynamicData.getAxisAlignedDistances()) {
+        if (collector.axisAlignedDistances != null) {
+            for (var accGroup : collector.axisAlignedDistances) {
                 if (accGroup != null) {
-                    addSectionInNewNormalLists(accGroup);
+                    addSectionInNewNormalLists(dynamicData, accGroup);
                 }
             }
         }
-        if (dynamicData.getUnalignedDistances() != null) {
-            for (var accGroup : dynamicData.getUnalignedDistances().values()) {
-                addSectionInNewNormalLists(accGroup);
+        if (collector.unalignedDistances != null) {
+            for (var accGroup : collector.unalignedDistances.values()) {
+                addSectionInNewNormalLists(dynamicData, accGroup);
             }
         }
+
+        dynamicData.finishIntegration();
     }
 
     public void addDebugStrings(List<String> list) {

@@ -15,7 +15,6 @@ import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceArraySet;
 import it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet;
-import net.minecraft.util.math.ChunkSectionPos;
 
 /**
  * A normal list contains all the face planes that have the same normal.
@@ -147,11 +146,7 @@ class NormalList {
     }
 
     void addSection(AccumulationGroup accGroup, long chunkSectionLongPos) {
-        ChunkSectionPos pos = accGroup.sectionPos;
-        double baseDistance = accGroup.normal.dot(pos.getMinX(), pos.getMinY(), pos.getMinZ());
-        DoubleInterval accGroupDistances = accGroup.getDistanceInterval(baseDistance);
-
-        var group = new Group(accGroup, accGroupDistances, baseDistance);
+        var group = new Group(accGroup);
 
         this.groupsBySection.put(chunkSectionLongPos, group);
         addGroupInterval(group);
@@ -165,27 +160,16 @@ class NormalList {
     }
 
     void updateSection(AccumulationGroup accGroup, long chunkSectionLongPos) {
-        ChunkSectionPos pos = accGroup.sectionPos;
-        double baseDistance = accGroup.normal.dot(pos.getMinX(), pos.getMinY(), pos.getMinZ());
-        DoubleInterval accGroupDistances = accGroup.getDistanceInterval(baseDistance);
-
         Group group = this.groupsBySection.get(chunkSectionLongPos);
 
-        // this is just a heuristic, but it assumes that if the size, bounds and
-        // hash are equal, they are most likely the same. We also know that the existing
-        // and new data is for the same section position since the group was retrieved
-        // from the map for the right position.
-        // TODO: how common are collisions and are they bad?
-        // If they are common, use second hash
-        if (group.facePlaneDistances.length == accGroup.relativeDistances.size()
-                && group.distances.equals(accGroupDistances)
-                && group.relDistanceHash == accGroup.relDistanceHash) {
+        // only update on changes to translucent geometry
+        if (group.equalsAccGroup(accGroup)) {
             // don't update if they are the same
             return;
         }
 
         removeGroupInterval(group);
-        group.replaceWith(accGroup, accGroupDistances, baseDistance);
+        group.replaceWith(accGroup);
         addGroupInterval(group);
     }
 }

@@ -36,18 +36,6 @@ import net.minecraft.util.math.ChunkSectionPos;
  * overhead if no sorting is wanted.
  */
 public class TranslucentGeometryCollector {
-    private static final Vector3fc[] ALIGNED_NORMALS = new Vector3fc[ModelQuadFacing.DIRECTIONS];
-
-    private static final int OPPOSING_X = 1 << ModelQuadFacing.POS_X.ordinal() | 1 << ModelQuadFacing.NEG_X.ordinal();
-    private static final int OPPOSING_Y = 1 << ModelQuadFacing.POS_Y.ordinal() | 1 << ModelQuadFacing.NEG_Y.ordinal();
-    private static final int OPPOSING_Z = 1 << ModelQuadFacing.POS_Z.ordinal() | 1 << ModelQuadFacing.NEG_Z.ordinal();
-
-    static {
-        for (int i = 0; i < ModelQuadFacing.DIRECTIONS; i++) {
-            ALIGNED_NORMALS[i] = new Vector3f(ModelQuadFacing.VALUES[i].toDirection().getUnitVector());
-        }
-    }
-
     AccumulationGroup[] axisAlignedDistances;
     Int2ReferenceLinkedOpenHashMap<AccumulationGroup> unalignedDistances;
 
@@ -154,7 +142,7 @@ public class TranslucentGeometryCollector {
             accGroup = this.axisAlignedDistances[quadDirection];
 
             if (accGroup == null) {
-                accGroup = new AccumulationGroup(sectionPos, ALIGNED_NORMALS[quadDirection], quadDirection);
+                accGroup = new AccumulationGroup(sectionPos, ModelQuadFacing.NORMALS[quadDirection], quadDirection);
                 this.axisAlignedDistances[quadDirection] = accGroup;
                 this.alignedNormalBitmap |= 1 << quadDirection;
             }
@@ -237,9 +225,9 @@ public class TranslucentGeometryCollector {
         }
 
         if (this.unalignedDistances == null) {
-            boolean twoOpposingNormals = this.alignedNormalBitmap == OPPOSING_X
-                    || this.alignedNormalBitmap == OPPOSING_Y
-                    || this.alignedNormalBitmap == OPPOSING_Z;
+            boolean twoOpposingNormals = this.alignedNormalBitmap == ModelQuadFacing.OPPOSING_X
+                    || this.alignedNormalBitmap == ModelQuadFacing.OPPOSING_Y
+                    || this.alignedNormalBitmap == ModelQuadFacing.OPPOSING_Z;
 
             // special case B
             // if there are just two normals, they are exact opposites of eachother and they
@@ -377,5 +365,20 @@ public class TranslucentGeometryCollector {
         }
 
         throw new IllegalStateException("Unknown sort type: " + this.sortType);
+    }
+
+    AccumulationGroup getGroupForNormal(NormalList normalList) {
+        int collectorKey = normalList.getCollectorKey();
+        if (collectorKey < 0xFF) {
+            if (this.axisAlignedDistances == null) {
+                return null;
+            }
+            return this.axisAlignedDistances[collectorKey];
+        } else {
+            if (this.unalignedDistances == null) {
+                return null;
+            }
+            return this.unalignedDistances.get(collectorKey);
+        }
     }
 }
