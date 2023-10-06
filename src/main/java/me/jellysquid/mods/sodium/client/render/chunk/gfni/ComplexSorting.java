@@ -158,7 +158,7 @@ public class ComplexSorting {
      *                    should be performed
      * @return true if the quads were sorted, false if there was a cycle
      */
-    public static boolean topoSortAlignedAcyclic(IntBuffer indexBuffer, TQuad[] allQuads, Vector3fc cameraPos) {
+    public static boolean topoSortAlignedScanningCyclic(IntBuffer indexBuffer, TQuad[] allQuads, Vector3fc cameraPos) {
         // if enabled, check for visibility and produce a mapping of indices
         TQuad[] quads = null;
         int[] activeToRealIndex = null;
@@ -433,7 +433,8 @@ public class ComplexSorting {
     /**
      * Performs a topological sort but constructs the full forward graph without
      * using a compression technique like
-     * {@link #topoSortAlignedAcyclic(IntBuffer, TQuad[], Vector3fc)} does. Only
+     * {@link #topoSortAlignedScanningCyclic(IntBuffer, TQuad[], Vector3fc)} does.
+     * Only
      * sort visible quads if a camera position is provided.
      * 
      * @param indexBuffer       the buffer to write the topo sort result to
@@ -444,7 +445,7 @@ public class ComplexSorting {
      *                          visibility check
      * @return true if the quads were sorted, false if there was a cycle
      */
-    public static boolean topoSortFullGraphAcyclic(
+    public static boolean topoSortLinkedListAcyclic(
             IntBuffer indexBuffer, TQuad[] allQuads,
             Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal,
             Vector3fc cameraPos) {
@@ -500,6 +501,7 @@ public class ComplexSorting {
 
         // int-based doubly linked list of active quad indexes
         // TODO: put this linked list in a class
+        // TODO: sorting is sometimes wrong, see example in sandstone world
         int[] next = new int[activeQuads];
         int[] prev = new int[activeQuads];
         int start = 0;
@@ -588,6 +590,121 @@ public class ComplexSorting {
         // detect cycles
         if (start != -1) {
             return false;
+        }
+
+        return true;
+    }
+
+    public static boolean topoSortDepthFirstCyclic(
+            IntBuffer indexBuffer, TQuad[] allQuads,
+            Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal,
+            Vector3fc cameraPos) {
+        // TODO: quads visibility filter copy-pasted from topoSortAlignedAcyclic
+        // if enabled, check for visibility and produce a mapping of indices
+        TQuad[] quads = null;
+        int[] activeToRealIndex = null;
+        int activeQuads = 0;
+        if (cameraPos != null) {
+            // allocate the working quads and index map at the full size to avoid needing to
+            // iterate the quads again after checking visibility
+            quads = new TQuad[allQuads.length];
+            activeToRealIndex = new int[allQuads.length];
+
+            for (int i = 0; i < allQuads.length; i++) {
+                TQuad quad = allQuads[i];
+                if (pointOutsideHalfspace(quad.center(), quad.normal(), cameraPos)) {
+                    activeToRealIndex[activeQuads] = i;
+                    quads[activeQuads] = quad;
+                    activeQuads++;
+                } else {
+                    // write the invisible quads right away
+                    TranslucentData.putQuadVertexIndexes(indexBuffer, i);
+                }
+            }
+        } else {
+            quads = allQuads;
+            activeQuads = allQuads.length;
+        }
+
+        // special case for 0 to 2 quads
+        if (activeQuads == 0) {
+            return true;
+        }
+        if (activeQuads == 1) {
+            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, 0, activeToRealIndex);
+            return true;
+        }
+
+        // special case 2 quads for performance
+        if (activeQuads == 2) {
+            var a = 0;
+            var b = 1;
+            if (quadVisibleThrough(quads[a], quads[b], null, null)) {
+                a = 1;
+                b = 0;
+            }
+            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, a, activeToRealIndex);
+            TranslucentData.putMappedQuadVertexIndexes(indexBuffer, b, activeToRealIndex);
+            return true;
+        }
+
+        BitArray unvisited = new BitArray(activeQuads);
+        unvisited.set(0, activeQuads);
+        int visitedCount = 0;
+        BitArray onStack = new BitArray(activeQuads);
+        int[] stack = new int[activeQuads];
+        int[] nextEdge = new int[activeQuads];
+
+        // start dfs searches until all quads are visited
+        while (visitedCount < activeQuads) {
+            int stackPos = 0;
+            var root = unvisited.nextSetBit(0);
+            stack[stackPos] = root;
+            onStack.set(root);
+            nextEdge[stackPos] = 0;
+
+            while (stackPos >= 0) {
+                // start at next edge and find an unvisited quad
+                var currentQuadIndex = stack[stackPos];
+                var nextEdgeTest = unvisited.nextSetBit(nextEdge[stackPos]);
+                if (nextEdgeTest != -1) {
+                    var currentQuad = quads[currentQuadIndex];
+                    var nextQuad = quads[nextEdgeTest];
+                    if (quadVisibleThrough(currentQuad, nextQuad, distancesByNormal, cameraPos)) {
+                        // if the visible quad is on the stack, there is a cycle
+                        if (onStack.getAndSet(nextEdgeTest)) {
+                            return false;
+                        }
+
+                        // set the next edge
+                        nextEdge[stackPos] = nextEdgeTest + 1;
+
+                        // visit the next quad, onStack is already set
+                        stackPos++;
+                        stack[stackPos] = nextEdgeTest;
+                        nextEdge[stackPos] = 0;
+                        continue;
+                    } else {
+                        // go to the next edge
+                        nextEdgeTest++;
+
+                        // if we haven't reached the end of the edges yet
+                        if (nextEdgeTest < activeQuads) {
+                            nextEdge[stackPos] = nextEdgeTest;
+                            continue;
+                        }
+                    }
+                }
+
+                // no more edges left, pop the stack
+                onStack.unset(currentQuadIndex);
+                visitedCount++;
+                unvisited.unset(currentQuadIndex);
+                stackPos--;
+
+                // write to the index buffer since the order is now correct
+                TranslucentData.putMappedQuadVertexIndexes(indexBuffer, currentQuadIndex, activeToRealIndex);
+            }
         }
 
         return true;

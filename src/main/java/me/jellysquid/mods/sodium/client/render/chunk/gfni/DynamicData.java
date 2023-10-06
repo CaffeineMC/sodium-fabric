@@ -35,7 +35,7 @@ public class DynamicData extends MixedDirectionData {
     public void sort(Vector3fc cameraPos) {
         IntBuffer indexBuffer = this.buffer.getDirectBuffer().asIntBuffer();
 
-        if (!ComplexSorting.topoSortFullGraphAcyclic(indexBuffer, this.quads, this.distancesByNormal, cameraPos)) {
+        if (!ComplexSorting.topoSortDepthFirstCyclic(indexBuffer, this.quads, this.distancesByNormal, cameraPos)) {
             // if a camera position is given, no cycle should be possible
             throw new IllegalStateException("Failed to sort");
         }
