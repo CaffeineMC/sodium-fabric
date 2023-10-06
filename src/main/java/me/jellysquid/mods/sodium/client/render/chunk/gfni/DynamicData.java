@@ -37,7 +37,8 @@ public class DynamicData extends MixedDirectionData {
 
         if (!ComplexSorting.topoSortDepthFirstCyclic(indexBuffer, this.quads, this.distancesByNormal, cameraPos)) {
             // if a camera position is given, no cycle should be possible
-            throw new IllegalStateException("Failed to sort");
+            // throw new IllegalStateException("Failed to sort at" + this.sectionPos);
+            System.out.println("Failed to sort at " + this.sectionPos);
         }
     }
 

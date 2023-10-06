@@ -23,6 +23,10 @@ public abstract class PresentTranslucentData extends TranslucentData {
         }
     }
 
+    public int getQuadLength() {
+        return this.buffer.getLength() / BYTES_PER_INDEX / VERTICES_PER_QUAD;
+    }
+
     static NativeBuffer nativeBufferForQuads(TQuad[] quads) {
         return new NativeBuffer(TranslucentData.quadCountToIndexBytes(quads.length));
     }

@@ -86,7 +86,7 @@ public class RenderSectionManager {
 
     private int lastUpdatedFrame;
 
-    private boolean needsUpdate;
+    private boolean needsGraphUpdate;
 
     private @Nullable BlockPos cameraBlockPos;
     private @Nullable Vector3fc cameraPosition;
@@ -99,7 +99,7 @@ public class RenderSectionManager {
 
         this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
 
-        this.needsUpdate = true;
+        this.needsGraphUpdate = true;
         this.renderDistance = renderDistance;
 
         this.regions = new RenderRegionManager(commandList);
@@ -121,7 +121,7 @@ public class RenderSectionManager {
 
         this.createTerrainRenderList(camera, viewport, frame, spectator);
 
-        this.needsUpdate = false;
+        this.needsGraphUpdate = false;
         this.lastUpdatedFrame = frame;
     }
 
@@ -198,7 +198,7 @@ public class RenderSectionManager {
 
         this.connectNeighborNodes(renderSection);
 
-        this.needsUpdate = true;
+        this.needsGraphUpdate = true;
     }
 
     public void onSectionRemoved(int x, int y, int z) {
@@ -222,7 +222,7 @@ public class RenderSectionManager {
 
         this.gfni.removeSection(section.getTranslucentData(), chunkSectionLongPos);
 
-        this.needsUpdate = true;
+        this.needsGraphUpdate = true;
     }
 
     public void renderLayer(ChunkRenderMatrices matrices, TerrainRenderPass pass, double x, double y, double z) {
@@ -286,9 +286,10 @@ public class RenderSectionManager {
         var optionallyBlockingCollector = updateImmediately ? blockingRebuilds : deferredRebuilds;
 
         this.submitSectionTasks(blockingRebuilds, ChunkUpdateType.IMPORTANT_REBUILD);
+        this.submitSectionTasks(blockingRebuilds, ChunkUpdateType.IMPORTANT_SORT);
         this.submitSectionTasks(optionallyBlockingCollector, ChunkUpdateType.REBUILD);
         this.submitSectionTasks(optionallyBlockingCollector, ChunkUpdateType.INITIAL_BUILD);
-        this.submitSectionTasks(optionallyBlockingCollector, ChunkUpdateType.TRANSLUCENT_SORT);
+        this.submitSectionTasks(optionallyBlockingCollector, ChunkUpdateType.SORT);
 
         blockingRebuilds.awaitCompletion(this.builder);
     }
@@ -306,7 +307,7 @@ public class RenderSectionManager {
             result.deleteAfterUpload();
         }
 
-        this.needsUpdate = true;
+        this.needsGraphUpdate = true;
     }
 
     private void processChunkBuildResults(ArrayList<BuilderTaskOutput> results) {
@@ -389,7 +390,7 @@ public class RenderSectionManager {
 
             int frame = this.lastUpdatedFrame;
             ChunkBuilderTask<? extends BuilderTaskOutput> task;
-            if (type == ChunkUpdateType.TRANSLUCENT_SORT) {
+            if (type == ChunkUpdateType.SORT || type == ChunkUpdateType.IMPORTANT_SORT) {
                 task = this.createSortTask(section, frame);
             } else {
                 task = this.createRebuildTask(section, frame);
@@ -436,11 +437,11 @@ public class RenderSectionManager {
     }
 
     public void markGraphDirty() {
-        this.needsUpdate = true;
+        this.needsGraphUpdate = true;
     }
 
     public boolean needsUpdate() {
-        return this.needsUpdate;
+        return this.needsGraphUpdate;
     }
 
     public ChunkBuilder getBuilder() {
@@ -488,8 +489,14 @@ public class RenderSectionManager {
 
         RenderSection section = this.sectionByPosition.get(pos.asLong());
 
-        if (section != null && ChunkUpdateType.canPromote(section.getPendingUpdate(), ChunkUpdateType.TRANSLUCENT_SORT)) {
-            section.setPendingUpdate(ChunkUpdateType.TRANSLUCENT_SORT);
+        if (section != null) {
+            var pendingUpdate = ChunkUpdateType.SORT;
+            if (this.shouldPrioritizeTask(section)) {
+                pendingUpdate = ChunkUpdateType.IMPORTANT_SORT;
+            }
+            if  (ChunkUpdateType.canPromote(section.getPendingUpdate(), pendingUpdate)) {
+                section.setPendingUpdate(pendingUpdate);
+            }
         }
     }
 
@@ -501,7 +508,7 @@ public class RenderSectionManager {
         if (section != null && section.isBuilt()) {
             ChunkUpdateType pendingUpdate;
 
-            if (allowImportantRebuilds() && (important || this.shouldPrioritizeRebuild(section))) {
+            if (allowImportantRebuilds() && (important || this.shouldPrioritizeTask(section))) {
                 pendingUpdate = ChunkUpdateType.IMPORTANT_REBUILD;
             } else {
                 pendingUpdate = ChunkUpdateType.REBUILD;
@@ -510,14 +517,14 @@ public class RenderSectionManager {
             if (ChunkUpdateType.canPromote(section.getPendingUpdate(), pendingUpdate)) {
                 section.setPendingUpdate(pendingUpdate);
 
-                this.needsUpdate = true;
+                this.needsGraphUpdate = true;
             }
         }
     }
 
     private static final float NEARBY_REBUILD_DISTANCE = MathHelper.square(16.0f);
 
-    private boolean shouldPrioritizeRebuild(RenderSection section) {
+    private boolean shouldPrioritizeTask(RenderSection section) {
         return this.cameraPosition != null && section.getSquaredDistance(this.cameraBlockPos) < NEARBY_REBUILD_DISTANCE;
     }
 
