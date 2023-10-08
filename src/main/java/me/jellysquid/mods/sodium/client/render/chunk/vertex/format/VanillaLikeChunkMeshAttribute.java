@@ -3,7 +3,8 @@ package me.jellysquid.mods.sodium.client.render.chunk.vertex.format;
 public enum VanillaLikeChunkMeshAttribute {
     // Expanded attributes, used by VanillaLikeChunkVertex
     POSITION,
-    COLOR_LIGHT,
+    COLOR,
     TEXTURE_UV,
-    DRAW_PARAMS
+    DRAW_PARAMS,
+    LIGHT
 }

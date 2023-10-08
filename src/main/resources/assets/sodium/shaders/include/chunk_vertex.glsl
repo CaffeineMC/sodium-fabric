@@ -12,9 +12,10 @@ in uvec4 in_VertexData;
 #elif defined(VERTEX_FORMAT_FULL)
 
 in vec3 in_Pos;
-in uint in_ColorLight;
+in uint in_Color;
 in uint in_TextureUv;
 in uint in_DrawParams;
+in uint in_Light;
 
 #else
 #error Unsupported vertex format
@@ -77,12 +78,11 @@ void _vert_init() {
     _vert_mesh_id  = (in_DrawParams >> 8) & 0xFFu;
 
     // Vertex Color
-    uvec3 packed_color = (uvec3(in_ColorLight) >> uvec3(0, 8, 16)) & uvec3(0xFFu);
+    uvec3 packed_color = (uvec3(in_Color) >> uvec3(0, 8, 16)) & uvec3(0xFFu);
     _vert_color = vec3(packed_color) * COLOR_SCALE;
 
     // Vertex Light
-    uvec2 packed_light = (uvec2(in_ColorLight) >> uvec2(24, 28)) & uvec2(0xFu);
-    _vert_light = packed_light;
+    _vert_light = (uvec2(in_Light) >> uvec2(0, 8)) & uvec2(0xFFu);
 
     // Vertex Texture Coords
     uvec2 packed_tex_coord = (uvec2(in_TextureUv) >> uvec2(0, 16)) & uvec2(0xFFFFu);

@@ -20,9 +20,19 @@ uniform vec3 u_RegionOffset;
 
 uniform sampler2D u_LightTex; // The light map texture
 
+#if defined(VERTEX_FORMAT_COMPACT)
+// expect 0-15 as inputs, Sodium 0.5 logic
 vec3 _sample_lightmap(uvec2 coord) {
     return texelFetch(u_LightTex, ivec2(coord), 0).rgb;
 }
+#elif defined(VERTEX_FORMAT_FULL)
+// expect UV coords as inputs
+vec3 _sample_lightmap(uvec2 uv) {
+    return texture(u_LightTex, clamp((ivec2(uv) / 256.0), vec2(0.5 / 16.0), vec2(15.5 / 16.0))).rgb;
+}
+#else
+#error Unexpected format
+#endif
 
 uvec3 _get_relative_chunk_coord(uint pos) {
     // Packing scheme is defined by LocalSectionIndex

@@ -45,9 +45,10 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         } else if (this.vertexType == ChunkMeshFormats.VANILLA_LIKE) {
             return builder
                     .bindAttribute("in_Pos", ChunkShaderBindingPoints.ATTRIBUTE_POSITION)
-                    .bindAttribute("in_ColorLight", ChunkShaderBindingPoints.ATTRIBUTE_COLOR_LIGHT)
+                    .bindAttribute("in_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
                     .bindAttribute("in_TextureUv", ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE_UV)
-                    .bindAttribute("in_DrawParams", ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS);
+                    .bindAttribute("in_DrawParams", ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS)
+                    .bindAttribute("in_Light", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT);
         } else
             throw new IllegalArgumentException("Unexpected vertex type");
     }

@@ -236,12 +236,14 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
             return new GlVertexAttributeBinding[] {
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION,
                             vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.POSITION)),
-                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR_LIGHT,
-                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.COLOR_LIGHT)),
+                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR,
+                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.COLOR)),
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE_UV,
                             vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.TEXTURE_UV)),
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS,
                             vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.DRAW_PARAMS)),
+                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT,
+                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.LIGHT))
             };
         } else
             return null; // assume Oculus/Iris will take over
