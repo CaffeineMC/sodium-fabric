@@ -3,38 +3,43 @@ package me.jellysquid.mods.sodium.client.render.chunk.vertex.format.impl;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeFormat;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.material.Material;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexEncoder;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.VanillaLikeChunkMeshAttribute;
 import net.caffeinemc.mods.sodium.api.util.ColorABGR;
 import net.caffeinemc.mods.sodium.api.util.ColorU8;
 import org.lwjgl.system.MemoryUtil;
 
-public class CompactChunkVertex implements ChunkVertexType {
-    public static final GlVertexFormat<ChunkMeshAttribute> VERTEX_FORMAT = GlVertexFormat.builder(ChunkMeshAttribute.class, 16)
-            .addElement(ChunkMeshAttribute.VERTEX_DATA, 0, GlVertexAttributeFormat.UNSIGNED_INT, 4, false, true)
-            .build();
+/**
+ * This vertex format is less performant and uses more VRAM than {@link CompactChunkVertex}, but should be completely
+ * compatible with mods & resource packs that need high precision for models.
+ */
+public class VanillaLikeChunkVertex implements ChunkVertexType {
+    public static final int STRIDE = 24;
 
-    public static final int STRIDE = 16;
-
-    private static final int POSITION_MAX_VALUE = 65536;
     private static final int TEXTURE_MAX_VALUE = 65536;
 
-    private static final float MODEL_ORIGIN = 8.0f;
-    private static final float MODEL_SCALE = 32.0f;
+    public static final GlVertexFormat<VanillaLikeChunkMeshAttribute> VERTEX_FORMAT = GlVertexFormat.builder(VanillaLikeChunkMeshAttribute.class, STRIDE)
+            .addElement(VanillaLikeChunkMeshAttribute.POSITION, 0, GlVertexAttributeFormat.FLOAT, 3, false, false)
+            .addElement(VanillaLikeChunkMeshAttribute.COLOR_LIGHT, 12, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
+            .addElement(VanillaLikeChunkMeshAttribute.TEXTURE_UV, 16, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
+            .addElement(VanillaLikeChunkMeshAttribute.DRAW_PARAMS, 20, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
+            .build();
 
     @Override
-    public GlVertexFormat<ChunkMeshAttribute> getVertexFormat() {
+    public GlVertexFormat<VanillaLikeChunkMeshAttribute> getVertexFormat() {
         return VERTEX_FORMAT;
     }
 
     @Override
     public ChunkVertexEncoder getEncoder() {
         return (ptr, material, vertex, sectionIndex) -> {
-            MemoryUtil.memPutInt(ptr + 0, (encodePosition(vertex.x) << 0) | (encodePosition(vertex.y) << 16));
-            MemoryUtil.memPutInt(ptr + 4, (encodePosition(vertex.z) << 0) | (encodeDrawParameters(material, sectionIndex) << 16));
-            MemoryUtil.memPutInt(ptr + 8, (encodeColor(vertex.color) << 0) | (encodeLight(vertex.light) << 24));
-            MemoryUtil.memPutInt(ptr + 12, (encodeTexture(vertex.u) << 0) | (encodeTexture(vertex.v) << 16));
+            MemoryUtil.memPutFloat(ptr + 0, vertex.x);
+            MemoryUtil.memPutFloat(ptr + 4, vertex.y);
+            MemoryUtil.memPutFloat(ptr + 8, vertex.z);
+            MemoryUtil.memPutInt(ptr + 12, (encodeColor(vertex.color) << 0) | (encodeLight(vertex.light) << 24));
+            MemoryUtil.memPutInt(ptr + 16, (encodeTexture(vertex.u) << 0) | (encodeTexture(vertex.v) << 16));
+            MemoryUtil.memPutInt(ptr + 20, encodeDrawParameters(material, sectionIndex));
 
             return ptr + STRIDE;
         };
@@ -42,11 +47,7 @@ public class CompactChunkVertex implements ChunkVertexType {
 
     @Override
     public String getDefine() {
-        return "VERTEX_FORMAT_COMPACT";
-    }
-
-    private static int encodePosition(float value) {
-        return (int) ((MODEL_ORIGIN + value) * (POSITION_MAX_VALUE / MODEL_SCALE));
+        return "VERTEX_FORMAT_FULL";
     }
 
     private static int encodeDrawParameters(Material material, int sectionIndex) {

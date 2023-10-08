@@ -2,6 +2,7 @@ package me.jellysquid.mods.sodium.client.render.chunk;
 
 import me.jellysquid.mods.sodium.client.SodiumClientMod;
 import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
+import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexFormat;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.DrawCommandList;
 import me.jellysquid.mods.sodium.client.gl.device.MultiDrawBatch;
@@ -20,7 +21,9 @@ import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderBindingPo
 import me.jellysquid.mods.sodium.client.render.chunk.shader.ChunkShaderInterface;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.VanillaLikeChunkMeshAttribute;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.util.BitwiseMath;
 import org.lwjgl.system.MemoryUtil;
@@ -32,11 +35,15 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
     private final SharedQuadIndexBuffer sharedIndexBuffer;
 
+    private final GlVertexAttributeBinding[] vertexAttributeBindings;
+
     public DefaultChunkRenderer(RenderDevice device, ChunkVertexType vertexType) {
         super(device, vertexType);
 
         this.batch = new MultiDrawBatch((ModelQuadFacing.COUNT * RenderRegion.REGION_SIZE) + 1);
         this.sharedIndexBuffer = new SharedQuadIndexBuffer(device.createCommandList(), SharedQuadIndexBuffer.IndexType.INTEGER);
+
+        this.vertexAttributeBindings = getBindingsForType();
     }
 
     @Override
@@ -217,12 +224,32 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
         return tessellation;
     }
 
+    private GlVertexAttributeBinding[] getBindingsForType() {
+        if(this.vertexType == ChunkMeshFormats.COMPACT) {
+            GlVertexFormat<ChunkMeshAttribute> compactFormat = (GlVertexFormat<ChunkMeshAttribute>)this.vertexFormat;
+            return new GlVertexAttributeBinding[] {
+                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
+                            compactFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
+            };
+        } else if(this.vertexType == ChunkMeshFormats.VANILLA_LIKE) {
+            GlVertexFormat<VanillaLikeChunkMeshAttribute> vanillaFormat = (GlVertexFormat<VanillaLikeChunkMeshAttribute>)this.vertexFormat;
+            return new GlVertexAttributeBinding[] {
+                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_POSITION,
+                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.POSITION)),
+                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_COLOR_LIGHT,
+                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.COLOR_LIGHT)),
+                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE_UV,
+                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.TEXTURE_UV)),
+                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS,
+                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.DRAW_PARAMS)),
+            };
+        } else
+            return null; // assume Oculus/Iris will take over
+    }
+
     private GlTessellation createRegionTessellation(CommandList commandList, RenderRegion.DeviceResources resources) {
         return commandList.createTessellation(GlPrimitiveType.TRIANGLES, new TessellationBinding[] {
-                TessellationBinding.forVertexBuffer(resources.getVertexBuffer(), new GlVertexAttributeBinding[] {
-                        new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA,
-                                this.vertexFormat.getAttribute(ChunkMeshAttribute.VERTEX_DATA))
-                }),
+                TessellationBinding.forVertexBuffer(resources.getVertexBuffer(), this.vertexAttributeBindings),
                 TessellationBinding.forElementBuffer(this.sharedIndexBuffer.getBufferObject())
         });
     }

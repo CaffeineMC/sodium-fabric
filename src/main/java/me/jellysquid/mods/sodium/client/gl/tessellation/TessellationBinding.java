@@ -4,10 +4,13 @@ import me.jellysquid.mods.sodium.client.gl.attribute.GlVertexAttributeBinding;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBuffer;
 import me.jellysquid.mods.sodium.client.gl.buffer.GlBufferTarget;
 
+import java.util.Objects;
+
 public record TessellationBinding(GlBufferTarget target,
                                   GlBuffer buffer,
                                   GlVertexAttributeBinding[] attributeBindings) {
     public static TessellationBinding forVertexBuffer(GlBuffer buffer, GlVertexAttributeBinding[] attributes) {
+        Objects.requireNonNull(attributes);
         return new TessellationBinding(GlBufferTarget.ARRAY_BUFFER, buffer, attributes);
     }
 

@@ -7,7 +7,7 @@ import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.gl.shader.*;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.shader.*;
-import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshAttribute;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import net.minecraft.util.Identifier;
 
@@ -17,7 +17,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     private final Map<ChunkShaderOptions, GlProgram<ChunkShaderInterface>> programs = new Object2ObjectOpenHashMap<>();
 
     protected final ChunkVertexType vertexType;
-    protected final GlVertexFormat<ChunkMeshAttribute> vertexFormat;
+    protected final GlVertexFormat<?> vertexFormat;
 
     protected final RenderDevice device;
 
@@ -39,6 +39,19 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
         return program;
     }
 
+    private GlProgram.Builder bindAttributesForType(GlProgram.Builder builder) {
+        if (this.vertexType == ChunkMeshFormats.COMPACT) {
+            return builder.bindAttribute("in_VertexData", ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA);
+        } else if (this.vertexType == ChunkMeshFormats.VANILLA_LIKE) {
+            return builder
+                    .bindAttribute("in_Pos", ChunkShaderBindingPoints.ATTRIBUTE_POSITION)
+                    .bindAttribute("in_ColorLight", ChunkShaderBindingPoints.ATTRIBUTE_COLOR_LIGHT)
+                    .bindAttribute("in_TextureUv", ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE_UV)
+                    .bindAttribute("in_DrawParams", ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS);
+        } else
+            throw new IllegalArgumentException("Unexpected vertex type");
+    }
+
     private GlProgram<ChunkShaderInterface> createShader(String path, ChunkShaderOptions options) {
         ShaderConstants constants = options.constants();
 
@@ -49,10 +62,9 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
                 new Identifier("sodium", path + ".fsh"), constants);
 
         try {
-            return GlProgram.builder(new Identifier("sodium", "chunk_shader"))
+            return bindAttributesForType(GlProgram.builder(new Identifier("sodium", "chunk_shader"))
                     .attachShader(vertShader)
-                    .attachShader(fragShader)
-                    .bindAttribute("in_VertexData", ChunkShaderBindingPoints.ATTRIBUTE_PACKED_DATA)
+                    .attachShader(fragShader))
                     .bindFragmentData("out_FragColor", ChunkShaderBindingPoints.FRAG_COLOR)
                     .link((shader) -> new ChunkShaderInterface(shader, options));
         } finally {
@@ -64,7 +76,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
     protected void begin(TerrainRenderPass pass) {
         pass.startDrawing();
 
-        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass);
+        ChunkShaderOptions options = new ChunkShaderOptions(ChunkFogMode.SMOOTH, pass, vertexType);
 
         this.activeProgram = this.compileProgram(options);
         this.activeProgram.bind();

@@ -26,6 +26,7 @@ import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkMeshFormats;
+import me.jellysquid.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import me.jellysquid.mods.sodium.client.render.texture.SpriteUtil;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
 import me.jellysquid.mods.sodium.client.render.viewport.Viewport;
@@ -69,6 +70,8 @@ public class RenderSectionManager {
 
     private final int renderDistance;
 
+    private final ChunkVertexType vertexType;
+
     @NotNull
     private SortedRenderLists renderLists;
 
@@ -82,10 +85,14 @@ public class RenderSectionManager {
     private @Nullable BlockPos lastCameraPosition;
 
     public RenderSectionManager(ClientWorld world, int renderDistance, CommandList commandList) {
-        this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, ChunkMeshFormats.COMPACT);
+        ChunkVertexType vertexType = SodiumClientMod.options().performance.useCompactVertexFormat ? ChunkMeshFormats.COMPACT : ChunkMeshFormats.VANILLA_LIKE;
+
+        this.chunkRenderer = new DefaultChunkRenderer(RenderDevice.INSTANCE, vertexType);
+
+        this.vertexType = vertexType;
 
         this.world = world;
-        this.builder = new ChunkBuilder(world, ChunkMeshFormats.COMPACT);
+        this.builder = new ChunkBuilder(world, vertexType);
 
         this.needsUpdate = true;
         this.renderDistance = renderDistance;
@@ -574,5 +581,9 @@ public class RenderSectionManager {
 
     public Collection<RenderSection> getSectionsWithGlobalEntities() {
         return ReferenceSets.unmodifiable(this.sectionsWithGlobalEntities);
+    }
+
+    public ChunkVertexType getVertexType() {
+        return this.vertexType;
     }
 }
