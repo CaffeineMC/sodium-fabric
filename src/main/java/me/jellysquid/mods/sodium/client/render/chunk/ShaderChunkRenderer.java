@@ -47,8 +47,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
                     .bindAttribute("in_Pos", ChunkShaderBindingPoints.ATTRIBUTE_POSITION)
                     .bindAttribute("in_Color", ChunkShaderBindingPoints.ATTRIBUTE_COLOR)
                     .bindAttribute("in_TextureUv", ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE_UV)
-                    .bindAttribute("in_DrawParams", ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS)
-                    .bindAttribute("in_Light", ChunkShaderBindingPoints.ATTRIBUTE_LIGHT);
+                    .bindAttribute("in_DrawParamsLight", ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS_LIGHT);
         } else
             throw new IllegalArgumentException("Unexpected vertex type");
     }

@@ -5,6 +5,5 @@ public enum VanillaLikeChunkMeshAttribute {
     POSITION,
     COLOR,
     TEXTURE_UV,
-    DRAW_PARAMS,
-    LIGHT
+    DRAW_PARAMS_LIGHT
 }

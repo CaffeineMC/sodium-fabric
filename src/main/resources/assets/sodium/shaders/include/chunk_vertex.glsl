@@ -14,8 +14,7 @@ in uvec4 in_VertexData;
 in vec3 in_Pos;
 in uint in_Color;
 in uint in_TextureUv;
-in uint in_DrawParams;
-in uint in_Light;
+in uint in_DrawParamsLight;
 
 #else
 #error Unsupported vertex format
@@ -71,18 +70,19 @@ void _vert_init() {
 #elif defined(VERTEX_FORMAT_FULL)
     _vert_position = in_Pos;
 
+    uint packed_draw_params = (in_DrawParamsLight & 0xFFFFu);
     // Vertex Material
-    _vert_material = (in_DrawParams) & 0xFFu;
+    _vert_material = (packed_draw_params) & 0xFFu;
 
     // Vertex Mesh ID
-    _vert_mesh_id  = (in_DrawParams >> 8) & 0xFFu;
+    _vert_mesh_id  = (packed_draw_params >> 8) & 0xFFu;
 
     // Vertex Color
     uvec3 packed_color = (uvec3(in_Color) >> uvec3(0, 8, 16)) & uvec3(0xFFu);
     _vert_color = vec3(packed_color) * COLOR_SCALE;
 
     // Vertex Light
-    _vert_light = (uvec2(in_Light) >> uvec2(0, 8)) & uvec2(0xFFu);
+    _vert_light = (uvec2((in_DrawParamsLight >> 16) & 0xFFFFu) >> uvec2(0, 8)) & uvec2(0xFFu);
 
     // Vertex Texture Coords
     uvec2 packed_tex_coord = (uvec2(in_TextureUv) >> uvec2(0, 16)) & uvec2(0xFFFFu);

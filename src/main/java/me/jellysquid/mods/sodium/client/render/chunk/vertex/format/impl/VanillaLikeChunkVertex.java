@@ -23,8 +23,7 @@ public class VanillaLikeChunkVertex implements ChunkVertexType {
             .addElement(VanillaLikeChunkMeshAttribute.POSITION, 0, GlVertexAttributeFormat.FLOAT, 3, false, false)
             .addElement(VanillaLikeChunkMeshAttribute.COLOR, 12, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
             .addElement(VanillaLikeChunkMeshAttribute.TEXTURE_UV, 16, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
-            .addElement(VanillaLikeChunkMeshAttribute.DRAW_PARAMS, 20, GlVertexAttributeFormat.UNSIGNED_SHORT, 1, false, true)
-            .addElement(VanillaLikeChunkMeshAttribute.LIGHT, 22, GlVertexAttributeFormat.UNSIGNED_SHORT, 1, false, true)
+            .addElement(VanillaLikeChunkMeshAttribute.DRAW_PARAMS_LIGHT, 20, GlVertexAttributeFormat.UNSIGNED_INT, 1, false, true)
             .build();
 
     @Override
@@ -40,8 +39,7 @@ public class VanillaLikeChunkVertex implements ChunkVertexType {
             MemoryUtil.memPutFloat(ptr + 8, vertex.z);
             MemoryUtil.memPutInt(ptr + 12, encodeColor(vertex.color));
             MemoryUtil.memPutInt(ptr + 16, (encodeTexture(vertex.u) << 0) | (encodeTexture(vertex.v) << 16));
-            MemoryUtil.memPutShort(ptr + 20, encodeDrawParameters(material, sectionIndex));
-            MemoryUtil.memPutShort(ptr + 22, encodeLight(vertex.light));
+            MemoryUtil.memPutInt(ptr + 20, (encodeDrawParameters(material, sectionIndex) << 0) | (encodeLight(vertex.light) << 16));
 
             return ptr + STRIDE;
         };
@@ -52,8 +50,8 @@ public class VanillaLikeChunkVertex implements ChunkVertexType {
         return "VERTEX_FORMAT_FULL";
     }
 
-    private static short encodeDrawParameters(Material material, int sectionIndex) {
-        return (short)(((sectionIndex & 0xFF) << 8) | ((material.bits() & 0xFF) << 0));
+    private static int encodeDrawParameters(Material material, int sectionIndex) {
+        return (((sectionIndex & 0xFF) << 8) | ((material.bits() & 0xFF) << 0));
     }
 
     private static int encodeColor(int color) {
@@ -66,10 +64,10 @@ public class VanillaLikeChunkVertex implements ChunkVertexType {
         return ColorABGR.pack(r, g, b, 0x00);
     }
 
-    private static short encodeLight(int light) {
+    private static int encodeLight(int light) {
         int block = light & 0xFF;
         int sky = (light >> 16) & 0xFF;
-        return (short)((block << 0) | (sky << 8));
+        return ((block << 0) | (sky << 8));
     }
 
     private static int encodeTexture(float value) {

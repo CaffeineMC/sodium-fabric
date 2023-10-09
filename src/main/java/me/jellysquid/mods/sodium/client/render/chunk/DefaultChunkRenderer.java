@@ -240,10 +240,8 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
                             vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.COLOR)),
                     new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_TEXTURE_UV,
                             vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.TEXTURE_UV)),
-                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS,
-                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.DRAW_PARAMS)),
-                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_LIGHT,
-                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.LIGHT))
+                    new GlVertexAttributeBinding(ChunkShaderBindingPoints.ATTRIBUTE_DRAW_PARAMS_LIGHT,
+                            vanillaFormat.getAttribute(VanillaLikeChunkMeshAttribute.DRAW_PARAMS_LIGHT)),
             };
         } else
             return null; // assume Oculus/Iris will take over
