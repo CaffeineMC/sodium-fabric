@@ -307,7 +307,8 @@ public class RenderSectionManager {
             result.deleteAfterUpload();
         }
 
-        this.needsGraphUpdate = true;
+        // TODO: only needed if the tasks actually changed the visibility (sort tasks don't count, though there would never be a sort task without camera movement so it likely doesn't matter)
+        this.needsGraphUpdate = true; 
     }
 
     private void processChunkBuildResults(ArrayList<BuilderTaskOutput> results) {
@@ -333,7 +334,7 @@ public class RenderSectionManager {
                 result.render.setTaskCancellationToken(null);
             }
 
-            result.render.setLastTaskFrame(result.submitTime);
+            result.render.setLastUploadFrame(result.submitTime);
         }
     }
 
@@ -352,7 +353,7 @@ public class RenderSectionManager {
         var map = new Reference2ReferenceLinkedOpenHashMap<RenderSection, BuilderTaskOutput>();
 
         for (var output : outputs) {
-            if (output.render.isDisposed() || output.render.getLastTaskFrame() > output.submitTime) {
+            if (output.render.isDisposed() || output.render.getLastUploadFrame() > output.submitTime) {
                 continue;
             }
 

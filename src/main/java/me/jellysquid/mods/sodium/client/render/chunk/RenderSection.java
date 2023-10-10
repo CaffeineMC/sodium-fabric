@@ -59,7 +59,7 @@ public class RenderSection {
     @Nullable
     private ChunkUpdateType pendingUpdateType;
 
-    private int lastTaskFrame = -1;
+    private int lastUploadFrame = -1;
     private int lastSubmittedFrame = -1;
 
     // Lifetime state
@@ -344,12 +344,12 @@ public class RenderSection {
         this.pendingUpdateType = type;
     }
 
-    public int getLastTaskFrame() {
-        return this.lastTaskFrame;
+    public int getLastUploadFrame() {
+        return this.lastUploadFrame;
     }
 
-    public void setLastTaskFrame(int lastSortFrame) {
-        this.lastTaskFrame = lastSortFrame;
+    public void setLastUploadFrame(int lastSortFrame) {
+        this.lastUploadFrame = lastSortFrame;
     }
 
     public int getLastSubmittedFrame() {
