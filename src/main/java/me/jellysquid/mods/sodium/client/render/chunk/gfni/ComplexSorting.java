@@ -33,6 +33,10 @@ public class ComplexSorting {
         return halfspace(planeAnchor, planeNormal, point) > 0;
     }
 
+    private static boolean pointInsideHalfSpace(Vector3fc planeAnchor, Vector3fc planeNormal, Vector3fc point) {
+        return halfspace(planeAnchor, planeNormal, point) < 0;
+    }
+
     public static void distanceSortModified(IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
         int[] indexes = new int[quads.length];
         BitArray visible = new BitArray(quads.length);
@@ -90,7 +94,7 @@ public class ComplexSorting {
             return 0;
         });
 
-        TranslucentData.writeVertexIndexes(indexBuffer, indexes);
+        TranslucentData.writeQuadVertexIndexes(indexBuffer, indexes);
     }
 
     private static int[] distanceSortIndexes(TQuad[] quads, Vector3fc cameraPos) {
@@ -104,7 +108,7 @@ public class ComplexSorting {
 
     public static void distanceSortDirect(IntBuffer indexBuffer, TQuad[] quads, Vector3fc cameraPos) {
         var indexes = distanceSortIndexes(quads, cameraPos);
-        TranslucentData.writeVertexIndexes(indexBuffer, indexes);
+        TranslucentData.writeQuadVertexIndexes(indexBuffer, indexes);
     }
 
     private static boolean orthoExtentWithinHalfspace(TQuad halfspace, TQuad otherQuad) {
@@ -112,7 +116,7 @@ public class ComplexSorting {
         var otherQuadOppositeDirection = halfspace.facing().getOpposite().ordinal();
         var sign = halfspace.facing().getSign();
 
-        return sign * halfspace.extents()[halfspaceDirection] > sign * otherQuad.extents()[otherQuadOppositeDirection];
+        return sign * halfspace.extents()[halfspaceDirection] - QUERY_EPSILON > sign * otherQuad.extents()[otherQuadOppositeDirection];
     }
 
     private static boolean orthogonalQuadVisibleThrough(TQuad quad, TQuad otherQuad) {
@@ -327,13 +331,15 @@ public class ComplexSorting {
         return true;
     }
 
+    private static final float QUERY_EPSILON = 0.0011f;
+
     private static boolean testSeparatorRange(Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal,
             Vector3fc normal, float start, float end) {
         var distances = distancesByNormal.get(normal);
         if (distances == null) {
             return false;
         }
-        return Group.queryRange(distances, start, end);
+        return Group.queryRange(distances, start - QUERY_EPSILON, end + QUERY_EPSILON);
     }
 
     private static boolean visibilityWithSeparator(TQuad quadA, TQuad quadB,
@@ -369,6 +375,8 @@ public class ComplexSorting {
                 return false;
             }
         }
+
+        // TODO: check all other normals too
 
         // visibility not disproven
         return true;
@@ -415,10 +423,10 @@ public class ComplexSorting {
         } else {
             // at least one unaligned quad
             // this is an approximation since our quads don't store all their vertices.
-            // check that other center is within the halfspace of quad and that the normals
-            // are more than 90 degrees apart
-            result = halfspace(quad.center(), quad.normal(), other.center()) < 0
-                    && quad.normal().dot(other.normal()) < 0;
+            // check that other center is within the halfspace of quad and that quad isn't
+            // in the halfspace of other
+            result = pointInsideHalfSpace(quad.center(), quad.normal(), other.center())
+                    && !pointInsideHalfSpace(other.center(), other.normal(), quad.center());
         }
 
         // if enabled and necessary, try to disprove this see-through relationship with
@@ -595,6 +603,21 @@ public class ComplexSorting {
         return true;
     }
 
+    /**
+     * Performs a topological sort without constructing the full graph in memory by
+     * doing a DFS on the implicit graph. Edges are tested as they are searched for
+     * and if necessary separator planes are used to disprove visibility.
+     * 
+     * TODO: the issue with it sometimes failing to sort is probably from the
+     * separator mechanism not working for unaligned quads yet.
+     * 
+     * @param indexBuffer       the buffer to write the topo sort result to
+     * @param allQuads          the quads to sort
+     * @param distancesByNormal a map of normals to sorted arrays of face plane
+     *                          distances, null to disable
+     * @param cameraPos         the camera position, or null to disable the
+     *                          visibility check
+     */
     public static boolean topoSortDepthFirstCyclic(
             IntBuffer indexBuffer, TQuad[] allQuads,
             Object2ReferenceOpenHashMap<Vector3fc, double[]> distancesByNormal,
@@ -612,6 +635,9 @@ public class ComplexSorting {
 
             for (int i = 0; i < allQuads.length; i++) {
                 TQuad quad = allQuads[i];
+                // TODO: this could introduce wrong sorting if the real normal and the quantized
+                // normal don't line up, ignoring the quad if it's not visible through the
+                // quantized one but visible in-camera
                 if (pointOutsideHalfspace(quad.center(), quad.normal(), cameraPos)) {
                     activeToRealIndex[activeQuads] = i;
                     quads[activeQuads] = quad;

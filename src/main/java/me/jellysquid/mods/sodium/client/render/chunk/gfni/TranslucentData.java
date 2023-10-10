@@ -26,8 +26,12 @@ public abstract class TranslucentData {
     }
 
     public void sort(Vector3fc cameraPos) {
-        // there should be no sort calls to data that doesn't need sorting
+        // there should be no sort calls to data that doesn't need dynamic sorting
         throw new UnsupportedOperationException();
+    }
+
+    public void timedSort(Vector3fc cameraPos) {
+        // TODO: collect and analyze timing data, actually call this method instead of sort
     }
 
     static int vertexCountToIndexBytes(int vertexCount) {

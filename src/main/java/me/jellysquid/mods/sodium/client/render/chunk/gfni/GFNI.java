@@ -17,20 +17,21 @@ import net.minecraft.util.math.ChunkSectionPos;
  * Distances are stored as doubles and normals are stored as float vectors.
  * 
  * TODO:
- * - sort the triggered sections by camera distance and possibly also use number
- * of translucent faces as a heuristic for importance
- * - baked models could possibly precompute normals and then just calculate
- * distances when processing a chunk?
  * - many sections can be marked as needing an update but they are only actually
  * scheduled for sorting when the RenderSectionManager makes them visible. This
  * may result in many sections suddenly needing sorting when the camera moves.
  * Maybe it's better to schedule them to be sorted gradually even if not
  * visible, if there are idle threads.
- * - problem: when there are two parallel planes made up of many quads each,
- * sorting the whole thing from one perspective means the sorting is wrong when
- * we look at it from another perspective. This happens because there is no
- * trigger in the plane. Sorting as if the entire thing was one quad would fix
- * it.
+ * - sort only up to a certain number of quads to limit rebuild time to some
+ * fixed value. determine how many that is by observing timings.
+ * - there's a scheduling issue when moving around flowing water on the floor
+ * and adding blocks in movement. Probably an issue with upgrading sort tasks to
+ * rebuild while they're running. Maybe it marks sections as built when
+ * they've been sorted even though it shouldn't?
+ * - De-epsilon all the geometry by snapping to multiples of 0.005 or sth like
+ * that. Would simplify the ComplexSorting code so that it doesn't need to deal
+ * with the existence of error margins (epsilons in the trigger distances and
+ * the centers).
  * 
  * @author douira
  */
