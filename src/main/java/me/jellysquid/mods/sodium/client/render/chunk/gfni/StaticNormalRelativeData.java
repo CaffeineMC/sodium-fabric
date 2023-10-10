@@ -50,7 +50,7 @@ public class StaticNormalRelativeData extends SplitDirectionData {
                 ranges[ModelQuadFacing.UNASSIGNED.ordinal()].vertexCount()));
         IntBuffer bufferBuilder = buffer.getDirectBuffer().asIntBuffer();
 
-        TranslucentData.writeVertexIndexes(bufferBuilder, MergeSort.mergeSort(keys));
+        TranslucentData.writeQuadVertexIndexes(bufferBuilder, MergeSort.mergeSort(keys));
 
         return new StaticNormalRelativeData(sectionPos, buffer, ranges);
     }
@@ -96,7 +96,7 @@ public class StaticNormalRelativeData extends SplitDirectionData {
 
                 // add the vertex start converted to quads to the offset to get the real quad
                 // index and not just the index local to the direction's set of quads
-                TranslucentData.writeVertexIndexesOffset(bufferBuilder, sorter.sort(centers[i]),
+                TranslucentData.writeQuadVertexIndexesOffset(bufferBuilder, sorter.sort(centers[i]),
                         range.vertexStart() / TranslucentData.VERTICES_PER_QUAD);
             }
         }

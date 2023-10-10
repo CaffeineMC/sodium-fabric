@@ -59,13 +59,13 @@ public abstract class TranslucentData {
         intBuffer.put(vertexOffset + 0);
     }
 
-    static void writeVertexIndexes(IntBuffer intBuffer, int[] quadIndexes) {
+    static void writeQuadVertexIndexes(IntBuffer intBuffer, int[] quadIndexes) {
         for (int quadIndexPos = 0; quadIndexPos < quadIndexes.length; quadIndexPos++) {
             putQuadVertexIndexes(intBuffer, quadIndexes[quadIndexPos]);
         }
     }
 
-    static void writeVertexIndexesOffset(IntBuffer intBuffer, int[] quadIndexes, int offset) {
+    static void writeQuadVertexIndexesOffset(IntBuffer intBuffer, int[] quadIndexes, int offset) {
         for (int quadIndexPos = 0; quadIndexPos < quadIndexes.length; quadIndexPos++) {
             putQuadVertexIndexes(intBuffer, quadIndexes[quadIndexPos] + offset);
         }
